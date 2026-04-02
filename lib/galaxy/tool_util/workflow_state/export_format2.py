@@ -7,6 +7,8 @@ using tool definitions. This module wires that callback with stale key
 policy, strict mode, and per-step status tracking.
 """
 
+import io
+import json
 import logging
 import os
 import sys
@@ -35,6 +37,11 @@ from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
 )
+from ._report_models import (
+    TreeReportBase,
+    WorkflowResultBase,
+)
+from ._report_output import emit_reports
 from ._types import GetToolInfo
 from .convert import (
     ConversionValidationFailure,
@@ -201,6 +208,8 @@ class ExportOptions(ToolCacheOptions):
     json_output: bool = False
     compact: bool = False
     strict: bool = False
+    report_json: str | None = None
+    report_markdown: str | None = None
     allow: list[str] = []
     deny: list[str] = []
 
@@ -210,10 +219,10 @@ class ExportTreeOptions(ToolCacheOptions):
     json_output: bool = False
     compact: bool = False
     strict: bool = False
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
-    allow: List[str] = []
-    deny: List[str] = []
+    report_json: str | None = None
+    report_markdown: str | None = None
+    allow: list[str] = []
+    deny: list[str] = []
 
 
 # -- Formatters --
@@ -234,8 +243,6 @@ def format_summary(result: ExportResult) -> str:
 
 def format_yaml(format2_dict: dict) -> str:
     try:
-        import io
-
         from ruamel.yaml import YAML
 
         yaml = YAML()
@@ -250,8 +257,6 @@ def format_yaml(format2_dict: dict) -> str:
 
 
 def format_json(format2_dict: dict) -> str:
-    import json
-
     return json.dumps(format2_dict, indent=4) + "\n"
 
 
@@ -297,49 +302,115 @@ def run_export(options: ExportOptions) -> int:
     else:
         output = format_yaml(result.format2_dict)
 
-    # Write output
+    # Write converted workflow
     if options.output:
         os.makedirs(os.path.dirname(os.path.abspath(options.output)), exist_ok=True)
         with open(options.output, "w") as f:
             f.write(output)
-        print(format_summary(result), file=sys.stderr)
     else:
-        # Summary to stderr, format2 to stdout
-        print(format_summary(result), file=sys.stderr)
         sys.stdout.write(output)
+
+    # Emit report
+    converted = sum(1 for s in result.steps if s.converted)
+    fallback = len(result.failed_steps)
+    json_data = SingleExportReport(
+        workflow=options.workflow_path,
+        ok=not result.failed_steps,
+        steps_converted=converted,
+        steps_fallback=fallback,
+    )
+    tree_report = wrap_single_export(options.workflow_path, json_data)
+    text_content = format_summary(result)
+    summary_text = result.summary
+
+    emit_reports(
+        options=options,
+        json_data=json_data,
+        markdown_formatter=_format_tree_markdown,
+        markdown_report=tree_report,
+        text_content=text_content,
+        stderr_summary=summary_text,
+    )
 
     return 1 if result.failed_steps else 0
 
 
-# -- Tree export --
+# -- Report models --
 
 
-@dataclass
-class WorkflowExportResult:
-    """Result of exporting one workflow in a tree run."""
+class WorkflowExportResult(WorkflowResultBase):
+    """Per-workflow export result."""
 
-    relative_path: str
-    ok: bool
+    skipped_reason: str | None = None  # override: free-form skip reasons beyond SkipWorkflowReason
+    ok: bool = False
     steps_converted: int = 0
     steps_fallback: int = 0
-    error: Optional[str] = None
-    skipped_reason: Optional[str] = None
 
 
-class ExportTreeReport(BaseModel):
-    """Tree-level report for batch export."""
+class SingleExportReport(BaseModel):
+    """JSON shape for single-file export."""
 
-    root: str
-    output_dir: str
-    results: List[Dict[str, Any]] = Field(default_factory=list)
+    workflow: str
+    ok: bool = False
+    steps_converted: int = 0
+    steps_fallback: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
-        ok = sum(1 for r in self.results if r.get("ok"))
-        fail = sum(1 for r in self.results if r.get("error"))
-        skipped = sum(1 for r in self.results if r.get("skipped_reason"))
+    def summary(self) -> dict[str, int]:
+        return {"converted": self.steps_converted, "fallback": self.steps_fallback}
+
+
+class ExportTreeReport(TreeReportBase):
+    """Tree-level report for batch export."""
+
+    output_dir: str
+    results: list[WorkflowExportResult] = Field(default_factory=list, serialization_alias="workflows")
+
+    def _workflow_results(self) -> list:
+        return self.results
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> dict[str, int]:
+        ok = sum(1 for r in self.results if r.ok)
+        fail = sum(1 for r in self.results if r.error)
+        skipped = sum(1 for r in self.results if r.skipped_reason)
         return {"ok": ok, "fail": fail, "skipped": skipped}
+
+
+def wrap_single_export(workflow_path: str, report: SingleExportReport) -> ExportTreeReport:
+    """Wrap single-file export result into a tree report for Markdown rendering."""
+    return ExportTreeReport(
+        root=workflow_path,
+        output_dir="",
+        results=[
+            WorkflowExportResult(
+                path=workflow_path,
+                relative_path=os.path.basename(workflow_path),
+                category="",
+                ok=report.ok,
+                steps_converted=report.steps_converted,
+                steps_fallback=report.steps_fallback,
+            )
+        ],
+    )
+
+
+def _format_tree_markdown(report: ExportTreeReport) -> str:
+    lines = [f"# Export Report: {report.root}"]
+    for r in report.results:
+        if r.error:
+            lines.append(f"- **{r.relative_path}**: ERROR ({r.error})")
+        elif r.skipped_reason:
+            lines.append(f"- **{r.relative_path}**: SKIPPED ({r.skipped_reason})")
+        elif r.ok:
+            lines.append(f"- **{r.relative_path}**: OK ({r.steps_converted} steps)")
+        else:
+            lines.append(f"- **{r.relative_path}**: PARTIAL ({r.steps_fallback} fallbacks)")
+    s = report.summary
+    lines.append(f"\n**Summary**: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
+    return "\n".join(lines)
 
 
 def run_export_tree(options: ExportTreeOptions) -> int:
@@ -395,7 +466,9 @@ def run_export_tree(options: ExportTreeOptions) -> int:
             f.write(output)
 
         return WorkflowExportResult(
+            path=info.path,
             relative_path=info.relative_path,
+            category=info.category,
             ok=not result.failed_steps,
             steps_converted=sum(1 for s in result.steps if s.converted),
             steps_fallback=len(result.failed_steps),
@@ -404,34 +477,40 @@ def run_export_tree(options: ExportTreeOptions) -> int:
     def aggregate(tree_result):
         results = []
         for outcome in tree_result.outcomes:
+            info = outcome.info
             if outcome.error:
-                results.append({"path": outcome.info.relative_path, "ok": False, "error": outcome.error})
-            elif outcome.skipped:
-                results.append({"path": outcome.info.relative_path, "ok": False, "skipped_reason": outcome.skip_reason})
-            elif outcome.result is not None:
-                r = outcome.result
                 results.append(
-                    {
-                        "path": r.relative_path,
-                        "ok": r.ok,
-                        "steps_converted": r.steps_converted,
-                        "steps_fallback": r.steps_fallback,
-                    }
+                    WorkflowExportResult(
+                        path=info.path,
+                        relative_path=info.relative_path,
+                        category=info.category,
+                        error=outcome.error,
+                    )
                 )
+            elif outcome.skipped:
+                results.append(
+                    WorkflowExportResult(
+                        path=info.path,
+                        relative_path=info.relative_path,
+                        category=info.category,
+                        skipped_reason=outcome.skip_reason,
+                    )
+                )
+            elif outcome.result is not None:
+                results.append(outcome.result)
         return ExportTreeReport(root=tree_result.root, output_dir=options.output_dir, results=results)
 
     def format_text(report):
         lines = [f"Export: {report.root} → {report.output_dir}"]
         for r in report.results:
-            path = r["path"]
-            if r.get("error"):
-                lines.append(f"  {path}: ERROR ({r['error']})")
-            elif r.get("skipped_reason"):
-                lines.append(f"  {path}: SKIPPED ({r['skipped_reason']})")
-            elif r.get("ok"):
-                lines.append(f"  {path}: OK ({r.get('steps_converted', 0)} steps)")
+            if r.error:
+                lines.append(f"  {r.relative_path}: ERROR ({r.error})")
+            elif r.skipped_reason:
+                lines.append(f"  {r.relative_path}: SKIPPED ({r.skipped_reason})")
+            elif r.ok:
+                lines.append(f"  {r.relative_path}: OK ({r.steps_converted} steps)")
             else:
-                lines.append(f"  {path}: PARTIAL ({r.get('steps_fallback', 0)} fallbacks)")
+                lines.append(f"  {r.relative_path}: PARTIAL ({r.steps_fallback} fallbacks)")
         s = report.summary
         lines.append(f"Summary: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
         return "\n".join(lines)
@@ -443,7 +522,7 @@ def run_export_tree(options: ExportTreeOptions) -> int:
         aggregate=aggregate,
         format_text=format_text,
         format_summary=lambda r: f"Export: {r.summary['ok']} OK, {r.summary['fail']} errors",
-        format_markdown=lambda r: format_text(r),  # simple for now
+        format_markdown=_format_tree_markdown,
         compute_exit_code=lambda r: 1 if r.summary["fail"] > 0 else 0,
         report_options=options,
     )

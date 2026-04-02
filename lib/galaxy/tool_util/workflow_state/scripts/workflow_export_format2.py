@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-to-format2-stateful."""
 
 from .._cli_common import (
+    add_report_args,
     build_base_parser,
     cli_main,
 )
@@ -26,6 +27,7 @@ def build_parser():
     )
     parser.add_argument("--compact", action="store_true", help="Generate compact workflow without position information")
     parser.add_argument("--strict", action="store_true", help="Fail on any step that can't be converted")
+    add_report_args(parser)
     return parser
 
 

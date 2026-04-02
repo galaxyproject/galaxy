@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-to-native-stateful."""
 
 from .._cli_common import (
+    add_report_args,
     build_base_parser,
     cli_main,
 )
@@ -18,6 +19,7 @@ def build_parser():
     )
     parser.add_argument("--output", "-o", help="Output file (default: stdout)")
     parser.add_argument("--strict", action="store_true", help="Fail if any step can't be schema-encoded")
+    add_report_args(parser)
     return parser
 
 
