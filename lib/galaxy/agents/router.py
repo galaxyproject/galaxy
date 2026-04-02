@@ -99,18 +99,25 @@ class QueryRouterAgent(BaseGalaxyAgent):
     async def _execute_handoff(
         self,
         ctx: RunContext[GalaxyAgentDependencies],
-        agent_class: type[BaseGalaxyAgent],
+        agent_type: str,
         input_text: str,
-        target_agent: str,
+        target_agent: str | None = None,
     ) -> str:
         """Execute a handoff to a specialist agent."""
-        log.info(f"Router handing off to {target_agent}: '{input_text[:100]}...'")
+        handoff_target = target_agent or agent_type
+        log.info(f"Router handing off to {handoff_target}: '{input_text[:100]}...'")
         try:
-            agent = agent_class(ctx.deps)
+            agent = ctx.deps.get_agent(agent_type, ctx.deps)
             response = await agent.process(input_text)
-            return self._serialize_handoff(response, target_agent)
-        except (OSError, ValueError) as e:
-            log.error(f"{target_agent} handoff failed: {e}")
+            return self._serialize_handoff(response, handoff_target)
+        except ValueError as e:
+            log.warning(f"{handoff_target} handoff unavailable: {e}")
+            return (
+                f"The '{handoff_target}' agent is not available in this Galaxy configuration. "
+                "Please try a different request or contact your administrator."
+            )
+        except OSError as e:
+            log.error(f"{handoff_target} handoff failed: {e}")
             return f"I encountered an issue ({type(e).__name__}). Please try again or contact support."
 
     def _create_error_analysis_handoff(self):
@@ -129,9 +136,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 task: Description of the error or debugging task to analyze
             """
-            from .error_analysis import ErrorAnalysisAgent
-
-            return await self._execute_handoff(ctx, ErrorAnalysisAgent, task, "error_analysis")
+            return await self._execute_handoff(ctx, AgentType.ERROR_ANALYSIS, task)
 
         return hand_off_to_error_analysis
 
@@ -154,9 +159,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 request: Description of the tool to create
             """
-            from .custom_tool import CustomToolAgent
-
-            return await self._execute_handoff(ctx, CustomToolAgent, request, "custom_tool")
+            return await self._execute_handoff(ctx, AgentType.CUSTOM_TOOL, request)
 
         return hand_off_to_custom_tool
 
@@ -181,9 +184,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 query: The tool discovery question
             """
-            from .tools import ToolRecommendationAgent
-
-            return await self._execute_handoff(ctx, ToolRecommendationAgent, query, "tool_recommendation")
+            return await self._execute_handoff(ctx, AgentType.TOOL_RECOMMENDATION, query)
 
         return hand_off_to_tool_recommendation
 
@@ -218,9 +219,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 request: The user's request about their history/analysis
             """
-            from .history import HistoryAgent
-
-            return await self._execute_handoff(ctx, HistoryAgent, request, "history")
+            return await self._execute_handoff(ctx, AgentType.HISTORY, request)
 
         return hand_off_to_history_agent
 
@@ -241,9 +240,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 request: The user's request about next steps or recommendations
             """
-            from .orchestrator import WorkflowOrchestratorAgent
-
-            return await self._execute_handoff(ctx, WorkflowOrchestratorAgent, request, "next_step_advisor")
+            return await self._execute_handoff(ctx, AgentType.ORCHESTRATOR, request, "next_step_advisor")
 
         return hand_off_to_next_step_advisor
 
@@ -265,9 +262,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
             Args:
                 request: The user's multi-faceted request
             """
-            from .orchestrator import WorkflowOrchestratorAgent
-
-            return await self._execute_handoff(ctx, WorkflowOrchestratorAgent, request, "orchestrator")
+            return await self._execute_handoff(ctx, AgentType.ORCHESTRATOR, request)
 
         return hand_off_to_orchestrator
 

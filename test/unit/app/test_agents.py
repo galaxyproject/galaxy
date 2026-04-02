@@ -15,6 +15,7 @@ and those that do not.
 """
 
 import os
+from types import SimpleNamespace
 from typing import (
     Any,
 )
@@ -303,6 +304,26 @@ class TestAgentUnitMocked:
             assert response.content == "Hello! I'm Galaxy's AI assistant. How can I help you today?"
             assert "Mock" not in response.content
             assert "AgentRunResult" not in response.content
+
+    @pytest.mark.asyncio
+    async def test_router_handoff_uses_registry_callback(self):
+        router = QueryRouterAgent(self.deps)
+        mock_history_agent = AsyncMock()
+        mock_history_agent.process.return_value = MagicMock(
+            content="History summary",
+            agent_type="history",
+            confidence=ConfidenceLevel.HIGH,
+            metadata={},
+            suggestions=[],
+        )
+        self.deps.get_agent = MagicMock(return_value=mock_history_agent)
+        ctx = SimpleNamespace(deps=self.deps)
+
+        handoff = router._create_history_handoff()
+        response = await handoff(ctx, "Summarize my history")
+
+        self.deps.get_agent.assert_called_once_with("history", self.deps)
+        assert "History summary" in response
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_agent_mocked(self):
