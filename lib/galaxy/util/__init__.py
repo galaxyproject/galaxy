@@ -323,8 +323,11 @@ def iter_start_of_line(fh, chunk_size=None):
         if not data:
             break
         if not data.endswith("\n"):
-            # Discard the rest of the line
-            fh.readline()
+            # Discard the rest of the line without reading it all into memory
+            while True:
+                line_rest = fh.readline(CHUNK_SIZE)
+                if not line_rest or line_rest.endswith("\n"):
+                    break
         yield data
 
 
