@@ -96,6 +96,7 @@ def build_default_registry(config=None) -> AgentRegistry:
     from .base import AgentType
     from .custom_tool import CustomToolAgent
     from .error_analysis import ErrorAnalysisAgent
+    from .history import HistoryAgent
     from .orchestrator import WorkflowOrchestratorAgent
     from .router import QueryRouterAgent
     from .tools import ToolRecommendationAgent
@@ -127,4 +128,5 @@ def build_default_registry(config=None) -> AgentRegistry:
     _register_if_enabled(registry, AgentType.CUSTOM_TOOL, CustomToolAgent)
     _register_if_enabled(registry, AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
     _register_if_enabled(registry, AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
+    _register_if_enabled(registry, AgentType.HISTORY, HistoryAgent)
     return registry

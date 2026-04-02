@@ -166,7 +166,8 @@ class TestAgentUnitMocked:
         assert registry.is_registered("custom_tool")
         assert registry.is_registered("orchestrator")
         assert registry.is_registered("tool_recommendation")
-        assert len(registry.list_agents()) == 5
+        assert registry.is_registered("history")
+        assert len(registry.list_agents()) == 6
 
     def test_disabled_agent_not_registered(self):
         """Disabled agent should not be in registry."""
@@ -191,7 +192,7 @@ class TestAgentUnitMocked:
     def test_build_registry_no_config_registers_all(self):
         """Without config, all agents registered (backwards compat)."""
         registry = build_default_registry()
-        assert len(registry.list_agents()) == 5
+        assert len(registry.list_agents()) == 6
 
     def test_disabled_agent_registry_get_agent_raises(self):
         """Registry.get_agent for a disabled agent gives 'Unknown agent type' error."""
@@ -206,6 +207,7 @@ class TestAgentUnitMocked:
             "router",
             "custom_tool",
             "error_analysis",
+            "history",
         ]
 
         for agent_type in required_agents:
