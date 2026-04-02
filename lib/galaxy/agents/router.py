@@ -252,8 +252,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
             """Route to orchestrator for queries requiring multiple agents to work together.
 
             Use this when the user's query explicitly requires multiple capabilities:
-            - "Summarize my history AND find tutorials" (history + gtn_training)
-            - "Debug this error AND show me how to avoid it" (error_analysis + gtn_training)
+            - "Summarize my history AND suggest what tool to use next" (history + tool_recommendation)
+            - "Debug this error AND suggest what to try next" (error_analysis + history)
             - "Analyze my workflow AND suggest improvements" (multiple agents)
             - Any request with "and" connecting distinct capabilities
 

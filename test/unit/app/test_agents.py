@@ -446,6 +446,30 @@ class TestAgentUnitMocked:
             assert "Custom tool" in response.content
 
     @pytest.mark.asyncio
+    async def test_workflow_orchestrator_maps_legacy_gtn_training_to_history(self):
+        agent = WorkflowOrchestratorAgent(self.deps)
+
+        with patch.object(agent, "_get_agent_plan") as mock_get_plan:
+            mock_get_plan.return_value = AgentPlan(
+                agents=["history", "gtn_training"],
+                sequential=True,
+                reasoning="Legacy planner output",
+            )
+
+            mock_history_agent = AsyncMock()
+            mock_history_agent.process.return_value = MagicMock(
+                content="You should inspect the failed datasets and rerun with corrected inputs.",
+                agent_type="history",
+            )
+            self.deps.get_agent = MagicMock(return_value=mock_history_agent)
+
+            response = await agent.process("What should I do next?")
+
+            assert response.metadata.get("agents_used") == ["history"]
+            self.deps.get_agent.assert_called_once_with("history", self.deps)
+            assert "rerun with corrected inputs" in response.content
+
+    @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):
         agent = self._orchestrator_agent()
 

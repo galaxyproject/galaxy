@@ -73,9 +73,37 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "orchestrator.md"
         return prompt_path.read_text()
 
+    def _normalize_agent_plan(self, agents: list[str]) -> list[str]:
+        """Map legacy plan outputs to supported agents and drop duplicates."""
+        normalized: list[str] = []
+        legacy_aliases = {
+            "gtn_training": AgentType.HISTORY,
+            "next_step_advisor": AgentType.HISTORY,
+        }
+        supported_agents = {
+            AgentType.ERROR_ANALYSIS,
+            AgentType.CUSTOM_TOOL,
+            AgentType.HISTORY,
+            AgentType.TOOL_RECOMMENDATION,
+        }
+
+        for agent_name in agents:
+            normalized_name = legacy_aliases.get(agent_name, agent_name)
+            if normalized_name not in supported_agents:
+                log.warning(f"Orchestrator: skipping unsupported agent '{agent_name}' from generated plan")
+                continue
+            if normalized_name not in normalized:
+                normalized.append(normalized_name)
+
+        return normalized
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         try:
             plan = await self._get_agent_plan(query)
+            plan.agents = self._normalize_agent_plan(plan.agents)
+            if not plan.agents:
+                log.warning("Orchestrator: plan did not contain any supported agents, defaulting to history")
+                plan.agents = [AgentType.HISTORY]
             log.info(
                 f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}"
             )
@@ -241,8 +269,8 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         transitions = {
             "error_analysis": "Looking at this error more closely:",
             "history": "Based on your history:",
-            "gtn_training": "For learning more:",
             "custom_tool": "Regarding the tool:",
+            "tool_recommendation": "For relevant Galaxy tools:",
         }
         return transitions.get(agent_name, "Additionally:")
 
@@ -253,8 +281,8 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         Available agents:
         - error_analysis: Debug job failures and errors (use when user PROVIDES error details)
         - custom_tool: Create new Galaxy tools
-        - history: Summarize histories, describe analyses, FIND failed jobs
-        - gtn_training: Find relevant tutorials (may not be available)
+        - history: Summarize histories, describe analyses, FIND failed jobs, and suggest practical next steps
+        - tool_recommendation: Find relevant Galaxy tools already available on this server
 
         Respond in this format:
         AGENTS: [agent1, agent2]
@@ -264,7 +292,8 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         Examples:
         - "What failed in my history?" → AGENTS: [history, error_analysis], SEQUENTIAL: true (find failed job, then analyze)
         - "Why did the job in my BRC history fail?" → AGENTS: [history, error_analysis], SEQUENTIAL: true
-        - "What should I do next?" → AGENTS: [history, gtn_training], SEQUENTIAL: true
+        - "What should I do next?" → AGENTS: [history], SEQUENTIAL: false
+        - "What tool should I use next for this analysis?" → AGENTS: [history, tool_recommendation], SEQUENTIAL: true
         - "Here's my error: [pasted text]" → AGENTS: [error_analysis], SEQUENTIAL: false (user provided details)
         - "Summarize my history" → AGENTS: [history], SEQUENTIAL: false
         """
