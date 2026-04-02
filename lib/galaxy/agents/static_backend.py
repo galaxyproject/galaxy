@@ -50,10 +50,6 @@ class StaticAgent(BaseGalaxyAgent):
         return ""
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        validation_error = self._validate_query(query)
-        if validation_error:
-            return self._validation_error_response(validation_error)
-
         for rule in self._rules:
             if self._rule_matches(rule.get("match", {}), query, context):
                 return self._make_response(rule["response"])
