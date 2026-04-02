@@ -17,6 +17,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
 )
 
 import jsonschema
@@ -132,7 +133,9 @@ def test_specification_json_schema():
         _test_file_json_schema(file, parameter_spec)
 
 
-def _conditional_type_def(file: str, state_representation: StateRepresentationT = "request") -> Dict[str, Any]:
+def _conditional_type_def(
+    file: str, state_representation: StateRepresentationT = "request"
+) -> Tuple[Dict[str, Any], Dict[str, Any]]:
     bundle = parameter_bundle_for_file(file)
     schema = _json_schema_for(bundle, state_representation)
     defs = schema.get("$defs", {})
