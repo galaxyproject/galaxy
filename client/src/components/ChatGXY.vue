@@ -1,22 +1,39 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faExternalLinkAlt, faMagic, faMicroscope, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { BAlert, BSkeleton } from "bootstrap-vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
-import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { useAgentActions } from "@/composables/agentActions";
+import { useDataAnalysisAgent } from "@/composables/agents/dataAnalysis";
 import { useMarkdown } from "@/composables/markdown";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./ChatGXY/agentTypes";
-import type { ChatHistoryItem, ChatMessage } from "./ChatGXY/chatTypes";
-import { generateId, scrollToBottom } from "./ChatGXY/chatUtils";
+import type { ChatHistoryItem, ChatMessage, ExchangeMessage } from "./ChatGXY/types";
+import {
+    applyCollapseState,
+    escapeHtml,
+    generateId,
+    hasArtifacts,
+    isAwaitingExecution,
+    isDataAnalysisMessage,
+    normaliseAnalysisSteps,
+    normaliseArtifactList,
+    normalisePathList,
+    scrollToBottom,
+} from "./ChatGXY/utilities";
 
+import GButton from "./BaseComponents/GButton.vue";
 import ChatInput from "./ChatGXY/ChatInput.vue";
 import ChatMessageCell from "./ChatGXY/ChatMessageCell.vue";
+import MessageArtifacts from "./ChatGXY/MessageArtifacts.vue";
+import MessageIntermediateDetails from "./ChatGXY/MessageIntermediateDetails.vue";
+import DatasetSelector from "./Form/Elements/FormData/FormData.vue";
 import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -37,6 +54,35 @@ const selectedAgentType = ref("auto");
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
+// TODO: Conditionally allow this if we have the Data Analysis agent available?
+/** Whether the Data Analysis agent is currently being used */
+const usingDataAnalysisAgent = ref(false);
+
+// Data Analysis agent state and actions
+const {
+    appendAssistantMessage,
+    applyDatasetSelectionFromMessages,
+    applyExecutionResultMetadata,
+    closeChatStream,
+    datasetError,
+    datasetOptions,
+    deliveredTaskIds,
+    formDataOptions,
+    loadingDatasets,
+    maybeRunPyodideForMessage,
+    pendingCollapsedMessages,
+    pyodideExecutions,
+    pyodideRunnerRunning,
+    pyodideTaskToMessage,
+    selectedDatasets,
+    selectedDatasetsFormData,
+    updateMessageOutputsFromArtifacts,
+} = useDataAnalysisAgent(usingDataAnalysisAgent, messages, currentChatId, selectedAgentType);
+
+const isChatBusy = computed(
+    () => busy.value || pyodideRunnerRunning.value || messages.value.some((message) => isAwaitingExecution(message)),
+);
+
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewlinesAfterList: true });
 const { processingAction, handleAction } = useAgentActions();
 
@@ -52,6 +98,10 @@ onMounted(async () => {
     }
 });
 
+onBeforeUnmount(() => {
+    closeChatStream();
+});
+
 watch(
     () => props.exchangeId,
     async (newId, oldId) => {
@@ -65,6 +115,31 @@ watch(
         }
     },
 );
+
+function safeRenderMarkdown(text: string): string {
+    try {
+        return renderMarkdown(text);
+    } catch (error) {
+        console.error("Failed to render markdown for chat message:", error);
+        return `<pre>${escapeHtml(text)}</pre>`;
+    }
+}
+
+function applyLatestAssistantState(target: ChatMessage, latest: ChatMessage) {
+    target.content = latest.content;
+    target.timestamp = latest.timestamp;
+    target.agentType = latest.agentType;
+    target.confidence = latest.confidence;
+    target.feedback = latest.feedback;
+    target.agentResponse = latest.agentResponse;
+    target.suggestions = latest.suggestions;
+    target.analysisSteps = latest.analysisSteps;
+    target.routingInfo = latest.routingInfo;
+    target.isCollapsible = latest.isCollapsible;
+    if (latest.isCollapsed !== undefined) {
+        target.isCollapsed = latest.isCollapsed;
+    }
+}
 
 function showWelcome() {
     messages.value.push({
@@ -85,6 +160,7 @@ async function submitQuery() {
     if (!query.value.trim()) {
         return;
     }
+    pendingCollapsedMessages.length = 0;
 
     const userMessage: ChatMessage = {
         id: generateId(),
@@ -114,6 +190,7 @@ async function submitQuery() {
                 query: currentQuery,
                 context: null,
                 exchange_id: currentChatId.value,
+                dataset_ids: usingDataAnalysisAgent.value ? selectedDatasets.value : undefined,
             },
         });
 
@@ -133,27 +210,7 @@ async function submitQuery() {
             await nextTick();
             scrollToBottom(chatContainer.value);
         } else if (data) {
-            const agentResponse = data.agent_response as AgentResponse | undefined;
-            const content = data.response || "No response received";
-
-            if (data.exchange_id) {
-                currentChatId.value = data.exchange_id;
-            }
-
-            const assistantMessage: ChatMessage = {
-                id: generateId(),
-                role: "assistant",
-                content: content,
-                timestamp: new Date(),
-                agentType:
-                    agentResponse?.agent_type ||
-                    (selectedAgentType.value === "auto" ? "router" : selectedAgentType.value),
-                confidence: agentResponse?.confidence || "medium",
-                feedback: null,
-                agentResponse: agentResponse,
-                suggestions: agentResponse?.suggestions || [],
-            };
-            messages.value.push(assistantMessage);
+            appendAssistantMessage(data, selectedAgentType.value);
 
             await nextTick();
             scrollToBottom(chatContainer.value);
@@ -214,6 +271,8 @@ async function sendFeedback(messageId: string, value: "up" | "down") {
 }
 
 async function fetchConversation(exchangeId: string): Promise<boolean> {
+    pendingCollapsedMessages.length = 0;
+
     const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
         params: {
             path: { exchange_id: exchangeId },
@@ -224,28 +283,133 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
         return false;
     }
 
-    messages.value = fullConversation.map((msg: any, index: number) => {
+    deliveredTaskIds.clear();
+    pyodideTaskToMessage.clear();
+    const taskIdToMessage: Record<string, ChatMessage> = {};
+    const pendingExecResults: Record<string, any> = {};
+    const assistantMessagesToReplay: ChatMessage[] = [];
+    const rebuiltMessages: ChatMessage[] = [];
+    let currentTurnAssistant: ChatMessage | null = null;
+
+    for (const [index, msg] of (fullConversation as unknown as ExchangeMessage[]).entries()) {
+        if (msg.role === "execution_result") {
+            if (msg.task_id) {
+                deliveredTaskIds.add(String(msg.task_id));
+                const target = taskIdToMessage[String(msg.task_id)];
+                if (target) {
+                    applyExecutionResultMetadata(target, msg);
+                } else {
+                    pendingExecResults[String(msg.task_id)] = msg;
+                }
+            }
+            continue;
+        }
+
+        if (msg.role !== "user" && msg.role !== "assistant") {
+            continue;
+        }
+
         const message: ChatMessage = {
             id: `hist-${msg.role}-${exchangeId}-${index}`,
             role: msg.role as "user" | "assistant",
-            content: msg.content,
+            content: msg.content || "",
             timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(),
             feedback: null,
         };
 
-        if (msg.role === "assistant") {
-            message.agentType = msg.agent_type;
-            message.confidence = msg.agent_response?.confidence || "medium";
-            message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+        if (msg.role === "user") {
+            currentTurnAssistant = null;
+            rebuiltMessages.push(message);
+            continue;
+        }
 
-            if (msg.agent_response) {
-                message.agentResponse = msg.agent_response;
-                message.suggestions = msg.agent_response.suggestions || [];
+        message.agentType = msg.agent_response?.agent_type || msg.agent_type || undefined;
+        message.confidence = msg.agent_response?.confidence || "medium";
+        message.feedback = msg.feedback === 1 ? "up" : msg.feedback === 0 ? "down" : null;
+
+        if (msg.agent_response) {
+            message.agentResponse = msg.agent_response;
+            message.suggestions = msg.agent_response.suggestions || [];
+            const metadata = msg.agent_response?.metadata;
+            const steps = metadata ? normaliseAnalysisSteps(metadata?.analysis_steps) : [];
+            if (steps.length) {
+                message.analysisSteps = steps;
+            }
+            if (metadata) {
+                const artifactSource = metadata?.artifacts ?? metadata?.execution?.artifacts;
+                const storedArtifacts = normaliseArtifactList(artifactSource);
+                updateMessageOutputsFromArtifacts(message, storedArtifacts);
+                const plots = normalisePathList(metadata?.plots);
+                message.generatedPlots = plots.length ? plots : undefined;
+                const files = normalisePathList(metadata?.files);
+                message.generatedFiles = files.length ? files : undefined;
+                const executedTask = metadata?.executed_task;
+                const pendingTask = metadata?.pyodide_task;
+                const taskIdsToCheck = [executedTask?.task_id, pendingTask?.task_id].filter(Boolean) as string[];
+
+                const taskTarget =
+                    currentTurnAssistant &&
+                    isDataAnalysisMessage(currentTurnAssistant) &&
+                    isDataAnalysisMessage(message)
+                        ? currentTurnAssistant
+                        : message;
+
+                if (executedTask?.task_id) {
+                    deliveredTaskIds.add(String(executedTask.task_id));
+                    pyodideTaskToMessage.set(String(executedTask.task_id), taskTarget);
+                    taskIdToMessage[String(executedTask.task_id)] = taskTarget;
+                }
+                if (pendingTask?.task_id) {
+                    pyodideTaskToMessage.set(String(pendingTask.task_id), taskTarget);
+                    taskIdToMessage[String(pendingTask.task_id)] = taskTarget;
+                }
+                taskIdsToCheck.forEach((taskId) => {
+                    if (pendingExecResults[taskId]) {
+                        applyExecutionResultMetadata(taskTarget, pendingExecResults[taskId]);
+                        delete pendingExecResults[taskId];
+                    }
+                });
             }
         }
 
-        return message;
-    });
+        applyCollapseState(message);
+
+        if (currentTurnAssistant && isDataAnalysisMessage(currentTurnAssistant) && isDataAnalysisMessage(message)) {
+            const turnAssistant = currentTurnAssistant;
+            const history = turnAssistant.collapsedHistory ? [...turnAssistant.collapsedHistory] : [];
+            message.isCollapsed = true;
+            history.push(message);
+            turnAssistant.collapsedHistory = history;
+            updateMessageOutputsFromArtifacts(turnAssistant, message.artifacts);
+            turnAssistant.generatedPlots = [
+                ...(turnAssistant.generatedPlots || []),
+                ...(message.generatedPlots || []).filter(
+                    (entry) => !(turnAssistant.generatedPlots || []).includes(entry),
+                ),
+            ];
+            turnAssistant.generatedFiles = [
+                ...(turnAssistant.generatedFiles || []),
+                ...(message.generatedFiles || []).filter(
+                    (entry) => !(turnAssistant.generatedFiles || []).includes(entry),
+                ),
+            ];
+            applyLatestAssistantState(turnAssistant, message);
+            continue;
+        }
+
+        currentTurnAssistant = message;
+        rebuiltMessages.push(message);
+        assistantMessagesToReplay.push(message);
+    }
+
+    messages.value = rebuiltMessages;
+
+    applyDatasetSelectionFromMessages(fullConversation);
+    assistantMessagesToReplay.forEach((assistantMessage) => maybeRunPyodideForMessage(assistantMessage));
+    if (pendingCollapsedMessages.length) {
+        pendingCollapsedMessages.forEach((msg) => messages.value.push(msg));
+        pendingCollapsedMessages.length = 0;
+    }
 
     currentChatId.value = exchangeId;
     nextTick(() => scrollToBottom(chatContainer.value));
@@ -257,6 +421,8 @@ async function loadChatById(exchangeId: string) {
         const loaded = await fetchConversation(exchangeId);
         if (loaded) {
             hasLoadedInitialChat.value = true;
+        } else {
+            // loadSingleMessageFallback(item); // TODO: Was added for DA agent
         }
     } catch (e) {
         console.error("Failed to load chat by ID:", e);
@@ -288,6 +454,7 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
+    pendingCollapsedMessages.length = 0;
     messages.value = [
         {
             id: generateId(),
@@ -300,7 +467,11 @@ function startNewChat() {
             isSystemMessage: true,
         },
     ];
+    Object.keys(pyodideExecutions).forEach((key) => delete pyodideExecutions[key]);
     currentChatId.value = null;
+    deliveredTaskIds.clear();
+    pyodideTaskToMessage.clear();
+    selectedDatasets.value = [];
     query.value = "";
 }
 
@@ -331,27 +502,65 @@ function popOutToScratchbook() {
 <template>
     <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
         <div v-if="!compact" class="chatgxy-header">
-            <Heading h2 :icon="faMagic" size="lg">
-                <span>ChatGXY</span>
-            </Heading>
-            <div class="header-actions">
-                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    New
-                </button>
-                <button
-                    v-if="currentChatId"
-                    class="btn btn-sm btn-outline-danger"
-                    title="Delete this conversation"
-                    @click="deleteCurrentChat">
-                    <FontAwesomeIcon :icon="faTrash" fixed-width />
-                </button>
-                <button
-                    class="btn btn-sm btn-outline-primary"
-                    title="Open in floating window"
-                    @click="popOutToScratchbook">
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                </button>
+            <div class="header-main">
+                <Heading h2 :icon="faMagic" size="lg">
+                    <span>ChatGXY</span>
+                </Heading>
+                <div class="header-actions">
+                    <GButton
+                        color="blue"
+                        outline
+                        size="small"
+                        :pressed="usingDataAnalysisAgent"
+                        tooltip
+                        :title="
+                            !usingDataAnalysisAgent
+                                ? 'Include datasets from my current history in the conversation context'
+                                : 'Do not include datasets'
+                        "
+                        @click="() => (usingDataAnalysisAgent = !usingDataAnalysisAgent)">
+                        <FontAwesomeIcon :icon="faMicroscope" fixed-width />
+                        Include Datasets
+                    </GButton>
+                    <GButton color="blue" outline size="small" tooltip title="Start New Chat" @click="startNewChat">
+                        <FontAwesomeIcon :icon="faPlus" fixed-width />
+                        New
+                    </GButton>
+                    <GButton
+                        v-if="currentChatId"
+                        color="red"
+                        outline
+                        tooltip
+                        title="Delete this conversation"
+                        @click="deleteCurrentChat">
+                        <FontAwesomeIcon :icon="faTrash" fixed-width />
+                    </GButton>
+                    <GButton color="blue" outline tooltip title="Open in floating window" @click="popOutToScratchbook">
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                    </GButton>
+                </div>
+            </div>
+
+            <div v-if="usingDataAnalysisAgent" class="header-expand">
+                <div class="pb-2">Select a dataset for this chat</div>
+                <DatasetSelector
+                    v-if="datasetOptions.length"
+                    id="dataset-select"
+                    v-model="selectedDatasetsFormData"
+                    :loading="loadingDatasets"
+                    :options="formDataOptions"
+                    user-defined-title="Created for ChatGXY"
+                    workflow-run />
+                <BAlert v-else :variant="datasetError ? 'danger' : 'info'" show>
+                    <div v-if="loadingDatasets">
+                        <LoadingSpan message="Loading datasets" />
+                    </div>
+                    <div v-else-if="datasetError">{{ datasetError }}</div>
+                    <div v-else>
+                        No datasets in the current history. Upload a dataset or switch to a different history to use
+                        this feature.
+                    </div>
+                </BAlert>
             </div>
         </div>
 
@@ -360,10 +569,27 @@ function popOutToScratchbook() {
                 v-for="message in messages"
                 :key="message.id"
                 :message="message"
-                :render-markdown="renderMarkdown"
+                :render-markdown="safeRenderMarkdown"
                 :processing-action="processingAction"
                 @feedback="sendFeedback"
-                @handle-action="handleAction" />
+                @handle-action="handleAction">
+                <template v-slot:after-content>
+                    <BAlert v-if="isAwaitingExecution(message)" class="mt-2" variant="warning" show>
+                        <LoadingSpan message="Analysis still running" />
+                        please keep this tab open; refreshing will restart the execution.
+                    </BAlert>
+                    <BAlert
+                        v-else-if="message.agentResponse?.metadata?.pyodide_status === 'timeout'"
+                        class="mt-2"
+                        variant="warning"
+                        show>
+                        ⚠️ Previous run timed out before the result was sent. Please ask again if you still need this
+                        step to complete.
+                    </BAlert>
+                    <MessageArtifacts v-if="hasArtifacts(message)" :message="message" />
+                    <MessageIntermediateDetails :message="message" :pyodide-executions="pyodideExecutions" />
+                </template>
+            </ChatMessageCell>
 
             <!-- Loading state -->
             <div v-if="busy" class="loading-entry">
@@ -381,7 +607,7 @@ function popOutToScratchbook() {
         </div>
 
         <div class="chatgxy-footer">
-            <ChatInput v-model="query" :busy="busy" @submit="submitQuery" />
+            <ChatInput v-model="query" :busy="isChatBusy" @submit="submitQuery" />
         </div>
     </div>
 </template>
@@ -411,16 +637,35 @@ function popOutToScratchbook() {
 }
 
 .chatgxy-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
     padding: 0.75rem 1rem;
     background: $panel-bg-color;
     border-bottom: $border-default;
 
+    .header-main {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
     .header-actions {
         display: flex;
         gap: 0.5rem;
+        align-items: stretch;
+    }
+
+    .header-expand {
+        margin-top: 0.625rem;
+        padding-top: 0.625rem;
+        border-top: 1px solid rgba($brand-primary, 0.12);
+        animation: fadeIn 0.2s ease-out;
+
+        > div:first-child {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: $text-muted;
+        }
     }
 }
 

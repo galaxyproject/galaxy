@@ -2,10 +2,10 @@
 import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import type {} from "@/composables/agentActions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
-import type { ChatMessage } from "./chatTypes";
+import type { ActionSuggestion, AgentResponse, ChatMessage } from "./types";
 
 import ActionCard from "./ActionCard.vue";
 
@@ -50,6 +50,8 @@ const emit = defineEmits<{
                     <!-- eslint-disable-next-line vue/no-v-html -->
                     <div class="response-content" v-html="props.renderMarkdown(props.message.content)" />
 
+                    <slot name="after-content" />
+
                     <ActionCard
                         v-if="props.message.suggestions?.length"
                         :suggestions="props.message.suggestions"
@@ -58,8 +60,6 @@ const emit = defineEmits<{
                             (action) =>
                                 emit('handle-action', action, getAgentResponseOrEmpty(props.message.agentResponse))
                         " />
-
-                    <slot name="after-content" />
 
                     <div v-if="!props.message.content.startsWith('❌')" class="response-meta">
                         <div class="meta-left">

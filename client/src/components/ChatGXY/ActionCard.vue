@@ -1,22 +1,3 @@
-<template>
-    <div v-if="suggestions.length > 0" class="action-card">
-        <div class="action-header">Quick Actions</div>
-        <div class="action-list">
-            <GButton
-                v-for="action in sortedSuggestions"
-                :key="`${action.action_type}-${action.description}`"
-                outline
-                size="small"
-                :color="action.priority === 1 ? 'blue' : 'grey'"
-                :disabled="processingAction"
-                @click="$emit('handle-action', action)">
-                <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
-                <span>{{ action.description }}</span>
-            </GButton>
-        </div>
-    </div>
-</template>
-
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -31,7 +12,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import { type ActionSuggestion, ActionType } from "@/composables/agentActions";
+import type { ActionSuggestion, ActionType } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 
@@ -44,27 +25,49 @@ const props = withDefaults(defineProps<Props>(), {
     processingAction: false,
 });
 
-defineEmits<{
-    "handle-action": [action: ActionSuggestion];
+const emit = defineEmits<{
+    (e: "handle-action", value: ActionSuggestion): void;
 }>();
 
 const sortedSuggestions = computed(() => {
-    return [...props.suggestions].sort((a, b) => a.priority - b.priority);
+    return [...props.suggestions]
+        .filter((suggestion) => suggestion.action_type !== "pyodide_execute")
+        .sort((a, b) => a.priority - b.priority);
 });
 
 const iconMap: Record<ActionType, IconDefinition> = {
-    [ActionType.TOOL_RUN]: faPlay,
-    [ActionType.SAVE_TOOL]: faSave,
-    [ActionType.CONTACT_SUPPORT]: faLifeRing,
-    [ActionType.REFINE_QUERY]: faPencilAlt,
-    [ActionType.DOCUMENTATION]: faBook,
-    [ActionType.VIEW_EXTERNAL]: faExternalLinkAlt,
+    tool_run: faPlay,
+    save_tool: faSave,
+    contact_support: faLifeRing,
+    refine_query: faPencilAlt,
+    documentation: faBook,
+    view_external: faExternalLinkAlt,
+    pyodide_execute: faWrench,
 };
 
 function getIcon(actionType: ActionType): IconDefinition {
     return iconMap[actionType] || faWrench;
 }
 </script>
+
+<template>
+    <div v-if="suggestions.length > 0" class="action-card">
+        <div class="action-header">Quick Actions</div>
+        <div class="action-list">
+            <GButton
+                v-for="(action, index) in sortedSuggestions"
+                :key="`${action.action_type}-${index}-${action.description}`"
+                outline
+                size="small"
+                :color="action.priority === 1 ? 'blue' : 'grey'"
+                :disabled="processingAction"
+                @click="emit('handle-action', action)">
+                <FontAwesomeIcon :icon="getIcon(action.action_type)" fixed-width />
+                <span>{{ action.description }}</span>
+            </GButton>
+        </div>
+    </div>
+</template>
 
 <style lang="scss" scoped>
 @import "@/style/scss/theme/blue.scss";
@@ -90,5 +93,46 @@ function getIcon(actionType: ActionType): IconDefinition {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+}
+
+.action-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: $border-radius-large;
+    transition: all 0.15s ease;
+    // Some Galaxy pages/themes apply inherited button colors that can make text
+    // effectively invisible until hover. Set explicit colors for the outlines.
+    color: $text-color;
+
+    &:hover:not(:disabled) {
+        transform: translateY(-1px);
+    }
+
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+}
+
+.action-button.btn-outline-primary {
+    color: $brand-primary;
+}
+
+.action-button.btn-outline-secondary {
+    color: $text-color;
+}
+
+.action-button:deep(svg) {
+    color: inherit;
+}
+
+.action-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
 }
 </style>

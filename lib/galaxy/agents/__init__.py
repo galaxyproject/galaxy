@@ -20,6 +20,11 @@ from .registry import (
 from .router import QueryRouterAgent
 from .tools import ToolRecommendationAgent
 
+try:
+    from .data_analysis import DataAnalysisAgent
+except ImportError:  # pragma: no cover - optional dependency (e.g. itsdangerous)
+    DataAnalysisAgent = None  # type: ignore[assignment,misc]
+
 __all__ = [
     "AgentType",
     "BaseGalaxyAgent",
@@ -31,4 +36,5 @@ __all__ = [
     "CustomToolAgent",
     "WorkflowOrchestratorAgent",
     "ToolRecommendationAgent",
+    "DataAnalysisAgent",
 ]

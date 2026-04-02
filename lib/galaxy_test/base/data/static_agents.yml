@@ -50,7 +50,7 @@ rules:
   - match:
       agent_type: error_analysis
     response:
-      content: "This error appears to be a tool configuration issue."
+      content: "This error appears to be a tool configuration issue. The command or dependency was not found."
       confidence: high
       agent_type: error_analysis
 

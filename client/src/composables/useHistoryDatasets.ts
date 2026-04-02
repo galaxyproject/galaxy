@@ -37,7 +37,7 @@ export function useHistoryDatasets(options: UseHistoryDatasetsOptions) {
     const isEnabled = computed(() => toValue(enabled));
 
     // Get history and its update time from the history store
-    const history = computed(() => historyStore.getHistoryById(historyIdValue.value));
+    const history = computed(() => (historyIdValue.value ? historyStore.getHistoryById(historyIdValue.value) : null));
     const historyUpdateTime = computed(() => history.value?.update_time);
 
     // Computed values from the store

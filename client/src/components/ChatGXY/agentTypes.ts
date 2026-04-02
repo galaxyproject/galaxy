@@ -9,7 +9,7 @@ import {
     faRoute,
 } from "@fortawesome/free-solid-svg-icons";
 
-import type { AgentResponse } from "@/composables/agentActions";
+import type { AgentResponse } from "./types";
 
 export interface AgentType {
     value: string;
@@ -44,7 +44,7 @@ export function formatModelName(model?: string): string {
     return parts[parts.length - 1] || model;
 }
 
-export function getAgentResponseOrEmpty(response?: AgentResponse): AgentResponse {
+export function getAgentResponseOrEmpty(response?: AgentResponse | null): AgentResponse {
     return (
         response || ({ content: "", agent_type: "", confidence: "low", suggestions: [], metadata: {} } as AgentResponse)
     );
