@@ -22,6 +22,7 @@ import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
 import { useActiveContext } from "@/composables/useActiveContext";
+import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
 import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -160,6 +161,10 @@ async function submitQuery() {
     busy.value = true;
 
     try {
+        const parsed = parseMentions(currentQuery);
+        const resolved = await resolveMentions(parsed);
+        const entityContext = buildEntityContext(resolved);
+
         const { data, error } = await GalaxyApi().POST("/api/chat", {
             params: {
                 query: {
@@ -170,6 +175,7 @@ async function submitQuery() {
                 query: currentQuery,
                 context: effectiveContext.value ? JSON.stringify(effectiveContext.value) : null,
                 exchange_id: currentChatId.value,
+                entity_context: entityContext,
             },
         });
 

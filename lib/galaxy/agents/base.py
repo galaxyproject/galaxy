@@ -372,14 +372,44 @@ class BaseGalaxyAgent(ABC):
                 if description:
                     prompt_parts.insert(0, f"[Active interface context: {description}]\n")
 
-            other_context = {
-                k: v for k, v in context.items() if v and k not in ("interface_context", "conversation_history")
-            }
+            entities = context.get("entities")
+            if entities and isinstance(entities, dict):
+                entity_desc = self._format_entity_context(entities)
+                if entity_desc:
+                    prompt_parts.insert(0, f"{entity_desc}\n")
+
+            excluded_keys = ("interface_context", "conversation_history", "entities")
+            other_context = {k: v for k, v in context.items() if v and k not in excluded_keys}
             if other_context:
                 context_str = "\n".join([f"{k}: {v}" for k, v in other_context.items()])
                 prompt_parts.insert(0, f"Context:\n{context_str}\n")
 
         return "\n".join(prompt_parts)
+
+    @staticmethod
+    def _format_entity_context(entities: dict[str, Any]) -> str:
+        """Format entity references from @mentions into readable text."""
+        lines: list[str] = []
+        for ds in entities.get("datasets", []):
+            parts = [f"Dataset #{ds.get('hid', '?')}"]
+            name = ds.get("name")
+            if name:
+                parts.append(f'"{name}"')
+            details = []
+            if ds.get("extension"):
+                details.append(ds["extension"])
+            if ds.get("state"):
+                details.append(ds["state"])
+            if details:
+                parts.append(f"({', '.join(details)})")
+            lines.append(f"- {' '.join(parts)}")
+        for hist in entities.get("histories", []):
+            label = "Current history" if hist.get("identifier") == "current" else "History"
+            name = hist.get("name", "")
+            lines.append(f'- {label}: "{name}"')
+        if not lines:
+            return ""
+        return "Referenced entities:\n" + "\n".join(lines)
 
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Convert pydantic-ai result to AgentResponse. Subclasses can override."""

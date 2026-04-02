@@ -9,6 +9,21 @@ import type { ChatMessage } from "./chatTypes";
 
 import ActionCard from "./ActionCard.vue";
 
+const MENTION_RE = /@(dataset|history):(\S+)/g;
+
+function escapeHtml(str: string): string {
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+function renderEntityRefs(text: string): string {
+    return text.replace(MENTION_RE, (_match, type: string, identifier: string) => {
+        const safeType = escapeHtml(type);
+        const safeId = escapeHtml(identifier);
+        const icon = type === "dataset" ? "&#xf1c0;" : "&#xf1da;";
+        return `<span class="entity-ref" title="${safeType} ${safeId}"><span class="entity-ref-icon">${icon}</span>@${safeType}:${safeId}</span>`;
+    });
+}
+
 const props = defineProps<{
     message: ChatMessage;
     renderMarkdown: (text: string) => string;
@@ -35,7 +50,8 @@ const emit = defineEmits<{
 
         <!-- User query -->
         <template v-else-if="props.message.role === 'user'">
-            <div class="query-text">{{ props.message.content }}</div>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div class="query-text" v-html="renderEntityRefs(props.message.content)" />
         </template>
 
         <!-- Assistant response -->
@@ -340,5 +356,25 @@ const emit = defineEmits<{
     .exchange-entry {
         animation: none;
     }
+}
+
+// --- Entity references in user messages ---
+.query-text :deep(.entity-ref) {
+    display: inline;
+    background: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+    padding: 0.1rem 0.35rem;
+    border-radius: $border-radius-base;
+    font-family: $font-family-monospace;
+    font-size: 0.88em;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.query-text :deep(.entity-ref-icon) {
+    font-family: "Font Awesome 5 Free", "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.75em;
+    margin-right: 0.2rem;
 }
 </style>

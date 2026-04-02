@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { faPaperPlane } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { ref } from "vue";
 
+import { detectMentionTrigger, type EntityType, type MentionTrigger } from "@/composables/useEntityMentions";
+
+import MentionDropdown from "./MentionDropdown.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const props = withDefaults(
@@ -22,8 +26,87 @@ const emit = defineEmits<{
     (e: "submit"): void;
 }>();
 
+const textareaEl = ref<HTMLTextAreaElement | null>(null);
+const dropdownRef = ref<InstanceType<typeof MentionDropdown> | null>(null);
+const mentionTrigger = ref<MentionTrigger | null>(null);
+
 function onInput(event: Event) {
-    emit("input", (event.target as HTMLTextAreaElement).value);
+    const textarea = event.target as HTMLTextAreaElement;
+    emit("input", textarea.value);
+    updateMentionTrigger(textarea);
+}
+
+function updateMentionTrigger(textarea: HTMLTextAreaElement) {
+    mentionTrigger.value = detectMentionTrigger(textarea.value, textarea.selectionStart);
+}
+
+function onKeydown(event: KeyboardEvent) {
+    if (mentionTrigger.value && dropdownRef.value) {
+        if (["ArrowDown", "ArrowUp", "Tab"].includes(event.key)) {
+            dropdownRef.value.handleKeydown(event);
+            return;
+        }
+        if (event.key === "Escape") {
+            dropdownRef.value.handleKeydown(event);
+            return;
+        }
+        if (event.key === "Enter" && !event.shiftKey) {
+            dropdownRef.value.handleKeydown(event);
+            return;
+        }
+    }
+
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        emit("submit");
+    }
+}
+
+function onMentionSelect(entityType: EntityType, identifier: string, displayText: string) {
+    if (!mentionTrigger.value) {
+        return;
+    }
+
+    const text = props.value;
+    const start = mentionTrigger.value.startIndex;
+    const end = mentionTrigger.value.endIndex;
+
+    // If user picked an entity type (no identifier yet), replace partial with "@type:"
+    // and keep the dropdown open for the entity list
+    if (!identifier) {
+        const newText = text.slice(0, start) + displayText + text.slice(end);
+        emit("input", newText);
+
+        // Set cursor after the inserted text
+        const cursorPos = start + displayText.length;
+        requestAnimationFrame(() => {
+            if (textareaEl.value) {
+                textareaEl.value.selectionStart = cursorPos;
+                textareaEl.value.selectionEnd = cursorPos;
+                updateMentionTrigger(textareaEl.value);
+            }
+        });
+        return;
+    }
+
+    // Full mention selected — insert and add a trailing space
+    const insertion = displayText + " ";
+    const newText = text.slice(0, start) + insertion + text.slice(end);
+    emit("input", newText);
+    mentionTrigger.value = null;
+
+    const cursorPos = start + insertion.length;
+    requestAnimationFrame(() => {
+        if (textareaEl.value) {
+            textareaEl.value.selectionStart = cursorPos;
+            textareaEl.value.selectionEnd = cursorPos;
+            textareaEl.value.focus();
+        }
+    });
+}
+
+function closeMention() {
+    mentionTrigger.value = null;
 }
 </script>
 
@@ -32,13 +115,14 @@ function onInput(event: Event) {
         <label for="chat-input" class="sr-only">Chat message</label>
         <textarea
             id="chat-input"
+            ref="textareaEl"
             :value="props.value"
             :disabled="busy || disabled"
             :placeholder="placeholder"
             rows="1"
             class="form-control chat-input"
             @input="onInput"
-            @keydown.enter.prevent="!$event.shiftKey && emit('submit')" />
+            @keydown="onKeydown" />
         <button
             :disabled="busy || disabled || !props.value.trim()"
             class="btn btn-primary send-button"
@@ -46,6 +130,15 @@ function onInput(event: Event) {
             <FontAwesomeIcon v-if="!busy" :icon="faPaperPlane" fixed-width />
             <LoadingSpan v-else message="" />
         </button>
+
+        <MentionDropdown
+            ref="dropdownRef"
+            :visible="!!mentionTrigger"
+            :mention-type="mentionTrigger?.entityType ?? null"
+            :search-text="mentionTrigger?.searchText ?? ''"
+            :anchor-el="textareaEl"
+            @select="onMentionSelect"
+            @close="closeMention" />
     </div>
 </template>
 
@@ -56,6 +149,7 @@ function onInput(event: Event) {
     display: flex;
     gap: 0.5rem;
     align-items: flex-end;
+    position: relative;
 
     .chat-input {
         flex: 1;

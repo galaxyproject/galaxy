@@ -200,6 +200,10 @@ class ChatAPI:
                     # New conversation - no history needed
                     full_context["conversation_history"] = []
 
+                # Inject entity context from @mentions if present
+                if payload and payload.entity_context:
+                    full_context["entities"] = payload.entity_context.model_dump(exclude_none=True)
+
                 # Get full agent response with metadata
                 agent_response = await self._get_agent_response_full(
                     query_text, agent_type, trans, user, job, full_context
