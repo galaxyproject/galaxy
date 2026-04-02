@@ -240,6 +240,7 @@ class BaseGalaxyAgent(ABC):
         for pattern in suspicious_patterns:
             if pattern in query_lower:
                 log.warning(f"Potential prompt injection detected in {self.agent_type} query: {pattern}")
+                return "I'm not able to process that query. Please rephrase your question."
 
         return None
 
