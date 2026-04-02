@@ -1,10 +1,12 @@
 """Shared argparse helpers and base options for workflow_state CLI scripts."""
 
 import argparse
+import json
 import logging
 import sys
 from typing import (
     Optional,
+    Type,
     TYPE_CHECKING,
 )
 
@@ -92,7 +94,7 @@ def add_stale_key_args(parser, mode="validate"):
 
 
 def add_report_args(parser):
-    """Add --report-json and --report-markdown to any argparse parser."""
+    """Add --report-json, --report-markdown, and --output-schema to any argparse parser."""
     parser.add_argument(
         "--report-json",
         nargs="?",
@@ -108,6 +110,12 @@ def add_report_args(parser):
         default=None,
         metavar="FILE",
         help="Output results as Markdown (to FILE if given, stdout otherwise)",
+    )
+    parser.add_argument(
+        "--output-schema",
+        action="store_true",
+        default=False,
+        help="Print JSON Schema for the --report-json output model and exit",
     )
 
 
@@ -147,8 +155,22 @@ def build_base_parser(
     return parser
 
 
-def cli_main(parser: argparse.ArgumentParser, options_cls, run_fn, argv=None):
+def cli_main(
+    parser: argparse.ArgumentParser,
+    options_cls,
+    run_fn,
+    argv=None,
+    report_schema_model: Optional[Type[BaseModel]] = None,
+):
     """Parse args, build options, run, exit — the shared CLI main pattern."""
+    raw = argv if argv is not None else sys.argv[1:]
+    if "--output-schema" in raw:
+        if report_schema_model is None:
+            print("Error: --output-schema not supported for this command", file=sys.stderr)
+            sys.exit(2)
+        print(json.dumps(report_schema_model.model_json_schema(), indent=2))
+        sys.exit(0)
+
     args = parser.parse_args(argv)
     options = options_cls.from_namespace(args)
     sys.exit(run_fn(options))

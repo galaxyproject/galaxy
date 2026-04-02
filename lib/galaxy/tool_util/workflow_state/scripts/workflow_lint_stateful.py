@@ -5,6 +5,7 @@ from .._cli_common import (
     build_base_parser,
     cli_main,
 )
+from .._report_models import SingleLintReport
 from ..lint_stateful import (
     LintStatefulOptions,
     run_lint_stateful,
@@ -36,7 +37,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), LintStatefulOptions, run_lint_stateful, argv)
+    cli_main(build_parser(), LintStatefulOptions, run_lint_stateful, argv, report_schema_model=SingleLintReport)
 
 
 if __name__ == "__main__":

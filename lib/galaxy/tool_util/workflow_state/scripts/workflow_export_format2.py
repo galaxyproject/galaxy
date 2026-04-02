@@ -8,6 +8,7 @@ from .._cli_common import (
 from ..export_format2 import (
     ExportOptions,
     run_export,
+    SingleExportReport,
 )
 
 
@@ -32,7 +33,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ExportOptions, run_export, argv)
+    cli_main(build_parser(), ExportOptions, run_export, argv, report_schema_model=SingleExportReport)
 
 
 if __name__ == "__main__":

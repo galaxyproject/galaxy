@@ -5,6 +5,7 @@ from .._cli_common import (
     build_base_parser,
     cli_main,
 )
+from .._report_models import SingleValidationReport
 from ..validate import (
     run_validate,
     ValidateOptions,
@@ -41,7 +42,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ValidateOptions, run_validate, argv)
+    cli_main(build_parser(), ValidateOptions, run_validate, argv, report_schema_model=SingleValidationReport)
 
 
 if __name__ == "__main__":

@@ -264,7 +264,7 @@ class LintWorkflowResult(WorkflowResultBase):
 
     lint_errors: int = 0
     lint_warnings: int = 0
-    step_results: List[ValidationStepResult] = Field(default_factory=list)
+    step_results: List[ValidationStepResult] = Field(default_factory=list, serialization_alias="results")
 
 
 class SingleLintReport(BaseModel):

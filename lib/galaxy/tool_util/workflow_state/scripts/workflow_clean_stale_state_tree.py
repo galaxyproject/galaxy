@@ -5,6 +5,7 @@ from .._cli_common import (
     build_base_parser,
     cli_main,
 )
+from .._report_models import TreeCleanReport
 from ..clean import (
     CleanTreeOptions,
     run_clean_tree,
@@ -30,7 +31,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), CleanTreeOptions, run_clean_tree, argv)
+    cli_main(build_parser(), CleanTreeOptions, run_clean_tree, argv, report_schema_model=TreeCleanReport)
 
 
 if __name__ == "__main__":

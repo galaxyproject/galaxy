@@ -8,6 +8,7 @@ from .._cli_common import (
 from ..to_native_stateful import (
     run_to_native_tree,
     ToNativeTreeOptions,
+    ToNativeTreeReport,
 )
 
 
@@ -24,7 +25,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ToNativeTreeOptions, run_to_native_tree, argv)
+    cli_main(build_parser(), ToNativeTreeOptions, run_to_native_tree, argv, report_schema_model=ToNativeTreeReport)
 
 
 if __name__ == "__main__":

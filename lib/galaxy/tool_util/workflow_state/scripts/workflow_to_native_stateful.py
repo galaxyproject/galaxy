@@ -7,6 +7,7 @@ from .._cli_common import (
 )
 from ..to_native_stateful import (
     run_to_native,
+    SingleToNativeReport,
     ToNativeOptions,
 )
 
@@ -24,7 +25,7 @@ def build_parser():
 
 
 def main(argv=None):
-    cli_main(build_parser(), ToNativeOptions, run_to_native, argv)
+    cli_main(build_parser(), ToNativeOptions, run_to_native, argv, report_schema_model=SingleToNativeReport)
 
 
 if __name__ == "__main__":
