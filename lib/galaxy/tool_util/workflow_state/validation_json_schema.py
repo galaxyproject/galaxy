@@ -35,6 +35,7 @@ from ._util import (
 log = logging.getLogger(__name__)
 
 _structural_schema_cache: Dict[bool, Draft202012Validator] = {}
+_native_structural_schema_cache: Dict[bool, Draft202012Validator] = {}
 
 
 @dataclass
@@ -69,6 +70,15 @@ def _get_structural_validator(strict: bool = False) -> Draft202012Validator:
         schema = workflow_json_schema(strict=strict)
         _structural_schema_cache[strict] = Draft202012Validator(schema)
     return _structural_schema_cache[strict]
+
+
+def _get_native_structural_validator(strict: bool = False) -> Draft202012Validator:
+    if strict not in _native_structural_schema_cache:
+        from gxformat2.schema.json_schema import native_workflow_json_schema
+
+        schema = native_workflow_json_schema(strict=strict)
+        _native_structural_schema_cache[strict] = Draft202012Validator(schema)
+    return _native_structural_schema_cache[strict]
 
 
 def _convert_errors(errors) -> List[JsonSchemaValidationError]:
@@ -253,16 +263,30 @@ def validate_workflow_json_schema(
     return result
 
 
+def validate_native_structural_json_schema(
+    workflow_dict: Dict[str, Any],
+    *,
+    strict: bool = False,
+) -> List[JsonSchemaValidationError]:
+    """Validate a native .ga workflow dict against NativeGalaxyWorkflow JSON Schema.
+
+    Returns list of validation errors (empty = valid).
+    """
+    validator = _get_native_structural_validator(strict=strict)
+    errors = sorted(validator.iter_errors(workflow_dict), key=lambda e: list(e.absolute_path))
+    return _convert_errors(errors)
+
+
 def validate_native_workflow_json_schema(
     workflow_dict: Dict[str, Any],
     get_tool_info: GetToolInfo,
     tool_schema_dir: Optional[str] = None,
 ) -> JsonSchemaValidationResult:
-    """JSON Schema validation of a native .ga workflow's per-step tool state.
+    """Two-level JSON Schema validation of a native .ga workflow.
 
-    No structural validation (no native structural schema exists).
-    Per-step: inject connections, then validate against
-    WorkflowStepNativeToolState JSON Schema.
+    Level 1: structural validation against NativeGalaxyWorkflow schema.
+    Level 2: per-step tool state validation (inject connections, then validate
+    against WorkflowStepNativeToolState JSON Schema).
     """
     from .legacy_parameters import (
         ReplacementClassification,
@@ -270,6 +294,11 @@ def validate_native_workflow_json_schema(
     )
 
     result = JsonSchemaValidationResult()
+
+    # Level 1: structural
+    result.structural_errors = validate_native_structural_json_schema(workflow_dict)
+    if result.structural_errors:
+        return result
 
     steps = workflow_dict.get("steps", {})
     if not isinstance(steps, dict):
