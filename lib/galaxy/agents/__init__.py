@@ -33,12 +33,3 @@ __all__ = [
     "ToolRecommendationAgent",
     "HistoryAgent",
 ]
-
-agent_registry = AgentRegistry()
-
-agent_registry.register(AgentType.ROUTER, QueryRouterAgent)
-agent_registry.register(AgentType.ERROR_ANALYSIS, ErrorAnalysisAgent)
-agent_registry.register(AgentType.CUSTOM_TOOL, CustomToolAgent)
-agent_registry.register(AgentType.ORCHESTRATOR, WorkflowOrchestratorAgent)
-agent_registry.register(AgentType.TOOL_RECOMMENDATION, ToolRecommendationAgent)
-agent_registry.register(AgentType.HISTORY, HistoryAgent)
