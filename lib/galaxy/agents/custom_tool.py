@@ -59,6 +59,10 @@ class CustomToolAgent(BaseGalaxyAgent):
         return prompt_path.read_text()
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
         capability_error = self._validate_model_capabilities()
         if capability_error:
             return self._build_response(

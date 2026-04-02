@@ -220,6 +220,10 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             return []
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
         # Fast path: bypass LLM for exact tool name matches
         try:
             trimmed_query = query.strip()

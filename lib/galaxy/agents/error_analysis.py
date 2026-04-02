@@ -101,6 +101,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
         try:
             log.info(f"ErrorAnalysis: Received query (length={len(query)})")
             log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")

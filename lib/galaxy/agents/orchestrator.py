@@ -98,6 +98,10 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return normalized
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
         try:
             plan = await self._get_agent_plan(query)
             plan.agents = self._normalize_agent_plan(plan.agents)

@@ -267,6 +267,10 @@ class QueryRouterAgent(BaseGalaxyAgent):
         return hand_off_to_orchestrator
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
         try:
             if context and context.get("conversation_history"):
                 log.info(f"Router: Conversation has {len(context['conversation_history'])} messages")

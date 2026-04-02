@@ -244,16 +244,19 @@ class BaseGalaxyAgent(ABC):
 
         return None
 
+    def _validation_error_response(self, validation_error: str) -> AgentResponse:
+        return AgentResponse(
+            content=validation_error,
+            confidence=ConfidenceLevel.LOW,
+            agent_type=self.agent_type,
+            suggestions=[],
+            metadata={"validation_error": True},
+        )
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
-            return AgentResponse(
-                content=validation_error,
-                confidence=ConfidenceLevel.LOW,
-                agent_type=self.agent_type,
-                suggestions=[],
-                metadata={"validation_error": True},
-            )
+            return self._validation_error_response(validation_error)
 
         try:
             full_prompt = self._prepare_prompt(query, context or {})
