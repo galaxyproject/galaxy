@@ -1,0 +1,20 @@
+<tool id="gx_text_optional_with_empty_default_regex_validation" name="gx_text_optional_with_empty_default_regex_validation" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output';
+cat '$inputs' >> $inputs_json;
+    ]]></command>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    </configfiles>
+    <inputs>
+        <param name="parameter" type="text" value="" optional="true">
+            <validator type="regex">[0-9.:]+</validator>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="inputs_json" format="json" />
+    </outputs>
+    <tests>
+    </tests>
+</tool>

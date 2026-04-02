@@ -140,7 +140,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         if trans.request.method == "GET":
             inputs = []
             all_roles = set(trans.user.all_roles())
-            private_role_emails = get_private_role_user_emails_dict(trans.sa_session)
+            role_ids = {r.id for r in all_roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             current_actions = history.default_permissions
             for action_key, action in Dataset.permitted_actions.items():
                 in_roles = set()

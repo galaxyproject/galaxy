@@ -70,7 +70,10 @@ export function initSentry(Galaxy: GalaxyInstance, router: VueRouter): void {
         replaysOnErrorSampleRate: replayEnabled ? 1.0 : 0,
         beforeSend(event, hint) {
             const error = hint.originalException;
-            if (error instanceof Error && ["AdminRequired", "RegisteredUserRequired"].includes(error.name)) {
+            if (
+                error instanceof Error &&
+                ["AdminRequired", "RegisteredUserRequired", "RequestAbortedError"].includes(error.name)
+            ) {
                 return null;
             }
             return event;
