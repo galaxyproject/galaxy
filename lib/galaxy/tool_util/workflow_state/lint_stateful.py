@@ -9,7 +9,6 @@ import logging
 import os
 import sys
 from typing import (
-    Dict,
     List,
     Optional,
 )
@@ -28,20 +27,16 @@ from gxformat2.lint import (
 )
 from gxformat2.linting import LintContext
 from gxformat2.yaml import ordered_load_path
-from pydantic import (
-    BaseModel,
-    computed_field,
-    Field,
-)
-
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
 )
 from ._report_models import (
-    SingleValidationReport,
+    LintTreeReport,
+    LintWorkflowResult,
+    SingleLintReport,
     ValidationStepResult,
-    wrap_single_validation,
+    wrap_single_lint,
 )
 from ._report_output import emit_reports
 from .stale_keys import (
@@ -51,7 +46,6 @@ from .stale_keys import (
 )
 from .validate import (
     format_text,
-    format_tree_markdown,
     validate_workflow_cli,
 )
 
@@ -202,22 +196,25 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         return _lint_context_exit_code(lint_context)
 
     # Emit combined results
+    n_lint_errors = len(lint_context.error_messages)
+    n_lint_warnings = len(lint_context.warn_messages)
     text = format_combined_text(lint_context, results, summary_only=options.summary)
 
-    has_explicit_report = options.report_json is not None or options.report_markdown is not None
-    if has_explicit_report:
-        json_data = SingleValidationReport(workflow=options.workflow_path, results=results)
-        tree_report = wrap_single_validation(options.workflow_path, results)
-        emit_reports(
-            options=options,
-            json_data=json_data,
-            markdown_formatter=format_tree_markdown,
-            markdown_report=tree_report,
-            text_content=text,
-            stderr_summary=format_text(results, summary_only=True),
-        )
-    else:
-        print(text)
+    json_data = SingleLintReport(
+        workflow=options.workflow_path,
+        lint_errors=n_lint_errors,
+        lint_warnings=n_lint_warnings,
+        results=results,
+    )
+    tree_report = wrap_single_lint(options.workflow_path, n_lint_errors, n_lint_warnings, results)
+    emit_reports(
+        options=options,
+        json_data=json_data,
+        markdown_formatter=_format_lint_tree_markdown,
+        markdown_report=tree_report,
+        text_content=text,
+        stderr_summary=format_text(results, summary_only=True),
+    )
 
     exit_code = _combined_exit_code(lint_context, results, options.strict)
     if conn_report and not conn_report.valid:
@@ -255,58 +252,6 @@ def _combined_exit_code(
 
 
 # -- Tree lint --
-
-
-class LintWorkflowResult(BaseModel):
-    """Per-workflow lint result for tree mode."""
-
-    path: str
-    relative_path: str
-    category: str
-    lint_errors: int = 0
-    lint_warnings: int = 0
-    step_results: List[ValidationStepResult] = Field(default_factory=list)
-    error: Optional[str] = None
-    skipped_reason: Optional[str] = None
-
-
-class LintTreeReport(BaseModel):
-    """Tree-level lint report combining structural + stateful results."""
-
-    root: str
-    results: List[LintWorkflowResult] = Field(default_factory=list, serialization_alias="workflows")
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def summary(self) -> Dict[str, int]:
-        lint_errors = sum(r.lint_errors for r in self.results)
-        lint_warnings = sum(r.lint_warnings for r in self.results)
-        state_ok = sum(
-            sum(1 for sr in r.step_results if sr.status == "ok")
-            for r in self.results
-            if not r.error and not r.skipped_reason
-        )
-        state_fail = sum(
-            sum(1 for sr in r.step_results if sr.status == "fail")
-            for r in self.results
-            if not r.error and not r.skipped_reason
-        )
-        state_skip = sum(
-            sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
-            for r in self.results
-            if not r.error and not r.skipped_reason
-        )
-        errors = sum(1 for r in self.results if r.error)
-        skipped = sum(1 for r in self.results if r.skipped_reason)
-        return {
-            "lint_errors": lint_errors,
-            "lint_warnings": lint_warnings,
-            "state_ok": state_ok,
-            "state_fail": state_fail,
-            "state_skip": state_skip,
-            "errors": errors,
-            "skipped": skipped,
-        }
 
 
 def _format_lint_tree_text(report: LintTreeReport, summary_only: bool = False) -> str:

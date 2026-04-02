@@ -256,6 +256,100 @@ def wrap_single_validation(
     )
 
 
+# -- Lint models --
+
+
+class LintWorkflowResult(WorkflowResultBase):
+    """Per-workflow lint result combining structural + stateful checks."""
+
+    lint_errors: int = 0
+    lint_warnings: int = 0
+    step_results: List[ValidationStepResult] = Field(default_factory=list)
+
+
+class SingleLintReport(BaseModel):
+    """JSON shape for single-file lint."""
+
+    workflow: str
+    lint_errors: int = 0
+    lint_warnings: int = 0
+    results: List[ValidationStepResult] = []
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        return {
+            "lint_errors": self.lint_errors,
+            "lint_warnings": self.lint_warnings,
+            "state_ok": sum(1 for r in self.results if r.status == "ok"),
+            "state_fail": sum(1 for r in self.results if r.status == "fail"),
+            "state_skip": sum(1 for r in self.results if r.status == "skip_tool_not_found"),
+        }
+
+
+class LintTreeReport(TreeReportBase):
+    """Tree-level lint report combining structural + stateful results."""
+
+    results: List[LintWorkflowResult] = Field(default_factory=list, serialization_alias="workflows")
+
+    def _workflow_results(self) -> list:
+        return self.results
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        lint_errors = sum(r.lint_errors for r in self.results)
+        lint_warnings = sum(r.lint_warnings for r in self.results)
+        state_ok = sum(
+            sum(1 for sr in r.step_results if sr.status == "ok")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        state_fail = sum(
+            sum(1 for sr in r.step_results if sr.status == "fail")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        state_skip = sum(
+            sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            for r in self.results
+            if not r.error and not r.skipped_reason
+        )
+        errors = sum(1 for r in self.results if r.error)
+        skipped = sum(1 for r in self.results if r.skipped_reason)
+        return {
+            "lint_errors": lint_errors,
+            "lint_warnings": lint_warnings,
+            "state_ok": state_ok,
+            "state_fail": state_fail,
+            "state_skip": state_skip,
+            "errors": errors,
+            "skipped": skipped,
+        }
+
+
+def wrap_single_lint(
+    workflow_path: str,
+    lint_errors: int,
+    lint_warnings: int,
+    step_results: List[ValidationStepResult],
+) -> LintTreeReport:
+    """Wrap single-file lint results into a LintTreeReport for Markdown rendering."""
+    return LintTreeReport(
+        root=workflow_path,
+        results=[
+            LintWorkflowResult(
+                path=workflow_path,
+                relative_path=os.path.basename(workflow_path),
+                category="",
+                lint_errors=lint_errors,
+                lint_warnings=lint_warnings,
+                step_results=step_results,
+            )
+        ],
+    )
+
+
 def wrap_single_clean(workflow_path: str, step_results: List[CleanStepResult]) -> TreeCleanReport:
     """Wrap single-file results into a TreeCleanReport for Markdown rendering."""
     total = sum(len(r.removed_keys) for r in step_results)

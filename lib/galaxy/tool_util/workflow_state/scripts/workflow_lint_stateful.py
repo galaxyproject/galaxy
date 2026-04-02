@@ -1,6 +1,7 @@
 """Thin CLI entry point for gxwf-lint-stateful."""
 
 from .._cli_common import (
+    add_report_args,
     build_base_parser,
     cli_main,
 )
@@ -30,22 +31,7 @@ def build_parser():
         required=False,
         help="If this is a training workflow, specify a training topic",
     )
-    parser.add_argument(
-        "--report-json",
-        nargs="?",
-        const="-",
-        default=None,
-        metavar="FILE",
-        help="Output results as JSON (to FILE if given, stdout otherwise)",
-    )
-    parser.add_argument(
-        "--report-markdown",
-        nargs="?",
-        const="-",
-        default=None,
-        metavar="FILE",
-        help="Output results as Markdown (to FILE if given, stdout otherwise)",
-    )
+    add_report_args(parser)
     return parser
 
 

@@ -1140,7 +1140,7 @@ class RoundTripTreeReport(TreeReportBase):
     """Tree-level report for roundtrip validation across a directory."""
 
     options: dict[str, Any] = Field(default_factory=dict)
-    results: list[RoundTripValidationResult] = Field(default_factory=list)
+    results: list[RoundTripValidationResult] = Field(default_factory=list, serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
