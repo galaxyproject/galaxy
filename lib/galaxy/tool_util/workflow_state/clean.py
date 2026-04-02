@@ -319,7 +319,12 @@ def clean_stale_state(
     detection, subworkflow handling).  The raw *workflow_dict* is only
     touched to mutate tool_state.  The normalized model's tool_state is
     kept in sync with the raw dict after cleaning.
+
+    When *policy* is None, defaults to ``StaleKeyPolicy.for_clean([], [])``
+    which strips all stale categories including bookkeeping.
     """
+    if policy is None:
+        policy = StaleKeyPolicy.for_clean([], [])
     result = CleanResult()
     raw_steps = workflow_dict.get("steps", {})
 
