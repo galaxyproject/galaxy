@@ -11,6 +11,7 @@ in JSON Schema are annotated with _json_schema_skip in parameter_specification.y
 knows to tolerate those *_invalid entries passing validation.
 """
 
+import sys
 from typing import (
     Any,
     Dict,
@@ -21,7 +22,12 @@ from typing import (
 )
 
 import jsonschema
+import pytest
 import yaml
+
+pytestmark = pytest.mark.skipif(
+    sys.version_info < (3, 9), reason="jsonschema<4.24 on Python 3.8 mishandles additionalProperties in anyOf"
+)
 
 from galaxy.tool_util.parameters.json import to_json_schema
 from galaxy.tool_util.unittest_utils.parameters import (
