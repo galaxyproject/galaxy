@@ -32,6 +32,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faGoogleDrive,
         message: "This is a  repository plugin that connects with the commercial Google Drive service.",
     },
+    onedrive: {
+        icon: faCloud,
+        message: "This is a repository plugin that connects with Microsoft OneDrive through Microsoft Graph.",
+    },
     onedata: {
         icon: faNetworkWired,
         message: "This is a repository plugin based on the Onedata service.",
