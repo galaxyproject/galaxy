@@ -23,7 +23,10 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.files import FileSourcesUserContext
-from galaxy.files.sources import dropbox
+from galaxy.files.sources import (
+    dropbox,
+    onedrive,
+)
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
 from galaxy.managers._config_templates import prepare_environment_from_root
@@ -333,6 +336,90 @@ class TestFileSourcesTestCase(BaseTestCase):
         assert status.connection
         assert not status.connection.is_not_ok
         assert pyfilesystem_fs_init_kwd["access_token"] == "my_test_access_token"
+
+    def test_onedrive_oauth2_flow(self, tmp_path, monkeypatch):
+        json = {
+            "refresh_token": "my_test_refresh_token",
+        }
+
+        def mock_get_token_from_code_raw(
+            code,
+            client_pair,
+            config,
+            redirect_uri,
+        ):
+            return MockResponse(json)
+
+        monkeypatch.setattr(config_templates, "get_token_from_code_raw", mock_get_token_from_code_raw)
+
+        self._init_onedrive_env(tmp_path, monkeypatch)
+
+        authorize_url = self.manager.template_oauth2(self.trans, "onedrive", 0).authorize_url
+        from urllib.parse import (
+            parse_qs,
+            urlparse,
+        )
+
+        parse_result = urlparse(authorize_url)
+        assert parse_result.hostname == "login.microsoftonline.com"
+        assert parse_result.path == "/common/oauth2/v2.0/authorize"
+        query_params = parse_qs(parse_result.query)
+        assert query_params["scope"][0] == "offline_access Files.ReadWrite.AppFolder"
+        assert "state" in query_params
+        state_param = query_params["state"]
+        state = OAuth2State.decode(state_param[0])
+        assert state.route == "file_source_instances/onedrive/0"
+        redirect_url = self.manager.handle_authorization_code(
+            self.trans,
+            "moocow",
+            state,
+        )
+        parse_result = urlparse(redirect_url)
+        query_params = parse_qs(parse_result.query)
+        assert "uuid" in query_params
+        uuid = query_params["uuid"][0]
+
+        user_vault = self.trans.user_vault
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        assert user_vault.read_secret(config_secret_key)
+
+    def test_onedrive_oauth2_access_token_injection_during_verify(self, tmp_path, monkeypatch):
+        self._init_onedrive_env(tmp_path, monkeypatch)
+
+        uuid = uuid4().hex
+        user_vault = self.trans.user_vault
+        config_secret_key = UserFileSource.vault_key_from_uuid(uuid, "_oauth2_refresh_token", None)
+        user_vault.write_secret(config_secret_key, "test_refresh_token")
+        create_payload = CreateInstancePayload(
+            name=SIMPLE_FILE_SOURCE_NAME,
+            description=SIMPLE_FILE_SOURCE_DESCRIPTION,
+            template_id="onedrive",
+            template_version=0,
+            variables={},
+            secrets={},
+            uuid=uuid,
+        )
+        self._create_instance(create_payload)
+        json = {
+            "access_token": "my_test_access_token",
+        }
+        observed_headers = {}
+
+        def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
+            return MockResponse(json)
+
+        def mock_request(method, url, headers=None, timeout=None, **kwargs):
+            observed_headers.update(headers or {})
+            return OneDriveMockResponse(json_data={"value": []})
+
+        monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
+        monkeypatch.setattr(onedrive.requests, "request", mock_request)
+        status = self.manager.plugin_status(self.trans, create_payload)
+        assert status.oauth2_access_token_generation
+        assert not status.oauth2_access_token_generation.is_not_ok
+        assert status.connection
+        assert not status.connection.is_not_ok
+        assert observed_headers["Authorization"] == "Bearer my_test_access_token"
 
     def test_report_oauth2_access_token_generation_failure(self, tmp_path, monkeypatch):
         self._init_dropbox_env(tmp_path, monkeypatch)
@@ -855,6 +942,13 @@ class TestFileSourcesTestCase(BaseTestCase):
         monkeypatch.setenv("GALAXY_DROPBOX_APP_CLIENT_ID", "mock_client_id")
         monkeypatch.setenv("GALAXY_DROPBOX_APP_CLIENT_SECRET", "mock_client_secret")
 
+    def _init_onedrive_env(self, tmp_path, monkeypatch):
+        self.init_user_in_database()
+        self._init_managers(tmp_path, safe_load(get_example("production_onedrive.yml")))
+
+        monkeypatch.setenv("GALAXY_ONEDRIVE_CLIENT_ID", "mock_client_id")
+        monkeypatch.setenv("GALAXY_ONEDRIVE_CLIENT_SECRET", "mock_client_secret")
+
     def _create_user_file_source(self, template_id="home_directory") -> UserFileSourceModel:
         create_payload = CreateInstancePayload(
             name=SIMPLE_FILE_SOURCE_NAME,
@@ -943,3 +1037,18 @@ class MockExceptionResponse:
 
     def raise_for_status(self):
         raise HTTPError(self._exception_msg, self._exception_msg, response=None)
+
+
+class OneDriveMockResponse:
+
+    def __init__(self, status_code=200, json_data=None, text=""):
+        self.status_code = status_code
+        self._json_data = json_data or {}
+        self.text = text
+
+    @property
+    def ok(self):
+        return 200 <= self.status_code < 300
+
+    def json(self):
+        return self._json_data
