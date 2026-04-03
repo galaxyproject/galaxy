@@ -537,8 +537,6 @@ def set_metadata_portable(
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
-        if job:
-            export_store.export_job(job, include_job_data=False)
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
