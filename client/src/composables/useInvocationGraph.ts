@@ -23,20 +23,31 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
+/** The names of all possible Invocation Graph step states.
+ *
+ * These are computed on the client, in the `updateStep` method,
+ * by analyzing the `GraphStep.jobs` states for a given Invocation step, or by
+ * examining other relevant step properties (subworkflow scheduling, etc.).
+ */
+export const graphStepStates = [
+    "new",
+    "upload",
+    "waiting",
+    "queued",
+    "running",
+    "ok",
+    "error",
+    "deleted",
+    "hidden",
+    "setting_metadata",
+    "paused",
+    "skipped",
+] as const;
+
+export type GraphStepState = (typeof graphStepStates)[number];
+
 export interface GraphStep extends Step {
-    state?:
-        | "new"
-        | "upload"
-        | "waiting"
-        | "queued"
-        | "running"
-        | "ok"
-        | "error"
-        | "deleted"
-        | "hidden"
-        | "setting_metadata"
-        | "paused"
-        | "skipped";
+    state?: GraphStepState;
     jobs: StepJobSummary["states"];
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;

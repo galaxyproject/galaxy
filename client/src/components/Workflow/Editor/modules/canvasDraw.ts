@@ -1,7 +1,7 @@
 import { curveCatmullRom, line } from "d3";
 
 import * as commentColors from "@/components/Workflow/Editor/Comments/colors";
-import type { GraphStep } from "@/composables/useInvocationGraph";
+import { type GraphStep, graphStepStates } from "@/composables/useInvocationGraph";
 import type {
     FrameWorkflowComment,
     FreehandWorkflowComment,
@@ -11,21 +11,9 @@ import type {
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-const stateNames = [
-    "new",
-    "waiting",
-    "queued",
-    "running",
-    "ok",
-    "error",
-    "deleted",
-    "setting_metadata",
-    "paused",
-    "skipped",
-    "upload",
-    "hidden",
-    "undefined",
-] as const;
+/** The names of all possible graph step states, including an undefined state
+ * (for input parameters which do not have a graph step state). */
+const stateNames = [...graphStepStates, "undefined"] as const;
 
 const stateColors: Record<string, string> = {};
 
