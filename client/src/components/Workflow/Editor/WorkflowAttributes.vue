@@ -47,7 +47,7 @@
                 This short description will be visible when this workflow is viewed and should be limited to a sentence
                 or two.
             </div>
-            <b-popover
+            <GPopover
                 custom-class="best-practice-popover"
                 target="workflow-annotation"
                 boundary="window"
@@ -56,12 +56,12 @@
                 triggers="manual"
                 title="Best Practice"
                 :content="annotationBestPracticeMessage">
-            </b-popover>
+            </GPopover>
         </div>
         <div id="workflow-license-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'license' }">
             <b>License</b>
             <LicenseSelector id="license-selector" :input-license="license" @onLicense="onLicense" />
-            <b-popover
+            <GPopover
                 custom-class="best-practice-popover"
                 target="license-selector"
                 boundary="window"
@@ -70,12 +70,12 @@
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningLicense">
-            </b-popover>
+            </GPopover>
         </div>
         <div id="workflow-creator-area" class="mt-2" :class="{ 'highlight-attribute': highlight === 'creator' }">
             <b>Creator</b>
             <CreatorEditor id="creator-editor" :creators="creatorAsList" @onCreators="onCreator" />
-            <b-popover
+            <GPopover
                 custom-class="best-practice-popover"
                 target="creator-editor"
                 boundary="window"
@@ -84,7 +84,7 @@
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningCreator">
-            </b-popover>
+            </GPopover>
         </div>
 
         <div id="workflow-doi-area" class="mt-2">
@@ -120,7 +120,7 @@
                 A detailed description of what the workflow does. It is best to include descriptions of what kinds of
                 data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
             </div>
-            <b-popover
+            <GPopover
                 custom-class="best-practice-popover"
                 target="workflow-readme"
                 boundary="window"
@@ -129,7 +129,7 @@
                 triggers="manual"
                 title="Best Practice"
                 :content="bestPracticeWarningReadme">
-            </b-popover>
+            </GPopover>
         </div>
         <div class="mt-2">
             <b>Help</b>
@@ -166,6 +166,7 @@ import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -177,6 +178,7 @@ const BEST_PRACTICE_HIGHLIGHT_TIME = 4000;
 export default {
     name: "WorkflowAttributes",
     components: {
+        GPopover,
         StatelessTags,
         LicenseSelector,
         CreatorEditor,
