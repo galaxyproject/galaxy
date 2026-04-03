@@ -23,12 +23,8 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
-/** The names of all possible Invocation Graph step states.
- *
- * These are computed on the client, in the `updateStep` method,
- * by analyzing the `GraphStep.jobs` states for a given Invocation step, or by
- * examining other relevant step properties (subworkflow scheduling, etc.).
- */
+/** All possible states for an Invocation Graph step, derived from job states,
+ * input dataset states, and subworkflow scheduling states. */
 export const graphStepStates = [
     "new",
     "upload",
@@ -38,7 +34,6 @@ export const graphStepStates = [
     "ok",
     "error",
     "deleted",
-    "hidden",
     "setting_metadata",
     "paused",
     "skipped",
