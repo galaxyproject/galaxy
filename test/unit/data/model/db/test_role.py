@@ -168,11 +168,28 @@ def test_get_private_role_user_emails_dict(session, make_role, make_user_and_rol
     user2, private_role2 = make_user_and_role(email="user2@example.com")
     user3, private_role3 = make_user_and_role(email="user3@example.com")
     # make 2 non-private roles
-    make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
+    admin_role1 = make_role(type="admin", name="admin-role-1", description="Description of admin-role1")
     make_role(type="admin", name="admin-role-2", description="Description of admin-role2")
 
-    data = get_private_role_user_emails_dict(session)
-    assert len(data) == 3  # only private role mappings are returned
+    # all private role ids
+    all_ids = {private_role1.id, private_role2.id, private_role3.id}
+    data = get_private_role_user_emails_dict(session, role_ids=all_ids)
+    assert len(data) == 3
     assert data[private_role1.id] == "user1@example.com"
     assert data[private_role2.id] == "user2@example.com"
     assert data[private_role3.id] == "user3@example.com"
+
+    # subset of role ids
+    subset_ids = {private_role1.id, private_role3.id}
+    data = get_private_role_user_emails_dict(session, role_ids=subset_ids)
+    assert len(data) == 2
+    assert data[private_role1.id] == "user1@example.com"
+    assert data[private_role3.id] == "user3@example.com"
+
+    # empty set returns empty dict without hitting the database
+    data = get_private_role_user_emails_dict(session, role_ids=set())
+    assert len(data) == 0
+
+    # non-private role ids return empty (filtered by type=PRIVATE)
+    data = get_private_role_user_emails_dict(session, role_ids={admin_role1.id})
+    assert len(data) == 0

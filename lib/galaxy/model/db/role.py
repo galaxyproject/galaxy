@@ -59,6 +59,8 @@ def get_private_role_user_emails_dict(session, role_ids: set[int] | None = None)
     If role_ids is provided, only return mappings for roles in that set,
     avoiding a full table scan on large instances.
     """
+    if role_ids is not None and not role_ids:
+        return {}
     stmt = select(UserRoleAssociation.role_id, User.email).join(Role).join(User).where(Role.type == Role.types.PRIVATE)
     if role_ids is not None:
         stmt = stmt.where(UserRoleAssociation.role_id.in_(role_ids))

@@ -460,11 +460,18 @@ class DatasetAssociationManager(
             library_dataset = None
             dataset = dataset_assoc.dataset
 
-        private_role_emails = get_private_role_user_emails_dict(self.session())
-
         # Omit duplicated roles by converting to set
         access_roles = set(dataset.get_access_roles(self.app.security_agent))
         manage_roles = set(dataset.get_manage_permissions_roles(self.app.security_agent))
+        modify_roles = set()
+        if library_dataset is not None:
+            modify_roles = set(
+                self.app.security_agent.get_roles_for_action(
+                    library_dataset, self.app.security_agent.permitted_actions.LIBRARY_MODIFY
+                )
+            )
+        all_role_ids = {r.id for r in access_roles | manage_roles | modify_roles}
+        private_role_emails = get_private_role_user_emails_dict(self.session(), role_ids=all_role_ids)
 
         def make_tuples(roles: set):
             tuples = []
@@ -480,11 +487,6 @@ class DatasetAssociationManager(
 
         rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
         if library_dataset is not None:
-            modify_roles = set(
-                self.app.security_agent.get_roles_for_action(
-                    library_dataset, self.app.security_agent.permitted_actions.LIBRARY_MODIFY
-                )
-            )
             modify_item_role_list = make_tuples(modify_roles)
             rval["modify_item_roles"] = modify_item_role_list
         return rval

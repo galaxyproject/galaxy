@@ -308,6 +308,9 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
             for hda in item.datasets:
                 if not hda.purged:
                     self.hda_manager.purge(hda, flush=True, **kwargs)
+            for hdca in item.dataset_collections:
+                if not hdca.deleted:
+                    hdca.deleted = True
 
         # Now mark the history as purged
         super().purge(item, flush=flush, **kwargs)
