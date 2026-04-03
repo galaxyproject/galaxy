@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { faFileUpload, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BDropdown, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { createUrlUploadItem, uploadDatasets } from "@/utils/upload";
+
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
 
@@ -42,7 +45,7 @@ function onSubmit(name: string, url: string, ftype?: string) {
     <div v-if="!currentHistoryId" class="d-flex align-items-center h-100">
         <FontAwesomeIcon :icon="faSpinner" spin />
     </div>
-    <BDropdown
+    <GDropdown
         v-else-if="urlData && urlData.length > 0"
         v-g-tooltip.hover
         no-caret
@@ -55,14 +58,14 @@ function onSubmit(name: string, url: string, ftype?: string) {
         <template v-slot:button-content>
             <FontAwesomeIcon :icon="faFileUpload" />
         </template>
-        <BDropdownText>
+        <GDropdownText>
             <small class="text-primary text-uppercase">Upload Examples</small>
-        </BDropdownText>
-        <BDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url, ud.ftype)">
+        </GDropdownText>
+        <GDropdownItem v-for="ud of urlData" :key="ud.url" @click="() => onSubmit(ud.name, ud.url, ud.ftype)">
             <span>
                 <FontAwesomeIcon :icon="faFileUpload" />
                 <span v-localize>{{ ud.name }}</span>
             </span>
-        </BDropdownItem>
-    </BDropdown>
+        </GDropdownItem>
+    </GDropdown>
 </template>

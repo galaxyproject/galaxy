@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -17,6 +17,8 @@ import type {
     TableField,
 } from "./GTable.types";
 
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -804,7 +806,7 @@ defineExpose({
                                     <!-- Actions column -->
                                     <td v-if="props.actions" class="g-table-actions-column">
                                         <slot name="actions" :item="item" :index="getGlobalIndex(paginatedIndex)">
-                                            <BDropdown
+                                            <GDropdown
                                                 v-g-tooltip.hover
                                                 no-caret
                                                 right
@@ -818,7 +820,7 @@ defineExpose({
                                                 </template>
 
                                                 <template v-for="ac in props.actions">
-                                                    <BDropdownItem
+                                                    <GDropdownItem
                                                         v-if="ac.visible ?? true"
                                                         :id="ac.id"
                                                         :key="ac.id"
@@ -835,9 +837,9 @@ defineExpose({
                                                         ">
                                                         <FontAwesomeIcon v-if="ac.icon" :icon="ac.icon" fixed-width />
                                                         {{ ac.label }}
-                                                    </BDropdownItem>
+                                                    </GDropdownItem>
                                                 </template>
-                                            </BDropdown>
+                                            </GDropdown>
                                         </slot>
                                     </td>
                                 </tr>

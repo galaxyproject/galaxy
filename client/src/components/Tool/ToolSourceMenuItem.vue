@@ -7,6 +7,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSource from "./ToolSource.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const { config } = useConfig(true);
 const { currentUser } = storeToRefs(useUserStore());
@@ -25,9 +26,9 @@ const props = defineProps({
 
 <template>
     <div v-if="config.enable_tool_source_display || (currentUser && currentUser.is_admin)">
-        <b-dropdown-item v-b-modal.tool-source-viewer>
+        <GDropdownItem v-b-modal.tool-source-viewer>
             <FontAwesomeIcon :icon="faEye" /><span v-localize>View Tool source</span>
-        </b-dropdown-item>
+        </GDropdownItem>
         <b-modal
             id="tool-source-viewer"
             modal-class="tool-source-modal"

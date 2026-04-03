@@ -16,7 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText, BFormCheckbox, BModal } from "bootstrap-vue";
+import { BFormCheckbox, BModal } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -29,6 +29,10 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -104,7 +108,7 @@ function onDelete() {
 
 <template>
     <div>
-        <BDropdown
+        <GDropdown
             v-g-tooltip.top.hover
             no-caret
             size="sm"
@@ -119,13 +123,13 @@ function onDelete() {
                 <span class="sr-only">History Options</span>
             </template>
 
-            <BDropdownText>
+            <GDropdownText>
                 <LoadingSpan v-if="historiesLoading" message="Fetching histories from server" />
                 <span v-else-if="!props.minimal">You have {{ totalHistoryCount }} histories.</span>
                 <span v-else>Manage History</span>
-            </BDropdownText>
+            </GDropdownText>
 
-            <BDropdownItem
+            <GDropdownItem
                 v-if="!props.minimal"
                 data-description="switch to multi history view"
                 :disabled="isAnonymous"
@@ -133,107 +137,107 @@ function onDelete() {
                 to="/histories/view_multiple">
                 <FontAwesomeIcon fixed-width :icon="faColumns" />
                 <span v-localize>Show Histories Side-by-Side</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownDivider v-if="!props.minimal" />
+            <GDropdownDivider v-if="!props.minimal" />
 
-            <BDropdownText v-if="!canEditHistory">
+            <GDropdownText v-if="!canEditHistory">
                 This history has been <span class="font-weight-bold">{{ historyState }}</span
                 >.
                 <span v-localize>Some actions might not be available.</span>
-            </BDropdownText>
+            </GDropdownText>
 
-            <BDropdownDivider v-if="!canEditHistory" />
+            <GDropdownDivider v-if="!canEditHistory" />
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="!canEditHistory"
                 :title="localize('Resume all Paused Jobs in this History')"
                 @click="resumePausedJobs()">
                 <FontAwesomeIcon fixed-width :icon="faPlay" />
                 <span v-localize>Resume Paused Jobs</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownDivider />
+            <GDropdownDivider />
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="isAnonymous"
                 :title="userTitle('Copy History to a New History')"
                 @click="showCopyModal = !showCopyModal">
                 <FontAwesomeIcon fixed-width :icon="faClone" />
                 <span v-localize>Copy History</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 data-description="copy datasets"
                 :disabled="isAnonymous"
                 :title="userTitle('Copy Datasets to Another History')"
                 @click="router.push('/datasets/copy')">
                 <FontAwesomeIcon fixed-width :icon="faCopy" />
                 <span v-localize>Copy Datasets</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="!canEditHistory"
                 :title="localize(isDeletedNotPurged ? 'Permanently Delete History' : 'Delete History')"
                 @click="showDeleteModal = !showDeleteModal">
                 <FontAwesomeIcon fixed-width :icon="isDeletedNotPurged ? faBurn : faTrash" />
                 <span v-if="isDeletedNotPurged" v-localize>Permanently Delete History</span>
                 <span v-else v-localize>Delete History</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 :title="localize('Export references for all Tools used in this History')"
                 :to="`/histories/citations?id=${history.id}`">
                 <FontAwesomeIcon fixed-width :icon="faStream" />
                 <span v-localize>Export Tool References</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 data-description="export to file"
                 :disabled="history.purged"
                 :title="localize('Export and Download History as a File')"
                 :to="`/histories/${history.id}/export`">
                 <FontAwesomeIcon fixed-width :icon="faFileArchive" />
                 <span v-localize>Export History to File</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="isAnonymous || history.archived || history.purged"
                 data-description="archive history"
                 :title="userTitle('Archive this History')"
                 :to="`/histories/${history.id}/archive`">
                 <FontAwesomeIcon fixed-width :icon="faArchive" />
                 <span v-localize>Archive History</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="isAnonymous"
                 data-description="extract workflow"
                 :title="userTitle('Convert History to Workflow')"
                 :to="`/histories/${history.id}/extract_workflow`">
                 <FontAwesomeIcon fixed-width :icon="faFileExport" />
                 <span v-localize>Extract Workflow</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="isAnonymous"
                 :title="userTitle('Display Workflow Invocations')"
                 :to="`/histories/${history.id}/invocations`">
                 <FontAwesomeIcon fixed-width :icon="faList" />
                 <span v-localize>Show Invocations</span>
-            </BDropdownItem>
+            </GDropdownItem>
 
-            <BDropdownDivider />
+            <GDropdownDivider />
 
-            <BDropdownItem
+            <GDropdownItem
                 :disabled="isAnonymous || !canEditHistory"
                 data-description="share and manage access"
                 :title="userTitle('Share, Publish, or Set Permissions for this History')"
                 :to="`/histories/sharing?id=${history.id}`">
                 <FontAwesomeIcon fixed-width :icon="faUsersCog" />
                 <span v-localize>Share & Manage Access</span>
-            </BDropdownItem>
-        </BDropdown>
+            </GDropdownItem>
+        </GDropdown>
 
         <CopyModal :history="history" :show-modal.sync="showCopyModal" />
 

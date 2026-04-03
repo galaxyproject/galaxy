@@ -2,7 +2,7 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BBadge, BButton, BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
@@ -17,6 +17,9 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";
 import type { VariantInterface } from "./variants";
+
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
 
 const props = defineProps<{
     variant?: VariantInterface[];
@@ -141,7 +144,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
         <!-- three options here - source is a collection that has multiple builders exposed, source is a collection
              that has a single builder exposed, or source is dataset(s). -->
         <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
-            <BDropdown
+            <GDropdown
                 v-g-tooltip.bottom.hover
                 class="d-flex"
                 data-description="upload"
@@ -149,13 +152,13 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 split
                 text="Create"
                 @click="createCollectionType(defaultCollectionBuilderType)">
-                <BDropdownItem
+                <GDropdownItem
                     v-for="colType in availableCollectionBuilders"
                     :key="colType"
                     @click="createCollectionType(colType)">
                     {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
-                </BDropdownItem>
-            </BDropdown>
+                </GDropdownItem>
+            </GDropdown>
             <BButton
                 v-if="props.workflowTab === 'create'"
                 v-g-tooltip.bottom.hover

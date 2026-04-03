@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
 import { computed } from "vue";
@@ -11,6 +11,9 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownForm from "@/components/BaseComponents/GDropdownForm.vue";
+import GDropdownItemButton from "@/components/BaseComponents/GDropdownItemButton.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
@@ -88,21 +91,21 @@ function updateStored(v: boolean) {
                     <ArrowRightToLine absolute-stroke-width :size="17" />
                 </BButton>
 
-                <BDropdown class="dropdown" toggle-class="heading-button" variant="link" size="md" no-caret>
+                <GDropdown class="dropdown" toggle-class="heading-button" variant="link" size="md" no-caret>
                     <template v-slot:button-content>
                         <FontAwesomeIcon :icon="faCog" fixed-width />
                     </template>
 
-                    <BDropdownForm form-class="px-2" title="remember size for all steps using this tool">
+                    <GDropdownForm form-class="px-2" title="remember size for all steps using this tool">
                         <BFormCheckbox :checked="inspectorStore.isStored(props.step)" @input="updateStored">
                             remember size
                         </BFormCheckbox>
-                    </BDropdownForm>
+                    </GDropdownForm>
 
-                    <BDropdownItemButton @click="inspectorStore.clearAllStored">
+                    <GDropdownItemButton @click="inspectorStore.clearAllStored">
                         reset all stored sizes
-                    </BDropdownItemButton>
-                </BDropdown>
+                    </GDropdownItemButton>
+                </GDropdown>
 
                 <BButton class="heading-button" variant="link" size="md" title="close" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />

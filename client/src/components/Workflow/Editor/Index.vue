@@ -142,7 +142,7 @@
                     </span>
 
                     <b-button-group>
-                        <BDropdown
+                        <GDropdown
                             v-if="credentialSteps.length > 0"
                             no-caret
                             right
@@ -155,13 +155,13 @@
                                 <FontAwesomeIcon :icon="faKey" fixed-width />
                             </template>
 
-                            <BDropdownText style="min-width: 25rem">
+                            <GDropdownText style="min-width: 25rem">
                                 This workflow contains the following steps that require credentials:
-                            </BDropdownText>
+                            </GDropdownText>
 
-                            <BDropdownDivider />
+                            <GDropdownDivider />
 
-                            <BDropdownItem
+                            <GDropdownItem
                                 v-for="cs in credentialSteps"
                                 :key="cs.id"
                                 title="Click to go to step"
@@ -169,8 +169,8 @@
                                 @click="onToolClick(cs.id)">
                                 <FontAwesomeIcon :icon="faWrench" fixed-width />
                                 {{ cs.id + 1 }}: {{ cs.label ?? cs.name }}
-                            </BDropdownItem>
-                        </BDropdown>
+                            </GDropdownItem>
+                        </GDropdown>
 
                         <b-button
                             :title="undoRedoStore.undoText + ' (Ctrl + Z)'"
@@ -247,7 +247,6 @@ import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } fr
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
-import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
@@ -290,6 +289,10 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowAttributes from "./WorkflowAttributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import GDropdown from "@/components/BaseComponents/GDropdown.vue";
+import GDropdownDivider from "@/components/BaseComponents/GDropdownDivider.vue";
+import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
+import GDropdownText from "@/components/BaseComponents/GDropdownText.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
 import SearchPanel from "@/components/Panels/SearchPanel.vue";
@@ -318,10 +321,10 @@ export default {
         InputPanel,
         UserToolPanel,
         SearchPanel,
-        BDropdownItem,
-        BDropdown,
-        BDropdownText,
-        BDropdownDivider,
+        GDropdownItem,
+        GDropdown,
+        GDropdownText,
+        GDropdownDivider,
     },
     props: {
         workflowId: {
