@@ -1719,14 +1719,8 @@ class BaseDirectoryImportModelStore(ModelImportStore):
 def restore_times(
     model_object: Union[model.Job, model.WorkflowInvocation, model.WorkflowInvocationStep], attrs: dict[str, Any]
 ) -> None:
-    try:
-        model_object.create_time = datetime.datetime.strptime(attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
-    except Exception:
-        pass
-    try:
-        model_object.update_time = datetime.datetime.strptime(attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
-    except Exception:
-        pass
+    model_object.create_time = datetime.datetime.fromisoformat(attrs["create_time"])
+    model_object.update_time = datetime.datetime.fromisoformat(attrs["update_time"])
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
