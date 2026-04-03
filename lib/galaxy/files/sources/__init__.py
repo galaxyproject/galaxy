@@ -337,7 +337,14 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def score_url_match(self, url: str) -> int:
         root = self.get_uri_root()
-        return len(root) if root in url else 0
+        if url.startswith(root):
+            rest = url[len(root) :]
+            # For roots with a prefix (e.g. gxfiles://test1), ensure match is
+            # at a boundary so gxfiles://test1http://evil doesn't match test1.
+            # Roots ending with :// (e.g. gxftp://) don't need this check.
+            if root.endswith("://") or not rest or rest.startswith("/"):
+                return len(root)
+        return 0
 
     def uri_from_path(self, path: str) -> str:
         uri_root = self.get_uri_root()
