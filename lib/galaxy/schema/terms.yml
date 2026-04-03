@@ -92,7 +92,7 @@ galaxy:
       This is the text of the content to import if the 'src' of the item is 'pasted'.
     targets: |
       This groups data import requests into sets of elements or items that should be imported together. Each
-      target should have a a set of items/elements as well as a 'destination'. The `destination` of the target controls where
+      target should have a set of items/elements as well as a 'destination'. The `destination` of the target controls where
       the data is imported to - for instances as HDAs into a history (`{"type": "hdas"}`) or as a collection
       (`{"type": "hdca"}`).
     sources:
