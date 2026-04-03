@@ -39,6 +39,7 @@ from ._report_models import (
     wrap_single_lint,
 )
 from ._report_output import emit_reports
+from ._types import GetToolInfo
 from .stale_keys import (
     ConflictingCategoryError,
     InvalidCategoryError,
@@ -151,7 +152,51 @@ def format_combined_text(
     return "\n".join(parts)
 
 
-# -- Entry point --
+# -- Library-level entry point --
+
+
+def lint_single(
+    workflow_path: str,
+    tool_info: GetToolInfo,
+    policy: Optional[StaleKeyPolicy] = None,
+    connections: bool = False,
+    skip_best_practices: bool = False,
+    training_topic: Optional[str] = None,
+) -> SingleLintReport:
+    """Lint a single workflow, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Composes structural lint + stateful validation.
+    """
+    workflow_dict = ordered_load_path(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    lint_context = run_structural_lint(
+        workflow_dict,
+        skip_best_practices=skip_best_practices,
+        training_topic=training_topic,
+    )
+
+    results, precheck, conn_report = validate_workflow_cli(
+        workflow_dict,
+        tool_info,
+        policy=policy,
+        connections=connections,
+    )
+
+    # Precheck failure — report structural results only, no state results
+    if precheck and not precheck.can_process:
+        results = []
+
+    return SingleLintReport(
+        workflow=workflow_name,
+        lint_errors=len(lint_context.error_messages),
+        lint_warnings=len(lint_context.warn_messages),
+        results=results,
+    )
+
+
+# -- CLI entry point --
 
 
 def run_lint_stateful(options: LintStatefulOptions) -> int:

@@ -134,6 +134,48 @@ def validate_workflow_cli(
     return step_results, precheck, conn_report
 
 
+def validate_single(
+    workflow_path: str,
+    tool_info: GetToolInfo,
+    policy: Optional[StaleKeyPolicy] = None,
+    connections: bool = False,
+    clean: bool = False,
+    mode: str = "pydantic",
+    strict: bool = False,
+    tool_schema_dir: Optional[str] = None,
+) -> SingleValidationReport:
+    """Validate a single workflow, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Handles both pydantic and json-schema backends, precheck, and connection validation.
+    """
+    workflow = load_workflow(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    if mode == "json-schema":
+        results = _json_schema_validate_single(
+            workflow,
+            tool_info=tool_info,
+            tool_schema_dir=tool_schema_dir,
+            strict=strict,
+            clean=clean,
+        )
+        return SingleValidationReport(workflow=workflow_name, results=results)
+
+    results, precheck, conn_report = validate_workflow_cli(
+        workflow,
+        tool_info,
+        policy=policy,
+        connections=connections,
+        clean=clean,
+    )
+    return SingleValidationReport(
+        workflow=workflow_name,
+        results=results,
+        connection_report=conn_report,
+    )
+
+
 def _validate_native(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
@@ -714,27 +756,29 @@ def run_validate(options: ValidateOptions) -> int:
 
     tool_info = setup_tool_info(options)
 
-    if options.mode == "json-schema":
-        return _run_json_schema_validate_single(options, tool_info)
-
     try:
         policy = StaleKeyPolicy.for_validate(options.allow, options.deny)
     except (InvalidCategoryError, ConflictingCategoryError) as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
 
-    workflow = load_workflow(options.workflow_path)
-    results, precheck, conn_report = validate_workflow_cli(
-        workflow,
+    report = validate_single(
+        options.workflow_path,
         tool_info,
         policy=policy,
         connections=options.connections,
         clean=options.clean,
+        mode=options.mode,
+        strict=options.strict,
+        tool_schema_dir=options.tool_schema_dir,
     )
-    if precheck and not precheck.can_process:
-        print(f"Skipped: {precheck.detail}", file=sys.stderr)
+
+    if not report.results:
+        # Precheck or empty — treat as skip
+        print("Skipped (legacy encoding or no tool steps)", file=sys.stderr)
         return 0
-    return _emit_single_results(options, results, conn_report)
+
+    return _emit_single_results(options, report.results, report.connection_report)
 
 
 def run_validate_tree(options: ValidateTreeOptions) -> int:

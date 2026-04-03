@@ -10,20 +10,32 @@ from ._types import (
     GetToolInfo,
     ToolInputs,
 )
+from .clean import clean_single
 from .convert import (
     ConversionValidationFailure,
     convert_state_to_format2,
     Format2State,
 )
-from .export_format2 import export_workflow_to_format2
+from .export_format2 import (
+    export_single,
+    export_workflow_to_format2,
+)
+from .lint_stateful import lint_single
+from .roundtrip import roundtrip_single
+from .validate import validate_single
 from .validation import validate_workflow
 
 __all__ = (
+    "clean_single",
     "ConversionValidationFailure",
     "convert_state_to_format2",
+    "export_single",
     "export_workflow_to_format2",
     "GetToolInfo",
+    "lint_single",
+    "roundtrip_single",
     "ToolInputs",
     "Format2State",
+    "validate_single",
     "validate_workflow",
 )

@@ -260,7 +260,51 @@ def format_json(format2_dict: dict) -> str:
     return json.dumps(format2_dict, indent=4) + "\n"
 
 
-# -- Entry point --
+# -- Library-level entry point --
+
+
+@dataclass
+class ExportSingleResult:
+    """Bundle of export report + converted format2 dict."""
+
+    report: "SingleExportReport"
+    format2_dict: dict
+    export_result: ExportResult
+
+
+def export_single(
+    workflow_path: str,
+    tool_info: GetToolInfo,
+    strict: bool = False,
+    compact: bool = False,
+    policy: Optional[StaleKeyPolicy] = None,
+) -> Optional[ExportSingleResult]:
+    """Export a single native workflow to format2, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Returns None if the workflow is skipped (legacy encoding).
+    """
+    workflow = ensure_native(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    precheck = precheck_native_workflow(workflow, tool_info)
+    if not precheck.can_process:
+        return None
+
+    result = export_workflow_to_format2(workflow, tool_info, strict=strict, compact=compact, policy=policy)
+
+    converted = sum(1 for s in result.steps if s.converted)
+    fallback = len(result.failed_steps)
+    report = SingleExportReport(
+        workflow=workflow_name,
+        ok=not result.failed_steps,
+        steps_converted=converted,
+        steps_fallback=fallback,
+    )
+    return ExportSingleResult(report=report, format2_dict=result.format2_dict, export_result=result)
+
+
+# -- CLI entry point --
 
 
 def run_export(options: ExportOptions) -> int:

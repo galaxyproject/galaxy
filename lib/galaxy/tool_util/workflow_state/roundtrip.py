@@ -1213,6 +1213,38 @@ def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
     return result.ok
 
 
+# -- Library-level entry point --
+
+
+def roundtrip_single(
+    workflow_path: str,
+    tool_info: "GetToolInfo",
+    strip_bookkeeping: bool = False,
+) -> SingleRoundTripReport:
+    """Run round-trip validation on a single workflow, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Loads the workflow, validates it's native, runs the roundtrip, wraps the result.
+    """
+    workflow = load_workflow(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    if _format(workflow) != "native":
+        result = RoundTripValidationResult(
+            workflow_path=workflow_path,
+            error="round-trip validation requires a native .ga workflow",
+        )
+        return SingleRoundTripReport(workflow=workflow_name, result=result)
+
+    result = roundtrip_validate(
+        workflow,
+        tool_info,
+        workflow_path=workflow_path,
+        strip_bookkeeping=strip_bookkeeping,
+    )
+    return SingleRoundTripReport(workflow=workflow_name, result=result)
+
+
 # -- Formatters --
 
 

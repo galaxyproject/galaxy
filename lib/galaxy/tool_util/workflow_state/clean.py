@@ -388,6 +388,29 @@ def clean_stale_state(
     return result
 
 
+def clean_single(
+    workflow_path: str,
+    tool_info: GetToolInfo,
+    policy: Optional[StaleKeyPolicy] = None,
+) -> SingleCleanReport:
+    """Clean stale keys from a single workflow, return structured report.
+
+    Library-level entry point with no CLI dependencies.
+    Loads the workflow, prechecks, normalizes, cleans, and wraps results.
+    Does not write to disk — the caller decides what to do with the report.
+    """
+    workflow = load_workflow(workflow_path)
+    workflow_name = os.path.basename(workflow_path)
+
+    precheck = precheck_native_workflow(workflow, tool_info)
+    if not precheck.can_process:
+        return SingleCleanReport(workflow=workflow_name, results=[])
+
+    normalized = ensure_native(workflow)
+    result = clean_stale_state(normalized, workflow, tool_info, policy=policy)
+    return SingleCleanReport(workflow=workflow_name, results=list(result.step_results))
+
+
 def expand_output_path(template: str, original_path: str) -> str:
     """Expand an output template with path specifiers.
 
