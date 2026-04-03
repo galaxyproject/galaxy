@@ -75,7 +75,7 @@ class GenomesManager:
         except TypeError:
             raise ReferenceDataError(f"Data tables not found for {index_type}")
         except IndexError:
-            raise ReferenceDataError(f"Data tables not found for {index_type} for {id}")
+            raise RequestParameterInvalidException(f"Data tables not found for {index_type} for {id}")
         else:
             return f"{file_name}{ext}"
 

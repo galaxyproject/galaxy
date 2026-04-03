@@ -100,6 +100,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             return self.get_tool_by_uuid(id_or_uuid)
 
     def get_tool_by_uuid(self, uuid: Optional[Union[UUID, str]]):
+        self._validate_uuid(uuid)
         stmt = select(DynamicTool).where(DynamicTool.uuid == uuid, DynamicTool.public == true())
         return self.session().scalars(stmt).one_or_none()
 
@@ -108,8 +109,17 @@ class DynamicToolManager(ModelManager[DynamicTool]):
         return self.session().scalars(stmt).one_or_none()
 
     def get_unprivileged_tool_by_uuid(self, user: model.User, uuid: Union[UUID, str]):
+        self._validate_uuid(uuid)
         stmt = self.owned_unprivileged_statement(user).where(DynamicTool.uuid == uuid)
         return self.session().scalars(stmt).one_or_none()
+
+    @staticmethod
+    def _validate_uuid(uuid: Optional[Union[UUID, str]]):
+        if uuid is not None and isinstance(uuid, str):
+            try:
+                UUID(uuid)
+            except ValueError:
+                raise exceptions.RequestParameterInvalidException(f"Invalid UUID format: {uuid!r}")
 
     def get_unprivileged_tool_by_tool_id(self, user: model.User, tool_id: str):
         stmt = self.owned_unprivileged_statement(user).where(DynamicTool.tool_id == tool_id)

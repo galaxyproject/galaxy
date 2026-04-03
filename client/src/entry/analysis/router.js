@@ -232,6 +232,7 @@ export function getRouter(Galaxy) {
                     ...StorageRoutes,
                     {
                         path: "",
+                        alias: "root",
                         component: Home,
                         props: (route) => ({ config: Galaxy.config, query: route.query }),
                     },

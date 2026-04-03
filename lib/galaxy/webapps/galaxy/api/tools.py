@@ -891,7 +891,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return global_tool_errors.error_stack
 
     @expose_api_anonymous
-    def create(self, trans: GalaxyWebTransaction, payload, **kwd):
+    def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
+        if payload is None:
+            raise exceptions.RequestParameterMissingException("A payload is required for tool execution.")
         """
         POST /api/tools
         Execute tool with a given parameter payload
@@ -928,5 +930,8 @@ def validate_not_protected(tool_id: Optional[str]):
 
 def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     if "payload" in kwd:
-        kwd = cast(dict[str, Any], kwd.get("payload"))
+        payload = kwd.get("payload")
+        if not isinstance(payload, dict):
+            raise exceptions.RequestParameterInvalidException("Request payload must be a JSON object.")
+        kwd = payload
     return kwd

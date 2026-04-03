@@ -54,6 +54,10 @@ class RemoteFilesManager:
 
         if "://" in target:
             uri = target
+            # Reject URIs with embedded schemes (e.g. gxfiles://foo_http://evil.com)
+            scheme_end = uri.index("://") + 3
+            if "://" in uri[scheme_end:]:
+                raise exceptions.RequestParameterInvalidException(f"Malformed URI: {uri}")
         elif target == RemoteFilesTarget.userdir:
             uri = "gxuserimport://"
             default_format = RemoteFilesFormat.flat
