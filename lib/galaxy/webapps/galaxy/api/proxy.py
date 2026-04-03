@@ -226,7 +226,8 @@ class FastAPIProxy:
         Removes:
         - Hop-by-hop headers (transfer-encoding, connection, keep-alive)
         - content-encoding: httpx auto-decompresses, so content is no longer encoded
-        - content-length: only if response was compressed (size changes after decompression)
+        - content-length: always removed because the actual streamed bytes may differ
+          from the upstream value (auto-decompression, stream size/time limits)
 
         Args:
             headers: The response headers from the upstream server
@@ -234,13 +235,19 @@ class FastAPIProxy:
         Returns:
             Filtered dictionary of headers safe to forward to the client
         """
-        had_content_encoding = "content-encoding" in headers
-
-        # Always exclude these hop-by-hop and encoding headers
-        excluded_headers = ["transfer-encoding", "connection", "keep-alive", "content-encoding"]
-
-        if had_content_encoding:
-            # If content was compressed, the content-length is now incorrect after decompression
-            excluded_headers.append("content-length")
+        # Always exclude these hop-by-hop and encoding headers.
+        # content-length is always excluded because:
+        # 1. httpx auto-decompresses, so compressed content-length is wrong after decompression
+        # 2. The stream may be truncated by MAX_STREAM_BYTES or MAX_STREAM_SECONDS limits
+        # StreamingResponse will use chunked transfer encoding instead.
+        # accept-ranges is excluded because range requests are not meaningful without content-length.
+        excluded_headers = [
+            "transfer-encoding",
+            "connection",
+            "keep-alive",
+            "content-encoding",
+            "content-length",
+            "accept-ranges",
+        ]
 
         return {key: value for key, value in headers.items() if key.lower() not in excluded_headers}

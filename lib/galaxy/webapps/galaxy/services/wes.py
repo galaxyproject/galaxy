@@ -595,6 +595,9 @@ class WesService(ServiceBase):
         token = self._keyset_pagination.decode_token(page_token, token_class=SingleKeysetToken)
         last_id = token.last_id if token else None
 
+        if trans.user is None:
+            raise exceptions.AuthenticationRequired("Listing WES runs requires authentication.")
+
         # Build query with keyset filtering
         query = trans.sa_session.query(WorkflowInvocation).join(History).where(History.user_id == trans.user.id)
 

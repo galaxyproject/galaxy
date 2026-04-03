@@ -534,3 +534,18 @@ def _download_and_check_file(file_sources):
 def _assert_access_prohibited(e):
     assert e is not None
     assert "Operation not allowed" in str(e)
+
+
+def test_score_url_match_requires_prefix():
+    """Ensure score_url_match uses prefix matching, not substring matching.
+
+    A malicious URI like gxfiles://test1http://evil.com should NOT match
+    the file source with uri_root gxfiles://test1.
+    """
+    file_sources = _configured_file_sources()
+    file_source = file_sources.get_file_source_path("gxfiles://test1/a").file_source
+    # Normal prefix match works
+    assert file_source.score_url_match("gxfiles://test1/a") > 0
+    # Embedded scheme must not match
+    assert file_source.score_url_match("gxfiles://test1http://evil.com/foo") == 0
+    assert file_source.score_url_match("http://evil.com/gxfiles://test1/a") == 0

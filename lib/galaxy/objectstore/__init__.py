@@ -1661,7 +1661,7 @@ class DistributedObjectStore(NestedObjectStore):
 
     def get_concrete_store_by_object_store_id(self, object_store_id: str) -> Optional["ConcreteObjectStore"]:
         """If this is a distributed object store, get ConcreteObjectStore by object_store_id."""
-        return self.backends[object_store_id]
+        return self.backends.get(object_store_id)
 
 
 class HierarchicalObjectStore(NestedObjectStore):

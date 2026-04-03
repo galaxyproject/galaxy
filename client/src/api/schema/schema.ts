@@ -3831,26 +3831,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/metrics": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Records a collection of metrics.
-         * @description Record any metrics sent and return some status object.
-         */
-        post: operations["create_api_metrics_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/notifications": {
         parameters: {
             query?: never;
@@ -9478,20 +9458,6 @@ export interface components {
             ready: boolean | null;
             /** State */
             state?: string | null;
-        };
-        /** CreateMetricsPayload */
-        CreateMetricsPayload: {
-            /**
-             * List of metrics to be recorded.
-             * @default []
-             * @example {
-             *       "args": "{\"test\":\"value\"}",
-             *       "level": 0,
-             *       "namespace": "test-source",
-             *       "time": "2021-01-23T18:25:43.511Z"
-             *     }
-             */
-            metrics: components["schemas"]["Metric"][];
         };
         /** CreateNewCollectionPayload */
         CreateNewCollectionPayload: {
@@ -19028,30 +18994,6 @@ export interface components {
              * @description TODO
              */
             file_type: string;
-        };
-        /** Metric */
-        Metric: {
-            /**
-             * Arguments
-             * @description A JSON string containing an array of extra data.
-             */
-            args: string;
-            /**
-             * Level
-             * @description An integer representing the metric's log level.
-             */
-            level: number;
-            /**
-             * Namespace
-             * @description Label indicating the source of the metric.
-             */
-            namespace: string;
-            /**
-             * Timestamp
-             * @description The timestamp in ISO format.
-             * @example 2021-01-23T18:25:43.511Z
-             */
-            time: string;
         };
         /**
          * ModelStoreFormat
@@ -38291,51 +38233,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LicenseMetadataModel"];
-                };
-            };
-            /** @description Request Error */
-            "4XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-            /** @description Server Error */
-            "5XX": {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MessageExceptionModel"];
-                };
-            };
-        };
-    };
-    create_api_metrics_post: {
-        parameters: {
-            query?: never;
-            header?: {
-                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-                "run-as"?: string | null;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateMetricsPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
                 };
             };
             /** @description Request Error */

@@ -20,7 +20,7 @@ const toolName = computed(() => {
 });
 
 const toolLink = computed(() => {
-    return `/root?tool_id=${props.toolId}&tool_version=${props.toolVersion}`;
+    return `/?tool_id=${props.toolId}&tool_version=${props.toolVersion}`;
 });
 
 watch(
