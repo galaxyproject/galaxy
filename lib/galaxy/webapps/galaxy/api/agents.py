@@ -232,6 +232,7 @@ class AgentAPI:
                 "Tool wrapper development",
                 "Parameter configuration",
             ],
-            "gtn_training": ["Tutorials", "Learning materials", "Training resources"],
+            "history": ["History summaries", "Analysis interpretation", "Next-step guidance"],
+            "tool_recommendation": ["Tool discovery", "Available tools", "Workflow suggestions"],
         }
         return specialties_map.get(agent_type, [])

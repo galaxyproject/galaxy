@@ -27,7 +27,6 @@ log = logging.getLogger(__name__)
 
 
 def _create_error_response(agent_name: str, error_msg: str, is_timeout: bool = False) -> AgentResponse:
-    """Create a standardized error response for agent failures."""
     return AgentResponse(
         content=error_msg,
         confidence=ConfidenceLevel.LOW,
@@ -40,18 +39,13 @@ def _create_error_response(agent_name: str, error_msg: str, is_timeout: bool = F
 class AgentPlan(BaseModel):
     """Simple plan for which agents to call."""
 
-    agents: list[str]  # List of agent names to call
-    sequential: bool = False  # True if agents should run in sequence
+    agents: list[str]
+    sequential: bool = False
     reasoning: str
 
 
 class WorkflowOrchestratorAgent(BaseGalaxyAgent):
-    """
-    Agent that orchestrates multiple specialist agents for complex tasks.
-
-    This agent analyzes complex queries and coordinates multiple agents
-    to provide comprehensive solutions.
-    """
+    """Coordinates multiple specialist agents for complex tasks."""
 
     agent_type = AgentType.ORCHESTRATOR
 
@@ -59,7 +53,6 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         super().__init__(deps)
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the orchestrator agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
@@ -68,7 +61,6 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 system_prompt=self.get_system_prompt(),
             )
         else:
-            # DeepSeek and other models without structured output
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
@@ -78,32 +70,59 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return agent
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for agent selection."""
         prompt_path = Path(__file__).parent / "prompts" / "orchestrator.md"
         return prompt_path.read_text()
 
+    def _normalize_agent_plan(self, agents: list[str]) -> list[str]:
+        """Map legacy plan outputs to supported agents and drop duplicates."""
+        normalized: list[str] = []
+        legacy_aliases = {
+            "gtn_training": AgentType.HISTORY,
+            "next_step_advisor": AgentType.HISTORY,
+        }
+        supported_agents = {
+            AgentType.ERROR_ANALYSIS,
+            AgentType.CUSTOM_TOOL,
+            AgentType.HISTORY,
+            AgentType.TOOL_RECOMMENDATION,
+        }
+
+        for agent_name in agents:
+            normalized_name = legacy_aliases.get(agent_name, agent_name)
+            if normalized_name not in supported_agents:
+                log.warning(f"Orchestrator: skipping unsupported agent '{agent_name}' from generated plan")
+                continue
+            if normalized_name not in normalized:
+                normalized.append(normalized_name)
+
+        return normalized
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """
-        Process an orchestration request and coordinate multiple agents.
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
 
-        Args:
-            query: Complex user query requiring multiple agents
-            context: Additional context for orchestration
-
-        Returns:
-            Comprehensive response from multiple coordinated agents
-        """
         try:
-            # Get agent plan from LLM
             plan = await self._get_agent_plan(query)
+            plan.agents = self._normalize_agent_plan(plan.agents)
+            if not plan.agents:
+                log.warning("Orchestrator: plan did not contain any supported agents, defaulting to history")
+                plan.agents = [AgentType.HISTORY]
+            log.info(
+                f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}"
+            )
 
-            # Execute agents
+            # Finding failed jobs must happen before analyzing them
+            if "history" in plan.agents and "error_analysis" in plan.agents:
+                if not plan.sequential:
+                    log.info("Orchestrator: Forcing sequential=true for history + error_analysis combination")
+                    plan.sequential = True
+
             if plan.sequential:
                 responses = await self._execute_sequential(plan.agents, query, context)
             else:
                 responses = await self._execute_parallel(plan.agents, query, context)
 
-            # Combine responses
             combined_content = self._combine_responses(responses, plan.reasoning)
 
             return self._build_response(
@@ -114,22 +133,14 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 agent_data={
                     "agents_used": plan.agents,
                     "execution_type": "sequential" if plan.sequential else "parallel",
-                    "reasoning": plan.reasoning,
                 },
             )
 
-        except OSError as e:
-            log.error(f"Orchestration network error: {e}")
-            return self._get_fallback_response(query, str(e))
-        except ValueError as e:
-            log.error(f"Orchestration value error: {e}")
-            return self._get_fallback_response(query, str(e))
         except Exception as e:
-            log.error(f"Unexpected error during orchestration: {e}")
+            log.error(f"Orchestration error: {e}")
             return self._get_fallback_response(query, str(e))
 
     async def _get_agent_plan(self, query: str) -> AgentPlan:
-        """Get plan for which agents to call."""
         try:
             result = await self._run_with_retry(query)
 
@@ -141,19 +152,11 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 else:
                     return result
             else:
-                # Parse simple text response for models without structured output
                 response_text = extract_result_content(result)
                 return self._parse_simple_plan(response_text)
 
-        except OSError as e:
-            log.warning(f"Agent plan generation network error, using fallback: {e}")
-            return AgentPlan(
-                agents=["error_analysis"],
-                sequential=False,
-                reasoning="Fallback to single agent due to network error",
-            )
-        except ValueError as e:
-            log.warning(f"Agent plan generation value error, using fallback: {e}")
+        except (OSError, ValueError) as e:
+            log.warning(f"Agent plan generation failed, using fallback: {e}")
             return AgentPlan(
                 agents=["error_analysis"],
                 sequential=False,
@@ -161,19 +164,15 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
             )
 
     def _parse_simple_plan(self, response_text: str) -> AgentPlan:
-        """Parse text response into AgentPlan for models without structured output."""
-        # Extract agents list
         agents_match = re.search(r"agents.*?\[(.*?)\]", response_text, re.IGNORECASE | re.DOTALL)
         if agents_match:
             agents_str = agents_match.group(1)
             agents = [a.strip().strip("\"'") for a in agents_str.split(",")]
         else:
-            agents = ["error_analysis"]  # fallback
+            agents = ["error_analysis"]
 
-        # Extract sequential flag
         sequential = "sequential=true" in response_text.lower()
 
-        # Extract reasoning
         reasoning_match = re.search(
             r"reasoning[=:]?\s*[\"']?(.*?)[\"']?$",
             response_text,
@@ -184,8 +183,8 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return AgentPlan(agents=agents, sequential=sequential, reasoning=reasoning)
 
     def _get_agent_timeout(self) -> float:
-        """Get timeout in seconds for individual agent execution."""
-        return self._get_agent_config("agent_timeout", 60.0)
+        """Default 120s to accommodate slow LLM backends."""
+        return self._get_agent_config("agent_timeout", 120.0)
 
     async def _execute_sequential(
         self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
@@ -195,16 +194,21 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         current_query = query
         timeout = self._get_agent_timeout()
 
+        log.info(f"Orchestrator: Running agents in SEQUENTIAL mode: {agents}")
         for agent_name in agents:
             try:
+                log.info(f"Orchestrator: Starting agent '{agent_name}' with query length {len(current_query)}")
                 agent = self.deps.get_agent(agent_name, self.deps)
-                # Execute with timeout protection
                 response = await asyncio.wait_for(agent.process(current_query, context or {}), timeout=timeout)
                 responses[agent_name] = response
 
-                # For sequential execution, next agent can see previous results
-                if len(responses) > 1:
-                    current_query = f"{query}\n\nPrevious analysis: {response.content}"
+                log.debug(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
+                log.debug(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
+
+                # Cap previous response to avoid unbounded query growth
+                prev_content = response.content[:2000]
+                current_query = f"{query}\n\nPrevious analysis from {agent_name}: {prev_content}"
+                log.debug(f"Orchestrator: Updated query for next agent, total length: {len(current_query)}")
 
             except asyncio.TimeoutError:
                 log.error(f"Agent {agent_name} timed out after {timeout}s")
@@ -223,12 +227,12 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
     ) -> dict[str, AgentResponse]:
         """Execute agents in parallel with timeout protection."""
+        log.info(f"Orchestrator: Running agents in PARALLEL mode: {agents}")
         timeout = self._get_agent_timeout()
 
         async def call_agent(agent_name: str):
             try:
                 agent = self.deps.get_agent(agent_name, self.deps)
-                # Execute with timeout protection
                 response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
                 return agent_name, response
             except asyncio.TimeoutError:
@@ -242,45 +246,58 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
                 log.error(f"Error executing agent {agent_name}: {e}")
                 return agent_name, _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
 
-        # Run all agents in parallel
         tasks = [call_agent(agent_name) for agent_name in agents]
         results = await asyncio.gather(*tasks)
 
         return dict(results)
 
     def _combine_responses(self, responses: dict[str, AgentResponse], reasoning: str) -> str:
-        """Combine multiple agent responses into a single coherent response."""
         if not responses:
             return "No agent responses received."
 
         if len(responses) == 1:
             return list(responses.values())[0].content
 
-        # Build combined response
-        sections = [f"## Multi-Agent Analysis\n{reasoning}\n"]
+        parts = []
+        for i, (agent_name, response) in enumerate(responses.items()):
+            content = response.content.strip()
+            if i == 0:
+                parts.append(content)
+            else:
+                transition = self._get_transition_phrase(agent_name)
+                parts.append(f"\n\n{transition}\n\n{content}")
 
-        for agent_name, response in responses.items():
-            agent_title = agent_name.replace("_", " ").title()
-            sections.append(f"### {agent_title}")
-            sections.append(response.content)
-            sections.append("")  # blank line
+        return "".join(parts)
 
-        return "\n".join(sections)
+    def _get_transition_phrase(self, agent_name: str) -> str:
+        transitions = {
+            "error_analysis": "Looking at this error more closely:",
+            "history": "Based on your history:",
+            "custom_tool": "Regarding the tool:",
+            "tool_recommendation": "For relevant Galaxy tools:",
+        }
+        return transitions.get(agent_name, "Additionally:")
 
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models without structured output."""
         return """
         You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
 
-        Available agents: error_analysis, custom_tool
+        Available agents:
+        - error_analysis: Debug job failures and errors (use when user PROVIDES error details)
+        - custom_tool: Create new Galaxy tools
+        - history: Summarize histories, describe analyses, FIND failed jobs, and suggest practical next steps
+        - tool_recommendation: Find relevant Galaxy tools already available on this server
 
         Respond in this format:
         AGENTS: [agent1, agent2]
         SEQUENTIAL: true/false
         REASONING: explanation
 
-        Example:
-        AGENTS: [error_analysis, custom_tool]
-        SEQUENTIAL: true
-        REASONING: Analyze error first, then suggest creating a tool
+        Examples:
+        - "What failed in my history?" → AGENTS: [history, error_analysis], SEQUENTIAL: true (find failed job, then analyze)
+        - "Why did the job in my BRC history fail?" → AGENTS: [history, error_analysis], SEQUENTIAL: true
+        - "What should I do next?" → AGENTS: [history], SEQUENTIAL: false
+        - "What tool should I use next for this analysis?" → AGENTS: [history, tool_recommendation], SEQUENTIAL: true
+        - "Here's my error: [pasted text]" → AGENTS: [error_analysis], SEQUENTIAL: false (user provided details)
+        - "Summarize my history" → AGENTS: [history], SEQUENTIAL: false
         """

@@ -1,5 +1,5 @@
 """
-Error analysis agent for enhanced tool error diagnosis.
+Error analysis agent for tool error diagnosis.
 """
 
 import logging
@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Literal,
     Optional,
 )
 
@@ -23,6 +22,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    ConfidenceLiteral,
     extract_result_content,
     extract_structured_output,
     GalaxyAgentDependencies,
@@ -31,13 +31,9 @@ from .base import (
 
 log = logging.getLogger(__name__)
 
-# Type alias for confidence levels - using Literal inlines the enum values
-# in the JSON schema, avoiding $defs references that vLLM can't handle
-ConfidenceLiteral = Literal["low", "medium", "high"]
-
 
 class ErrorAnalysisResult(BaseModel):
-    """Structured result from error analysis - simplified for local LLMs."""
+    """Structured result from error analysis."""
 
     error_category: str  # e.g., "tool_configuration", "input_data", "parameters"
     error_severity: str  # "low", "medium", "high", "critical"
@@ -49,17 +45,11 @@ class ErrorAnalysisResult(BaseModel):
 
 
 class ErrorAnalysisAgent(BaseGalaxyAgent):
-    """
-    Enhanced error analysis agent for diagnosing tool failures and providing solutions.
-
-    This agent specializes in analyzing Galaxy tool errors, job failures, and providing
-    step-by-step solutions with high accuracy and detailed guidance.
-    """
+    """Agent for diagnosing tool failures and providing solutions."""
 
     agent_type = AgentType.ERROR_ANALYSIS
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
-        """Create the error analysis agent with conditional structured output."""
         if self._supports_structured_output():
             agent = Agent(
                 self._get_model(),
@@ -68,7 +58,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 system_prompt=self.get_system_prompt(),
             )
         else:
-            # DeepSeek and other models without structured output
             agent = Agent(
                 self._get_model(),
                 deps_type=GalaxyAgentDependencies,
@@ -78,20 +67,10 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return agent
 
     def get_system_prompt(self) -> str:
-        """Get the system prompt for error analysis."""
         prompt_path = Path(__file__).parent / "prompts" / "error_analysis.md"
         return prompt_path.read_text()
 
     async def get_job_details(self, job_id: int) -> dict[str, Any]:
-        """
-        Get comprehensive job information for error analysis.
-
-        Args:
-            job_id: Galaxy job ID
-
-        Returns:
-            Dictionary with job details
-        """
         try:
             if not self.deps.job_manager:
                 return {"error": "Job manager not available"}
@@ -108,7 +87,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                 "tool_version": job.tool_version,
                 "state": job.state,
                 "exit_code": job.exit_code,
-                "stderr": job.stderr[:2000] if job.stderr else "",  # Limit output size
+                "stderr": job.stderr[:2000] if job.stderr else "",
                 "stdout": job.stdout[:1000] if job.stdout else "",
                 "command_line": job.command_line,
                 "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
@@ -121,116 +100,29 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def get_tool_info(self, tool_id: str) -> dict[str, Any]:
-        """Get tool metadata and documentation."""
-        if not self.deps.toolbox:
-            return {"error": "Toolbox not available"}
-
-        try:
-            tool = self.deps.toolbox.get_tool(tool_id)
-            if not tool:
-                return {"error": "Tool not found"}
-
-            return {
-                "tool_id": tool.id,
-                "name": tool.name,
-                "version": tool.version,
-                "description": tool.description or "",
-                "requirements": [str(r) for r in tool.requirements] if hasattr(tool, "requirements") else [],
-                "help_text": str(tool.raw_help)[:500] if hasattr(tool, "raw_help") and tool.raw_help else "",
-            }
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error getting tool info for {tool_id}: {e}")
-            return {"error": f"Failed to retrieve tool info: {str(e)}"}
-
-    async def search_error_patterns(self, error_text: str) -> list[dict[str, Any]]:
-        """
-        Search for similar error patterns using keyword-based heuristics.
-
-        Args:
-            error_text: Error message to search for
-
-        Returns:
-            List of matching error patterns with solutions
-        """
-        try:
-            patterns = []
-            error_lower = error_text.lower()
-
-            if "memory" in error_lower or "out of memory" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Memory exhaustion",
-                        "frequency": "common",
-                        "solutions": [
-                            "Reduce input data size",
-                            "Request more memory in job configuration",
-                            "Use tools designed for large datasets",
-                        ],
-                    }
-                )
-
-            if "permission denied" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Permission error",
-                        "frequency": "common",
-                        "solutions": [
-                            "Check file permissions",
-                            "Ensure proper data library access",
-                            "Contact administrator if system files are involved",
-                        ],
-                    }
-                )
-
-            if "command not found" in error_lower:
-                patterns.append(
-                    {
-                        "pattern": "Missing tool or dependency",
-                        "frequency": "common",
-                        "solutions": [
-                            "Tool may not be installed correctly",
-                            "Check tool dependencies",
-                            "Contact administrator about tool installation",
-                        ],
-                    }
-                )
-
-            return patterns
-
-        except (AttributeError, KeyError, TypeError) as e:
-            log.warning(f"Error searching patterns: {e}")
-            return []
-
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        """
-        Process an error analysis request.
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
 
-        Args:
-            query: User's error description or question
-            context: Additional context like job_id
-
-        Returns:
-            Structured error analysis response
-        """
         try:
-            # Enhance query with context if available
+            log.info(f"ErrorAnalysis: Received query (length={len(query)})")
+            log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
+            if "Previous analysis" in query:
+                log.info("ErrorAnalysis: Query contains previous analysis context")
+
             enhanced_query = query
             if context and context.get("job_id"):
                 job_details = await self.get_job_details(context["job_id"])
                 if "error" not in job_details:
                     enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
 
-            # Run the analysis with retry logic
             result = await self._run_with_retry(enhanced_query)
 
-            # Handle different response formats based on model capabilities
             if self._supports_structured_output():
-                # Try to extract structured output
                 analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
 
                 if analysis_result is None:
-                    # Model returned text instead of structured output
                     content = extract_result_content(result)
                     return self._build_response(
                         content=content,
@@ -257,7 +149,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                     },
                 )
             else:
-                # Handle simple text output from DeepSeek
                 response_text = extract_result_content(result)
                 parsed_result = self._parse_simple_response(response_text)
 
@@ -271,15 +162,11 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
                     agent_data={"error_category": parsed_result.get("error_category", "unknown")},
                 )
 
-        except OSError as e:
-            log.warning(f"Error analysis network error: {e}")
-            return self._get_fallback_response(query, str(e))
-        except ValueError as e:
-            log.warning(f"Error analysis value error: {e}")
+        except (OSError, ValueError) as e:
+            log.warning(f"Error analysis failed: {e}")
             return self._get_fallback_response(query, str(e))
 
     def _format_job_context(self, job_details: dict[str, Any]) -> str:
-        """Format job details for context."""
         parts = []
 
         if job_details.get("tool_id"):
@@ -294,40 +181,30 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return "\n".join(parts)
 
     def _format_analysis_response(self, analysis: ErrorAnalysisResult) -> str:
-        """Format the analysis result into user-friendly content."""
         parts = []
 
-        # Error classification
         parts.append(f"**Error Type**: {analysis.error_category.replace('_', ' ').title()}")
         parts.append(f"**Severity**: {analysis.error_severity.title()}")
 
-        # Likely cause
         parts.append(f"\n**Likely Cause**: {analysis.likely_cause}")
 
-        # Solution steps
         if analysis.solution_steps:
             parts.append("\n**Recommended Solution**:")
             for i, step in enumerate(analysis.solution_steps, 1):
                 parts.append(f"{i}. {step}")
 
-        # Alternative approaches
         if analysis.alternative_approaches:
             parts.append("\n**Alternative Approaches**:")
             for approach in analysis.alternative_approaches:
                 parts.append(f"• {approach}")
 
-        # Admin notice
         if analysis.requires_admin:
             parts.append("\n⚠️ **Note**: This issue may require administrator assistance.")
 
         return "\n".join(parts)
 
     def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
-        """Create action suggestions from analysis result.
-
-        Only creates suggestions for concrete, executable Galaxy actions.
-        General guidance (solution steps, alternatives) is in the response content.
-        """
+        """Create suggestions for concrete, executable Galaxy actions."""
         suggestions = []
 
         if analysis.requires_admin:
@@ -343,31 +220,34 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         return suggestions
 
     def _get_simple_system_prompt(self) -> str:
-        """Simple system prompt for models without structured output."""
         return """
         You are a Galaxy platform error analysis expert. Analyze the error and provide a helpful response.
 
-        CRITICAL: Never invent URLs, documentation links, or external references. Only state facts you are certain about.
+        IMPORTANT: If the query includes "Previous analysis from history:" that context ALREADY CONTAINS the error details. Use that information directly to provide a SPECIFIC solution. Do NOT ask for more details or give generic advice.
+
+        Example: If previous analysis says "AssertionError because the input file only contained 2 lines and user requested 3", respond with:
+        CAUSE: The tool was asked to select more lines (3) than exist in the input file (2)
+        SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
+        CONFIDENCE: high
+
+        CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
 
         Respond in this exact format:
-        ERROR_TYPE: [category like tool_failure, permission_denied, resource_exhausted, etc.]
+        ERROR_TYPE: [category like tool_failure, parameter_error, resource_exhausted, etc.]
         CAUSE: [brief explanation of what went wrong]
         SOLUTION: [step-by-step fix]
         CONFIDENCE: [high/medium/low]
-
-        Example:
-        ERROR_TYPE: command_not_found
-        CAUSE: Required tool or dependency is not installed
-        SOLUTION: 1. Check tool installation 2. Verify PATH settings 3. Contact admin if needed
-        CONFIDENCE: high
         """
 
+    def _strip_metadata_markers(self, text: str) -> str:
+        cleaned = text
+        for marker in ["ERROR_TYPE:", "CAUSE:", "SOLUTION:", "CONFIDENCE:"]:
+            cleaned = re.sub(rf"{re.escape(marker)}[^\n]*\n?", "", cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
     def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
-        """Parse simple text response into structured format."""
-        # Normalize text for consistent parsing
         normalized_text = normalize_llm_text(response_text)
 
-        # Extract structured information from text
         error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
         cause = re.search(r"CAUSE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
         solution = re.search(
@@ -377,7 +257,6 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         )
         confidence = re.search(r"CONFIDENCE:\s*(\w+)", normalized_text, re.IGNORECASE)
 
-        # Build content
         content_parts = []
         if cause and cause.group(1).strip():
             content_parts.append(f"**Likely cause:** {cause.group(1).strip()}")
@@ -386,7 +265,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             content_parts.append(f"**Solution:**\n{solution.group(1).strip()}")
 
         if not content_parts:
-            content_parts = [normalized_text]  # Fallback to full response
+            content_parts = [self._strip_metadata_markers(response_text)]
 
         conf_str = confidence.group(1).lower() if confidence else "medium"
         confidence_level = ConfidenceLevel(conf_str)
@@ -399,5 +278,4 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         }
 
     def _get_fallback_content(self) -> str:
-        """Get fallback content for error analysis failures."""
         return "Unable to complete error analysis at this time."

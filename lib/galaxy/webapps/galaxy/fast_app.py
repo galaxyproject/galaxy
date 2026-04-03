@@ -1,3 +1,5 @@
+import logging
+from contextlib import asynccontextmanager
 from typing import (
     Any,
     TYPE_CHECKING,
@@ -183,7 +185,7 @@ def include_legacy_openapi(app, gx_app):
     return app.openapi_schema
 
 
-def get_fastapi_instance(root_path="") -> FastAPI:
+def get_fastapi_instance(root_path="", lifespan=None) -> FastAPI:
     return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
@@ -191,6 +193,7 @@ def get_fastapi_instance(root_path="") -> FastAPI:
         openapi_tags=api_tags_metadata,
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
         root_path=root_path,
+        lifespan=lifespan,
     )
 
 
@@ -239,9 +242,56 @@ def include_tus(app: FastAPI, gx_app):
     app.include_router(job_files_tus_router)
 
 
+log = logging.getLogger(__name__)
+
+
+def get_mcp_lifespan(gx_app):
+    """Get MCP lifespan if enabled, or (None, None)."""
+    if not gx_app.config.enable_mcp_server:
+        return None, None
+
+    try:
+        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+
+        mcp_app = get_mcp_app(gx_app)
+        return mcp_app, mcp_app.lifespan
+    except ImportError:
+        log.info("MCP server dependencies not installed (fastmcp), skipping")
+        return None, None
+    except Exception:
+        log.exception("Failed to initialize MCP server")
+        return None, None
+
+
+def include_mcp(app: FastAPI, gx_app, mcp_app):
+    """Mount the MCP server if it was initialized."""
+    if mcp_app is None:
+        return
+
+    try:
+        mcp_path = gx_app.config.mcp_server_path
+        app.mount(mcp_path, mcp_app)
+        log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
+    except Exception as e:
+        log.error(f"Failed to mount MCP server: {e}")
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
-    app = get_fastapi_instance(root_path=root_path)
+
+    mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
+
+    if mcp_lifespan:
+
+        @asynccontextmanager
+        async def combined_lifespan(app: FastAPI):
+            async with mcp_lifespan(app):
+                yield
+
+        app = get_fastapi_instance(root_path=root_path, lifespan=combined_lifespan)
+    else:
+        app = get_fastapi_instance(root_path=root_path)
+
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     app.state.limiter = limiter
@@ -256,6 +306,7 @@ def initialize_fast_app(gx_wsgi_webapp, gx_app):
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
     include_tus(app, gx_app)
     app.state.route_name_index = build_route_name_index(app)
+    include_mcp(app, gx_app, mcp_app)
     app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
