@@ -1,6 +1,8 @@
 import subprocess
 
 from galaxy.job_metrics.instrumenters.core import (
+    CONTAINER_ID,
+    CONTAINER_TYPE,
     CorePlugin,
     GALAXY_MEMORY_MB_KEY,
     GALAXY_SLOTS_KEY,
@@ -15,6 +17,15 @@ def test_core_instrumentation(tmpdir):
     properties = core_plugin.job_properties(1, tmpdir)
     assert properties[GALAXY_SLOTS_KEY] == 4
     assert properties[GALAXY_MEMORY_MB_KEY] == 1024
+
+
+def test_corrupted_container_file_is_ignored(tmpdir):
+    """Verify graceful handling when Pulsar writes an HTTP error page instead of valid JSON (galaxyproject/galaxy#22192)."""
+    core_plugin = CorePlugin()
+    tmpdir.join("__instrument_core_container").write("<html><body><h1>502 Bad Gateway</h1></body></html>")
+    properties = core_plugin.job_properties(1, tmpdir)
+    assert CONTAINER_ID not in properties
+    assert CONTAINER_TYPE not in properties
 
 
 def _run_plugin(plugin, work_dir, env=None):
