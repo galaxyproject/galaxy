@@ -2,7 +2,7 @@
 import { faReadme } from "@fortawesome/free-brands-svg-icons";
 import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormInput, BModal } from "bootstrap-vue";
+import { BAlert, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -37,6 +37,7 @@ import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
@@ -636,17 +637,16 @@ onBeforeMount(() => {
             </div>
         </div>
 
-        <BModal
-            v-model="showExportWizard"
+        <GModal
+            :show.sync="showExportWizard"
             title="Configure Export on Completion"
-            size="lg"
-            hide-footer
-            @hidden="onExportWizardCancel">
+            size="medium"
+            @close="onExportWizardCancel">
             <ExportOnCompleteWizard
                 :initial-config="exportOnCompleteConfig || undefined"
                 @configured="onExportConfigured"
                 @cancel="onExportWizardCancel" />
-        </BModal>
+        </GModal>
     </div>
 </template>
 

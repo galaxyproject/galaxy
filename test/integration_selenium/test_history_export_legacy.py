@@ -37,7 +37,7 @@ class TestLegacyHistoryExport(SeleniumIntegrationTestCase):
         history_export.show_job_link.wait_for_and_click()
         history_export.job_table.wait_for_present()
         history_export.job_table_ok.wait_for_and_click()
-        history_export.job_table.wait_for_absent()
+        history_export.job_table.wait_for_absent_or_hidden()
 
         self.click_history_option_export_to_file()
 

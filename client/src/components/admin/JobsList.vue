@@ -39,7 +39,65 @@
                     </b-form-group>
                 </b-form>
                 <b-form-group>
-                    <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
+                    <FilterMenu
+                        id="job-search"
+                        name="jobs"
+                        placeholder="search jobs"
+                        :filter-class="filterClass"
+                        :filter-text.sync="filter"
+                        has-help
+                        :loading="busy"
+                        :show-advanced.sync="showAdvanced">
+                        <template v-slot:menu-help-text>
+                            <div>
+                                <p>This textbox box can be used to filter the jobs displayed.</p>
+
+                                <p>
+                                    Text entered here will be searched against job user, tool ID, job runner, and
+                                    handler. Additionally, advanced filtering tags can be used to refine the search more
+                                    precisely. Tags are of the form
+                                    <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
+                                    <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to search just for
+                                    jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
+                                    Notice by default the search is not case-sensitive.
+                                </p>
+
+                                <p>
+                                    If the quoted version of tag is used, the search is case sensitive and only full
+                                    matches will be returned. So <code>tool:'cat1'</code> would show only jobs from the
+                                    <code>cat1</code> tool exactly.
+                                </p>
+
+                                <p>The available tags are:</p>
+                                <dl>
+                                    <dt><code>user</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed by matching user(s).
+                                        You may also just click on a user in the list of jobs to filter on that exact
+                                        user using this directly.
+                                    </dd>
+                                    <dt><code>handler</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed on matching handler(s).
+                                        You may also just click on a handler in the list of jobs to filter on that exact
+                                        user using this directly.
+                                    </dd>
+                                    <dt><code>runner</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed on matching job
+                                        runner(s). You may also just click on a runner in the list of jobs to filter on
+                                        that exact user using this directly.
+                                    </dd>
+                                    <dt><code>tool</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs from the matching tool(s). You
+                                        may also just click on a tool in the list of jobs to filter on that exact user
+                                        using this directly.
+                                    </dd>
+                                </dl>
+                            </div>
+                        </template>
+                    </FilterMenu>
                 </b-form-group>
             </b-col>
         </b-row>
@@ -70,7 +128,11 @@
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
-            :busy="busy">
+            :busy="busy"
+            @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+            @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+            @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+            @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
                 <b-form-checkbox
                     v-model="allSelected"
@@ -106,18 +168,20 @@
 
 <script>
 import axios from "axios";
+import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
 import { NON_TERMINAL_STATES } from "@/api/jobs";
-import filtersMixin from "@/components/Indices/filtersMixin";
 import { jobsProvider } from "@/components/providers/JobProvider";
 import { getAppRoot } from "@/onload/loadConfig";
+import Filtering, { contains } from "@/utils/filtering";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { commonJobFields } from "./JobFields";
 
 import JobLock from "./JobLock.vue";
 import JobsTable from "@/components/admin/JobsTable.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 
 function cancelJob(jobId, message) {
@@ -125,35 +189,34 @@ function cancelJob(jobId, message) {
     return axios.delete(url, { data: { message: message } });
 }
 
-const helpHtml = `<div>
-<p>This textbox box can be used to filter the jobs displayed.
-
-<p>Text entered here will be searched against job user, tool ID, job runner, and handler. Additionally,
-advanced filtering tags can be used to refine the search more precisely. Tags are of the form
-<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
-For instance to search just for jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
-Notice by default the search is not case-sensitive.
-
-<p>If the quoted version of tag is used, the search is case sensitive and only full matches will be
-returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</code> tool exactly.</p>
-
-<p>The available tags are:
-<dl>
-    <dt><code>user</code></dt>
-    <dd>This filters the job index to contain only jobs executed by matching user(s). You may also just click on a user in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>handler</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching handler(s).  You may also just click on a handler in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>runner</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching job runner(s).  You may also just click on a runner in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>tool</code></dt>
-    <dd>This filters the job index to contain only jobs from the matching tool(s).  You may also just click on a tool in the list of jobs to filter on that exact user using this directly.</dd>
-</dl>
-</div>
-`;
-
 export default {
-    components: { JobLock, JobsTable, Heading },
-    mixins: [filtersMixin],
+    components: { FilterMenu, JobLock, JobsTable, Heading },
+    setup() {
+        const filter = ref("");
+        const showAdvanced = ref(false);
+
+        const filterClass = new Filtering(
+            {
+                user: { placeholder: "user email", type: String, handler: contains("user"), menuItem: true },
+                handler: { placeholder: "handler", type: String, handler: contains("handler"), menuItem: true },
+                runner: { placeholder: "job runner", type: String, handler: contains("runner"), menuItem: true },
+                tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
+            },
+            undefined,
+            false,
+        );
+
+        function appendTagFilter(filterName, filterVal) {
+            filter.value = filterClass.setFilterValue(filter.value, filterName, `'${filterVal}'`);
+        }
+
+        return {
+            appendTagFilter,
+            filter,
+            filterClass,
+            showAdvanced,
+        };
+    },
     data() {
         return {
             jobs: [],
@@ -178,7 +241,6 @@ export default {
             cutoffMin: 5,
             showAllRunning: false,
             titleSearch: `search jobs`,
-            helpHtml: helpHtml,
             sendNotification: false,
         };
     },

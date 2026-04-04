@@ -66,7 +66,7 @@ steps:
         self.components.workflows.edit_button.wait_for_and_click()
         self.assert_modal_has_text("Using version '0.1.1' instead of version '0.0.0'")
         self.screenshot("workflow_editor_tool_repository_upgrade")
-        self.components.workflow_editor.modal_button_continue.wait_for_and_click()
+        self.components.workflow_editor.state_upgrade_modal_close.wait_for_and_click()
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert (

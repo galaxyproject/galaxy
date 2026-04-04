@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BModal, BPopover } from "bootstrap-vue";
+import { BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
 import { computed, ref, set } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
+import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 import FilterMenuDropdown from "@/components/Common/FilterMenuDropdown.vue";
@@ -341,10 +343,15 @@ function updateFilterText(newFilterText: string) {
                     <FontAwesomeIcon :icon="faQuestion" />
                 </GButton>
 
-                <BModal v-if="props.hasHelp" v-model="showHelp" :title="`${props.name} Advanced Search Help`" ok-only>
+                <GModal
+                    v-if="props.hasHelp"
+                    fixed-height
+                    size="small"
+                    :show.sync="showHelp"
+                    :title="`${capitalizeFirstLetter(props.name)} Advanced Search Help`">
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>
-                </BModal>
+                </GModal>
             </div>
             <hr v-if="props.showAdvanced" class="w-100" />
         </component>

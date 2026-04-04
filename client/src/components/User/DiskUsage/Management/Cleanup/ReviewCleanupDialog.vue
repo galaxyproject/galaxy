@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BModal, BPagination } from "bootstrap-vue";
+import { BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
@@ -8,13 +8,15 @@ import { bytesToString } from "@/utils/utils";
 
 import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GTable from "@/components/Common/GTable.vue";
+import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 interface ReviewCleanupDialogProps {
     operation?: CleanupOperation;
     totalItems?: number;
-    modalStatic?: boolean;
 }
 
 const props = withDefaults(defineProps<ReviewCleanupDialogProps>(), {
@@ -66,6 +68,7 @@ const items = ref<CleanableItem[]>([]);
 const selectedItems = ref<CleanableItem[]>([]);
 const confirmChecked = ref(false);
 const isBusy = ref(false);
+const openConfirmationModal = ref(false);
 
 const selectedItemCount = computed(() => {
     return selectedItems.value.length;
@@ -84,19 +87,11 @@ const title = computed(() => {
 });
 
 const confirmationTitle = computed(() => {
-    return `Permanently delete ${selectedItemCount.value} items?`;
-});
-
-const deleteButtonVariant = computed(() => {
-    return hasItemsSelected.value ? "danger" : "";
+    return `Permanently delete ${selectedItemCount.value} item${selectedItemCount.value > 1 ? "s" : ""}?`;
 });
 
 const deleteItemsText = computed(() => {
-    return hasItemsSelected.value ? `${selectedItemCount.value} items` : "";
-});
-
-const confirmButtonVariant = computed(() => {
-    return confirmChecked.value ? "danger" : "";
+    return hasItemsSelected.value ? `${selectedItemCount.value} item${selectedItemCount.value > 1 ? "s" : ""}` : "";
 });
 
 async function loadItems() {
@@ -142,9 +137,9 @@ function hideModal() {
     showDialog.value = false;
 }
 
-function onShowModal() {
+async function onShowModal() {
     resetModal();
-    loadItems();
+    await loadItems();
 }
 
 function resetModal() {
@@ -220,6 +215,18 @@ watch([currentPage, sortBy, sortDesc], async () => {
     await loadItems();
 });
 
+watch(showDialog, (newVal) => {
+    if (newVal) {
+        onShowModal();
+    }
+});
+
+watch(openConfirmationModal, (newVal) => {
+    if (newVal) {
+        resetConfirmationModal();
+    }
+});
+
 watch(selectedItems, (newVal) => {
     if (newVal.length === 0) {
         indeterminate.value = false;
@@ -240,10 +247,12 @@ defineExpose({
 </script>
 
 <template>
-    <BModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
-        <template v-slot:modal-title>
-            {{ title }}
-            <span class="text-primary h3">{{ totalRows }} items</span>
+    <GModal footer :show.sync="showDialog" size="medium">
+        <template v-slot:header>
+            <Heading class="w-100 d-flex justify-content-between mb-0" size="md">
+                <div>{{ title }}</div>
+                <div class="text-primary">{{ totalRows }} {{ totalRows === 1 ? "item" : "items" }}</div>
+            </Heading>
         </template>
         <div>
             {{ captionText }}
@@ -282,37 +291,40 @@ defineExpose({
             </template>
         </GTable>
 
-        <template v-slot:modal-footer>
-            <BPagination
-                v-if="hasPages"
-                v-model="currentPage"
-                :total-rows="totalRows"
-                :per-page="MAXIMUM_ITEMS_PER_PAGE" />
+        <template v-slot:footer>
+            <div
+                class="d-flex align-items-center"
+                :class="hasPages ? 'justify-content-between' : 'justify-content-end'">
+                <BPagination
+                    v-if="hasPages"
+                    v-model="currentPage"
+                    class="mb-0"
+                    :total-rows="totalRows"
+                    :per-page="MAXIMUM_ITEMS_PER_PAGE" />
 
-            <BButton
-                v-b-modal.confirmation-modal
-                :disabled="!hasItemsSelected"
-                :variant="deleteButtonVariant"
-                class="mx-2"
-                data-test-id="delete-button">
-                {{ permanentlyDeleteText }} {{ deleteItemsText }}
-            </BButton>
+                <GButton
+                    :disabled="!hasItemsSelected"
+                    color="red"
+                    class="mx-2"
+                    data-test-id="delete-button"
+                    @click="openConfirmationModal = true">
+                    {{ permanentlyDeleteText }} {{ deleteItemsText }}
+                </GButton>
+            </div>
         </template>
 
-        <BModal
+        <GModal
             id="confirmation-modal"
+            confirm
+            :show.sync="openConfirmationModal"
             :title="confirmationTitle"
-            title-tag="h2"
-            :ok-title="permanentlyDeleteText"
-            :ok-variant="confirmButtonVariant"
+            :ok-text="permanentlyDeleteText"
+            ok-color="red"
             :ok-disabled="!confirmChecked"
-            static
-            centered
-            @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems">
             <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
             </BFormCheckbox>
-        </BModal>
-    </BModal>
+        </GModal>
+    </GModal>
 </template>

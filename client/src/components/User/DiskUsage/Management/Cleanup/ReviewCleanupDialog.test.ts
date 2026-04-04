@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import { type CleanableItem, CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
 import ReviewCleanupDialog from "./ReviewCleanupDialog.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
 
@@ -13,7 +14,6 @@ const REVIEW_TABLE = '[data-test-id="review-table"]';
 const DELETE_BUTTON = '[data-test-id="delete-button"]';
 const SELECT_ALL_CHECKBOX = '[data-test-id="select-all-checkbox"]';
 const AGREEMENT_CHECKBOX = '[data-test-id="agreement-checkbox"]';
-const CONFIRMATION_MODAL = "#confirmation-modal";
 
 const EXPECTED_ITEMS: CleanableItem[] = [
     { id: "1", name: "Item 1", size: 512, type: "dataset", update_time: new Date().toISOString() },
@@ -71,35 +71,31 @@ describe("ReviewCleanupDialog.vue", () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         const deleteButton = wrapper.find(DELETE_BUTTON);
 
-        expect(deleteButton.attributes().disabled).toBeTruthy();
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).selectedItems.length).toBe(0);
+        expect(deleteButton.classes()).toContain("g-disabled");
         await setAllItemsChecked(wrapper);
-        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
-        expect((wrapper.vm as any).selectedItems.length).toBe(EXPECTED_TOTAL_ITEMS);
-        expect(deleteButton.attributes().disabled).toBeFalsy();
+        expect(deleteButton.classes()).not.toContain("g-disabled");
     });
 
     it("should show a confirmation message when deleting items", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
-        const confirmationModal = wrapper.find(CONFIRMATION_MODAL);
 
-        expect(confirmationModal.attributes("aria-hidden")).toBeTruthy();
+        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        expect(confirmationModal.props("show")).toBeFalsy();
         await wrapper.find(DELETE_BUTTON).trigger("click");
-        expect(confirmationModal.attributes("aria-hidden")).toBeFalsy();
+        expect(confirmationModal.props("show")).toBeTruthy();
     });
 
     it("should disable the confirmation button until the agreement has been accepted", async () => {
         const wrapper = await mountReviewCleanupDialogWith(FAKE_OPERATION);
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
-        const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons.wrappers).hasText("Permanently delete").at(0)!;
 
-        expect(permanentlyDeleteBtn.attributes().disabled).toBeTruthy();
+        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
+        expect(confirmationModal.props("okDisabled")).toBe(true);
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
-        expect(permanentlyDeleteBtn.attributes().disabled).toBeFalsy();
+        await flushPromises();
+        expect(confirmationModal.props("okDisabled")).toBe(false);
     });
 
     it("should emit the confirmation event when the agreement and deletion has been confirmed", async () => {
@@ -107,22 +103,12 @@ describe("ReviewCleanupDialog.vue", () => {
         await setAllItemsChecked(wrapper);
         await wrapper.find(DELETE_BUTTON).trigger("click");
         await wrapper.find(AGREEMENT_CHECKBOX).setChecked();
-        const allButtons = wrapper.findAll(".btn");
-        const permanentlyDeleteBtn = withNameFilter(allButtons.wrappers).hasText("Permanently delete").at(0)!;
 
+        const confirmationModal = wrapper.findAllComponents(GModal).at(1);
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeFalsy();
-        await permanentlyDeleteBtn.trigger("click");
+        confirmationModal.vm.$emit("ok");
+        await flushPromises();
         expect(wrapper.emitted().onConfirmCleanupSelectedItems).toBeTruthy();
         expect(wrapper.emitted().onConfirmCleanupSelectedItems?.length).toBe(1);
     });
-
-    // From: https://github.com/vuejs/vue-test-utils/issues/960#issuecomment-626327505
-    function withNameFilter(wrapperArray: Wrapper<any>[]) {
-        return {
-            childSelectorHasText: (selector: string, str: string): Wrapper<any>[] =>
-                wrapperArray.filter((i) => i.find(selector).text().match(str)),
-
-            hasText: (str: string): Wrapper<any>[] => wrapperArray.filter((i) => i.text().match(str)),
-        };
-    }
 });

@@ -1,19 +1,13 @@
 <script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import {
-    BButton,
-    BFormDatalist,
-    BFormDatepicker,
-    BFormInput,
-    BInputGroup,
-    BInputGroupAppend,
-    BModal,
-} from "bootstrap-vue";
-import { capitalize } from "lodash";
+import { BButton, BFormDatalist, BFormDatepicker, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { ValidFilter } from "@/utils/filtering";
+import { capitalizeFirstLetter } from "@/utils/strings";
+
+import GModal from "../BaseComponents/GModal.vue";
 
 type FilterType = string | boolean | undefined;
 
@@ -41,7 +35,7 @@ const propValue = computed(() => props.filters[props.name]);
 const localValue = ref(propValue.value);
 
 const helpToggle = ref(false);
-const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
+const modalTitle = `${capitalizeFirstLetter(props.filter.placeholder || "")} Help`;
 
 function onHelp(_: string, value: string) {
     helpToggle.value = false;
@@ -109,7 +103,7 @@ watch(
 
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <BModal v-model="helpToggle" :title="modalTitle" ok-only>
+            <GModal :show.sync="helpToggle" :title="modalTitle" size="small" fixed-height>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"
@@ -117,7 +111,7 @@ watch(
                 <div v-else-if="typeof props.filter.helpInfo == 'string'">
                     <p>{{ props.filter.helpInfo }}</p>
                 </div>
-            </BModal>
+            </GModal>
         </span>
     </div>
 </template>

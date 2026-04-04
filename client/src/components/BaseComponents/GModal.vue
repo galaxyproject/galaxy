@@ -8,7 +8,12 @@ import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 
-import { type ComponentSize, type ComponentSizeClassList, prefix } from "@/components/BaseComponents/componentVariants";
+import {
+    type ComponentColor,
+    type ComponentSize,
+    type ComponentSizeClassList,
+    prefix,
+} from "@/components/BaseComponents/componentVariants";
 import { useUid } from "@/composables/utils/uid";
 import { match } from "@/utils/utils";
 
@@ -36,6 +41,8 @@ const props = withDefaults(
         title?: string;
         /** Fixes the height of the modal to a pre-set height based on `size` */
         fixedHeight?: boolean;
+        /** Color of the Ok button */
+        okColor?: ComponentColor;
         /** Disables the Ok button */
         okDisabled?: boolean;
         /** Title to show when the Ok button is disabled */
@@ -56,6 +63,7 @@ const props = withDefaults(
         footer: false,
         title: undefined,
         fixedHeight: false,
+        okColor: "blue",
         okDisabled: false,
         okDisabledTitle: undefined,
         closeOnOk: true,
@@ -213,7 +221,7 @@ defineExpose({ showModal, hideModal });
                     <GButton
                         :disabled="okDisabled"
                         :disabled-title="okDisabledTitle"
-                        color="blue"
+                        :color="props.okColor"
                         @click="hideModal(true)">
                         {{ props.okText ?? "Ok" }}
                     </GButton>

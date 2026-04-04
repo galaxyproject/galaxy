@@ -1952,13 +1952,14 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.workflows.rename_input.wait_for_visible().clear()
         self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
         self.components.workflows.rename_input.wait_for_and_send_keys(Keys.ENTER)
+        self.wait_for_selector_absent_or_hidden(".g-modal")
 
     def workflow_delete_by_name(self, name):
         self.workflow_index_search_for(name)
         self.components.workflows.workflow_drop_down.wait_for_and_click()
         self.components.workflows.delete_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components._.confirm_button(name="Delete").wait_for_and_click()
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
 
     def workflow_bookmark_by_name(self, name):
         self.workflow_index_search_for(name)

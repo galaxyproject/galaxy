@@ -1,7 +1,7 @@
 <script setup>
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BModal, BPopover } from "bootstrap-vue";
+import { BAlert, BPopover } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import ToolCredentials from "./ToolCredentials.vue";
 import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
@@ -188,21 +189,16 @@ onBeforeMount(() => {
                 v-if="allowObjectStoreSelection"
                 :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                 :user="currentUser" />
-            <BModal
+            <GModal
                 id="modal-select-preferred-object-store"
-                v-model="showPreferredObjectStoreModal"
+                :show.sync="showPreferredObjectStoreModal"
                 :title="storageLocationModalTitle"
-                scrollable
-                centered
-                modal-class="tool-preferred-object-store-modal"
-                title-tag="h3"
-                size="lg"
-                ok-only
-                ok-title="Close">
+                size="small">
                 <ToolSelectPreferredObjectStore
+                    v-if="showPreferredObjectStoreModal"
                     :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                     @updated="onUpdatePreferredObjectStoreId" />
-            </BModal>
+            </GModal>
             <slot name="buttons" />
         </template>
 

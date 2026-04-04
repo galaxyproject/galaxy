@@ -1,6 +1,7 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
 import { shallowMount, type Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -15,6 +16,7 @@ import { getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -44,6 +46,10 @@ type IndexComponent = Vue & {
     datatypes: Record<string, string[]> | null;
     onDownload: () => void;
     onChange: () => void;
+    saveAsName: string | null;
+    saveAsAnnotation: string | null;
+    services: { createWorkflow: ReturnType<typeof vi.fn> } | null;
+    routeToWorkflow: () => Promise<void>;
 };
 
 describe("Index", () => {
@@ -153,6 +159,50 @@ describe("Index", () => {
         wrapper.vm.name = "new name";
         await wrapper.vm.$nextTick();
         expect(getHasChanges()).toBeTruthy();
+    });
+
+    it("save as calls createWorkflow with the provided name and annotation", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.saveAsAnnotation = "A description";
+        vm.services = {
+            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 }),
+        };
+        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
+
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        expect(vm.services.createWorkflow).toHaveBeenCalledWith(
+            expect.objectContaining({ name: "My New Workflow", annotation: "A description" }),
+        );
+    });
+
+    it("save-as field values are intact when doSaveAs runs (not cleared by close event)", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.services = {
+            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 }),
+        };
+        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
+
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
+        expect(vm.services.createWorkflow).toHaveBeenCalledWith(expect.objectContaining({ name: "My New Workflow" }));
+    });
+
+    it("resets save-as fields when the modal is cancelled", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.saveAsAnnotation = "A description";
+
+        wrapper.findComponent(GModal).vm.$emit("cancel");
+        await wrapper.vm.$nextTick();
+
+        expect(vm.saveAsName).toBeNull();
+        expect(vm.saveAsAnnotation).toBeNull();
     });
 
     it("prevents navigation only if hasChanges", async () => {

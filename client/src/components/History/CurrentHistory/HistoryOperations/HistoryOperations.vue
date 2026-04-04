@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { HistorySummaryExtended } from "@/api";
 import localize from "@/utils/localization";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
 
 interface Props {
@@ -32,34 +34,36 @@ function onUpdateOperationStatus(updateTime: number) {
 <template>
     <section>
         <nav v-if="editable" class="content-operations d-flex justify-content-between bg-secondary">
-            <BButtonGroup>
-                <BButton
-                    v-g-tooltip.hover
+            <GButtonGroup>
+                <GButton
+                    tooltip
                     :title="localize('Select Items')"
                     class="show-history-content-selectors-btn rounded-0"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    color="blue"
+                    transparent
                     :disabled="!hasMatches"
                     :pressed="showSelection"
                     @click="toggleSelection">
                     <FontAwesomeIcon :icon="faCheckSquare" fixed-width />
-                </BButton>
+                </GButton>
 
-                <BButton
-                    v-g-tooltip.hover
+                <GButton
+                    tooltip
                     :title="localize('Collapse Items')"
                     class="rounded-0"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    color="blue"
+                    transparent
                     :disabled="!expandedCount"
                     @click="$emit('collapse-all')">
                     <FontAwesomeIcon :icon="faCompress" fixed-width />
-                </BButton>
-            </BButtonGroup>
+                </GButton>
+            </GButtonGroup>
 
-            <BButtonGroup v-show="showSelection">
+            <GButtonGroup v-show="showSelection">
                 <slot name="selection-operations" />
-            </BButtonGroup>
+            </GButtonGroup>
 
             <DefaultOperations
                 v-if="!isMultiViewItem"
@@ -68,16 +72,17 @@ function onUpdateOperationStatus(updateTime: number) {
                 @update:operation-running="onUpdateOperationStatus" />
         </nav>
         <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
-            <BButton
-                v-g-tooltip.hover
+            <GButton
+                tooltip
                 :title="localize('Collapse Items')"
                 class="rounded-0"
-                size="sm"
-                variant="link"
+                size="small"
+                color="blue"
+                transparent
                 :disabled="!expandedCount"
                 @click="$emit('collapse-all')">
                 <FontAwesomeIcon :icon="faCompress" fixed-width />
-            </BButton>
+            </GButton>
         </nav>
     </section>
 </template>

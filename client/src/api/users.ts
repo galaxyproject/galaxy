@@ -37,3 +37,30 @@ export async function fetchCurrentUserQuotaSourceUsage(quotaSourceLabel?: string
 
     return toQuotaUsage(data);
 }
+
+// TODO: Can we also use user: "current" here?
+export async function fetchBeaconSettings(userId: string) {
+    const { data, error } = await GalaxyApi().GET("/api/users/{user_id}/beacon", {
+        params: { path: { user_id: userId } },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
+}
+
+// TODO: Can we also use user: "current" here?
+export async function toggleBeaconIntegration(userId: string, enabled: boolean) {
+    const { data, error } = await GalaxyApi().POST("/api/users/{user_id}/beacon", {
+        params: { path: { user_id: userId } },
+        body: { enabled },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
+}

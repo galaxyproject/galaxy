@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormGroup, BFormInput, BModal } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import { useUserStore } from "@/stores/userStore";
 import { userLogoutClient } from "@/utils/logout";
+
+import GForm from "../BaseComponents/Form/GForm.vue";
+import GFormInput from "../BaseComponents/Form/GFormInput.vue";
+import GFormLabel from "../BaseComponents/Form/GFormLabel.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import LoadingSpan from "../LoadingSpan.vue";
 
 const emit = defineEmits<{
     (e: "reset"): void;
@@ -17,6 +23,7 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 
 const touched = ref(false);
+const deleting = ref(false);
 const userInput = ref("");
 const deleteError = ref("");
 
@@ -30,11 +37,13 @@ const showDeleteError = computed(() => {
 
 function resetModal() {
     userInput.value = "";
+    deleting.value = false;
     emit("reset");
 }
 
 async function handleSubmit() {
     if (nameState.value) {
+        deleting.value = true;
         const { error } = await GalaxyApi().DELETE("/api/users/{user_id}", {
             params: {
                 path: {
@@ -45,10 +54,12 @@ async function handleSubmit() {
 
         if (error) {
             if (error.err_code === 403) {
-                ("User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.");
+                deleteError.value =
+                    "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
             } else {
                 deleteError.value = "An error occurred while deleting the user.";
             }
+            deleting.value = false;
         } else {
             userLogoutClient();
         }
@@ -57,18 +68,17 @@ async function handleSubmit() {
 </script>
 
 <template>
-    <BModal
+    <GModal
         id="modal-user-deletion"
-        centered
         title="Account Deletion"
-        title-tag="h2"
-        visible
-        static
-        ok-variant="danger"
-        ok-title="Delete Account Permanently"
-        cancel-variant="outline-primary"
-        :ok-disabled="!nameState"
-        @hidden="resetModal"
+        show
+        ok-color="red"
+        ok-text="Delete Account Permanently"
+        :ok-disabled="!nameState || deleting"
+        ok-disabled-title="Please enter the correct email to enable account deletion"
+        confirm
+        :close-on-ok="false"
+        @close="resetModal"
         @ok="handleSubmit">
         <BAlert variant="danger" :show="showDeleteError">{{ deleteError }}</BAlert>
         <BAlert variant="warning" show>
@@ -79,11 +89,23 @@ async function handleSubmit() {
             </b>
         </BAlert>
 
-        <BFormGroup
-            :state="inputState"
-            label="Enter your email address to confirm deletion"
-            invalid-feedback="Email does not match the current user email.">
-            <BFormInput id="name-input" v-model="userInput" :state="inputState" required @blur="touched = true" />
-        </BFormGroup>
-    </BModal>
+        <BAlert v-if="deleting" variant="info" show>
+            <LoadingSpan message="Deleting user account" />
+        </BAlert>
+        <GForm v-else @submit.native.prevent>
+            <GFormLabel
+                title="Enter your email address to confirm deletion"
+                invalid-feedback="Email does not match the current user email."
+                :state="inputState">
+                <GFormInput
+                    id="name-input"
+                    v-model="userInput"
+                    class="w-100"
+                    :state="inputState"
+                    type="email"
+                    required
+                    @blur="touched = true" />
+            </GFormLabel>
+        </GForm>
+    </GModal>
 </template>

@@ -19,7 +19,6 @@
  */
 
 import { faExclamationTriangle, faKey, faPencilAlt, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
-import { BModal } from "bootstrap-vue";
 import { faCheck } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
@@ -37,6 +36,7 @@ import {
 } from "@/stores/userToolsServiceCredentialsStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import GCard from "@/components/Common/GCard.vue";
 import CredentialsGroupForm from "@/components/User/Credentials/CredentialsGroupForm.vue";
 
@@ -329,25 +329,16 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
             :update-time="group.update_time">
         </GCard>
 
-        <BModal
-            v-model="showModal"
-            visible
-            centered
-            scrollable
-            no-close-on-backdrop
-            no-close-on-esc
-            button-size="md"
-            size="lg"
-            body-class="edit-credentials-body"
+        <GModal
+            :show.sync="showModal"
+            confirm
             :title="`Edit Credentials Group - ${editData?.groupData.groupPayload.name}`"
-            :ok-title="saveButtonText"
-            cancel-title="Close"
-            cancel-variant="outline-danger"
+            :ok-text="saveButtonText"
             @ok="onSaveChanges">
             <CredentialsGroupForm
                 v-if="editData"
                 :group-data="editData.groupData"
                 :service-definition="editData.serviceDefinition" />
-        </BModal>
+        </GModal>
     </div>
 </template>

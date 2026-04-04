@@ -114,7 +114,8 @@ function onFormatChange(format: string) {
                     resource-name="workflow results"
                     :show-file-name="true"
                     @update:directory="directory = $event"
-                    @update:file-name="fileName = $event" />
+                    @update:file-name="fileName = $event"
+                    @navigated="onCancel" />
             </div>
 
             <div v-if="wizard.isCurrent('configure-options')">

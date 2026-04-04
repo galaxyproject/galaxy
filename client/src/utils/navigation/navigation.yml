@@ -77,7 +77,7 @@ preferences:
     object_store: '#select-preferred-object-store'
     delete_account: '#g-card-delete-account'
     delete_account_input: '#name-input'
-    delete_account_ok_btn: '.modal-footer .btn-danger'
+    delete_account_ok_btn: '.g-modal-confirm-buttons button.g-red'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
     preferred_storage: '#g-card-manage-preferred-object-store'
@@ -90,7 +90,7 @@ preferences:
       option_cards: '[id^="g-card-"][data-source-option-card-id]'
       option_card: '#g-card-${object_store_id}'
       option_card_select: '#g-card-action-select-${object_store_id}'
-      confirm_button: '#modal-select-preferred-object-store .btn-primary'
+      confirm_button: '#modal-select-preferred-object-store .g-modal-close-button'
 
 object_store_instances:
   index:
@@ -559,7 +559,7 @@ history_export:
     copy_export_link: '.copy-export-link'
     show_job_link: '.show-job-link'
     job_table: '.info_data_table'
-    job_table_ok: '.job-information-modal .btn-primary'
+    job_table_ok: '[data-description="job information modal"] .g-modal-close-button'
     tab_export_to_file: '.tab-export-to-file'
     directory_input: '.directory-form-input'
     name_input: '.export-to-remote-file #name'
@@ -1044,8 +1044,9 @@ workflow_editor:
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
     save_button: '#workflow-save-button'
-    state_modal_body: '.state-upgrade-modal'
-    modal_button_continue: '.modal-footer .btn'
+    state_upgrade_modal: '[data-description="workflow state upgrade modal"]'
+    state_upgrade_modal_close: '[data-description="workflow state upgrade modal"] .g-modal-close-button'
+    save_as_modal_close: '[data-description="save-as-modal"] .g-modal-close-button'
     workflow_activity: '#activity-workflow-editor-workflows'
     save_as_activity: "#activity-save-workflow-as"
     column_definitions: '[data-description="edit column definitions"]'
@@ -1185,7 +1186,7 @@ admin:
       filter_link_by_tool: '.job-filter-link-tool-id[data-tool-id="${tool_id}"]'
       filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
       filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
-      filter_query: '.index-filter-query'
+      filter_query: '#job-search .search-query'
 
   toolshed:
     selectors:
