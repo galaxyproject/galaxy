@@ -3,13 +3,14 @@ import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import { MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
 import type { ChatMessage } from "./chatTypes";
 
 import ActionCard from "./ActionCard.vue";
 
-const MENTION_RE = /@(dataset|history):(\S+)/g;
+const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
 function escapeHtml(str: string): string {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

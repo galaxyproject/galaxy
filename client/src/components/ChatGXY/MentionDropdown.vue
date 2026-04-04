@@ -2,7 +2,7 @@
 import { autoUpdate, computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { faDatabase, faHistory } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import type { HistoryItemSummary } from "@/api";
 import { isHDA } from "@/api";
@@ -22,6 +22,9 @@ const emit = defineEmits<{
     (e: "select", entityType: EntityType, identifier: string, displayText: string): void;
     (e: "close"): void;
 }>();
+
+const historyStore = useHistoryStore();
+const historyItemsStore = useHistoryItemsStore();
 
 const dropdownEl = ref<HTMLElement | null>(null);
 const selectedIndex = ref(0);
@@ -65,8 +68,6 @@ function getEntityTypeItems(): MenuItem[] {
 }
 
 function getDatasetItems(): MenuItem[] {
-    const historyStore = useHistoryStore();
-    const historyItemsStore = useHistoryItemsStore();
     const historyId = historyStore.currentHistoryId;
     if (!historyId) {
         return [];
@@ -94,8 +95,6 @@ function getDatasetItems(): MenuItem[] {
 }
 
 function getHistoryItems(): MenuItem[] {
-    const historyStore = useHistoryStore();
-
     const items: MenuItem[] = [];
 
     // Always offer "current"
@@ -119,7 +118,7 @@ function getHistoryItems(): MenuItem[] {
     return items;
 }
 
-function getMenuItems(): MenuItem[] {
+const menuItems = computed<MenuItem[]>(() => {
     if (props.mentionType === null) {
         return getEntityTypeItems();
     }
@@ -130,7 +129,7 @@ function getMenuItems(): MenuItem[] {
         return getHistoryItems();
     }
     return [];
-}
+});
 
 function handleSelect(item: MenuItem) {
     if (props.mentionType === null) {
@@ -146,21 +145,20 @@ function handleKeydown(event: KeyboardEvent) {
         return;
     }
 
-    const items = getMenuItems();
-    if (items.length === 0) {
+    if (menuItems.value.length === 0) {
         return;
     }
 
     if (event.key === "ArrowDown") {
         event.preventDefault();
-        selectedIndex.value = (selectedIndex.value + 1) % items.length;
+        selectedIndex.value = (selectedIndex.value + 1) % menuItems.value.length;
     } else if (event.key === "ArrowUp") {
         event.preventDefault();
-        selectedIndex.value = (selectedIndex.value - 1 + items.length) % items.length;
+        selectedIndex.value = (selectedIndex.value - 1 + menuItems.value.length) % menuItems.value.length;
     } else if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
         event.stopPropagation();
-        const item = items[selectedIndex.value];
+        const item = menuItems.value[selectedIndex.value];
         if (item) {
             handleSelect(item);
         }
@@ -221,9 +219,9 @@ defineExpose({ handleKeydown });
 
 <template>
     <div v-show="visible" ref="dropdownEl" class="mention-dropdown" role="listbox">
-        <div v-if="getMenuItems().length === 0" class="mention-empty">No matches</div>
+        <div v-if="menuItems.length === 0" class="mention-empty">No matches</div>
         <div
-            v-for="(item, index) in getMenuItems()"
+            v-for="(item, index) in menuItems"
             :key="item.key"
             class="mention-item"
             role="option"

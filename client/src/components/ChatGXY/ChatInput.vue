@@ -40,17 +40,11 @@ function updateMentionTrigger(textarea: HTMLTextAreaElement) {
     mentionTrigger.value = detectMentionTrigger(textarea.value, textarea.selectionStart);
 }
 
+const DROPDOWN_KEYS = new Set(["ArrowDown", "ArrowUp", "Tab", "Escape", "Enter"]);
+
 function onKeydown(event: KeyboardEvent) {
-    if (mentionTrigger.value && dropdownRef.value) {
-        if (["ArrowDown", "ArrowUp", "Tab"].includes(event.key)) {
-            dropdownRef.value.handleKeydown(event);
-            return;
-        }
-        if (event.key === "Escape") {
-            dropdownRef.value.handleKeydown(event);
-            return;
-        }
-        if (event.key === "Enter" && !event.shiftKey) {
+    if (mentionTrigger.value && dropdownRef.value && DROPDOWN_KEYS.has(event.key)) {
+        if (event.key !== "Enter" || !event.shiftKey) {
             dropdownRef.value.handleKeydown(event);
             return;
         }

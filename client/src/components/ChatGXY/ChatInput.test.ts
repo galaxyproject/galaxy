@@ -1,7 +1,14 @@
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import ChatInput from "./ChatInput.vue";
+
+vi.mock("@/stores/historyStore", () => ({
+    useHistoryStore: () => ({ currentHistoryId: null, currentHistory: null }),
+}));
+vi.mock("@/stores/historyItemsStore", () => ({
+    useHistoryItemsStore: () => ({ getHistoryItems: () => [] }),
+}));
 
 function mountInput(props: Record<string, unknown> = {}) {
     return mount(ChatInput as any, {
@@ -13,6 +20,7 @@ function mountInput(props: Record<string, unknown> = {}) {
         stubs: {
             FontAwesomeIcon: true,
             LoadingSpan: true,
+            MentionDropdown: true,
         },
     });
 }

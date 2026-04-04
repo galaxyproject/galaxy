@@ -34,12 +34,8 @@ export interface ResolvedEntity {
     dataset_count?: number;
 }
 
-const MENTION_PATTERN = /@(dataset|history):(\S+)/g;
+export const MENTION_PATTERN_SOURCE = "@(dataset|history):(\\S+)";
 
-/**
- * Detects whether the cursor is currently inside a mention trigger.
- * Returns the trigger context or null if not in a mention.
- */
 export function detectMentionTrigger(text: string, cursorPos: number): MentionTrigger | null {
     // Walk backwards from cursor to find the nearest unmatched `@`
     const before = text.slice(0, cursorPos);
@@ -80,13 +76,10 @@ export function detectMentionTrigger(text: string, cursorPos: number): MentionTr
     };
 }
 
-/**
- * Parse all `@entity:identifier` patterns from a text string.
- */
 export function parseMentions(text: string): ParsedMention[] {
     const mentions: ParsedMention[] = [];
     let match: RegExpExecArray | null;
-    const re = new RegExp(MENTION_PATTERN.source, "g");
+    const re = new RegExp(MENTION_PATTERN_SOURCE, "g");
     while ((match = re.exec(text)) !== null) {
         mentions.push({
             type: match[1] as EntityType,
@@ -98,9 +91,6 @@ export function parseMentions(text: string): ParsedMention[] {
     return mentions;
 }
 
-/**
- * Resolve parsed mentions into full entity metadata using stores.
- */
 export async function resolveMentions(mentions: ParsedMention[]): Promise<ResolvedEntity[]> {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
@@ -163,9 +153,6 @@ export async function resolveMentions(mentions: ParsedMention[]): Promise<Resolv
     return resolved;
 }
 
-/**
- * Build the entity context payload to send to the backend.
- */
 export function buildEntityContext(entities: ResolvedEntity[]): {
     datasets: ResolvedEntity[];
     histories: ResolvedEntity[];
