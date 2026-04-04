@@ -202,3 +202,21 @@ def test_validate_doi_fail_too_long():
 def test_ready_name_for_url(input_name, expected_output):
     """Test that ready_name_for_url correctly sanitizes names for URL use."""
     assert util.ready_name_for_url(input_name) == expected_output
+
+
+@pytest.mark.parametrize(
+    "target,expected_substring",
+    [
+        ("normal.txt", 'filename="normal.txt"'),
+        ("file.gz ", 'filename="file.gz"'),
+        (" file.gz", 'filename="file.gz"'),
+        (" file.gz ", 'filename="file.gz"'),
+        ("Galaxy102-[name].fastqsanger.gz ", 'filename="Galaxy102-[name].fastqsanger.gz"'),
+    ],
+)
+def test_to_content_disposition(target, expected_substring):
+    result = util.to_content_disposition(target)
+    assert result.startswith("attachment; ")
+    assert expected_substring in result
+    # Ensure no trailing whitespace in the header value
+    assert result == result.strip()

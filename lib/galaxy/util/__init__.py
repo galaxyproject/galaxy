@@ -2043,6 +2043,7 @@ def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
 
 
 def to_content_disposition(target: str) -> str:
+    target = target.strip()
     filename, ext = os.path.splitext(target)
     character_limit = 255 - len(ext)
     sanitized_filename = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in filename)[0:character_limit] + ext
