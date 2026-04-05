@@ -4,10 +4,7 @@ from typing import (
     Union,
 )
 
-from galaxy.files.models import (
-    AnyRemoteEntry,
-    FilesSourceRuntimeContext,
-)
+from galaxy.files.models import FilesSourceRuntimeContext
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
     FsspecBaseFileSourceConfiguration,
@@ -102,13 +99,12 @@ class GoogleCloudStorageFilesSource(
         )
         return fs
 
-    def _to_bucket_path(self, path: str, config: GoogleCloudStorageFileSourceConfiguration) -> str:
-        """Adapt the path to the GCS bucket format, including root_path if configured."""
+    def _to_filesystem_path(self, path: str, config: GoogleCloudStorageFileSourceConfiguration) -> str:
+        """Convert an entry path to the GCS filesystem path format."""
         bucket = config.bucket_name
         root = (config.root_path or "").strip("/")
         if path.startswith("/"):
             path = path[1:]
-        # Build path: bucket / root_path / path
         if root and path:
             return f"{bucket}/{root}/{path}"
         elif root:
@@ -117,56 +113,16 @@ class GoogleCloudStorageFilesSource(
             return f"{bucket}/{path}"
         return bucket
 
-    def _adapt_entry_path(self, filesystem_path: str) -> str:
+    def _adapt_entry_path(self, filesystem_path: str, config: GoogleCloudStorageFileSourceConfiguration) -> str:
         """Remove the GCS bucket name and root_path from the filesystem path."""
-        if self.template_config.bucket_name:
-            bucket = self.template_config.bucket_name
-            root = (self.template_config.root_path or "").strip("/")
+        if config.bucket_name:
+            bucket = config.bucket_name
+            root = (config.root_path or "").strip("/")
             full_prefix = f"{bucket}/{root}" if root else bucket
             if filesystem_path == full_prefix:
                 return "/"
             return "/" + filesystem_path.removeprefix(f"{full_prefix}/")
         return "/" + filesystem_path
-
-    def _list(
-        self,
-        context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration],
-        path="/",
-        recursive=False,
-        write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
-    ) -> tuple[list[AnyRemoteEntry], int]:
-        bucket_path = self._to_bucket_path(path, context.config)
-        return super()._list(
-            context=context,
-            path=bucket_path,
-            recursive=recursive,
-            limit=limit,
-            offset=offset,
-            query=query,
-            sort_by=sort_by,
-        )
-
-    def _realize_to(
-        self,
-        source_path: str,
-        native_path: str,
-        context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration],
-    ):
-        bucket_path = self._to_bucket_path(source_path, context.config)
-        super()._realize_to(source_path=bucket_path, native_path=native_path, context=context)
-
-    def _write_from(
-        self,
-        target_path: str,
-        native_path: str,
-        context: FilesSourceRuntimeContext[GoogleCloudStorageFileSourceConfiguration],
-    ):
-        bucket_path = self._to_bucket_path(target_path, context.config)
-        super()._write_from(target_path=bucket_path, native_path=native_path, context=context)
 
     def score_url_match(self, url: str):
         bucket_name = self.template_config.bucket_name

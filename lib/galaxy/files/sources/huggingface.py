@@ -94,7 +94,7 @@ class HuggingFaceFilesSource(
             **cache_options,
         )
 
-    def _to_filesystem_path(self, path: str) -> str:
+    def _to_filesystem_path(self, path: str, config: HuggingFaceFileSourceConfiguration) -> str:
         """Transform entry path to Hugging Face filesystem path."""
         if path == "/":
             # Hugging Face does not implement access to the repositories root
