@@ -1,0 +1,29 @@
+{#-
+  Tree-level report for ``gxwf-roundtrip-validate-tree``.
+
+  Pure port of ``roundtrip.format_roundtrip_markdown``. Flat bullet list
+  per workflow with sub-bullets for conversion failures and error diffs.
+
+  Context:
+    report — RoundTripTreeReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+{% set s = report.summary %}
+# Roundtrip Validation: {{ report.root }}
+
+**{{ report.total }} workflows:** {{ s.clean }} clean, {{ s.benign_only }} benign, {{ s.fail }} fail, {{ s.error }} error, {{ s.skipped }} skipped
+
+{% for r in report.workflows %}
+{% set benign = r.benign_diffs | length %}
+{% set error_count = r.error_diffs | length %}
+{% set detail = "" %}
+{% if benign %}{% set detail = detail ~ " (" ~ benign ~ " benign)" %}{% endif %}
+{% if error_count %}{% set detail = detail ~ " (" ~ error_count ~ " errors)" %}{% endif %}
+- **{{ r.workflow_path }}**: {{ r.status | upper }}{{ detail }}
+{% for line in r.conversion_failure_lines %}
+  - {{ line }}
+{% endfor %}
+{% for d in r.error_diffs %}
+  - {{ d.step_path }}: {{ d.description }}
+{% endfor %}
+{% endfor %}

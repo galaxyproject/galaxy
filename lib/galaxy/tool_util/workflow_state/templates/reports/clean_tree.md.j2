@@ -1,0 +1,49 @@
+{#-
+  Tree-level report for ``gxwf-state-clean``.
+
+  Three sections: affected-workflows table, clean-workflows banner, and
+  per-workflow detail bullets. Uses ``selectattr("removed_keys")`` and
+  ``selectattr("total_removed")`` for filtering, ``loop.first`` to gate
+  the Per-Workflow Details header, and the ``steps_affected`` +
+  ``display_label`` computed fields landed in step 1.
+
+  Context:
+    report — TreeCleanReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+# Stale State Cleaning Report
+
+Root: `{{ report.root }}`
+Workflows: {{ report.workflows | length }} | {{ report.summary.total_keys }} stale key(s) across {{ report.summary.affected }} workflow(s)
+
+{% if report.summary.affected > 0 or report.summary.errors > 0 %}
+## Affected Workflows
+
+| Workflow | Steps Affected | Keys Removed | Details |
+| --- | --- | --- | --- |
+{% for r in report.workflows %}
+{% if r.error %}
+| {{ r.path }} | - | - | ERROR: {{ r.error }} |
+{% elif r.total_removed > 0 %}
+| {{ r.path }} | {{ r.steps_affected }} | {{ r.total_removed }} | {% for sr in r.results | selectattr("removed_keys") %}Step {{ sr.step }} ({{ sr.tool_id }}): {{ sr.removed_keys | join(", ") }}{% if not loop.last %}; {% endif %}{% endfor %} |
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% if report.summary.clean > 0 %}
+## Clean Workflows ({{ report.summary.clean }})
+
+All other workflows have no stale keys.
+
+{% endif %}
+{% for r in report.workflows | selectattr("total_removed") %}
+{% if loop.first %}
+## Per-Workflow Details
+
+{% endif %}
+### {{ r.path }}
+{% for sr in r.results | selectattr("removed_keys") %}
+- Step {{ sr.step }} ({{ sr.display_label }}): Removed `{{ sr.removed_keys | join("`, `") }}`
+{% endfor %}
+
+{% endfor %}

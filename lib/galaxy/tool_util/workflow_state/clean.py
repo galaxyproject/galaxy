@@ -41,6 +41,7 @@ from ._report_models import (
     wrap_single_clean,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._tree_orchestrator import skip_workflow
 from ._types import (
     GetToolInfo,
@@ -573,63 +574,6 @@ def format_tree_clean_text(report: TreeCleanReport) -> str:
     return "\n".join(lines)
 
 
-def format_tree_clean_markdown(report: TreeCleanReport) -> str:
-    s = report.summary
-    total_wf = len(report.results)
-    lines = [
-        "# Stale State Cleaning Report",
-        "",
-        f"Root: `{report.root}`",
-        f"Workflows: {total_wf} | {s['total_keys']} stale key(s) across {s['affected']} workflow(s)",
-        "",
-    ]
-
-    affected = [r for r in report.results if r.total_removed > 0 or r.error]
-    if affected:
-        lines.append("## Affected Workflows")
-        lines.append("")
-        lines.append("| Workflow | Steps Affected | Keys Removed | Details |")
-        lines.append("| --- | --- | --- | --- |")
-        for r in affected:
-            name = r.relative_path
-            if r.error:
-                lines.append(f"| {name} | - | - | ERROR: {r.error} |")
-                continue
-            steps_affected = sum(1 for sr in r.step_results if sr.removed_keys)
-            details_parts = []
-            for sr in r.step_results:
-                if sr.removed_keys:
-                    details_parts.append(f"Step {sr.step} ({sr.tool_id}): {', '.join(sr.removed_keys)}")
-            detail = "; ".join(details_parts) if details_parts else ""
-            lines.append(f"| {name} | {steps_affected} | {r.total_removed} | {detail} |")
-        lines.append("")
-
-    if s["clean"] > 0:
-        lines.append(f"## Clean Workflows ({s['clean']})")
-        lines.append("")
-        lines.append("All other workflows have no stale keys.")
-        lines.append("")
-
-    detail_lines = []
-    for r in report.results:
-        if r.total_removed > 0:
-            detail_lines.append(f"### {r.relative_path}")
-            for sr in r.step_results:
-                if sr.removed_keys:
-                    tool_label = sr.tool_id or "unknown"
-                    if sr.version:
-                        tool_label += f" {sr.version}"
-                    detail_lines.append(f"- Step {sr.step} ({tool_label}): Removed `{'`, `'.join(sr.removed_keys)}`")
-            detail_lines.append("")
-
-    if detail_lines:
-        lines.append("## Per-Workflow Details")
-        lines.append("")
-        lines.extend(detail_lines)
-
-    return "\n".join(lines)
-
-
 # -- JSON formatters (delegate to Pydantic model_dump) --
 
 
@@ -690,7 +634,7 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
         aggregate=_aggregate_clean,
         format_text=format_tree_clean_text,
         format_summary=lambda r: f"Summary: {r.summary['total_keys']} stale key(s), {r.summary['affected']} affected",
-        format_markdown=format_tree_clean_markdown,
+        format_markdown=make_markdown_renderer("clean_tree.md.j2"),
         compute_exit_code=lambda r: 1 if r.summary["total_keys"] > 0 or r.summary["errors"] > 0 else 0,
         report_options=options,
     )
@@ -748,7 +692,7 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
         emit_reports(
             options=options,
             json_data=json_data,
-            markdown_formatter=format_tree_clean_markdown,
+            markdown_formatter=make_markdown_renderer("clean_tree.md.j2"),
             markdown_report=tree_report,
             text_content=text_content or "",
             stderr_summary=stderr_summary or "",

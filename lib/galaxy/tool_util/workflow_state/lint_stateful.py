@@ -40,6 +40,7 @@ from ._report_models import (
     wrap_single_lint,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._types import GetToolInfo
 from .stale_keys import (
     ConflictingCategoryError,
@@ -293,7 +294,7 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     emit_reports(
         options=options,
         json_data=json_data,
-        markdown_formatter=_format_lint_tree_markdown,
+        markdown_formatter=make_markdown_renderer("lint_tree.md.j2"),
         markdown_report=tree_report,
         text_content=text,
         stderr_summary=format_text(results, summary_only=True),
@@ -364,36 +365,6 @@ def _format_lint_tree_text(report: LintTreeReport, summary_only: bool = False) -
             n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
             n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
             lines.append(f"  {r.relative_path}: steps({n_ok} OK, {n_fail} FAIL, {n_skip} SKIP){lint_tag}")
-    return "\n".join(lines)
-
-
-def _format_lint_tree_markdown(report: LintTreeReport) -> str:
-    """Render LintTreeReport as Markdown."""
-    s = report.summary
-    lines = [
-        "# Lint Report",
-        "",
-        f"Root: `{report.root}`",
-        f"Workflows: {len(report.results)} | "
-        f"Lint: {s['lint_errors']} errors, {s['lint_warnings']} warnings | "
-        f"State: {s['state_ok']} OK, {s['state_fail']} FAIL, {s['state_skip']} SKIP",
-        "",
-        "| Workflow | Lint Errors | Lint Warnings | State OK | State Fail | State Skip |",
-        "| --- | --- | --- | --- | --- | --- |",
-    ]
-    for r in report.results:
-        name = r.relative_path
-        if r.error:
-            lines.append(f"| {name} | - | - | - | - | ERROR: {r.error} |")
-            continue
-        if r.skipped_reason:
-            lines.append(f"| {name} | - | - | - | - | SKIPPED |")
-            continue
-        n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
-        n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-        n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
-        lines.append(f"| {name} | {r.lint_errors} | {r.lint_warnings} | {n_ok} | {n_fail} | {n_skip} |")
-    lines.append("")
     return "\n".join(lines)
 
 
@@ -505,7 +476,7 @@ def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
         aggregate=aggregate,
         format_text=lambda r: _format_lint_tree_text(r, summary_only=options.summary),
         format_summary=lambda r: _format_lint_tree_text(r, summary_only=True),
-        format_markdown=_format_lint_tree_markdown,
+        format_markdown=make_markdown_renderer("lint_tree.md.j2"),
         compute_exit_code=compute_exit_code,
         report_options=options,
     )

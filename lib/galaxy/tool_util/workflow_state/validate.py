@@ -27,6 +27,7 @@ from ._report_models import (
     wrap_single_validation,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._tree_orchestrator import (
     skip_workflow,
     TreeContext,
@@ -539,66 +540,7 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
     return "\n".join(lines)
 
 
-def format_tree_markdown(report: TreeValidationReport) -> str:
-    """Render TreeValidationReport as Markdown."""
-    s = report.summary
-    total_wf = len(report.results)
-    lines = [
-        "# Workflow Validation Report",
-        "",
-        f"Root: `{report.root}`",
-        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR"
-        + (f" | {s['skipped']} workflow(s) skipped" if s["skipped"] else ""),
-        "",
-    ]
-
-    failure_details: List[str] = []
-    for category, wf_results in sorted(report.by_category().items()):
-        lines.append(f"## {category} ({len(wf_results)} workflows)")
-        lines.append("")
-        lines.append("| Workflow | Steps | OK | Fail | Skip | Details |")
-        lines.append("| --- | --- | --- | --- | --- | --- |")
-
-        for r in wf_results:
-            name = os.path.basename(r.relative_path)
-            if r.skipped_reason:
-                lines.append(f"| {name} | - | - | - | - | SKIPPED: {r.skipped_reason.value} |")
-                continue
-            if r.error:
-                lines.append(f"| {name} | - | - | - | - | ERROR: {r.error} |")
-                continue
-
-            n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
-            n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
-            total = len(r.step_results)
-            fails = [sr for sr in r.step_results if sr.status == "fail"]
-            detail = ""
-            if fails:
-                detail = f"{len(fails)} failure(s)"
-                for sr in fails:
-                    for err in sr.errors:
-                        failure_details.append(f"- **{r.relative_path}** Step {sr.step} ({sr.tool_id}): {err}")
-            lines.append(f"| {name} | {total} | {n_ok} | {n_fail} | {n_skip} | {detail} |")
-
-        lines.append("")
-
-    if failure_details:
-        lines.append("## Failure Details")
-        lines.append("")
-        lines.extend(failure_details)
-        lines.append("")
-
-    # Append connection validation sections
-    conn_reports = [(r.relative_path, r.connection_report) for r in report.results if r.connection_report]
-    if conn_reports:
-        for wf_path, conn_report in conn_reports:
-            lines.append(f"## Connections: {wf_path}")
-            lines.append("")
-            lines.append(format_connection_markdown(conn_report))
-            lines.append("")
-
-    return "\n".join(lines)
+_format_tree_markdown = make_markdown_renderer("validate_tree.md.j2")
 
 
 # -- JSON formatters (delegate to Pydantic model_dump) --
@@ -890,7 +832,7 @@ def run_validate_tree(options: ValidateTreeOptions) -> int:
         aggregate=_aggregate_validation,
         format_text=_format_tree_with_connections,
         format_summary=lambda r: format_tree_text(r, summary_only=True),
-        format_markdown=format_tree_markdown,
+        format_markdown=_format_tree_markdown,
         compute_exit_code=lambda r: _compute_tree_exit_code(r, options),
         report_options=options,
     )
@@ -921,7 +863,7 @@ def _emit_single_results(
     emit_reports(
         options=options,
         json_data=json_data,
-        markdown_formatter=format_tree_markdown,
+        markdown_formatter=_format_tree_markdown,
         markdown_report=tree_report,
         text_content=text_content,
         stderr_summary=stderr_summary,

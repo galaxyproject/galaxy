@@ -1,0 +1,158 @@
+{
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "category": "catA",
+          "error": null,
+          "lint_errors": 0,
+          "lint_warnings": 2,
+          "name": "wf_ok.ga",
+          "path": "catA/wf_ok.ga",
+          "results": [
+            {
+              "errors": [],
+              "status": "ok",
+              "step": "1",
+              "tool_id": "cat1",
+              "version": null
+            }
+          ],
+          "skipped_reason": null,
+          "step_counts": {
+            "fail": 0,
+            "ok": 1,
+            "skip_tool_not_found": 0
+          }
+        },
+        {
+          "category": "catA",
+          "error": null,
+          "lint_errors": 1,
+          "lint_warnings": 0,
+          "name": "wf_fail.ga",
+          "path": "catA/wf_fail.ga",
+          "results": [
+            {
+              "errors": [
+                "missing required key"
+              ],
+              "status": "fail",
+              "step": "1",
+              "tool_id": "Grep1",
+              "version": null
+            },
+            {
+              "errors": [],
+              "status": "skip_tool_not_found",
+              "step": "2",
+              "tool_id": "missing_tool",
+              "version": null
+            }
+          ],
+          "skipped_reason": null,
+          "step_counts": {
+            "fail": 1,
+            "ok": 0,
+            "skip_tool_not_found": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "category": "catB",
+          "error": "lint exploded",
+          "lint_errors": 0,
+          "lint_warnings": 0,
+          "name": "wf_err.ga",
+          "path": "catB/wf_err.ga",
+          "results": [],
+          "skipped_reason": null,
+          "step_counts": null
+        }
+      ]
+    }
+  ],
+  "root": "/tmp/workflows",
+  "summary": {
+    "errors": 1,
+    "lint_errors": 1,
+    "lint_warnings": 2,
+    "skipped": 0,
+    "state_fail": 1,
+    "state_ok": 1,
+    "state_skip": 1
+  },
+  "workflows": [
+    {
+      "category": "catA",
+      "error": null,
+      "lint_errors": 0,
+      "lint_warnings": 2,
+      "name": "wf_ok.ga",
+      "path": "catA/wf_ok.ga",
+      "results": [
+        {
+          "errors": [],
+          "status": "ok",
+          "step": "1",
+          "tool_id": "cat1",
+          "version": null
+        }
+      ],
+      "skipped_reason": null,
+      "step_counts": {
+        "fail": 0,
+        "ok": 1,
+        "skip_tool_not_found": 0
+      }
+    },
+    {
+      "category": "catA",
+      "error": null,
+      "lint_errors": 1,
+      "lint_warnings": 0,
+      "name": "wf_fail.ga",
+      "path": "catA/wf_fail.ga",
+      "results": [
+        {
+          "errors": [
+            "missing required key"
+          ],
+          "status": "fail",
+          "step": "1",
+          "tool_id": "Grep1",
+          "version": null
+        },
+        {
+          "errors": [],
+          "status": "skip_tool_not_found",
+          "step": "2",
+          "tool_id": "missing_tool",
+          "version": null
+        }
+      ],
+      "skipped_reason": null,
+      "step_counts": {
+        "fail": 1,
+        "ok": 0,
+        "skip_tool_not_found": 1
+      }
+    },
+    {
+      "category": "catB",
+      "error": "lint exploded",
+      "lint_errors": 0,
+      "lint_warnings": 0,
+      "name": "wf_err.ga",
+      "path": "catB/wf_err.ga",
+      "results": [],
+      "skipped_reason": null,
+      "step_counts": null
+    }
+  ]
+}

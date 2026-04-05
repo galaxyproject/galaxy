@@ -1,0 +1,57 @@
+{#-
+  Tree-level report for ``gxwf-state-validate``.
+
+  Pure port of ``validate.format_tree_markdown``. Per-category tables with
+  a Details column showing failure counts, a Failure Details appendix using
+  ``report.all_failures``, and per-workflow connection sections via
+  ``{% include "connection_section.md.j2" %}``.
+
+  The ``workflow_state_cells`` macro is NOT used here because the validate
+  table has a 6th "Details" column whose content varies (failure count for
+  normal rows, SKIPPED/ERROR for exceptional rows) — inlining the 3-branch
+  logic keeps the template straightforward.
+
+  Context:
+    report — TreeValidationReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+{% import "_macros.md.j2" as m %}
+{% set s = report.summary %}
+# Workflow Validation Report
+
+Root: `{{ report.root }}`
+Workflows: {{ report.workflows | length }} | Steps: {{ s.ok }} OK, {{ s.fail }} FAIL, {{ s.skip_tool_not_found }} SKIP, {{ s.error }} ERROR{% if s.skipped %} | {{ s.skipped }} workflow(s) skipped{% endif %}
+
+
+{% for cat in report.categories %}
+## {{ cat.name }} ({{ cat.results | length }} workflows)
+
+| Workflow | Steps | OK | Fail | Skip | Details |
+| --- | --- | --- | --- | --- | --- |
+{% for r in cat.results %}
+{% if r.skipped_reason %}
+| {{ r.name }} | - | - | - | - | SKIPPED: {{ r.skipped_reason }} |
+{% elif r.error %}
+| {{ r.name }} | - | - | - | - | ERROR: {{ r.error }} |
+{% else %}
+{% set fail_count = r.failures | length %}
+| {{ r.name }} | {{ r.results | length }} | {{ r.summary.ok }} | {{ r.summary.fail }} | {{ r.summary.skip_tool_not_found }} | {% if fail_count %}{{ fail_count }} failure(s){% endif %} |
+{% endif %}
+{% endfor %}
+
+{% endfor %}
+{% if report.all_failures %}
+## Failure Details
+
+{% for f in report.all_failures %}
+{{ m.failure_bullet(f) }}
+{% endfor %}
+
+{% endif %}
+{% for r in report.workflows | selectattr("connection_report") %}
+## Connections: {{ r.path }}
+
+{% set report = r.connection_report %}
+{% include "connection_section.md.j2" %}
+
+{% endfor %}
