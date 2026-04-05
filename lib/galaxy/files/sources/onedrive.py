@@ -81,14 +81,10 @@ class OneDriveFilesSource(
         return f"{api_base}/special/approot"
 
     def _children_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
-<<<<<<< HEAD
-        return f"{self._item_url(config, path)}/children"
-=======
         item_url = self._item_url(config, path)
         if path.strip("/"):
             return f"{item_url}:/children"
         return f"{item_url}/children"
->>>>>>> 4132e5d794 (Add OneDrive file source)
 
     def _content_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
         return f"{self._item_url(config, path)}:/content" if path.strip("/") else f"{self._item_url(config, path)}/content"
@@ -196,14 +192,10 @@ class OneDriveFilesSource(
     def _create_entry(
         self, entry_data: EntryData, context: FilesSourceRuntimeContext[OneDriveFilesSourceConfiguration]
     ) -> Entry:
-<<<<<<< HEAD
-        parent_path = getattr(entry_data, "path", "/")
-=======
         parent_path = getattr(entry_data, "path", None)
         if parent_path is None:
             target = getattr(entry_data, "target", "/")
             parent_path = self.to_relative_path(target)
->>>>>>> 4132e5d794 (Add OneDrive file source)
         payload = {
             "name": entry_data.name,
             "folder": {},
