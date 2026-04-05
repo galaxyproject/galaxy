@@ -227,6 +227,8 @@ class JobRunnerMapper:
     def __handle_rule(self, rule_function: Callable, destination: JobDestination) -> JobDestination:
         try:
             job_destination = self.__invoke_expand_function(rule_function, destination)
+        except JobNotReadyException:
+            raise
         except Exception as e:
             # Rules have varying quality and don't raise a consistent set of standard exceptions.
             # so ... if we get an error here let's try again without resource params encoded
