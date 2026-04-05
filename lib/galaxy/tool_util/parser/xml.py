@@ -31,6 +31,10 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_SORT,
 )
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.testing_types import (
+    AssertionList,
+    DirectCredential,
+)
 from galaxy.tool_util_models.tool_source import (
     Citation,
     DrillDownOptionsDict,
@@ -53,8 +57,6 @@ from galaxy.util import (
     xml_to_string,
 )
 from .interface import (
-    AssertionList,
-    DirectCredential,
     DrillDownDynamicOptions,
     DynamicOptions,
     InputSource,

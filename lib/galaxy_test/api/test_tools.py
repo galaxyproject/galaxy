@@ -43,17 +43,17 @@ MINIMAL_TOOL = {
     "name": "Minimal Tool",
     "class": "GalaxyTool",
     "version": "1.0.0",
-    "command": "echo 'Hello World' > $output1",
+    "shell_command": "echo 'Hello World' > 'output.txt'",
     "inputs": [],
-    "outputs": {"output1": {"format": "txt", "type": "data"}},
+    "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 MINIMAL_TOOL_NO_ID = {
     "name": "Minimal Tool",
     "class": "GalaxyTool",
     "version": "1.0.0",
-    "command": "echo 'Hello World 2' > $output1",
+    "shell_command": "echo 'Hello World 2' > 'output.txt'",
     "inputs": [],
-    "outputs": {"output1": {"format": "txt", "type": "data"}},
+    "outputs": {"output1": {"format": "txt", "type": "data", "from_work_dir": "output.txt"}},
 }
 
 

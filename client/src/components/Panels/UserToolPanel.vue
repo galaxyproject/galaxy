@@ -81,7 +81,7 @@ function getToolBadges(tool: UnprivilegedToolResponse) {
     return [
         {
             id: "version",
-            label: tool.representation.version,
+            label: tool.representation.version ?? "",
             title: "Version of this custom tool",
         },
     ];

@@ -46,8 +46,6 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundle,
 )
 from galaxy.tool_util.parser.interface import (
-    AssertionList,
-    DirectCredential,
     TestCollectionDef,
     TestCollectionOutputDef,
     TestSourceTestOutputColllection,
@@ -55,6 +53,10 @@ from galaxy.tool_util.parser.interface import (
     XmlTestCollectionDefDict,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.tool_util_models.testing_types import (
+    AssertionList,
+    DirectCredential,
+)
 from galaxy.tool_util_models.tool_source import (
     JsonTestCollectionDefDict,
     JsonTestDatasetDefDict,

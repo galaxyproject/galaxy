@@ -28,7 +28,6 @@ from typing_extensions import (
     TypedDict,
 )
 
-from galaxy.tool_util_models.parameters import GalaxyToolParameterModel
 from ._base import ToolSourceBaseModel
 from .assertions import assertions
 from .parameters import ToolParameterT
@@ -46,6 +45,7 @@ from .tool_source import (
     XrefDict,
     YamlTemplateConfigFile,
 )
+from .yaml_parameters import YamlGalaxyToolParameter
 
 
 def normalize_dict(values, keys: List[str]):
@@ -56,44 +56,24 @@ def normalize_dict(values, keys: List[str]):
             values[key] = [{"name": k, **v} for k, v in items.items()]
 
 
-class ToolSourceBase(ToolSourceBaseModel):
-    id: Optional[str] = None
-    name: Optional[str] = None
-    version: Optional[str] = "1.0"
-    profile: Optional[float] = None
-    description: Optional[str] = None
-    container: Optional[str] = None
-    requirements: Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]] = []
-    inputs: List[GalaxyToolParameterModel] = []
-    outputs: List[IncomingToolOutput] = []
-    citations: Optional[List[Citation]] = None
-    license: Optional[str] = None
-    edam_operations: Optional[List[str]] = None
-    edam_topics: Optional[List[str]] = None
-    xrefs: Optional[List[XrefDict]] = None
-    help: Optional[HelpContent] = None
+class _DynamicToolSourceBase(ToolSourceBaseModel):
+    # extra="forbid" rejects unknown top-level keys (e.g. a stray `argument:` at
+    # the tool level), matching the strict-narrow stance on `inputs`.
+    model_config = ConfigDict(
+        extra="forbid",
+        field_title_generator=lambda field_name, field_info: field_name.lower(),
+    )
 
-    @model_validator(mode="before")
-    @classmethod
-    def normalize_items(cls, values):
-        if isinstance(values, dict):
-            normalize_dict(values, ["inputs", "outputs"])
-        return values
-
-
-# repeated fields to get consistent order, ugh, FIXME obviously
-class UserToolSource(ToolSourceBaseModel):
-    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     id: Annotated[
-        str,
+        Optional[str],
         Field(
             description="Unique identifier for the tool. Should be all lower-case and should not include whitespace.",
             examples=["my-cool-tool"],
             min_length=3,
             max_length=255,
         ),
-    ]
-    version: Annotated[str, Field(description="Version for the tool.", examples=["0.1.0"])]
+    ] = None
+    version: Annotated[Optional[str], Field(description="Version for the tool.", examples=["0.1.0"])] = None
     name: Annotated[
         str,
         Field(
@@ -109,9 +89,6 @@ class UserToolSource(ToolSourceBaseModel):
     configfiles: Annotated[
         Optional[List[YamlTemplateConfigFile]], Field(description="A list of config files for this tool.")
     ] = None
-    container: Annotated[
-        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
-    ]
     requirements: Annotated[
         Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
         Field(
@@ -126,7 +103,7 @@ class UserToolSource(ToolSourceBaseModel):
             examples=["head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'"],
         ),
     ]
-    inputs: List[GalaxyToolParameterModel] = []
+    inputs: List[YamlGalaxyToolParameter] = []
     outputs: List[IncomingToolOutput] = []
     citations: Optional[List[Citation]] = None
     license: Annotated[
@@ -139,7 +116,9 @@ class UserToolSource(ToolSourceBaseModel):
     edam_operations: Optional[List[str]] = None
     edam_topics: Optional[List[str]] = None
     xrefs: Optional[List[XrefDict]] = None
+    profile: Optional[float] = None
     help: Annotated[Optional[HelpContent], Field(description="Help text shown below the tool interface.")] = None
+    tests: Optional[List["YamlToolTest"]] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -149,12 +128,25 @@ class UserToolSource(ToolSourceBaseModel):
         return values
 
 
-class AdminToolSource(ToolSourceBase):
+class UserToolSource(_DynamicToolSourceBase):
+    class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
+    container: Annotated[
+        str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
+    ]
+
+
+class YamlToolSource(_DynamicToolSourceBase):
     class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
-    command: str
+    container: Annotated[
+        Optional[str],
+        Field(
+            description="Container image to use for this tool.",
+            examples=["quay.io/biocontainers/python:3.13"],
+        ),
+    ] = None
 
 
-DynamicToolSources = Annotated[Union[UserToolSource, AdminToolSource], Field(discriminator="class_")]
+DynamicToolSources = Annotated[Union[UserToolSource, YamlToolSource], Field(discriminator="class_")]
 
 
 class ParsedTool(ToolSourceBaseModel):
@@ -242,6 +234,78 @@ class TestCollectionOutputAssertions(StrictModel):
 TestOutputLiteral = Union[bool, int, float, str]
 
 TestOutputAssertions = Union[TestCollectionOutputAssertions, TestDataOutputAssertions, TestOutputLiteral]
+
+
+TestInputValue = Union[bool, int, float, str, List[Any], Dict[str, Any]]
+
+
+class YamlTestCredentialValue(StrictModel):
+    name: Annotated[str, Field(description="Name of the credential variable or secret.")]
+    value: Annotated[str, Field(description="Value of the credential variable or secret.")]
+
+
+class YamlTestCredential(StrictModel):
+    name: Annotated[str, Field(description="Name of the credentials group.")]
+    variables: Annotated[
+        List[YamlTestCredentialValue],
+        Field(description="Variables exposed to the tool environment."),
+    ] = []
+    secrets: Annotated[
+        List[YamlTestCredentialValue],
+        Field(description="Secrets exposed to the tool environment."),
+    ] = []
+    version: Annotated[
+        Optional[str],
+        Field(description="Version of the credential definition."),
+    ] = None
+
+
+class YamlToolTest(BaseModel):
+    """In-tool test case as authored in YAML tool fixtures."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    doc: Annotated[Optional[str], Field(description="Human-readable description of this test case.")] = None
+    inputs: Annotated[
+        Optional[Dict[str, TestInputValue]],
+        Field(description="Mapping of input parameter names to test values."),
+    ] = None
+    outputs: Annotated[
+        Dict[str, TestOutputAssertions],
+        Field(description="Mapping of output names to expected values or assertions."),
+    ] = {}
+    assert_stdout: Annotated[
+        Optional[assertions],
+        Field(description="Assertions to apply against the tool's standard output."),
+    ] = None
+    assert_stderr: Annotated[
+        Optional[assertions],
+        Field(description="Assertions to apply against the tool's standard error."),
+    ] = None
+    command: Annotated[
+        Optional[assertions],
+        Field(description="Assertions to apply against the executed command line."),
+    ] = None
+    expect_exit_code: Annotated[
+        Optional[int],
+        Field(description="Expected process exit code."),
+    ] = None
+    expect_failure: Annotated[
+        Optional[bool],
+        Field(description="If true, the tool is expected to produce an error."),
+    ] = None
+    expect_test_failure: Annotated[
+        Optional[bool],
+        Field(description="If true, the test itself is expected to fail."),
+    ] = None
+    credentials: Annotated[
+        Optional[List[YamlTestCredential]],
+        Field(description="Credentials to inject for this test case."),
+    ] = None
+
+
+UserToolSource.model_rebuild()
+YamlToolSource.model_rebuild()
 
 JobDict = Dict[str, Any]
 
