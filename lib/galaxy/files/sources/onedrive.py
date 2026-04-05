@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import (
     Annotated,
+    Literal,
     Optional,
     Union,
 )
@@ -38,20 +39,22 @@ AccessTokenField = Field(
     validation_alias=AliasChoices("oauth2_access_token", "accessToken", "access_token"),
 )
 
+DriveMode = Literal["appfolder", "full"]
+
 
 class OneDriveFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
     drive_api_base: Union[str, TemplateExpansion] = "https://graph.microsoft.com/v1.0/me/drive"
+    drive_mode: Union[DriveMode, TemplateExpansion] = "appfolder"
 
 
 class OneDriveFilesSourceConfiguration(BaseFileSourceConfiguration):
     access_token: Annotated[str, AccessTokenField]
     drive_api_base: str = "https://graph.microsoft.com/v1.0/me/drive"
+    drive_mode: DriveMode = "appfolder"
 
 
-class OneDriveFilesSource(
-    BaseFilesSource[OneDriveFileSourceTemplateConfiguration, OneDriveFilesSourceConfiguration]
-):
+class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguration, OneDriveFilesSourceConfiguration]):
     plugin_type = "onedrive"
 
     template_config_class = OneDriveFileSourceTemplateConfiguration
@@ -73,12 +76,18 @@ class OneDriveFilesSource(
             return ""
         return "/".join(quote(component, safe="") for component in normalized.split("/"))
 
-    def _item_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
+    def _root_url(self, config: OneDriveFilesSourceConfiguration) -> str:
         api_base = config.drive_api_base.rstrip("/")
+        if config.drive_mode == "full":
+            return f"{api_base}/root"
+        return f"{api_base}/special/approot"
+
+    def _item_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
+        root_url = self._root_url(config)
         encoded_path = self._encoded_path(path)
         if encoded_path:
-            return f"{api_base}/special/approot:/{encoded_path}"
-        return f"{api_base}/special/approot"
+            return f"{root_url}:/{encoded_path}"
+        return root_url
 
     def _children_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
         item_url = self._item_url(config, path)
@@ -87,7 +96,9 @@ class OneDriveFilesSource(
         return f"{item_url}/children"
 
     def _content_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
-        return f"{self._item_url(config, path)}:/content" if path.strip("/") else f"{self._item_url(config, path)}/content"
+        return (
+            f"{self._item_url(config, path)}:/content" if path.strip("/") else f"{self._item_url(config, path)}/content"
+        )
 
     def _request(
         self,
@@ -172,7 +183,10 @@ class OneDriveFilesSource(
         with open(native_path, "rb") as handle:
             response = requests.put(
                 upload_url,
-                headers={"Authorization": f"Bearer {context.config.access_token}", "Content-Type": "application/octet-stream"},
+                headers={
+                    "Authorization": f"Bearer {context.config.access_token}",
+                    "Content-Type": "application/octet-stream",
+                },
                 data=handle,
                 timeout=300,
             )

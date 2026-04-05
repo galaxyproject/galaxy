@@ -121,6 +121,7 @@ class OneDriveFileSourceTemplateConfiguration(OAuth2TemplateConfiguration, Stric
     oauth2_client_secret: Union[str, TemplateExpansion]
     # Microsoft Graph app-folder scope keeps access limited to Apps/<Application Name>.
     oauth2_scope: Optional[Union[str, TemplateExpansion]] = None
+    drive_mode: Union[Literal["appfolder", "full"], TemplateExpansion] = "appfolder"
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
@@ -129,6 +130,7 @@ class OneDriveFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel
     type: Literal["onedrive"]
     writable: bool = False
     oauth2_access_token: str
+    drive_mode: Literal["appfolder", "full"] = "appfolder"
 
 
 class S3FSFileSourceTemplateConfiguration(StrictModel):

@@ -44,6 +44,20 @@ def _plugin():
     return OneDriveFilesSource(template)
 
 
+def _plugin_full():
+    template = OneDriveFilesSource.build_template_config(
+        id="test1",
+        type="onedrive",
+        label="OneDrive",
+        doc="Test OneDrive file source",
+        writable=True,
+        access_token="test_access_token",
+        drive_mode="full",
+        file_sources_config=FileSourcePluginsConfig(),
+    )
+    return OneDriveFilesSource(template)
+
+
 def test_list_root(monkeypatch):
     plugin = _plugin()
     observed = {}
@@ -75,6 +89,23 @@ def test_list_root(monkeypatch):
     assert entries[1].uri == "gxfiles://test1/a.txt"
 
 
+def test_list_root_full_drive_mode(monkeypatch):
+    plugin = _plugin_full()
+    observed = {}
+
+    def mock_request(method, url, headers=None, timeout=None, **kwargs):
+        observed["url"] = url
+        return MockResponse(json_data={"value": []})
+
+    monkeypatch.setattr("galaxy.files.sources.onedrive.requests.request", mock_request)
+
+    entries, count = plugin.list("/")
+
+    assert count == 0
+    assert entries == []
+    assert observed["url"] == "https://graph.microsoft.com/v1.0/me/drive/root/children"
+
+
 def test_list_nested_folder(monkeypatch):
     plugin = _plugin()
     observed = {}
@@ -89,6 +120,23 @@ def test_list_nested_folder(monkeypatch):
 
     assert count == 1
     assert observed["url"] == "https://graph.microsoft.com/v1.0/me/drive/special/approot:/level1/level%202:/children"
+    assert entries[0].path == "/level1/level 2/b.txt"
+
+
+def test_list_nested_folder_full_drive_mode(monkeypatch):
+    plugin = _plugin_full()
+    observed = {}
+
+    def mock_request(method, url, headers=None, timeout=None, **kwargs):
+        observed["url"] = url
+        return MockResponse(json_data={"value": [{"name": "b.txt", "size": 4}]})
+
+    monkeypatch.setattr("galaxy.files.sources.onedrive.requests.request", mock_request)
+
+    entries, count = plugin.list("/level1/level 2")
+
+    assert count == 1
+    assert observed["url"] == "https://graph.microsoft.com/v1.0/me/drive/root:/level1/level%202:/children"
     assert entries[0].path == "/level1/level 2/b.txt"
 
 

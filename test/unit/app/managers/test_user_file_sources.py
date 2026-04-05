@@ -23,10 +23,7 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.files import FileSourcesUserContext
-from galaxy.files.sources import (
-    dropbox,
-    onedrive,
-)
+from galaxy.files.sources import dropbox
 from galaxy.files.templates import ConfiguredFileSourceTemplates
 from galaxy.files.templates.examples import get_example
 from galaxy.managers._config_templates import prepare_environment_from_root
@@ -403,7 +400,7 @@ class TestFileSourcesTestCase(BaseTestCase):
         json = {
             "access_token": "my_test_access_token",
         }
-        observed_headers = {}
+        observed_headers: dict[str, str] = {}
 
         def mock_get_token_from_refresh_raw(refresh_token, client_pair, config):
             return MockResponse(json)
@@ -413,7 +410,7 @@ class TestFileSourcesTestCase(BaseTestCase):
             return OneDriveMockResponse(json_data={"value": []})
 
         monkeypatch.setattr(config_templates, "get_token_from_refresh_raw", mock_get_token_from_refresh_raw)
-        monkeypatch.setattr(onedrive.requests, "request", mock_request)
+        monkeypatch.setattr("galaxy.files.sources.onedrive.requests.request", mock_request)
         status = self.manager.plugin_status(self.trans, create_payload)
         assert status.oauth2_access_token_generation
         assert not status.oauth2_access_token_generation.is_not_ok

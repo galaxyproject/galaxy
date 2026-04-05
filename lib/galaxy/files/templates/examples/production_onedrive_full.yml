@@ -5,7 +5,8 @@
     type: onedrive
     oauth2_client_id: "{{ environment.oauth2_client_id }}"
     oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
-    drive_mode: appfolder
+    oauth2_scope: "offline_access Files.ReadWrite"
+    drive_mode: full
     writable: true
   environment:
     oauth2_client_id:
