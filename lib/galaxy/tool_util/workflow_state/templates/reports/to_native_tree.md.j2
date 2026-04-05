@@ -1,0 +1,27 @@
+{#-
+  Tree-level report for ``gxwf-to-native-stateful``.
+
+  Pure port of ``to_native_stateful._format_tree_markdown``. Structure is
+  identical to ``export_tree.md.j2`` — same four branches, only the H1 and
+  the OK-branch count field (``steps_encoded`` vs ``steps_converted``)
+  differ. Content improvements deferred, same rationale as export.
+
+  Context:
+    report — ToNativeTreeReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+# Conversion Report: {{ report.root }}
+
+{% for r in report.workflows %}
+{% if r.error %}
+- **{{ r.path }}**: ERROR ({{ r.error }})
+{% elif r.skipped_reason %}
+- **{{ r.path }}**: SKIPPED ({{ r.skipped_reason }})
+{% elif r.ok %}
+- **{{ r.path }}**: OK ({{ r.steps_encoded }} steps)
+{% else %}
+- **{{ r.path }}**: PARTIAL ({{ r.steps_fallback }} fallbacks)
+{% endif %}
+{% endfor %}
+
+**Summary**: {{ report.summary.ok }} OK, {{ report.summary.fail }} errors, {{ report.summary.skipped }} skipped

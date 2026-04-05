@@ -11,15 +11,11 @@ import json
 import logging
 import os
 import sys
-from dataclasses import (
-    dataclass,
-    field,
+from typing import (
+    Literal,
 )
 
-from gxformat2.normalized import (
-    NormalizedNativeWorkflow,
-    to_native,
-)
+from gxformat2.normalized import to_native
 from gxformat2.options import ConversionOptions
 from gxformat2.yaml import ordered_load_path
 from pydantic import (
@@ -43,14 +39,14 @@ from ._report_models import (
     WorkflowResultBase,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._types import GetToolInfo
 from .convert import make_encode_tool_state
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class StepEncodeStatus:
+class StepEncodeStatus(BaseModel):
     step_id: str
     step_label: str | None = None
     tool_id: str | None = None
@@ -58,28 +54,25 @@ class StepEncodeStatus:
     error: str | None = None
 
 
-@dataclass
-class ToNativeResult:
-    native: NormalizedNativeWorkflow
-    steps: list[StepEncodeStatus] = field(default_factory=list)
+class ToNativeResult(BaseModel):
+    native_dict: dict
+    steps: list[StepEncodeStatus] = Field(default_factory=list)
 
-    @property
-    def native_dict(self) -> dict:
-        return self.native.to_dict()
-
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def all_encoded(self) -> bool:
         return all(s.encoded for s in self.steps)
 
-    @property
-    def failed_steps(self) -> list[StepEncodeStatus]:
-        return [s for s in self.steps if not s.encoded]
-
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> str:
         ok = sum(1 for s in self.steps if s.encoded)
         fail = len(self.steps) - ok
         return f"{ok} schema-encoded, {fail} fell back to default"
+
+    @property
+    def failed_steps(self) -> list[StepEncodeStatus]:
+        return [s for s in self.steps if not s.encoded]
 
 
 def convert_to_native_stateful(
@@ -117,7 +110,7 @@ def convert_to_native_stateful(
     )
     native = to_native(workflow_dict, options=options)
 
-    return ToNativeResult(native=native, steps=step_statuses)
+    return ToNativeResult(native_dict=native.to_dict(), steps=step_statuses)
 
 
 def _make_encode_callback(
@@ -185,6 +178,20 @@ class WorkflowToNativeResult(WorkflowResultBase):
     steps_encoded: int = 0
     steps_fallback: int = 0
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def status(self) -> Literal["ok", "partial", "error", "skipped"]:
+        # Precedence: error → skipped → ok → partial. ``ok=True`` with
+        # ``steps_fallback>0`` stays "ok" (fallback count is a detail,
+        # not a state) — matches the original formatter's branch order.
+        if self.error:
+            return "error"
+        if self.skipped_reason:
+            return "skipped"
+        if self.ok:
+            return "ok"
+        return "partial"
+
 
 class SingleToNativeReport(BaseModel):
     """JSON shape for single-file format2→native conversion."""
@@ -234,22 +241,6 @@ def wrap_single_to_native(workflow_path: str, report: SingleToNativeReport) -> T
             )
         ],
     )
-
-
-def _format_tree_markdown(report: ToNativeTreeReport) -> str:
-    lines = [f"# Conversion Report: {report.root}"]
-    for r in report.results:
-        if r.error:
-            lines.append(f"- **{r.relative_path}**: ERROR ({r.error})")
-        elif r.skipped_reason:
-            lines.append(f"- **{r.relative_path}**: SKIPPED ({r.skipped_reason})")
-        elif r.ok:
-            lines.append(f"- **{r.relative_path}**: OK ({r.steps_encoded} steps)")
-        else:
-            lines.append(f"- **{r.relative_path}**: PARTIAL ({r.steps_fallback} fallbacks)")
-    s = report.summary
-    lines.append(f"\n**Summary**: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
-    return "\n".join(lines)
 
 
 # -- Formatters --
@@ -349,7 +340,7 @@ def run_to_native(options: ToNativeOptions) -> int:
     emit_reports(
         options=options,
         json_data=json_data,
-        markdown_formatter=_format_tree_markdown,
+        markdown_formatter=make_markdown_renderer("to_native_tree.md.j2"),
         markdown_report=tree_report,
         text_content=text_content,
         stderr_summary=summary_text,
@@ -378,7 +369,7 @@ def _convert_dict_to_native(
         strict_structure=strict_structure,
     )
     native = to_native(wf_dict, options=options)
-    return ToNativeResult(native=native, steps=step_statuses)
+    return ToNativeResult(native_dict=native.to_dict(), steps=step_statuses)
 
 
 def run_to_native_tree(options: ToNativeTreeOptions) -> int:
@@ -490,7 +481,7 @@ def run_to_native_tree(options: ToNativeTreeOptions) -> int:
         aggregate=aggregate,
         format_text=_format_text,
         format_summary=lambda r: f"Convert: {r.summary['ok']} OK, {r.summary['fail']} errors",
-        format_markdown=_format_tree_markdown,
+        format_markdown=make_markdown_renderer("to_native_tree.md.j2"),
         compute_exit_code=lambda r: 1 if r.summary["fail"] > 0 else 0,
         report_options=options,
     )
