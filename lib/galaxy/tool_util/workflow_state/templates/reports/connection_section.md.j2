@@ -1,0 +1,32 @@
+{#-
+  Connection validation section.
+
+  Ported verbatim from ``validate.format_connection_markdown``. Standalone
+  renderer today; also an include target for ``validate_tree.md.j2`` when a
+  workflow carries a ``connection_report``.
+
+  Context:
+    report — ConnectionValidationReport as json-dumped dict
+-#}
+{% set s = report.summary %}
+{% set valid_label = "VALID" if report.valid else "INVALID" %}
+## Connection Validation
+
+**Status:** {{ valid_label }}
+**Connections:** {{ s.ok | default(0) }} OK, {{ s.invalid | default(0) }} INVALID, {{ s.skip | default(0) }} SKIP
+{% if report.has_details %}
+
+| Source | Target | Status | Mapping | Errors |
+| --- | --- | --- | --- | --- |
+{% for sr in report.step_results %}
+{%   for cr in sr.connections %}
+{%     set mapping_cell = cr.mapping if cr.mapping else "-" %}
+{%     set errors_cell = cr.errors | join("; ") if cr.errors else "-" %}
+| {{ cr.source_step }}/{{ cr.source_output }} | {{ cr.target_step }}/{{ cr.target_input }} | {{ cr.status }} | {{ mapping_cell }} | {{ errors_cell }} |
+{%   endfor %}
+{%   for err in sr.errors %}
+{%     set step_label = (sr.step ~ " (" ~ sr.tool_id ~ ")") if sr.tool_id else sr.step %}
+| - | {{ step_label }} | error | - | {{ err }} |
+{%   endfor %}
+{% endfor %}
+{% endif %}

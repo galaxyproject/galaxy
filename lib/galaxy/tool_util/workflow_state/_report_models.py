@@ -8,6 +8,7 @@ consume these models directly via field names.
 
 import os
 from typing import (
+    Any,
     Dict,
     List,
     Literal,
@@ -47,6 +48,14 @@ class CleanStepResult(StepResultBase):
     skipped: bool = False
     skip_reason: str = ""
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def display_label(self) -> str:
+        label = self.tool_id or "unknown"
+        if self.version:
+            label += f" {self.version}"
+        return label
+
 
 # -- Workflow-level results --
 
@@ -59,6 +68,12 @@ class WorkflowResultBase(BaseModel):
     category: str
     error: Optional[str] = None
     skipped_reason: Optional[SkipWorkflowReason] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def name(self) -> str:
+        """Basename of ``relative_path`` — saves templates a ``basename`` filter."""
+        return os.path.basename(self.relative_path)
 
 
 class WorkflowValidationResult(WorkflowResultBase):
@@ -76,10 +91,33 @@ class WorkflowValidationResult(WorkflowResultBase):
             "skip_tool_not_found": sum(1 for sr in self.step_results if sr.status == "skip_tool_not_found"),
         }
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def failures(self) -> Optional[List[Dict[str, Optional[str]]]]:
+        """Flat failure list for templates (one entry per error message).
+
+        Returns ``None`` when the workflow was skipped or errored — same
+        convention as ``summary`` — so templates branch on a single sentinel.
+        """
+        if self.error or self.skipped_reason:
+            return None
+        out: List[Dict[str, Optional[str]]] = []
+        for sr in self.step_results:
+            if sr.status != "fail":
+                continue
+            for err in sr.errors:
+                out.append({"step": sr.step, "tool_id": sr.tool_id, "message": err})
+        return out
+
 
 class WorkflowCleanResult(WorkflowResultBase):
     step_results: List[CleanStepResult] = Field(default=[], serialization_alias="results")
     total_removed: int = 0
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def steps_affected(self) -> int:
+        return sum(1 for sr in self.step_results if sr.removed_keys)
 
 
 # -- Connection validation report models --
@@ -126,6 +164,16 @@ class ConnectionValidationReport(BaseModel):
     step_results: List[ConnectionStepResult] = []
     summary: Dict[str, int] = {}
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_details(self) -> bool:
+        """True iff any step has connection data or step-level errors.
+
+        Precomputed here so templates don't need a mutable accumulator loop
+        (Jinja2 namespaces aren't in the Jinja2/Nunjucks shared subset).
+        """
+        return any(sr.connections or sr.errors for sr in self.step_results)
+
 
 # -- Tree-level (directory) reports --
 
@@ -142,6 +190,15 @@ class TreeReportBase(BaseModel):
             groups.setdefault(cat, []).append(r)
         return groups
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def categories(self) -> List[Dict[str, Any]]:
+        """Templates-facing grouping: ``[{name, results}]`` sorted by name.
+
+        Lives in JSON so Jinja/Nunjucks templates can iterate without a method call.
+        """
+        return [{"name": name, "results": results} for name, results in sorted(self.by_category().items())]
+
     def _workflow_results(self) -> list:
         raise NotImplementedError
 
@@ -151,6 +208,16 @@ class TreeValidationReport(TreeReportBase):
 
     def _workflow_results(self) -> list:
         return self.results
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def all_failures(self) -> List[Dict[str, Optional[str]]]:
+        """Cross-workflow failure list so templates can render a grouped appendix."""
+        out: List[Dict[str, Optional[str]]] = []
+        for r in self.results:
+            for f in r.failures or ():
+                out.append({"workflow": r.relative_path, **f})
+        return out
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -268,6 +335,18 @@ class LintWorkflowResult(WorkflowResultBase):
     lint_errors: int = 0
     lint_warnings: int = 0
     step_results: List[ValidationStepResult] = Field(default_factory=list, serialization_alias="results")
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def step_counts(self) -> Optional[Dict[str, int]]:
+        """State-step tallies, mirroring ``WorkflowValidationResult.summary``."""
+        if self.error or self.skipped_reason:
+            return None
+        return {
+            "ok": sum(1 for sr in self.step_results if sr.status == "ok"),
+            "fail": sum(1 for sr in self.step_results if sr.status == "fail"),
+            "skip_tool_not_found": sum(1 for sr in self.step_results if sr.status == "skip_tool_not_found"),
+        }
 
 
 class SingleLintReport(BaseModel):

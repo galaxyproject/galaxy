@@ -46,6 +46,7 @@ from ._report_models import (
     TreeReportBase,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._types import GetToolInfo
 from .clean import (
     clean_stale_state,
@@ -82,39 +83,6 @@ class FailureClass(Enum):
     SUBWORKFLOW = "subworkflow"
     PARSE_ERROR = "parse_error"
     OTHER = "other"
-
-
-class StepResult(BaseModel):
-    step_id: str
-    tool_id: str | None = None
-    success: bool
-    failure_class: FailureClass | None = None
-    error: str | None = None
-    diffs: list[str] = Field(default_factory=list)
-    format2_state: dict | None = None
-    format2_connections: dict | None = None
-
-
-class RoundTripResult(BaseModel):
-    workflow_name: str
-    direction: str  # "native_to_format2" or "format2_to_native"
-    step_results: list[StepResult] = Field(default_factory=list)
-
-    @property
-    def success(self) -> bool:
-        return all(r.success for r in self.step_results)
-
-    @property
-    def failure_summary(self) -> str:
-        failures = [r for r in self.step_results if not r.success]
-        if not failures:
-            return "PASS"
-        parts = []
-        for f in failures:
-            parts.append(
-                f"step {f.step_id} ({f.tool_id}): {f.failure_class.value if f.failure_class else 'unknown'} - {f.error}"
-            )
-        return "; ".join(parts)
 
 
 # -- Diff model --
@@ -197,6 +165,39 @@ class StepDiff(BaseModel):
         tag = f"[{self.severity.value}] " if self.severity == DiffSeverity.BENIGN else ""
         suffix = f" ({self.benign_artifact.reason})" if verbose and self.benign_artifact else ""
         return f"  {tag}{self.step_path}: {self.description}{suffix}"
+
+
+class StepResult(BaseModel):
+    step_id: str
+    tool_id: str | None = None
+    success: bool
+    failure_class: FailureClass | None = None
+    error: str | None = None
+    diffs: list[StepDiff] = Field(default_factory=list)
+    format2_state: dict | None = None
+    format2_connections: dict | None = None
+
+
+class RoundTripResult(BaseModel):
+    workflow_name: str
+    direction: str  # "native_to_format2" or "format2_to_native"
+    step_results: list[StepResult] = Field(default_factory=list)
+
+    @property
+    def success(self) -> bool:
+        return all(r.success for r in self.step_results)
+
+    @property
+    def failure_summary(self) -> str:
+        failures = [r for r in self.step_results if not r.success]
+        if not failures:
+            return "PASS"
+        parts = []
+        for f in failures:
+            parts.append(
+                f"step {f.step_id} ({f.tool_id}): {f.failure_class.value if f.failure_class else 'unknown'} - {f.error}"
+            )
+        return "; ".join(parts)
 
 
 # -- Benign classifiers --
@@ -1008,6 +1009,7 @@ class RoundTripValidationResult(BaseModel):
     """Result of validating a workflow's native→format2→native round-trip."""
 
     workflow_path: str
+    category: str = ""
     format2_dict: dict | None = Field(default=None, exclude=True)
     reimported_dict: dict | None = Field(default=None, exclude=True)
     conversion_result: RoundTripResult | None = None
@@ -1020,14 +1022,17 @@ class RoundTripValidationResult(BaseModel):
     structure_errors: list[str] = Field(default_factory=list)
     encoding_errors: list[str] = Field(default_factory=list)
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def error_diffs(self) -> list[StepDiff]:
         return [d for d in (self.diffs or []) if d.severity == DiffSeverity.ERROR]
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def benign_diffs(self) -> list[StepDiff]:
         return [d for d in (self.diffs or []) if d.severity == DiffSeverity.BENIGN]
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def ok(self) -> bool:
         if self.skipped_reason or self.error:
@@ -1038,6 +1043,7 @@ class RoundTripValidationResult(BaseModel):
             return False
         return len(self.error_diffs) == 0
 
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def status(self) -> str:
         if self.skipped_reason:
@@ -1052,6 +1058,23 @@ class RoundTripValidationResult(BaseModel):
             return "roundtrip_mismatch"
         return "ok"
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def conversion_failure_lines(self) -> list[str]:
+        """Pre-formatted per-step conversion failures.
+
+        Kept identical to the strings ``_format_conversion_failures`` emits so
+        templates stay inside the Jinja2/Nunjucks shared subset (no method calls).
+        """
+        lines: list[str] = []
+        if self.status == "conversion_fail" and self.conversion_result:
+            for sr in self.conversion_result.step_results:
+                if not sr.success:
+                    fc = sr.failure_class.value if sr.failure_class else "unknown"
+                    lines.append(f"step {sr.step_id} ({sr.tool_id}): [{fc}] {sr.error}")
+        return lines
+
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def summary_line(self) -> str:
         status = self.status
@@ -1088,6 +1111,7 @@ def roundtrip_validate(
     strict_structure: bool = False,
     strict_encoding: bool = False,
     strict_state: bool = False,
+    category: str = "",
 ) -> RoundTripValidationResult:
     """Validate a native workflow survives native→format2→native round-trip.
 
@@ -1105,7 +1129,7 @@ def roundtrip_validate(
     - strict_state: promote precheck skips to errors (legacy encoding,
       replacement params), require every tool step to convert successfully
     """
-    result = RoundTripValidationResult(workflow_path=workflow_path)
+    result = RoundTripValidationResult(workflow_path=workflow_path, category=category)
 
     # Stage 1: input validation
     if strict_encoding:
@@ -1199,6 +1223,18 @@ def roundtrip_validate(
     comparison = compare_workflow_steps(orig_model, native_prime)
     result.diffs = comparison.diffs
     result.step_id_mapping = comparison.step_id_mapping
+
+    if result.conversion_result:
+        step_diffs_by_id: dict[str, list[StepDiff]] = {}
+        for diff in comparison.diffs:
+            # step_path for top-level steps is "step {orig_id}"; subworkflow steps
+            # have a colon-separated prefix, e.g. "step 0:subworkflow//step 1".
+            # Attribute each diff to the top-level step id it belongs to.
+            step_id = diff.step_path.split(":")[0].removeprefix("step ")
+            step_diffs_by_id.setdefault(step_id, []).append(diff)
+        for sr in result.conversion_result.step_results:
+            sr.diffs = step_diffs_by_id.get(sr.step_id, [])
+
     return result
 
 
@@ -1232,6 +1268,33 @@ class RoundTripTreeReport(TreeReportBase):
             else:
                 fail += 1
         return {"clean": ok, "benign_only": benign_only, "fail": fail, "error": error, "skipped": skipped}
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def total(self) -> int:
+        return len(self.results)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def tool_failure_modes(self) -> list[dict[str, Any]]:
+        """Top-N offending tools across the tree, aggregated in Python.
+
+        Each entry is ``{tool_id, failure_class, count}``. Aggregation lives
+        here (not in templates) to keep renderers inside the Jinja2/Nunjucks
+        shared subset. Sorted by count desc, then tool_id for determinism.
+        """
+        counts: dict[tuple[str | None, str], int] = {}
+        for r in self.results:
+            if r.conversion_result:
+                for sr in r.conversion_result.step_results:
+                    if sr.success:
+                        continue
+                    fc = sr.failure_class.value if sr.failure_class else "unknown"
+                    counts[(sr.tool_id, fc)] = counts.get((sr.tool_id, fc), 0) + 1
+        return [
+            {"tool_id": tool_id, "failure_class": fc, "count": n}
+            for (tool_id, fc), n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0][0] or "", kv[0][1]))
+        ]
 
     def format_summary_line(self) -> str:
         s = self.summary
@@ -1322,14 +1385,8 @@ def roundtrip_single(
 
 
 def _format_conversion_failures(result: RoundTripValidationResult, prefix: str = "  ") -> list[str]:
-    """Format conversion failure details for a single result."""
-    lines: list[str] = []
-    if result.status == "conversion_fail" and result.conversion_result:
-        for sr in result.conversion_result.step_results:
-            if not sr.success:
-                fc = sr.failure_class.value if sr.failure_class else "unknown"
-                lines.append(f"{prefix}step {sr.step_id} ({sr.tool_id}): [{fc}] {sr.error}")
-    return lines
+    """Format conversion failure details for a single result (prefixed)."""
+    return [f"{prefix}{line}" for line in result.conversion_failure_lines]
 
 
 def format_validation_text(
@@ -1361,32 +1418,7 @@ def format_validation_text(
     return "\n".join(lines)
 
 
-def format_roundtrip_markdown(report: RoundTripTreeReport) -> str:
-    """Render a roundtrip tree report as Markdown."""
-    s = report.summary
-    total = sum(s.values())
-    lines = [
-        f"# Roundtrip Validation: {report.root}",
-        "",
-        f"**{total} workflows:** {s['clean']} clean, {s['benign_only']} benign, "
-        f"{s['fail']} fail, {s['error']} error, {s['skipped']} skipped",
-        "",
-    ]
-    for r in report.results:
-        status_tag = r.status.upper()
-        benign = len(r.benign_diffs)
-        error_count = len(r.error_diffs)
-        detail = ""
-        if benign:
-            detail += f" ({benign} benign)"
-        if error_count:
-            detail += f" ({error_count} errors)"
-        lines.append(f"- **{r.workflow_path}**: {status_tag}{detail}")
-        for line in _format_conversion_failures(r, prefix="  - "):
-            lines.append(line)
-        for d in r.error_diffs:
-            lines.append(f"  - {d.step_path}: {d.description}")
-    return "\n".join(lines) + "\n"
+_format_roundtrip_markdown = make_markdown_renderer("roundtrip_tree.md.j2")
 
 
 # -- Entry point --
@@ -1433,7 +1465,7 @@ def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
     emit_reports(
         options=options,
         json_data=json_data,
-        markdown_formatter=format_roundtrip_markdown,
+        markdown_formatter=_format_roundtrip_markdown,
         markdown_report=tree_report,
         text_content=text,
         stderr_summary=result.summary_line,
@@ -1464,6 +1496,7 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
             strict_structure=options.strict_structure,
             strict_encoding=options.strict_encoding,
             strict_state=options.strict_state,
+            category=info.category,
         )
 
     def aggregate(tree_result):
@@ -1473,6 +1506,7 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
                 results.append(
                     RoundTripValidationResult(
                         workflow_path=outcome.info.path,
+                        category=outcome.info.category,
                         error=outcome.error,
                     )
                 )
@@ -1498,7 +1532,7 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
         aggregate=aggregate,
         format_text=lambda r: format_validation_text(r.results, verbose=options.verbose, strict=options.strict),
         format_summary=lambda r: r.format_summary_line(),
-        format_markdown=format_roundtrip_markdown,
+        format_markdown=_format_roundtrip_markdown,
         compute_exit_code=lambda r: _roundtrip_tree_exit_code(r, options),
         report_options=options,
     )

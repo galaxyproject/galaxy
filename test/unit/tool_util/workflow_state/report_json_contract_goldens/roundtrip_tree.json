@@ -1,0 +1,548 @@
+{
+  "categories": [
+    {
+      "name": "catA",
+      "results": [
+        {
+          "benign_diffs": [],
+          "category": "catA",
+          "conversion_failure_lines": [],
+          "conversion_result": {
+            "direction": "native_to_format2",
+            "step_results": [
+              {
+                "diffs": [],
+                "error": null,
+                "failure_class": null,
+                "format2_connections": null,
+                "format2_state": null,
+                "step_id": "1",
+                "success": true,
+                "tool_id": "cat1"
+              }
+            ],
+            "workflow_name": "wf_ok.ga"
+          },
+          "diffs": [],
+          "error": null,
+          "error_diffs": [],
+          "ok": true,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "ok",
+          "step_id_mapping": null,
+          "summary_line": "wf_pure_clean.ga: OK (1 steps)",
+          "workflow_path": "/tmp/workflows/catA/wf_pure_clean.ga"
+        },
+        {
+          "benign_diffs": [
+            {
+              "benign_artifact": null,
+              "description": "all-None section omitted",
+              "diff_type": "missing_in_roundtrip",
+              "key_path": "tool_state.section",
+              "original_value": null,
+              "roundtrip_value": null,
+              "severity": "benign",
+              "step_path": "step[1]"
+            }
+          ],
+          "category": "catA",
+          "conversion_failure_lines": [],
+          "conversion_result": {
+            "direction": "native_to_format2",
+            "step_results": [
+              {
+                "diffs": [],
+                "error": null,
+                "failure_class": null,
+                "format2_connections": null,
+                "format2_state": null,
+                "step_id": "1",
+                "success": true,
+                "tool_id": "cat1"
+              }
+            ],
+            "workflow_name": "wf_ok.ga"
+          },
+          "diffs": [
+            {
+              "benign_artifact": null,
+              "description": "all-None section omitted",
+              "diff_type": "missing_in_roundtrip",
+              "key_path": "tool_state.section",
+              "original_value": null,
+              "roundtrip_value": null,
+              "severity": "benign",
+              "step_path": "step[1]"
+            }
+          ],
+          "error": null,
+          "error_diffs": [],
+          "ok": true,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "ok",
+          "step_id_mapping": null,
+          "summary_line": "wf_ok.ga: OK (1 steps, 1 benign diff(s))",
+          "workflow_path": "/tmp/workflows/catA/wf_ok.ga"
+        },
+        {
+          "benign_diffs": [
+            {
+              "benign_artifact": null,
+              "description": "all-None section omitted",
+              "diff_type": "missing_in_roundtrip",
+              "key_path": "tool_state.section",
+              "original_value": null,
+              "roundtrip_value": null,
+              "severity": "benign",
+              "step_path": "step[1]"
+            }
+          ],
+          "category": "catA",
+          "conversion_failure_lines": [],
+          "conversion_result": {
+            "direction": "native_to_format2",
+            "step_results": [
+              {
+                "diffs": [],
+                "error": null,
+                "failure_class": null,
+                "format2_connections": null,
+                "format2_state": null,
+                "step_id": "1",
+                "success": true,
+                "tool_id": "cat1"
+              }
+            ],
+            "workflow_name": "wf_ok.ga"
+          },
+          "diffs": [
+            {
+              "benign_artifact": null,
+              "description": "value differs: 'a' vs 'b'",
+              "diff_type": "value_mismatch",
+              "key_path": "tool_state.param",
+              "original_value": "a",
+              "roundtrip_value": "b",
+              "severity": "error",
+              "step_path": "step[2]"
+            },
+            {
+              "benign_artifact": null,
+              "description": "all-None section omitted",
+              "diff_type": "missing_in_roundtrip",
+              "key_path": "tool_state.section",
+              "original_value": null,
+              "roundtrip_value": null,
+              "severity": "benign",
+              "step_path": "step[1]"
+            }
+          ],
+          "error": null,
+          "error_diffs": [
+            {
+              "benign_artifact": null,
+              "description": "value differs: 'a' vs 'b'",
+              "diff_type": "value_mismatch",
+              "key_path": "tool_state.param",
+              "original_value": "a",
+              "roundtrip_value": "b",
+              "severity": "error",
+              "step_path": "step[2]"
+            }
+          ],
+          "ok": false,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "roundtrip_mismatch",
+          "step_id_mapping": null,
+          "summary_line": "wf_mismatch.ga: MISMATCH (1 error(s), 1 benign)",
+          "workflow_path": "/tmp/workflows/catA/wf_mismatch.ga"
+        }
+      ]
+    },
+    {
+      "name": "catB",
+      "results": [
+        {
+          "benign_diffs": [],
+          "category": "catB",
+          "conversion_failure_lines": [
+            "step 2 (Grep1): [conversion_error] unknown field: foo"
+          ],
+          "conversion_result": {
+            "direction": "native_to_format2",
+            "step_results": [
+              {
+                "diffs": [],
+                "error": "unknown field: foo",
+                "failure_class": "conversion_error",
+                "format2_connections": null,
+                "format2_state": null,
+                "step_id": "2",
+                "success": false,
+                "tool_id": "Grep1"
+              }
+            ],
+            "workflow_name": "wf_conv_fail.ga"
+          },
+          "diffs": [],
+          "error": null,
+          "error_diffs": [],
+          "ok": false,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "conversion_fail",
+          "step_id_mapping": null,
+          "summary_line": "wf_conv_fail.ga: CONVERSION FAIL (1 step(s))",
+          "workflow_path": "/tmp/workflows/catB/wf_conv_fail.ga"
+        },
+        {
+          "benign_diffs": [],
+          "category": "catB",
+          "conversion_failure_lines": [
+            "step 3 (Grep1): [conversion_error] unknown field: bar"
+          ],
+          "conversion_result": {
+            "direction": "native_to_format2",
+            "step_results": [
+              {
+                "diffs": [],
+                "error": "unknown field: bar",
+                "failure_class": "conversion_error",
+                "format2_connections": null,
+                "format2_state": null,
+                "step_id": "3",
+                "success": false,
+                "tool_id": "Grep1"
+              }
+            ],
+            "workflow_name": "wf_conv_fail2.ga"
+          },
+          "diffs": [],
+          "error": null,
+          "error_diffs": [],
+          "ok": false,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "conversion_fail",
+          "step_id_mapping": null,
+          "summary_line": "wf_conv_fail2.ga: CONVERSION FAIL (1 step(s))",
+          "workflow_path": "/tmp/workflows/catB/wf_conv_fail2.ga"
+        },
+        {
+          "benign_diffs": [],
+          "category": "catB",
+          "conversion_failure_lines": [],
+          "conversion_result": null,
+          "diffs": null,
+          "error": "Reimport failed: boom",
+          "error_diffs": [],
+          "ok": false,
+          "skipped_reason": null,
+          "stale_clean_results": null,
+          "status": "error",
+          "step_id_mapping": null,
+          "summary_line": "wf_error.ga: ERROR (Reimport failed: boom)",
+          "workflow_path": "/tmp/workflows/catB/wf_error.ga"
+        },
+        {
+          "benign_diffs": [],
+          "category": "catB",
+          "conversion_failure_lines": [],
+          "conversion_result": null,
+          "diffs": null,
+          "error": null,
+          "error_diffs": [],
+          "ok": false,
+          "skipped_reason": "legacy_encoding",
+          "stale_clean_results": null,
+          "status": "skipped",
+          "step_id_mapping": null,
+          "summary_line": "wf_skip.ga: SKIPPED (legacy_encoding)",
+          "workflow_path": "/tmp/workflows/catB/wf_skip.ga"
+        }
+      ]
+    }
+  ],
+  "options": {
+    "strict": false,
+    "strip_bookkeeping": true
+  },
+  "root": "/tmp/workflows",
+  "summary": {
+    "benign_only": 1,
+    "clean": 1,
+    "error": 1,
+    "fail": 3,
+    "skipped": 1
+  },
+  "tool_failure_modes": [
+    {
+      "count": 2,
+      "failure_class": "conversion_error",
+      "tool_id": "Grep1"
+    }
+  ],
+  "total": 7,
+  "workflows": [
+    {
+      "benign_diffs": [],
+      "category": "catA",
+      "conversion_failure_lines": [],
+      "conversion_result": {
+        "direction": "native_to_format2",
+        "step_results": [
+          {
+            "diffs": [],
+            "error": null,
+            "failure_class": null,
+            "format2_connections": null,
+            "format2_state": null,
+            "step_id": "1",
+            "success": true,
+            "tool_id": "cat1"
+          }
+        ],
+        "workflow_name": "wf_ok.ga"
+      },
+      "diffs": [],
+      "error": null,
+      "error_diffs": [],
+      "ok": true,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "ok",
+      "step_id_mapping": null,
+      "summary_line": "wf_pure_clean.ga: OK (1 steps)",
+      "workflow_path": "/tmp/workflows/catA/wf_pure_clean.ga"
+    },
+    {
+      "benign_diffs": [
+        {
+          "benign_artifact": null,
+          "description": "all-None section omitted",
+          "diff_type": "missing_in_roundtrip",
+          "key_path": "tool_state.section",
+          "original_value": null,
+          "roundtrip_value": null,
+          "severity": "benign",
+          "step_path": "step[1]"
+        }
+      ],
+      "category": "catA",
+      "conversion_failure_lines": [],
+      "conversion_result": {
+        "direction": "native_to_format2",
+        "step_results": [
+          {
+            "diffs": [],
+            "error": null,
+            "failure_class": null,
+            "format2_connections": null,
+            "format2_state": null,
+            "step_id": "1",
+            "success": true,
+            "tool_id": "cat1"
+          }
+        ],
+        "workflow_name": "wf_ok.ga"
+      },
+      "diffs": [
+        {
+          "benign_artifact": null,
+          "description": "all-None section omitted",
+          "diff_type": "missing_in_roundtrip",
+          "key_path": "tool_state.section",
+          "original_value": null,
+          "roundtrip_value": null,
+          "severity": "benign",
+          "step_path": "step[1]"
+        }
+      ],
+      "error": null,
+      "error_diffs": [],
+      "ok": true,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "ok",
+      "step_id_mapping": null,
+      "summary_line": "wf_ok.ga: OK (1 steps, 1 benign diff(s))",
+      "workflow_path": "/tmp/workflows/catA/wf_ok.ga"
+    },
+    {
+      "benign_diffs": [
+        {
+          "benign_artifact": null,
+          "description": "all-None section omitted",
+          "diff_type": "missing_in_roundtrip",
+          "key_path": "tool_state.section",
+          "original_value": null,
+          "roundtrip_value": null,
+          "severity": "benign",
+          "step_path": "step[1]"
+        }
+      ],
+      "category": "catA",
+      "conversion_failure_lines": [],
+      "conversion_result": {
+        "direction": "native_to_format2",
+        "step_results": [
+          {
+            "diffs": [],
+            "error": null,
+            "failure_class": null,
+            "format2_connections": null,
+            "format2_state": null,
+            "step_id": "1",
+            "success": true,
+            "tool_id": "cat1"
+          }
+        ],
+        "workflow_name": "wf_ok.ga"
+      },
+      "diffs": [
+        {
+          "benign_artifact": null,
+          "description": "value differs: 'a' vs 'b'",
+          "diff_type": "value_mismatch",
+          "key_path": "tool_state.param",
+          "original_value": "a",
+          "roundtrip_value": "b",
+          "severity": "error",
+          "step_path": "step[2]"
+        },
+        {
+          "benign_artifact": null,
+          "description": "all-None section omitted",
+          "diff_type": "missing_in_roundtrip",
+          "key_path": "tool_state.section",
+          "original_value": null,
+          "roundtrip_value": null,
+          "severity": "benign",
+          "step_path": "step[1]"
+        }
+      ],
+      "error": null,
+      "error_diffs": [
+        {
+          "benign_artifact": null,
+          "description": "value differs: 'a' vs 'b'",
+          "diff_type": "value_mismatch",
+          "key_path": "tool_state.param",
+          "original_value": "a",
+          "roundtrip_value": "b",
+          "severity": "error",
+          "step_path": "step[2]"
+        }
+      ],
+      "ok": false,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "roundtrip_mismatch",
+      "step_id_mapping": null,
+      "summary_line": "wf_mismatch.ga: MISMATCH (1 error(s), 1 benign)",
+      "workflow_path": "/tmp/workflows/catA/wf_mismatch.ga"
+    },
+    {
+      "benign_diffs": [],
+      "category": "catB",
+      "conversion_failure_lines": [
+        "step 2 (Grep1): [conversion_error] unknown field: foo"
+      ],
+      "conversion_result": {
+        "direction": "native_to_format2",
+        "step_results": [
+          {
+            "diffs": [],
+            "error": "unknown field: foo",
+            "failure_class": "conversion_error",
+            "format2_connections": null,
+            "format2_state": null,
+            "step_id": "2",
+            "success": false,
+            "tool_id": "Grep1"
+          }
+        ],
+        "workflow_name": "wf_conv_fail.ga"
+      },
+      "diffs": [],
+      "error": null,
+      "error_diffs": [],
+      "ok": false,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "conversion_fail",
+      "step_id_mapping": null,
+      "summary_line": "wf_conv_fail.ga: CONVERSION FAIL (1 step(s))",
+      "workflow_path": "/tmp/workflows/catB/wf_conv_fail.ga"
+    },
+    {
+      "benign_diffs": [],
+      "category": "catB",
+      "conversion_failure_lines": [
+        "step 3 (Grep1): [conversion_error] unknown field: bar"
+      ],
+      "conversion_result": {
+        "direction": "native_to_format2",
+        "step_results": [
+          {
+            "diffs": [],
+            "error": "unknown field: bar",
+            "failure_class": "conversion_error",
+            "format2_connections": null,
+            "format2_state": null,
+            "step_id": "3",
+            "success": false,
+            "tool_id": "Grep1"
+          }
+        ],
+        "workflow_name": "wf_conv_fail2.ga"
+      },
+      "diffs": [],
+      "error": null,
+      "error_diffs": [],
+      "ok": false,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "conversion_fail",
+      "step_id_mapping": null,
+      "summary_line": "wf_conv_fail2.ga: CONVERSION FAIL (1 step(s))",
+      "workflow_path": "/tmp/workflows/catB/wf_conv_fail2.ga"
+    },
+    {
+      "benign_diffs": [],
+      "category": "catB",
+      "conversion_failure_lines": [],
+      "conversion_result": null,
+      "diffs": null,
+      "error": "Reimport failed: boom",
+      "error_diffs": [],
+      "ok": false,
+      "skipped_reason": null,
+      "stale_clean_results": null,
+      "status": "error",
+      "step_id_mapping": null,
+      "summary_line": "wf_error.ga: ERROR (Reimport failed: boom)",
+      "workflow_path": "/tmp/workflows/catB/wf_error.ga"
+    },
+    {
+      "benign_diffs": [],
+      "category": "catB",
+      "conversion_failure_lines": [],
+      "conversion_result": null,
+      "diffs": null,
+      "error": null,
+      "error_diffs": [],
+      "ok": false,
+      "skipped_reason": "legacy_encoding",
+      "stale_clean_results": null,
+      "status": "skipped",
+      "step_id_mapping": null,
+      "summary_line": "wf_skip.ga: SKIPPED (legacy_encoding)",
+      "workflow_path": "/tmp/workflows/catB/wf_skip.ga"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ from dataclasses import (
 )
 from typing import (
     Any,
+    Literal,
 )
 
 from gxformat2.normalized import (
@@ -49,6 +50,7 @@ from ._report_models import (
     WorkflowResultBase,
 )
 from ._report_output import emit_reports
+from ._report_templates import make_markdown_renderer
 from ._types import GetToolInfo
 from .convert import (
     ConversionValidationFailure,
@@ -414,7 +416,7 @@ def run_export(options: ExportOptions) -> int:
     emit_reports(
         options=options,
         json_data=json_data,
-        markdown_formatter=_format_tree_markdown,
+        markdown_formatter=make_markdown_renderer("export_tree.md.j2"),
         markdown_report=tree_report,
         text_content=text_content,
         stderr_summary=summary_text,
@@ -433,6 +435,20 @@ class WorkflowExportResult(WorkflowResultBase):
     ok: bool = False
     steps_converted: int = 0
     steps_fallback: int = 0
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def status(self) -> Literal["ok", "partial", "error", "skipped"]:
+        # Precedence: error → skipped → ok → partial. ``ok=True`` with
+        # ``steps_fallback>0`` stays "ok" (fallback count is a detail,
+        # not a state) — matches the original formatter's branch order.
+        if self.error:
+            return "error"
+        if self.skipped_reason:
+            return "skipped"
+        if self.ok:
+            return "ok"
+        return "partial"
 
 
 class SingleExportReport(BaseModel):
@@ -483,22 +499,6 @@ def wrap_single_export(workflow_path: str, report: SingleExportReport) -> Export
             )
         ],
     )
-
-
-def _format_tree_markdown(report: ExportTreeReport) -> str:
-    lines = [f"# Export Report: {report.root}"]
-    for r in report.results:
-        if r.error:
-            lines.append(f"- **{r.relative_path}**: ERROR ({r.error})")
-        elif r.skipped_reason:
-            lines.append(f"- **{r.relative_path}**: SKIPPED ({r.skipped_reason})")
-        elif r.ok:
-            lines.append(f"- **{r.relative_path}**: OK ({r.steps_converted} steps)")
-        else:
-            lines.append(f"- **{r.relative_path}**: PARTIAL ({r.steps_fallback} fallbacks)")
-    s = report.summary
-    lines.append(f"\n**Summary**: {s['ok']} OK, {s['fail']} errors, {s['skipped']} skipped")
-    return "\n".join(lines)
 
 
 def run_export_tree(options: ExportTreeOptions) -> int:
@@ -626,7 +626,7 @@ def run_export_tree(options: ExportTreeOptions) -> int:
         aggregate=aggregate,
         format_text=format_text,
         format_summary=lambda r: f"Export: {r.summary['ok']} OK, {r.summary['fail']} errors",
-        format_markdown=_format_tree_markdown,
+        format_markdown=make_markdown_renderer("export_tree.md.j2"),
         compute_exit_code=lambda r: 1 if r.summary["fail"] > 0 else 0,
         report_options=options,
     )

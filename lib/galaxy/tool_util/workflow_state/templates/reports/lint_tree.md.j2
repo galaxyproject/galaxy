@@ -1,0 +1,31 @@
+{#-
+  Tree-level report for ``gxwf-lint-stateful``.
+
+  Pure port of ``lint_stateful._format_lint_tree_markdown`` — single wide
+  table with one row per workflow. Uses the ``step_counts`` computed field
+  on ``LintWorkflowResult`` instead of re-looping ``results``.
+
+  Content improvements deferred — surfacing lint messages and exit-code
+  meaning needs model + pipeline changes called out in the plan's
+  Step 1 "out of scope" list.
+
+  Context:
+    report — LintTreeReport as json-dumped dict (``results`` → ``workflows``)
+    meta   — ignored here; kept for uniform signature
+-#}
+# Lint Report
+
+Root: `{{ report.root }}`
+Workflows: {{ report.workflows | length }} | Lint: {{ report.summary.lint_errors }} errors, {{ report.summary.lint_warnings }} warnings | State: {{ report.summary.state_ok }} OK, {{ report.summary.state_fail }} FAIL, {{ report.summary.state_skip }} SKIP
+
+| Workflow | Lint Errors | Lint Warnings | State OK | State Fail | State Skip |
+| --- | --- | --- | --- | --- | --- |
+{% for r in report.workflows %}
+{% if r.error %}
+| {{ r.path }} | - | - | - | - | ERROR: {{ r.error }} |
+{% elif r.skipped_reason %}
+| {{ r.path }} | - | - | - | - | SKIPPED |
+{% else %}
+| {{ r.path }} | {{ r.lint_errors }} | {{ r.lint_warnings }} | {{ r.step_counts.ok }} | {{ r.step_counts.fail }} | {{ r.step_counts.skip_tool_not_found }} |
+{% endif %}
+{% endfor %}

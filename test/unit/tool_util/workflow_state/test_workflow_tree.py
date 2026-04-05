@@ -310,15 +310,13 @@ class TestValidateTree:
         assert len(report.results) == 1
 
     def test_markdown_report_structure(self, tmp_path):
-        from galaxy.tool_util.workflow_state.validate import (
-            format_tree_markdown,
-            validate_tree,
-        )
+        from galaxy.tool_util.workflow_state._report_templates import make_markdown_renderer
+        from galaxy.tool_util.workflow_state.validate import validate_tree
         from galaxy.workflow.gx_validator import GET_TOOL_INFO
 
         _write_tree(tmp_path, {"imaging/seg.ga": _make_native_workflow()})
         report = validate_tree(str(tmp_path), GET_TOOL_INFO)
-        md = format_tree_markdown(report)
+        md = make_markdown_renderer("validate_tree.md.j2")(report)
         assert "# Workflow Validation Report" in md
         assert "imaging" in md
         assert "seg.ga" in md
@@ -481,17 +479,15 @@ class TestCleanTree:
         assert s["total_keys"] == 0
 
     def test_markdown_report_structure(self, tmp_path):
-        from galaxy.tool_util.workflow_state.clean import (
-            clean_tree,
-            format_tree_clean_markdown,
-        )
+        from galaxy.tool_util.workflow_state._report_templates import make_markdown_renderer
+        from galaxy.tool_util.workflow_state.clean import clean_tree
         from galaxy.workflow.gx_validator import GET_TOOL_INFO
 
         wf = _make_native_workflow_with_stale({"stale_key": "val"})
         _write_tree(tmp_path, {"imaging/seg.ga": wf})
 
         report = clean_tree(str(tmp_path), GET_TOOL_INFO)
-        md = format_tree_clean_markdown(report)
+        md = make_markdown_renderer("clean_tree.md.j2")(report)
         assert "# Stale State Cleaning Report" in md
         assert "stale_key" in md
 
