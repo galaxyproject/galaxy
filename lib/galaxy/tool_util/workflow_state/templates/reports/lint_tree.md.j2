@@ -26,6 +26,6 @@ Workflows: {{ report.workflows | length }} | Lint: {{ report.summary.lint_errors
 {% elif r.skipped_reason %}
 | {{ r.path }} | - | - | - | - | SKIPPED |
 {% else %}
-| {{ r.path }} | {{ r.lint_errors }} | {{ r.lint_warnings }} | {{ r.step_counts.ok }} | {{ r.step_counts.fail }} | {{ r.step_counts.skip_tool_not_found }} |
+| {{ r.path }} | {{ r.lint_errors }} | {{ r.lint_warnings }} | {{ r.step_counts.ok }} | {{ r.step_counts.fail }} | {{ r.step_counts.skip }} |
 {% endif %}
 {% endfor %}

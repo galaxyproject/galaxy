@@ -17,6 +17,7 @@ from galaxy.tool_util.workflow_state._encoding import (
     validate_encoding_format2,
     validate_encoding_native,
 )
+from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state.cache import (
     build_tool_info,
     populate_cache,
@@ -193,7 +194,7 @@ class TestIWCSweepStrictEncodingClean:
 @skip_unless_environ(IWC_ENV)
 class TestIWCSweepStrictStateClean:
     """After cleaning, --strict-state semantics: every tool step must validate
-    with no skip_tool_not_found (tool cache resolves everything) and no fails.
+    with no skipped steps (tool cache resolves everything) and no fails.
 
     Note: bypasses validate_single() / run_validate() and calls
     validate_workflow_cli() directly because library entry points still take a
@@ -208,7 +209,7 @@ class TestIWCSweepStrictStateClean:
             precheck is None or precheck.can_process
         ), f"strict-state: precheck refused {wf_path}: {precheck.detail if precheck else ''}"
         fails = [r for r in results if r.status == "fail"]
-        skips = [r for r in results if r.status == "skip_tool_not_found"]
+        skips = [r for r in results if r.status in SKIP_STATUSES]
         assert not fails, f"strict-state fails in {wf_path}: {[(r.step, r.errors) for r in fails]}"
         assert not skips, f"strict-state skips in {wf_path}: {[(r.step, r.tool_id) for r in skips]}"
 
@@ -307,6 +308,6 @@ class TestIWCSweepStrictAll:
             precheck is None or precheck.can_process
         ), f"strict-state: precheck refused {wf_path}: {precheck.detail if precheck else ''}"
         fails = [r for r in results if r.status == "fail"]
-        skips = [r for r in results if r.status == "skip_tool_not_found"]
+        skips = [r for r in results if r.status in SKIP_STATUSES]
         assert not fails, f"strict-state fails in {wf_path}: {[(r.step, r.errors) for r in fails]}"
         assert not skips, f"strict-state skips in {wf_path}: {[(r.step, r.tool_id) for r in skips]}"

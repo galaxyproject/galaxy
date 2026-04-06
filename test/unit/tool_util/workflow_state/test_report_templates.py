@@ -149,7 +149,7 @@ _MACRO_TEST_TEMPLATE = """\
 ---
 {{ m.workflow_state_cells({"skipped_reason": None, "error": "parse failed", "summary": None, "results": []}) }}
 ---
-{{ m.workflow_state_cells({"skipped_reason": None, "error": None, "summary": {"ok": 3, "fail": 1, "skip_tool_not_found": 0}, "results": [1, 2, 3, 4]}) }}
+{{ m.workflow_state_cells({"skipped_reason": None, "error": None, "summary": {"ok": 3, "fail": 1, "skip": 0}, "results": [1, 2, 3, 4]}) }}
 """
 
 
