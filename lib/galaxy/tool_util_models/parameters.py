@@ -19,6 +19,7 @@ from typing import (
     Union,
 )
 
+import annotated_types
 from pydantic import (
     AfterValidator,
     AliasChoices,
@@ -174,7 +175,11 @@ def _label_value_dicts(options: List[Any]) -> List[Dict[str, Any]]:
 
 
 def dynamic_model_information_from_py_type(
-    param_model: ParamModel, py_type: Type, requires_value: Optional[bool] = None, validators=None
+    param_model: ParamModel,
+    py_type: Type,
+    requires_value: Optional[bool] = None,
+    validators=None,
+    extra_json_schema: Optional[Dict[str, Any]] = None,
 ):
     name = safe_field_name(param_model.name)
     if requires_value is None:
@@ -186,6 +191,8 @@ def dynamic_model_information_from_py_type(
         validators["not_null"] = field_validator(name)(Validators.validate_not_none)
 
     field_kwargs = param_model.field_kwargs()
+    if extra_json_schema:
+        field_kwargs.setdefault("json_schema_extra", {}).update(extra_json_schema)
     return DynamicModelInformation(
         name,
         (py_type, Field(initialize, alias=param_model.name if param_model.name != name else None, **field_kwargs)),
@@ -272,14 +279,70 @@ def pydantic_to_galaxy_type(value: Any) -> Any:
 VT = TypeVar("VT", bound=StaticValidatorModel)
 
 
+def _json_schema_annotations_for(static_validator_models: Sequence[VT]) -> List[Any]:
+    """Extract JSON Schema-representable constraint annotations from validators.
+
+    Non-negated in_range and length validators have direct annotated_types
+    equivalents that Pydantic emits as JSON Schema keywords. Regex is handled
+    separately via json_schema_extra since StringConstraints is incompatible
+    with non-string types (e.g. AnyUrl).
+    """
+    annotations: List[Any] = []
+    for v in static_validator_models:
+        if isinstance(v, InRangeParameterValidatorModel) and not v.negate:
+            if v.min is not None:
+                annotations.append(annotated_types.Gt(v.min) if v.exclude_min else annotated_types.Ge(v.min))
+            if v.max is not None:
+                annotations.append(annotated_types.Lt(v.max) if v.exclude_max else annotated_types.Le(v.max))
+        elif isinstance(v, LengthParameterValidatorModel) and not v.negate:
+            if v.min is not None:
+                annotations.append(annotated_types.MinLen(v.min))
+            if v.max is not None:
+                annotations.append(annotated_types.MaxLen(v.max))
+    return annotations
+
+
+def _json_schema_extra_for_validators(validators: Sequence[VT]) -> Dict[str, Any]:
+    """Extract JSON Schema keywords for validators best handled via json_schema_extra.
+
+    Regex pattern is emitted here rather than as a type annotation because
+    StringConstraints is incompatible with non-string types like AnyUrl.
+    Negated length uses ``not: {minLength, maxLength}`` since the non-negated
+    form is handled by annotated_types.
+    """
+    extra: Dict[str, Any] = {}
+    for v in validators:
+        if isinstance(v, RegexParameterValidatorModel) and not v.negate:
+            pattern = v.expression
+            # Python re.match anchors at start; JSON Schema pattern does not
+            if not pattern.startswith("^"):
+                pattern = "^" + pattern
+            extra["pattern"] = pattern
+            break
+    for v in validators:
+        if isinstance(v, LengthParameterValidatorModel) and v.negate:
+            not_constraint: Dict[str, Any] = {}
+            if v.min is not None:
+                not_constraint["minLength"] = v.min
+            if v.max is not None:
+                not_constraint["maxLength"] = v.max
+            if not_constraint:
+                extra["not"] = not_constraint
+            break
+    return extra
+
+
 def decorate_type_with_validators_if_needed(
     py_type: Type, static_validator_models: Sequence[VT], optional: bool = False
 ) -> Type:
     pydantic_validator = pydantic_validator_for(static_validator_models, optional=optional)
+    json_schema_annotations = _json_schema_annotations_for(static_validator_models)
+    all_annotations = json_schema_annotations[:]
     if pydantic_validator:
-        return expand_annotation(py_type, [pydantic_validator])
-    else:
-        return py_type
+        all_annotations.append(pydantic_validator)
+    if all_annotations:
+        return expand_annotation(py_type, all_annotations)
+    return py_type
 
 
 # Looks like Annotated only work with one PlainValidator so condensing all static validators
@@ -339,7 +402,12 @@ class TextParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if state_representation in ("job_internal", "job_runtime"):
             requires_value = True
-        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
+        return dynamic_model_information_from_py_type(
+            self,
+            py_type,
+            requires_value=requires_value,
+            extra_json_schema=_json_schema_extra_for_validators(self.validators),
+        )
 
     @property
     def request_requires_value(self) -> bool:
@@ -481,7 +549,7 @@ class FileHash(StrictModel):
 
 
 class BaseDataRequest(StrictModel):
-    url: StrictStr = Field(..., alias="location")
+    url: StrictStr = Field(..., alias="location", validation_alias=AliasChoices("url", "location"))
     name: Optional[StrictStr] = None
     ext: StrictStr
     dbkey: StrictStr = "?"
@@ -1445,6 +1513,11 @@ class ColorParameterModel(BaseGalaxyToolParameterModelDefinition):
     type: Literal["color"]
     value: Optional[str] = None
 
+    def field_kwargs(self) -> Dict[str, Any]:
+        kwargs = super().field_kwargs()
+        kwargs["json_schema_extra"]["pattern"] = "^#[0-9a-f]{6}$"
+        return kwargs
+
     @property
     def py_type(self) -> Type:
         return optional_if_needed(StrictStr, self.optional)
@@ -1535,7 +1608,12 @@ class DirectoryUriParameterModel(BaseGalaxyToolParameterModelDefinition):
         requires_value = self.request_requires_value
         if _is_landing_request(state_representation):
             requires_value = False
-        return dynamic_model_information_from_py_type(self, py_type, requires_value=requires_value)
+        return dynamic_model_information_from_py_type(
+            self,
+            py_type,
+            requires_value=requires_value,
+            extra_json_schema=_json_schema_extra_for_validators(self.validators),
+        )
 
     @property
     def request_requires_value(self) -> bool:
@@ -1634,6 +1712,7 @@ class SelectParameterModel(BaseGalaxyToolParameterModelDefinition):
             py_type = self.py_type_if_required(allow_connections=False)
             if self.multiple:
                 validators = {"from_string": field_validator(self.name, mode="before")(SelectParameterModel.split_str)}
+                py_type = union_type([StrictStr, py_type])
             py_type = optional_if_needed(py_type, self.optional)
         elif state_representation == "test_case_json":
             # in JSON test case representation, lists are already validated as lists (no string splitting)
@@ -1876,11 +1955,13 @@ class DataColumnParameterModel(BaseGalaxyToolParameterModelDefinition):
                 validators = {
                     "from_string": field_validator(self.name, mode="before")(DataColumnParameterModel.split_str)
                 }
+                py_type = union_type([StrictStr, self.py_type])
             else:
                 validators = {}
+                py_type = self.py_type
             requires_value = self.request_requires_value
             return dynamic_model_information_from_py_type(
-                self, self.py_type, validators=validators, requires_value=requires_value
+                self, py_type, validators=validators, requires_value=requires_value
             )
         elif state_representation == "test_case_json":
             # JSON test cases accept lists directly (no string splitting)

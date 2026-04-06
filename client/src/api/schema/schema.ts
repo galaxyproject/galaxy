@@ -8506,8 +8506,6 @@ export interface components {
             identifier: string;
             /** Info */
             info?: string | null;
-            /** Location */
-            location: string;
             /** Name */
             name?: string | null;
             /**
@@ -8524,6 +8522,8 @@ export interface components {
              * @default false
              */
             to_posix_lines: boolean;
+            /** Url */
+            url: string;
         };
         /** CollectionElementIdentifier */
         CollectionElementIdentifier: {
@@ -12789,8 +12789,6 @@ export interface components {
             hashes?: components["schemas"]["FileHash"][] | null;
             /** Info */
             info?: string | null;
-            /** Location */
-            location: string;
             /** Name */
             name?: string | null;
             /**
@@ -12807,6 +12805,8 @@ export interface components {
              * @default false
              */
             to_posix_lines: boolean;
+            /** Url */
+            url: string;
         };
         /** FileSourceTemplateSummaries */
         FileSourceTemplateSummaries: components["schemas"]["FileSourceTemplateSummary"][];

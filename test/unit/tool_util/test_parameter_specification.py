@@ -121,6 +121,8 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
     }
 
     for valid_or_invalid, tests in combos.items():
+        if valid_or_invalid not in assertion_functions:
+            continue
         assertion_function = assertion_functions[valid_or_invalid]
         assertion_function(parameter_bundle, tests)
 

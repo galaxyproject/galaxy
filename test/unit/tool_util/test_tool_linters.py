@@ -2449,7 +2449,7 @@ def test_linting_functional_tool_multi_select(lint_ctx):
     run_lint_module(lint_ctx, tests, tool_source)
     warn_message = lint_ctx.warn_messages[0]
     assert (
-        "Test 2: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [5 validation errors for"
+        "Test 2: failed to validate test parameters against inputs - tests won't run on a modern Galaxy tool profile version. Validation errors are [6 validation errors for"
         in str(warn_message)
     )
 

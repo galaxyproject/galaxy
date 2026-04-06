@@ -344,6 +344,9 @@ gx_text_expression_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  _json_schema_skip:
+    request_invalid: "expression validator uses AfterValidator"
+    workflow_step_linked_invalid: "expression validator uses AfterValidator"
 
 gx_text_empty_validation:
   request_valid:
@@ -365,6 +368,11 @@ gx_text_empty_validation:
   - parameter: {__class__: 'ConnectedValue'}
   workflow_step_linked_invalid:
   - parameter: ''
+  _json_schema_skip:
+    request_invalid: "empty_field validator uses AfterValidator"
+    job_internal_invalid: "empty_field validator uses AfterValidator"
+    job_runtime_invalid: "empty_field validator uses AfterValidator"
+    workflow_step_linked_invalid: "empty_field validator uses AfterValidator"
 
 gx_text:
   request_valid: &gx_text_request_valid
@@ -928,6 +936,10 @@ gx_directory_uri:
   - parameter: "justsomestring"
   - parameter: true
   - parameter: null
+  _json_schema_skip:
+    request_invalid: "regex validator uses AfterValidator"
+    job_internal_invalid: "regex validator uses AfterValidator"
+    job_runtime_invalid: "regex validator uses AfterValidator"
 
 gx_directory_uri_validation:
   request_valid:
@@ -944,6 +956,9 @@ gx_directory_uri_validation:
   - parameter: "gxfiles://tooshort/index.json"
   - parameter: "gxfiles://mycoolsource/api/wrongex.js"
   - parameter: "gxfiles://mycoolsource/badexp.json"
+  _json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_hidden:
   request_valid:
@@ -1051,6 +1066,9 @@ gx_hidden_validation:
   - parameter: "http://mycoolservice.com/index.json"
   - parameter: "http://mycoolservice.com/api/wrongex.js"
   - parameter: "http://mycoolservice.com/badexp.json"
+  _json_schema_skip:
+    request_invalid: "regex/length/expression validators use AfterValidator"
+    workflow_step_linked_invalid: "regex/length/expression validators use AfterValidator"
 
 gx_float:
   request_valid:
