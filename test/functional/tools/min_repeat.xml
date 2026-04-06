@@ -10,6 +10,10 @@
         <repeat name="queries2" title="Dataset" min="1">
             <param name="input2" type="data" label="Select" />
         </repeat>
+        <!-- test if its possible to define an optional repeat -->
+        <repeat name="queries3" title="Dataset" min="0" default="1">
+            <param name="input2" type="data" label="Select" />
+        </repeat>
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" label="Repeat 1 Datasets on ${on_string}" />
