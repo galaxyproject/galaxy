@@ -278,13 +278,6 @@ def test_validate_encoding_format2_rejects_tool_state_field():
     assert "tool_state" in errors[0] and "instead of `state`" in errors[0]
 
 
-def test_validate_encoding_format2_rejects_json_string_state():
-    wf = {"steps": [{"tool_id": "t", "state": json.dumps({"x": 1})}]}
-    errors = validate_encoding_format2(wf)
-    assert len(errors) == 1
-    assert "JSON string" in errors[0]
-
-
 # -- Step 3: behavioral wiring tests --
 
 

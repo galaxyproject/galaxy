@@ -60,7 +60,7 @@ def validate_encoding_native(workflow_dict: Dict[str, Any]) -> List[str]:
 
 
 def validate_encoding_format2(workflow_dict: Dict[str, Any]) -> List[str]:
-    """Check that a format2 workflow uses `state` (not `tool_state`) and values are proper dicts."""
+    """Check that a format2 workflow uses `state` (not `tool_state`)."""
     errors: List[str] = []
     steps = workflow_dict.get("steps")
     if isinstance(steps, list):
@@ -76,9 +76,6 @@ def validate_encoding_format2(workflow_dict: Dict[str, Any]) -> List[str]:
         has_state = step.get("state") is not None
         if has_tool_state and not has_state:
             errors.append(f"Step {key}: uses `tool_state` instead of `state` (format2)")
-        state = step.get("state") if has_state else step.get("tool_state")
-        if isinstance(state, str):
-            errors.append(f"Step {key}: state is a JSON string, expected dict")
     return errors
 
 
