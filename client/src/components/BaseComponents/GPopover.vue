@@ -365,27 +365,29 @@ defineExpose({
 </script>
 
 <template>
-    <div
-        v-show="showState"
-        ref="popoverEl"
-        class="popover b-popover"
-        :class="[customClass, `bs-popover-${actualPlacement}`]"
-        role="tooltip"
-        :style="{ transform: `translate(${popoverPosition.x}px, ${popoverPosition.y}px)` }">
+    <Teleport to="body">
         <div
-            ref="arrowEl"
-            class="arrow"
-            :style="{
-                left: arrowPosition.x != null ? `${arrowPosition.x}px` : '',
-                top: arrowPosition.y != null ? `${arrowPosition.y}px` : '',
-            }" />
-        <div v-if="title || $slots.title" class="popover-header">
-            <slot name="title">{{ title }}</slot>
+            v-show="showState"
+            ref="popoverEl"
+            class="popover b-popover"
+            :class="[customClass, `bs-popover-${actualPlacement}`]"
+            role="tooltip"
+            :style="{ transform: `translate(${popoverPosition.x}px, ${popoverPosition.y}px)` }">
+            <div
+                ref="arrowEl"
+                class="arrow"
+                :style="{
+                    left: arrowPosition.x != null ? `${arrowPosition.x}px` : '',
+                    top: arrowPosition.y != null ? `${arrowPosition.y}px` : '',
+                }" />
+            <div v-if="title || $slots.title" class="popover-header">
+                <slot name="title">{{ title }}</slot>
+            </div>
+            <div class="popover-body">
+                <slot>{{ content }}</slot>
+            </div>
         </div>
-        <div class="popover-body">
-            <slot>{{ content }}</slot>
-        </div>
-    </div>
+    </Teleport>
 </template>
 
 <style scoped lang="scss">
