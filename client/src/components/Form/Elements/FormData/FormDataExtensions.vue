@@ -25,7 +25,6 @@ const emit = defineEmits<{
 const localFormatsVisible = computed({
     get: () => props.formatsVisible,
     set: (value: boolean) => {
-        // emit("update:show-modal", value);
         emit("update:formats-visible", value);
     },
 });
@@ -50,7 +49,6 @@ const localFormatsVisible = computed({
         </GButton>
         <GPopover
             v-if="props.popover"
-            v-model="localFormatsVisible"
             :target="props.formatsButtonId"
             :show.sync="localFormatsVisible"
             placement="bottom">
