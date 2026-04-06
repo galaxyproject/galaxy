@@ -2,6 +2,7 @@
 
 from .._cli_common import (
     add_report_args,
+    add_strict_args,
     build_base_parser,
     cli_main,
 )
@@ -18,7 +19,7 @@ def build_parser():
         description="Lint Galaxy workflows: structural checks + tool state validation.",
         stale_key_mode="validate",
     )
-    parser.add_argument("--strict", action="store_true", help="Treat skips (missing tool defs) as failures")
+    add_strict_args(parser)
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
     parser.add_argument(

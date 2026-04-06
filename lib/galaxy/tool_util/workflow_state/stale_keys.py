@@ -34,8 +34,6 @@ from ._types import (
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _select_which_when_native,
-    as_dict,
-    as_list,
 )
 
 
@@ -164,9 +162,9 @@ def _classify_conditional(
 ):
     """Classify undeclared keys inside a conditional, with stale-branch detection."""
     conditional = cast(ConditionalParameterModel, tool_input)
-    cond_state = as_dict(value)
-    if cond_state is None:
+    if not isinstance(value, dict):
         return
+    cond_state = value
 
     test_param = conditional.test_parameter
     active_when = _select_which_when_native(conditional, cond_state)
@@ -217,8 +215,9 @@ def _classify_repeat(
     name: str,
 ):
     repeat = cast(RepeatParameterModel, tool_input)
-    repeat_state = as_list(value)
-    for i, instance in enumerate(repeat_state):
+    if not isinstance(value, list):
+        return
+    for i, instance in enumerate(value):
         if isinstance(instance, dict):
             instance_prefix = f"{prefix}{name}_{i}."
             _classify_recursive(instance, list(repeat.parameters), result, prefix=instance_prefix)
@@ -231,10 +230,9 @@ def _classify_section(
     child_prefix: str,
 ):
     section = cast(SectionParameterModel, tool_input)
-    section_state = as_dict(value)
-    if section_state is None:
+    if not isinstance(value, dict):
         return
-    _classify_recursive(section_state, list(section.parameters), result, prefix=child_prefix)
+    _classify_recursive(value, list(section.parameters), result, prefix=child_prefix)
 
 
 # -- Classification helpers --
@@ -273,8 +271,8 @@ def _stale_root_detail(key: str, tool_inputs: list[ToolParameterT], state: dict)
 
         # Check test param
         if key == tool_input.test_parameter.name:
-            cond_state = as_dict(state.get(cond_name))
-            if cond_state and key in cond_state:
+            cond_state = state.get(cond_name)
+            if isinstance(cond_state, dict) and key in cond_state:
                 root_val = state.get(key)
                 nested_val = cond_state.get(key)
                 if root_val == nested_val:
@@ -287,8 +285,8 @@ def _stale_root_detail(key: str, tool_inputs: list[ToolParameterT], state: dict)
         for when in tool_input.whens:
             for p in when.parameters:
                 if p.name == key:
-                    cond_state = as_dict(state.get(cond_name))
-                    if cond_state and key in cond_state:
+                    cond_state = state.get(cond_name)
+                    if isinstance(cond_state, dict) and key in cond_state:
                         root_val = state.get(key)
                         nested_val = cond_state.get(key)
                         if root_val == nested_val:

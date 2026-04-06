@@ -1,0 +1,30 @@
+{
+    "a_galaxy_workflow": "true",
+    "format-version": "0.1",
+    "name": "Synthetic Missing Tool",
+    "steps": {
+        "0": {
+            "type": "data_input",
+            "tool_id": null,
+            "label": "input_dataset",
+            "tool_state": {
+                "name": "input_dataset"
+            }
+        },
+        "1": {
+            "type": "tool",
+            "tool_id": "toolshed.g2.bx.psu.edu/repos/nobody/nonexistent_tool/nonexistent/99.0",
+            "tool_version": "99.0",
+            "label": "missing",
+            "tool_state": {
+                "param1": "value1"
+            },
+            "input_connections": {
+                "input1": {"id": 0, "output_name": "output"}
+            },
+            "workflow_outputs": [
+                {"label": "output", "output_name": "out_file1"}
+            ]
+        }
+    }
+}

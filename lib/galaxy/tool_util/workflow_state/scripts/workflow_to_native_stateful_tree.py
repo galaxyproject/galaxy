@@ -2,6 +2,7 @@
 
 from .._cli_common import (
     add_report_args,
+    add_strict_args,
     build_base_parser,
     cli_main,
 )
@@ -19,7 +20,7 @@ def build_parser():
         workflow_path_help="Path to directory containing format2 .gxwf.yml workflows",
     )
     parser.add_argument("--output-dir", required=True, help="Output directory for native .ga files")
-    parser.add_argument("--strict", action="store_true", help="Fail if any step can't be schema-encoded")
+    add_strict_args(parser)
     add_report_args(parser)
     return parser
 

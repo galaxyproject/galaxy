@@ -2,6 +2,7 @@
 
 from .._cli_common import (
     add_report_args,
+    add_strict_args,
     build_base_parser,
     cli_main,
 )
@@ -27,7 +28,7 @@ def build_parser():
         help="Output JSON instead of YAML (default: YAML)",
     )
     parser.add_argument("--compact", action="store_true", help="Generate compact workflow without position information")
-    parser.add_argument("--strict", action="store_true", help="Fail on any step that can't be converted")
+    add_strict_args(parser)
     add_report_args(parser)
     return parser
 
