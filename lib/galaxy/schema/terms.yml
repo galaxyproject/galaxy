@@ -92,9 +92,9 @@ galaxy:
       This is the text of the content to import if the 'src' of the item is 'pasted'.
     targets: |
       This groups data import requests into sets of elements or items that should be imported together. Each
-      target should have a a set of items/elements as well as a 'destination'. The ``destination`` of the target controls where
-      the data is imported to - for instances as HDAs into a history (``{"type": "hdas"}``) or as a collection
-      (``{"type": "hdca"}``).
+      target should have a set of items/elements as well as a 'destination'. The `destination` of the target controls where
+      the data is imported to - for instances as HDAs into a history (`{"type": "hdas"}`) or as a collection
+      (`{"type": "hdca"}`).
     sources:
       url: |
         This source type indicates the item should be imported from a Galaxy URI. This could be a traditional HTTP/HTTPS URL (e.g.
@@ -102,7 +102,7 @@ galaxy:
         handle.
       pasted: |
         This source type indicates the item should be just the literal contents embedded in the request using the
-        the ``paste_content`` field.        
+        the `paste_content` field.
       files: |
         This source type indicates the item should be imported from a file that is uploaded to Galaxy with the
         the request.
@@ -125,7 +125,7 @@ galaxy:
         This destination type indicates the items should be imported as a library.
   collections:
     flatList: |
-      A flat list is just a simple dataset collection of type ``list`` that contains only datasets and not
+      A flat list is just a simple dataset collection of type `list` that contains only datasets and not
       other collections.
     mapOver: |
       When a tool consumes a dataset but is run with a collection, the tool *maps over* the collection.
@@ -137,15 +137,15 @@ galaxy:
       It is easiest to visualize "mapping over" a collection in the context of a tool that consumes a dataset
       and produces a dataset, but the semantics apply naturally to tools that consume collections or
       produce collections as well.
-      
-      For instance, consider a tool that consumes a ``paired`` collection and produces an output dataset.
-      If a list of paired collections (collection type ``list:paired``) is passed to the tool - it will
-      produce a flat list (collection type ``list``) of output datasets with the same number of elements
-      in the same order as the provided list of ``paired`` collections.
+
+      For instance, consider a tool that consumes a `paired` collection and produces an output dataset.
+      If a list of paired collections (collection type `list:paired`) is passed to the tool - it will
+      produce a flat list (collection type `list`) of output datasets with the same number of elements
+      in the same order as the provided list of `paired` collections.
 
       In the case of outputs, consider a tool that takes in a dataset and produces a flat list. If this tool
       is run over a flat list of datasets - that list will be "mapped over" and each element will produce a list.
-      These lists will be gathered in a nested list structure (collection type ``list:list``) where
+      These lists will be gathered in a nested list structure (collection type `list:list`) where
       the outer element count and structure matches that of the input and the inner list for each of those
       is just the outputs of the tool for the corresponding element of the input.
     collectionBuilder:
@@ -190,7 +190,7 @@ galaxy:
     states:
       # upload, waiting, failed, paused, deleting, deleted, stop, stopped, skipped.
       ok: |
-        This state indicates the job completed normally and Galaxy did not detect any errors with execution. 
+        This state indicates the job completed normally and Galaxy did not detect any errors with execution.
       new: |
         This state indicates the job is ready to be run. Typically this means a Galaxy job handler will schedule
         the job and place it into a queued state on its next iteration.
@@ -240,24 +240,24 @@ galaxy:
         or jobs will be created for this workflow invocation.
   upload:
     galaxyUploadUtil: |
-      A utility for uploading files to a Galaxy server from the command line. Use ``galaxy-upload`` to upload
-      file(s) to a Galaxy server, and ``galaxy-history-search``, a helper utility to find Galaxy histories
-      to pass to the ``galaxy-upload`` command.
+      A utility for uploading files to a Galaxy server from the command line. Use `galaxy-upload` to upload
+      file(s) to a Galaxy server, and `galaxy-history-search`, a helper utility to find Galaxy histories
+      to pass to the `galaxy-upload` command.
     ruleBased: |
       Galaxy can bulk import lists & tables of URLs into datasets or collections using reproducible rules.
-  
+
   datasets:
     formatVsDatatypeVsExtension: |
       In Galaxy, the terms "datatype," "format," and "extension" are used to describe the nature of a dataset,
       each with specific meanings.
-      
-      The ``datatype`` defines how a dataset is interpreted, validated, and processed, such as "fastqsanger", "bam",
+
+      The `datatype` defines how a dataset is interpreted, validated, and processed, such as "fastqsanger", "bam",
       or "vcf". Each datatype corresponds to a Python class that specifies how Galaxy should handle the file.
-      
-      The ``format`` is the user-facing label for the dataset's datatype, appearing in the Galaxy user interface
+
+      The `format` is the user-facing label for the dataset's datatype, appearing in the Galaxy user interface
       to indicate the structure and content expectations of the dataset.
-      
-      The ``extension`` is a string associated with each datatype, stored in Galaxy’s database to identify the
+
+      The `extension` is a string associated with each datatype, stored in Galaxy’s database to identify the
       dataset’s datatype. This extension can match a file’s actual disk suffix (e.g., ".vcf") but may also be more
       specialized (e.g., "fastqsanger"). Understanding these distinctions ensures that datasets are processed
       correctly within Galaxy, maintaining the integrity and reproducibility of analyses.
