@@ -269,11 +269,13 @@ export function time(): string {
  * @param data object containing script and style strings
  */
 export function appendScriptStyle(data: Readonly<{ script?: string; styles?: string }>) {
-    // create a script tag inside head tag
+    // create a script tag inside head tag, wrapped in an IIFE to avoid
+    // "redeclaration of let" errors when the same webhook script is injected
+    // more than once (Firefox enforces this strictly in the global scope)
     if (data.script && data.script !== "") {
         const tag = document.createElement("script");
         tag.type = "text/javascript";
-        tag.textContent = data.script;
+        tag.textContent = `(function(){\n${data.script}\n})();`;
         document.head.appendChild(tag);
     }
     // create a style tag inside head tag
