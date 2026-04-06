@@ -27,6 +27,12 @@ from .legacy_parameters import (
 )
 
 
+class ReplacementParamsSkip(Exception):
+    """Raised when a step contains ${...} replacement parameters that prevent validation."""
+
+    pass
+
+
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     tool_state = step_tool_state(step)
     input_connections = step_input_connections(step)
@@ -35,7 +41,7 @@ def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     # these can't pass type validation (e.g., "${num}" for an integer field)
     scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
     if scan.classification == ReplacementClassification.YES:
-        return
+        raise ReplacementParamsSkip("Replacement parameters detected")
 
     state = copy.deepcopy(tool_state)
 

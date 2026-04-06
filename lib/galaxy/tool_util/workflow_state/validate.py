@@ -21,6 +21,7 @@ from ._cli_common import (
 from ._report_models import (
     ConnectionValidationReport,
     SingleValidationReport,
+    SKIP_STATUSES,
     TreeValidationReport,
     ValidationStepResult,
     WorkflowValidationResult,
@@ -58,6 +59,7 @@ from .validation_json_schema import (
 )
 from .validation_native import (
     get_parsed_tool_for_native_step,
+    ReplacementParamsSkip,
     validate_native_step_against,
 )
 from .workflow_tools import load_workflow
@@ -276,6 +278,17 @@ def _validate_native(
 
         try:
             validate_native_step_against(step_def, parsed_tool)
+        except ReplacementParamsSkip as e:
+            results.append(
+                ValidationStepResult(
+                    step=step_label,
+                    tool_id=tool_id,
+                    version=tool_version,
+                    status="skip_replacement_params",
+                    errors=[str(e)],
+                )
+            )
+            continue
         except Exception as e:
             results.append(
                 ValidationStepResult(
@@ -477,7 +490,7 @@ def format_text(results: List[ValidationStepResult], summary_only: bool = False)
     lines = []
     ok = sum(1 for r in results if r.status == "ok")
     fail = sum(1 for r in results if r.status == "fail")
-    skip = sum(1 for r in results if r.status == "skip_tool_not_found")
+    skip = sum(1 for r in results if r.status in SKIP_STATUSES)
 
     if not summary_only:
         for r in results:
@@ -491,7 +504,7 @@ def format_text(results: List[ValidationStepResult], summary_only: bool = False)
                 lines.append(f"Step {r.step}: {tool_label} ... FAIL")
                 for err in r.errors:
                     lines.append(f"  {err}")
-            elif r.status == "skip_tool_not_found":
+            elif r.status in SKIP_STATUSES:
                 reason = r.errors[0] if r.errors else "skipped"
                 lines.append(f"Step {r.step}: {tool_label} ... SKIP ({reason})")
 
@@ -510,7 +523,7 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
     skipped_count = s["skipped"]
     skipped_suffix = f" | {skipped_count} workflow(s) skipped" if skipped_count else ""
     lines.append(
-        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR{skipped_suffix}"
+        f"Workflows: {total_wf} | Steps: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR{skipped_suffix}"
     )
     lines.append("")
 
@@ -525,7 +538,7 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
                 continue
             n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
             n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            n_skip = sum(1 for sr in r.step_results if sr.status in SKIP_STATUSES)
             total = len(r.step_results)
             lines.append(f"  {name}: {total} steps ({n_ok} OK, {n_fail} FAIL, {n_skip} SKIP)")
             for sr in r.step_results:
@@ -534,9 +547,7 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
                         lines.append(f"    Step {sr.step} ({sr.tool_id}): {err}")
 
     lines.append("---")
-    lines.append(
-        f"Summary: {s['ok']} OK, {s['fail']} FAIL, {s['skip_tool_not_found']} SKIP, {s['error']} ERROR{skipped_suffix}"
-    )
+    lines.append(f"Summary: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR{skipped_suffix}")
     return "\n".join(lines)
 
 
@@ -691,11 +702,13 @@ def _json_schema_validate_single(
             error_msgs = [f"{e.message} (at /{e.path})" if e.path else e.message for e in sr.errors]
             results.append(ValidationStepResult(step=sr.step, tool_id=sr.tool_id, status="fail", errors=error_msgs))
         elif sr.status == "skip":
-            results.append(
-                ValidationStepResult(
-                    step=sr.step, tool_id=sr.tool_id, status="skip_tool_not_found", errors=["No tool schema available"]
-                )
-            )
+            if sr.skip_reason == "replacement_params":
+                status = "skip_replacement_params"
+                errors = ["Replacement parameters detected"]
+            else:
+                status = "skip_tool_not_found"
+                errors = ["No tool schema available"]
+            results.append(ValidationStepResult(step=sr.step, tool_id=sr.tool_id, status=status, errors=errors))
 
     return results
 
@@ -871,7 +884,7 @@ def _emit_single_results(
 
     exit_code = 0
     has_failures = any(r.status == "fail" for r in results)
-    has_skips = any(r.status == "skip_tool_not_found" for r in results)
+    has_skips = any(r.status in SKIP_STATUSES for r in results)
     if has_failures:
         exit_code = 1
     elif has_skips and options.strict_state:
@@ -887,7 +900,7 @@ def _compute_tree_exit_code(report: TreeValidationReport, options) -> int:
     exit_code = 0
     if s["fail"] > 0 or s["error"] > 0:
         exit_code = 1
-    elif s["skip_tool_not_found"] > 0 and options.strict_state:
+    elif s["skip"] > 0 and options.strict_state:
         exit_code = 2
     if options.connections:
         for r in report.results:

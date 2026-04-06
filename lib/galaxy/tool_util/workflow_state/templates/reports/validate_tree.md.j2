@@ -20,7 +20,7 @@
 # Workflow Validation Report
 
 Root: `{{ report.root }}`
-Workflows: {{ report.workflows | length }} | Steps: {{ s.ok }} OK, {{ s.fail }} FAIL, {{ s.skip_tool_not_found }} SKIP, {{ s.error }} ERROR{% if s.skipped %} | {{ s.skipped }} workflow(s) skipped{% endif %}
+Workflows: {{ report.workflows | length }} | Steps: {{ s.ok }} OK, {{ s.fail }} FAIL, {{ s.skip }} SKIP, {{ s.error }} ERROR{% if s.skipped %} | {{ s.skipped }} workflow(s) skipped{% endif %}
 
 
 {% for cat in report.categories %}
@@ -35,7 +35,7 @@ Workflows: {{ report.workflows | length }} | Steps: {{ s.ok }} OK, {{ s.fail }} 
 | {{ r.name }} | - | - | - | - | ERROR: {{ r.error }} |
 {% else %}
 {% set fail_count = r.failures | length %}
-| {{ r.name }} | {{ r.results | length }} | {{ r.summary.ok }} | {{ r.summary.fail }} | {{ r.summary.skip_tool_not_found }} | {% if fail_count %}{{ fail_count }} failure(s){% endif %} |
+| {{ r.name }} | {{ r.results | length }} | {{ r.summary.ok }} | {{ r.summary.fail }} | {{ r.summary.skip }} | {% if fail_count %}{{ fail_count }} failure(s){% endif %} |
 {% endif %}
 {% endfor %}
 

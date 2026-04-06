@@ -143,7 +143,7 @@ def test_step_counts_sums_each_status() -> None:
             ValidationStepResult(step="4", status="skip_tool_not_found"),
         ],
     )
-    assert r.step_counts == {"ok": 2, "fail": 1, "skip_tool_not_found": 1}
+    assert r.step_counts == {"ok": 2, "fail": 1, "skip": 1}
 
 
 def test_step_counts_none_on_error_or_skip() -> None:

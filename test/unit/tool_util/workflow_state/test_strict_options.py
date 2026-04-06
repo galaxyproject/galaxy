@@ -333,7 +333,7 @@ def test_run_validate_strict_state_alone_allows_json_string_tool_state(tmp_path,
 
 
 def test_run_validate_skip_strict_structure_alone_exit_0(tmp_path, monkeypatch):
-    """strict_structure alone should NOT promote skip_tool_not_found to failure."""
+    """strict_structure alone should NOT promote skipped steps to failure."""
     path = _write_native_unknown_tool(tmp_path)
     from galaxy.tool_util.workflow_state import validate as validate_mod
 

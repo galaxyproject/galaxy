@@ -36,6 +36,7 @@ from ._report_models import (
     LintTreeReport,
     LintWorkflowResult,
     SingleLintReport,
+    SKIP_STATUSES,
     ValidationStepResult,
     wrap_single_lint,
 )
@@ -324,7 +325,7 @@ def _combined_exit_code(
     """Derive exit code from both structural lint and stateful validation."""
     has_lint_errors = bool(lint_context.error_messages)
     has_failures = any(r.status == "fail" for r in results)
-    has_skips = any(r.status == "skip_tool_not_found" for r in results)
+    has_skips = any(r.status in SKIP_STATUSES for r in results)
 
     if has_lint_errors or has_failures:
         return 1
@@ -363,7 +364,7 @@ def _format_lint_tree_text(report: LintTreeReport, summary_only: bool = False) -
                 lint_tag += f" {r.lint_warnings} lint-warning(s)"
             n_ok = sum(1 for sr in r.step_results if sr.status == "ok")
             n_fail = sum(1 for sr in r.step_results if sr.status == "fail")
-            n_skip = sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            n_skip = sum(1 for sr in r.step_results if sr.status in SKIP_STATUSES)
             lines.append(f"  {r.relative_path}: steps({n_ok} OK, {n_fail} FAIL, {n_skip} SKIP){lint_tag}")
     return "\n".join(lines)
 

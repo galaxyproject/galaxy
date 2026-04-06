@@ -51,6 +51,7 @@ class JsonSchemaStepResult:
     tool_id: Optional[str]
     errors: List[JsonSchemaValidationError]
     status: Literal["ok", "fail", "skip"]
+    skip_reason: Optional[str] = None
 
 
 @dataclass
@@ -333,7 +334,11 @@ def validate_native_workflow_json_schema(
         parsed_tool = _parsed_tool_cache[cache_key]
 
         if parsed_tool is None:
-            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
+            result.step_results.append(
+                JsonSchemaStepResult(
+                    step=step_key, tool_id=tool_id, errors=[], status="skip", skip_reason="tool_not_found"
+                )
+            )
             continue
 
         # Prepare state: decode → inject connections
@@ -342,7 +347,11 @@ def validate_native_workflow_json_schema(
 
         scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
         if scan.classification == ReplacementClassification.YES:
-            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
+            result.step_results.append(
+                JsonSchemaStepResult(
+                    step=step_key, tool_id=tool_id, errors=[], status="skip", skip_reason="replacement_params"
+                )
+            )
             continue
 
         state = copy.deepcopy(tool_state)

@@ -46,7 +46,7 @@
 - | - | - | - | ERROR: {{ r.error }}
 {%- else -%}
 {% set s = r.summary %}
-{{ (r.results | length) }} | {{ s.ok }} | {{ s.fail }} | {{ s.skip_tool_not_found }} |
+{{ (r.results | length) }} | {{ s.ok }} | {{ s.fail }} | {{ s.skip }} |
 {%- endif %}
 {%- endmacro %}
 

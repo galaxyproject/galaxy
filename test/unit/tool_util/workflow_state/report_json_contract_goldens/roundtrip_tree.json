@@ -24,6 +24,7 @@
             "workflow_name": "wf_ok.ga"
           },
           "diffs": [],
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [],
           "ok": true,
@@ -31,6 +32,7 @@
           "stale_clean_results": null,
           "status": "ok",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_pure_clean.ga: OK (1 steps)",
           "workflow_path": "/tmp/workflows/catA/wf_pure_clean.ga"
         },
@@ -77,6 +79,7 @@
               "step_path": "step[1]"
             }
           ],
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [],
           "ok": true,
@@ -84,6 +87,7 @@
           "stale_clean_results": null,
           "status": "ok",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_ok.ga: OK (1 steps, 1 benign diff(s))",
           "workflow_path": "/tmp/workflows/catA/wf_ok.ga"
         },
@@ -140,6 +144,7 @@
               "step_path": "step[1]"
             }
           ],
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [
             {
@@ -158,6 +163,7 @@
           "stale_clean_results": null,
           "status": "roundtrip_mismatch",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_mismatch.ga: MISMATCH (1 error(s), 1 benign)",
           "workflow_path": "/tmp/workflows/catA/wf_mismatch.ga"
         }
@@ -189,6 +195,7 @@
             "workflow_name": "wf_conv_fail.ga"
           },
           "diffs": [],
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [],
           "ok": false,
@@ -196,6 +203,7 @@
           "stale_clean_results": null,
           "status": "conversion_fail",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_conv_fail.ga: CONVERSION FAIL (1 step(s))",
           "workflow_path": "/tmp/workflows/catB/wf_conv_fail.ga"
         },
@@ -222,6 +230,7 @@
             "workflow_name": "wf_conv_fail2.ga"
           },
           "diffs": [],
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [],
           "ok": false,
@@ -229,6 +238,7 @@
           "stale_clean_results": null,
           "status": "conversion_fail",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_conv_fail2.ga: CONVERSION FAIL (1 step(s))",
           "workflow_path": "/tmp/workflows/catB/wf_conv_fail2.ga"
         },
@@ -238,6 +248,7 @@
           "conversion_failure_lines": [],
           "conversion_result": null,
           "diffs": null,
+          "encoding_errors": [],
           "error": "Reimport failed: boom",
           "error_diffs": [],
           "ok": false,
@@ -245,6 +256,7 @@
           "stale_clean_results": null,
           "status": "error",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_error.ga: ERROR (Reimport failed: boom)",
           "workflow_path": "/tmp/workflows/catB/wf_error.ga"
         },
@@ -254,6 +266,7 @@
           "conversion_failure_lines": [],
           "conversion_result": null,
           "diffs": null,
+          "encoding_errors": [],
           "error": null,
           "error_diffs": [],
           "ok": false,
@@ -261,6 +274,7 @@
           "stale_clean_results": null,
           "status": "skipped",
           "step_id_mapping": null,
+          "structure_errors": [],
           "summary_line": "wf_skip.ga: SKIPPED (legacy_encoding)",
           "workflow_path": "/tmp/workflows/catB/wf_skip.ga"
         }
@@ -309,6 +323,7 @@
         "workflow_name": "wf_ok.ga"
       },
       "diffs": [],
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [],
       "ok": true,
@@ -316,6 +331,7 @@
       "stale_clean_results": null,
       "status": "ok",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_pure_clean.ga: OK (1 steps)",
       "workflow_path": "/tmp/workflows/catA/wf_pure_clean.ga"
     },
@@ -362,6 +378,7 @@
           "step_path": "step[1]"
         }
       ],
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [],
       "ok": true,
@@ -369,6 +386,7 @@
       "stale_clean_results": null,
       "status": "ok",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_ok.ga: OK (1 steps, 1 benign diff(s))",
       "workflow_path": "/tmp/workflows/catA/wf_ok.ga"
     },
@@ -425,6 +443,7 @@
           "step_path": "step[1]"
         }
       ],
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [
         {
@@ -443,6 +462,7 @@
       "stale_clean_results": null,
       "status": "roundtrip_mismatch",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_mismatch.ga: MISMATCH (1 error(s), 1 benign)",
       "workflow_path": "/tmp/workflows/catA/wf_mismatch.ga"
     },
@@ -469,6 +489,7 @@
         "workflow_name": "wf_conv_fail.ga"
       },
       "diffs": [],
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [],
       "ok": false,
@@ -476,6 +497,7 @@
       "stale_clean_results": null,
       "status": "conversion_fail",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_conv_fail.ga: CONVERSION FAIL (1 step(s))",
       "workflow_path": "/tmp/workflows/catB/wf_conv_fail.ga"
     },
@@ -502,6 +524,7 @@
         "workflow_name": "wf_conv_fail2.ga"
       },
       "diffs": [],
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [],
       "ok": false,
@@ -509,6 +532,7 @@
       "stale_clean_results": null,
       "status": "conversion_fail",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_conv_fail2.ga: CONVERSION FAIL (1 step(s))",
       "workflow_path": "/tmp/workflows/catB/wf_conv_fail2.ga"
     },
@@ -518,6 +542,7 @@
       "conversion_failure_lines": [],
       "conversion_result": null,
       "diffs": null,
+      "encoding_errors": [],
       "error": "Reimport failed: boom",
       "error_diffs": [],
       "ok": false,
@@ -525,6 +550,7 @@
       "stale_clean_results": null,
       "status": "error",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_error.ga: ERROR (Reimport failed: boom)",
       "workflow_path": "/tmp/workflows/catB/wf_error.ga"
     },
@@ -534,6 +560,7 @@
       "conversion_failure_lines": [],
       "conversion_result": null,
       "diffs": null,
+      "encoding_errors": [],
       "error": null,
       "error_diffs": [],
       "ok": false,
@@ -541,6 +568,7 @@
       "stale_clean_results": null,
       "status": "skipped",
       "step_id_mapping": null,
+      "structure_errors": [],
       "summary_line": "wf_skip.ga: SKIPPED (legacy_encoding)",
       "workflow_path": "/tmp/workflows/catB/wf_skip.ga"
     }

@@ -23,7 +23,9 @@ from pydantic import (
 
 from .precheck import SkipWorkflowReason
 
-StepStatus = Literal["ok", "fail", "skip_tool_not_found"]
+StepStatus = Literal["ok", "fail", "skip_tool_not_found", "skip_replacement_params"]
+
+SKIP_STATUSES: frozenset = frozenset({"skip_tool_not_found", "skip_replacement_params"})
 ConnectionStatus = Literal["ok", "invalid", "skip"]
 
 
@@ -88,7 +90,7 @@ class WorkflowValidationResult(WorkflowResultBase):
         return {
             "ok": sum(1 for sr in self.step_results if sr.status == "ok"),
             "fail": sum(1 for sr in self.step_results if sr.status == "fail"),
-            "skip_tool_not_found": sum(1 for sr in self.step_results if sr.status == "skip_tool_not_found"),
+            "skip": sum(1 for sr in self.step_results if sr.status in SKIP_STATUSES),
         }
 
     @computed_field  # type: ignore[prop-decorator]
@@ -222,7 +224,7 @@ class TreeValidationReport(TreeReportBase):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> Dict[str, int]:
-        ok = fail = skip_tool_not_found = error = skipped = 0
+        ok = fail = skip = error = skipped = 0
         for r in self.results:
             if r.skipped_reason:
                 skipped += 1
@@ -235,12 +237,12 @@ class TreeValidationReport(TreeReportBase):
                     ok += 1
                 elif sr.status == "fail":
                     fail += 1
-                elif sr.status == "skip_tool_not_found":
-                    skip_tool_not_found += 1
+                elif sr.status in SKIP_STATUSES:
+                    skip += 1
         return {
             "ok": ok,
             "fail": fail,
-            "skip_tool_not_found": skip_tool_not_found,
+            "skip": skip,
             "error": error,
             "skipped": skipped,
         }
@@ -282,7 +284,7 @@ class SingleValidationReport(BaseModel):
         return {
             "ok": sum(1 for r in self.results if r.status == "ok"),
             "fail": sum(1 for r in self.results if r.status == "fail"),
-            "skip_tool_not_found": sum(1 for r in self.results if r.status == "skip_tool_not_found"),
+            "skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
         }
 
 
@@ -345,7 +347,7 @@ class LintWorkflowResult(WorkflowResultBase):
         return {
             "ok": sum(1 for sr in self.step_results if sr.status == "ok"),
             "fail": sum(1 for sr in self.step_results if sr.status == "fail"),
-            "skip_tool_not_found": sum(1 for sr in self.step_results if sr.status == "skip_tool_not_found"),
+            "skip": sum(1 for sr in self.step_results if sr.status in SKIP_STATUSES),
         }
 
 
@@ -367,7 +369,7 @@ class SingleLintReport(BaseModel):
             "lint_warnings": self.lint_warnings,
             "state_ok": sum(1 for r in self.results if r.status == "ok"),
             "state_fail": sum(1 for r in self.results if r.status == "fail"),
-            "state_skip": sum(1 for r in self.results if r.status == "skip_tool_not_found"),
+            "state_skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
         }
 
 
@@ -395,7 +397,7 @@ class LintTreeReport(TreeReportBase):
             if not r.error and not r.skipped_reason
         )
         state_skip = sum(
-            sum(1 for sr in r.step_results if sr.status == "skip_tool_not_found")
+            sum(1 for sr in r.step_results if sr.status in SKIP_STATUSES)
             for r in self.results
             if not r.error and not r.skipped_reason
         )

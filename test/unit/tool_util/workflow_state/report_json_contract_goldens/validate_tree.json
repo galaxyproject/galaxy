@@ -44,7 +44,7 @@
           "summary": {
             "fail": 0,
             "ok": 2,
-            "skip_tool_not_found": 0
+            "skip": 0
           }
         },
         {
@@ -133,7 +133,7 @@
           "summary": {
             "fail": 1,
             "ok": 0,
-            "skip_tool_not_found": 1
+            "skip": 1
           }
         }
       ]
@@ -171,7 +171,7 @@
     "error": 1,
     "fail": 1,
     "ok": 2,
-    "skip_tool_not_found": 1,
+    "skip": 1,
     "skipped": 1
   },
   "workflows": [
@@ -202,7 +202,7 @@
       "summary": {
         "fail": 0,
         "ok": 2,
-        "skip_tool_not_found": 0
+        "skip": 0
       }
     },
     {
@@ -291,7 +291,7 @@
       "summary": {
         "fail": 1,
         "ok": 0,
-        "skip_tool_not_found": 1
+        "skip": 1
       }
     },
     {
