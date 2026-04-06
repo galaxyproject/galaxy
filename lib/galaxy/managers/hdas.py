@@ -614,7 +614,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 id=self.app.security.encode_id(item.id),
                 context=context,
             ),
-            "urls": self.serialize_urls,
             # TODO: backwards compat: need to go away
             "download_url": lambda item, key, **context: self.url_for(
                 "history_contents_display",
@@ -701,30 +700,6 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                         display_apps.append(dict(label=display_label, links=app_links))
 
         return display_apps
-
-    def serialize_urls(self, item, key, **context):
-        """
-        Return web controller urls useful for this HDA.
-        """
-        hda = item
-        url_for = self.url_for
-        encoded_id = self.app.security.encode_id(hda.id)
-        urls = {
-            "purge": url_for(controller="dataset", action="purge_async", dataset_id=encoded_id),
-            "display": url_for(controller="dataset", action="display", dataset_id=encoded_id, preview=True),
-            "edit": url_for(controller="dataset", action="edit", dataset_id=encoded_id),
-            "download": url_for(controller="dataset", action="display", dataset_id=encoded_id, to_ext=hda.extension),
-            "report_error": url_for(controller="dataset", action="errors", id=encoded_id),
-            "rerun": url_for(controller="tool_runner", action="rerun", id=encoded_id),
-            "show_params": url_for(controller="dataset", action="details", dataset_id=encoded_id),
-            "visualization": url_for(
-                controller="visualization", action="index", id=encoded_id, model="HistoryDatasetAssociation"
-            ),
-            "meta_download": url_for(
-                controller="dataset", action="get_metadata_file", hda_id=encoded_id, metadata_name=""
-            ),
-        }
-        return urls
 
 
 class HDADeserializer(
