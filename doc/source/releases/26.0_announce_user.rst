@@ -155,6 +155,9 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* Add new datatypes: .taf and .taf.gz
+  (thanks to `@Maed0x <https://github.com/Maed0x>`__).
+  `Pull Request 22242`_
 * Sequence datatypes: only read first character per line for setting metadata
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 22276`_
