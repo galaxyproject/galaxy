@@ -11,10 +11,6 @@ import json
 import logging
 import os
 import sys
-from dataclasses import (
-    dataclass,
-    field,
-)
 from typing import (
     Dict,
     List,
@@ -22,10 +18,7 @@ from typing import (
     Optional,
 )
 
-from gxformat2.normalized import (
-    NormalizedNativeWorkflow,
-    to_native,
-)
+from gxformat2.normalized import to_native
 from gxformat2.options import ConversionOptions
 from gxformat2.yaml import ordered_load_path
 from pydantic import (
@@ -56,8 +49,7 @@ from .convert import make_encode_tool_state
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class StepEncodeStatus:
+class StepEncodeStatus(BaseModel):
     step_id: str
     step_label: Optional[str] = None
     tool_id: Optional[str] = None
@@ -65,28 +57,25 @@ class StepEncodeStatus:
     error: Optional[str] = None
 
 
-@dataclass
-class ToNativeResult:
-    native: NormalizedNativeWorkflow
-    steps: List[StepEncodeStatus] = field(default_factory=list)
+class ToNativeResult(BaseModel):
+    native_dict: dict
+    steps: List[StepEncodeStatus] = Field(default_factory=list)
 
-    @property
-    def native_dict(self) -> dict:
-        return self.native.to_dict()
-
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def all_encoded(self) -> bool:
         return all(s.encoded for s in self.steps)
 
-    @property
-    def failed_steps(self) -> List[StepEncodeStatus]:
-        return [s for s in self.steps if not s.encoded]
-
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def summary(self) -> str:
         ok = sum(1 for s in self.steps if s.encoded)
         fail = len(self.steps) - ok
         return f"{ok} schema-encoded, {fail} fell back to default"
+
+    @property
+    def failed_steps(self) -> List[StepEncodeStatus]:
+        return [s for s in self.steps if not s.encoded]
 
 
 def convert_to_native_stateful(
@@ -124,7 +113,7 @@ def convert_to_native_stateful(
     )
     native = to_native(workflow_dict, options=options)
 
-    return ToNativeResult(native=native, steps=step_statuses)
+    return ToNativeResult(native_dict=native.to_dict(), steps=step_statuses)
 
 
 def _make_encode_callback(
@@ -383,7 +372,7 @@ def _convert_dict_to_native(
         strict_structure=strict_structure,
     )
     native = to_native(wf_dict, options=options)
-    return ToNativeResult(native=native, steps=step_statuses)
+    return ToNativeResult(native_dict=native.to_dict(), steps=step_statuses)
 
 
 def run_to_native_tree(options: ToNativeTreeOptions) -> int:
