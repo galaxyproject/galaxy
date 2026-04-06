@@ -205,6 +205,9 @@ class SingleValidationReport(BaseModel):
     workflow: str
     results: List[ValidationStepResult]
     connection_report: Optional["ConnectionValidationReport"] = None
+    skipped_reason: Optional[str] = None
+    structure_errors: List[str] = Field(default_factory=list)
+    encoding_errors: List[str] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -274,6 +277,8 @@ class SingleLintReport(BaseModel):
     lint_errors: int = 0
     lint_warnings: int = 0
     results: List[ValidationStepResult] = []
+    structure_errors: List[str] = Field(default_factory=list)
+    encoding_errors: List[str] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property

@@ -35,11 +35,17 @@ from pydantic import (
 
 from ._cli_common import (
     setup_tool_info,
+    StrictOptions,
     ToolCacheOptions,
 )
 from ._report_models import (
     TreeReportBase,
     WorkflowResultBase,
+)
+from ._encoding import (
+    check_strict_structure as _check_strict_structure,
+    validate_encoding_format2,
+    validate_encoding_native,
 )
 from ._report_output import emit_reports
 from ._types import GetToolInfo
@@ -85,6 +91,7 @@ def convert_to_native_stateful(
     workflow_path: str,
     get_tool_info: GetToolInfo,
     strict: bool = False,
+    strict_structure: bool = False,
 ) -> ToNativeResult:
     """Convert format2 workflow to native with schema-aware tool_state encoding.
 
@@ -93,7 +100,9 @@ def convert_to_native_stateful(
 
     Conversion happens inside to_native() via the state_encode_to_native
     callback. Steps where encoding fails fall back to gxformat2's default
-    passthrough (clean dict, no json.dumps) unless strict=True.
+    passthrough (clean dict, no json.dumps) unless strict=True. When
+    strict_structure=True, gxformat2 validates both the format2 input and
+    the native output against extra='forbid' strict schema models.
     """
     workflow_dict = ordered_load_path(workflow_path)
     if isinstance(workflow_dict, dict) and workflow_dict.get("a_galaxy_workflow") == "true":
@@ -109,6 +118,7 @@ def convert_to_native_stateful(
     options = ConversionOptions(
         state_encode_to_native=callback,
         workflow_directory=os.path.dirname(os.path.abspath(workflow_path)),
+        strict_structure=strict_structure,
     )
     native = to_native(workflow_dict, options=options)
 
@@ -160,16 +170,14 @@ class EncodeError(Exception):
 # -- Options model --
 
 
-class ToNativeOptions(ToolCacheOptions):
+class ToNativeOptions(ToolCacheOptions, StrictOptions):
     output: Optional[str] = None
-    strict: bool = False
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
 
 
-class ToNativeTreeOptions(ToolCacheOptions):
+class ToNativeTreeOptions(ToolCacheOptions, StrictOptions):
     output_dir: str = ""
-    strict: bool = False
     report_json: Optional[str] = None
     report_markdown: Optional[str] = None
 
@@ -280,15 +288,45 @@ def run_to_native(options: ToNativeOptions) -> int:
 
     tool_info = setup_tool_info(options)
 
+    if options.strict_encoding or options.strict_structure:
+        try:
+            raw_dict = ordered_load_path(options.workflow_path)
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            return 1
+        if options.strict_encoding:
+            enc_errors = validate_encoding_format2(raw_dict)
+            if enc_errors:
+                print("Error: strict-encoding (input):", file=sys.stderr)
+                for e_msg in enc_errors:
+                    print(f"  {e_msg}", file=sys.stderr)
+                return 2
+        if options.strict_structure:
+            struct_errors = _check_strict_structure(raw_dict)
+            if struct_errors:
+                print("Error: strict-structure (input):", file=sys.stderr)
+                for e_msg in struct_errors:
+                    print(f"  {e_msg}", file=sys.stderr)
+                return 2
+
     try:
         result = convert_to_native_stateful(
             options.workflow_path,
             tool_info,
-            strict=options.strict,
+            strict=options.strict_state,
+            strict_structure=options.strict_structure,
         )
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
+
+    if options.strict_encoding:
+        enc_errors = validate_encoding_native(result.native_dict)
+        if enc_errors:
+            print("Error: strict-encoding (output):", file=sys.stderr)
+            for e_msg in enc_errors:
+                print(f"  {e_msg}", file=sys.stderr)
+            return 2
 
     output = format_native_json(result.native_dict)
 
@@ -330,6 +368,7 @@ def _convert_dict_to_native(
     get_tool_info: GetToolInfo,
     strict: bool = False,
     workflow_dir: str = "",
+    strict_structure: bool = False,
 ) -> ToNativeResult:
     """Convert a format2 dict to native (for tree mode)."""
     if isinstance(wf_dict, dict) and wf_dict.get("a_galaxy_workflow") == "true":
@@ -341,6 +380,7 @@ def _convert_dict_to_native(
     options = ConversionOptions(
         state_encode_to_native=callback,
         workflow_directory=workflow_dir,
+        strict_structure=strict_structure,
     )
     native = to_native(wf_dict, options=options)
     return ToNativeResult(native=native, steps=step_statuses)
@@ -369,12 +409,28 @@ def run_to_native_tree(options: ToNativeTreeOptions) -> int:
         if isinstance(wf_dict, dict) and wf_dict.get("a_galaxy_workflow") == "true":
             skip_workflow("native format (not format2)")
 
+        if options.strict_encoding:
+            enc_errors = validate_encoding_format2(wf_dict)
+            if enc_errors:
+                raise RuntimeError("strict-encoding (input): " + "; ".join(enc_errors))
+
+        if options.strict_structure:
+            struct_errors = _check_strict_structure(wf_dict)
+            if struct_errors:
+                raise RuntimeError("strict-structure (input): " + "; ".join(struct_errors))
+
         result = _convert_dict_to_native(
             wf_dict,
             get_tool_info,
-            strict=options.strict,
+            strict=options.strict_state,
             workflow_dir=os.path.dirname(info.path),
+            strict_structure=options.strict_structure,
         )
+
+        if options.strict_encoding:
+            enc_errors = validate_encoding_native(result.native_dict)
+            if enc_errors:
+                raise RuntimeError("strict-encoding (output): " + "; ".join(enc_errors))
 
         stem = os.path.splitext(info.relative_path)[0]
         out_path = os.path.join(options.output_dir, stem + ".ga")

@@ -15,6 +15,12 @@ from typing import (
 import pytest
 from gxformat2.normalized import ensure_native
 
+from galaxy.tool_util.workflow_state._encoding import (
+    check_strict_encoding,
+    check_strict_structure,
+    validate_encoding_format2,
+    validate_encoding_native,
+)
 from galaxy.tool_util.workflow_state.cache import (
     build_tool_info,
     populate_cache,
@@ -172,6 +178,65 @@ class TestIWCSweepJsonSchema:
 
 
 @skip_unless_environ(IWC_ENV)
+class TestIWCSweepStrictEncodingClean:
+    """After cleaning, native workflows must satisfy strict-encoding semantics
+    (outer tool_state is a proper dict, not a JSON string). Raw .ga files on
+    disk store tool_state as a JSON string — strict-encoding is a post-clean
+    / post-normalization invariant, meant to catch regressions like
+    reintroducing a per-key json.dumps layer in the conversion pipeline."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_strict_encoding_native_after_clean(self, wf_path, tool_info):
+        workflow = load_workflow(wf_path)
+        normalized = ensure_native(workflow)
+        clean_stale_state(normalized, workflow, tool_info)
+        errors = validate_encoding_native(workflow)
+        assert not errors, f"strict-encoding errors after clean in {wf_path}: {errors}"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepStrictStateClean:
+    """After cleaning, --strict-state semantics: every tool step must validate
+    with no skip_tool_not_found (tool cache resolves everything) and no fails.
+
+    Note: bypasses validate_single() / run_validate() and calls
+    validate_workflow_cli() directly because library entry points still take a
+    bare `strict: bool` — see STRICT_STATE_PLAN follow-up from review.
+    """
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_strict_state_after_clean(self, wf_path, tool_info):
+        workflow_dict = load_workflow(wf_path)
+        results, precheck, _conn_report = validate_workflow_cli(workflow_dict, tool_info, clean=True)
+        assert (
+            precheck is None or precheck.can_process
+        ), f"strict-state: precheck refused {wf_path}: {precheck.detail if precheck else ''}"
+        fails = [r for r in results if r.status == "fail"]
+        skips = [r for r in results if r.status == "skip_tool_not_found"]
+        assert not fails, f"strict-state fails in {wf_path}: {[(r.step, r.errors) for r in fails]}"
+        assert not skips, f"strict-state skips in {wf_path}: {[(r.step, r.tool_id) for r in skips]}"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepRoundtripStrictEncoding:
+    """Roundtrip (which cleans internally) must produce format2 and reimported
+    native dicts that satisfy --strict-encoding on both sides. Under strict
+    semantics a precheck skip is a failure, so we assert rather than skip."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_roundtrip_strict_encoding(self, wf_path, tool_info):
+        workflow = load_workflow(wf_path)
+        result = roundtrip_validate(workflow, tool_info, workflow_path=wf_path)
+        assert not result.skipped_reason, f"strict-state: roundtrip precheck-skipped {wf_path}: {result.skipped_reason}"
+        assert result.format2_dict is not None, f"no format2 output for {wf_path}: {result.error}"
+        f2_errors = validate_encoding_format2(result.format2_dict)
+        assert not f2_errors, f"format2 output strict-encoding errors for {wf_path}: {f2_errors}"
+        assert result.reimported_dict is not None, f"no reimported dict for {wf_path}: {result.error}"
+        native_errors = validate_encoding_native(result.reimported_dict)
+        assert not native_errors, f"reimported native strict-encoding errors for {wf_path}: {native_errors}"
+
+
+@skip_unless_environ(IWC_ENV)
 class TestIWCSweepNativeJsonSchema:
     """JSON Schema validation of native .ga workflows using WorkflowStepNativeToolState schemas."""
 
@@ -186,3 +251,66 @@ class TestIWCSweepNativeJsonSchema:
             if sr.status == "fail":
                 errors.append(f"step {sr.step} ({sr.tool_id}): {[e.message for e in sr.errors]}")
         assert result.valid, f"Native JSON Schema validation failed for {wf_path}:\n" + "\n".join(errors)
+
+
+# Older IWC workflows with deprecated position sub-fields (bottom, height,
+# right, width, x, y) that were intentionally dropped from the strict model.
+_STRICT_STRUCTURE_SKIP = {
+    "computational-chemistry/fragment-based-docking-scoring/fragment-based-docking-scoring.ga",
+    "computational-chemistry/protein-ligand-complex-parameterization/protein-ligand-complex-parameterization.ga",
+    "sars-cov-2-variant-calling/sars-cov-2-ont-artic-variant-calling/ont-artic-variation.ga",
+    "sars-cov-2-variant-calling/sars-cov-2-pe-illumina-wgs-variant-calling/pe-wgs-variation.ga",
+}
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepStrictStructure:
+    """Validate IWC workflows against strict-structure (extra='forbid' models).
+
+    Tests that IWC .ga workflows on disk have no unknown keys at the envelope
+    or step level. A handful of older workflows with deprecated position
+    sub-fields are skipped."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_strict_structure(self, wf_path):
+        rel = _workflow_id(wf_path)
+        if rel in _STRICT_STRUCTURE_SKIP:
+            pytest.skip(f"deprecated position fields: {rel}")
+        workflow = load_workflow(wf_path)
+        errors = check_strict_structure(workflow)
+        assert not errors, f"strict-structure errors in {wf_path}: {errors}"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepStrictAll:
+    """Combined strict validation: structure + encoding + state after clean.
+
+    Exercises the full --strict semantics: strict-structure on raw input,
+    strict-encoding after cleaning, and strict-state (no skips/failures)."""
+
+    @pytest.mark.parametrize("wf_path", _discover_native_workflows(), ids=_workflow_id)
+    def test_strict_all(self, wf_path, tool_info):
+        rel = _workflow_id(wf_path)
+        if rel in _STRICT_STRUCTURE_SKIP:
+            pytest.skip(f"deprecated position fields: {rel}")
+        workflow = load_workflow(wf_path)
+
+        # strict-structure on raw input
+        struct_errors = check_strict_structure(workflow)
+        assert not struct_errors, f"strict-structure errors in {wf_path}: {struct_errors}"
+
+        # clean, then strict-encoding
+        normalized = ensure_native(workflow)
+        clean_stale_state(normalized, workflow, tool_info)
+        enc_errors = check_strict_encoding(workflow)
+        assert not enc_errors, f"strict-encoding errors after clean in {wf_path}: {enc_errors}"
+
+        # strict-state: validate with no skips or failures
+        results, precheck, _conn = validate_workflow_cli(workflow, tool_info)
+        assert (
+            precheck is None or precheck.can_process
+        ), f"strict-state: precheck refused {wf_path}: {precheck.detail if precheck else ''}"
+        fails = [r for r in results if r.status == "fail"]
+        skips = [r for r in results if r.status == "skip_tool_not_found"]
+        assert not fails, f"strict-state fails in {wf_path}: {[(r.step, r.errors) for r in fails]}"
+        assert not skips, f"strict-state skips in {wf_path}: {[(r.step, r.tool_id) for r in skips]}"

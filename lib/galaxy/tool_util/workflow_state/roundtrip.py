@@ -33,7 +33,13 @@ from pydantic import (
 
 from ._cli_common import (
     setup_tool_info,
+    StrictOptions,
     ToolCacheOptions,
+)
+from ._encoding import (
+    check_strict_structure as _check_strict_structure,
+    validate_encoding_format2,
+    validate_encoding_native,
 )
 from ._report_models import (
     CleanStepResult,
@@ -85,8 +91,8 @@ class StepResult(BaseModel):
     failure_class: FailureClass | None = None
     error: str | None = None
     diffs: list[str] = Field(default_factory=list)
-    format2_state: Optional[dict] = None
-    format2_connections: Optional[dict] = None
+    format2_state: dict | None = None
+    format2_connections: dict | None = None
 
 
 class RoundTripResult(BaseModel):
@@ -1011,6 +1017,8 @@ class RoundTripValidationResult(BaseModel):
     original_dict: dict | None = Field(default=None, exclude=True)
     error: str | None = None
     skipped_reason: Optional["SkipWorkflowReason"] = None
+    structure_errors: list[str] = Field(default_factory=list)
+    encoding_errors: list[str] = Field(default_factory=list)
 
     @property
     def error_diffs(self) -> list[StepDiff]:
@@ -1077,6 +1085,9 @@ def roundtrip_validate(
     workflow_path: str = "",
     strip_bookkeeping: bool = False,
     clean_stale: bool = True,
+    strict_structure: bool = False,
+    strict_encoding: bool = False,
+    strict_state: bool = False,
 ) -> RoundTripValidationResult:
     """Validate a native workflow survives native→format2→native round-trip.
 
@@ -1086,11 +1097,36 @@ def roundtrip_validate(
     If clean_stale is True (default), stale tool_state keys are stripped
     before conversion — these are keys left behind by older tool versions
     or Galaxy serialization bugs that would otherwise cause validation failures.
+
+    Strict flags apply at pipeline stages:
+    - strict_structure: validate input, format2 output, and reimported native
+      dicts against gxformat2 strict (extra='forbid') schema models
+    - strict_encoding: reject JSON-string tool_state/state at input and output
+    - strict_state: promote precheck skips to errors (legacy encoding,
+      replacement params), require every tool step to convert successfully
     """
     result = RoundTripValidationResult(workflow_path=workflow_path)
 
+    # Stage 1: input validation
+    if strict_encoding:
+        enc_errors = validate_encoding_native(workflow_dict)
+        if enc_errors:
+            result.encoding_errors = enc_errors
+            result.error = "strict-encoding (input): " + "; ".join(enc_errors)
+            return result
+
+    if strict_structure:
+        struct_errors = _check_strict_structure(workflow_dict)
+        if struct_errors:
+            result.structure_errors = struct_errors
+            result.error = "strict-structure (input): " + "; ".join(struct_errors)
+            return result
+
     precheck = precheck_native_workflow(workflow_dict, get_tool_info)
     if not precheck.can_process:
+        if strict_state:
+            result.error = f"strict-state: cannot process: {precheck.detail}"
+            return result
         result.skipped_reason = precheck.skip_reasons[0]
         return result
 
@@ -1106,27 +1142,60 @@ def roundtrip_validate(
         clean_result = clean_stale_state(orig_model, workflow_dict, get_tool_info)
         result.stale_clean_results = list(clean_result.step_results)
 
-    # Per-step conversion (validates each tool step can be converted)
+    # Stage 3: per-step conversion (validates each tool step can be converted)
     step_result = roundtrip_native_workflow(orig_model, get_tool_info, workflow_name)
     result.conversion_result = step_result
     if not step_result.success:
         return result
 
-    # Forward: native → format2 with schema-aware state conversion
+    # Stage 4: forward native → format2 with schema-aware state conversion
     native_copy = copy.deepcopy(workflow_dict)
-    forward_options = ConversionOptions(state_encode_to_format2=make_convert_tool_state(get_tool_info))
-    format2_model = to_format2(native_copy, options=forward_options)
+    forward_options = ConversionOptions(
+        state_encode_to_format2=make_convert_tool_state(get_tool_info),
+        strict_structure=strict_structure,
+    )
+    try:
+        format2_model = to_format2(native_copy, options=forward_options)
+    except Exception as e:
+        if strict_structure:
+            result.structure_errors = [str(e)]
+            result.error = f"strict-structure (format2 output): {e}"
+        else:
+            result.error = f"Forward conversion failed: {e}"
+        return result
     result.format2_dict = format2_model.to_dict()
 
-    # Reverse: format2 → native with schema-aware encoding (pass model directly)
+    if strict_encoding:
+        enc_errors = validate_encoding_format2(result.format2_dict)
+        if enc_errors:
+            result.encoding_errors = enc_errors
+            result.error = "strict-encoding (format2 output): " + "; ".join(enc_errors)
+            return result
+
+    # Stage 5: reverse format2 → native with schema-aware encoding (pass model directly)
+    reverse_options = ConversionOptions(
+        state_encode_to_native=make_encode_tool_state(get_tool_info),
+        strict_structure=strict_structure,
+    )
     try:
-        reverse_options = ConversionOptions(state_encode_to_native=make_encode_tool_state(get_tool_info))
         native_prime = to_native(format2_model, options=reverse_options)
     except Exception as e:
-        result.error = f"Reimport failed: {e}"
+        if strict_structure:
+            result.structure_errors = [str(e)]
+            result.error = f"strict-structure (reimported native): {e}"
+        else:
+            result.error = f"Reimport failed: {e}"
         return result
 
     result.reimported_dict = native_prime.to_dict()
+
+    if strict_encoding:
+        enc_errors = validate_encoding_native(result.reimported_dict)
+        if enc_errors:
+            result.encoding_errors = enc_errors
+            result.error = "strict-encoding (reimported native): " + "; ".join(enc_errors)
+            return result
+
     comparison = compare_workflow_steps(orig_model, native_prime)
     result.diffs = comparison.diffs
     result.step_id_mapping = comparison.step_id_mapping
@@ -1183,21 +1252,19 @@ class SingleRoundTripReport(BaseModel):
 # -- Options model --
 
 
-class RoundTripValidateOptions(ToolCacheOptions):
+class RoundTripValidateOptions(ToolCacheOptions, StrictOptions):
     strip_bookkeeping: bool = False
-    strict: bool = False
     output_native: str | None = None
     output_format2: str | None = None
     report_json: str | None = None
     report_markdown: str | None = None
 
 
-class RoundTripValidateTreeOptions(ToolCacheOptions):
+class RoundTripValidateTreeOptions(ToolCacheOptions, StrictOptions):
     strip_bookkeeping: bool = False
-    strict: bool = False
     verbose: bool = False
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
+    report_json: str | None = None
+    report_markdown: str | None = None
 
 
 def _is_passing(result: RoundTripValidationResult, strict: bool) -> bool:
@@ -1220,6 +1287,9 @@ def roundtrip_single(
     workflow_path: str,
     tool_info: "GetToolInfo",
     strip_bookkeeping: bool = False,
+    strict_structure: bool = False,
+    strict_encoding: bool = False,
+    strict_state: bool = False,
 ) -> SingleRoundTripReport:
     """Run round-trip validation on a single workflow, return structured report.
 
@@ -1241,6 +1311,9 @@ def roundtrip_single(
         tool_info,
         workflow_path=workflow_path,
         strip_bookkeeping=strip_bookkeeping,
+        strict_structure=strict_structure,
+        strict_encoding=strict_encoding,
+        strict_state=strict_state,
     )
     return SingleRoundTripReport(workflow=workflow_name, result=result)
 
@@ -1340,6 +1413,9 @@ def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
         tool_info,
         workflow_path=options.workflow_path,
         strip_bookkeeping=options.strip_bookkeeping,
+        strict_structure=options.strict_structure,
+        strict_encoding=options.strict_encoding,
+        strict_state=options.strict_state,
     )
 
     if options.output_format2 and result.format2_dict:
@@ -1362,6 +1438,8 @@ def _run_single_validation(options: RoundTripValidateOptions, tool_info) -> int:
         text_content=text,
         stderr_summary=result.summary_line,
     )
+    if result.structure_errors or result.encoding_errors:
+        return 2
     return 0 if _is_passing(result, options.strict) else 1
 
 
@@ -1383,6 +1461,9 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
             get_tool_info,
             workflow_path=info.relative_path,
             strip_bookkeeping=options.strip_bookkeeping,
+            strict_structure=options.strict_structure,
+            strict_encoding=options.strict_encoding,
+            strict_state=options.strict_state,
         )
 
     def aggregate(tree_result):
@@ -1418,9 +1499,18 @@ def run_roundtrip_validate_tree(options: RoundTripValidateTreeOptions) -> int:
         format_text=lambda r: format_validation_text(r.results, verbose=options.verbose, strict=options.strict),
         format_summary=lambda r: r.format_summary_line(),
         format_markdown=format_roundtrip_markdown,
-        compute_exit_code=lambda r: 1 if any(not _is_passing(res, options.strict) for res in r.results) else 0,
+        compute_exit_code=lambda r: _roundtrip_tree_exit_code(r, options),
         report_options=options,
     )
+
+
+def _roundtrip_tree_exit_code(report: RoundTripTreeReport, options) -> int:
+    """Exit code for tree roundtrip: 2 if any strict-structure/encoding failure, 1 if any non-passing, else 0."""
+    if any(r.structure_errors or r.encoding_errors for r in report.results):
+        return 2
+    if any(not _is_passing(res, options.strict) for res in report.results):
+        return 1
+    return 0
 
 
 def _write_json(data: dict, path: str):

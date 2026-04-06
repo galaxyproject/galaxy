@@ -10,6 +10,10 @@ import os
 from gxformat2.normalized import ensure_native
 from gxformat2.testing import DeclarativeTestSuite
 
+from galaxy.tool_util.workflow_state._encoding import (
+    check_strict_encoding,
+    check_strict_structure,
+)
 from galaxy.tool_util.workflow_state.cache import build_tool_info
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
@@ -130,6 +134,42 @@ def _clean_then_validate_op(wf_dict: dict) -> dict:
     return workflow
 
 
+def _strict_encoding_op(wf_dict: dict) -> dict:
+    """Check strict-encoding; raise on violations, return workflow on success."""
+    errors = check_strict_encoding(wf_dict)
+    if errors:
+        raise RuntimeError("Strict-encoding violations:\n" + "\n".join(errors))
+    return wf_dict
+
+
+def _strict_structure_op(wf_dict: dict) -> dict:
+    """Check strict-structure; raise on violations, return workflow on success."""
+    errors = check_strict_structure(wf_dict)
+    if errors:
+        raise RuntimeError("Strict-structure violations:\n" + "\n".join(errors))
+    return wf_dict
+
+
+def _strict_state_validate_op(wf_dict: dict) -> dict:
+    """Validate with strict-state semantics: skips and missing tools are failures.
+
+    Raises on precheck skip, validation failures, or skip_tool_not_found steps.
+    """
+    workflow = copy.deepcopy(wf_dict)
+    results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
+    if precheck is not None and not precheck.can_process:
+        raise RuntimeError(f"Strict-state: cannot process: {precheck.reason}")
+    failures = [r for r in results if r.status == "fail"]
+    if failures:
+        msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
+        raise RuntimeError("Strict-state validation failed:\n" + "\n".join(msgs))
+    skips = [r for r in results if r.status == "skip_tool_not_found"]
+    if skips:
+        msgs = [f"step {r.step} ({r.tool_id}): tool not found" for r in skips]
+        raise RuntimeError("Strict-state: missing tools:\n" + "\n".join(msgs))
+    return workflow
+
+
 def _validate_clean_op(wf_dict: dict) -> dict:
     """Validate with --clean: full stale-key cleaning before validation.
 
@@ -154,6 +194,9 @@ OPERATIONS = {
     "validate_clean": _validate_clean_op,
     "export_format2": _export_op,
     "clean_then_validate": _clean_then_validate_op,
+    "strict_encoding": _strict_encoding_op,
+    "strict_structure": _strict_structure_op,
+    "strict_state_validate": _strict_state_validate_op,
 }
 
 suite = DeclarativeTestSuite(

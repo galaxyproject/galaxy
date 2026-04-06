@@ -2,6 +2,7 @@
 
 from .._cli_common import (
     add_report_args,
+    add_strict_args,
     build_base_parser,
     cli_main,
 )
@@ -23,11 +24,7 @@ def build_parser():
         action="store_true",
         help="Strip bookkeeping keys (__current_case__, etc.) before comparison",
     )
-    parser.add_argument(
-        "--strict",
-        action="store_true",
-        help="Treat benign diffs (dropped all-None sections, empty repeats) as errors",
-    )
+    add_strict_args(parser)
     add_report_args(parser)
     return parser
 
