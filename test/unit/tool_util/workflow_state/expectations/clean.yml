@@ -2,68 +2,6 @@
 # Operations return the cleaned workflow dict directly;
 # assertions navigate its structure.
 
-clean_cat1_bookkeeping_stripped:
-  fixture: test_workflow_1.ga
-  operation: clean
-  assertions:
-    - path: [steps, "2", tool_state, __page__]
-      value_absent: true
-    - path: [steps, "2", tool_state, __rerun_remap_job_id__]
-      value_absent: true
-
-clean_cat1_valid_inputs_survive:
-  fixture: test_workflow_1.ga
-  operation: clean
-  assertions:
-    - path: [steps, "2", tool_state, input1]
-      value: "null"  # string "null" from legacy JSON-encoded tool_state (not None)
-    - path: [steps, "2", tool_state, queries]
-      value_type: list
-
-clean_cat1_step_structure_intact:
-  fixture: test_workflow_1.ga
-  operation: clean
-  assertions:
-    - path: [steps, "0", type]
-      value: data_input
-    - path: [steps, "2", tool_id]
-      value: cat1
-    - path: [steps, "2", tool_version]
-      value: "1.0.0"
-
-clean_random_lines_bookkeeping_stripped:
-  fixture: test_workflow_2.ga
-  operation: clean
-  assertions:
-    - path: [steps, "1", tool_state, __page__]
-      value_absent: true
-    - path: [steps, "1", tool_state, __rerun_remap_job_id__]
-      value_absent: true
-    - path: [steps, "2", tool_state, __page__]
-      value_absent: true
-    - path: [steps, "2", tool_state, __rerun_remap_job_id__]
-      value_absent: true
-
-clean_random_lines_stale_chrominfo_stripped:
-  fixture: test_workflow_2.ga
-  operation: clean
-  assertions:
-    - path: [steps, "1", tool_state, chromInfo]
-      value_absent: true
-    - path: [steps, "2", tool_state, chromInfo]
-      value_absent: true
-
-clean_random_lines_valid_inputs_survive:
-  fixture: test_workflow_2.ga
-  operation: clean
-  assertions:
-    - path: [steps, "1", tool_state, num_lines]
-      value: '"8"'  # JSON-decoded string literal from legacy encoding
-    - path: [steps, "1", tool_state, seed_source]
-      value_type: dict
-    - path: [steps, "1", tool_state, seed_source, seed_source_selector]
-      value: no_seed
-
 clean_synthetic_cat1_bookkeeping_stripped:
   fixture: synthetic-cat1-stale.ga
   operation: clean

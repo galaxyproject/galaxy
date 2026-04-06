@@ -51,8 +51,6 @@ from ._types import (
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _select_which_when_native,
-    as_dict,
-    as_list,
 )
 from .precheck import precheck_native_workflow
 from .stale_keys import (
@@ -204,9 +202,9 @@ def _strip_recursive(
 
         if parameter_type == "gx_conditional":
             conditional = cast(ConditionalParameterModel, tool_input)
-            cond_state = as_dict(value)
-            if cond_state is None:
+            if not isinstance(value, dict):
                 continue
+            cond_state = value
 
             test_param = conditional.test_parameter
             target_when = _select_which_when_native(conditional, cond_state)
@@ -221,9 +219,9 @@ def _strip_recursive(
 
         elif parameter_type == "gx_repeat":
             repeat = cast(RepeatParameterModel, tool_input)
-            repeat_state = as_list(value)
-            if not repeat_state:
+            if not isinstance(value, list):
                 continue
+            repeat_state = value
 
             for i, instance in enumerate(repeat_state):
                 if isinstance(instance, dict):
@@ -239,9 +237,9 @@ def _strip_recursive(
 
         elif parameter_type == "gx_section":
             section = cast(SectionParameterModel, tool_input)
-            section_state = as_dict(value)
-            if section_state is None:
+            if not isinstance(value, dict):
                 continue
+            section_state = value
             _strip_recursive(
                 section_state,
                 list(section.parameters),

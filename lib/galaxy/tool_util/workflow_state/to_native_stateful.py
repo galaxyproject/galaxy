@@ -92,8 +92,8 @@ def convert_to_native_stateful(
     ensure_native() would short-circuit and skip the encoder callback.
 
     Conversion happens inside to_native() via the state_encode_to_native
-    callback. Steps where encoding fails keep default json.dumps encoding
-    unless strict=True.
+    callback. Steps where encoding fails fall back to gxformat2's default
+    passthrough (clean dict, no json.dumps) unless strict=True.
     """
     workflow_dict = ordered_load_path(workflow_path)
     if isinstance(workflow_dict, dict) and workflow_dict.get("a_galaxy_workflow") == "true":

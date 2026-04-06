@@ -223,13 +223,11 @@ def encode_state_to_native(parsed_tool: ToolInputs, state: dict) -> Dict[str, An
     """Encode a format2 state dict to native tool_state encoding.
 
     Walks the format2 state with tool definitions to reverse format2
-    conversions (e.g., multiple select lists → comma-delimited strings)
-    before json.dumps encoding each top-level key.
-
-    ConnectedValue markers are passed through as json.dumps(marker).
+    conversions (e.g., multiple select lists → comma-delimited strings).
+    Returns a clean dict with proper Python types — no per-key json.dumps.
+    ConnectedValue markers are passed through as-is.
     """
-    reversed_state = _reverse_format2_values(parsed_tool.inputs, state)
-    return {key: json.dumps(value) for key, value in reversed_state.items()}
+    return _reverse_format2_values(parsed_tool.inputs, state)
 
 
 def _reverse_format2_values(tool_inputs: List[ToolParameterT], state: dict) -> dict:
@@ -284,7 +282,8 @@ def make_encode_tool_state(get_tool_info: GetToolInfo):
     """Create a NativeStateEncoderFn for gxformat2's ImportOptions.state_encode_to_native.
 
     Signature: (step: dict, state: dict) -> Optional[Dict[str, Any]]
-    Returns schema-aware native tool_state, or None to fall back to json.dumps encoding.
+    Returns schema-aware native tool_state (clean dict), or None to fall back
+    to gxformat2's default passthrough (which is also a clean dict).
     """
 
     def _encode(step: dict, state: dict) -> Optional[Dict[str, Any]]:
