@@ -944,6 +944,7 @@ class JobContext(BaseJobContext):
         return hdca
 
     def add_output_dataset_association(self, name, dataset):
+        Job._check_name_length(name)
         assoc = JobToOutputDatasetAssociation(name, dataset)
         assoc.job = self.job
         self.sa_session.add(assoc)
