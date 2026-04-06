@@ -10,7 +10,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    model_validator,
+)
 
 from .cache import (
     build_tool_info,
@@ -93,6 +96,34 @@ def add_stale_key_args(parser, mode="validate"):
         )
 
 
+def add_strict_args(parser):
+    """Add --strict and its three orthogonal sub-flags to any argparse parser.
+
+    --strict is shorthand for --strict-structure --strict-encoding --strict-state.
+    Sub-flags can also be set individually.
+    """
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Shorthand for --strict-structure --strict-encoding --strict-state",
+    )
+    parser.add_argument(
+        "--strict-structure",
+        action="store_true",
+        help="Reject workflows with unknown keys in envelope/steps (extra='forbid')",
+    )
+    parser.add_argument(
+        "--strict-encoding",
+        action="store_true",
+        help="Reject JSON-string-where-dict-expected in tool_state/state/containers",
+    )
+    parser.add_argument(
+        "--strict-state",
+        action="store_true",
+        help="Require every tool step's state to validate; no skips allowed",
+    )
+
+
 def add_report_args(parser):
     """Add --report-json, --report-markdown, and --output-schema to any argparse parser."""
     parser.add_argument(
@@ -122,6 +153,31 @@ def add_report_args(parser):
 def setup_logging(verbose: bool):
     """Configure logging based on --verbose flag."""
     logging.basicConfig(level=logging.DEBUG if verbose else logging.WARNING)
+
+
+class StrictOptions(BaseModel):
+    """Composable strict-mode flags shared across workflow_state CLIs.
+
+    --strict is shorthand that expands into all three sub-flags. Each sub-flag
+    enforces an orthogonal invariant:
+
+    - strict_structure: workflow dict validates against extra='forbid' models
+    - strict_encoding: no JSON-string-where-dict-expected (tool_state/state/containers)
+    - strict_state: every tool step resolves and validates; no skips allowed
+    """
+
+    strict: bool = False
+    strict_structure: bool = False
+    strict_encoding: bool = False
+    strict_state: bool = False
+
+    @model_validator(mode="after")
+    def _expand_strict(self):
+        if self.strict:
+            self.strict_structure = True
+            self.strict_encoding = True
+            self.strict_state = True
+        return self
 
 
 class ToolCacheOptions(BaseModel):

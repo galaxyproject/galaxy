@@ -11,7 +11,6 @@ Two walkers for the two serialization formats:
   validation and reverse encoding.
 """
 
-import json
 from typing import (
     Any,
     Callable,
@@ -128,11 +127,11 @@ def walk_native_state(
 
         if parameter_type == "gx_conditional":
             conditional = cast(ConditionalParameterModel, tool_input)
-            conditional_state = as_dict(value)
-            if conditional_state is None:
+            if not isinstance(value, dict):
                 if check_unknown_keys and value is not None:
                     raise Exception(f"Invalid conditional state found {value!r} for conditional {parameter_name}")
                 continue
+            conditional_state = value
             target_when = _select_which_when_native(conditional, conditional_state)
             if target_when is None:
                 all_params: List[ToolParameterT] = [conditional.test_parameter]
@@ -151,19 +150,12 @@ def walk_native_state(
 
         elif parameter_type == "gx_repeat":
             repeat = cast(RepeatParameterModel, tool_input)
-            repeat_state = as_list(value)
-            if check_unknown_keys and value is not None and not repeat_state and not isinstance(value, list):
-                # _as_list returned [] but value was non-None and not already a list —
-                # could be a string that didn't decode to a list, or some other type
-                if isinstance(value, str):
-                    try:
-                        decoded = json.loads(value)
-                        if not isinstance(decoded, list):
-                            raise Exception(f"Invalid repeat state found {value!r} for repeat {parameter_name}")
-                    except (json.JSONDecodeError, TypeError):
-                        raise Exception(f"Invalid repeat state found {value!r} for repeat {parameter_name}")
-                else:
+            if isinstance(value, list):
+                repeat_state = value
+            else:
+                if check_unknown_keys and value is not None:
                     raise Exception(f"Invalid repeat state found {value!r} for repeat {parameter_name}")
+                repeat_state = []
             repeat_instance_connects = repeat_inputs_to_array(state_path, input_connections)
             max_instances = max(len(repeat_state), len(repeat_instance_connects))
             while len(repeat_state) < max_instances:
@@ -185,11 +177,11 @@ def walk_native_state(
 
         elif parameter_type == "gx_section":
             section = cast(SectionParameterModel, tool_input)
-            section_state = as_dict(value)
-            if section_state is None:
+            if not isinstance(value, dict):
                 if check_unknown_keys and value is not None:
                     raise Exception(f"Invalid section state found {value!r} for section {parameter_name}")
                 continue
+            section_state = value
             nested = walk_native_state(
                 input_connections,
                 section.parameters,
@@ -207,39 +199,6 @@ def walk_native_state(
                 output[parameter_name] = result
 
     return output
-
-
-# These json.loads() calls are safe because they are only called by the walker
-# for values the tool schema identifies as containers (conditional, section, repeat).
-# Container values in native tool_state are always JSON-encoded dicts or lists —
-# there is no ambiguity like there is for leaf values (where "2" could be the
-# string "2" or a JSON-encoded integer). Leaf values are never passed through
-# these functions; they go directly to the walker's leaf_callback for
-# type-aware handling.
-def as_dict(value) -> Optional[dict]:
-    if isinstance(value, dict):
-        return value
-    if isinstance(value, str):
-        try:
-            decoded = json.loads(value)
-            if isinstance(decoded, dict):
-                return decoded
-        except (json.JSONDecodeError, TypeError):
-            pass
-    return None
-
-
-def as_list(value) -> list:
-    if isinstance(value, list):
-        return value
-    if isinstance(value, str):
-        try:
-            decoded = json.loads(value)
-            if isinstance(decoded, list):
-                return decoded
-        except (json.JSONDecodeError, TypeError):
-            pass
-    return []
 
 
 def _test_value_matches_discriminator(test_value, discriminator) -> bool:

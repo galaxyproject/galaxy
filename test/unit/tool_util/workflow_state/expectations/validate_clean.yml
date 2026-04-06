@@ -25,16 +25,6 @@ validate_clean_format2_passes:
     - path: [steps, concat, tool_id]
       value: cat1
 
-# Legacy-encoded workflows pass because cleaning decodes JSON-string
-# tool_state to dict on the internal copy, so precheck passes.
-# The returned workflow is the original (unmutated).
-validate_clean_legacy_cat1_passes:
-  fixture: test_workflow_1.ga
-  operation: validate_clean
-  assertions:
-    - path: [steps, "2", tool_id]
-      value: cat1
-
 # --- IWC workflows: stale keys don't block validation when --clean is used ---
 
 validate_clean_iwc_repeatmasking_passes:

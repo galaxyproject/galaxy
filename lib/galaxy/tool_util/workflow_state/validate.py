@@ -7,11 +7,15 @@ Supports both native .ga and format2 .gxwf.yml workflows.
 import logging
 import os
 import sys
-from typing import Optional
 
 from ._cli_common import (
     setup_tool_info,
+    StrictOptions,
     ToolCacheOptions,
+)
+from ._encoding import (
+    check_strict_encoding as _check_strict_encoding,
+    check_strict_structure as _check_strict_structure,
 )
 from ._report_models import (
     ConnectionValidationReport,
@@ -62,8 +66,7 @@ StepResult = ValidationStepResult
 # -- Options model --
 
 
-class _ValidateCommonOptions(ToolCacheOptions):
-    strict: bool = False
+class _ValidateCommonOptions(ToolCacheOptions, StrictOptions):
     summary: bool = False
     connections: bool = False
     mode: str = "pydantic"
@@ -133,27 +136,52 @@ def validate_workflow_cli(
 def validate_single(
     workflow_path: str,
     tool_info: GetToolInfo,
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
     mode: str = "pydantic",
     strict: bool = False,
-    tool_schema_dir: Optional[str] = None,
+    tool_schema_dir: str | None = None,
+    strict_structure: bool = False,
+    strict_encoding: bool = False,
 ) -> SingleValidationReport:
     """Validate a single workflow, return structured report.
 
     Library-level entry point with no CLI dependencies.
     Handles both pydantic and json-schema backends, precheck, and connection validation.
+
+    When strict_structure/strict_encoding are set, the raw workflow dict is
+    pre-checked; failures are reported via structure_errors/encoding_errors on
+    the returned SingleValidationReport. The legacy ``strict`` param still
+    controls json-schema-mode structural strict for backwards compatibility;
+    new callers should prefer ``strict_structure``.
     """
     workflow = load_workflow(workflow_path)
     workflow_name = os.path.basename(workflow_path)
+
+    if strict_encoding:
+        enc_errors = _check_strict_encoding(workflow)
+        if enc_errors:
+            return SingleValidationReport(
+                workflow=workflow_name,
+                results=[],
+                encoding_errors=enc_errors,
+            )
+    if strict_structure:
+        struct_errors = _check_strict_structure(workflow)
+        if struct_errors:
+            return SingleValidationReport(
+                workflow=workflow_name,
+                results=[],
+                structure_errors=struct_errors,
+            )
 
     if mode == "json-schema":
         results = _json_schema_validate_single(
             workflow,
             tool_info=tool_info,
             tool_schema_dir=tool_schema_dir,
-            strict=strict,
+            strict=strict or strict_structure,
             clean=clean,
         )
         return SingleValidationReport(workflow=workflow_name, results=results)
@@ -165,10 +193,12 @@ def validate_single(
         connections=connections,
         clean=clean,
     )
+    skipped_reason = precheck.detail if precheck and not precheck.can_process else None
     return SingleValidationReport(
         workflow=workflow_name,
         results=results,
         connection_report=conn_report,
+        skipped_reason=skipped_reason,
     )
 
 
@@ -343,13 +373,24 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
 
 
 def _make_validate_process_one(
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
+    strict_state: bool = False,
+    strict_encoding: bool = False,
+    strict_structure: bool = False,
 ):
     """Build a process_one callback for validation tree runs."""
 
     def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info: GetToolInfo):
+        if strict_encoding:
+            enc_errors = _check_strict_encoding(wf_dict)
+            if enc_errors:
+                raise RuntimeError("strict-encoding: " + "; ".join(enc_errors))
+        if strict_structure:
+            struct_errors = _check_strict_structure(wf_dict)
+            if struct_errors:
+                raise RuntimeError("strict-structure: " + "; ".join(struct_errors))
         step_results, precheck, conn_report = validate_workflow_cli(
             wf_dict,
             get_tool_info,
@@ -358,6 +399,8 @@ def _make_validate_process_one(
             clean=clean,
         )
         if precheck and not precheck.can_process:
+            if strict_state:
+                raise RuntimeError(f"strict-state: cannot process: {precheck.detail}")
             skip_workflow(precheck.skip_reasons[0].value)
         return step_results, conn_report
 
@@ -717,7 +760,7 @@ def _run_json_schema_validate_single(options: ValidateOptions, tool_info: GetToo
         workflow,
         tool_info=tool_info,
         tool_schema_dir=options.tool_schema_dir,
-        strict=options.strict,
+        strict=options.strict_structure,
         clean=options.clean,
     )
     return _emit_single_results(options, results)
@@ -725,7 +768,7 @@ def _run_json_schema_validate_single(options: ValidateOptions, tool_info: GetToo
 
 def _make_json_schema_process_one(
     tool_info: GetToolInfo,
-    tool_schema_dir: Optional[str],
+    tool_schema_dir: str | None,
     strict: bool,
     clean: bool = False,
 ):
@@ -765,13 +808,29 @@ def run_validate(options: ValidateOptions) -> int:
         connections=options.connections,
         clean=options.clean,
         mode=options.mode,
-        strict=options.strict,
+        strict=options.strict_structure,
         tool_schema_dir=options.tool_schema_dir,
+        strict_structure=options.strict_structure,
+        strict_encoding=options.strict_encoding,
     )
+
+    if report.encoding_errors:
+        print("Error: strict-encoding:", file=sys.stderr)
+        for e in report.encoding_errors:
+            print(f"  {e}", file=sys.stderr)
+        return 2
+    if report.structure_errors:
+        print("Error: strict-structure:", file=sys.stderr)
+        for e in report.structure_errors:
+            print(f"  {e}", file=sys.stderr)
+        return 2
 
     if not report.results:
         # Precheck or empty — treat as skip
         print("Skipped (legacy encoding or no tool steps)", file=sys.stderr)
+        if report.skipped_reason and options.strict_state:
+            print(f"Error: strict-state: cannot process: {report.skipped_reason}", file=sys.stderr)
+            return 2
         return 0
 
     return _emit_single_results(options, report.results, report.connection_report)
@@ -795,11 +854,18 @@ def run_validate_tree(options: ValidateTreeOptions) -> int:
         process_one = _make_json_schema_process_one(
             tool_info=tool_info,
             tool_schema_dir=options.tool_schema_dir,
-            strict=options.strict,
+            strict=options.strict_structure,
             clean=options.clean,
         )
     else:
-        process_one = _make_validate_process_one(policy=policy, connections=options.connections, clean=options.clean)
+        process_one = _make_validate_process_one(
+            policy=policy,
+            connections=options.connections,
+            clean=options.clean,
+            strict_state=options.strict_state,
+            strict_encoding=options.strict_encoding,
+            strict_structure=options.strict_structure,
+        )
 
     from ._tree_orchestrator import run_tree
 
@@ -861,7 +927,7 @@ def _emit_single_results(
     has_skips = any(r.status == "skip_tool_not_found" for r in results)
     if has_failures:
         exit_code = 1
-    elif has_skips and options.strict:
+    elif has_skips and options.strict_state:
         exit_code = 2
     if conn_report and not conn_report.valid:
         exit_code = max(exit_code, 1)
@@ -874,7 +940,7 @@ def _compute_tree_exit_code(report: TreeValidationReport, options) -> int:
     exit_code = 0
     if s["fail"] > 0 or s["error"] > 0:
         exit_code = 1
-    elif s["skip_tool_not_found"] > 0 and options.strict:
+    elif s["skip_tool_not_found"] > 0 and options.strict_state:
         exit_code = 2
     if options.connections:
         for r in report.results:

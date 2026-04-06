@@ -225,7 +225,9 @@ class TestStrictBehavior:
         )
         with patch("galaxy.tool_util.workflow_state.validate.setup_tool_info", return_value=FakeGetToolInfo()):
             exit_code = run_validate(options)
-        assert exit_code == 1
+        # --strict expands to strict_structure which pre-checks against the
+        # gxformat2 strict model and returns exit 2 before json-schema runs.
+        assert exit_code == 2
 
 
 class TestToolSchemaDirEndToEnd:
