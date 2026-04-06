@@ -91,7 +91,7 @@ export function parseMentions(text: string): ParsedMention[] {
     return mentions;
 }
 
-export async function resolveMentions(mentions: ParsedMention[]): Promise<ResolvedEntity[]> {
+export function resolveMentions(mentions: ParsedMention[]): ResolvedEntity[] {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const historyId = historyStore.currentHistoryId;

@@ -162,7 +162,7 @@ async function submitQuery() {
 
     try {
         const parsed = parseMentions(currentQuery);
-        const resolved = await resolveMentions(parsed);
+        const resolved = resolveMentions(parsed);
         const entityContext = buildEntityContext(resolved);
 
         const { data, error } = await GalaxyApi().POST("/api/chat", {
