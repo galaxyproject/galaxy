@@ -14,6 +14,7 @@ from galaxy.tool_util.workflow_state._encoding import (
     check_strict_encoding,
     check_strict_structure,
 )
+from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state.cache import build_tool_info
 from galaxy.tool_util.workflow_state.clean import clean_stale_state
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
@@ -153,7 +154,7 @@ def _strict_structure_op(wf_dict: dict) -> dict:
 def _strict_state_validate_op(wf_dict: dict) -> dict:
     """Validate with strict-state semantics: skips and missing tools are failures.
 
-    Raises on precheck skip, validation failures, or skip_tool_not_found steps.
+    Raises on precheck skip, validation failures, or skipped steps.
     """
     workflow = copy.deepcopy(wf_dict)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
@@ -163,10 +164,10 @@ def _strict_state_validate_op(wf_dict: dict) -> dict:
     if failures:
         msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
         raise RuntimeError("Strict-state validation failed:\n" + "\n".join(msgs))
-    skips = [r for r in results if r.status == "skip_tool_not_found"]
+    skips = [r for r in results if r.status in SKIP_STATUSES]
     if skips:
-        msgs = [f"step {r.step} ({r.tool_id}): tool not found" for r in skips]
-        raise RuntimeError("Strict-state: missing tools:\n" + "\n".join(msgs))
+        msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in skips]
+        raise RuntimeError("Strict-state: skipped steps:\n" + "\n".join(msgs))
     return workflow
 
 

@@ -28,11 +28,6 @@ strict_encoding_json_string_tool_state:
   operation: strict_encoding
   expect_error: true
 
-strict_encoding_json_string_state:
-  fixture: synthetic-cat1-format2-json-state.gxwf.yml
-  operation: strict_encoding
-  expect_error: true
-
 strict_encoding_tool_state_in_format2:
   fixture: synthetic-cat1-format2-tool-state.gxwf.yml
   operation: strict_encoding

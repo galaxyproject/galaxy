@@ -23,7 +23,7 @@
           "step_counts": {
             "fail": 0,
             "ok": 1,
-            "skip_tool_not_found": 0
+            "skip": 0
           }
         },
         {
@@ -55,7 +55,7 @@
           "step_counts": {
             "fail": 1,
             "ok": 0,
-            "skip_tool_not_found": 1
+            "skip": 1
           }
         }
       ]
@@ -108,7 +108,7 @@
       "step_counts": {
         "fail": 0,
         "ok": 1,
-        "skip_tool_not_found": 0
+        "skip": 0
       }
     },
     {
@@ -140,7 +140,7 @@
       "step_counts": {
         "fail": 1,
         "ok": 0,
-        "skip_tool_not_found": 1
+        "skip": 1
       }
     },
     {
