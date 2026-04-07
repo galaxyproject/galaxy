@@ -9,7 +9,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_has_keys,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -468,6 +471,48 @@ class TestDatasetsApi(ApiTestCase):
         display = display_response.json()
         self._assert_has_key(display, "data")
         assert "\nA" in display["data"][0]
+
+    def test_raw_data_tabular_missing_columns_returns_400(self, history_id):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/22393 — a tabular
+        # dataset queried via data_type=raw_data without a `columns` parameter used to raise
+        # a bare TypeError that bubbled up as a 500; it should be a 400 MessageException.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data"})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "columns")
+
+    def test_raw_data_tabular_invalid_column_index_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "[99]"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "column index")
+
+    def test_raw_data_tabular_invalid_columns_json_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "not-json"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "JSON")
+
+    def test_raw_data_no_converter_returns_400(self, history_id):
+        # Requesting a provider whose name requires a converter that is not available should
+        # return a 400 MessageException, not a bare NoConverterException bubbling up as a 500.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "provider": "column_with_stats"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Conversion")
 
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data

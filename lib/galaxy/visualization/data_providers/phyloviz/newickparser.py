@@ -1,5 +1,6 @@
 import re
 
+from galaxy.exceptions import MalformedContents
 from .baseparser import (
     Base_Parser,
     PhyloTree,
@@ -46,7 +47,7 @@ class Newick_Parser(Base_Parser):
         """elements separated by comma could be empty"""
 
         if string.find("(") != -1:
-            raise Exception(f"Tree is not well form, location: {string}")
+            raise MalformedContents(f"Newick tree is malformed at: {string}")
 
         childrenString = string.split(",")
         childrenNodes = []
