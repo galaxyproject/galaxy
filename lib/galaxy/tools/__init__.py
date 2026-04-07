@@ -4052,6 +4052,11 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
         def _handle_paired(dce):
             element_identifier = dce.element_identifier
             copied_value = dce.element_object.copy(flush=False)
+            # Normalize to 'paired' for list:paired output, since a
+            # list:paired_or_unpaired input may contain 2-element
+            # paired_or_unpaired sub-collections that are structurally
+            # equivalent to paired but carry the wider collection_type.
+            copied_value.collection_type = "paired"
             paired_dce_copies[element_identifier] = copied_value
             paired_datasets.append(copied_value.elements[0].element_object)
             paired_datasets.append(copied_value.elements[1].element_object)

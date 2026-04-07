@@ -76,7 +76,7 @@
       <param name="input">
         <collection type="list:paired_or_unpaired">
           <element name="el1">
-            <collection type="paired">
+            <collection type="paired_or_unpaired">
               <element name="forward" value="simple_line.txt" />
               <element name="reverse" value="simple_line_alternative.txt" />
             </collection>
