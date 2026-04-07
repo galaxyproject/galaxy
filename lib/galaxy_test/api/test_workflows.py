@@ -28,6 +28,7 @@ from galaxy.exceptions import error_codes
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
 from galaxy_test.base import rules_test_data
+from galaxy_test.base.api_asserts import assert_error_message_contains
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -8230,6 +8231,14 @@ steps:
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 5)
         self.__assert_lines_hid_line_count_is(history_id, 3, 5)
+
+    @skip_without_tool("random_lines1")
+    def test_run_replace_params_by_tool_rejects_scalar_values(self):
+        workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_reject_scalar_params")
+        workflow_request["parameters"] = dumps(dict(random_lines1=5))
+        response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Input should be a valid dictionary")
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_uuid(self):

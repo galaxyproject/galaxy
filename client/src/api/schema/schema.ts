@@ -17056,7 +17056,9 @@ export interface components {
              * @default {}
              */
             parameters: {
-                [key: string]: unknown;
+                [key: string]: {
+                    [key: string]: unknown;
+                };
             } | null;
             /**
              * Legacy Step Parameters Normalized
