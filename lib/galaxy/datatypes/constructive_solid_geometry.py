@@ -1024,30 +1024,36 @@ class GocadSGrid(data.Text):
 
     file_ext = "gocad.sg"
 
-    MetadataElement(name="gocad_version", default=None, desc="Gocad version", readonly=True, optional=True, visible=True)
+    MetadataElement(
+        name="gocad_version", default=None, desc="Gocad version", readonly=True, optional=True, visible=True
+    )
     MetadataElement(name="name", default=None, desc="Grid name", readonly=True, optional=True, visible=True)
 
     def extract_version(self, line: str) -> str:
-        match = re.search(r'GOCAD SGrid\s+([\d.]+)', line)
+        match = re.search(r"GOCAD SGrid\s+([\d.]+)", line)
         if match:
             return match.group(1)
         return "?"
 
     def extract_name(self, line: str) -> str:
-        match = re.search(r'name:\s*(.*)', line)
+        match = re.search(r"name:\s*(.*)", line)
         if match:
             return match.group(1).strip()
         return "?"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        with open(dataset.get_file_name(), errors="ignore") as file:
-            first_line = file.readline()
+        with open(dataset.get_file_name(), errors="ignore") as fh:
+            line_iter = util.iter_start_of_line(fh, MAX_LINE_LEN)
+            try:
+                first_line = next(line_iter)
+            except StopIteration:
+                return
             dataset.metadata.gocad_version = self.extract_version(first_line)
-
-            for _ in range(20):
-                line = file.readline()
+            for stop_index, line in enumerate(line_iter):
                 if "name:" in line:
                     dataset.metadata.name = self.extract_name(line)
+                    break
+                if stop_index > MAX_HEADER_LINES:
                     break
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
@@ -1070,28 +1076,31 @@ class FeflowFem(data.Text):
 
     file_ext = "feflow.fem"
 
-    MetadataElement(name="feflow_version", default=None, desc="Feflow version", readonly=True, optional=True, visible=True)
+    MetadataElement(
+        name="feflow_version", default=None, desc="Feflow version", readonly=True, optional=True, visible=True
+    )
     MetadataElement(name="problem_type", default=None, desc="Problem type", readonly=True, optional=True, visible=True)
 
     def extract_version(self, line: str) -> str:
-        match = re.search(r'\(V\s*([^)]+)\)', line)
+        match = re.search(r"\(([Vv][^)]+)\)", line)
         if match:
             return match.group(1)
         return "?"
 
-    def extract_type(self, line: str) -> str:
-        match = re.search(r'CLASS\s*\(([^V][^)]*)\)', line)
-        if match:
-            return match.group(1).strip()
+    def extract_problem(self, line: str) -> str:
+        if "PROBLEM:" in line:
+            return line.split("PROBLEM:", 1)[1].strip()
         return "?"
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        with open(dataset.get_file_name(), errors="ignore") as file:
-            for _ in range(5):
-                line = file.readline()
-                if "CLASS" in line:
+        with open(dataset.get_file_name(), errors="ignore") as fh:
+            for stop_index, line in enumerate(util.iter_start_of_line(fh, MAX_LINE_LEN)):
+                if line.startswith("PROBLEM:"):
+                    dataset.metadata.problem_type = self.extract_problem(line)
+                elif "CLASS" in line:
                     dataset.metadata.feflow_version = self.extract_version(line)
-                    dataset.metadata.problem_type = self.extract_type(line)
+                    break
+                if stop_index > MAX_HEADER_LINES:
                     break
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
@@ -1106,7 +1115,7 @@ class FeflowFem(data.Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Check for the key string 'PROBLEM:' at the start of the file."""
         return file_prefix.text_io(errors="ignore").readline().startswith("PROBLEM:")
-    
+
 
 @build_sniff_from_prefix
 class AsciiRaster(data.Text):
@@ -1118,17 +1127,21 @@ class AsciiRaster(data.Text):
     MetadataElement(name="nrows", default=0, desc="Number of rows", readonly=True, visible=True)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
-        if dataset.has_data():
-            with open(dataset.get_file_name(), errors="ignore") as fh:
-                for line in fh:
-                    line = line.strip().lower()
-                    if not line: continue
-                    if line.startswith("ncols"):
-                        dataset.metadata.ncols = int(line.split()[1])
-                    elif line.startswith("nrows"):
-                        dataset.metadata.nrows = int(line.split()[1])
-                    if dataset.metadata.nrows > 0 and dataset.metadata.ncols > 0:
-                        break
+        if not dataset.has_data():
+            return
+        with open(dataset.get_file_name(), errors="ignore") as fh:
+            for stop_index, line in enumerate(util.iter_start_of_line(fh, MAX_LINE_LEN)):
+                line = line.strip().lower()
+                if not line:
+                    continue
+                if line.startswith("ncols"):
+                    dataset.metadata.ncols = int(line.split()[1])
+                elif line.startswith("nrows"):
+                    dataset.metadata.nrows = int(line.split()[1])
+                if getattr(dataset.metadata, "ncols", 0) and getattr(dataset.metadata, "nrows", 0):
+                    break
+                if stop_index > MAX_HEADER_LINES:
+                    break
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:

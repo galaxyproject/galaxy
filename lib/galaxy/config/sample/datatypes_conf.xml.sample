@@ -1173,7 +1173,7 @@
     <datatype extension="vtkxml" type="galaxy.datatypes.constructive_solid_geometry:VtkXml" display_in_upload="true"/>
     <datatype extension="gocad.sg" type="galaxy.datatypes.constructive_solid_geometry:GocadSGrid" display_in_upload="true"/>
     <datatype extension="feflow.fem" type="galaxy.datatypes.constructive_solid_geometry:FeflowFem" display_in_upload="true"/>
-    <datatype extension="raster.asc" type="galaxy.datatypes.constructive_solid_geometry:AsciiRaster" display_in_upload="true"/>    
+    <datatype extension="raster.asc" type="galaxy.datatypes.constructive_solid_geometry:AsciiRaster" display_in_upload="true"/>
     <datatype extension="stl" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" description="STL is a file format native to the stereolithography CAD software created by 3D Systems."/>
     <!-- Povray script -->
     <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
@@ -1249,6 +1249,9 @@
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTess"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:NeperTesr"/>
     <sniffer type="galaxy.datatypes.constructive_solid_geometry:GmshMsh"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:GocadSGrid"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:FeflowFem"/>
+    <sniffer type="galaxy.datatypes.constructive_solid_geometry:AsciiRaster"/>
     <sniffer type="galaxy.datatypes.goldenpath:GoldenPath"/>
     <sniffer type="galaxy.datatypes.interval:ScIdx"/>
     <sniffer type="galaxy.datatypes.tabular:Vcf"/>

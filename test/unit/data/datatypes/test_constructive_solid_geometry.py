@@ -1,4 +1,9 @@
-from galaxy.datatypes.constructive_solid_geometry import VtkXml, GocadSGrid, FeflowFem, AsciiRaster
+from galaxy.datatypes.constructive_solid_geometry import (
+    AsciiRaster,
+    FeflowFem,
+    GocadSGrid,
+    VtkXml,
+)
 from .util import (
     get_dataset,
     MockDatasetDataset,
@@ -18,7 +23,7 @@ def test_vtkXml_set_meta():
 
 def test_GocadSGrid_set_meta():
     gocad = GocadSGrid()
-    with get_dataset("testfile.sg") as dataset:
+    with get_dataset("testfile.gocad.sg") as dataset:
         dataset.dataset = MockDatasetDataset(dataset.get_file_name())
         gocad.set_meta(dataset)
 
@@ -28,18 +33,19 @@ def test_GocadSGrid_set_meta():
 
 def test_FeflowFem_set_meta():
     feflow = FeflowFem()
-    with get_dataset("testfile.fem") as dataset:
+    with get_dataset("testfile.feflow.fem") as dataset:
         dataset.dataset = MockDatasetDataset(dataset.get_file_name())
         feflow.set_meta(dataset)
 
     assert dataset.metadata.feflow_version == "v.6.004"
     assert dataset.metadata.problem_type == "A new FEFLOW problem"
 
+
 def test_AsciiRaster_set_meta():
     asciiRaster = AsciiRaster()
-    with get_dataset("testfile.asc") as dataset:
+    with get_dataset("testfile.raster.asc") as dataset:
         dataset.dataset = MockDatasetDataset(dataset.get_file_name())
         asciiRaster.set_meta(dataset)
 
-    assert dataset.metadata.ncols == 100
-    assert dataset.metadata.nrows == 200
+    assert dataset.metadata.ncols == 20
+    assert dataset.metadata.nrows == 39
