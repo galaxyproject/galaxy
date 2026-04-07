@@ -31,6 +31,7 @@ from sqlalchemy.sql.expression import (
 
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
+from galaxy.job_execution.actions.post import ActionBox
 from galaxy.jobs import (
     JobQueueI,
     JobWrapper,
@@ -554,6 +555,12 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                     copied_from_job = self.sa_session.get(model.Job, job.copied_from_job_id)
                     assert copied_from_job is not None
                     job.copy_from_job(copied_from_job)
+                    # Execute non-immediate post-job actions (e.g. HideDatasetAction)
+                    # that were registered during workflow step execution but are
+                    # normally only run at job completion via the runner finish path.
+                    for pjaa in job.post_job_actions:
+                        if pjaa.post_job_action.action_type not in ActionBox.immediate_actions:
+                            ActionBox.execute(self.app, self.sa_session, pjaa.post_job_action, job)
                     continue
                 job_state = self.__check_job_state(job)
                 if job_state == JOB_WAIT:

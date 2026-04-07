@@ -6758,6 +6758,48 @@ steps:
             ), f"first output:\n{first_wf_output}\nsecond output:\n{second_wf_output}"
 
     @skip_without_tool("cat1")
+    def test_workflow_rerun_with_use_cached_job_hides_output(self, history_id: str):
+        run_summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        hide: true
+""",
+            test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""",
+            history_id=history_id,
+        )
+        first_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=2)
+        assert not first_output["visible"], f"Expected output to be hidden on first run: {first_output}"
+
+        # Unhide the output so we can verify the cached rerun hides it again
+        # (rather than just preserving already-hidden state)
+        self.dataset_populator.update_dataset(first_output["id"], {"visible": True})
+        first_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=2)
+        assert first_output["visible"]
+
+        rerun_summary = self.workflow_populator.rerun(run_summary, use_cached_job=True)
+        # Verify job was actually cached
+        for job in rerun_summary.jobs:
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert job_details["copied_from_job_id"], f"Expected job to be cached: {job_details}"
+
+        cached_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=3)
+        assert not cached_output["visible"], f"Expected output to be hidden with cached job: {cached_output}"
+
+    @skip_without_tool("cat1")
     @skip_without_tool("identifier_multiple")
     def test_workflow_rerun_with_cached_job_consumes_implicit_hdca(self, history_id: str):
         workflow = """
