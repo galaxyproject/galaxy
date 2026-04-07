@@ -4039,6 +4039,18 @@ mapping:
           If set to a non-0 value, upper limit on number of
           tasks that can be executed per user per second.
 
+      celery_user_concurrency_limit:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Maximum number of Celery tasks that can execute concurrently
+          for a single user. If set to 0 (default), no concurrency
+          limit is enforced. When a user exceeds this limit, new tasks
+          are deferred and retried until a slot becomes available.
+          A periodic cleanup task reclaims slots from crashed workers
+          by inspecting active tasks on all workers.
+
       use_pbkdf2:
         type: bool
         default: true

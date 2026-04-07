@@ -5451,6 +5451,21 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``celery_user_concurrency_limit``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Maximum number of Celery tasks that can execute concurrently for a
+    single user. If set to 0 (default), no concurrency limit is
+    enforced. When a user exceeds this limit, new tasks are deferred
+    and retried until a slot becomes available. A periodic cleanup
+    task reclaims slots from crashed workers by inspecting active
+    tasks on all workers.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~~
 ``use_pbkdf2``
 ~~~~~~~~~~~~~~
