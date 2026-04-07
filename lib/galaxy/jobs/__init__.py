@@ -81,6 +81,7 @@ from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
     Dataset,
     Job,
+    JobOutputNameTooLongError,
     store,
     Task,
 )
@@ -2143,10 +2144,10 @@ class MinimalJobWrapper(HasResourceParameters):
             except store.FileTracebackException as e:
                 job.traceback = e.traceback
                 log.exception(f"Problem generating command line for Job {job.id}.\n{job.traceback}")
-                raise
-            except Exception:
+                return fail(str(e), exception=e)
+            except Exception as e:
                 log.exception(f"problem importing job outputs. stdout [{job.stdout}] stderr [{job.stderr}]")
-                raise
+                return fail(str(e), exception=e)
         else:
             if self.tool.version_string_cmd:
                 version_filename = self.get_version_string_path()
@@ -2159,7 +2160,7 @@ class MinimalJobWrapper(HasResourceParameters):
             # importing metadata will discover outputs if extended metadata
             try:
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
-            except MaxDiscoveredFilesExceededError as e:
+            except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
                 final_job_state = job.states.ERROR
                 job.job_messages = [
                     {

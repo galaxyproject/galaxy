@@ -344,18 +344,20 @@ class WorkflowSummary:
             for cja_assoc in cja:
                 cja_job = cja_assoc.job
                 self.job_id2representative_job[cja_job.id] = representative_job
-        # This whole elif condition may no longer be needed do to additional
-        # tracking with creating_job_associations. Will delete at some point.
+        # Fallback for implicit output collections lacking creating_job_associations
+        # (e.g. reached via Sentry GALAXY-MAIN-121W / issue #22359). Trace via a leaf
+        # HDA's creating job instead.
         elif dataset_collection.implicit_output_name:
             # TODO: Optimize db call
             element = dataset_collection.collection.first_dataset_element
-            if not element:
-                # Got no dataset instance to walk back up to creating job.
+            dataset_instance = element.hda if element else None
+            if not dataset_instance:
+                # Got no dataset instance to walk back up to creating job
+                # (empty collection, or leaf element is not an HDA - e.g. LDDA).
                 # TODO track this via tool request model
                 self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
                 return
-            dataset_instance = element.hda
-            if dataset_instance is None or not self.__check_state(dataset_instance):
+            if not self.__check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?
                 return

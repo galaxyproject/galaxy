@@ -221,6 +221,7 @@
   <tool file="collection_paired_or_unpaired.xml" />
   <tool file="collection_list_paired_or_unpaired.xml" />
   <tool file="discover_sort_by.xml" />
+  <tool file="discover_long_name.xml" />
   <tool file="discover_default_ext.xml" />
   <tool file="expression_forty_two.xml" />
   <tool file="expression_pick_larger_file.xml" />

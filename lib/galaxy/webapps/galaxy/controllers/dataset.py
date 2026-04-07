@@ -82,8 +82,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return "This link may not be followed from within Galaxy."
 
     @web.expose_api_raw_anonymous_and_sessionless
-    def get_metadata_file(self, trans, hda_id, metadata_name, **kwd):
+    def get_metadata_file(self, trans, hda_id=None, metadata_name=None, **kwd):
         """Allows the downloading of metadata files associated with datasets (eg. bai index for bam files)"""
+        if hda_id is None or metadata_name is None:
+            raise RequestParameterInvalidException("Required parameters 'hda_id' and 'metadata_name' are missing.")
         # Backward compatibility with legacy links, should use `/api/datasets/{hda_id}/get_metadata_file` instead
         fh, headers = self.service.get_metadata_file(
             trans, history_content_id=self.decode_id(hda_id), metadata_file=metadata_name, open_file=True
@@ -597,7 +599,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                             )
                         )
                     else:
-                        raise Exception(f"Attempted a view action ({app_action}) on a non-ready display application")
+                        return trans.show_error_message(
+                            f"Attempted a view action ({app_action}) on a non-ready display application"
+                        )
             return dict(msg=msg)
         return trans.show_error_message(
             "You do not have permission to view this dataset at an external display application."
