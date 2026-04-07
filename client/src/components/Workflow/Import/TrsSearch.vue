@@ -41,13 +41,13 @@ const fields: TableField[] = [
 ];
 
 const query = ref("");
-const results: Ref<TrsToolData[]> = ref([]);
+const results: Ref<TrsSearchData[]> = ref([]);
 const trsServer = ref("");
 const loading = ref(false);
 const importing = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
-const selectedTool = ref<TrsToolData | null>(null);
+const selectedTool = ref<TrsSearchData | null>(null);
 const selectedVersion = ref<string | undefined>(undefined);
 
 const hasErrorMessage = computed(() => {
@@ -120,7 +120,7 @@ function computeItems(items: TrsSearchData[]) {
 
 const router = useRouter();
 
-function onVersionSelected(toolData: TrsToolData, versionId: string) {
+function onVersionSelected(toolData: TrsSearchData, versionId: string) {
     selectedTool.value = toolData;
     selectedVersion.value = versionId;
 }
