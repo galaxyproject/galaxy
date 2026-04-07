@@ -10,6 +10,19 @@ History
 
 
 -------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix missing sharable link URL in TS2.0 emails by `@jmchilton <https://github.com/jmchilton>`_ in `#21892 <https://github.com/galaxyproject/galaxy/pull/21892>`_
+* Store tool shed search index test data in repo by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22071 <https://github.com/galaxyproject/galaxy/pull/22071>`_
+* Fix toolshed static image url encoding by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22286 <https://github.com/galaxyproject/galaxy/pull/22286>`_
+
+-------------------
 25.1.2 (2026-03-09)
 -------------------
 

@@ -363,7 +363,13 @@ export default {
             this.disabled = true;
             this.loading = true;
 
-            return getToolFormData(this.id || this.toolUuid, this.currentVersion, this.job_id, this.history_id)
+            return getToolFormData(
+                this.id || this.toolUuid,
+                this.currentVersion,
+                this.job_id,
+                this.history_id,
+                this.toolUuid,
+            )
                 .then((data) => {
                     this.currentVersion = data.version;
                     this.formConfig = data;

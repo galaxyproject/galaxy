@@ -10,6 +10,46 @@ History
 
 
 -------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* When getting tool by uuid, get that exact tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21844 <https://github.com/galaxyproject/galaxy/pull/21844>`_
+* Fix Pydantic UnsupportedFieldAttributeWarning for Field defaults in Annotated by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21923 <https://github.com/galaxyproject/galaxy/pull/21923>`_
+* Backport paired or unpaired mapping fix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21936 <https://github.com/galaxyproject/galaxy/pull/21936>`_
+* Fix ToolExpressionOutput.to_model() for boolean type. by `@jmchilton <https://github.com/jmchilton>`_ in `#22038 <https://github.com/galaxyproject/galaxy/pull/22038>`_
+* Model hidden_data params as optional data in tool meta-models. by `@jmchilton <https://github.com/jmchilton>`_ in `#22116 <https://github.com/galaxyproject/galaxy/pull/22116>`_
+* Fix validation of certain classes of text validators in tools. by `@jmchilton <https://github.com/jmchilton>`_ in `#22280 <https://github.com/galaxyproject/galaxy/pull/22280>`_
+
+============
+Enhancements
+============
+
+* Tool Request API  by `@jmchilton <https://github.com/jmchilton>`_ in `#20935 <https://github.com/galaxyproject/galaxy/pull/20935>`_
+* Remove Trackster by `@guerler <https://github.com/guerler>`_ in `#20974 <https://github.com/galaxyproject/galaxy/pull/20974>`_
+* Add Playwright Backend Support to Galaxy Browser Automation Framework by `@jmchilton <https://github.com/jmchilton>`_ in `#21102 <https://github.com/galaxyproject/galaxy/pull/21102>`_
+* Fix various bugs/hacks with tool_data_table handling. by `@jmchilton <https://github.com/jmchilton>`_ in `#21163 <https://github.com/galaxyproject/galaxy/pull/21163>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#21368 <https://github.com/galaxyproject/galaxy/pull/21368>`_
+* Enable attaching sample sheet to landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21489 <https://github.com/galaxyproject/galaxy/pull/21489>`_
+* Tool testing: add min/max attributes to test output collections by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#21495 <https://github.com/galaxyproject/galaxy/pull/21495>`_
+* Extend `image_diff` and image content assertions to handle boolean images by `@kostrykin <https://github.com/kostrykin>`_ in `#21527 <https://github.com/galaxyproject/galaxy/pull/21527>`_
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
+* Fix slow startup regression by `@ksuderman <https://github.com/ksuderman>`_ in `#21637 <https://github.com/galaxyproject/galaxy/pull/21637>`_
+* Remove sanitization from built-in grep tool by `@wm75 <https://github.com/wm75>`_ in `#21648 <https://github.com/galaxyproject/galaxy/pull/21648>`_
+* Update Python dependencies by `@galaxybot <https://github.com/galaxybot>`_ in `#21653 <https://github.com/galaxyproject/galaxy/pull/21653>`_
+* Add linter to validate required_files include paths exist by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22061 <https://github.com/galaxyproject/galaxy/pull/22061>`_
+
+=============
+Other changes
+=============
+
+* Fix tool request API for multiple select parameters with defaults. by `@jmchilton <https://github.com/jmchilton>`_ in `#21416 <https://github.com/galaxyproject/galaxy/pull/21416>`_
+
+-------------------
 25.1.2 (2026-03-09)
 -------------------
 

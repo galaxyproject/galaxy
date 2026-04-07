@@ -10,6 +10,17 @@ History
 
 
 -------------------
+26.0.0 (2026-04-08)
+-------------------
+
+
+============
+Enhancements
+============
+
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
+
+-------------------
 25.1.2 (2026-03-09)
 -------------------
 

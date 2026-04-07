@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Union,
 )
+from uuid import UUID
 
 from starlette.datastructures import UploadFile
 
@@ -482,12 +483,14 @@ class ToolsService(ServiceBase):
     def _get_tool(
         self, trans: ProvidesUserContext, id, tool_version=None, tool_uuid=None, user: Optional[User] = None
     ) -> Tool:
+        if tool_uuid:
+            try:
+                UUID(tool_uuid)
+            except ValueError:
+                raise exceptions.RequestParameterInvalidException(f"Invalid tool_uuid '{tool_uuid}'.")
         tool = trans.app.toolbox.get_tool(id, tool_version)
         if not tool:
-            if user:
-                # FIXME: id as tool_uuid is for raw_tool_source endpoint, port to fastapi and fix
-                if id == tool_uuid:
-                    id = None
+            if user and (id or tool_uuid):
                 tool = trans.app.toolbox.get_tool(user=user, tool_id=id, tool_uuid=tool_uuid)
                 if tool:
                     return tool
