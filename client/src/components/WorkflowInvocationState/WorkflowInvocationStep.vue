@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
-import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { faInfoCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
 import type { WorkflowStepTyped } from "@/api/workflows";
+import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import type { GraphStep } from "@/composables/useInvocationGraph";
+import { getAppRoot } from "@/onload/loadConfig";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import Heading from "../Common/Heading.vue";
@@ -20,6 +23,8 @@ import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
 const TERMINAL_JOB_STATES = ["ok", "error", "deleted", "paused"];
 
@@ -41,8 +46,11 @@ const emit = defineEmits<{
 }>();
 
 const invocationStore = useInvocationStore();
+const { datatypes } = useDatatypesMapper();
 
 const localExpanded = ref(Boolean(props.expanded));
+const stepConfigData = ref<Record<string, any> | null>(null);
+const loadingStepConfig = ref(false);
 const stepFetchInterval = ref<any>(undefined);
 
 const computedExpanded = computed({
@@ -143,6 +151,43 @@ const jobsTabTitle = computed(() => {
     return "No jobs";
 });
 
+const activeStepWithConfig = computed(() => {
+    // graphStep is the full editor-format step (already has config_form with correct values)
+    if (props.graphStep?.config_form) {
+        return props.graphStep as any;
+    }
+    // If the graphStep doesn't have config_form, we may be able to get it from stepConfigData (fetched when user clicks on Step Config tab)
+    if (!stepConfigData.value) {
+        return null;
+    }
+    const step = props.graphStep ?? (props.workflowStep as any);
+    return {
+        ...step,
+        config_form: stepConfigData.value.config_form,
+        inputs: stepConfigData.value.inputs ?? step.inputs,
+        outputs: stepConfigData.value.outputs ?? step.outputs,
+    } as any;
+});
+
+async function fetchStepConfig() {
+    // graphStep already has config_form — no fetch needed
+    if (props.graphStep?.config_form || stepConfigData.value || loadingStepConfig.value) {
+        return;
+    }
+    loadingStepConfig.value = true;
+    try {
+        const step = props.graphStep ?? props.workflowStep;
+        const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, {
+            type: step.type,
+            content_id: "content_id" in step ? step.content_id : step.tool_id,
+            tool_state: "tool_state" in step ? step.tool_state : {},
+        });
+        stepConfigData.value = data;
+    } finally {
+        loadingStepConfig.value = false;
+    }
+}
+
 function toggleStep() {
     computedExpanded.value = !computedExpanded.value;
 }
@@ -174,6 +219,13 @@ onUnmounted(() => {
             </div>
 
             <div v-if="computedExpanded" class="portlet-content">
+                <div
+                    v-if="props.workflowStep.annotation"
+                    class="mb-2 bg-light rounded p-2"
+                    :class="{ 'mt-2': !props.inGraphView }">
+                    {{ props.workflowStep.annotation }}
+                </div>
+
                 <div v-if="isReady && invocationStepId !== undefined">
                     <div style="min-width: 1">
                         <BAlert v-if="loading" variant="info" show>
@@ -278,6 +330,26 @@ onUnmounted(() => {
                                             </div>
                                         </div>
                                     </GTab>
+
+                                    <GTab
+                                        :class="{ 'invocation-view-step-config': props.inGraphView }"
+                                        lazy
+                                        @click="fetchStepConfig">
+                                        <template v-slot:title>
+                                            <FontAwesomeIcon :icon="faWrench" />
+                                            <span v-localize>Step Config</span>
+                                        </template>
+                                        <BAlert v-if="loadingStepConfig" show>
+                                            <LoadingSpan message="Loading step configuration" />
+                                        </BAlert>
+                                        <fieldset v-else-if="activeStepWithConfig" disabled>
+                                            <FormTool
+                                                v-if="workflowStepType === 'tool'"
+                                                :step="activeStepWithConfig"
+                                                :datatypes="datatypes" />
+                                            <FormDefault v-else :step="activeStepWithConfig" :datatypes="datatypes" />
+                                        </fieldset>
+                                    </GTab>
                                 </GTabs>
                             </div>
                         </div>
@@ -300,6 +372,15 @@ onUnmounted(() => {
 .portlet-header {
     &:hover {
         opacity: 0.8;
+    }
+}
+
+.invocation-view-step-config {
+    :deep(.tool-header) {
+        position: unset;
+    }
+    :deep(.ui-form-header-underlay) {
+        display: none;
     }
 }
 </style>
