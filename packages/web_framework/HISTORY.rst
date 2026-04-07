@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
--------
-26.0rc1
--------
+-------------------
+26.0.0 (2026-04-08)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix WSGI middlewares returning strings by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22108 <https://github.com/galaxyproject/galaxy/pull/22108>`_
+* Delete dummy error controller, fix type error on invalid requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22245 <https://github.com/galaxyproject/galaxy/pull/22245>`_
+* Fail early wehn no route match is found by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22284 <https://github.com/galaxyproject/galaxy/pull/22284>`_
+* Harden API parameter validation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22351 <https://github.com/galaxyproject/galaxy/pull/22351>`_
+
+============
+Enhancements
+============
+
+* Remove Reports Application by `@guerler <https://github.com/guerler>`_ in `#21076 <https://github.com/galaxyproject/galaxy/pull/21076>`_
+* Replace Webpack with Vite for client build by `@dannon <https://github.com/dannon>`_ in `#21369 <https://github.com/galaxyproject/galaxy/pull/21369>`_
+* Drop support for Python 3.9 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21583 <https://github.com/galaxyproject/galaxy/pull/21583>`_
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
 
 -------------------
 25.1.2 (2026-03-09)

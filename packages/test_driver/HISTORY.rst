@@ -3,11 +3,20 @@ History
 
 .. to_doc
 
--------
-26.0rc1
--------
+-------------------
+26.0.0 (2026-04-08)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Add Support for HTTP Headers in URL Fetch Requests with Secure Storage for Landing Requests by `@davelopez <https://github.com/davelopez>`_ in `#20924 <https://github.com/galaxyproject/galaxy/pull/20924>`_
+* Pulsar relay implementation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21118 <https://github.com/galaxyproject/galaxy/pull/21118>`_
+* Add AI Agent Framework and ChatGXY 2.0 by `@dannon <https://github.com/dannon>`_ in `#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`_
+* Implement workflow completion monitoring with extensible hooks by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`_
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
 
 -------------------
 25.1.2 (2026-03-09)

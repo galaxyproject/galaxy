@@ -3,11 +3,27 @@ History
 
 .. to_doc
 
--------
-26.0rc1
--------
+-------------------
+26.0.0 (2026-04-08)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix ``preferred_object_store_id`` not respected for discovered outputs with extended metadata by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22056 <https://github.com/galaxyproject/galaxy/pull/22056>`_
+* Fail job gracefully when output name exceeds 255 character DB limit by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22059 <https://github.com/galaxyproject/galaxy/pull/22059>`_
+* Fix redundant empty collection elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22154 <https://github.com/galaxyproject/galaxy/pull/22154>`_
+* Handle ``MaxDiscoveredFilesExceededError`` for dynamic collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22402 <https://github.com/galaxyproject/galaxy/pull/22402>`_
+
+============
+Enhancements
+============
+
+* Add citation reminder to job completion email by `@Syrinx55 <https://github.com/Syrinx55>`_ in `#21347 <https://github.com/galaxyproject/galaxy/pull/21347>`_
+* Enable attaching sample sheet to landing requests by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21489 <https://github.com/galaxyproject/galaxy/pull/21489>`_
+* Drop support for Python 3.9 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21583 <https://github.com/galaxyproject/galaxy/pull/21583>`_
 
 -------------------
 25.1.2 (2026-03-09)

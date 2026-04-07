@@ -3,11 +3,47 @@ History
 
 .. to_doc
 
--------
-26.0rc1
--------
+-------------------
+26.0.0 (2026-04-08)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Infer type from extension for mzml by `@bgruening <https://github.com/bgruening>`_ in `#21033 <https://github.com/galaxyproject/galaxy/pull/21033>`_
+* Update config samples from schema by `@davelopez <https://github.com/davelopez>`_ in `#21053 <https://github.com/galaxyproject/galaxy/pull/21053>`_
+* remove a tool from sample that is no longer included in dist by `@martenson <https://github.com/martenson>`_ in `#21371 <https://github.com/galaxyproject/galaxy/pull/21371>`_
+* Various fixes around ascp file source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21372 <https://github.com/galaxyproject/galaxy/pull/21372>`_
+* Add tool_shed_url config for explicit hostname setting by `@jmchilton <https://github.com/jmchilton>`_ in `#21499 <https://github.com/galaxyproject/galaxy/pull/21499>`_
+* Use inference_services config for plugin chat proxy by `@dannon <https://github.com/dannon>`_ in `#21986 <https://github.com/galaxyproject/galaxy/pull/21986>`_
+* Silence social_core's noisy handle_http_errors logging by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22403 <https://github.com/galaxyproject/galaxy/pull/22403>`_
+
+============
+Enhancements
+============
+
+* Improve docs for `invalidjobexception_state` and `_retry` of DRMAA runners by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#20612 <https://github.com/galaxyproject/galaxy/pull/20612>`_
+* Add Support for HTTP Headers in URL Fetch Requests with Secure Storage for Landing Requests by `@davelopez <https://github.com/davelopez>`_ in `#20924 <https://github.com/galaxyproject/galaxy/pull/20924>`_
+* Remove Trackster by `@guerler <https://github.com/guerler>`_ in `#20974 <https://github.com/galaxyproject/galaxy/pull/20974>`_
+* Remove legacy Visualization Mako and Controllers by `@guerler <https://github.com/guerler>`_ in `#21133 <https://github.com/galaxyproject/galaxy/pull/21133>`_
+* Reimplement keycloak/cilogon as PSA providers and remove custos by `@nuwang <https://github.com/nuwang>`_ in `#21234 <https://github.com/galaxyproject/galaxy/pull/21234>`_
+* Slight improvement of mztab2 datatype by `@nguilhot <https://github.com/nguilhot>`_ in `#21258 <https://github.com/galaxyproject/galaxy/pull/21258>`_
+* Link to an external profile when user accounts are managed by a single OIDC provider by `@marius-mather <https://github.com/marius-mather>`_ in `#21356 <https://github.com/galaxyproject/galaxy/pull/21356>`_
+* Ascp plugin by `@d-callan <https://github.com/d-callan>`_ in `#21357 <https://github.com/galaxyproject/galaxy/pull/21357>`_
+* Add initial support for the DICOM format by `@kostrykin <https://github.com/kostrykin>`_ in `#21385 <https://github.com/galaxyproject/galaxy/pull/21385>`_
+* Add AI Agent Framework and ChatGXY 2.0 by `@dannon <https://github.com/dannon>`_ in `#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`_
+* Implement workflow completion monitoring with extensible hooks by `@mvdbeek <https://github.com/mvdbeek>`_ in `#21532 <https://github.com/galaxyproject/galaxy/pull/21532>`_
+* Drop support for Python 3.9 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21583 <https://github.com/galaxyproject/galaxy/pull/21583>`_
+* Update to gravity 1.2.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21608 <https://github.com/galaxyproject/galaxy/pull/21608>`_
+* Add new datatypes: .taf and .taf.gz by `@Maed0x <https://github.com/Maed0x>`_ in `#22242 <https://github.com/galaxyproject/galaxy/pull/22242>`_
+
+=============
+Other changes
+=============
+
+* Backport of 21939 by `@jdavcs <https://github.com/jdavcs>`_ in `#22265 <https://github.com/galaxyproject/galaxy/pull/22265>`_
 
 -------------------
 25.1.2 (2026-03-09)

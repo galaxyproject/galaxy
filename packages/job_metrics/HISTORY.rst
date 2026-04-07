@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
--------
-26.0rc1
--------
+-------------------
+26.0.0 (2026-04-08)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Add type annotations to job handling code by `@nsoranzo <https://github.com/nsoranzo>`_ in `#21171 <https://github.com/galaxyproject/galaxy/pull/21171>`_
+* Apply 2026 black style by `@galaxybot <https://github.com/galaxybot>`_ in `#21618 <https://github.com/galaxyproject/galaxy/pull/21618>`_
 
 -------------------
 25.1.2 (2026-03-09)
