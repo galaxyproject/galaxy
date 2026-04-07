@@ -4065,8 +4065,8 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
                 _handle_paired(element)
         elif collection_type == "list:paired_or_unpaired":
             for element in collection.elements:
-                sub_elements = getattr(element.element_object, "elements", None)
-                if not sub_elements or len(sub_elements) == 1:
+                sub_collection = element.element_object
+                if len(sub_collection.elements) == 1:
                     _handle_unpaired(element)
                 else:
                     _handle_paired(element)
