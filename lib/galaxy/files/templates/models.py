@@ -123,6 +123,7 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     writable: Union[bool, TemplateExpansion] = False
     template_start: Optional[str] = None
     template_end: Optional[str] = None
+    request_checksum_calculation: Optional[Union[str, TemplateExpansion, None]] = None
 
 
 class S3FSFileSourceConfiguration(StrictModel):
@@ -133,6 +134,7 @@ class S3FSFileSourceConfiguration(StrictModel):
     key: Optional[str] = None
     bucket: Optional[str] = None
     writable: bool = False
+    request_checksum_calculation: Optional[str] = None
 
 
 class FtpFileSourceTemplateConfiguration(StrictModel):
