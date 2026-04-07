@@ -75,6 +75,7 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
             "googledrive|client_secret": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_CLIENT_SECRET"),
             "googledrive|access_token": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_ACCESS_TOKEN"),
             "googledrive|refresh_token": os.environ.get("GALAXY_TEST_GOOGLE_DRIVE_REFRESH_TOKEN"),
+            "onedrive|access_token": os.environ.get("GALAXY_TEST_ONEDRIVE_ACCESS_TOKEN"),
             "googlecloudstorage|project": os.environ.get("GALAXY_TEST_GCS_PROJECT"),
             "googlecloudstorage|bucket_name": os.environ.get("GALAXY_TEST_GCS_BUCKET"),
             "googlecloudstorage|client_id": os.environ.get("GALAXY_TEST_GCS_CLIENT_ID"),

@@ -629,14 +629,19 @@ app - checkout the [Dropbox documentation](https://www.dropbox.com/developers/re
 #### OneDrive
 
 Once you have OAuth 2.0 client credentials from Microsoft Entra (called `oauth2_client_id`
-and `oauth2_client_secret` here), the following configuration can be used to enable
+and `oauth2_client_secret` here), the following configurations can be used to enable
 OneDrive for your Galaxy instance.
 
 ```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive.yml
 :language: yaml
 ```
+or
 
-To use this template, make the credentials available to Galaxy's web and job handler
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/production_onedrive_full.yml
+:language: yaml
+```
+
+To use one of these templates, make the credentials available to Galaxy's web and job handler
 processes using the environment variables `GALAXY_ONEDRIVE_CLIENT_ID` and
 `GALAXY_ONEDRIVE_CLIENT_SECRET`. Jobs themselves do not need these values and should
 not receive them.
@@ -653,23 +658,37 @@ The current OneDrive implementation supports two drive modes:
   application folder. This mode requires broader delegated Microsoft Graph
   permissions such as `Files.ReadWrite`.
 
-To configure Microsoft Entra for this file source:
+To configure Microsoft Entra app for this file source:
 
-1. Create an app registration for your Galaxy instance in Microsoft Entra.
-2. Add a web redirect URI pointing to your Galaxy instance with `oauth2_callback`
-   appended to the root URL. For local development, this is typically
-   `http://localhost:8080/oauth2_callback`.
-3. Configure supported account types for the accounts you intend to support. If you
-   want to support both work/school accounts and personal Microsoft accounts, set
-   the audience to "Any Entra ID tenant + Personal Microsoft accounts".
-4. Add delegated Microsoft Graph permissions:
-   For the default app-folder setup, add permission `Files.ReadWrite.AppFolder`.
-   To ensure Galaxy can obtain refresh tokens for long-lived access add permission
-   `offline_access`.
-6. Create a client secret and provide its value to Galaxy via
-   `GALAXY_ONEDRIVE_CLIENT_SECRET` (remember, this value can be seen only once after creation).
-7. Go to Overview, find "Application (client) ID" and provide its value to Galaxy
-   via `GALAXY_ONEDRIVE_CLIENT_ID`
+1. Sign in to [Microsoft Azure](https://portal.azure.com/). Go to `Microsoft Entra ID` and open
+   `App Registrations`.
+2. Select `New registration`.
+3. Enter a recognizable application name for Galaxy, for example `Galaxy OneDrive`.
+4. Under `Supported account types`, choose the audience that matches your deployment.
+   If Galaxy users may connect both organizational Microsoft accounts and personal
+   Microsoft accounts, select `Any Entra ID tenant + Personal Microsoft accounts`.
+5. Under `Redirect URI`, choose platform type `Web` and enter your Galaxy callback URL:
+   `<your galaxy root>/oauth2_callback`.
+   For example, if Galaxy is available at `https://usegalaxy.eu`, use
+   `https://usegalaxy.eu/oauth2_callback`.
+   For local development this is often `http://localhost:8080/oauth2_callback`.
+6. Create the registration and open the app's `Overview` page.
+   Copy the `Application (client) ID` and expose it to Galaxy as
+   `GALAXY_ONEDRIVE_CLIENT_ID`.
+7. Open `Certificates & secrets > Client secrets`, create a new client secret,
+   and copy the generated secret value immediately.
+   Expose that value to Galaxy as `GALAXY_ONEDRIVE_CLIENT_SECRET`.
+   Microsoft only shows the full secret value once.
+8. Open `API permissions` and add Microsoft Graph delegated permissions.
+   For the default app-folder configuration, add `Files.ReadWrite.AppFolder`.
+   Also add `offline_access` so Galaxy can obtain refresh tokens for long-lived access.
+9. If your deployment uses `drive_mode: full` instead of the default `appfolder`,
+   add delegated permission `Files.ReadWrite` instead of `Files.ReadWrite.AppFolder`.
+   This must match the scope requested in the Galaxy template.
+
+After this setup, users connect their own OneDrive accounts through Galaxy's OAuth2
+flow. The client ID and client secret identify your Galaxy application to Microsoft,
+but file access is performed with per-user delegated access and refresh tokens.
 
 To configure full-drive access instead of the default app-folder mode, you need to
 change both the Galaxy yml config template and the Microsoft Entra app registration. 
@@ -679,12 +698,6 @@ matching delegated Microsoft Graph permission (`Files.ReadWrite` instead of
 `Files.ReadWrite.AppFolder`). If only the Microsoft permission is widened and
 `drive_mode` remains `appfolder`, Galaxy will continue to operate only inside the
 application folder.
-
-The OAuth2 endpoints Galaxy uses for this template are the Microsoft identity platform's
-v2 endpoints under the `common` tenant. If you register an application that also supports
-personal Microsoft accounts, ensure the manifest is consistent with that audience. In
-particular, the app manifest should use `AzureADandPersonalMicrosoftAccount` as the
-`signInAudience` and `2` as the `requestedAccessTokenVersion`.
 
 This implementation currently uses Microsoft Graph's simple upload endpoint and
 does not yet implement resumable uploads for very large files, server-side pagination,
