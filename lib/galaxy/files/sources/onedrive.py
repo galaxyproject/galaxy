@@ -1,6 +1,5 @@
 import logging
 from typing import (
-    Optional,
     Union,
 )
 
@@ -38,9 +37,7 @@ class OneDriveFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     drive_id: str
 
 
-class OneDriveFilesSource(
-    FsspecFilesSource[OneDriveFileSourceTemplateConfiguration, OneDriveFileSourceConfiguration]
-):
+class OneDriveFilesSource(FsspecFilesSource[OneDriveFileSourceTemplateConfiguration, OneDriveFileSourceConfiguration]):
     plugin_type = "onedrive"
     required_module = MSGDriveFS
     required_package = REQUIRED_PACKAGE
