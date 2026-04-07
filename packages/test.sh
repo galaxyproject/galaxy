@@ -43,9 +43,11 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 if command -v uv >/dev/null; then
     uv venv --python "$TEST_PYTHON" "$TEST_ENV_DIR"
     PIP_CMD="$(command -v uv) pip"
+    BUILD_WHEEL_CMD="uv build --wheel --out-dir"
 else
     "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
     PIP_CMD='python -m pip'
+    BUILD_WHEEL_CMD="pip wheel --no-deps -w"
 fi
 
 # shellcheck disable=SC1091
@@ -53,6 +55,7 @@ fi
 if [ "${PIP_CMD}" = 'python -m pip' ]; then
     ${PIP_CMD} install --upgrade pip setuptools wheel
 fi
+${PIP_CMD} install twine
 if [ $FOR_PULSAR -eq 0 ]; then
     # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
     ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
@@ -101,5 +104,10 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         # directly to use the venv we have already activated
         mypy .
     fi
+    DIST_DIR=$(mktemp -d)
+    # shellcheck disable=SC2086 - word splitting is intentional for BUILD_WHEEL_CMD
+    $BUILD_WHEEL_CMD "$DIST_DIR" . >/dev/null
+    twine check "$DIST_DIR"/*
+    rm -rf "$DIST_DIR"
     cd ..
 done < $PACKAGE_LIST_FILE
