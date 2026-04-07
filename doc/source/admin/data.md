@@ -626,6 +626,49 @@ a production Galaxy instance but Dropbox operates on a different scale.
 For more information on what Dropbox considers a "development" app versus a "production"
 app - checkout the [Dropbox documentation](https://www.dropbox.com/developers/reference/developer-guide#production-approval).
 
+#### OneDrive via `msgraphfs` (shared admin-configured drive)
+
+Galaxy can be configured with a shared Microsoft drive file source using the
+`onedrive` plugin backed by [`msgraphfs`](https://github.com/acsone/msgraphfs).
+This is **not** a per-user OAuth 2.0 flow where each Galaxy user connects their own account.
+Instead, the Galaxy administrator configures one Microsoft Entra application and exposes a single
+shared drive or document library to Galaxy users through `file_sources_conf.yml`.
+
+To configure this file source step by step:
+
+1. Create or open a Microsoft Entra application registration for your Galaxy instance.
+2. Copy the `Application (client) ID` and `Directory (tenant) ID` from the application's
+   overview page.
+3. Under `Certificates & secrets`, create a client secret and copy its `Value` (remember, you can 
+   only see it once after creation, so copy it immediately).
+4. Under `API permissions`, add Microsoft Graph **application** permissions:
+   - `Files.Read.All` for read-only browsing/import.
+   - `Files.ReadWrite.All` if you want Galaxy to export files back to the drive.
+5. Grant admin consent for the application permissions.
+6. Add values to Galaxy env variables:
+   - `Directory (tenant) ID` to `GALAXY_ONEDRIVE_TENANT_ID`
+   - `Application (client) ID` to `GALAXY_ONEDRIVE_CLIENT_ID`
+   - Secret's `Value` to `GALAXY_ONEDRIVE_CLIENT_SECRET`
+
+7. To discover the `drive_id`, use Microsoft Graph Explorer or another Graph client while signed
+into an account that can inspect the target Microsoft 365 tenant resources:
+
+7.1. Search for the target SharePoint site's drive:
+
+   ```http
+   GET https://graph.microsoft.com/v1.0/sites/root/drives
+   ```
+
+7.2. Copy the `id` field of the document library or drive you want Galaxy to expose.
+7.3. Set that value as `GALAXY_ONEDRIVE_DRIVE_ID`.
+
+Once these values are available in the environment, Galaxy can load the `onedrive` file source
+from `file_sources_conf.yml` and expose the configured shared drive to users in the remote files UI.
+
+This shared `onedrive` configuration is intended for Microsoft 365 / SharePoint-style tenant
+resources and is generally **not** a good fit for personal Microsoft accounts. Administrators testing
+/ setting this configuration will need access to an organizational tenant.
+
 ## Playing Nicer with Ansible
 
 Many large instances of Galaxy are configured with Ansible and much of the existing administrator

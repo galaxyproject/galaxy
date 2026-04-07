@@ -4,6 +4,20 @@
   doc: Your Dropbox files - configure an access token via the user preferences
   access_token: ${user.preferences['dropbox|access_token']}
 
+# Admin-configured Microsoft OneDrive / SharePoint drive via msgraphfs
+# This is a shared file source for all Galaxy users, not a per-user OAuth2 connection.
+# It is best suited to an organizational drive or SharePoint document library that
+# the Microsoft Entra application can access with application permissions.
+- type: onedrive
+  id: onedrive-shared
+  label: Shared OneDrive
+  doc: Shared Microsoft drive exposed through Microsoft Graph app credentials.
+  tenant_id: ${environ['GALAXY_ONEDRIVE_TENANT_ID']}
+  client_id: ${environ['GALAXY_ONEDRIVE_CLIENT_ID']}
+  client_secret: ${environ['GALAXY_ONEDRIVE_CLIENT_SECRET']}
+  drive_id: ${environ['GALAXY_ONEDRIVE_DRIVE_ID']}
+  writable: true
+
 - type: webdav
   id: owncloud1
   label: OwnCloud
