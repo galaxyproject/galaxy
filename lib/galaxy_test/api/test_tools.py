@@ -2510,6 +2510,22 @@ class TestToolsApi(ApiTestCase, TestsTools):
         collection.assert_has_dataset_element("forward").with_contents_stripped("forward")
         collection.assert_has_dataset_element("reverse").with_contents_stripped("reverse")
 
+    @skip_without_tool("identifier_in_conditional")
+    def test_hdca_rejected_for_single_data_param_in_conditional(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22401 .
+        # Submitting a paired collection (no batch wrapper) to a non-multiple
+        # ``data`` parameter is invalid and must produce a 400 client error,
+        # not a 500 from a TypeError raised inside ``wrap_values``. Map-over is
+        # still supported via ``{"batch": True, "values": [...]}``, exercised
+        # by ``test_identifier_map_over_input_in_conditional``.
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|multi_input": False,
+            "outer_cond|input1": {"src": "hdca", "id": hdca_id},
+        }
+        response = self._run("identifier_in_conditional", history_id, inputs)
+        self._assert_status_code_is(response, 400)
+
     @skip_without_tool("identifier_multiple_in_conditional")
     def test_identifier_multiple_reduce_in_conditional(self, history_id):
         hdca_id = self._build_pair(history_id, ["123", "456"])
