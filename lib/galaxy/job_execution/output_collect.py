@@ -29,6 +29,7 @@ from galaxy.model.store.discover import (
     discover_target_directory,
     DiscoveredFile,
     JsonCollectedDatasetMatch,
+    MaxDiscoveredFilesExceededError,
     MetadataSourceProvider as AbstractMetadataSourceProvider,
     ModelPersistenceContext,
     PermissionProvider as AbstractPermissionProvider,
@@ -213,6 +214,16 @@ def collect_dynamic_outputs(
                 change_datatype_actions=job_context.change_datatype_actions,
             )
             collection_builder.populate()
+        except MaxDiscoveredFilesExceededError:
+            # Mark the collection as population-failed so it is not left in NEW,
+            # then let the outer metadata/job handler record this in job_messages.
+            collection.handle_population_failed("Job generated more than the maximum number of output datasets.")
+            # Register the (failed) collection with the job context so that in
+            # the extended-metadata path the updated populated_state is
+            # serialized to the export store, and the host side imports the
+            # FAILED collection state rather than leaving it stuck in NEW.
+            job_context.add_dataset_collection(has_collection)
+            raise
         except Exception:
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")

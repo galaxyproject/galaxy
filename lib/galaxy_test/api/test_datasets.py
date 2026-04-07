@@ -9,7 +9,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
+    assert_has_keys,
+)
 from galaxy_test.base.decorators import (
     requires_admin,
     requires_new_history,
@@ -339,6 +342,19 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
+        # When previewing an unknown / binary dataset as text the response must use
+        # a text/plain content-type so the iframe preserves whitespace/newlines and
+        # does not interpret stray characters as HTML.
+        contents = "header line\nrow with < and > and &\nfinal line\n"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="data", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.text == contents
+
     def test_display_extra_paths(self, history_id: str):
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:
@@ -455,6 +471,48 @@ class TestDatasetsApi(ApiTestCase):
         display = display_response.json()
         self._assert_has_key(display, "data")
         assert "\nA" in display["data"][0]
+
+    def test_raw_data_tabular_missing_columns_returns_400(self, history_id):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/22393 — a tabular
+        # dataset queried via data_type=raw_data without a `columns` parameter used to raise
+        # a bare TypeError that bubbled up as a 500; it should be a 400 MessageException.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(f"datasets/{hda['id']}", {"data_type": "raw_data"})
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "columns")
+
+    def test_raw_data_tabular_invalid_column_index_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "[99]"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "column index")
+
+    def test_raw_data_tabular_invalid_columns_json_returns_400(self, history_id):
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "columns": "not-json"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "JSON")
+
+    def test_raw_data_no_converter_returns_400(self, history_id):
+        # Requesting a provider whose name requires a converter that is not available should
+        # return a 400 MessageException, not a bare NoConverterException bubbling up as a 500.
+        contents = "1\t2\t3\nA\tB\tC\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        response = self._get(
+            f"datasets/{hda['id']}",
+            {"data_type": "raw_data", "provider": "column_with_stats"},
+        )
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Conversion")
 
     def test_bam_chunking_through_display_endpoint(self, history_id):
         # This endpoint does not use data providers and instead overrides display_data

@@ -126,6 +126,17 @@ LOGGING_CONFIG_DEFAULT: dict[str, Any] = {
             "level": "INFO",
             "qualname": "sentry_sdk.errors",
         },
+        "social": {
+            # social_core's handle_http_errors decorator calls
+            # social_logger.exception(...) on every OAuth provider HTTP
+            # error (e.g. 400 invalid_grant when an auth code is
+            # reused/expired), then re-raises AuthCanceled/AuthForbidden/
+            # etc. which AuthnzManager.callback() already catches and
+            # logs appropriately (see #22300). The library-side exception
+            # log is pure Sentry noise — see #22400.
+            "level": "CRITICAL",
+            "qualname": "social",
+        },
     },
     "filters": {
         "stack": {

@@ -28,6 +28,7 @@ from galaxy.tool_util_models import UserToolSource
 from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
+from galaxy_test.base.api_asserts import assert_error_message_contains
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -7513,6 +7514,48 @@ steps:
             ), f"first output:\n{first_wf_output}\nsecond output:\n{second_wf_output}"
 
     @skip_without_tool("cat1")
+    def test_workflow_rerun_with_use_cached_job_hides_output(self, history_id: str):
+        run_summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+    outputs:
+      out_file1:
+        hide: true
+""",
+            test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""",
+            history_id=history_id,
+        )
+        first_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=2)
+        assert not first_output["visible"], f"Expected output to be hidden on first run: {first_output}"
+
+        # Unhide the output so we can verify the cached rerun hides it again
+        # (rather than just preserving already-hidden state)
+        self.dataset_populator.update_dataset(first_output["id"], {"visible": True})
+        first_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=2)
+        assert first_output["visible"]
+
+        rerun_summary = self.workflow_populator.rerun(run_summary, use_cached_job=True)
+        # Verify job was actually cached
+        for job in rerun_summary.jobs:
+            job_details = self.dataset_populator.get_job_details(job["id"], full=True).json()
+            assert job_details["copied_from_job_id"], f"Expected job to be cached: {job_details}"
+
+        cached_output = self.dataset_populator.get_history_dataset_details(history_id=history_id, hid=3)
+        assert not cached_output["visible"], f"Expected output to be hidden with cached job: {cached_output}"
+
+    @skip_without_tool("cat1")
     @skip_without_tool("identifier_multiple")
     def test_workflow_rerun_with_cached_job_consumes_implicit_hdca(self, history_id: str):
         workflow = """
@@ -8986,6 +9029,14 @@ steps:
         # Would be 8 and 6 without modification
         self.__assert_lines_hid_line_count_is(history_id, 2, 5)
         self.__assert_lines_hid_line_count_is(history_id, 3, 5)
+
+    @skip_without_tool("random_lines1")
+    def test_run_replace_params_by_tool_rejects_scalar_values(self):
+        workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_reject_scalar_params")
+        workflow_request["parameters"] = dumps(dict(random_lines1=5))
+        response = self.workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+        self._assert_status_code_is(response, 400)
+        assert_error_message_contains(response, "Input should be a valid dictionary")
 
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_uuid(self):

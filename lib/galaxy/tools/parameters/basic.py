@@ -2274,7 +2274,23 @@ class DataToolParameter(BaseDataToolParameter):
             if len(rval) > 1:
                 raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
             if len(rval) > 0:
-                return rval[0]
+                single_value = rval[0]
+                if isinstance(single_value, HistoryDatasetCollectionAssociation):
+                    # A non-multiple data parameter cannot reduce a dataset
+                    # collection. Without this check the HDCA is silently
+                    # accepted here, then ``collect_input_dataset_collections``
+                    # rewrites the state to a list of the collection's HDAs and
+                    # ``wrap_values`` later crashes with a raw ``TypeError``
+                    # (https://github.com/galaxyproject/galaxy/issues/22401).
+                    # Map-over remains supported via ``{"batch": true, ...}``,
+                    # which is expanded to per-element jobs before reaching
+                    # ``from_json``.
+                    raise ParameterValueError(
+                        "dataset collection supplied to single input dataset parameter; "
+                        "to run the tool over each element of the collection, use the map-over option",
+                        self.name,
+                    )
+                return single_value
             else:
                 raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
         return rval

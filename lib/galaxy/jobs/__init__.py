@@ -2161,6 +2161,7 @@ class MinimalJobWrapper(HasResourceParameters):
             try:
                 self.discover_outputs(job, inp_data, out_data, out_collections, final_job_state=final_job_state)
             except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
+                log.warning("Job %s failed during output discovery: %s", job.id, e)
                 final_job_state = job.states.ERROR
                 job.job_messages = [
                     {

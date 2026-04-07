@@ -185,7 +185,7 @@ class InvokeWorkflowPayload(GetTargetHistoryPayload):
             return json.loads(v)
         return v
 
-    parameters: Optional[dict[str, Any]] = Field(
+    parameters: Optional[dict[str, dict[str, Any]]] = Field(
         {},
         title=STEP_PARAMETERS_TITLE,
         description=STEP_PARAMETERS_DESCRIPTION,
