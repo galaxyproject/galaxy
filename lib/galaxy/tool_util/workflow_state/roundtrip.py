@@ -85,39 +85,6 @@ class FailureClass(Enum):
     OTHER = "other"
 
 
-class StepResult(BaseModel):
-    step_id: str
-    tool_id: str | None = None
-    success: bool
-    failure_class: FailureClass | None = None
-    error: str | None = None
-    diffs: list[str] = Field(default_factory=list)
-    format2_state: dict | None = None
-    format2_connections: dict | None = None
-
-
-class RoundTripResult(BaseModel):
-    workflow_name: str
-    direction: str  # "native_to_format2" or "format2_to_native"
-    step_results: list[StepResult] = Field(default_factory=list)
-
-    @property
-    def success(self) -> bool:
-        return all(r.success for r in self.step_results)
-
-    @property
-    def failure_summary(self) -> str:
-        failures = [r for r in self.step_results if not r.success]
-        if not failures:
-            return "PASS"
-        parts = []
-        for f in failures:
-            parts.append(
-                f"step {f.step_id} ({f.tool_id}): {f.failure_class.value if f.failure_class else 'unknown'} - {f.error}"
-            )
-        return "; ".join(parts)
-
-
 # -- Diff model --
 
 
@@ -198,6 +165,39 @@ class StepDiff(BaseModel):
         tag = f"[{self.severity.value}] " if self.severity == DiffSeverity.BENIGN else ""
         suffix = f" ({self.benign_artifact.reason})" if verbose and self.benign_artifact else ""
         return f"  {tag}{self.step_path}: {self.description}{suffix}"
+
+
+class StepResult(BaseModel):
+    step_id: str
+    tool_id: str | None = None
+    success: bool
+    failure_class: FailureClass | None = None
+    error: str | None = None
+    diffs: list[StepDiff] = Field(default_factory=list)
+    format2_state: dict | None = None
+    format2_connections: dict | None = None
+
+
+class RoundTripResult(BaseModel):
+    workflow_name: str
+    direction: str  # "native_to_format2" or "format2_to_native"
+    step_results: list[StepResult] = Field(default_factory=list)
+
+    @property
+    def success(self) -> bool:
+        return all(r.success for r in self.step_results)
+
+    @property
+    def failure_summary(self) -> str:
+        failures = [r for r in self.step_results if not r.success]
+        if not failures:
+            return "PASS"
+        parts = []
+        for f in failures:
+            parts.append(
+                f"step {f.step_id} ({f.tool_id}): {f.failure_class.value if f.failure_class else 'unknown'} - {f.error}"
+            )
+        return "; ".join(parts)
 
 
 # -- Benign classifiers --
@@ -1223,6 +1223,18 @@ def roundtrip_validate(
     comparison = compare_workflow_steps(orig_model, native_prime)
     result.diffs = comparison.diffs
     result.step_id_mapping = comparison.step_id_mapping
+
+    if result.conversion_result:
+        step_diffs_by_id: dict[str, list[StepDiff]] = {}
+        for diff in comparison.diffs:
+            # step_path for top-level steps is "step {orig_id}"; subworkflow steps
+            # have a colon-separated prefix, e.g. "step 0:subworkflow//step 1".
+            # Attribute each diff to the top-level step id it belongs to.
+            step_id = diff.step_path.split(":")[0].removeprefix("step ")
+            step_diffs_by_id.setdefault(step_id, []).append(diff)
+        for sr in result.conversion_result.step_results:
+            sr.diffs = step_diffs_by_id.get(sr.step_id, [])
+
     return result
 
 
