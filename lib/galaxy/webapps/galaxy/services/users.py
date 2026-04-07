@@ -204,6 +204,8 @@ class UsersService(ServiceBase):
         f_email: Optional[str],
         f_name: Optional[str],
         f_any: Optional[str],
+        limit: Optional[int] = None,
+        offset: Optional[int] = 0,
     ) -> list[MaybeLimitedUserModel]:
         # never give any info to non-authenticated users
         if not trans.user and not trans.user_is_bootstrap_admin:
@@ -234,6 +236,8 @@ class UsersService(ServiceBase):
             trans.user_is_admin,
             trans.app.config.expose_user_email,
             trans.app.config.expose_user_name,
+            limit=limit,
+            offset=offset or 0,
         )
         rval: list[MaybeLimitedUserModel] = []
         for user in users:

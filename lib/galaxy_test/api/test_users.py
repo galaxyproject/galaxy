@@ -47,6 +47,23 @@ class TestUsersApi(ApiTestCase):
         all_deleted_users = all_deleted_users_response_2.json()
         assert len([u for u in all_deleted_users if u["email"] == TEST_USER_EMAIL_INDEX_DELETED]) == 1
 
+    @requires_admin
+    def test_index_with_pagination(self):
+        dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self._setup_user(f"pagination_test_{dataset_populator.get_random_name()}@bx.psu.edu")
+        self._setup_user(f"pagination_test_{dataset_populator.get_random_name()}@bx.psu.edu")
+        response = self._get("users", data={"limit": 1}, admin=True)
+        self._assert_status_code_is(response, 200)
+        data = response.json()
+        assert len(data) == 1
+        # With offset
+        response_offset = self._get("users", data={"limit": 1, "offset": 1}, admin=True)
+        self._assert_status_code_is(response_offset, 200)
+        data_offset = response_offset.json()
+        assert len(data_offset) == 1
+        # Different results
+        assert data[0]["id"] != data_offset[0]["id"]
+
     def test_index_anon(self):
         with self._different_user(anon=True):
             all_users_response = self._get("users")
