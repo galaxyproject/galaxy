@@ -12,7 +12,7 @@ import { Services } from "@/components/Workflow/services";
 import { useMarkdown } from "@/composables/markdown";
 import { withPrefix } from "@/utils/redirect";
 
-import type { TrsSelection, TrsTool as TrsToolData } from "./types";
+import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -24,8 +24,6 @@ import TrsTool from "@/components/Workflow/Import/TrsTool.vue";
 const emit = defineEmits<{
     (e: "input-valid", valid: boolean): void;
 }>();
-
-type TrsSearchData = TrsToolData;
 
 type TrsSearchRow = {
     id: string;
