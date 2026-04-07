@@ -539,7 +539,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         io_details = util.string_as_bool(kwd.get("io_details", False))
         link_details = util.string_as_bool(kwd.get("link_details", False))
         tool_version = kwd.get("tool_version")
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=id)
+        tool_uuid = kwd.get("tool_uuid")
+        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=tool_version, tool_uuid=tool_uuid)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -870,7 +871,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InsufficientPermissionsException(
                 "Only administrators may display tool sources on this Galaxy server."
             )
-        tool = self.service._get_tool(trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=id)
+        tool_uuid = kwds.get("tool_uuid")
+        tool = self.service._get_tool(
+            trans, id, user=trans.user, tool_version=kwds.get("tool_version"), tool_uuid=tool_uuid
+        )
         trans.response.headers["language"] = tool.tool_source.language
         if dynamic_tool := getattr(tool, "dynamic_tool", None):
             if dynamic_tool.value.get("class") == "GalaxyUserTool":
