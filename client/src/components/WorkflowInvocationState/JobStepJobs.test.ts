@@ -21,7 +21,7 @@ const TEST_NEW_JOB_ID = "sample-job-NEW";
 
 const SELECTORS = {
     JOBS_TABLE: ".job-step-jobs",
-    JOB_ROW: ".job-step-jobs > tbody > tr",
+    JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
     JOB_CONTENT: ".g-modal-content",
     JOB_INFORMATION_TABLE: "table#job-information",
 };

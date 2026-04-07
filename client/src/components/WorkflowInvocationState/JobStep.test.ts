@@ -16,7 +16,7 @@ const SELECTORS = {
     JOB_STATE_BUTTON_NAV: "nav",
     JOB_STATE_BUTTON: ".g-button",
     JOBS_TABLE: ".job-step-jobs",
-    JOB_ROW: ".job-step-jobs > tbody > tr",
+    JOB_ROW: ".job-step-jobs .g-table tbody > tr:not(.g-table-details-row):not(.g-table-empty-row)",
     STUBBED_JOB_DETAILS: "anonymous-stub",
 };
 

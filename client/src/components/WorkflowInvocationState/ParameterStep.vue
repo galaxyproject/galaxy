@@ -1,30 +1,43 @@
 <script setup lang="ts">
-import { BTable } from "bootstrap-vue";
-
 import type {
     InvocationInput,
     InvocationInputParameter,
     InvocationOutput,
     InvocationOutputCollection,
 } from "@/api/invocations";
+import type { TableField } from "@/components/Common/GTable.types";
 
+import GTable from "@/components/Common/GTable.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 type InvocationStepTypes = InvocationInput | InvocationInputParameter | InvocationOutput | InvocationOutputCollection;
 
-const props = defineProps<{
+interface Props {
     parameters: InvocationStepTypes[];
     styledTable?: boolean;
-}>();
+}
+
+const props = defineProps<Props>();
+
+const fields: TableField[] = [
+    { key: "label", label: "Label" },
+    { key: "parameter_value", label: "Value" },
+];
 
 function isData(value: unknown): value is InvocationInput | InvocationOutput | InvocationOutputCollection {
     return typeof value === "object" && value !== null && "src" in value;
 }
+
 function hasValidId(
     value: InvocationInput | InvocationOutput | InvocationOutputCollection,
 ): value is typeof value & { id: string } {
     return value.id !== null && value.id !== undefined && typeof value.id === "string";
 }
+
+function isInputParameter(value: InvocationStepTypes): value is InvocationInputParameter {
+    return "parameter_value" in value;
+}
+
 function dataStepLabel(input: InvocationStepTypes): string {
     if ("label" in input && input.label) {
         return input.label;
@@ -37,13 +50,12 @@ function dataStepLabel(input: InvocationStepTypes): string {
 </script>
 
 <template>
-    <BTable
-        small
-        :outlined="props.styledTable"
-        :striped="props.styledTable"
-        :borderless="props.styledTable"
-        :fields="['label', 'parameter_value']"
-        :items="props.parameters">
+    <GTable
+        compact
+        :bordered="props.styledTable"
+        :fields="fields"
+        :items="props.parameters"
+        :striped="props.styledTable">
         <template v-slot:cell(parameter_value)="{ item }">
             <GenericHistoryItem
                 v-if="isData(item) && hasValidId(item)"
@@ -51,12 +63,17 @@ function dataStepLabel(input: InvocationStepTypes): string {
                 :item-src="item.src"
                 :data-label="dataStepLabel(item)" />
             <div v-else-if="isData(item) && !hasValidId(item)" class="text-muted">Dataset with no ID</div>
-            <i v-else-if="item.parameter_value === null || item.parameter_value === undefined" class="text-muted">
+            <i
+                v-else-if="
+                    isInputParameter(item) && (item.parameter_value === null || item.parameter_value === undefined)
+                "
+                class="text-muted">
                 No value provided
             </i>
-            <span v-else>
+            <span v-else-if="isInputParameter(item)">
                 {{ item.parameter_value }}
             </span>
+            <span v-else class="text-muted">Unsupported input/output value</span>
         </template>
-    </BTable>
+    </GTable>
 </template>
