@@ -155,6 +155,9 @@ Datatypes Updates
 ===========================================================
 
 .. datatypes
+* Ensure ``x-content-truncated`` header is string
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 22386`_
 * Add new datatypes: .taf and .taf.gz
   (thanks to `@Maed0x <https://github.com/Maed0x>`__).
   `Pull Request 22242`_
