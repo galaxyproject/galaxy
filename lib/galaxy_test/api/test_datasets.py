@@ -339,6 +339,19 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22395
+        # When previewing an unknown / binary dataset as text the response must use
+        # a text/plain content-type so the iframe preserves whitespace/newlines and
+        # does not interpret stray characters as HTML.
+        contents = "header line\nrow with < and > and &\nfinal line\n"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, file_type="data", wait=True)
+        display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"preview": "True"})
+        self._assert_status_code_is(display_response, 200)
+        content_type = display_response.headers.get("content-type", "")
+        assert content_type.startswith("text/plain"), content_type
+        assert display_response.text == contents
+
     def test_display_extra_paths(self, history_id: str):
         test_data_resolver = TestDataResolver()
         with open(test_data_resolver.get_filename("1.fasta")) as fh:
