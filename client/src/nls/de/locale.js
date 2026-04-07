@@ -5,7 +5,8 @@ export default {
     Workflow: "Arbeitsablauf",
     "Shared Data": "Gemeinsame Daten",
     "Data Libraries": "Datenbibliotheken",
-    Histories: "Geschichten",
+    Histories: "Historien",
+    "Delete History": "Historie löschen",
     Workflows: "Workflows",
     Visualizations: "Visualisierungen",
     Pages: "Seiten",
@@ -22,13 +23,14 @@ export default {
     "How to Cite Galaxy": "Wie man Galaxie zitiert",
     User: "Benutzer",
     Login: "Anmeldung",
+    "Log in to": "Anmelden, um",
     Register: "Neu registrieren",
     "Log in or Register": "Einloggen oder Registrieren",
     "Signed in as": "Angemeldet als",
     Preferences: "Präferenzen",
     "Custom Builds": "Custom Builds",
     Logout: "Ausloggen",
-    "Saved Histories": "Gespeicherte Geschichten",
+    "Saved Histories": "Gespeicherte Historien",
     "Saved Datasets": "Gespeicherte Datasets",
     "Saved Pages": "Gespeicherte Seiten",
     //Tooltip
@@ -42,14 +44,23 @@ export default {
     "Analysis home view": "Analyse home view",
     // ---------------------------------------------------------------------------- histories
     // ---- history/options-menu
-    "History Lists": "History Lists",
+    "History Options": "Historie Optionen",
+    "Fetching histories from server": "Historien werden vom Server abgerufen",
+    "You have {{ totalHistoryCount }} histories.": "Sie haben {{ totalHistoryCount }} Historien.",
+    "Manage History": "Historie verwalten",
+    "Open History Multiview": "Historie-Mehrfachansicht öffnen",
+    "Show Histories Side-by-Side": "Historien nebeneinander anzeigen",
     // Saved histories is defined above.
     // "Saved Histories":
     //     false,
-    "Histories Shared with Me": "Geschichten mit mir geteilt",
-    "Current History": "Aktuelle Geschichte",
+    "Histories Shared with Me": "Historien mit mir geteilt",
+    "This history has been": "Dieser Historie ist",
+    "Some actions might not be available.": "Einige Aktionen sind moeglicherweise nicht verfuegbar.",
+    "Resume all Paused Jobs in this History": "Alle pausierten Jobs in diesem Historie fortsetzen",
+    "Current History": "Aktuelle Historie",
     "Create New": "Erstelle neu",
-    "Copy History": "Geschichte kopieren",
+    "Copy History to a New History": "Historie in einen neuen Historie kopieren",
+    "Copy History": "Historie kopieren",
     "Share or Publish": "Teilen oder veröffentlichen",
     "Show Structure": "Struktur anzeigen",
     "Extract Workflow": "Workflow extrahieren",
@@ -59,21 +70,40 @@ export default {
     "Delete Permanently": "Dauerhaft löschen",
     "Dataset Actions": "Datensatzaktionen",
     "Copy Datasets": "Datensätze kopieren",
+    "Copy Datasets to Another History": "Datensätze in einen anderen Historie kopieren",
     "Dataset Security": "Datensatz Sicherheit",
-    "Resume Paused Jobs": "Fortsetzen pausierte Jobs",
+    "Resume Paused Jobs": "Pausierte Jobs fortsetzen",
     "Collapse Expanded Datasets": "Collapse Expanded Datasets",
     "Unhide Hidden Datasets": "Hidden Datasets verstecken",
     "Delete Hidden Datasets": "Hidden Datasets löschen",
     "Purge Deleted Datasets": "Gelöschte Datasets löschen",
     Downloads: "Downloads",
     "Export Tool Citations": "Export Tool Zitate",
-    "Export History to File": "Export History to File",
+    "Export Tool References": "Tool-Referenzen exportieren",
+    "Export references for all Tools used in this History":
+        "Referenzen fuer alle in diesem Historie verwendeten Tools exportieren",
+    "Export and Download History as a File": "Historie als Datei exportieren und herunterladen",
+    "Export History to File": "Historie in Datei exportieren",
     "Other Actions": "Andere Aktionen",
     "Import from File": "Import aus Datei",
     Webhooks: "Webhooks",
+    "Permanently Delete History": "Historie dauerhaft löschen",
+    "Permanently Delete History?": "Historie dauerhaft löschen?",
+    "Delete History?": "Historie löschen?",
+    "Archive this History": "Diesen Historie archivieren",
+    "Archive History": "Historie archivieren",
+    "Convert History to Workflow": "Historie in Workflow umwandeln",
+    "Display Workflow Invocations": "Workflow-Aufrufe anzeigen",
+    "Show Invocations": "Aufrufe anzeigen",
+    "Share, Publish, or Set Permissions for this History":
+        "Diesen Historie teilen, veroeffentlichen oder Berechtigungen festlegen",
+    "Share & Manage Access": "Teilen und Zugriff verwalten",
+    "Do you also want to permanently delete the history": "Moechten Sie den Historie auch dauerhaft loeschen",
+    "Yes, permanently delete this history.": "Ja, diesen Historie dauerhaft loeschen.",
+
     // ---- history-model
     // ---- history-view
-    "This history is empty": "Diese Geschichte ist leer",
+    "This history is empty": "Diese Historie ist leer",
     "No matching datasets found": "Keine passenden Datensätze gefunden",
     "An error occurred while getting updates from the server":
         "Ein Fehler ist aufgetreten beim Aktualisieren vom Server",
@@ -83,7 +113,7 @@ export default {
     //"An error was encountered while <% where %>" :
     //false,
     "search datasets": "Suchdatensätze",
-    "You are currently viewing a deleted history!": "Du siehst derzeit einen gelöschten Verlauf!",
+    "You are currently viewing a deleted history!": "Du siehst derzeit einen gelöschten Historie!",
     "You are over your disk quota": "Du bist über dein Festplatten-Kontingent",
     "Tool execution is on hold until your disk usage drops below your allocated quota":
         "Tool-Ausführung ist in der Warteschleife, bis Ihre Datenträgerverwendung unter Ihrem zugeteilten Kontingent fällt",
@@ -91,9 +121,9 @@ export default {
     None: "Keiner",
     "For all selected": "Für alle ausgewählt",
     // ---- history-view-edit
-    "Edit history tags": "Geschichte bearbeiten",
+    "Edit history tags": "Historie bearbeiten",
     "Edit history annotation": "Historie bearbeiten",
-    "Click to rename history": "Klicken Sie hier, um den Verlauf umzubenennen",
+    "Click to rename history": "Klicken Sie hier, um den Historie umzubenennen",
     // multi operations
     "Operations on multiple datasets": "Operationen auf mehreren Datensätzen",
     "Hide datasets": "Datensätze ausblenden",
@@ -108,8 +138,8 @@ export default {
     Annotation: "Annotation",
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
-        "Diese Geschichte ist leer. Klicken Sie auf 'Get Data' im linken Tool-Menü, um",
-    "You must be logged in to create histories": "Du musst eingeloggt sein, um Geschichten zu schaffen",
+        "Diese Historie ist leer. Klicken Sie auf 'Get Data' im linken Tool-Menü, um",
+    "You must be logged in to create histories": "Du musst eingeloggt sein, um Historien zu schaffen",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
