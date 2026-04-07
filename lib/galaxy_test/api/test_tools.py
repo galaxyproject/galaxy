@@ -286,6 +286,33 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert "hg18_value" in option_values
             assert "mm10_value" in option_values
 
+    @skip_without_tool("dbkey_filter_multi_input")
+    def test_build_request_dbkey_filter_hdca_multi_input(self):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22399:
+        # an HDCA passed to a multiple="true" data input must not break a downstream
+        # data_meta filter. Previously this raised
+        # AttributeError: 'MetaData' object has no attribute 'element_is_set'
+        # because _get_ref_data returned the raw list containing the HDCA instead
+        # of unwrapping it to its HDAs.
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="a\nb\nc", dbkey="hg19", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="d\ne\nf", dbkey="hg19", wait=True)
+            element_identifiers = [
+                {"name": "sample1", "src": "hda", "id": hda1["id"]},
+                {"name": "sample2", "src": "hda", "id": hda2["id"]},
+            ]
+            hdca = self.dataset_collection_populator.create_list_in_history(
+                history_id,
+                element_identifiers=element_identifiers,
+                direct_upload=False,
+                wait=True,
+            ).json()
+            inputs = {"inputs": [{"src": "hdca", "id": hdca["id"]}]}
+            build = self.dataset_populator.build_tool_state("dbkey_filter_multi_input", history_id, inputs=inputs)
+            option_values = self._get_build_option_values(build, "index")
+            assert "hg19_value" in option_values
+            assert "hg18_value" not in option_values
+
     @skip_without_tool("dbkey_filter_collection_input")
     def test_run_dbkey_filter_nested_collection_dce(self):
         with self.dataset_populator.test_history() as history_id:

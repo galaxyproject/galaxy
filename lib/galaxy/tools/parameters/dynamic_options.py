@@ -27,6 +27,7 @@ from galaxy.model import (
     MetadataFile,
     User,
 )
+from galaxy.model.dataset_collections.adapters import CollectionAdapter
 from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters.options import ParameterOption
 from galaxy.tools.parameters.workflow_utils import (
@@ -1054,35 +1055,60 @@ def template_or_none(template: Optional[str], context: dict[str, Any]) -> Option
 
 def _get_ref_data(other_values, ref_name):
     """
-    get the list of data sets from ref_name
-    - a KeyError is raised if no such element exists
-    - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
+    Return a flat iterable of dataset instances for ``ref_name``.
+
+    - Raises ``KeyError`` if no such element exists.
+    - Raises ``ValueError`` if the element (or any member of a list
+      element) is not one of the supported types.
+
+    Lists originating from ``multiple="true"`` data inputs may contain
+    HDCAs / ``DatasetCollectionElement``s / ``CollectionAdapter``s (see
+    ``DataToolParameter.from_json``); those are flattened to their
+    dataset instances here so downstream filters can uniformly access
+    ``.metadata`` on an HDA.
+
+    TODO: ``DataToolParameter.from_json`` should not wrap
+    items that already represent multiple datasets (HDCAs, DCEs of a
+    collection) in a list.
     """
     from galaxy.tools.wrappers import (
         DatasetFilenameWrapper,
         DatasetListWrapper,
     )
 
-    ref = other_values[ref_name]
-    if not isinstance(
-        ref,
-        (
-            DatasetFilenameWrapper,
-            HistoryDatasetAssociation,
-            LibraryDatasetDatasetAssociation,
-            DatasetCollectionElement,
-            DatasetListWrapper,
-            HistoryDatasetCollectionAssociation,
-            list,
-        ),
-    ):
-        if is_runtime_value(ref):
-            return []
+    single_types = (
+        DatasetFilenameWrapper,
+        HistoryDatasetAssociation,
+        LibraryDatasetDatasetAssociation,
+    )
+
+    def _unwrap(item):
+        if isinstance(item, single_types):
+            return [item]
+        if isinstance(item, DatasetCollectionElement):
+            return item.dataset_instances
+        if isinstance(item, HistoryDatasetCollectionAssociation):
+            return item.to_hda_representative(multiple=True)
+        if isinstance(item, CollectionAdapter):
+            return item.dataset_instances
         raise ValueError
+
+    ref = other_values[ref_name]
+    if isinstance(ref, single_types):
+        return [ref]
     if isinstance(ref, DatasetCollectionElement):
         return ref.dataset_instances
-    if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
-        return [ref]
-    elif isinstance(ref, HistoryDatasetCollectionAssociation):
+    if isinstance(ref, HistoryDatasetCollectionAssociation):
         return ref.to_hda_representative(multiple=True)
-    return ref
+    if isinstance(ref, CollectionAdapter):
+        return ref.dataset_instances
+    if isinstance(ref, (list, DatasetListWrapper)):
+        flattened: list = []
+        for item in ref:
+            if item is None:
+                continue
+            flattened.extend(_unwrap(item))
+        return flattened
+    if is_runtime_value(ref):
+        return []
+    raise ValueError
