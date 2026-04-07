@@ -4,7 +4,7 @@
 
 
 Galaxy Browser Automation Framework
-====================================
+------------------------------------
 
 .. note::
    The package is named ``galaxy-selenium`` for historical reasons, but a more accurate name
@@ -29,8 +29,7 @@ This package provides a browser automation framework for Galaxy_ with:
 Architecture
 ------------
 
-Core Interfaces
-~~~~~~~~~~~~~~~
+.. rubric:: Core Interfaces
 
 The framework is built around two main protocol interfaces:
 
@@ -53,8 +52,7 @@ The framework is built around two main protocol interfaces:
     - ``value_of_css_property()`` for CSS introspection
 
 
-Architecture Diagram
-~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Architecture Diagram
 
 ::
 
@@ -110,8 +108,7 @@ Architecture Diagram
            (web_element_protocol.py)
 
 
-Implementations
-~~~~~~~~~~~~~~~
+.. rubric:: Implementations
 
 **Selenium Backend** (``has_driver.py``)
     - Uses Selenium WebDriver
@@ -134,8 +131,7 @@ Both implementations:
 - Include full type hints
 
 
-Separation of Concerns
-~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Separation of Concerns
 
 ::
 
@@ -197,8 +193,7 @@ Building CLI Tools
 
 The ``cli.py`` module provides infrastructure for building command-line automation tools.
 
-Core Components
-~~~~~~~~~~~~~~~
+.. rubric:: Core Components
 
 **add_selenium_arguments(parser)**
     Adds standard CLI arguments:
@@ -217,8 +212,7 @@ Core Components
     - Provides Galaxy navigation utilities
     - Cleanup via ``finish()`` method
 
-Example: dump_tour.py
-~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Example: dump_tour.py
 
 The ``scripts/dump_tour.py`` script demonstrates CLI tool development:
 
@@ -256,8 +250,7 @@ Usage::
     python dump_tour.py my_tour.yaml --backend playwright --galaxy_url http://localhost:8080
 
 
-Building Your Own CLI Tool
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Building Your Own CLI Tool
 
 1. **Import the CLI utilities**::
 
@@ -289,8 +282,7 @@ Building Your Own CLI Tool
 Development
 -----------
 
-Package Structure
-~~~~~~~~~~~~~~~~~
+.. rubric:: Package Structure
 
 ::
 
@@ -318,8 +310,7 @@ Package Structure
     └── fixtures/                 # HTML test pages
 
 
-Running Commands
-~~~~~~~~~~~~~~~~
+.. rubric:: Running Commands
 
 Always use ``uv run`` from the package directory::
 
@@ -333,8 +324,7 @@ Always use ``uv run`` from the package directory::
     uv run ruff check .
 
 
-Adding New Low-Level Browser Operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Adding New Low-Level Browser Operations
 
 Low-level operations are generic browser automation primitives that work with both backends.
 
@@ -382,8 +372,7 @@ Use the ``/add-browser-operation`` slash command to automate these steps::
 This command will generate all the necessary code across all files and create tests.
 
 
-Adding New Smart Component Operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. rubric:: Adding New Smart Component Operations
 
 Smart component operations are higher-level conveniences that may require adding low-level
 operations first. These operations make Galaxy components more ergonomic to use in tests.
