@@ -508,7 +508,9 @@ class Data(metaclass=DataMeta):
             return open(data.get_file_name(), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
-        headers["content-type"] = "text/html"
+        # Use text/plain so the browser preserves whitespace and line endings
+        # and does not attempt to interpret stray markup as HTML.
+        headers["content-type"] = "text/plain; charset=utf-8"
         if file_size > max_peek_size:
             headers["x-content-truncated"] = str(max_peek_size)
         with open(data.get_file_name(), "rb") as fh:
@@ -522,8 +524,9 @@ class Data(metaclass=DataMeta):
             return self._yield_user_file_content(trans, data, data.get_file_name(), headers), headers
 
         with compression_utils.get_fileobj(data.get_file_name(), "rb") as fh:
-            # preview large text file
-            headers["content-type"] = "text/html"
+            # preview large text file - serve as text/plain so the browser
+            # preserves whitespace/newlines and does not interpret content as HTML.
+            headers["content-type"] = "text/plain; charset=utf-8"
             headers["x-content-truncated"] = str(max_peek_size)
             return unicodify(fh.read(max_peek_size)), headers
 
