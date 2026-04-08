@@ -35,6 +35,17 @@ clean_format2_noop:
     - path: [steps, concat, state, queries]
       value_type: list
 
+clean_format2_stale_keys_stripped:
+  fixture: synthetic-cat1-stale.gxwf.yml
+  operation: clean
+  assertions:
+    - path: [steps, concat, state, chromInfo]
+      value_absent: true
+    - path: [steps, concat, state, stale_param]
+      value_absent: true
+    - path: [steps, concat, state, queries]
+      value_type: list
+
 # --- IWC workflows ---
 
 clean_iwc_repeatmasking_bookkeeping_stripped:
@@ -76,6 +87,54 @@ clean_iwc_rnaseq_subworkflow_bookkeeping_stripped:
       value_absent: true
     - path: [steps, "17", subworkflow, steps, "2", tool_state, __rerun_remap_job_id__]
       value_absent: true
+
+# --- Structural step cleaning ---
+
+clean_strips_step_uuid:
+  fixture: rnaseq-sr.ga
+  operation: clean
+  assertions:
+    - path: [steps, "10", uuid]
+      value_absent: true
+
+clean_preserves_step_position:
+  fixture: rnaseq-sr.ga
+  operation: clean
+  assertions:
+    - path: [steps, "10", position]
+      value_type: dict
+
+clean_skip_uuid_preserves_uuid:
+  fixture: rnaseq-sr.ga
+  operation: clean_skip_uuid
+  assertions:
+    - path: [steps, "10", uuid]
+      value_type: str
+
+clean_strips_step_errors:
+  fixture: synthetic-cat1-errors.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", errors]
+      value_absent: true
+
+clean_strips_step_uuid_from_errors_fixture:
+  fixture: synthetic-cat1-errors.ga
+  operation: clean
+  assertions:
+    - path: [steps, "1", uuid]
+      value_absent: true
+
+clean_skip_uuid_preserves_uuid_from_errors_fixture:
+  fixture: synthetic-cat1-errors.ga
+  operation: clean_skip_uuid
+  assertions:
+    - path: [steps, "1", uuid]
+      value_type: str
+    - path: [steps, "1", errors]
+      value_absent: true
+
+# ---
 
 clean_iwc_rnaseq_subworkflow_valid_inputs_survive:
   fixture: rnaseq-sr.ga

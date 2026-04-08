@@ -16,7 +16,7 @@ from galaxy.tool_util.workflow_state._encoding import (
     check_strict_structure,
 )
 from galaxy.tool_util.workflow_state.cache import build_tool_info
-from galaxy.tool_util.workflow_state.clean import clean_stale_state
+from galaxy.tool_util.workflow_state.clean import clean_format2_state, clean_stale_state, _is_format2
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 from galaxy.tool_util.workflow_state.stale_keys import StaleKeyPolicy
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli
@@ -73,17 +73,30 @@ def _load_fixture(name: str) -> dict:
     return load_workflow(path)
 
 
+def _run_clean(wf_dict: dict, skip_uuid: bool = False) -> dict:
+    """Dispatch clean to the appropriate format-aware function."""
+    workflow = copy.deepcopy(wf_dict)
+    policy = StaleKeyPolicy.for_clean([], [])
+    if _is_format2(workflow):
+        clean_format2_state(workflow, _tool_info, policy=policy, skip_uuid=skip_uuid)
+    else:
+        normalized = ensure_native(workflow)
+        clean_stale_state(normalized, workflow, _tool_info, policy=policy, skip_uuid=skip_uuid)
+    return workflow
+
+
 def _clean_op(wf_dict: dict) -> dict:
     """Full clean: strip all stale keys including bookkeeping.
 
     Returns the cleaned workflow dict directly so assertions
     navigate the workflow structure (not operation metadata).
     """
-    workflow = copy.deepcopy(wf_dict)
-    normalized = ensure_native(workflow)
-    policy = StaleKeyPolicy.for_clean([], [])
-    clean_stale_state(normalized, workflow, _tool_info, policy=policy)
-    return workflow
+    return _run_clean(wf_dict)
+
+
+def _clean_skip_uuid_op(wf_dict: dict) -> dict:
+    """Clean with skip_uuid=True: structural step cleaning preserves uuid fields."""
+    return _run_clean(wf_dict, skip_uuid=True)
 
 
 def _validate_op(wf_dict: dict) -> dict:
@@ -191,6 +204,7 @@ def _validate_clean_op(wf_dict: dict) -> dict:
 
 OPERATIONS = {
     "clean": _clean_op,
+    "clean_skip_uuid": _clean_skip_uuid_op,
     "validate": _validate_op,
     "validate_clean": _validate_clean_op,
     "export_format2": _export_op,

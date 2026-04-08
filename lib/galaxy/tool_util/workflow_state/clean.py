@@ -1,7 +1,7 @@
 """Stale state cleaning: domain logic, formatters, and run() entry point.
 
-Strips stale tool_state keys from native .ga workflows by comparing
-keys against current tool input definitions.
+Strips stale tool_state keys from native .ga and format2 .gxwf.yml workflows
+by comparing keys against current tool input definitions.
 """
 
 import copy
@@ -52,6 +52,7 @@ from ._types import (
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _select_which_when_native,
+    select_which_when_format2,
 )
 from .precheck import precheck_native_workflow
 from .stale_keys import (
@@ -134,6 +135,7 @@ class CleanOptions(ToolCacheOptions):
     report_markdown: Optional[str] = None
     preserve: List[str] = []
     strip: List[str] = []
+    skip_uuid: bool = False
 
 
 class CleanTreeOptions(ToolCacheOptions):
@@ -142,6 +144,7 @@ class CleanTreeOptions(ToolCacheOptions):
     report_markdown: Optional[str] = None
     preserve: List[str] = []
     strip: List[str] = []
+    skip_uuid: bool = False
 
 
 # -- Intermediate result (for single-workflow cleaning before wrapping) --
@@ -155,17 +158,36 @@ class CleanResult:
 
     @property
     def total_removed(self) -> int:
-        return sum(len(r.removed_keys) for r in self.step_results)
+        return sum(len(r.removed_state_keys) + len(r.removed_step_keys) for r in self.step_results)
 
     @property
     def steps_with_removals(self) -> int:
-        return sum(1 for r in self.step_results if r.removed_keys)
+        return sum(1 for r in self.step_results if r.removed_state_keys or r.removed_step_keys)
 
     def merge(self, other: "CleanResult"):
         self.step_results.extend(other.step_results)
 
 
 # -- Domain logic --
+
+
+def strip_structural_step(step_dict: NativeStepDict, skip_uuid: bool = False) -> List[str]:
+    """Strip Galaxy-injected structural properties from a step dict in place.
+
+    Always removes: errors (Galaxy runtime annotation, not part of the workflow spec).
+    Conditionally removes: uuid (unless skip_uuid=True).
+    Preserves: position and all other keys.
+
+    Returns the list of keys removed.
+    """
+    removed: List[str] = []
+    if "errors" in step_dict:
+        del step_dict["errors"]
+        removed.append("errors")
+    if not skip_uuid and "uuid" in step_dict:
+        del step_dict["uuid"]
+        removed.append("uuid")
+    return removed
 
 
 def _strip_recursive(
@@ -288,11 +310,11 @@ def strip_stale_keys(
             skip_reason="No tool_state",
         )
 
-    removed_keys: List[str] = []
+    removed_state_keys: List[str] = []
     _strip_recursive(
         tool_state,
         list(parsed_tool.inputs),
-        removed_keys,
+        removed_state_keys,
         strip_bookkeeping=_policy_to_strip_bookkeeping(policy),
     )
     step["tool_state"] = tool_state
@@ -301,7 +323,7 @@ def strip_stale_keys(
         step="?",
         tool_id=tool_id,
         version=tool_version,
-        removed_keys=removed_keys,
+        removed_state_keys=removed_state_keys,
     )
 
 
@@ -311,6 +333,7 @@ def clean_stale_state(
     get_tool_info: GetToolInfo,
     prefix: str = "",
     policy: Optional[StaleKeyPolicy] = None,
+    skip_uuid: bool = False,
 ) -> CleanResult:
     """Clean stale keys from all steps in a native workflow dict (mutates in place).
 
@@ -339,6 +362,7 @@ def clean_stale_state(
                 get_tool_info,
                 prefix=f"{step_label}.",
                 policy=policy,
+                skip_uuid=skip_uuid,
             )
             result.merge(sub_result)
             continue
@@ -376,15 +400,168 @@ def clean_stale_state(
             continue
 
         step_def = raw_steps.get(str(step_id), raw_steps.get(step_id, {}))
+        removed_step_keys = strip_structural_step(step_def, skip_uuid=skip_uuid)
         step_result = strip_stale_keys(step_def, parsed_tool, policy=policy)
         # Keep normalized model in sync with the mutated raw dict
         cleaned_state = step_def.get("tool_state")
         if isinstance(cleaned_state, dict):
             step.tool_state = cleaned_state
         step_result.step = step_label
+        step_result.removed_step_keys = removed_step_keys
         result.step_results.append(step_result)
 
     return result
+
+
+def _strip_format2_recursive(
+    state: Dict[str, Any],
+    tool_inputs: List[ToolParameterT],
+    removed_keys: List[str],
+    prefix: str = "",
+) -> None:
+    """Remove stale keys from a format2 state dict in place.
+
+    Format2 state is already decoded (no JSON double-encoding), so we compare
+    keys directly against tool input names and recurse into containers.
+    """
+    known = {inp.name for inp in tool_inputs}
+    stale = [key for key in state if key not in known]
+    for key in stale:
+        path = f"{prefix}{key}" if prefix else key
+        removed_keys.append(path)
+        del state[key]
+
+    for tool_input in tool_inputs:
+        name = tool_input.name
+        if name not in state:
+            continue
+        value = state[name]
+        child_prefix = f"{prefix}{name}." if prefix else f"{name}."
+
+        if isinstance(tool_input, ConditionalParameterModel):
+            if isinstance(value, dict):
+                when = select_which_when_format2(tool_input, value)
+                branch_inputs: List[ToolParameterT] = [tool_input.test_parameter]
+                if when is not None:
+                    branch_inputs = branch_inputs + list(when.parameters)
+                _strip_format2_recursive(value, branch_inputs, removed_keys, prefix=child_prefix)
+
+        elif isinstance(tool_input, RepeatParameterModel):
+            if isinstance(value, list):
+                for i, instance in enumerate(value):
+                    if isinstance(instance, dict):
+                        instance_prefix = f"{prefix}{name}_{i}." if prefix else f"{name}_{i}."
+                        _strip_format2_recursive(
+                            instance, list(tool_input.parameters), removed_keys, prefix=instance_prefix
+                        )
+
+        elif isinstance(tool_input, SectionParameterModel):
+            if isinstance(value, dict):
+                _strip_format2_recursive(value, list(tool_input.parameters), removed_keys, prefix=child_prefix)
+
+
+def clean_format2_state(
+    workflow_dict: dict,
+    get_tool_info: GetToolInfo,
+    policy: Optional[StaleKeyPolicy] = None,
+    skip_uuid: bool = False,
+    prefix: str = "",
+) -> CleanResult:
+    """Clean stale keys from all steps in a format2 workflow dict (mutates in place).
+
+    Iterates raw workflow dict steps (both list and dict formats). Strips
+    structural step keys (uuid/errors) and stale state keys for each tool step.
+    Recurses into inline subworkflows via the ``run`` key.
+    """
+    if policy is None:
+        policy = StaleKeyPolicy.for_clean([], [])
+    result = CleanResult()
+    raw_steps = workflow_dict.get("steps", {})
+
+    if isinstance(raw_steps, dict):
+        steps_iter = list(raw_steps.items())
+    else:
+        steps_iter = [(str(i), s) for i, s in enumerate(raw_steps)]
+
+    for step_key, step_dict in steps_iter:
+        if not isinstance(step_dict, dict):
+            continue
+        step_label = f"{prefix}{step_key}" if prefix else str(step_key)
+
+        # Inline subworkflow — recurse, don't clean as a tool step
+        run = step_dict.get("run")
+        if isinstance(run, dict):
+            sub_result = clean_format2_state(
+                run, get_tool_info, policy=policy, skip_uuid=skip_uuid, prefix=f"{step_label}."
+            )
+            result.merge(sub_result)
+            continue
+
+        tool_id = step_dict.get("tool_id")
+        if not tool_id:
+            continue
+        tool_version: Optional[str] = step_dict.get("tool_version")
+
+        removed_step_keys = strip_structural_step(step_dict, skip_uuid=skip_uuid)
+
+        try:
+            parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
+        except Exception as e:
+            result.step_results.append(
+                CleanStepResult(
+                    step=step_label,
+                    tool_id=tool_id,
+                    version=tool_version,
+                    skipped=True,
+                    skip_reason=f"No tool definition: {e}",
+                    removed_step_keys=removed_step_keys,
+                )
+            )
+            continue
+
+        if parsed_tool is None:
+            result.step_results.append(
+                CleanStepResult(
+                    step=step_label,
+                    tool_id=tool_id,
+                    version=tool_version,
+                    skipped=True,
+                    skip_reason="No tool definition",
+                    removed_step_keys=removed_step_keys,
+                )
+            )
+            continue
+
+        state = step_dict.get("state")
+        if not isinstance(state, dict):
+            result.step_results.append(
+                CleanStepResult(
+                    step=step_label,
+                    tool_id=tool_id,
+                    version=tool_version,
+                    removed_step_keys=removed_step_keys,
+                )
+            )
+            continue
+
+        removed_state_keys: List[str] = []
+        _strip_format2_recursive(state, list(parsed_tool.inputs), removed_state_keys)
+
+        result.step_results.append(
+            CleanStepResult(
+                step=step_label,
+                tool_id=tool_id,
+                version=tool_version,
+                removed_state_keys=removed_state_keys,
+                removed_step_keys=removed_step_keys,
+            )
+        )
+
+    return result
+
+
+def _is_format2(workflow_dict: dict) -> bool:
+    return workflow_dict.get("a_galaxy_workflow") != "true"
 
 
 def clean_single(
@@ -431,22 +608,25 @@ def expand_output_path(template: str, original_path: str) -> str:
 def _make_clean_process_one(
     policy: Optional[StaleKeyPolicy] = None,
     output_template: Optional[str] = None,
+    skip_uuid: bool = False,
 ):
     """Build a process_one callback for clean tree runs."""
     from .workflow_tree import WorkflowInfo
 
     def process_one(info: WorkflowInfo, wf_dict: dict, get_tool_info: GetToolInfo):
-        precheck = precheck_native_workflow(wf_dict, get_tool_info)
-        if not precheck.can_process:
-            skip_workflow(precheck.skip_reasons[0].value)
-
         if output_template is None:
             work_copy = copy.deepcopy(wf_dict)
         else:
             work_copy = wf_dict
 
-        normalized = ensure_native(work_copy)
-        result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy)
+        if _is_format2(work_copy):
+            result = clean_format2_state(work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid)
+        else:
+            precheck = precheck_native_workflow(wf_dict, get_tool_info)
+            if not precheck.can_process:
+                skip_workflow(precheck.skip_reasons[0].value)
+            normalized = ensure_native(work_copy)
+            result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid)
 
         if result.total_removed > 0 and output_template is not None:
             output_json = json.dumps(work_copy, indent=4) + "\n"
@@ -504,6 +684,7 @@ def clean_tree(
     get_tool_info: "GetToolInfo",
     output_template: Optional[str] = None,
     policy: Optional[StaleKeyPolicy] = None,
+    skip_uuid: bool = False,
 ) -> TreeCleanReport:
     """Clean stale state from all native .ga workflows under a directory tree.
 
@@ -514,8 +695,8 @@ def clean_tree(
         TreeContext,
     )
 
-    ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=False)
-    process_one = _make_clean_process_one(policy=policy, output_template=output_template)
+    ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=True)
+    process_one = _make_clean_process_one(policy=policy, output_template=output_template, skip_uuid=skip_uuid)
     tree_result = collect_tree(ctx, process_one)
     return _aggregate_clean(tree_result)
 
@@ -529,12 +710,13 @@ def format_dry_run(result: CleanResult) -> str:
         if sr.skipped:
             lines.append(f"Step {sr.step} ({sr.tool_id}): SKIP ({sr.skip_reason})")
             continue
-        if sr.removed_keys:
+        all_removed = sr.removed_step_keys + sr.removed_state_keys
+        if all_removed:
             tool_label = sr.tool_id or "unknown"
             if sr.version:
                 tool_label += f" {sr.version}"
             lines.append(f"Step {sr.step} ({tool_label}):")
-            lines.append(f"  Removed: {', '.join(sr.removed_keys)}")
+            lines.append(f"  Removed: {', '.join(all_removed)}")
 
     if result.total_removed:
         lines.append("---")
@@ -563,8 +745,9 @@ def format_tree_clean_text(report: TreeCleanReport) -> str:
         if r.total_removed > 0:
             lines.append(f"  {r.relative_path}: {r.total_removed} stale key(s)")
             for sr in r.step_results:
-                if sr.removed_keys:
-                    lines.append(f"    Step {sr.step} ({sr.tool_id}): {', '.join(sr.removed_keys)}")
+                all_removed = sr.removed_step_keys + sr.removed_state_keys
+                if all_removed:
+                    lines.append(f"    Step {sr.step} ({sr.tool_id}): {', '.join(all_removed)}")
 
     lines.append("---")
     skipped_count = s.get("skipped", 0)
@@ -625,8 +808,10 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
         TreeContext,
     )
 
-    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=False)
-    process_one = _make_clean_process_one(policy=policy, output_template=options.output_template)
+    ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=True)
+    process_one = _make_clean_process_one(
+        policy=policy, output_template=options.output_template, skip_uuid=options.skip_uuid
+    )
 
     return run_tree(
         ctx=ctx,
@@ -643,11 +828,6 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
 def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int:
     workflow = load_workflow(options.workflow_path)
 
-    precheck = precheck_native_workflow(workflow, tool_info)
-    if not precheck.can_process:
-        print(f"Skipped: {precheck.detail}", file=sys.stderr)
-        return 0
-
     original_json = json.dumps(workflow, indent=4) + "\n"
 
     dry_run = options.output_template is None
@@ -657,8 +837,15 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
     else:
         work_copy = workflow
 
-    normalized = ensure_native(work_copy)
-    result = clean_stale_state(normalized, work_copy, tool_info, policy=policy)
+    if _is_format2(work_copy):
+        result = clean_format2_state(work_copy, tool_info, policy=policy, skip_uuid=options.skip_uuid)
+    else:
+        precheck = precheck_native_workflow(workflow, tool_info)
+        if not precheck.can_process:
+            print(f"Skipped: {precheck.detail}", file=sys.stderr)
+            return 0
+        normalized = ensure_native(work_copy)
+        result = clean_stale_state(normalized, work_copy, tool_info, policy=policy, skip_uuid=options.skip_uuid)
 
     if options.diff:
         cleaned_json = json.dumps(work_copy, indent=4) + "\n"
