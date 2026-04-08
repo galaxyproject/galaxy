@@ -133,7 +133,7 @@ describe("History Navigation", () => {
         const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
         const modal = wrapper.findComponent(GModal);
         expect(modal.props("title")).toBe("Permanently Delete History?");
-        expect(modal.props("okText")).toBe("Permanently Delete");
+        expect(modal.props("okText")).toBe("Delete Permanently");
     });
 
     it("purge checkbox is not disabled for an active history", async () => {
