@@ -28,6 +28,9 @@ const emit = defineEmits<{
     (e: "select"): void;
 }>();
 
+// Debug logging
+console.debug("[ZipFileEntryCard] File props:", props.file);
+
 const isSelectable = computed(() => {
     return props.selectable && !sizeLimitExceeded.value;
 });
@@ -64,6 +67,10 @@ const badges: CardBadge[] = [
         @select="emit('select')"
         @click="emit('select')">
         <template v-slot:description>
+            <div v-if="file.alternateName && file.alternateName !== file.name" class="zip-file-alternate-name text-muted">
+                {{ file.alternateName }}
+            </div>
+
             <div v-if="file.path !== file.name" class="zip-file-path text-muted">
                 {{ file.path }}
             </div>
@@ -76,6 +83,14 @@ const badges: CardBadge[] = [
 </template>
 
 <style scoped lang="scss">
+.zip-file-alternate-name {
+    font-size: 0.9rem;
+    font-style: italic;
+    margin-bottom: 0.5rem;
+    word-break: break-all;
+    overflow-wrap: break-word;
+}
+
 .zip-file-path {
     font-size: 0.9rem;
     font-style: italic;
