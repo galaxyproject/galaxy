@@ -48,6 +48,7 @@ FileSourceTemplateType = Literal[
     "dataverse",
     "huggingface",
     "omero",
+    "smb",
 ]
 
 
@@ -154,6 +155,33 @@ class FtpFileSourceConfiguration(StrictModel):
     port: int = 21
     user: Optional[str] = None
     passwd: Optional[str] = None
+    writable: bool = False
+
+
+class SMBFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["smb"]
+    host: Union[str, TemplateExpansion]
+    domain: Optional[Union[str, TemplateExpansion]] = None
+    user: Optional[Union[str, TemplateExpansion]] = None
+    passwd: Optional[Union[str, TemplateExpansion]] = None
+    port: Union[int, TemplateExpansion] = 445
+    encrypt: Union[bool, TemplateExpansion] = False
+    path: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class SMBFileSourceConfiguration(StrictModel):
+    type: Literal["smb"]
+    host: str
+    domain: Optional[str] = None
+    user: Optional[str] = None
+    passwd: Optional[str] = None
+    port: int = 445
+    encrypt: bool = False
+    share_access: Optional[str] = None
+    path: str
     writable: bool = False
 
 
@@ -371,6 +399,7 @@ FileSourceTemplateConfiguration = Annotated[
         DataverseFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
+        SMBFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -393,6 +422,7 @@ FileSourceConfiguration = Annotated[
         DataverseFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
         OmeroFileSourceConfiguration,
+        SMBFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -473,6 +503,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "dataverse": DataverseFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
+    "smb": SMBFileSourceConfiguration,
 }
 
 

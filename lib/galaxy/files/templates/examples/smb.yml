@@ -1,0 +1,58 @@
+- id: smb
+  version: 0
+  name: SMB Share
+  description: |
+    Connect to Windows/Samba SMB shares using the fsspec SMBFileSystem.
+  configuration:
+    type: smb
+    host: "{{ variables.host }}"
+    domain: "{{ variables.domain }}"
+    user: "{{ variables.user }}"
+    passwd: "{{ secrets.password }}"
+    port: "{{ variables.port }}"
+    encrypt: "{{ variables.encrypt }}"
+
+    path: "{{ variables.path }}"
+    writable: "{{ variables.writable }}"
+  variables:
+    host:
+      label: SMB Host
+      type: string
+      help: Hostname or IP address of the SMB server.
+    user:
+      label: Username
+      type: string
+      optional: true
+      help: Username for authentication.
+    domain:
+      label: Domain
+      type: string
+      optional: true
+      help: Domain for the SMB server (e.g., INTRANET).
+    path:
+      label: Share Path
+      type: string
+      help: The share and directory path on the server, e.g., "share/folder".
+    port:
+      label: Port
+      type: integer
+      optional: true
+      default: 445
+      help: SMB port (usually 445).
+    encrypt:
+      label: Encrypt
+      type: boolean
+      optional: true
+      default: false
+      help: Whether to force encryption.
+    writable:
+      label: Writable?
+      type: boolean
+      optional: true
+      default: false
+      help: Allow Galaxy to write to this SMB share.
+  secrets:
+    password:
+      label: Password
+      optional: true
+      help: Password for authentication.

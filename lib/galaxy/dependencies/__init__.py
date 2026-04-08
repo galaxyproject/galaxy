@@ -356,6 +356,9 @@ class ConditionalDependencies:
     def check_omero_py(self):
         return "omero" in self.file_sources
 
+    def check_smbprotocol(self):
+        return "smb" in self.file_sources
+
 
 def strip_comment(line):
     # lifted from https://github.com/tox-dev/tox/commit/3c6b4f204e89852c4b7536b246a66d20be6d39ec

@@ -36,6 +36,7 @@ rspace-client>=2.6.1,<3  # type: rspace
 adlfs
 huggingface_hub
 omero-py #type: omero
+smbprotocol #type: smb
 
 # Vault backend
 hvac

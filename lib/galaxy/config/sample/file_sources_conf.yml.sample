@@ -127,6 +127,20 @@
   config_path: ""
   port: 2222
 
+- type: smb
+  id: smb-example
+  label: "SMB Share Example"
+  doc: "Connect to a Windows/Samba SMB share"
+  host: "smb.example.com"
+  domain: "DOMAIN"
+  user: "username"
+  passwd: "password"
+  port: 445
+  encrypt: false
+  share_access: ""
+  path: "share/folder"
+  writable: false
+
 - type: s3fs
   label: My MinIO storage
   endpoint_url: "https://minio.usegalaxy.eu"
