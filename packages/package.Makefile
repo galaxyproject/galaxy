@@ -31,7 +31,7 @@ clean: clean-build clean-pyc clean-tests
 
 clean-build:
 	rm -fr build/
-	rm -fr dist/
+	rm -fr $(DIST)/
 	rm -fr galaxy_*.egg-info
 
 clean-pyc:
@@ -44,15 +44,15 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	uv sync --all-extras
+	uv sync --inexact --all-extras
 
-_test: 
+_test:
 	uv run pytest $(TESTS)
 
 test: setup-venv _test
 
 _dist:
-	uv build --out-dir $(DIST)
+	uv build -o $(DIST)
 	ls -l $(DIST)
 
 dist: setup-venv clean _dist
@@ -65,8 +65,6 @@ _mypy:
 
 mypy: _setup-mypy-venv _mypy
 
-_twine-exists: ; @which twine > /dev/null
-
 _setup-lint-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
@@ -75,8 +73,11 @@ _lint:
 
 lint: _setup-lint-venv _lint
 
-lint-dist: _twine-exists dist
-	$(IN_VENV) twine check dist/*
+_setup-dev-venv:
+	uv pip install -r dev-requirements.txt
+
+lint-dist: _setup-dev-venv
+	uv run twine check $(DIST)/*
 
 # black doesn't actually work on symlinked files because they are outside
 # the current directory
@@ -88,22 +89,6 @@ lint-dist: _twine-exists dist
 #_black:
 #	uv run black --config ../pyproject.toml .
 #format: _setup-format-venv _isort _black
-
-_release-test-artifacts:
-	$(IN_VENV) twine upload -r test dist/*
-	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
-
-release-test-artifacts: lint-dist _release-test-artifacts
-
-_release-artifacts:
-	@while [ -z "$$CONTINUE" ]; do \
-	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
-	done ; \
-	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
-	@echo "Releasing"
-	$(IN_VENV) twine upload dist/*
-
-release-artifacts: release-test-artifacts _release-artifacts
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
