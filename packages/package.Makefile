@@ -44,15 +44,15 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	uv sync --all-extras
+	uv sync --inexact --all-extras
 
-_test: 
+_test:
 	uv run pytest $(TESTS)
 
 test: setup-venv _test
 
 _dist:
-	uv build --out-dir $(DIST)
+	uv build -o $(DIST)
 	ls -l $(DIST)
 
 dist: setup-venv clean _dist
@@ -73,8 +73,11 @@ _lint:
 
 lint: _setup-lint-venv _lint
 
-lint-dist:
-	uvx twine check $(DIST)/*
+_setup-dev-venv:
+	uv pip install -r dev-requirements.txt
+
+lint-dist: _setup-dev-venv
+	uv run twine check $(DIST)/*
 
 # black doesn't actually work on symlinked files because they are outside
 # the current directory
@@ -87,19 +90,19 @@ lint-dist:
 #	uv run black --config ../pyproject.toml .
 #format: _setup-format-venv _isort _black
 
-_release-test-artifacts:
-	uvx twine upload -r test $(DIST)/*
+_release-test-artifacts: _setup-dev-venv
+	uv run twine upload -r test $(DIST)/*
 	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
 
 release-test-artifacts: dist lint-dist _release-test-artifacts
 
-_release-artifacts:
+_release-artifacts: _setup-dev-venv
 	@while [ -z "$$CONTINUE" ]; do \
 	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
 	done ; \
 	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
 	@echo "Releasing"
-	uvx twine upload $(DIST)/*
+	uv run twine upload $(DIST)/*
 
 release-artifacts: release-test-artifacts _release-artifacts
 

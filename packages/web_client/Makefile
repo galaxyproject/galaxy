@@ -49,42 +49,56 @@ clean-web-client:
 	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then python3 -m venv $(VENV); exit; fi;
-	$(IN_VENV) pip install -r dev-requirements.txt
+	uv sync --inexact --all-extras
 
-test:
-	$(IN_VENV) pytest $(TESTS)
+_test:
+	uv run pytest $(TESTS)
 
-dist: clean $(VENV)/bin/yarn galaxy/web_client/client_build_hash.txt
-	$(IN_VENV) python -m build -o $(DIST)
+test: setup-venv _test
+
+_dist: galaxy/web_client/client_build_hash.txt
+	uv build -o $(DIST)
 	ls -l $(DIST)
 
-$(VENV)/bin/yarn: setup-venv
-	$(IN_VENV) pip install build nodeenv
-	$(IN_VENV) nodeenv -n $(shell cat ../../client/.node_version) -p
-	$(IN_VENV) npm install --global yarn
+dist: clean _dist
 
 galaxy/web_client/client_build_hash.txt:
-	$(IN_VENV) cd ../..; make client-production
-	mv ../../client/dist galaxy/web_client
+	# Use the main Galaxy virtualenv, since that's what `make client-production` uses
+	cd ../..; \
+		uv venv --allow-existing $(VENV); \
+		$(IN_VENV) \
+		uv pip install "nodejs-wheel==$$(cat client/.node_version)"; \
+		make client-production
+	mv ../../client/dist galaxy/web_client/
 	git rev-parse HEAD > galaxy/web_client/client_build_hash.txt
 
-lint-dist:
-	uvx twine check $(DIST)/*
+_setup-mypy-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
-_release-test-artifacts:
-	uvx twine upload -r test $(DIST)/*
+_mypy:
+	uv run mypy .
+
+mypy: _setup-mypy-venv _mypy
+
+_setup-dev-venv:
+	uv pip install -r dev-requirements.txt
+
+lint-dist: _setup-dev-venv
+	uv run twine check $(DIST)/*
+
+_release-test-artifacts: _setup-dev-venv
+	uv run twine upload -r test $(DIST)/*
 	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
 
 release-test-artifacts: dist lint-dist _release-test-artifacts
 
-_release-artifacts:
+_release-artifacts: _setup-dev-venv
 	@while [ -z "$$CONTINUE" ]; do \
 	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
 	done ; \
 	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
 	@echo "Releasing"
-	uvx twine upload $(DIST)/*
+	uv run twine upload $(DIST)/*
 
 release-artifacts: release-test-artifacts _release-artifacts
 
@@ -102,6 +116,3 @@ push-release:
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
-
-mypy:
-	mypy .
