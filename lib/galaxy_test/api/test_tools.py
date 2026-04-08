@@ -2511,6 +2511,23 @@ class TestToolsApi(ApiTestCase, TestsTools):
         collection.assert_has_dataset_element("reverse").with_contents_stripped("reverse")
 
     @skip_without_tool("identifier_in_conditional")
+    def test_hdca_accepted_via_batch_for_single_data_param_in_conditional(self, history_id):
+        # Regression test: tool form building (/api/tools/{id}/build) must
+        # accept a batch-wrapped HDCA for a non-multiple ``data`` parameter.
+        # The reject-HDCA check added for
+        # https://github.com/galaxyproject/galaxy/issues/22401 only applies at
+        # execution time; at build time the batch wrapper has not yet been
+        # expanded and reaches ``DataToolParameter.from_json`` intact.
+        hdca_id = self._build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|multi_input": False,
+            "outer_cond|input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        # ``build_tool_state`` calls ``raise_for_status`` internally, so any
+        # non-2xx response (e.g. the 400 this test guards against) fails loudly.
+        self.dataset_populator.build_tool_state("identifier_in_conditional", history_id, inputs)
+
+    @skip_without_tool("identifier_in_conditional")
     def test_hdca_rejected_for_single_data_param_in_conditional(self, history_id):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22401 .
         # Submitting a paired collection (no batch wrapper) to a non-multiple
