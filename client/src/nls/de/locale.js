@@ -41,7 +41,6 @@ export default {
     "Visualize datasets": "Visualisieren von Datensätzen",
     "Access published resources": "Zugriff auf veröffentlichte Ressourcen",
     "Chain tools into workflows": "Kettenwerkzeuge in Workflows",
-    "Analysis home view": "Analyse home view",
     // ---------------------------------------------------------------------------- histories
     // ---- history/options-menu
     "History Options": "Verlauf Optionen",
@@ -73,7 +72,6 @@ export default {
     "Copy Datasets to Another History": "Datensätze in einen anderen Verlauf kopieren",
     "Dataset Security": "Datensatz Sicherheit",
     "Resume Paused Jobs": "Pausierte Jobs fortsetzen",
-    "Collapse Expanded Datasets": "Collapse Expanded Datasets",
     "Unhide Hidden Datasets": "Versteckte Datensätze wieder anzeigen",
     "Delete Hidden Datasets": "Versteckte Datensätze löschen",
     "Purge Deleted Datasets": "Gelöschte Datasets löschen",
