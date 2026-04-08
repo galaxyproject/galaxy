@@ -5,6 +5,7 @@ from fsspec import AbstractFileSystem
 
 from galaxy.exceptions import MessageException
 from galaxy.files.models import (
+    AnyRemoteEntry,
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
@@ -50,12 +51,12 @@ class IIIFFilesSource(FsspecFilesSource[IIIFFileSourceTemplateConfiguration, III
 
         return IIIFFileSystem(**cache_options)
 
-    def _to_filesystem_path(self, path: str) -> str:
+    def _to_filesystem_path(self, path: str, config: IIIFFileSourceConfiguration) -> str:
         if path in ("", "/"):
-            return self.manifest_url
+            return self._normalize_manifest_url(config.manifest_url)
         return path.lstrip("/")
 
-    def _info_to_entry(self, info: dict):
+    def _info_to_entry(self, info: dict, config: IIIFFileSourceConfiguration) -> AnyRemoteEntry:
         filesystem_path = info["name"]
         entry_path = filesystem_path
         entry_name = self._entry_name_from_info(info, filesystem_path)
@@ -74,10 +75,6 @@ class IIIFFilesSource(FsspecFilesSource[IIIFFileSourceTemplateConfiguration, III
         if isinstance(iiif_label, str) and iiif_label:
             return iiif_label
         return os.path.basename(filesystem_path.rstrip("/"))
-
-    @property
-    def manifest_url(self) -> str:
-        return self._normalize_manifest_url(self.template_config.manifest_url)
 
     @staticmethod
     def _normalize_manifest_url(manifest_url: str) -> str:
