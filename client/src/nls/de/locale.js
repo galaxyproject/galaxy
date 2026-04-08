@@ -3,7 +3,7 @@ export default {
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "Daten analysieren",
     Workflow: "Arbeitsablauf",
-    "Shared Data": "Gemeinsame Daten",
+    "Shared Data": "Geteilte Daten",
     "Data Libraries": "Datenbibliotheken",
     Histories: "Verläufe",
     "Delete History": "Verlauf löschen",
@@ -31,7 +31,7 @@ export default {
     "Custom Builds": "Custom Builds",
     Logout: "Ausloggen",
     "Saved Histories": "Gespeicherte Verläufe",
-    "Saved Datasets": "Gespeicherte Datasets",
+    "Saved Datasets": "Gespeicherte Datensätze",
     "Saved Pages": "Gespeicherte Seiten",
     //Tooltip
     "Account and saved data": "Konto und gespeicherte Daten",
@@ -53,7 +53,7 @@ export default {
     // Saved histories is defined above.
     // "Saved Histories":
     //     false,
-    "Histories Shared with Me": "Verläufe mit mir geteilt",
+    "Histories Shared with Me": "Mit mir geteilte Verläufe",
     "This history has been": "Dieser Verlauf ist",
     "Some actions might not be available.": "Einige Aktionen sind möglicherweise nicht verfügbar.",
     "Resume all Paused Jobs in this History": "Alle pausierten Jobs in diesem Verlauf fortsetzen",
@@ -74,11 +74,11 @@ export default {
     "Dataset Security": "Datensatz Sicherheit",
     "Resume Paused Jobs": "Pausierte Jobs fortsetzen",
     "Collapse Expanded Datasets": "Collapse Expanded Datasets",
-    "Unhide Hidden Datasets": "Hidden Datasets verstecken",
-    "Delete Hidden Datasets": "Hidden Datasets löschen",
+    "Unhide Hidden Datasets": "Versteckte Datensätze wieder anzeigen",
+    "Delete Hidden Datasets": "Versteckte Datensätze löschen",
     "Purge Deleted Datasets": "Gelöschte Datasets löschen",
     Downloads: "Downloads",
-    "Export Tool Citations": "Export Tool Zitate",
+    "Export Tool Citations": "Tool Zitationen exportieren",
     "Export Tool References": "Tool-Referenzen exportieren",
     "Export references for all Tools used in this History":
         "Referenzen für alle in diesem Verlauf verwendeten Tools exportieren",
@@ -106,7 +106,7 @@ export default {
     "This history is empty": "Diese Verlauf ist leer",
     "No matching datasets found": "Keine passenden Datensätze gefunden",
     "An error occurred while getting updates from the server":
-        "Ein Fehler ist aufgetreten beim Aktualisieren vom Server",
+        "Ein Fehler ist bei der Aktualisierung des Servers aufgetreten",
     "Please contact a Galaxy administrator if the problem persists":
         "Bitte wenden Sie sich an einen Galaxy-Administrator, wenn das Problem weiterhin besteht",
     //TODO:
@@ -139,7 +139,7 @@ export default {
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
         "Diese Verlauf ist leer. Klicken Sie auf 'Get Data' im linken Tool-Menü, um",
-    "You must be logged in to create histories": "Du musst eingeloggt sein, um Verläufe zu schaffen",
+    "You must be logged in to create histories": "Du musst eingeloggt sein, um Verläufe zu erstellen",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
