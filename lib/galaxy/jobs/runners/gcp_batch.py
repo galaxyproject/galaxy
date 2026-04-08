@@ -202,7 +202,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
 
         # Generate unique job name
         prefix = params.get("job_id_prefix", "galaxy-job")
-        job_name = f"{prefix}-{int(time.time())}-{os.urandom(4).hex()}"
+        job_name = f"{prefix}-{int(time.time())}-{os.urandom(4).hex()}-{job_wrapper.get_id_tag()}"
 
         # Create the batch job specification
         batch_job = self._create_batch_job_spec(job_wrapper, ajs, params)
