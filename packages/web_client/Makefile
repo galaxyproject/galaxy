@@ -13,6 +13,7 @@ PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
+DIST=dist
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
@@ -30,7 +31,7 @@ clean: clean-build clean-pyc clean-tests clean-web-client
 
 clean-build:
 	rm -fr build/
-	rm -fr dist/
+	rm -fr $(DIST)/
 	rm -fr galaxy_*.egg-info
 
 clean-pyc:
@@ -48,15 +49,15 @@ clean-web-client:
 	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then python -m venv $(VENV); exit; fi;
+	if [ ! -d $(VENV) ]; then python3 -m venv $(VENV); exit; fi;
 	$(IN_VENV) pip install -r dev-requirements.txt
 
 test:
 	$(IN_VENV) pytest $(TESTS)
 
 dist: clean $(VENV)/bin/yarn galaxy/web_client/client_build_hash.txt
-	$(IN_VENV) python -m build
-	ls -l dist
+	$(IN_VENV) python -m build -o $(DIST)
+	ls -l $(DIST)
 
 $(VENV)/bin/yarn: setup-venv
 	$(IN_VENV) pip install build nodeenv
@@ -68,16 +69,14 @@ galaxy/web_client/client_build_hash.txt:
 	mv ../../client/dist galaxy/web_client
 	git rev-parse HEAD > galaxy/web_client/client_build_hash.txt
 
-_twine-exists: ; @which twine > /dev/null
-
-lint-dist: _twine-exists dist
-	$(IN_VENV) twine check dist/*
+lint-dist:
+	uvx twine check $(DIST)/*
 
 _release-test-artifacts:
-	$(IN_VENV) twine upload -r test dist/*
+	uvx twine upload -r test $(DIST)/*
 	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
 
-release-test-artifacts: lint-dist _release-test-artifacts
+release-test-artifacts: dist lint-dist _release-test-artifacts
 
 _release-artifacts:
 	@while [ -z "$$CONTINUE" ]; do \
@@ -85,7 +84,7 @@ _release-artifacts:
 	done ; \
 	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
 	@echo "Releasing"
-	$(IN_VENV) twine upload dist/*
+	uvx twine upload $(DIST)/*
 
 release-artifacts: release-test-artifacts _release-artifacts
 
