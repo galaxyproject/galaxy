@@ -86,22 +86,6 @@ _setup-dev-venv:
 lint-dist: _setup-dev-venv
 	uv run twine check $(DIST)/*
 
-_release-test-artifacts: _setup-dev-venv
-	uv run twine upload -r test $(DIST)/*
-	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
-
-release-test-artifacts: dist lint-dist _release-test-artifacts
-
-_release-artifacts: _setup-dev-venv
-	@while [ -z "$$CONTINUE" ]; do \
-	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
-	done ; \
-	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
-	@echo "Releasing"
-	uv run twine upload $(DIST)/*
-
-release-artifacts: release-test-artifacts _release-artifacts
-
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
 
