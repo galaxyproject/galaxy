@@ -31,17 +31,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  build-and-publish-pypi:
+  build-python-packages:
     if: |
       github.repository_owner == 'galaxyproject' &&
       (github.event_name == 'release' ||
        (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
     needs: [check-permissions]
-    name: Build and Publish to PyPI
+    name: Build Python packages for PyPI
     runs-on: ubuntu-latest
-    strategy:
-        matrix:
-            python-version: ['3.10']
     steps:
       - uses: actions/checkout@v6
         with:
@@ -49,18 +46,41 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Install script dependencies
         run: uv tool install galaxy-release-util
-      - name: Build and publish to PyPI
+      - name: Build Python packages
         run: |
-          galaxy-release-util build-and-upload --no-confirm
-        env:
-            TWINE_USERNAME: __token__
-            TWINE_PASSWORD: ${{ (github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease) && secrets.PYPI_TEST_TOKEN || secrets.PYPI_MAIN_TOKEN }}
-            TWINE_REPOSITORY_URL: ${{ (github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
+          galaxy-release-util build
+      - name: Move all built packages to dist/
+        run: |
+          mkdir -p dist
+          for dir in $(find packages/ -mindepth 2 -maxdepth 2 -type d -name dist); do
+              mv ${dir}/* dist/
+          done
+          ls dist/
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages
+          path: dist/
+
+  pypi-publish:
+    needs: [build-python-packages]
+    name: Upload packages to PyPI
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: packages
+          path: dist
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: ${{ (github.event_name == 'workflow_dispatch' && inputs.release_type == 'prerelease') || (github.event_name == 'release' && github.event.release.prerelease) && 'https://test.pypi.org/legacy/' || 'https://upload.pypi.org/legacy/' }}
 
   build-and-publish-npm:
     if: |
