@@ -123,6 +123,9 @@ Visualizations Updates
 ===========================================================
 
 .. visualizations
+* Update openlayers plugin
+  (thanks to `@guerler <https://github.com/guerler>`__).
+  `Pull Request 22435`_
 * Bump tiffviewer visualization to v0.0.4
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 22168`_
