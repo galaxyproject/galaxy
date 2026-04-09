@@ -13,18 +13,18 @@ try:
     )
     from pykube.http import HTTPClient
     from pykube.objects import (
-        Ingress,
         Job,
         Pod,
         Service,
+        object_factory,
     )
 except ImportError as exc:
     KubeConfig = None
-    Ingress = None
     Job = None
     Pod = None
     Service = None
     HTTPError = None
+    object_factory = None
     K8S_IMPORT_MESSAGE = (
         "The Python pykube package is required to use "
         "this feature, please install it or correct the "
@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_JOB_API_VERSION = "batch/v1"
 DEFAULT_SERVICE_API_VERSION = "v1"
-DEFAULT_INGRESS_API_VERSION = "networking.k8s.io/v1"
+DEFAULT_HTTPROUTE_API_VERSION = "gateway.networking.k8s.io/v1"
 DEFAULT_NAMESPACE = "default"
 INSTANCE_ID_INVALID_MESSAGE = (
     "Galaxy instance [%s] is either too long "
@@ -81,10 +81,6 @@ def find_service_object_by_name(pykube_api, service_name, namespace=None):
     return Service.objects(pykube_api).filter(field_selector={"metadata.name": service_name}, namespace=namespace)
 
 
-def find_ingress_object_by_name(pykube_api, ingress_name, namespace=None):
-    if not ingress_name:
-        raise ValueError("ingress name must not be empty")
-    return Ingress.objects(pykube_api).filter(field_selector={"metadata.name": ingress_name}, namespace=namespace)
 
 
 def find_job_object_by_name(pykube_api, job_name, namespace=None):
@@ -130,14 +126,14 @@ def delete_job(job, cleanup="always"):
         job.api.raise_for_status(r)
 
 
-def delete_ingress(ingress, cleanup="always", job_failed=False):
+def delete_httproute(httproute, cleanup="always", job_failed=False):
     api_delete = cleanup == "always"
     if not api_delete and cleanup == "onsuccess" and not job_failed:
         api_delete = True
     if api_delete:
         delete_options = {"apiVersion": "v1", "kind": "DeleteOptions", "propagationPolicy": "Background"}
-        r = ingress.api.delete(json=delete_options, **ingress.api_kwargs())
-        ingress.api.raise_for_status(r)
+        r = httproute.api.delete(json=delete_options, **httproute.api_kwargs())
+        httproute.api.raise_for_status(r)
 
 
 def delete_service(service, cleanup="always", job_failed=False):
@@ -177,19 +173,32 @@ def service_object_dict(params, service_name, spec):
     return k8s_service_obj
 
 
-def ingress_object_dict(params, ingress_name, spec):
-    k8s_ingress_obj = {
-        "apiVersion": params.get("k8s_ingress_api_version", DEFAULT_INGRESS_API_VERSION),
-        "kind": "Ingress",
+def httproute_object_dict(params, route_name, spec):
+    k8s_httproute_obj = {
+        "apiVersion": params.get("k8s_httproute_api_version", DEFAULT_HTTPROUTE_API_VERSION),
+        "kind": "HTTPRoute",
         "metadata": {
-            "name": ingress_name,
+            "name": route_name,
             "namespace": params.get("k8s_namespace", DEFAULT_NAMESPACE),
-            # TODO: Add default annotations
         },
     }
-    k8s_ingress_obj["metadata"].update(spec.pop("metadata", {}))
-    k8s_ingress_obj.update(spec)
-    return k8s_ingress_obj
+    k8s_httproute_obj["metadata"].update(spec.pop("metadata", {}))
+    k8s_httproute_obj.update(spec)
+    return k8s_httproute_obj
+
+
+def create_httproute_class(pykube_api):
+    """Create HTTPRoute class dynamically using new-pykube object_factory."""
+    if object_factory is None:
+        raise Exception("new-pykube package required for Gateway API support")
+    return object_factory(pykube_api, DEFAULT_HTTPROUTE_API_VERSION, "HTTPRoute")
+
+
+def find_httproute_object_by_name(pykube_api, route_name, namespace=None):
+    if not route_name:
+        raise ValueError("HTTPRoute name must not be empty")
+    HTTPRoute = create_httproute_class(pykube_api)
+    return HTTPRoute.objects(pykube_api).filter(field_selector={"metadata.name": route_name}, namespace=namespace)
 
 
 def parse_pvc_param_line(pvc_param):
@@ -318,10 +327,10 @@ def galaxy_instance_id(params):
 __all__ = (
     "DEFAULT_JOB_API_VERSION",
     "DEFAULT_SERVICE_API_VERSION",
-    "DEFAULT_INGRESS_API_VERSION",
+    "DEFAULT_HTTPROUTE_API_VERSION",
     "ensure_pykube",
     "find_service_object_by_name",
-    "find_ingress_object_by_name",
+    "find_httproute_object_by_name",
     "find_job_object_by_name",
     "find_pod_object_by_name",
     "galaxy_instance_id",
@@ -330,17 +339,17 @@ __all__ = (
     "is_pod_unschedulable",
     "Job",
     "Service",
-    "Ingress",
     "job_object_dict",
     "service_object_dict",
-    "ingress_object_dict",
+    "httproute_object_dict",
+    "create_httproute_class",
     "Pod",
     "produce_k8s_job_prefix",
     "pull_policy",
     "pykube_client_from_dict",
     "delete_job",
     "delete_service",
-    "delete_ingress",
+    "delete_httproute",
     "get_volume_mounts_for_job",
     "parse_pvc_param_line",
 )

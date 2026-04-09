@@ -24,22 +24,22 @@ from galaxy.jobs.runners import (
     JobState,
 )
 from galaxy.jobs.runners.util.pykube_util import (
+    create_httproute_class,
     deduplicate_entries,
-    DEFAULT_INGRESS_API_VERSION,
+    DEFAULT_HTTPROUTE_API_VERSION,
     DEFAULT_JOB_API_VERSION,
-    delete_ingress,
+    delete_httproute,
     delete_job,
     delete_service,
     ensure_pykube,
-    find_ingress_object_by_name,
+    find_httproute_object_by_name,
     find_job_object_by_name,
     find_pod_object_by_name,
     find_service_object_by_name,
     galaxy_instance_id,
     get_volume_mounts_for_job,
     HTTPError,
-    Ingress,
-    ingress_object_dict,
+    httproute_object_dict,
     is_pod_running,
     is_pod_unschedulable,
     Job,
@@ -129,10 +129,11 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
-            k8s_interactivetools_ingress_annotations=dict(map=str),
-            k8s_interactivetools_ingress_class=dict(map=str, default=None),
             k8s_interactivetools_tls_secret=dict(map=str, default=None),
-            k8s_ingress_api_version=dict(map=str, default=DEFAULT_INGRESS_API_VERSION),
+            # Gateway API parameters
+            k8s_gateway_name=dict(map=str, default="galaxy-gateway"),
+            k8s_gateway_namespace=dict(map=str, default="gateway-system"),
+            k8s_httproute_api_version=dict(map=str, default=DEFAULT_HTTPROUTE_API_VERSION),
         )
 
         if "runner_param_specs" not in kwargs:
@@ -258,15 +259,17 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         log.debug(f"Configuring entry points and deploying service/ingress for job with ID {ajs.job_id}")
         k8s_service_obj = service_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_service_spec(ajs))
 
-        k8s_ingress_obj = ingress_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_ingress_spec(ajs))
-        log.debug(f"Kubernetes service object: {json.dumps(k8s_service_obj, indent=4)}")
-        log.debug(f"Kubernetes ingress object: {json.dumps(k8s_ingress_obj, indent=4)}")
-        # We avoid creating service and ingress if they already exist (e.g. when Galaxy is restarted or resubmitting a job)
+        # Create service first
         service = Service(self._pykube_api, k8s_service_obj)
         service.create()
-        ingress = Ingress(self._pykube_api, k8s_ingress_obj)
-        ingress.version = self.runner_params["k8s_ingress_api_version"]
-        ingress.create()
+        log.debug(f"Kubernetes service object: {json.dumps(k8s_service_obj, indent=4)}")
+
+        # Create HTTPRoute for Gateway API
+        k8s_httproute_obj = httproute_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_httproute_spec(ajs))
+        log.debug(f"Kubernetes HTTPRoute object: {json.dumps(k8s_httproute_obj, indent=4)}")
+        HTTPRoute = create_httproute_class(self._pykube_api)
+        httproute = HTTPRoute(self._pykube_api, k8s_httproute_obj)
+        httproute.create()
 
     def __get_overridable_params(self, job_wrapper, param_key):
         try:
@@ -409,57 +412,9 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         }
         return k8s_spec_template
 
-    def __get_k8s_ingress_rules_spec(self, ajs, entry_points):
-        """This represents the template for the "rules" portion of the Ingress spec."""
-        if "v1beta1" in self.runner_params["k8s_ingress_api_version"]:
-            rules_spec = [
-                {
-                    "host": ep["domain"],
-                    "http": {
-                        "paths": [
-                            {
-                                "backend": {
-                                    "serviceName": self.__get_k8s_job_name(
-                                        self.__produce_k8s_job_prefix(), ajs.job_wrapper
-                                    ),
-                                    "servicePort": int(ep["tool_port"]),
-                                },
-                                "path": ep.get("entry_path", "/"),
-                                "pathType": "Prefix",
-                            }
-                        ]
-                    },
-                }
-                for ep in entry_points
-            ]
-        else:
-            rules_spec = [
-                {
-                    "host": ep["domain"],
-                    "http": {
-                        "paths": [
-                            {
-                                "backend": {
-                                    "service": {
-                                        "name": self.__get_k8s_job_name(
-                                            self.__produce_k8s_job_prefix(), ajs.job_wrapper
-                                        ),
-                                        "port": {"number": int(ep["tool_port"])},
-                                    }
-                                },
-                                "path": ep.get("entry_path", "/"),
-                                "pathType": "ImplementationSpecific",
-                            }
-                        ]
-                    },
-                }
-                for ep in entry_points
-            ]
-        return rules_spec
 
-    def __get_k8s_ingress_spec(self, ajs):
-        """The k8s spec template is nothing but a Ingress spec, except that it is nested and does not have an apiversion
-        nor kind."""
+    def __get_k8s_httproute_spec(self, ajs):
+        """The HTTPRoute spec for Gateway API routing."""
         guest_ports = ajs.job_wrapper.guest_ports
         if len(guest_ports) > 0:
             entry_points = []
@@ -468,7 +423,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 # sending in self.app as `trans` since it's only used for `.security` so seems to work
                 entry_point_path = self.app.interactivetool_manager.get_entry_point_path(self.app, entry_point)
                 if "?" in entry_point_path:
-                    # Removing all the parameters from the ingress path, but they will still be in the database
+                    # Removing all the parameters from the HTTPRoute path, but they will still be in the database
                     # so the link that the user clicks on will still have them
                     log.warning(
                         "IT urls including parameters (eg: /myit?mykey=myvalue) are only experimentally supported on K8S"
@@ -484,6 +439,8 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 entry_points.append(
                     {"tool_port": entry_point.tool_port, "domain": entry_point_domain, "entry_path": entry_point_path}
                 )
+
+        # Build HTTPRoute spec
         k8s_spec_template = {
             "metadata": {
                 "labels": {
@@ -494,26 +451,52 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 },
                 "annotations": {"app.galaxyproject.org/tool_id": ajs.job_wrapper.tool.id},
             },
-            "spec": {"rules": self.__get_k8s_ingress_rules_spec(ajs, entry_points)},
+            "spec": {
+                "parentRefs": [
+                    {
+                        "name": self.runner_params.get("k8s_gateway_name", "galaxy-gateway"),
+                        "namespace": self.runner_params.get("k8s_gateway_namespace", "gateway-system"),
+                    }
+                ],
+                "hostnames": list({ep["domain"] for ep in entry_points}),
+                "rules": self.__get_k8s_httproute_rules_spec(ajs, entry_points),
+            },
         }
-        default_ingress_class = self.runner_params.get("k8s_interactivetools_ingress_class")
-        if default_ingress_class:
-            k8s_spec_template["spec"]["ingressClassName"] = default_ingress_class
-        if self.runner_params.get("k8s_interactivetools_use_ssl"):
-            domains = list({e["domain"] for e in entry_points})
-            override_secret = self.runner_params.get("k8s_interactivetools_tls_secret")
-            if override_secret:
-                k8s_spec_template["spec"]["tls"] = [
-                    {"hosts": [domain], "secretName": override_secret} for domain in domains
-                ]
-            else:
-                k8s_spec_template["spec"]["tls"] = [
-                    {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
-                ]
-        if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
-            new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
-            k8s_spec_template["metadata"]["annotations"].update(new_ann)
         return k8s_spec_template
+
+    def __get_k8s_httproute_rules_spec(self, ajs, entry_points):
+        """This represents the template for the HTTPRoute rules spec."""
+        service_name = self.__get_k8s_job_name(self.__produce_k8s_job_prefix(), ajs.job_wrapper)
+
+        rules_spec = []
+        for ep in entry_points:
+            rule = {
+                "matches": [
+                    {
+                        "path": {
+                            "type": "PathPrefix",
+                            "value": ep.get("entry_path", "/"),
+                        }
+                    }
+                ],
+                "backendRefs": [
+                    {
+                        "name": service_name,
+                        "port": int(ep["tool_port"]),
+                    }
+                ],
+            }
+            # Add hostname filter if using domain-based routing
+            if ep["domain"] != f"{self.app.config.interactivetools_proxy_host}":
+                rule["matches"][0]["headers"] = [
+                    {
+                        "name": "Host",
+                        "value": ep["domain"],
+                    }
+                ]
+            rules_spec.append(rule)
+
+        return rules_spec
 
     def __get_k8s_security_context(self, job_wrapper):
         security_context = {}
@@ -900,9 +883,9 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 )
                 self.work_queue.put((self.__cleanup_k8s_job, new_retryable_job_state))
 
-    def __cleanup_k8s_ingress(self, ingress, job_failed=False):
+    def __cleanup_k8s_httproute(self, httproute, job_failed=False):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
-        delete_ingress(ingress, k8s_cleanup_job, job_failed)
+        delete_httproute(httproute, k8s_cleanup_job, job_failed)
 
     def __cleanup_k8s_service(self, service, job_failed=False):
         k8s_cleanup_job = self.runner_params["k8s_cleanup_job"]
@@ -987,15 +970,18 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def __cleanup_k8s_guest_ports(self, job_wrapper, k8s_job):
         k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_name = f"{k8s_job_prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
-        log.debug(f"Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}")
-        ingress_to_delete = find_ingress_object_by_name(
+
+        # Delete HTTPRoute (Gateway API)
+        log.debug(f"Deleting service/HTTPRoute for job with ID {job_wrapper.get_id_tag()}")
+        httproute_to_delete = find_httproute_object_by_name(
             self._pykube_api, k8s_job_name, self.runner_params["k8s_namespace"]
         )
-        if ingress_to_delete and len(ingress_to_delete.response["items"]) > 0:
-            k8s_ingress = Ingress(self._pykube_api, ingress_to_delete.response["items"][0])
-            self.__cleanup_k8s_ingress(k8s_ingress)
+        if httproute_to_delete and len(httproute_to_delete.response["items"]) > 0:
+            HTTPRoute = create_httproute_class(self._pykube_api)
+            k8s_httproute = HTTPRoute(self._pykube_api, httproute_to_delete.response["items"][0])
+            self.__cleanup_k8s_httproute(k8s_httproute)
         else:
-            log.debug(f"No ingress found for job with k8s_job_name {k8s_job_name}")
+            log.debug(f"No HTTPRoute found for job with k8s_job_name {k8s_job_name}")
         service_to_delete = find_service_object_by_name(
             self._pykube_api, k8s_job_name, self.runner_params["k8s_namespace"]
         )
