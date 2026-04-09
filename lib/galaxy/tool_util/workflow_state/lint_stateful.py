@@ -223,7 +223,7 @@ def lint_single(
 def run_lint_stateful(options: LintStatefulOptions) -> int:
     """Run single-file combined structural lint + stateful validation. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-lint-stateful-tree for batch linting", file=sys.stderr)
+        print("Error: got directory, use 'gxwf lint-tree' for batch linting", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)

@@ -750,7 +750,7 @@ def _make_json_schema_process_one(
 def run_validate(options: ValidateOptions) -> int:
     """Run single-file validation pipeline. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-state-validate-tree for batch validation", file=sys.stderr)
+        print("Error: got directory, use 'gxwf validate-tree' for batch validation", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)

@@ -1427,7 +1427,7 @@ _format_roundtrip_markdown = make_markdown_renderer("roundtrip_tree.md.j2")
 def run_roundtrip_validate(options: RoundTripValidateOptions) -> int:
     """Run single-file round-trip validation. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-roundtrip-validate-tree for batch validation", file=sys.stderr)
+        print("Error: got directory, use 'gxwf roundtrip-tree' for batch validation", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)

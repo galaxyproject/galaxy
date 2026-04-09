@@ -775,7 +775,7 @@ def format_json_tree(report: TreeCleanReport) -> dict:
 def run_clean(options: CleanOptions) -> int:
     """Run single-file clean pipeline. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-state-clean-tree for batch cleaning", file=sys.stderr)
+        print("Error: got directory, use 'gxwf clean-tree' for batch cleaning", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)

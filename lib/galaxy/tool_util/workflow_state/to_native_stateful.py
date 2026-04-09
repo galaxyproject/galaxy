@@ -272,7 +272,7 @@ def format_native_json(native_dict: dict) -> str:
 def run_to_native(options: ToNativeOptions) -> int:
     """Run single-file format2→native conversion. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-to-native-stateful-tree for batch conversion", file=sys.stderr)
+        print("Error: got directory, use 'gxwf convert-tree --to native' for batch conversion", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)

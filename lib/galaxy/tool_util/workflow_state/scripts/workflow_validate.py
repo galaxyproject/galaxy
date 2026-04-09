@@ -4,7 +4,9 @@ from .._cli_common import (
     add_report_args,
     add_strict_args,
     build_base_parser,
+    build_base_subparser_args,
     cli_main,
+    cli_main_from_args,
 )
 from .._report_models import SingleValidationReport
 from ..validate import (
@@ -12,13 +14,10 @@ from ..validate import (
     ValidateOptions,
 )
 
+SUBCOMMAND = "validate"
 
-def build_parser():
-    parser = build_base_parser(
-        prog="gxwf-state-validate",
-        description="Validate workflow tool_state against tool definitions.",
-        stale_key_mode="validate",
-    )
+
+def _add_args(parser):
     add_strict_args(parser)
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
@@ -39,7 +38,23 @@ def build_parser():
         help="Directory of pre-exported per-tool JSON Schemas (for offline json-schema mode)",
     )
     add_report_args(parser)
+
+
+def build_parser():
+    parser = build_base_parser(
+        prog="gxwf-state-validate",
+        description="Validate workflow tool_state against tool definitions.",
+        stale_key_mode="validate",
+    )
+    _add_args(parser)
     return parser
+
+
+def register(subparsers):
+    p = subparsers.add_parser(SUBCOMMAND, help="Validate workflow tool_state against tool definitions")
+    build_base_subparser_args(p, stale_key_mode="validate")
+    _add_args(p)
+    p.set_defaults(func=lambda args: cli_main_from_args(ValidateOptions, run_validate, args, SingleValidationReport))
 
 
 def main(argv=None):
