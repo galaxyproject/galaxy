@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faAngleDoubleDown,
+    faAngleDoubleUp,
+    faExclamation,
+    faSpinner,
+    faSquare,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
@@ -58,6 +65,7 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+const headerCollapsed = ref(false);
 
 const uniqueMessages = computed(() => {
     const messages = invocation.value?.messages || [];
@@ -283,6 +291,17 @@ async function onCancel() {
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
             :success="props.success">
+            <template v-slot:before-icon>
+                <GButton
+                    transparent
+                    size="small"
+                    :title="headerCollapsed ? 'Expand header' : 'Collapse header'"
+                    icon-only
+                    inline
+                    @click="headerCollapsed = !headerCollapsed">
+                    <FontAwesomeIcon :icon="headerCollapsed ? faAngleDoubleDown : faAngleDoubleUp" fixed-width />
+                </GButton>
+            </template>
             <template v-slot:workflow-title-actions>
                 <GButton
                     v-if="!invocationAndJobTerminal"
@@ -305,7 +324,7 @@ async function onCancel() {
         </WorkflowNavigationTitle>
 
         <WorkflowAnnotation
-            v-if="props.isFullPage"
+            v-if="props.isFullPage && !headerCollapsed"
             :workflow-id="invocation.workflow_id"
             :invocation-create-time="invocation.create_time"
             :history-id="invocation.history_id">
