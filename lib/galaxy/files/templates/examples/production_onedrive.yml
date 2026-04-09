@@ -1,6 +1,6 @@
-- id: onedrive
+- id: onedrive_appfolder
   name: OneDrive
-  description: Connect to your Microsoft OneDrive app folder to download and upload files.
+  description: Connect to the Galaxy folder in your Microsoft OneDrive. Galaxy will only access its own app folder, not the rest of your OneDrive.
   configuration:
     type: onedrive
     oauth2_client_id: "{{ environment.oauth2_client_id }}"

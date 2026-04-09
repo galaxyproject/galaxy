@@ -1,0 +1,4 @@
+- type: onedrive
+  id: test1
+  doc: Test access to a OneDrive account.
+  accessToken: ${user.preferences['onedrive|access_token']}

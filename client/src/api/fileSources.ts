@@ -34,7 +34,7 @@ export const templateTypes: FileSourceTypesDetail = {
     },
     onedrive: {
         icon: faCloud,
-        message: "This is a repository plugin that connects with Microsoft OneDrive through Microsoft Graph.",
+        message: "This is a repository plugin that connects with Microsoft OneDrive.",
     },
     onedata: {
         icon: faNetworkWired,

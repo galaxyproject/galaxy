@@ -645,6 +645,11 @@ To use one of these templates, make the credentials available to Galaxy's web an
 processes using the environment variables `GALAXY_ONEDRIVE_CLIENT_ID` and
 `GALAXY_ONEDRIVE_CLIENT_SECRET`. Jobs themselves do not need these values and should
 not receive them.
+If your Galaxy instance has Vault configured, you can use this Vault-backed variant instead:
+
+```{literalinclude} ../../../lib/galaxy/files/templates/examples/onedrive_client_secrets_in_vault.yml
+:language: yaml
+```
 
 The current OneDrive implementation supports two drive modes:
 

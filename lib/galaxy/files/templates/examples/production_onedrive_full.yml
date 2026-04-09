@@ -1,6 +1,8 @@
-- id: onedrive
+- id: onedrive_full
   name: OneDrive
-  description: Connect to your Microsoft OneDrive app folder to download and upload files.
+  description: |
+    Connect to your full Microsoft OneDrive. 
+    You will be asked to grant Galaxy permission to access files across your OneDrive, not just the Galaxy app folder.
   configuration:
     type: onedrive
     oauth2_client_id: "{{ environment.oauth2_client_id }}"

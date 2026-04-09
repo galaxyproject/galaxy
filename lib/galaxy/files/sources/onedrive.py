@@ -65,11 +65,6 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
             "Authorization": f"Bearer {config.access_token}",
         }
 
-    def _json_headers(self, config: OneDriveFilesSourceConfiguration) -> dict[str, str]:
-        headers = self._headers(config)
-        headers["Content-Type"] = "application/json"
-        return headers
-
     def _encoded_path(self, path: str) -> str:
         normalized = path.strip("/")
         if not normalized:
@@ -105,10 +100,11 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
         method: str,
         url: str,
         context: FilesSourceRuntimeContext[OneDriveFilesSourceConfiguration],
+        timeout: int = 30,
         **kwargs,
     ) -> requests.Response:
         try:
-            response = requests.request(method, url, headers=self._headers(context.config), timeout=30, **kwargs)
+            response = requests.request(method, url, headers=self._headers(context.config), timeout=timeout, **kwargs)
         except requests.RequestException as exc:
             raise MessageException(f"Error connecting to OneDrive. Reason: {exc}") from exc
 
@@ -181,26 +177,13 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
     ) -> str:
         upload_url = self._content_url(context.config, target_path)
         with open(native_path, "rb") as handle:
-            response = requests.put(
+            self._request(
+                "PUT",
                 upload_url,
-                headers={
-                    "Authorization": f"Bearer {context.config.access_token}",
-                    "Content-Type": "application/octet-stream",
-                },
+                context,
                 data=handle,
                 timeout=300,
             )
-        if response.status_code in {401, 403}:
-            raise AuthenticationRequired(
-                "Permission denied while writing to OneDrive. Check the Microsoft app scopes and stored user authorization."
-            )
-        if not response.ok:
-            try:
-                payload = response.json()
-                message = payload.get("error", {}).get("message", response.text)
-            except Exception:
-                message = response.text
-            raise MessageException(f"Error uploading to OneDrive. Reason: {message}")
         return self.uri_from_path(target_path)
 
     def _create_entry(
@@ -215,23 +198,12 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
             "folder": {},
             "@microsoft.graph.conflictBehavior": "fail",
         }
-        response = requests.post(
+        response = self._request(
+            "POST",
             self._children_url(context.config, parent_path),
+            context,
             json=payload,
-            headers=self._json_headers(context.config),
-            timeout=30,
         )
-        if response.status_code in {401, 403}:
-            raise AuthenticationRequired(
-                "Permission denied while creating a OneDrive folder. Check the Microsoft app scopes and stored user authorization."
-            )
-        if not response.ok:
-            try:
-                body = response.json()
-                message = body.get("error", {}).get("message", response.text)
-            except Exception:
-                message = response.text
-            raise MessageException(f"Error creating OneDrive folder. Reason: {message}")
         item = response.json()
         path = self._entry_from_item(item, parent_path).path
         return Entry(name=item["name"], uri=self.uri_from_path(path), external_link=item.get("webUrl"))
