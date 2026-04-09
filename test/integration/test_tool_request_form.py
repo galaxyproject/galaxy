@@ -68,8 +68,8 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
         assert notification["content"]["requester_name"] == TOOL_REQUEST_PAYLOAD["requester_name"]
         assert notification["content"]["description"] == TOOL_REQUEST_PAYLOAD["description"]
 
-    def test_missing_required_fields_returns_422(self):
-        """Missing required fields should return 422 Unprocessable Entity."""
+    def test_missing_required_fields_returns_400(self):
+        """Missing required fields should return 400 Bad Request."""
         user = self._setup_user("tool_request_invalid@galaxy.test")
         with self._different_user(user["email"]):
             # Missing tool_name and description (both required)
