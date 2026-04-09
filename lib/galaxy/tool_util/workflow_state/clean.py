@@ -171,6 +171,25 @@ class CleanResult:
 # -- Domain logic --
 
 
+_POSITION_CANONICAL_KEYS = frozenset({"left", "top"})
+
+
+def _strip_position_extras(raw_steps: dict) -> None:
+    """Normalize position dicts to only canonical keys (left, top).
+
+    Older Galaxy versions stored redundant browser-computed fields
+    (bottom, x, y, right, height, width). Strip everything except left/top.
+    """
+    for step_def in raw_steps.values():
+        if not isinstance(step_def, dict):
+            continue
+        pos = step_def.get("position")
+        if isinstance(pos, dict):
+            for key in list(pos.keys()):
+                if key not in _POSITION_CANONICAL_KEYS:
+                    del pos[key]
+
+
 def strip_structural_step(step_dict: NativeStepDict, skip_uuid: bool = False) -> List[str]:
     """Strip Galaxy-injected structural properties from a step dict in place.
 
@@ -349,6 +368,7 @@ def clean_stale_state(
         policy = StaleKeyPolicy.for_clean([], [])
     result = CleanResult()
     raw_steps = workflow_dict.get("steps", {})
+    _strip_position_extras(raw_steps)
 
     for step_id, step in sorted(workflow.steps.items(), key=lambda x: int(x[0])):
         step_label = f"{prefix}{step_id}" if prefix else str(step_id)
@@ -589,7 +609,10 @@ def clean_single(
 
     precheck = precheck_native_workflow(workflow, tool_info)
     if not precheck.can_process:
-        return SingleCleanReport(workflow=workflow_name, results=[], before_content=before_content)
+        after_content_early: Optional[str] = json.dumps(workflow, indent=2) if include_content else None
+        return SingleCleanReport(
+            workflow=workflow_name, results=[], before_content=before_content, after_content=after_content_early
+        )
 
     normalized = ensure_native(workflow)
     result = clean_stale_state(normalized, workflow, tool_info, policy=policy)
