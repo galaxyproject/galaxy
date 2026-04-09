@@ -53,7 +53,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return ""
 
     @expose_api_anonymous
-    def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
+    def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True, **kwargs):
         """
         View a history. If a history is importable, then it is viewable by any user.
         """

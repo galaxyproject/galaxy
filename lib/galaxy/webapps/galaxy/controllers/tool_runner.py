@@ -173,7 +173,7 @@ class ToolRunner(BaseUIController):
         tool = self.__get_tool(tool_id)
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
-            log.warning("data_source_redirect called with tool id '%s' but no such tool exists", tool_id)
+            log.debug("data_source_redirect called with tool id '%s' but no such tool exists", tool_id)
             trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
             return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")
