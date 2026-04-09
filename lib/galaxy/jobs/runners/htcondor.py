@@ -1,8 +1,10 @@
 """Job control via the HTCondor DRM using the htcondor2 Python API."""
 
+import json
 import logging
 import os
 import subprocess
+import sys
 import threading
 from typing import (
     Optional,
@@ -30,6 +32,187 @@ log = logging.getLogger(__name__)
 __all__ = ("HTCondorJobRunner",)
 
 HTCONDOR_DESTINATION_KEYS = ("htcondor_collector", "htcondor_schedd", "htcondor_config")
+HTCONDOR_HELPER_MODULE = "galaxy.jobs.runners.htcondor_helper"
+HTCONDOR_HELPER_TIMEOUT = 5
+
+
+def _normalize_condor_config(condor_config: Optional[str]) -> Optional[str]:
+    if not condor_config:
+        return None
+    return os.path.realpath(os.path.expanduser(condor_config))
+
+
+def _locate_schedd(htcondor, schedd_cache, schedd_lock, collector: Optional[str], schedd_name: Optional[str]):
+    cache_key = (collector, schedd_name)
+    with schedd_lock:
+        cached = schedd_cache.get(cache_key)
+    if cached:
+        return cached
+
+    if not collector and not schedd_name:
+        schedd = htcondor.Schedd()
+    else:
+        collector_obj = htcondor.Collector(pool=collector) if collector else htcondor.Collector()
+        if schedd_name:
+            schedd_ad = collector_obj.locate(htcondor.DaemonType.Schedd, name=schedd_name)
+        else:
+            schedd_ads = collector_obj.locateAll(htcondor.DaemonType.Schedd)
+            schedd_ad = schedd_ads[0] if schedd_ads else None
+        if not schedd_ad:
+            location = f"collector={collector}" if collector else "local collector"
+            raise RuntimeError(f"Unable to locate schedd via {location} (schedd={schedd_name or 'first'})")
+        schedd = htcondor.Schedd(schedd_ad)
+
+    with schedd_lock:
+        schedd_cache[cache_key] = schedd
+    return schedd
+
+
+class _HTCondorClient:
+    def submit(self, submit_description: str, collector: Optional[str], schedd_name: Optional[str]) -> str:
+        raise NotImplementedError()
+
+    def remove(self, job_spec: Union[int, str], collector: Optional[str], schedd_name: Optional[str]) -> None:
+        raise NotImplementedError()
+
+    def shutdown(self) -> None:
+        pass
+
+
+class _HTCondorInProcessClient(_HTCondorClient):
+    def __init__(self, htcondor):
+        self.htcondor = htcondor
+        self._schedd_cache = {}
+        self._schedd_lock = threading.Lock()
+
+    def _schedd(self, collector: Optional[str], schedd_name: Optional[str]):
+        return _locate_schedd(self.htcondor, self._schedd_cache, self._schedd_lock, collector, schedd_name)
+
+    def submit(self, submit_description: str, collector: Optional[str], schedd_name: Optional[str]) -> str:
+        submit_result = self._schedd(collector, schedd_name).submit(self.htcondor.Submit(submit_description))
+        return str(submit_result.cluster())
+
+    def remove(self, job_spec: Union[int, str], collector: Optional[str], schedd_name: Optional[str]) -> None:
+        self._schedd(collector, schedd_name).act(
+            self.htcondor.JobAction.Remove, job_spec, reason="Galaxy job stop request"
+        )
+
+
+class _HTCondorSubprocessClient(_HTCondorClient):
+    def __init__(self, condor_config: str):
+        self.condor_config = condor_config
+        self._lock = threading.Lock()
+        self._process: subprocess.Popen[str] | None = None
+
+    def submit(self, submit_description: str, collector: Optional[str], schedd_name: Optional[str]) -> str:
+        response = self._request(
+            dict(
+                command="submit",
+                collector=collector,
+                schedd_name=schedd_name,
+                submit_description=submit_description,
+            )
+        )
+        return str(response["cluster"])
+
+    def remove(self, job_spec: Union[int, str], collector: Optional[str], schedd_name: Optional[str]) -> None:
+        self._request(
+            dict(
+                command="remove",
+                collector=collector,
+                schedd_name=schedd_name,
+                job_spec=job_spec,
+            )
+        )
+
+    def shutdown(self) -> None:
+        with self._lock:
+            process = self._process
+            if process is None:
+                return
+            try:
+                stdin = process.stdin
+                if stdin is not None and not stdin.closed:
+                    stdin.write(json.dumps(dict(command="shutdown")) + "\n")
+                    stdin.flush()
+            except Exception:
+                pass
+            finally:
+                if process.stdin is not None and not process.stdin.closed:
+                    process.stdin.close()
+
+            try:
+                process.wait(timeout=HTCONDOR_HELPER_TIMEOUT)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=HTCONDOR_HELPER_TIMEOUT)
+            finally:
+                if process.stdout is not None:
+                    process.stdout.close()
+                if process.stderr is not None:
+                    process.stderr.close()
+                self._process = None
+
+    def _request(self, payload):
+        with self._lock:
+            process = self._ensure_process_locked()
+            stdin = process.stdin
+            stdout = process.stdout
+            if stdin is None or stdout is None:
+                raise RuntimeError("HTCondor helper process is missing stdio pipes")
+            try:
+                stdin.write(json.dumps(payload) + "\n")
+                stdin.flush()
+            except Exception as exc:
+                raise RuntimeError(self._helper_failure_message_locked("Failed to write to HTCondor helper")) from exc
+
+            line = stdout.readline()
+            if not line:
+                raise RuntimeError(self._helper_failure_message_locked("HTCondor helper exited unexpectedly"))
+            try:
+                response = json.loads(line)
+            except Exception as exc:
+                raise RuntimeError(f"Invalid response from HTCondor helper: {line.rstrip()}") from exc
+            if not response.get("ok"):
+                raise RuntimeError(response.get("error", "Unknown HTCondor helper error"))
+            return response
+
+    def _ensure_process_locked(self):
+        process = self._process
+        if process is not None and process.poll() is None:
+            return process
+        if process is not None:
+            if process.stdin is not None and not process.stdin.closed:
+                process.stdin.close()
+            if process.stdout is not None:
+                process.stdout.close()
+            if process.stderr is not None:
+                process.stderr.close()
+
+        env = os.environ.copy()
+        env["CONDOR_CONFIG"] = self.condor_config
+        env.setdefault("PYTHONUNBUFFERED", "1")
+        env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(path for path in sys.path if path))
+        self._process = subprocess.Popen(
+            [sys.executable, "-m", HTCONDOR_HELPER_MODULE],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            close_fds=True,
+            env=env,
+        )
+        return self._process
+
+    def _helper_failure_message_locked(self, message: str) -> str:
+        process = self._process
+        if process is None or process.stderr is None or process.poll() is None:
+            return message
+        stderr = process.stderr.read().strip()
+        if stderr:
+            return f"{message}: {stderr}"
+        return message
 
 
 class HTCondorJobState(AsynchronousJobState):
@@ -90,10 +273,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             kwargs["runner_param_specs"] = {}
         kwargs["runner_param_specs"].update(runner_param_specs)
 
-        condor_config = kwargs.get("htcondor_config")
-        if condor_config:
-            os.environ.setdefault("CONDOR_CONFIG", condor_config)
-
         super().__init__(app, nworkers, **kwargs)
         try:
             import htcondor2
@@ -103,86 +282,44 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 f"following error:\n{exc.__class__.__name__}: {str(exc)}"
             )
         self.htcondor = htcondor2
-        self._local_schedd = None
-        self._schedd_cache = {}
-        # Protect schedd initialization/cache in multi-threaded runners.
-        self._schedd_lock = threading.Lock()
+        self._client_cache = {}
+        self._client_lock = threading.Lock()
 
-        if self.runner_params.htcondor_config:
-            self._apply_condor_config(self.runner_params.htcondor_config)
+    def shutdown(self):
+        try:
+            super().shutdown()
+        finally:
+            self._shutdown_clients()
 
-    def _apply_condor_config(self, condor_config: Optional[str]) -> None:
-        """Set CONDOR_CONFIG and reload htcondor2 config when possible."""
-        if not condor_config:
-            return
-        existing = os.environ.get("CONDOR_CONFIG")
-        if existing and existing != condor_config:
-            log.warning(
-                "CONDOR_CONFIG is already set to %s; ignoring htcondor_config=%s",
-                existing,
-                condor_config,
-            )
-            return
-        os.environ["CONDOR_CONFIG"] = condor_config
-        if hasattr(self, "htcondor"):
+    def _shutdown_clients(self) -> None:
+        with self._client_lock:
+            clients = list(self._client_cache.values())
+            self._client_cache.clear()
+        for client in clients:
             try:
-                self.htcondor.reload_config()
-            except Exception as exc:
-                log.warning("Failed to reload HTCondor config after setting CONDOR_CONFIG: %s", exc)
+                client.shutdown()
+            except Exception:
+                log.exception("Failed to shut down HTCondor client")
 
-    def _htcondor_params(self, job_destination: "JobDestination"):
+    def _htcondor_params(self, job_destination: Optional["JobDestination"]):
         """Resolve collector/schedd/config parameters from the destination or runner defaults."""
-        params = job_destination.params
+        params = job_destination.params if job_destination is not None else {}
         collector = params.get("htcondor_collector", None) or self.runner_params.htcondor_collector
         schedd_name = params.get("htcondor_schedd", None) or self.runner_params.htcondor_schedd
         condor_config = params.get("htcondor_config", None) or self.runner_params.htcondor_config
-        return collector, schedd_name, condor_config
+        return collector, schedd_name, _normalize_condor_config(condor_config)
 
-    def _local_schedd_for_destination(self):
-        """Return the local Schedd instance, lazily initialized once."""
-        if self._local_schedd is None:
-            with self._schedd_lock:
-                if self._local_schedd is None:
-                    self._local_schedd = self.htcondor.Schedd()
-        return self._local_schedd
-
-    def _schedd_for_destination(self, job_destination: "JobDestination"):
-        """Locate a Schedd for the destination, caching by collector/schedd/config.
-
-        This supports both local pools and remote collectors. Results are cached
-        because the locate calls involve network lookups; a lock protects cache
-        access since the runner uses multiple threads.
-        """
-        collector, schedd_name, condor_config = self._htcondor_params(job_destination)
-        self._apply_condor_config(condor_config)
-
-        if not collector and not schedd_name:
-            return self._local_schedd_for_destination()
-
-        cache_key = (
-            collector,
-            schedd_name,
-            os.environ.get("CONDOR_CONFIG"),
-        )
-        with self._schedd_lock:
-            cached = self._schedd_cache.get(cache_key)
-        if cached:
-            return cached
-
-        collector_obj = self.htcondor.Collector(pool=collector) if collector else self.htcondor.Collector()
-        if schedd_name:
-            schedd_ad = collector_obj.locate(self.htcondor.DaemonType.Schedd, name=schedd_name)
-        else:
-            schedd_ads = collector_obj.locateAll(self.htcondor.DaemonType.Schedd)
-            schedd_ad = schedd_ads[0] if schedd_ads else None
-        if not schedd_ad:
-            location = f"collector={collector}" if collector else "local collector"
-            raise Exception(f"Unable to locate schedd via {location} (schedd={schedd_name or 'first'})")
-
-        schedd = self.htcondor.Schedd(schedd_ad)
-        with self._schedd_lock:
-            self._schedd_cache[cache_key] = schedd
-        return schedd
+    def _client_for_destination(self, job_destination: Optional["JobDestination"]):
+        _, _, condor_config = self._htcondor_params(job_destination)
+        with self._client_lock:
+            client = self._client_cache.get(condor_config)
+            if client is None:
+                if condor_config is None:
+                    client = _HTCondorInProcessClient(self.htcondor)
+                else:
+                    client = _HTCondorSubprocessClient(condor_config)
+                self._client_cache[condor_config] = client
+        return client
 
     def _submit_params(self, job_destination: "JobDestination"):
         """Map destination params to submit params, excluding htcondor_* keys."""
@@ -192,26 +329,27 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
     def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         """Create job script and submit it to the DRM."""
 
-        # prepare the job
         include_metadata = asbool(job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
         if not self.prepare_job(job_wrapper, include_metadata=include_metadata):
             return
 
         job_destination = job_wrapper.job_destination
         galaxy_id_tag = job_wrapper.get_id_tag()
+        collector, schedd_name, _ = self._htcondor_params(job_destination)
 
-        # get destination params
         query_params = self._submit_params(job_destination)
         container = None
         universe = query_params.get("universe", None)
         if universe and universe.strip().lower() == "docker":
             container = self._find_container(job_wrapper)
             if container:
-                # HTCondor needs the image as 'docker_image'
                 query_params.update({"docker_image": container.container_id})
 
         if galaxy_slots := query_params.get("request_cpus", None):
-            galaxy_slots_statement = f'GALAXY_SLOTS="{galaxy_slots}"; export GALAXY_SLOTS; GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
+            galaxy_slots_statement = (
+                f'GALAXY_SLOTS="{galaxy_slots}"; export GALAXY_SLOTS; '
+                'GALAXY_SLOTS_CONFIGURED="1"; export GALAXY_SLOTS_CONFIGURED;'
+            )
         else:
             galaxy_slots_statement = 'GALAXY_SLOTS="1"; export GALAXY_SLOTS;'
 
@@ -248,8 +386,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             return
 
         cleanup_job = job_wrapper.cleanup_job
-        # Write submit description to disk for debugging and parity with the CLI runner,
-        # even though submission is performed via the htcondor2 API below.
         try:
             with open(submit_file, "w") as handle:
                 handle.write(submit_file_contents)
@@ -260,7 +396,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             log.exception(f"({galaxy_id_tag}) failure preparing submit file")
             return
 
-        # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
             log.debug("(%s) Job deleted/stopped by user before it entered the queue", galaxy_id_tag)
             if cleanup_job in ("always", "onsuccess"):
@@ -272,11 +407,11 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
         log.debug(f"({galaxy_id_tag}) submitting file {executable}")
 
         try:
-            # The htcondor runner targets the htcondor2 API only; no legacy-API fallback is maintained.
-            submit_description = self.htcondor.Submit(submit_file_contents)
-            schedd = self._schedd_for_destination(job_destination)
-            submit_result = schedd.submit(submit_description)
-            external_job_id = str(submit_result.cluster())
+            external_job_id = self._client_for_destination(job_destination).submit(
+                submit_file_contents,
+                collector=collector,
+                schedd_name=schedd_name,
+            )
         except Exception:
             log.exception("htcondor submit failed for job %s", job_wrapper.get_id_tag())
             if self.app.config.cleanup_job == "always" and os.path.exists(submit_file):
@@ -337,13 +472,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 log.debug(f"({galaxy_id_tag}/{job_id}) job has stopped running")
 
             job_state = cjs.job_wrapper.get_state()
-            if job_held:
-                # Keep the job queued for now; HTCondor hold handling needs discussion.
-                if job_state not in (model.Job.states.DELETED, model.Job.states.STOPPED):
-                    cjs.job_wrapper.change_state(model.Job.states.QUEUED)
-                cjs.running = False
-                new_watched.append(cjs)
-                continue
             if job_complete or job_state == model.Job.states.STOPPED:
                 if job_state != model.Job.states.DELETED:
                     external_metadata = not asbool(
@@ -358,6 +486,12 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                 log.debug(f"({galaxy_id_tag}/{job_id}) job failed")
                 cjs.failed = True
                 self.work_queue.put((self.fail_job, cjs))
+                continue
+            if job_held:
+                if job_state not in (model.Job.states.DELETED, model.Job.states.STOPPED):
+                    cjs.job_wrapper.change_state(model.Job.states.QUEUED)
+                cjs.running = False
+                new_watched.append(cjs)
                 continue
             cjs.running = job_running
             new_watched.append(cjs)
@@ -455,7 +589,6 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
             elif event_type == self.htcondor.JobEventType.JOB_TERMINATED:
                 job_complete = True
             elif event_type == self.htcondor.JobEventType.JOB_HELD:
-                # Keep jobs in the queue on hold for now; behavior needs discussion.
                 job_running = False
                 job_held = True
             elif event_type in (
@@ -470,16 +603,16 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
         if not external_id:
             return "Missing external job id"
         try:
-            job_id = int(external_id)
+            job_spec: Union[int, str] = int(external_id)
         except Exception:
-            job_id = external_id
+            job_spec = external_id
         try:
-            schedd = (
-                self._schedd_for_destination(job_destination)
-                if job_destination is not None
-                else self._local_schedd_for_destination()
+            collector, schedd_name, _ = self._htcondor_params(job_destination)
+            self._client_for_destination(job_destination).remove(
+                job_spec,
+                collector=collector,
+                schedd_name=schedd_name,
             )
-            schedd.act(self.htcondor.JobAction.Remove, job_id, reason="Galaxy job stop request")
         except Exception as e:
             return str(e)
         return None
