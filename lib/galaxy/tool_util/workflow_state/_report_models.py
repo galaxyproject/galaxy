@@ -269,31 +269,13 @@ class TreeCleanReport(TreeReportBase):
 # -- Single-workflow wrappers (for JSON serialization of single-file runs) --
 
 
-class SingleValidationReport(BaseModel):
-    """JSON shape for single-file validation."""
-
-    workflow: str
-    results: List[ValidationStepResult]
-    connection_report: Optional["ConnectionValidationReport"] = None
-    skipped_reason: Optional[str] = None
-    structure_errors: List[str] = Field(default_factory=list)
-    encoding_errors: List[str] = Field(default_factory=list)
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def summary(self) -> Dict[str, int]:
-        return {
-            "ok": sum(1 for r in self.results if r.status == "ok"),
-            "fail": sum(1 for r in self.results if r.status == "fail"),
-            "skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
-        }
-
-
 class SingleCleanReport(BaseModel):
     """JSON shape for single-file cleaning."""
 
     workflow: str
     results: List[CleanStepResult]
+    before_content: Optional[str] = None
+    after_content: Optional[str] = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -304,6 +286,27 @@ class SingleCleanReport(BaseModel):
     @property
     def steps_with_removals(self) -> int:
         return sum(1 for r in self.results if r.removed_state_keys or r.removed_step_keys)
+
+
+class SingleValidationReport(BaseModel):
+    """JSON shape for single-file validation."""
+
+    workflow: str
+    results: List[ValidationStepResult]
+    connection_report: Optional["ConnectionValidationReport"] = None
+    skipped_reason: Optional[str] = None
+    structure_errors: List[str] = Field(default_factory=list)
+    encoding_errors: List[str] = Field(default_factory=list)
+    clean_report: Optional[SingleCleanReport] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        return {
+            "ok": sum(1 for r in self.results if r.status == "ok"),
+            "fail": sum(1 for r in self.results if r.status == "fail"),
+            "skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
+        }
 
 
 # -- Helpers for wrapping single-file results into tree reports --

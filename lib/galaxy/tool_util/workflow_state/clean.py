@@ -568,23 +568,42 @@ def clean_single(
     workflow_path: str,
     tool_info: GetToolInfo,
     policy: Optional[StaleKeyPolicy] = None,
+    include_content: bool = False,
 ) -> SingleCleanReport:
     """Clean stale keys from a single workflow, return structured report.
 
     Library-level entry point with no CLI dependencies.
     Loads the workflow, prechecks, normalizes, cleans, and wraps results.
     Does not write to disk — the caller decides what to do with the report.
+
+    When include_content=True, before_content is the raw file text and
+    after_content is the cleaned workflow serialized as JSON.
     """
+    before_content: Optional[str] = None
+    if include_content:
+        with open(workflow_path) as f:
+            before_content = f.read()
+
     workflow = load_workflow(workflow_path)
     workflow_name = os.path.basename(workflow_path)
 
     precheck = precheck_native_workflow(workflow, tool_info)
     if not precheck.can_process:
-        return SingleCleanReport(workflow=workflow_name, results=[])
+        return SingleCleanReport(workflow=workflow_name, results=[], before_content=before_content)
 
     normalized = ensure_native(workflow)
     result = clean_stale_state(normalized, workflow, tool_info, policy=policy)
-    return SingleCleanReport(workflow=workflow_name, results=list(result.step_results))
+
+    after_content: Optional[str] = None
+    if include_content:
+        after_content = json.dumps(workflow, indent=2)
+
+    return SingleCleanReport(
+        workflow=workflow_name,
+        results=list(result.step_results),
+        before_content=before_content,
+        after_content=after_content,
+    )
 
 
 def expand_output_path(template: str, original_path: str) -> str:
