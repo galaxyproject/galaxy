@@ -1,4 +1,4 @@
-- id: onedrive_appfolder
+- id: onedrive
   name: OneDrive
   description: Connect to the Galaxy folder in your Microsoft OneDrive. Galaxy will only access its own app folder, not the rest of your OneDrive.
   configuration:
