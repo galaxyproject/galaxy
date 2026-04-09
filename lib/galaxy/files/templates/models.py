@@ -41,6 +41,7 @@ FileSourceTemplateType = Literal[
     "webdav",
     "dropbox",
     "googledrive",
+    "onedrive",
     "elabftw",
     "inveniordm",
     "zenodo",
@@ -111,6 +112,25 @@ class GoogleDriveFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictMo
     type: Literal["googledrive"]
     writable: bool = False
     oauth2_access_token: str
+
+
+class OneDriveFileSourceTemplateConfiguration(OAuth2TemplateConfiguration, StrictModel):
+    type: Literal["onedrive"]
+    writable: Union[bool, TemplateExpansion] = False
+    oauth2_client_id: Union[str, TemplateExpansion]
+    oauth2_client_secret: Union[str, TemplateExpansion]
+    # Microsoft Graph app-folder scope keeps access limited to Apps/<Application Name>.
+    oauth2_scope: Optional[Union[str, TemplateExpansion]] = None
+    drive_mode: Union[Literal["appfolder", "full"], TemplateExpansion] = "appfolder"
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class OneDriveFileSourceConfiguration(OAuth2FileSourceConfiguration, StrictModel):
+    type: Literal["onedrive"]
+    writable: bool = False
+    oauth2_access_token: str
+    drive_mode: Literal["appfolder", "full"] = "appfolder"
 
 
 class S3FSFileSourceTemplateConfiguration(StrictModel):
@@ -364,6 +384,7 @@ FileSourceTemplateConfiguration = Annotated[
         WebdavFileSourceTemplateConfiguration,
         DropboxFileSourceTemplateConfiguration,
         GoogleDriveFileSourceTemplateConfiguration,
+        OneDriveFileSourceTemplateConfiguration,
         eLabFTWFileSourceTemplateConfiguration,
         InvenioFileSourceTemplateConfiguration,
         ZenodoFileSourceTemplateConfiguration,
@@ -386,6 +407,7 @@ FileSourceConfiguration = Annotated[
         WebdavFileSourceConfiguration,
         DropboxFileSourceConfiguration,
         GoogleDriveFileSourceConfiguration,
+        OneDriveFileSourceConfiguration,
         eLabFTWFileSourceConfiguration,
         InvenioFileSourceConfiguration,
         ZenodoFileSourceConfiguration,
@@ -466,6 +488,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
+    "onedrive": OneDriveFileSourceConfiguration,
     "elabftw": eLabFTWFileSourceConfiguration,
     "inveniordm": InvenioFileSourceConfiguration,
     "zenodo": ZenodoFileSourceConfiguration,
@@ -487,6 +510,12 @@ OAUTH2_CONFIGURED_SOURCES: ConfiguredOAuth2Sources = {
         authorize_params={"access_type": "offline", "prompt": "consent"},
         token_url="https://oauth2.googleapis.com/token",
         scope="https://www.googleapis.com/auth/drive.file",
+    ),
+    "onedrive": OAuth2Configuration(
+        authorize_url="https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+        token_url="https://login.microsoftonline.com/common/oauth2/v2.0/token",
+        authorize_params={},
+        scope="offline_access Files.ReadWrite.AppFolder",
     ),
 }
 

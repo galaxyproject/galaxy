@@ -18,7 +18,7 @@ interface Props {
     uuid?: string;
 }
 
-const OAUTH2_TYPES = ["dropbox", "googledrive"];
+const OAUTH2_TYPES = ["dropbox", "googledrive", "onedrive"];
 
 const fileSourceTemplatesStore = useFileSourceTemplatesStore();
 fileSourceTemplatesStore.fetchTemplates();

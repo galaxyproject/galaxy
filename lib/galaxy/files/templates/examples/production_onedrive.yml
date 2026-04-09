@@ -1,0 +1,16 @@
+- id: onedrive
+  name: OneDrive
+  description: Connect to the Galaxy folder in your Microsoft OneDrive. Galaxy will only access its own app folder, not the rest of your OneDrive.
+  configuration:
+    type: onedrive
+    oauth2_client_id: "{{ environment.oauth2_client_id }}"
+    oauth2_client_secret: "{{ environment.oauth2_client_secret }}"
+    drive_mode: appfolder
+    writable: true
+  environment:
+    oauth2_client_id:
+      type: variable
+      variable: GALAXY_ONEDRIVE_CLIENT_ID
+    oauth2_client_secret:
+      type: variable
+      variable: GALAXY_ONEDRIVE_CLIENT_SECRET
