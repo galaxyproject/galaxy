@@ -177,6 +177,13 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="domain" minOccurs="0" type="xs:string">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Provider domain (e.g. for Auth0)
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                         </xs:all>
                         <xs:attribute name="name" type="xs:string" use="required">
                             <xs:annotation>

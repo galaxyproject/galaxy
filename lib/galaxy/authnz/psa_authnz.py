@@ -223,6 +223,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
         if oidc_backend_config.get("username_key") is not None:
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
+        if oidc_backend_config.get("domain") is not None:
+            self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():
