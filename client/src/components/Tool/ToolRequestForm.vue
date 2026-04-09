@@ -77,19 +77,9 @@ async function submit() {
         });
 
         submitting.value = false;
+        resetForm();
         successMessage.value =
             "Your tool request has been submitted! The instance admins have been notified and will review your request.";
-        // Reset form fields but keep the success message visible
-        toolName.value = "";
-        toolUrl.value = "";
-        description.value = "";
-        scientificDomain.value = "";
-        requestedVersion.value = "";
-        condaAvailable.value = null;
-        testDataAvailable.value = null;
-        requesterName.value = "";
-        requesterEmail.value = "";
-        requesterAffiliation.value = "";
     } catch (e) {
         submitting.value = false;
         errorMessage.value = errorMessageAsString(e, "Failed to submit tool request. Please try again.");

@@ -1,5 +1,6 @@
 import logging
 from datetime import (
+    datetime,
     timedelta,
     timezone,
 )
@@ -114,9 +115,7 @@ class ToolRequestFormService(ServiceBase):
             requester_affiliation=payload.requester_affiliation,
         )
 
-        import datetime
-
-        now = datetime.datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         expiration_time = now + timedelta(days=180)
 
         notification_data = NotificationCreateData(
