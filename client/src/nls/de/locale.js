@@ -46,7 +46,7 @@ export default {
     // Saved histories is defined above.
     // "Saved Histories":
     //     false,
-    "Histories Shared with Me": "Mit mir geteilte Geschichten",
+    "Histories Shared with Me": "Mit mir geteilte Verläufe",
     "Current History": "Aktueller Verlauf",
     "Create New": "Erstelle neu",
     "Copy History": "Verlauf kopieren",
