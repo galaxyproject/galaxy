@@ -4,7 +4,9 @@ from .._cli_common import (
     add_report_args,
     add_strict_args,
     build_base_parser,
+    build_base_subparser_args,
     cli_main,
+    cli_main_from_args,
 )
 from .._report_models import LintTreeReport
 from ..lint_stateful import (
@@ -12,14 +14,10 @@ from ..lint_stateful import (
     run_lint_stateful_tree,
 )
 
+SUBCOMMAND = "lint-tree"
 
-def build_parser():
-    parser = build_base_parser(
-        prog="gxwf-lint-stateful-tree",
-        description="Lint all workflows in a directory: structural checks + tool state validation.",
-        stale_key_mode="validate",
-        workflow_path_help="Path to directory containing .ga/.gxwf.yml workflows",
-    )
+
+def _add_args(parser):
     add_strict_args(parser)
     parser.add_argument("--summary", action="store_true", help="Show only summary counts")
     parser.add_argument("--connections", action="store_true", help="Validate inter-step connection type compatibility")
@@ -35,7 +33,28 @@ def build_parser():
         help="If this is a training workflow, specify a training topic",
     )
     add_report_args(parser)
+
+
+def build_parser():
+    parser = build_base_parser(
+        prog="gxwf-lint-stateful-tree",
+        description="Lint all workflows in a directory: structural checks + tool state validation.",
+        stale_key_mode="validate",
+        workflow_path_help="Path to directory containing .ga/.gxwf.yml workflows",
+    )
+    _add_args(parser)
     return parser
+
+
+def register(subparsers):
+    p = subparsers.add_parser(SUBCOMMAND, help="Lint all workflows in a directory")
+    build_base_subparser_args(
+        p, stale_key_mode="validate", workflow_path_help="Path to directory containing .ga/.gxwf.yml workflows"
+    )
+    _add_args(p)
+    p.set_defaults(
+        func=lambda args: cli_main_from_args(LintStatefulTreeOptions, run_lint_stateful_tree, args, LintTreeReport)
+    )
 
 
 def main(argv=None):

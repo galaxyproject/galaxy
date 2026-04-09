@@ -211,6 +211,19 @@ def build_base_parser(
     return parser
 
 
+def build_base_subparser_args(
+    parser: argparse.ArgumentParser,
+    stale_key_mode: Optional[str] = None,
+    workflow_path_help: str = "Path to a .ga or .gxwf.yml workflow file",
+) -> None:
+    """Add shared positional + common args to a subparser (no prog/description)."""
+    add_common_args(parser)
+    add_populate_args(parser)
+    if stale_key_mode:
+        add_stale_key_args(parser, mode=stale_key_mode)
+    parser.add_argument("workflow_path", help=workflow_path_help)
+
+
 def cli_main(
     parser: argparse.ArgumentParser,
     options_cls,
@@ -230,6 +243,20 @@ def cli_main(
     args = parser.parse_args(argv)
     options = options_cls.from_namespace(args)
     sys.exit(run_fn(options))
+
+
+def cli_main_from_args(
+    options_cls,
+    run_fn,
+    args: argparse.Namespace,
+    report_schema_model: Optional[Type[BaseModel]] = None,
+) -> int:
+    """Build options from pre-parsed namespace and run — for use in subcommand handlers."""
+    if report_schema_model is not None and getattr(args, "output_schema", False):
+        print(json.dumps(report_schema_model.model_json_schema(), indent=2))
+        return 0
+    options = options_cls.from_namespace(args)
+    return run_fn(options) or 0
 
 
 def setup_tool_info(options: ToolCacheOptions) -> "ToolShedGetToolInfo":

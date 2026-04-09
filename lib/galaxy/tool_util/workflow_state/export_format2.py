@@ -323,7 +323,7 @@ def export_single(
 def run_export(options: ExportOptions) -> int:
     """Run single-file export pipeline. Returns exit code."""
     if os.path.isdir(options.workflow_path):
-        print("Error: got directory, use gxwf-to-format2-stateful-tree for batch export", file=sys.stderr)
+        print("Error: got directory, use 'gxwf convert-tree --to format2' for batch export", file=sys.stderr)
         return 2
 
     tool_info = setup_tool_info(options)
