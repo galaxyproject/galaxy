@@ -401,6 +401,7 @@ class Data(metaclass=DataMeta):
         self, trans, data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
     ) -> tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
+        assert data.name
         outfname = data.name[0:150]
         outfname = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in outfname)
         archive = ZipstreamWrapper(

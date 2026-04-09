@@ -214,7 +214,8 @@ class TourGenerator:
                     step.content = f"Select dataset: <b>{hid}: {dataset}</b>"
                 else:
                     step.content = "Select a dataset"
-            elif input.type == "conditional" and isinstance(input, Conditional):
+            elif input.type == "conditional":
+                assert isinstance(input, Conditional)
                 test_param = input.test_param
                 if test_param is None:
                     param_id = f"{input.name}|"

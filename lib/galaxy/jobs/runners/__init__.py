@@ -425,6 +425,7 @@ class BaseJobRunner:
 
     def _walk_dataset_outputs(self, job: model.Job):
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            assert dataset_assoc.dataset.dataset is not None
             for dataset in (
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):

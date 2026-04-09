@@ -2898,6 +2898,7 @@ def raw_to_galaxy(
         )
         primary_data.state = Dataset.states.DEFERRED
         permissions = app.security_agent.history_get_default_permissions(history)
+        assert primary_data.dataset is not None
         app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
         app.model.session.add(primary_data)
         history.stage_addition(primary_data)

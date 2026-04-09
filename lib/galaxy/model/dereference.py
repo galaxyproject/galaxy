@@ -239,7 +239,7 @@ def get_replacement_dataset(
     dataset_sources: list[DatasetSource],
     dataset_hashes: Sequence[Union[DatasetHash, DatasetSourceHash]],
     extension: str,
-    object_store_id: str,
+    object_store_id: str | None,
     created_from_basename: Optional[str] = None,
 ) -> Optional[HistoryDatasetAssociation]:
     """

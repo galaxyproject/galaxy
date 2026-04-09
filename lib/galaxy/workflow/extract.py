@@ -385,6 +385,7 @@ class WorkflowSummary:
             return
 
         hid_in_history = dataset.hid
+        assert hid_in_history is not None
         original_hda = self.__original_hda(dataset)
         self.hda_hid_in_history[original_hda.id] = hid_in_history
 

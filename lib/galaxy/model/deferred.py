@@ -106,6 +106,7 @@ class DatasetInstanceMaterializer:
         """
         attached = self._attached
         dataset = dataset_instance.dataset
+        assert dataset is not None
         if dataset.state != Dataset.states.DEFERRED and isinstance(dataset_instance, HistoryDatasetAssociation):
             return dataset_instance
 
@@ -117,7 +118,7 @@ class DatasetInstanceMaterializer:
 
         materialized_dataset_hashes = [h.copy() for h in dataset.hashes]
         if in_place:
-            materialized_dataset = dataset_instance.dataset
+            materialized_dataset = dataset
             materialized_dataset.state = Dataset.states.OK
         else:
             materialized_dataset = Dataset()
@@ -130,7 +131,7 @@ class DatasetInstanceMaterializer:
                     # legacy dataset being copied, new paradigm is to treat transform as
                     # what happened and requested_transform as what should happen - so lets
                     # swap these in this new dataset.
-                    source.requested_transform = source.transform
+                    source.requested_transform = source.transform  # type: ignore[assignment]
 
                 # we have not applied any transforms yet, so we can clear these
                 source.transform = None

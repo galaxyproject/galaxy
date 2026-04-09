@@ -102,6 +102,7 @@ class WorkflowRunCrateProfileBuilder:
         return crate
 
     def _add_file(self, dataset: HistoryDatasetAssociation, properties: dict[Any, Any], crate: ROCrate) -> File:
+        assert dataset.dataset is not None
         if dataset.dataset.id in self.model_store.dataset_id_to_path:
             filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
             description = ""
@@ -576,6 +577,7 @@ class WorkflowRunCrateProfileBuilder:
         )
 
     def _add_dataset_formal_parameter(self, hda: HistoryDatasetAssociation, crate: ROCrate):
+        assert hda.dataset is not None
         return crate.add(
             ContextEntity(
                 crate,

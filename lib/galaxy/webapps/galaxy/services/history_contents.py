@@ -375,6 +375,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             content_name = dataset_collection_instance.name
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
+        if not content_name:
+            raise exceptions.RequestParameterInvalidException("Content must have a name")
         short_term_storage_target = model_store_storage_target(
             self.short_term_storage_allocator,
             content_name,
@@ -615,6 +617,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         payload_dict = payload.model_dump(by_alias=True)
         hda = self.hda_manager.get_owned(history_content_id, trans.user, current_history=trans.history, trans=trans)
         assert hda is not None
+        assert hda.history is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(hda)
@@ -881,6 +884,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
     def __delete_dataset(self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool):
         hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
+        assert hda.history is not None
         self.history_manager.error_unless_mutable(hda.history)
         self.hda_manager.error_if_uploading(hda)
 
@@ -1237,6 +1241,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
     def __create_hda_from_copy(self, trans, history: History, original_hda_id: int):
         original = self.hda_manager.get_accessible(original_hda_id, trans.user)
+        assert original.history is not None
         # check for access on history that contains the original hda as well
         self.history_manager.error_unless_accessible(original.history, trans.user, current_history=trans.history)
         hda = self.hda_manager.copy(original, history=history)
@@ -1508,6 +1513,7 @@ class HistoryItemOperator:
         self.hda_manager.ensure_can_change_datatype(item)
         self.hda_manager.ensure_can_set_metadata(item)
         is_deferred = item.has_deferred_data
+        assert item.dataset is not None
         item.state = item.dataset.states.SETTING_METADATA
         if is_deferred:
             if params.datatype == "auto":  # if `auto` just keep the original guessed datatype

@@ -385,13 +385,14 @@ class Repository(Base, Dictifiable):
     user = relationship("User", back_populates="active_repositories")
     downloadable_revisions = relationship(
         "RepositoryMetadata",
-        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[has-type]
+        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id)
+        & (RepositoryMetadata.downloadable == true()),
         viewonly=True,
-        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
+        order_by=lambda: desc(RepositoryMetadata.update_time),
     )
     metadata_revisions = relationship(
         "RepositoryMetadata",
-        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
+        order_by=lambda: desc(RepositoryMetadata.update_time),
         back_populates="repository",
     )
     roles = relationship("RepositoryRoleAssociation", back_populates="repository")
@@ -687,7 +688,11 @@ class Tag(Base):
 
 
 class RepositoryMetadata(Dictifiable):
-    repository: "Repository"
+    update_time: Mapped[DateTime]
+    repository_id: Mapped[Optional[int]]
+    changeset_revision: Mapped[Optional[str]]
+    downloadable: Mapped[bool]
+    repository: Mapped["Repository"]
 
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.

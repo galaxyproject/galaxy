@@ -2047,6 +2047,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     def add_output_dataset(self, name: str, dataset: "HistoryDatasetAssociation"):
         self._check_name_length(name)
         joda = JobToOutputDatasetAssociation(name, dataset)
+        assert dataset.dataset is not None
         if dataset.dataset.job is None:
             # Only set job if dataset doesn't already have associated job.
             # database operation tools that make copies should not modify the job here.
@@ -3496,7 +3497,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     archive_export_id: Mapped[Optional[int]] = mapped_column(ForeignKey("store_export_association.id"), default=None)
 
     datasets: Mapped[list["HistoryDatasetAssociation"]] = relationship(
-        back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
+        back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)
     )
     exports: Mapped[list["JobExportHistoryArchive"]] = relationship(
         back_populates="history",
@@ -3510,7 +3511,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
                 not_(HistoryDatasetAssociation.deleted),
             )
         ),
-        order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
         viewonly=True,
     )
     dataset_collections: Mapped[list["HistoryDatasetCollectionAssociation"]] = relationship(back_populates="history")
@@ -3531,10 +3532,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             lambda: and_(
                 HistoryDatasetAssociation.history_id == History.id,
                 not_(HistoryDatasetAssociation.deleted),
-                HistoryDatasetAssociation.visible,  # type: ignore[has-type]
+                HistoryDatasetAssociation.visible,
             )
         ),
-        order_by=lambda: asc(HistoryDatasetAssociation.hid),  # type: ignore[has-type]
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
         viewonly=True,
     )
     visible_dataset_collections: Mapped[list["HistoryDatasetCollectionAssociation"]] = relationship(
@@ -4685,10 +4686,10 @@ class Dataset(Base, StorableObject, Serializable):
         return self.object_store.size(self)
 
     @overload
-    def get_size(self, nice_size: Literal[False], calculate_size: bool = True) -> int: ...
+    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str: ...
 
     @overload
-    def get_size(self, nice_size: Literal[True], calculate_size: bool = True) -> str: ...
+    def get_size(self, nice_size: Literal[False] = False, calculate_size: bool = True) -> int: ...
 
     def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
         """Returns the size of the data on disk"""
@@ -4706,7 +4707,7 @@ class Dataset(Base, StorableObject, Serializable):
         else:
             return cast(int, self.file_size) or 0
 
-    def set_size(self, no_extra_files=False):
+    def set_size(self, no_extra_files: bool = False) -> None:
         """Sets the size of the data on disk.
 
         If the caller is sure there are no extra files, pass no_extra_files as True to optimize subsequent
@@ -4714,7 +4715,7 @@ class Dataset(Base, StorableObject, Serializable):
         the file system.
         """
         if not self.file_size:
-            self.file_size = self._calculate_size()
+            self.file_size = Decimal(self._calculate_size())
             if no_extra_files:
                 self.total_size = self.file_size
 
@@ -5135,7 +5136,10 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
 class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDDAs, etc"""
 
+    copied_from_history_dataset_association_id: Mapped[Optional[int]]
+    name: Mapped[Optional[str]]
     purged: Mapped[Optional[bool]]
+    visible: Mapped[bool]
     deleted: Mapped[bool]
     dataset_id: Mapped[Optional[int]]
     _state: Mapped[Optional[str]]
@@ -5143,6 +5147,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     creating_job_associations: list[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
+    dataset: Mapped[Optional[Dataset]]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
     dependent_jobs: list[JobToInputLibraryDatasetAssociation]
@@ -5233,7 +5238,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     @property
     def has_deferred_data(self) -> bool:
-        return self.dataset and self.dataset.state == Dataset.states.DEFERRED
+        return self.dataset is not None and self.dataset.state == Dataset.states.DEFERRED
 
     @property
     def deferred_source_uri(self):
@@ -5292,6 +5297,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             replacement.object_store_id = self.dataset.object_store_id
             self.dataset = replacement
             self.dataset_id = None
+            assert self.dataset.object_store is not None
             self.dataset.object_store.create(self.dataset)
         self.extension = "expression.json"
         self.state = self.states.OK
@@ -5304,9 +5310,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.set_total_size()
 
     def get_file_name(self, sync_cache: bool = True) -> str:
+        assert self.dataset is not None
         return self.dataset.get_file_name(sync_cache=sync_cache)
 
     def set_file_name(self, filename: str):
+        assert self.dataset is not None
         return self.dataset.set_file_name(filename)
 
     def link_to(self, path):
@@ -5829,9 +5837,13 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     history_id: Mapped[Optional[int]]
     dataset_id: Mapped[Optional[int]]
     extension: Mapped[str]
+    _metadata: Mapped[Optional[dict[str, Any]]]
+    version: Mapped[Optional[int]]
+    hid: Mapped[Optional[int]]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
+    history: Mapped[Optional["History"]]
 
     def __init__(
         self,
@@ -5987,6 +5999,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         """
         Copy this HDA to a library optionally replacing an existing LDDA.
         """
+        assert self.dataset is not None
         if not self.dataset.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
@@ -5999,7 +6012,9 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             #   applied to the new LibraryDataset, and the current user's DefaultUserPermissions will be applied
             #   to the associated Dataset.
             library_dataset = LibraryDataset(folder=target_folder, name=self.name, info=self.info)
-        user = trans.user or self.history.user
+        user = trans.user
+        if not user and self.history is not None:
+            user = self.history.user
         ldda = LibraryDatasetDatasetAssociation(
             name=element_identifier or self.name,
             info=self.info,
@@ -10932,9 +10947,9 @@ class MetadataFile(Base, StorableObject, Serializable):
         self.name = name
 
     @property
-    def dataset(self) -> Optional["DatasetInstance"]:
+    def dataset(self) -> Dataset | None:
         da = self.history_dataset or self.library_dataset
-        return da and da.dataset
+        return da.dataset if da is not None else None
 
     def update_from_file(self, file_name):
         if not self.dataset:
@@ -10953,9 +10968,11 @@ class MetadataFile(Base, StorableObject, Serializable):
         try:
             da = self.history_dataset or self.library_dataset
             assert da is not None
+            assert da.dataset is not None
             if self.object_store_id is None:
                 self.object_store_id = da.dataset.object_store_id
             object_store = da.dataset.object_store
+            assert object_store is not None
             store_by = object_store.get_store_by(da.dataset)
             if store_by == "id" and self.id is None:
                 self.flush()  # type: ignore[unreachable]

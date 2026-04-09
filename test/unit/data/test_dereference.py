@@ -14,6 +14,7 @@ def test_dereference():
     uri_request = DataRequestUri(url=TEST_URI, ext="bed")
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "1.bed"
+    assert hda.dataset is not None
     assert hda.dataset.sources[0].source_uri == TEST_URI
     assert hda.ext == "bed"
 
@@ -23,6 +24,7 @@ def test_dereference_dbkey():
     uri_request = DataRequestUri(url=TEST_URI, ext="bed", dbkey="hg19")
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "1.bed"
+    assert hda.dataset is not None
     assert hda.dataset.sources[0].source_uri == TEST_URI
     assert hda.dbkey == "hg19"
 
@@ -40,6 +42,7 @@ def test_dereference_md5():
     )
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "foobar.txt"
+    assert hda.dataset is not None
     assert hda.dataset.sources[0].source_uri == TEST_BASE64_URI
     assert hda.dataset.sources[0].hashes[0]
     assert hda.dataset.sources[0].hashes[0].hash_function == "MD5"
@@ -53,7 +56,9 @@ def test_dereference_to_posix():
     )
     hda = dereference_to_model(sa_session, user, history, uri_request)
     assert hda.name == "foobar.txt"
+    assert hda.dataset is not None
     assert hda.dataset.sources[0].source_uri == TEST_BASE64_URI
+    assert hda.dataset.sources[0].requested_transform is not None
     assert hda.dataset.sources[0].requested_transform[0]["action"] == "datatype_groom"
     assert hda.dataset.sources[0].requested_transform[1]["action"] == "spaces_to_tabs"
     assert hda.dataset.state == hda.states.DEFERRED

@@ -649,6 +649,8 @@ class FileParameter(MetadataParameter):
         if target_context.parent is None:
             return None
         target_dataset = target_context.parent.dataset
+        assert target_dataset is not None
+        assert target_dataset.object_store is not None
         if value and target_dataset.object_store.exists(target_dataset):
             # Only copy MetadataFile if the target dataset has been created in an object store.
             # All current datatypes re-generate MetadataFile objects when setting metadata,

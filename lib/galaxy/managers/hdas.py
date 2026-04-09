@@ -251,13 +251,14 @@ class HDAManager(
         """
         Purge this HDA and the dataset underlying it.
         """
-        user = hda.history.user or None
+        user = hda.history.user if hda.history is not None else None
         if user:
             # Need to calculate this before purging
             quota_amount_reduction = hda.quota_amount(user)
         super().purge(hda, flush=flush)
         # decrease the user's space used
         if user:
+            assert hda.dataset is not None
             quota_source_info = hda.dataset.quota_source_info
             if quota_amount_reduction and quota_source_info.use:
                 user.adjust_total_disk_usage(
@@ -363,6 +364,7 @@ def dereference_input_to_hda(
 ) -> HistoryDatasetAssociation:
     permissions = trans.app.security_agent.history_get_default_permissions(history)
     hda = dereference_to_model(trans.sa_session, trans.user, history, data_request)
+    assert hda.dataset is not None
     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions, new=True, flush=False)
     trans.sa_session.commit()
     return hda
@@ -461,6 +463,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
                 hda: HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
                 hda.deleted = True
                 quota_amount = int(hda.quota_amount(user))
+                assert hda.dataset is not None
                 hda.purge_usage_from_quota(user, hda.dataset.quota_source_info)
                 hda.purged = True
                 dataset_ids_to_remove.add(hda.dataset.id)
