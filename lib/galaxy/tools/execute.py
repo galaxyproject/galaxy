@@ -481,25 +481,26 @@ class ExecutionTracker:
         return output_collection_name
 
     def sliced_input_collection_structure(self, input_name):
-        unqualified_recurse = Version(str(self.tool.profile)) < Version("18.09") and "|" not in input_name
+        unqualified_recurse = Version(str(self.tool.profile)) < Version("26.0") and "|" not in input_name
 
-        def find_collection(input_dict, input_name):
+        def find_collection(input_dict, input_name, path_prefix=""):
             for key, value in input_dict.items():
                 if key == input_name:
-                    return value
+                    return value, f"{path_prefix}{key}"
                 if isinstance(value, dict):
                     if "|" in input_name:
                         prefix, rest_input_name = input_name.split("|", 1)
                         if key == prefix:
-                            return find_collection(value, rest_input_name)
+                            return find_collection(value, rest_input_name, f"{path_prefix}{key}|")
                     elif unqualified_recurse:
                         # Looking for "input1" instead of "cond|input1" for instance.
                         # See discussion on https://github.com/galaxyproject/galaxy/issues/6157.
-                        unqualified_match = find_collection(value, input_name)
+                        unqualified_match, qualified_path = find_collection(value, input_name, f"{path_prefix}{key}|")
                         if unqualified_match:
-                            return unqualified_match
+                            return unqualified_match, qualified_path
+            return None, None
 
-        input_collection = find_collection(self.example_params, input_name)
+        input_collection, qualified_name = find_collection(self.example_params, input_name)
         if input_collection is None:
             raise Exception("Failed to find referenced collection in inputs.")
 
@@ -512,10 +513,10 @@ class ExecutionTracker:
             )
         )
         subcollection_mapping_type = None
-        if self.is_implicit_input(input_name):
+        if self.is_implicit_input(qualified_name):
             collection_info = self.collection_info
             assert collection_info
-            subcollection_mapping_type = collection_info.subcollection_mapping_type(input_name)
+            subcollection_mapping_type = collection_info.subcollection_mapping_type(qualified_name)
 
         return get_structure(
             input_collection, collection_type_description, leaf_subcollection_type=subcollection_mapping_type

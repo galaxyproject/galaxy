@@ -259,6 +259,122 @@ def _check_pattern(node):
         return True
 
 
+class OutputsStructuredLikeReference(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        param_qualified_paths = _collect_param_qualified_paths(tool_xml)
+        for output in tool_xml.findall("./outputs/collection[@structured_like]"):
+            structured_like = output.attrib["structured_like"]
+            _check_unqualified_reference(
+                lint_ctx, cls.name(), output, structured_like, "structured_like", param_qualified_paths
+            )
+
+
+class OutputsFormatSourceReference(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        param_qualified_paths = _collect_param_qualified_paths(tool_xml)
+        output_names = {
+            o.attrib["name"]
+            for o in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]")
+        }
+        for output in tool_xml.findall("./outputs/data[@format_source]") + tool_xml.findall(
+            "./outputs/collection[@format_source]"
+        ):
+            format_source = output.attrib["format_source"]
+            # format_source can reference other outputs, skip if it matches an output name
+            if format_source in output_names:
+                continue
+            _check_unqualified_reference(
+                lint_ctx, cls.name(), output, format_source, "format_source", param_qualified_paths
+            )
+
+
+def _check_unqualified_reference(
+    lint_ctx: "LintContext",
+    linter_name: str,
+    node: "Element",
+    ref_value: str,
+    attr_name: str,
+    param_qualified_paths: dict,
+):
+    if "|" in ref_value:
+        return
+    # Check if it matches a top-level param directly
+    top_level_match = any(qp == ref_value for paths in param_qualified_paths.values() for qp in paths)
+    if top_level_match:
+        return
+    matches = param_qualified_paths.get(ref_value, [])
+    output_name = node.attrib.get("name", "unknown")
+    if len(matches) == 1:
+        lint_ctx.warn(
+            f"Output '{output_name}' uses unqualified {attr_name}='{ref_value}'. "
+            f"Use the qualified name '{matches[0]}'.",
+            linter=linter_name,
+            node=node,
+        )
+    elif len(matches) > 1:
+        lint_ctx.warn(
+            f"Output '{output_name}' uses ambiguous unqualified {attr_name}='{ref_value}' "
+            f"matching multiple inputs: {', '.join(matches)}. Use a qualified name.",
+            linter=linter_name,
+            node=node,
+        )
+    else:
+        lint_ctx.error(
+            f"Output '{output_name}' references {attr_name}='{ref_value}' "
+            f"which does not match any input parameter.",
+            linter=linter_name,
+            node=node,
+        )
+
+
+def _collect_param_qualified_paths(tool_xml: "ElementTree") -> dict:
+    """Build a map of unqualified param name -> list of qualified paths."""
+    param_paths: dict = {}
+    parent_map = {child: parent for parent in tool_xml.iter() for child in parent}
+    for param in tool_xml.findall("./inputs//param"):
+        name = param.attrib.get("name")
+        if not name:
+            argument = param.attrib.get("argument")
+            if argument:
+                name = argument.lstrip("-").replace("-", "_")
+        if not name:
+            continue
+        qualified = _get_qualified_name(param, parent_map)
+        param_paths.setdefault(name, []).append(qualified)
+    return param_paths
+
+
+def _get_qualified_name(param_elem: "Element", parent_map: dict) -> str:
+    """Walk up the XML tree to build the qualified path for a param element."""
+    name = param_elem.attrib.get("name")
+    if not name:
+        argument = param_elem.attrib.get("argument")
+        if argument:
+            name = argument.lstrip("-").replace("-", "_")
+    parts = [name] if name else []
+    current = param_elem
+    while True:
+        parent = parent_map.get(current)
+        if parent is None:
+            break
+        if parent.tag in ("conditional", "section"):
+            parent_name = parent.attrib.get("name")
+            if parent_name:
+                parts.insert(0, parent_name)
+        elif parent.tag in ("inputs", "tool"):
+            break
+        current = parent
+    return "|".join(parts)
+
+
 def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:
     outputs = tool_xml.find("./outputs")
     if outputs is not None:
