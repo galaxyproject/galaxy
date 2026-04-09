@@ -104,6 +104,27 @@ clean_preserves_step_position:
     - path: [steps, "10", position]
       value_type: dict
 
+clean_strips_subworkflow_position_extras:
+  fixture: real-sars-cov2-variant-calling.ga
+  operation: clean
+  assertions:
+    - path: [steps, "2", subworkflow, steps, "0", position, bottom]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, x]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, y]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, right]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, height]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, width]
+      value_absent: true
+    - path: [steps, "2", subworkflow, steps, "0", position, left]
+      value_type: float
+    - path: [steps, "2", subworkflow, steps, "0", position, top]
+      value_type: float
+
 clean_skip_uuid_preserves_uuid:
   fixture: rnaseq-sr.ga
   operation: clean_skip_uuid
