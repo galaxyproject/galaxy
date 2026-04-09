@@ -35,7 +35,7 @@ export default {
     "Account and saved data": "Konto und gespeicherte Daten",
     "Account registration or login": "Konto Registrierung oder Login",
     "Support, contact, and community": "Unterstützung, Kontakt und Community",
-    "Administer this Galaxy": "Verwalte diese Galaxy",
+    "Administer this Galaxy": "Verwalte diese Galaxy-Instanz",
     "Visualize datasets": "Visualisieren von Datensätzen",
     "Access published resources": "Zugriff auf veröffentlichte Ressourcen",
     "Chain tools into workflows": "Verkette Werkzeuge in Workflows",
