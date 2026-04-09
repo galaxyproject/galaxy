@@ -43,15 +43,19 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 if command -v uv >/dev/null; then
     uv venv --python "$TEST_PYTHON" "$TEST_ENV_DIR"
     PIP_CMD="$(command -v uv) pip"
+    BUILD_WHEEL_CMD="$(command -v uv) build"
+    TWINE_CMD="$(command -v uvx) twine"
 else
     "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
     PIP_CMD='python -m pip'
+    BUILD_WHEEL_CMD='python -m build'
+    TWINE_CMD=twine
 fi
 
 # shellcheck disable=SC1091
 . "${TEST_ENV_DIR}/bin/activate"
 if [ "${PIP_CMD}" = 'python -m pip' ]; then
-    ${PIP_CMD} install --upgrade pip setuptools wheel
+    ${PIP_CMD} install --upgrade build pip setuptools twine wheel
 fi
 if [ $FOR_PULSAR -eq 0 ]; then
     # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
@@ -100,6 +104,11 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
         mypy .
+
+        # shellcheck disable=SC2086 - word splitting is intentional for BUILD_WHEEL_CMD
+        ${BUILD_WHEEL_CMD} -o dist
+        # shellcheck disable=SC2086 - word splitting is intentional for TWINE_CMD
+        ${TWINE_CMD} check dist/*
     fi
     cd ..
 done < $PACKAGE_LIST_FILE
