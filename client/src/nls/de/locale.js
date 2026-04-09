@@ -120,7 +120,7 @@ export default {
     "For all selected": "Für alle ausgewählt",
     // ---- history-view-edit
     "Edit history tags": "Verlauf bearbeiten",
-    "Edit history annotation": "Verlauf bearbeiten",
+    "Edit history annotation": "Verlaufsnotiz bearbeiten",
     "Click to rename history": "Klicken Sie hier, um den Verlauf umzubenennen",
     // multi operations
     "Operations on multiple datasets": "Operationen auf mehreren Datensätzen",
