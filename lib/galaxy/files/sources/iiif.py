@@ -22,7 +22,7 @@ from galaxy.util.config_templates import TemplateExpansion
 try:
     from iiif_fsspec import IIIFFileSystem
 except ImportError:
-    IIIFFileSystem = None  # type: ignore[assignment,misc]
+    IIIFFileSystem = None
 
 
 class IIIFFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
