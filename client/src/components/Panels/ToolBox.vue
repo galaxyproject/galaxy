@@ -477,6 +477,16 @@ function onLabelToggle(labelId: string) {
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
                     <BBadge class="alert-warning w-100">No results found</BBadge>
+                    <div v-if="showRequestToolButton" class="mt-2">
+                        <GButton
+                            size="small"
+                            class="w-100"
+                            data-description="request tool button"
+                            @click="openToolRequestForm">
+                            <FontAwesomeIcon :icon="faWrench" class="mr-1" />
+                            {{ localize("Request a Tool") }}
+                        </GButton>
+                    </div>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <BBadge class="alert-danger w-100">
@@ -488,12 +498,6 @@ function onLabelToggle(labelId: string) {
                     </BBadge>
                 </div>
             </section>
-        </div>
-        <div v-if="showRequestToolButton" class="px-2 pb-2">
-            <GButton size="small" class="w-100" data-description="request tool button" @click="openToolRequestForm">
-                <FontAwesomeIcon :icon="faWrench" class="mr-1" />
-                {{ localize("Request a Tool") }}
-            </GButton>
         </div>
 
         <ToolRequestForm :show.sync="showToolRequestForm" />
