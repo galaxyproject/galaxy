@@ -72,6 +72,7 @@ BACKENDS = {
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
     "cilogon": "galaxy.authnz.cilogon.CILogonOpenIdConnect",
+    "auth0": "galaxy.authnz.auth0.GalaxyAuth0OpenIdConnect",
 }
 
 BACKENDS_NAME = {
@@ -88,6 +89,7 @@ BACKENDS_NAME = {
     "tapis": "tapis",
     "keycloak": "keycloak",
     "cilogon": "cilogon",
+    "auth0": "auth0",
 }
 
 AUTH_PIPELINE = (
