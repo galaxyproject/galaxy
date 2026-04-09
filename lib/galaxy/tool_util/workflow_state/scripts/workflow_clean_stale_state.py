@@ -3,7 +3,9 @@
 from .._cli_common import (
     add_report_args,
     build_base_parser,
+    build_base_subparser_args,
     cli_main,
+    cli_main_from_args,
 )
 from .._report_models import SingleCleanReport
 from ..clean import (
@@ -11,14 +13,10 @@ from ..clean import (
     run_clean,
 )
 
+SUBCOMMAND = "clean"
 
-def build_parser():
-    parser = build_base_parser(
-        prog="gxwf-state-clean",
-        description="Strip stale tool_state keys from native Galaxy workflows.",
-        stale_key_mode="clean",
-        workflow_path_help="Path to a single native .ga workflow file",
-    )
+
+def _add_args(parser):
     parser.add_argument(
         "--output-template",
         metavar="TEMPLATE",
@@ -35,7 +33,24 @@ def build_parser():
         help="Skip stripping uuid fields from steps (errors are always stripped)",
     )
     add_report_args(parser)
+
+
+def build_parser():
+    parser = build_base_parser(
+        prog="gxwf-state-clean",
+        description="Strip stale tool_state keys from native Galaxy workflows.",
+        stale_key_mode="clean",
+        workflow_path_help="Path to a single native .ga workflow file",
+    )
+    _add_args(parser)
     return parser
+
+
+def register(subparsers):
+    p = subparsers.add_parser(SUBCOMMAND, help="Strip stale tool_state keys from native Galaxy workflows")
+    build_base_subparser_args(p, stale_key_mode="clean", workflow_path_help="Path to a single native .ga workflow file")
+    _add_args(p)
+    p.set_defaults(func=lambda args: cli_main_from_args(CleanOptions, run_clean, args, SingleCleanReport))
 
 
 def main(argv=None):
