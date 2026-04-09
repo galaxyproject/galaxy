@@ -38,7 +38,7 @@ export default {
     "Administer this Galaxy": "Verwalte diese Galaxy-Instanz",
     "Visualize datasets": "Visualisieren von Datensätzen",
     "Access published resources": "Zugriff auf veröffentlichte Ressourcen",
-    "Chain tools into workflows": "Verkette Werkzeuge in Workflows",
+    "Chain tools into workflows": "Verknüpfe Werkzeuge in Workflows",
     "Analysis home view": "Analyse home view",
     // ---------------------------------------------------------------------------- histories
     // ---- history/options-menu
