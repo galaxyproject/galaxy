@@ -71,7 +71,7 @@ nora:
     version: 1.2.4
 openlayers:
     package: "@galaxyproject/openlayers"
-    version: 0.0.6
+    version: 0.0.8
 openseadragon:
     package: "@galaxyproject/openseadragon"
     version: 0.0.2

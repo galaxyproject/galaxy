@@ -46,12 +46,16 @@ class GenomesManager:
     ) -> Any:
         if reference:
             region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+            if region is None:
+                raise ReferenceDataError(f"No reference data for {id}")
             return {"dataset_type": "refseq", "data": region.sequence}
         else:
             return self.genomes.chroms(trans, dbkey=id, num=num, chrom=chrom, low=low)
 
     def get_sequence(self, trans: ProvidesUserContext, id: str, chrom: str, low: int, high: int) -> Any:
         region = self.genomes.reference(trans, dbkey=id, chrom=chrom, low=low, high=high)
+        if region is None:
+            raise ReferenceDataError(f"No reference data for {id}")
         return region.sequence
 
     def get_indexes(self, id: str, index_type: str) -> Any:

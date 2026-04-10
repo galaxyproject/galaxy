@@ -67,6 +67,7 @@ jobs:
           path: dist/
 
   pypi-publish:
+    if: always() && needs.build-python-packages.result == 'success'
     needs: [build-python-packages]
     name: Upload packages to PyPI
     runs-on: ubuntu-latest

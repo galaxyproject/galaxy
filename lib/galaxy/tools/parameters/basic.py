@@ -2162,7 +2162,9 @@ class DataToolParameter(BaseDataToolParameter):
             if self.default_object:
                 return raw_to_galaxy(trans.app, trans.history, self.default_object)
             return None
+        batch_wrapper = False
         if isinstance(value, MutableMapping) and "values" in value:
+            batch_wrapper = bool(value.get("batch"))
             value = self.to_python(value, trans.app)
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
@@ -2276,15 +2278,24 @@ class DataToolParameter(BaseDataToolParameter):
             if len(rval) > 0:
                 single_value = rval[0]
                 if isinstance(single_value, HistoryDatasetCollectionAssociation):
+                    if batch_wrapper:
+                        # A batch wrapper ({"batch": true, "values": [...]})
+                        # only reaches ``from_json`` during tool form building
+                        # (``/api/tools/{id}/build``); at execution time
+                        # ``expand_meta_parameters`` has already replaced the
+                        # wrapper with per-element values. Returning the HDCA
+                        # lets the form re-render and preserves the user's
+                        # map-over selection.
+                        return single_value
                     # A non-multiple data parameter cannot reduce a dataset
                     # collection. Without this check the HDCA is silently
                     # accepted here, then ``collect_input_dataset_collections``
                     # rewrites the state to a list of the collection's HDAs and
                     # ``wrap_values`` later crashes with a raw ``TypeError``
                     # (https://github.com/galaxyproject/galaxy/issues/22401).
-                    # Map-over remains supported via ``{"batch": true, ...}``,
-                    # which is expanded to per-element jobs before reaching
-                    # ``from_json``.
+                    # Map-over is still supported via ``{"batch": true, ...}``;
+                    # at execution time that wrapper is expanded to per-element
+                    # jobs before reaching ``from_json``.
                     raise ParameterValueError(
                         "dataset collection supplied to single input dataset parameter; "
                         "to run the tool over each element of the collection, use the map-over option",
