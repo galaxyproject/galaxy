@@ -1,6 +1,9 @@
 import builtins
 import logging
-from typing import TYPE_CHECKING, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    TypedDict,
+)
 
 import jwt as pyjwt
 from social_core.exceptions import (

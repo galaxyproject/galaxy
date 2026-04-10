@@ -1,7 +1,13 @@
 import tempfile
 from types import SimpleNamespace
-from typing import Optional, cast
-from unittest.mock import MagicMock, patch
+from typing import (
+    cast,
+    Optional,
+)
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pytest
 from social_core.utils import setting_name
@@ -11,9 +17,11 @@ from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.structured_app import BasicSharedApp
 from galaxy.util import asbool
-from ..webapps.test_webapp_base import CORSParsingMockConfig, StubGalaxyWebTransaction
-
 from galaxy.webapps.base.webapp import WebApplication
+from ..webapps.test_webapp_base import (
+    CORSParsingMockConfig,
+    StubGalaxyWebTransaction,
+)
 
 
 @pytest.fixture
