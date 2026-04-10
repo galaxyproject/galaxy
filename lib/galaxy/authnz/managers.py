@@ -1,6 +1,6 @@
 import builtins
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypedDict
 
 import jwt as pyjwt
 from social_core.exceptions import (
@@ -43,6 +43,11 @@ DEFAULT_OIDC_IDP_ICONS = {
     "elixir": "https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png",
     "okta": "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
 }
+
+
+class RefreshResult(TypedDict):
+    refreshed: bool
+    reauthentication_required: bool
 
 
 class AuthnzManager:
@@ -279,27 +284,59 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
-    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
+    @staticmethod
+    def _reauth_required_from_refresh_exception(exc):
+        """
+        Check if the exception is due to a failed refresh attempt.
+        """
+        response = getattr(exc, "response", None)
+        if response is None:
+            return False
+        # Auth failures on token refresh should force re-authentication.
+        if response.status_code in (400, 401, 403):
+            return True
+        return False
+
+    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth) -> RefreshResult:
+        """
+        Refresh expiring OIDC tokens for a specific provider.
+
+        Returns:
+            RefreshResult: A dictionary containing a boolean indicating success, and a boolean
+            indicating if reauthentication is required
+        """
         try:
             success, message, backend = self._get_authnz_backend(auth.provider)
             if success is False:
                 msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
                 log.error(msg)
-                return False
+                return {"refreshed": False, "reauthentication_required": False}
             refreshed = backend.refresh(trans, auth)
             if refreshed:
                 log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
-            return True
-        except Exception:
+            return {"refreshed": refreshed, "reauthentication_required": False}
+        except Exception as e:
             log.exception("An error occurred when refreshing user token")
-            return False
+            if self._reauth_required_from_refresh_exception(e):
+                return {"refreshed": False, "reauthentication_required": True}
+            return {"refreshed": False, "reauthentication_required": False}
 
-    def refresh_expiring_oidc_tokens(self, trans, user=None):
+    def refresh_expiring_oidc_tokens(self, trans, user=None) -> str | None:
+        """
+        Refresh expiring OIDC tokens for all providers associated with a user.
+
+        Returns:
+            str | None: The provider name if refresh fails and require_refresh is enabled, otherwise None
+        """
         user = trans.user or user
         if not isinstance(user, model.User):
-            return
+            return None
         for auth in user.social_auth or []:
-            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+            result = self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+            # Redirect to OIDC login if refresh fails and require_refresh is enabled
+            if trans.app.config.oidc_require_refresh and result["reauthentication_required"]:
+                return auth.provider
+        return None
 
     def authenticate(self, provider, trans, idphint=None):
         """
