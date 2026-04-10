@@ -42,7 +42,7 @@ export function getStepColor(step: Step, nodeColor: string, errorColor: string):
                 }
             }
         }
-        return lookupStateColor("undefined") || nodeColor;
+        return nodeColor;
     }
     return step.errors ? errorColor : nodeColor;
 }

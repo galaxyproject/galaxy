@@ -371,20 +371,6 @@ useDraggable(canvas, {
         --selected-outline-color: #{$brand-primary};
         --view-color: #{fade-out($brand-dark, 0.8)};
         --view-outline-color: #{$brand-info};
-
-        // Invocation state colors
-        --state-color-new: #{$state-default-bg};
-        --state-color-waiting: #{$state-default-bg};
-        --state-color-queued: #{$state-default-bg};
-        --state-color-running: #{$state-running-bg};
-        --state-color-ok: #{$state-success-bg};
-        --state-color-error: #{$state-danger-bg};
-        --state-color-deleted: #{darken($state-default-bg, 30%)};
-        --state-color-setting-metadata: #{$state-warning-bg};
-        --state-color-paused: #{$state-info-bg};
-        --state-color-skipped: #{$state-default-bg};
-        --state-color-upload: #{$state-info-bg};
-        --state-color-undefined: #{$gray-200};
     }
 }
 </style>

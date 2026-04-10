@@ -43,7 +43,6 @@ const STATE_COLORS = {
     "--state-color-new": "#e2e3e5",
     "--state-color-waiting": "#e2e3e5",
     "--state-color-queued": "#e2e3e5",
-    "--state-color-undefined": "#e9ecef",
 };
 
 describe("initStateColors + getStepColor", () => {
@@ -74,22 +73,24 @@ describe("initStateColors + getStepColor", () => {
             expect(getStepColor(step, "#node", "#error")).toBe(STATE_COLORS["--state-color-error"]);
         });
 
-        it("ignores inactive header-* classes and falls back to the undefined color", () => {
+        it("ignores inactive header-* classes and falls back to nodeColor", () => {
             const step = makeGraphStep({
-                headerClass: { "node-header-invocation": true, "header-undefined": false },
+                headerClass: { "node-header-invocation": true, "header-ok": false },
             } as any);
-            expect(getStepColor(step, "#node", "#error")).toBe(STATE_COLORS["--state-color-undefined"]);
+            expect(getStepColor(step, "#node", "#error")).toBe("#node");
         });
 
-        it("falls back to undefined color when headerClass has no header-* keys", () => {
-            const step = makeGraphStep({ headerClass: { "node-header-invocation": true } } as any);
-            expect(getStepColor(step, "#node", "#error")).toBe(STATE_COLORS["--state-color-undefined"]);
-        });
-
-        it("falls back to nodeColor when undefined color is also unset", () => {
-            initStateColors(makeMockStyle({}));
+        it("falls back to nodeColor when headerClass has no active header-* keys", () => {
             const step = makeGraphStep({ headerClass: { "node-header-invocation": true } } as any);
             expect(getStepColor(step, "#node", "#error")).toBe("#node");
+        });
+
+        it("returns the uninitialized state color for header-uninitialized", () => {
+            initStateColors(makeMockStyle({ ...STATE_COLORS, "--state-color-uninitialized": "#dee2e6" }));
+            const step = makeGraphStep({
+                headerClass: { "node-header-invocation": true, "header-uninitialized": true },
+            } as any);
+            expect(getStepColor(step, "#node", "#error")).toBe("#dee2e6");
         });
     });
 });
