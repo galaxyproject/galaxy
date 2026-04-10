@@ -91,6 +91,41 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
             response = self._post("tool_request_form", data=minimal_payload, json=True)
             self._assert_status_code_is(response, 204)
 
+    def test_workflow_install_request_with_tool_ids(self):
+        """Submit a request that includes workflow context (tool_ids + workflow_name)."""
+        user = self._setup_user("tool_request_workflow@galaxy.test")
+        workflow_payload = {
+            "tool_name": "2 tools required by workflow My Analysis",
+            "description": (
+                'The following tools are required by workflow "My Analysis" '
+                "but not installed: toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17, "
+                "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13."
+            ),
+            "requester_name": "Dr. Smith",
+            "tool_ids": [
+                "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
+                "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
+            ],
+            "workflow_name": "My Analysis",
+        }
+        with self._different_user(user["email"]):
+            response = self._post("tool_request_form", data=workflow_payload, json=True)
+            self._assert_status_code_is(response, 204)
+
+        with self._different_user(ADMIN_TEST_USER):
+            notifications = self._get("notifications").json()
+        workflow_tool_notifications = [
+            n
+            for n in notifications
+            if n.get("category") == "tool_request" and n.get("content", {}).get("workflow_name") == "My Analysis"
+        ]
+        assert (
+            len(workflow_tool_notifications) >= 1
+        ), f"Expected at least one tool_request notification with workflow_name='My Analysis', got: {notifications}"
+        content = workflow_tool_notifications[0]["content"]
+        assert content["workflow_name"] == "My Analysis"
+        assert len(content["tool_ids"]) == 2
+
 
 class TestToolRequestFormDisabledIntegration(IntegrationTestCase):
     """Tests for when the tool request form feature is disabled."""

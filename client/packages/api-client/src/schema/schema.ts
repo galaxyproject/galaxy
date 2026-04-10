@@ -25068,6 +25068,11 @@ export interface components {
              */
             test_data_available?: boolean | null;
             /**
+             * Tool IDs
+             * @description Tool shed tool IDs for workflow install requests.
+             */
+            tool_ids?: string[] | null;
+            /**
              * Tool name
              * @description The name of the requested tool.
              */
@@ -25077,6 +25082,11 @@ export interface components {
              * @description Homepage or repository URL for the requested tool.
              */
             tool_url?: string | null;
+            /**
+             * Workflow name
+             * @description Name of the workflow requiring these tools, if applicable.
+             */
+            workflow_name?: string | null;
         };
         /** ToolRequestImplicitCollectionReference */
         ToolRequestImplicitCollectionReference: {
@@ -25169,6 +25179,11 @@ export interface components {
              */
             test_data_available?: boolean | null;
             /**
+             * Tool IDs
+             * @description Tool shed tool IDs for workflow install requests.
+             */
+            tool_ids?: string[] | null;
+            /**
              * Tool name
              * @description The name of the requested tool.
              */
@@ -25178,6 +25193,11 @@ export interface components {
              * @description Homepage or repository URL for the requested tool.
              */
             tool_url?: string | null;
+            /**
+             * Workflow name
+             * @description Name of the workflow requiring these tools, if applicable.
+             */
+            workflow_name?: string | null;
         };
         /**
          * ToolRequestState
