@@ -1,5 +1,6 @@
 import subprocess
 
+from galaxy.job_metrics import JobMetrics
 from galaxy.job_metrics.instrumenters.core import (
     CONTAINER_ID,
     CONTAINER_TYPE,
@@ -21,11 +22,12 @@ def test_core_instrumentation(tmpdir):
 
 def test_corrupted_container_file_is_ignored(tmpdir):
     """Verify graceful handling when Pulsar writes an HTTP error page instead of valid JSON (galaxyproject/galaxy#22192)."""
-    core_plugin = CorePlugin()
     tmpdir.join("__instrument_core_container").write("<html><body><h1>502 Bad Gateway</h1></body></html>")
-    properties = core_plugin.job_properties(1, tmpdir)
-    assert CONTAINER_ID not in properties
-    assert CONTAINER_TYPE not in properties
+    metrics = JobMetrics()
+    per_plugin = metrics.collect_properties("default", 1, tmpdir)
+    core_properties = per_plugin.get("core", {})
+    assert CONTAINER_ID not in core_properties
+    assert CONTAINER_TYPE not in core_properties
 
 
 def _run_plugin(plugin, work_dir, env=None):

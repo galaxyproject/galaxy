@@ -117,9 +117,6 @@ class CorePlugin(InstrumentPlugin):
                 return json.load(fh)
         except FileNotFoundError:
             return {}
-        except json.JSONDecodeError:
-            log.warning("Failed to parse container details file in %s, file may be corrupted", job_directory)
-            return {}
 
     def __record_galaxy_slots_command(self, job_directory):
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)

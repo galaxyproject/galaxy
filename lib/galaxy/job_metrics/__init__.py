@@ -12,6 +12,7 @@ collect the output of these from a job directory.
 """
 
 import collections
+import json
 import logging
 import os
 from abc import (
@@ -231,7 +232,7 @@ class JobInstrumenter(JobInstrumenterI):
                 properties = plugin.job_properties(job_id, job_directory)
                 if properties:
                     per_plugin_properties[plugin.plugin_type] = properties
-            except FileNotFoundError as e:
+            except (FileNotFoundError, json.JSONDecodeError) as e:
                 log.warning("Failed to collect job properties for plugin %s: %s", plugin, e)
             except Exception:
                 log.exception("Failed to collect job properties for plugin %s", plugin)
