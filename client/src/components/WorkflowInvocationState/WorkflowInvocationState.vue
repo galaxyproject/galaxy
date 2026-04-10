@@ -12,6 +12,7 @@ import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -65,7 +66,8 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
-const headerCollapsed = ref(false);
+
+const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("invocation-header-collapsed");
 
 const uniqueMessages = computed(() => {
     const messages = invocation.value?.messages || [];
@@ -247,6 +249,19 @@ watch(
     },
 );
 
+// If a workflow is run just now (success prop), we want to have the header expanded
+watch(
+    () => props.success,
+    (success) => {
+        if (success && headerCollapsed.value) {
+            setTimeout(() => {
+                headerCollapsed.value = false;
+            }, 1500);
+        }
+    },
+    { immediate: true },
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -298,7 +313,7 @@ async function onCancel() {
                     :title="headerCollapsed ? 'Expand header' : 'Collapse header'"
                     icon-only
                     inline
-                    @click="headerCollapsed = !headerCollapsed">
+                    @click="toggleHeaderCollapse">
                     <FontAwesomeIcon :icon="headerCollapsed ? faAngleDoubleDown : faAngleDoubleUp" fixed-width />
                 </GButton>
             </template>
