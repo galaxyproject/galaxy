@@ -465,4 +465,5 @@ export const supportedLanguages = {
     fr: true,
     zh: true,
     es: true,
+    de: true,
 };
