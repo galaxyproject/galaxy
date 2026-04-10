@@ -1,7 +1,7 @@
 import { curveCatmullRom, line } from "d3";
 
 import * as commentColors from "@/components/Workflow/Editor/Comments/colors";
-import { type GraphStep, graphStepStates } from "@/composables/useInvocationGraph";
+import type { GraphStep } from "@/composables/useInvocationGraph";
 import type {
     FrameWorkflowComment,
     FreehandWorkflowComment,
@@ -11,19 +11,23 @@ import type {
 import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-/** The names of all possible graph step states, including an undefined state
- * (for input parameters which do not have a graph step state). */
-const stateNames = [...graphStepStates, "undefined"] as const;
-
 const stateColors: Record<string, string> = {};
+let _style: CSSStyleDeclaration | null = null;
 
-/** Initialize the state colors for minimap nodes from CSS variables.
- * This should be called once when the minimap is mounted. */
+/** Initialize the state color cache from CSS variables. Call once when the minimap is mounted. */
 export function initStateColors(style: CSSStyleDeclaration) {
-    for (const state of stateNames) {
-        const cssKey = state.replace("_", "-");
-        stateColors[state] = style.getPropertyValue(`--state-color-${cssKey}`);
+    _style = style;
+    for (const key of Object.keys(stateColors)) {
+        delete stateColors[key];
     }
+}
+
+/** Returns the cached CSS `--state-color-{stateName}` value, looking it up on first use. */
+function lookupStateColor(stateName: string): string {
+    if (!(stateName in stateColors) && _style) {
+        stateColors[stateName] = _style.getPropertyValue(`--state-color-${stateName.replace(/_/g, "-")}`);
+    }
+    return stateColors[stateName] ?? "";
 }
 
 /** Get the color for a minimap step based on its state (invocation view) and errors. */
@@ -32,13 +36,13 @@ export function getStepColor(step: Step, nodeColor: string, errorColor: string):
     if (graphStep.headerClass) {
         for (const [key, active] of Object.entries(graphStep.headerClass)) {
             if (active && key.startsWith("header-")) {
-                const color = stateColors[key.slice(7)];
+                const color = lookupStateColor(key.slice(7));
                 if (color) {
                     return color;
                 }
             }
         }
-        return stateColors["undefined"] || nodeColor;
+        return lookupStateColor("undefined") || nodeColor;
     }
     return step.errors ? errorColor : nodeColor;
 }

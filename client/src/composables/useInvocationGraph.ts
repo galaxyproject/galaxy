@@ -13,6 +13,7 @@ import { computed, type Ref, ref, set } from "vue";
 import { fetchCollectionSummary } from "@/api/datasetCollections";
 import { fetchDatasetDetails } from "@/api/datasets";
 import type { InvocationStep, StepJobSummary, WorkflowInvocationElementView } from "@/api/invocations";
+import type { components } from "@/api/schema";
 import type { StoredWorkflowDetailed } from "@/api/workflows";
 import { getContentItemState } from "@/components/History/Content/model/states";
 import { isWorkflowInput } from "@/components/Workflow/constants";
@@ -23,23 +24,14 @@ import { rethrowSimple } from "@/utils/simple-error";
 
 import { provideScopedWorkflowStores } from "./workflowStores";
 
-/** All possible states for an Invocation Graph step, derived from job states,
- * input dataset states, and subworkflow scheduling states. */
-export const graphStepStates = [
-    "new",
-    "upload",
-    "waiting",
-    "queued",
-    "running",
-    "ok",
-    "error",
-    "deleted",
-    "setting_metadata",
-    "paused",
-    "skipped",
-] as const;
-
-export type GraphStepState = (typeof graphStepStates)[number];
+/** All possible states for an Invocation Graph step.
+ * - `JobState`: for tool/collection steps (derived from job states and `populated_state`)
+ * - `DatasetState`: for data input steps (derived from the dataset/collection state)
+ * - `InvocationStepState`: for subworkflow steps (derived from the invocation step state) */
+type GraphStepState =
+    | components["schemas"]["JobState"]
+    | components["schemas"]["DatasetState"]
+    | components["schemas"]["InvocationStepState"];
 
 export interface GraphStep extends Step {
     state?: GraphStepState;
@@ -72,9 +64,9 @@ export const statePlaceholders: Record<string, string> = {
 };
 
 /** Only one job needs to be in one of these states for the graph step to be in that state */
-const SINGLE_INSTANCE_STATES = ["error", "running", "paused", "deleting"];
+const SINGLE_INSTANCE_STATES: GraphStepState[] = ["error", "running", "paused", "deleting"];
 /** All jobs need to be in one of these states for the graph step to be in that state */
-const ALL_INSTANCES_STATES = ["deleted", "skipped", "new", "queued"];
+const ALL_INSTANCES_STATES: GraphStepState[] = ["deleted", "skipped", "new", "queued"];
 
 /** Composable that creates a readonly invocation graph and loads it onto a workflow editor canvas for display.
  * @param invocation - The invocation to display in graph view
@@ -269,7 +261,7 @@ export function useInvocationGraph(
                 } else if (populatedState === "deleting") {
                     newState = "deleted";
                 } else if (populatedState && !["stop", "stopped"].includes(populatedState)) {
-                    newState = populatedState as GraphStep["state"];
+                    newState = populatedState;
                 }
             }
         }
@@ -292,18 +284,18 @@ export function useInvocationGraph(
      * @returns The state for the graph step or `undefined` if the states don't match any
      *          single instance state or all instances state
      * */
-    function getStepStateFromJobStates(jobStates: string[]): GraphStep["state"] | undefined {
+    function getStepStateFromJobStates(jobStates: string[]): GraphStepState | undefined {
         for (const state of SINGLE_INSTANCE_STATES) {
             if (jobStates.includes(state)) {
                 if (state === "deleting") {
                     return "deleted";
                 }
-                return state as GraphStep["state"];
+                return state;
             }
         }
         for (const state of ALL_INSTANCES_STATES) {
             if (jobStates.every((jobState) => jobState === state)) {
-                return state as GraphStep["state"];
+                return state;
             }
         }
         return undefined;
