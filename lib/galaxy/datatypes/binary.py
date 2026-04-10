@@ -368,7 +368,12 @@ class Kraken2DatabaseArchive(CompressedArchive):
             if filename and tarfile.is_tarfile(filename):
                 with tarfile.open(filename, "r") as temptar:
                     _tar_content = temptar.getnames()
-                    if "hash.k2d" in _tar_content and "opts.k2d" in _tar_content and "taxo.k2d" in _tar_content and "seqid2taxid.k2d" in _tar_content:
+                    if (
+                        "hash.k2d" in _tar_content
+                        and "opts.k2d" in _tar_content
+                        and "taxo.k2d" in _tar_content
+                        and "seqid2taxid.k2d" in _tar_content
+                    ):
                         return True
         except Exception as e:
             log.warning("%s, sniff Exception: %s", self, e)
