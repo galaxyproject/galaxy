@@ -757,6 +757,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     mulled_channels: list[str]
     new_file_path: str
     nginx_upload_store: str
+    oidc_require_refresh: bool
     password_expiration_period: timedelta
     preserve_python_environment: str
     pretty_datetime_format: str
