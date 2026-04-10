@@ -20,7 +20,7 @@ export default {
     "Mailing Lists": "Mailinglisten",
     Videos: "Videos",
     "Community Hub": "Community Hub",
-    "How to Cite Galaxy": "Wie man Galaxy zitiert",
+    "How to Cite Galaxy": "Wie zitiere ich Galaxy?",
     User: "Benutzer",
     Login: "Anmeldung",
     "Log in to": "Anmelden, um",
@@ -34,13 +34,13 @@ export default {
     "Saved Datasets": "Gespeicherte Datensätze",
     "Saved Pages": "Gespeicherte Seiten",
     //Tooltip
-    "Account and saved data": "Konto und gespeicherte Daten",
-    "Account registration or login": "Konto Registrierung oder Login",
+    "Account and saved data": "Nutzerkonto und gespeicherte Daten",
+    "Account registration or login": "Registrierung oder Anmeldung",
     "Support, contact, and community": "Unterstützung, Kontakt und Community",
     "Administer this Galaxy": "Verwalte diese Galaxy-Instanz",
     "Visualize datasets": "Visualisieren von Datensätzen",
     "Access published resources": "Zugriff auf veröffentlichte Ressourcen",
-    "Chain tools into workflows": "Verknüpfe Werkzeuge in Workflows",
+    "Chain tools into workflows": "Verknüpfe Tools zu Workflows",
     // ---------------------------------------------------------------------------- histories
     // ---- history/options-menu
     "History Options": "Verlauf Optionen",
@@ -66,17 +66,17 @@ export default {
     // Delete is defined elsewhere, but is also in this menu.
     // "Delete":
     //     false,
-    "Delete Permanently": "Dauerhaft löschen",
+    "Delete Permanently": "Endgültig löschen",
     "Dataset Actions": "Datensatzaktionen",
     "Copy Datasets": "Datensätze kopieren",
     "Copy Datasets to Another History": "Datensätze in einen anderen Verlauf kopieren",
     "Dataset Security": "Datensatz Sicherheit",
     "Resume Paused Jobs": "Fortsetzen pausierter Jobs",
     "Unhide Hidden Datasets": "Versteckte Datensätze einblenden",
-    "Delete Hidden Datasets": "Versteckte Datensätze löschen",
-    "Purge Deleted Datasets": "Gelöschte Datensätze löschen",
+    "Delete Hidden Datasets": "Versteckte Datensätze als gelöscht markieren",
+    "Purge Deleted Datasets": "Als gelöscht markierte Datensätze endgültig löschen",
     Downloads: "Downloads",
-    "Export Tool Citations": "Tool Zitationen exportieren",
+    "Export Tool Citations": "Tool-Zitationen exportieren",
     "Export Tool References": "Tool-Referenzen exportieren",
     "Export references for all Tools used in this History":
         "Referenzen für alle in diesem Verlauf verwendeten Tools exportieren",
@@ -85,9 +85,9 @@ export default {
     "Other Actions": "Andere Aktionen",
     "Import from File": "Import aus Datei",
     Webhooks: "Webhooks",
-    "Permanently Delete History": "Verlauf dauerhaft löschen",
-    "Permanently Delete History?": "Verlauf dauerhaft löschen?",
-    "Delete History?": "Verlauf löschen?",
+    "Permanently Delete History": "Verlauf endgültig löschen",
+    "Permanently Delete History?": "Verlauf endgültig löschen?",
+    "Delete History?": "Verlauf als gelöscht markieren?",
     "Archive this History": "Diesen Verlauf archivieren",
     "Archive History": "Verlauf archivieren",
     "Convert History to Workflow": "Verlauf in Workflow umwandeln",
@@ -96,28 +96,28 @@ export default {
     "Share, Publish, or Set Permissions for this History":
         "Diesen Verlauf teilen, veröffentlichen oder Berechtigungen festlegen",
     "Share & Manage Access": "Teilen und Zugriff verwalten",
-    "Do you also want to permanently delete the history": "Möchten Sie den Verlauf auch dauerhaft löschen",
-    "Yes, permanently delete this history.": "Ja, diesen Verlauf dauerhaft löschen.",
+    "Do you also want to permanently delete the history": "Möchten Sie den Verlauf auch endgültig löschen",
+    "Yes, permanently delete this history.": "Ja, diesen Verlauf endgültig löschen.",
 
     // ---- history-model
     // ---- history-view
     "This history is empty": "Diese Verlauf ist leer",
     "No matching datasets found": "Keine passenden Datensätze gefunden",
     "An error occurred while getting updates from the server":
-        "Ein Fehler ist bei der Aktualisierung des Servers aufgetreten",
+        "Beim Abruf von Aktualisierungen vom Server ist ein Fehler aufgetreten",
     "Please contact a Galaxy administrator if the problem persists":
-        "Bitte wenden Sie sich an einen Galaxy-Administrator, wenn das Problem weiterhin besteht",
+        "Bitte wenden Sie sich an einen Galaxy-Administrator, wenn das Problem bestehen bleibt",
     //TODO:
     //"An error was encountered while <% where %>" :
     //false,
-    "search datasets": "Suchdatensätze",
+    "search datasets": "Datensätze suchen",
     "You are currently viewing a deleted history!": "Du siehst derzeit einen gelöschten Verlauf!",
-    "You are over your disk quota": "Du bist über dein Festplatten-Kontingent",
+    "You are over your disk quota": "Du hast Dein Speicherkontingent überschritten",
     "Tool execution is on hold until your disk usage drops below your allocated quota":
-        "Tool-Ausführung ist in der Warteschleife, bis Ihre Datenträgerverwendung unter Ihrem zugeteilten Kontingent fällt",
+        "Tool-Ausführungen sind pausiert, bis Du genügend Speicherplatz freigibst, um Dein Dir zugeteiltes Speicherkontingent nicht länger zu überschreiten.",
     All: "Alle",
     None: "Keiner",
-    "For all selected": "Für alle ausgewählt",
+    "For all selected": "Für alles Ausgewählte",
     // ---- history-view-edit
     "Edit history tags": "Verlauf bearbeiten",
     "Edit history annotation": "Verlaufsnotiz bearbeiten",
@@ -126,13 +126,13 @@ export default {
     "Operations on multiple datasets": "Operationen auf mehreren Datensätzen",
     "Hide datasets": "Datensätze ausblenden",
     "Unhide datasets": "Datensätze einblenden",
-    "Delete datasets": "Datensätze löschen",
-    "Undelete datasets": "Undelete-Datasets",
-    "Permanently delete datasets": "Datensätze dauerhaft löschen",
+    "Delete datasets": "Datensätze als gelöscht markieren",
+    "Undelete datasets": "Als gelöscht markierte Datensätze wiederherstellen",
+    "Permanently delete datasets": "Datensätze endgültig löschen",
     "This will permanently remove the data in your datasets. Are you sure?":
-        "Das wird endgültig die Daten in deinen Datasets entfernen. Bist du sicher?",
+        "Die zugrundeliegenden Daten werden durch diese Aktion unwiderruflich gelöscht. Bist Du sicher, dass Du das möchtest?",
     // ---- history-view-annotated
-    Dataset: "Dataset",
+    Dataset: "Datensatz",
     Annotation: "Annotation",
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
@@ -154,13 +154,14 @@ export default {
 
     // ---------------------------------------------------------------------------- datasets
     // ---- hda-model
-    "Unable to purge dataset": "Dataset kann nicht gelöscht werden",
+    "Unable to purge dataset": "Das endgültige Löschen des Datensatzes ist fehlgeschlagen",
     // ---- hda-base
     // display button
-    "Cannot display datasets removed from disk": "Datasets können nicht von der Festplatte entfernt werden",
+    "Cannot display datasets removed from disk":
+        "Bereits endgültig gelöschte Datensätze können nicht mehr dargestellt werden",
     "This dataset must finish uploading before it can be viewed":
-        "Dieser Datensatz muss das Hochladen beenden, bevor es angezeigt werden kann",
-    "This dataset is not yet viewable": "Dieser Datensatz ist noch nicht sichtbar",
+        "Dieser Datensatz muss erst vollständig hochgeladen werden, bevor er angezeigt werden kann",
+    "This dataset is not yet viewable": "Dieser Datensatz kann noch nicht angezeigt werden",
     "View data": "Daten anzeigen",
     // download button
     Download: "Herunterladen",
