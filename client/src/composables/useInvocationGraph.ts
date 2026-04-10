@@ -2,10 +2,12 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
     faCheckCircle,
     faClock,
+    faCloud,
     faExclamationTriangle,
     faForward,
     faPause,
     faSpinner,
+    faStopCircle,
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { computed, type Ref, ref, set } from "vue";
@@ -46,21 +48,45 @@ interface InvocationGraph extends Omit<StoredWorkflowDetailed, "steps"> {
 }
 
 /** Classes for states' icons */
-export const iconClasses: Record<string, { icon: IconDefinition; spin?: boolean; class?: string }> = {
+export const iconClasses: Record<GraphStepState, { icon: IconDefinition; spin?: boolean; class?: string }> = {
+    // terminal success
     ok: { icon: faCheckCircle, class: "text-success" },
-    error: { icon: faExclamationTriangle, class: "text-danger" },
-    paused: { icon: faPause, class: "text-primary" },
-    running: { icon: faSpinner, spin: true },
+    empty: { icon: faCheckCircle, class: "text-success" },
+    // transitional / waiting
     new: { icon: faClock },
     waiting: { icon: faClock },
     queued: { icon: faClock },
-    deleted: { icon: faTrash, class: "text-danger" },
+    resubmitted: { icon: faClock },
+    ready: { icon: faClock },
+    scheduled: { icon: faClock },
+    // active
+    running: { icon: faSpinner, spin: true },
+    upload: { icon: faSpinner, spin: true },
+    setting_metadata: { icon: faSpinner, spin: true },
+    // paused / info
+    paused: { icon: faPause, class: "text-primary" },
+    deferred: { icon: faCloud, class: "text-info" },
+    // skipped
     skipped: { icon: faForward, class: "text-warning" },
+    // errors / failures
+    error: { icon: faExclamationTriangle, class: "text-danger" },
+    failed: { icon: faExclamationTriangle, class: "text-danger" },
+    failed_metadata: { icon: faExclamationTriangle, class: "text-danger" },
+    discarded: { icon: faExclamationTriangle, class: "text-danger" },
+    // deleted / stopped
+    deleted: { icon: faTrash, class: "text-danger" },
+    deleting: { icon: faTrash, class: "text-danger" },
+    stop: { icon: faStopCircle, class: "text-danger" },
+    stopped: { icon: faStopCircle, class: "text-danger" },
 };
 
 export const statePlaceholders: Record<string, string> = {
     ok: "successful",
     error: "failed",
+    upload: "uploading",
+    setting_metadata: "setting metadata",
+    failed_metadata: "have metadata errors",
+    stop: "stopping",
 };
 
 /** Only one job needs to be in one of these states for the graph step to be in that state */
@@ -303,7 +329,7 @@ export function useInvocationGraph(
 
     function setHeaderClass(graphStep: GraphStep) {
         /** Setting the header class for the graph step */
-        graphStep.headerClass = getHeaderClass(graphStep.state as string);
+        graphStep.headerClass = getHeaderClass(graphStep.state);
 
         /** Setting the header icon for the graph step */
         if (graphStep.state) {
@@ -356,7 +382,7 @@ export function useInvocationGraph(
     };
 }
 
-export function getHeaderClass(state: string) {
+export function getHeaderClass(state: GraphStepState | undefined) {
     return {
         "node-header-invocation": true,
         [`header-${state}`]: !!state,
