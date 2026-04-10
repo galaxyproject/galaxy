@@ -17,7 +17,6 @@ from webob.exc import HTTPFound
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.authnz.managers import AuthnzManager
-from galaxy.structured_app import BasicSharedApp
 from galaxy.util import asbool
 from galaxy.webapps.base.webapp import WebApplication
 from ..webapps.test_webapp_base import (
