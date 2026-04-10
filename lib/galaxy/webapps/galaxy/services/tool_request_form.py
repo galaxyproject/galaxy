@@ -60,6 +60,12 @@ class ToolRequestFormData(Model):
     requester_affiliation: Optional[str] = Field(
         None, title="Requester affiliation", description="The affiliation/lab of the requester."
     )
+    tool_ids: Optional[list[str]] = Field(
+        None, title="Tool IDs", description="Tool shed tool IDs for workflow install requests."
+    )
+    workflow_name: Optional[str] = Field(
+        None, title="Workflow name", description="Name of the workflow requiring these tools, if applicable."
+    )
 
 
 class ToolRequestFormService(ServiceBase):
@@ -113,6 +119,8 @@ class ToolRequestFormService(ServiceBase):
             requester_name=payload.requester_name,
             requester_email=payload.requester_email,
             requester_affiliation=payload.requester_affiliation,
+            tool_ids=payload.tool_ids,
+            workflow_name=payload.workflow_name,
         )
 
         now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
