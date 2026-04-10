@@ -6,6 +6,7 @@ import {
     faExclamationTriangle,
     faForward,
     faPause,
+    faQuestionCircle,
     faSpinner,
     faStopCircle,
     faTrash,
@@ -29,14 +30,16 @@ import { provideScopedWorkflowStores } from "./workflowStores";
 /** All possible states for an Invocation Graph step.
  * - `JobState`: for tool/collection steps (derived from job states and `populated_state`)
  * - `DatasetState`: for data input steps (derived from the dataset/collection state)
- * - `InvocationStepState`: for subworkflow steps (derived from the invocation step state) */
-type GraphStepState =
+ * - `InvocationStepState`: for subworkflow steps (derived from the invocation step state)
+ * - `"uninitialized"`: initial state before the step's actual state has been determined */
+export type GraphStepState =
     | components["schemas"]["JobState"]
     | components["schemas"]["DatasetState"]
-    | components["schemas"]["InvocationStepState"];
+    | components["schemas"]["InvocationStepState"]
+    | "uninitialized";
 
 export interface GraphStep extends Step {
-    state?: GraphStepState;
+    state: GraphStepState;
     jobs: StepJobSummary["states"];
     headerClass?: Record<string, boolean>;
     headerIcon?: IconDefinition;
@@ -78,6 +81,8 @@ export const iconClasses: Record<GraphStepState, { icon: IconDefinition; spin?: 
     deleting: { icon: faTrash, class: "text-danger" },
     stop: { icon: faStopCircle, class: "text-danger" },
     stopped: { icon: faStopCircle, class: "text-danger" },
+    // not yet determined
+    uninitialized: { icon: faQuestionCircle },
 };
 
 export const statePlaceholders: Record<string, string> = {
@@ -185,7 +190,8 @@ export function useInvocationGraph(
             /** An invocation graph step (initialized with the original workflow step) */
             let graphStepFromWfStep;
             if (!steps.value[i]) {
-                graphStepFromWfStep = { ...fullSteps[i] } as GraphStep;
+                graphStepFromWfStep = { ...fullSteps[i], state: "uninitialized" } as GraphStep;
+                setHeaderClass(graphStepFromWfStep);
             } else {
                 graphStepFromWfStep = steps.value[i] as GraphStep;
             }
@@ -235,8 +241,8 @@ export function useInvocationGraph(
         invocationStep: InvocationStep | undefined,
         invocationStepSummary: StepJobSummary | undefined,
     ) {
-        /** The new state for the graph step */
-        let newState = graphStep.state;
+        /** The resolved state for the graph step (undefined = not yet determined) */
+        let newState: GraphStepState | undefined = undefined;
 
         // there is an invocation step for this workflow step
         if (invocationStep) {
@@ -297,9 +303,10 @@ export function useInvocationGraph(
             newState = "queued";
         }
 
-        // if the state has changed, update the graph step
-        if (graphStep.state !== newState) {
-            graphStep.state = newState;
+        // preserve previous state if a new one couldn't be determined
+        const resolvedState = newState ?? graphStep.state;
+        if (graphStep.state !== resolvedState) {
+            graphStep.state = resolvedState;
             setHeaderClass(graphStep);
         }
     }

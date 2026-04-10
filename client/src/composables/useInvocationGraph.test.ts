@@ -110,6 +110,23 @@ describe("useInvocationGraph — step state", () => {
         });
     });
 
+    describe("uninitialized state", () => {
+        it("headerClass is set on a fresh step before state is determined", async () => {
+            const { steps, load } = setupComposable();
+            await load();
+            expect(steps.value[0]?.headerClass).toBeDefined();
+        });
+
+        it("stays uninitialized when job states are inconclusive and populated_state is excluded", async () => {
+            // "ok" not in SINGLE/ALL lists → getStepStateFromJobStates returns undefined
+            // "stop" is explicitly excluded from the populated_state fallback
+            // → newState stays undefined → preserves previous "uninitialized" state
+            const { steps, load } = withJobStates({ ok: 1 }, "stop");
+            await load();
+            expect(steps.value[0]?.state).toBe("uninitialized");
+        });
+    });
+
     describe("from populated_state fallback (when job states are inconclusive)", () => {
         // use { ok: 1 } — not in any SINGLE or ALL_INSTANCES list, so falls through to populated_state
         it("is queued — from scheduled populated_state", async () => {
