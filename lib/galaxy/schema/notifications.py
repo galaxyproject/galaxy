@@ -144,6 +144,12 @@ class ToolRequestNotificationContent(Model):
     requester_affiliation: Optional[str] = Field(
         None, title="Requester affiliation", description="The affiliation/lab of the requester."
     )
+    tool_ids: Optional[list[str]] = Field(
+        None, title="Tool IDs", description="Tool shed tool IDs for workflow install requests."
+    )
+    workflow_name: Optional[str] = Field(
+        None, title="Workflow name", description="Name of the workflow requiring these tools, if applicable."
+    )
 
 
 NotificationContentField = Field(
