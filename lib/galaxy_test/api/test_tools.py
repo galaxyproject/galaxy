@@ -2747,8 +2747,34 @@ class TestToolsApi(ApiTestCase, TestsTools):
             self._assert_status_code_is(response, 200)
 
             response_object = response.json()
-            assert len(response_object["outputs"]) == 1
-            assert len(response_object["jobs"]) == 1
+            assert len(response_object["jobs"]) == 2
+            assert len(response_object["implicit_collections"]) == 1
+
+    def test_can_map_over_dce_from_larger_list_paired(self):
+        """Regression: mapping a DCE should use the child collection structure,
+        not the parent list structure. Previously raised KeyError when the parent
+        list had more elements than the child pair collection."""
+        with self.dataset_populator.test_history() as history_id:
+            pair_ids = []
+            for _ in range(3):
+                pair_id = self.dataset_collection_populator.create_pair_in_history(
+                    history_id, contents=["0", "0"], wait=True
+                ).json()["outputs"][0]["id"]
+                pair_ids.append(pair_id)
+            ok_hdca = self.dataset_collection_populator.create_list_from_pairs(history_id, pair_ids)
+            dce_id = ok_hdca.json()["elements"][0]["id"]
+
+            inputs = {
+                "input1": {
+                    "batch": True,
+                    "values": [{"src": "dce", "id": dce_id, "map_over_type": None}],
+                },
+            }
+            response = self._run_cat1(history_id, inputs=inputs)
+            self._assert_status_code_is(response, 200)
+
+            response_object = response.json()
+            assert len(response_object["jobs"]) == 2
             assert len(response_object["implicit_collections"]) == 1
 
     @skip_without_tool("identifier_source")
