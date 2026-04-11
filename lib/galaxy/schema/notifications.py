@@ -348,7 +348,7 @@ class NotificationCreatedResponse(Model):
 class NotificationUpdateRequest(Model):
     def has_changes(self) -> bool:
         """Whether the notification update request contains at least one change."""
-        return any(getattr(self, field) is not None for field in self.__fields__.keys())
+        return any(getattr(self, field) is not None for field in self.model_fields.keys())
 
 
 class UserNotificationUpdateRequest(NotificationUpdateRequest):
