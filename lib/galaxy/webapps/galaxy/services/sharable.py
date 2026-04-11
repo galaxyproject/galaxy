@@ -31,6 +31,7 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingOptions,
     SharingStatus,
+    UserEmail,
     UserIdentifier,
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
@@ -138,7 +139,9 @@ class ShareableService:
         status = self.serializer.serialize_to_view(
             item, user=trans.user, trans=trans, default_view="sharing", encode_id=False
         )
-        status["users_shared_with"] = [{"id": a.user.id, "email": a.user.email} for a in item.users_shared_with]
+        status["users_shared_with"] = [
+            UserEmail(id=a.user.id, email=a.user.email) for a in item.users_shared_with
+        ]
         return SharingStatus(**status)
 
     def _get_users(self, trans, emails_or_ids: list[UserIdentifier]) -> tuple[set[User], set[str]]:
