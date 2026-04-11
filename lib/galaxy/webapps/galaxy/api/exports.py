@@ -20,6 +20,8 @@ from galaxy.schema.schema import (
     ExportObjectResultMetadata,
     ExportTaskListResponse,
     ObjectExportTaskResponse,
+    ShortTermStoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -105,11 +107,21 @@ class FastAPIExports:
         request_data_raw = metadata.get("request_data", {})
         result_data_raw = metadata.get("result_data")
 
+        payload_raw = request_data_raw.get("payload") or {}
+        # Pick the right payload flavour by presence of target_uri
+        # (WriteStoreToPayload has it, ShortTermStoreExportPayload does not).
+        if "target_uri" in payload_raw:
+            payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload] = (
+                WriteStoreToPayload.model_construct(**payload_raw)
+            )
+        else:
+            payload = ShortTermStoreExportPayload.model_construct(**payload_raw)
+
         request_data = ExportObjectRequestMetadata.model_construct(
             object_id=request_data_raw.get("object_id"),
             object_type=request_data_raw.get("object_type"),
             user_id=request_data_raw.get("user_id"),
-            payload=request_data_raw.get("payload"),
+            payload=payload,
         )
 
         result_data = None
