@@ -111,8 +111,8 @@ class FastAPIExports:
         # Pick the right payload flavour by presence of target_uri
         # (WriteStoreToPayload has it, ShortTermStoreExportPayload does not).
         if "target_uri" in payload_raw:
-            payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload] = (
-                WriteStoreToPayload.model_construct(**payload_raw)
+            payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload] = WriteStoreToPayload.model_construct(
+                **payload_raw
             )
         else:
             payload = ShortTermStoreExportPayload.model_construct(**payload_raw)

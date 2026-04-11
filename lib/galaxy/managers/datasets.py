@@ -33,7 +33,10 @@ from galaxy.model import (
     DatasetPermissions,
     HistoryDatasetAssociation,
 )
-from galaxy.model.db.role import get_private_role_user_emails_dict
+from galaxy.model.db.role import (
+    get_private_role_user_emails_dict,
+    role_name_id_pairs,
+)
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -472,23 +475,14 @@ class DatasetAssociationManager(
             )
         all_role_ids = {r.id for r in access_roles | manage_roles | modify_roles}
         private_role_emails = get_private_role_user_emails_dict(self.session(), role_ids=all_role_ids)
+        encode_id = self.app.security.encode_id
 
-        def make_tuples(roles: set):
-            tuples = []
-            for role in roles:
-                # use role name for non-private roles, and user.email from private rules
-                displayed_name = private_role_emails.get(role.id, role.name)
-                role_tuple = (displayed_name, self.app.security.encode_id(role.id))
-                tuples.append(role_tuple)
-            return tuples
-
-        access_dataset_role_list = make_tuples(access_roles)
-        manage_dataset_role_list = make_tuples(manage_roles)
-
-        rval = dict(access_dataset_roles=access_dataset_role_list, manage_dataset_roles=manage_dataset_role_list)
+        rval = dict(
+            access_dataset_roles=role_name_id_pairs(access_roles, private_role_emails, encode_id),
+            manage_dataset_roles=role_name_id_pairs(manage_roles, private_role_emails, encode_id),
+        )
         if library_dataset is not None:
-            modify_item_role_list = make_tuples(modify_roles)
-            rval["modify_item_roles"] = modify_item_role_list
+            rval["modify_item_roles"] = role_name_id_pairs(modify_roles, private_role_emails, encode_id)
         return rval
 
     def ensure_dataset_on_disk(self, trans, dataset: U):
