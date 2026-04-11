@@ -3,7 +3,7 @@ from typing import (
     Union,
 )
 
-from pydantic.tools import parse_obj_as
+from pydantic import TypeAdapter
 
 from galaxy.datatypes._schema import (
     DatatypeConverterList,
@@ -87,7 +87,7 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
                     "tool_id": targets[target_type].id,
                 }
             )
-    return parse_obj_as(DatatypeConverterList, converters)
+    return TypeAdapter(DatatypeConverterList).validate_python(converters)
 
 
 def _get_edam_details(datatypes_registry: Registry, edam_ids: dict[str, str]) -> dict[str, dict]:
@@ -158,7 +158,7 @@ def view_visualization_mappings(
                 }
             )
 
-    return parse_obj_as(DatatypeVisualizationMappingsList, mappings)
+    return TypeAdapter(DatatypeVisualizationMappingsList).validate_python(mappings)
 
 
 def get_preferred_visualization(datatypes_registry: Registry, datatype_extension: str) -> Optional[dict[str, str]]:
