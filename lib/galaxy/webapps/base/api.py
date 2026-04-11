@@ -56,7 +56,7 @@ log = getLogger(__name__)
 def _get_range_header(range_header: str, file_size: int) -> tuple[int, int]:
     def _invalid_range():
         return HTTPException(
-            status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+            status.HTTP_416_RANGE_NOT_SATISFIABLE,
             detail=f"Invalid request range (Range:{range_header!r})",
         )
 
