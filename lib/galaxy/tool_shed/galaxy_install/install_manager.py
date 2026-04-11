@@ -319,7 +319,7 @@ class InstallRepositoryManager:
         tsr_ids = [r.id for r in created_or_updated_tool_shed_repositories]
         tool_shed_repositories = []
         for tsr_id in tsr_ids:
-            tsr = self.install_model.context.query(self.install_model.ToolShedRepository).get(tsr_id)
+            tsr = self.install_model.context.get(self.install_model.ToolShedRepository, tsr_id)
             tool_shed_repositories.append(tsr)
         clause_list = []
         for tsr_id in tsr_ids:
@@ -492,8 +492,8 @@ class InstallRepositoryManager:
             tsr_ids, repo_info_dicts, tool_panel_section_keys=tool_panel_section_keys
         )
         for tsr_id in ordered_tsr_ids:
-            repository = self.install_model.context.query(self.install_model.ToolShedRepository).get(
-                self.app.security.decode_id(tsr_id)
+            repository = self.install_model.context.get(
+                self.install_model.ToolShedRepository, self.app.security.decode_id(tsr_id)
             )
             if repository.status in [
                 self.install_model.ToolShedRepository.installation_status.NEW,

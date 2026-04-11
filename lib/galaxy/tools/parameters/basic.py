@@ -2201,7 +2201,10 @@ class DataToolParameter(BaseDataToolParameter):
                         # support that for integer column types.
                         log.warning("Encoded ID where unencoded ID expected.")
                         single_value = trans.security.decode_id(single_value)
-                    rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(single_value))
+                    if single_value is None:
+                        rval.append(None)
+                    else:
+                        rval.append(trans.sa_session.get(HistoryDatasetAssociation, single_value))
                 if len(found_srcs) > 1 and "hdca" in found_srcs:
                     raise ParameterValueError(
                         "if collections are supplied to multiple data input parameter, only collections may be used",

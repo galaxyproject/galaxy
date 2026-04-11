@@ -416,7 +416,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _get_dataset_for_edit(self, trans, dataset_id):
         if dataset_id is not None:
             id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(HistoryDatasetAssociation).get(id)
+            data = trans.sa_session.get(HistoryDatasetAssociation, id)
         else:
             trans.log_event("dataset_id is None, cannot load a dataset to edit.")
             return None, self.message_exception(trans, "You must provide a dataset id to edit attributes.")
