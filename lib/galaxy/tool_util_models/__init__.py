@@ -261,11 +261,11 @@ OutputChecks = Union[TestOutputLiteral, Dict[str, Any]]
 OutputsDict = Dict[str, OutputChecks]
 
 
-class TestJobDict(TypedDict):
+class JobTestDict(TypedDict):
     doc: NotRequired[str]
     job: NotRequired[JobDict]
     expect_failure: NotRequired[bool]
     outputs: OutputsDict
 
 
-TestDicts = List[TestJobDict]
+TestDicts = List[JobTestDict]
