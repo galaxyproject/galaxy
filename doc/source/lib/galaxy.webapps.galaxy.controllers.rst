@@ -105,14 +105,6 @@ galaxy.webapps.galaxy.controllers.shed\_tool\_static module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.tag module
---------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.tag
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.tool\_runner module
 -----------------------------------------------------
 
