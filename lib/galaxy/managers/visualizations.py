@@ -217,5 +217,5 @@ class VisualizationDeserializer(sharable.SharableModelDeserializer):
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)

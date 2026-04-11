@@ -7930,7 +7930,7 @@ class HistoryDatasetCollectionAssociation(
             subq = subq1.union(subq2)
 
             # Build and return final query
-            stm = select().select_from(subq)
+            stm = select().select_from(subq.subquery())
             # Add aggregate columns for each job state
             for state in enum_values(Job.states):
                 col = func.sum(case((column(state_label) == state, 1), else_=0)).label(state)
@@ -11407,7 +11407,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         (Required by social_core.storage.UserMixin interface)
         """
         stmt_user = select(User).filter_by(*args, **kwargs)
-        stmt_count = select(func.count()).select_from(stmt_user)
+        stmt_count = select(func.count()).select_from(stmt_user.subquery())
         return cls.sa_session.scalar(stmt_count) > 0
 
     @classmethod

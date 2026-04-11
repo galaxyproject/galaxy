@@ -1091,5 +1091,5 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)
