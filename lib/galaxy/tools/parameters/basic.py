@@ -2052,12 +2052,12 @@ def src_id_to_item(
             for item in adapting:
                 element = TransientCollectionAdapterDatasetInstanceElement(
                     item.name,
-                    cast(HistoryDatasetAssociation, src_id_to_item(sa_session, item.dict(), security)),
+                    cast(HistoryDatasetAssociation, src_id_to_item(sa_session, item.model_dump(), security)),
                 )
                 elements.append(element)
             return recover_adapter(elements, adapter_model)
         else:
-            value = adapting.dict()
+            value = adapting.model_dump()
     src_to_class = {
         "hda": HistoryDatasetAssociation,
         "ldda": LibraryDatasetDatasetAssociation,
@@ -2994,7 +2994,7 @@ def history_item_to_json(value, app, use_security):
     collection_adapter: Optional[CollectionAdapter] = None
     if isinstance(value, CollectionAdapter):
         collection_adapter = value
-        return collection_adapter.to_adapter_model().dict()
+        return collection_adapter.to_adapter_model().model_dump()
     if isinstance(value, MutableMapping) and "src" in value and "id" in value:
         return value
     elif isinstance(value, DatasetCollectionElement):
