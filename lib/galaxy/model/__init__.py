@@ -916,8 +916,8 @@ class User(Base, Dictifiable, RepresentById):
     data_manager_histories: Mapped[list["DataManagerHistoryAssociation"]] = relationship(back_populates="user")
     roles: Mapped[list["UserRoleAssociation"]] = relationship(back_populates="user")
     stored_workflows: Mapped[list["StoredWorkflow"]] = relationship(
-        back_populates="user",
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
+        viewonly=True,
     )
     all_notifications: Mapped[list["UserNotificationAssociation"]] = relationship(back_populates="user")
 
@@ -3497,7 +3497,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     archive_export_id: Mapped[Optional[int]] = mapped_column(ForeignKey("store_export_association.id"), default=None)
 
     datasets: Mapped[list["HistoryDatasetAssociation"]] = relationship(
-        back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)
+        primaryjoin=(lambda: HistoryDatasetAssociation.history_id == History.id),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        viewonly=True,
     )
     exports: Mapped[list["JobExportHistoryArchive"]] = relationship(
         back_populates="history",
@@ -8568,7 +8570,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
     published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
 
     user: Mapped["User"] = relationship(
-        primaryjoin=(lambda: User.id == StoredWorkflow.user_id), back_populates="stored_workflows"
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
     )
     workflows: Mapped[list["Workflow"]] = relationship(
         back_populates="stored_workflow",
@@ -12897,7 +12899,7 @@ mapper_registry.map_imperatively(
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates="dataset"),
         creating_job_associations=relationship(JobToOutputDatasetAssociation, back_populates="dataset"),
-        history=relationship(History, back_populates="datasets"),
+        history=relationship(History),
         implicitly_converted_datasets=relationship(
             ImplicitlyConvertedDatasetAssociation,
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),
