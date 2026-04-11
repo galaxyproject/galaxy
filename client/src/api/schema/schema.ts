@@ -20712,7 +20712,7 @@ export interface components {
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
-            workflow: string;
+            workflow: unknown;
         };
         /** RegexJobMessage */
         RegexJobMessage: {
