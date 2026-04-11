@@ -395,7 +395,7 @@ class NotificationManager:
         if request.expiration_time is not None:
             stmt = stmt.values(expiration_time=request.expiration_time)
         if request.content is not None:
-            stmt = stmt.values(content=request.content.json())
+            stmt = stmt.values(content=request.content.model_dump_json())
         result = cast(CursorResult, self.sa_session.execute(stmt))
         updated_row_count = result.rowcount
         self.sa_session.commit()
