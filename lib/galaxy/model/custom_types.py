@@ -132,6 +132,8 @@ class DoubleEncodedJsonType(JSONType):
 class MutableJSONType(JSONType):
     """Associated with MutationObj"""
 
+    cache_ok = True
+
 
 class MutationObj(Mutable):
     """
