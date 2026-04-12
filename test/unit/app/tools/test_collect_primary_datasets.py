@@ -197,6 +197,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert len(history_2.datasets) == 1
 
         self._collect()
+        self.app.model.context.flush()
 
         # Make sure extra primary was copied to cloned history with
         # cloned output.
