@@ -3612,7 +3612,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
-        self._item_by_hid_cache = None
+        self._copied_from_object_id_cache = None
 
     @reconstructor
     def init_on_load(self):
@@ -3805,14 +3805,20 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             hdas = self.datasets
         else:
             hdas = self.active_datasets
+        copied_from_object_id_map = {}
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy(flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
+            copied_from_object_id_map[hda.id] = new_hda
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
                 new_hda.copy_tags_from(target_user, hda)
+
+        # Pre-populate cache so HDCA copy's minimize_copies can find
+        # the just-created HDAs (viewonly self.datasets won't see unflushed rows).
+        new_history._copied_from_object_id_cache = copied_from_object_id_map
 
         # Copy history dataset collections
         if all_datasets:
@@ -3838,10 +3844,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
 
         return new_history
 
-    def get_dataset_by_hid(self, hid):
-        if self._item_by_hid_cache is None:
-            self._item_by_hid_cache = {dataset.hid: dataset for dataset in self.datasets}
-        return self._item_by_hid_cache.get(hid)
+    def get_copied_dataset(self, id):
+        if self._copied_from_object_id_cache is None:
+            return None
+        return self._copied_from_object_id_cache.get(id)
 
     @property
     def has_possible_members(self):
@@ -8411,12 +8417,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             elif isinstance(element_object, HistoryDatasetAssociation):
                 new_element_object = None
                 if minimize_copies:
-                    new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
-                if (
-                    new_element_object
-                    and new_element_object.dataset
-                    and new_element_object.dataset.id == element_object.dataset_id
-                ):
+                    new_element_object = element_destination.get_copied_dataset(element_object.id)
+                if new_element_object:
                     element_object = new_element_object
                 else:
                     new_element_object = element_object.copy(
@@ -8771,7 +8773,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     parent_workflow_steps = relationship(
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
-        back_populates="subworkflow",
+        viewonly=True,
     )
     stored_workflow = relationship(
         "StoredWorkflow",
@@ -8984,7 +8986,6 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
 
     subworkflow: Mapped[Optional["Workflow"]] = relationship(
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
-        back_populates="parent_workflow_steps",
     )
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship(
         primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id)
