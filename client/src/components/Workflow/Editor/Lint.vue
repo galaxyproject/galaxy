@@ -6,6 +6,7 @@ import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
+import type { Rectangle } from "@/utils/geometry";
 
 import {
     bestPracticeWarningAnnotation,

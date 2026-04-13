@@ -1,10 +1,13 @@
-import type { UseScrollReturn } from "@vueuse/core";
 import { select } from "d3-selection";
 import { type D3ZoomEvent, zoom, zoomIdentity } from "d3-zoom";
 import { type Ref, ref, watch } from "vue";
 
-import type { Vector, WorkflowTransform } from "@/components/Workflow/Editor/modules/geometry";
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Vector, WorkflowTransform } from "@/utils/geometry";
+
+export interface XYPosition {
+    x: number;
+    y: number;
+}
 
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
@@ -31,7 +34,6 @@ export function useD3Zoom(
     minZoom: number,
     maxZoom: number,
     targetRef: Ref<HTMLElement | null>,
-    scroll: UseScrollReturn,
     initialPan: XYPosition = { x: 0, y: 0 },
 ) {
     const transform = ref<WorkflowTransform>({ x: initialPan.x, y: initialPan.y, k: k });

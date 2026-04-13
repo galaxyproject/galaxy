@@ -3,8 +3,7 @@ import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
-
-import { type AxisAlignedBoundingBox, Transform, type WorkflowTransform } from "./modules/geometry";
+import { type AxisAlignedBoundingBox, Transform, type WorkflowTransform } from "@/utils/geometry";
 
 const lineGap = 10;
 

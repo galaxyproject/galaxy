@@ -4,10 +4,6 @@ import { ref, watch } from "vue";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { BaseWorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { assertDefined } from "@/utils/assertions";
-import { match } from "@/utils/utils";
-
-import { AddCommentAction } from "../Actions/commentActions";
-import { AddToSelectionAction, RemoveFromSelectionAction } from "../Actions/workflowActions";
 import {
     AxisAlignedBoundingBox,
     vecMax,
@@ -16,7 +12,11 @@ import {
     vecSnap,
     vecSubtract,
     type Vector,
-} from "../modules/geometry";
+} from "@/utils/geometry";
+import { match } from "@/utils/utils";
+
+import { AddCommentAction } from "../Actions/commentActions";
+import { AddToSelectionAction, RemoveFromSelectionAction } from "../Actions/workflowActions";
 
 export function useToolLogic() {
     const comment = ref<BaseWorkflowComment | null>(null);
