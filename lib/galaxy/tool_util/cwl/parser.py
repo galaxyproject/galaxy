@@ -14,6 +14,7 @@ from abc import (
 )
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -70,6 +71,7 @@ if TYPE_CHECKING:
     from .cwltool_deps import (
         CWLObjectType,
         JobsType,
+        OutputCallbackType,
         Process,
         workflow,
     )
@@ -357,7 +359,11 @@ class JobProxy:
             )
 
             runtimeContext = RuntimeContext(job_args)
-            self._cwl_job = next(self._tool_proxy._tool.job(self._input_dict, self._output_callback, runtimeContext))
+            self._cwl_job = next(
+                self._tool_proxy._tool.job(
+                    self._input_dict, cast("OutputCallbackType", self._output_callback), runtimeContext
+                )
+            )
             self._is_command_line_job = hasattr(self._cwl_job, "command_line")
 
     def _normalize_job(self):
@@ -465,7 +471,7 @@ class JobProxy:
         else:
             return {}
 
-    def _output_callback(self, out: Optional["CWLObjectType"], process_status: str):
+    def _output_callback(self, out: Optional["CWLObjectType"], process_status: str) -> None:
         self._process_status = process_status
         if process_status == "success":
             self._final_output = out
