@@ -59,7 +59,6 @@ from tool_shed.util.metadata_util import (
 from tool_shed.webapp import model
 from tool_shed.webapp.model.db import (
     get_repository_by_name_and_owner,
-    get_repository_query,
 )
 
 if TYPE_CHECKING:
@@ -262,10 +261,8 @@ def generate_sharable_link_for_repository_in_tool_shed(
 
 def get_repository_in_tool_shed(app: "ToolShedApp", id, eagerload_columns=None):
     """Get a repository on the tool shed side from the database via id."""
-    q = get_repository_query(app.model.context)
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.get(app.security.decode_id(id))
+    options = [joinedload(col) for col in eagerload_columns] if eagerload_columns else []
+    return app.model.context.get(model.Repository, app.security.decode_id(id), options=options)
 
 
 def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):

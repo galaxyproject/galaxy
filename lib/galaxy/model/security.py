@@ -1790,7 +1790,7 @@ def _get_valid_roles_exposed(session, search_query, is_admin, limit, page, page_
         )
         stmt = stmt.union(stmt2)
 
-    count_stmt = select(func.count()).select_from(stmt)
+    count_stmt = select(func.count()).select_from(stmt.subquery())
     total_count = session.scalar(count_stmt)
 
     stmt = stmt.order_by(Role.name)

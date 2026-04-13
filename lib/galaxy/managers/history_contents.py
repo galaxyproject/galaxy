@@ -230,7 +230,7 @@ class HistoryContentsManager(base.SortableManager):
             decoded_target_ids.extend(self.app.security.decode_id(h) for h in payload.target_history_ids)
 
         target_histories = [
-            h for h in map(trans.sa_session.query(model.History).get, decoded_target_ids) if h and h.user == user
+            h for h in (trans.sa_session.get(model.History, i) for i in decoded_target_ids) if h and h.user == user
         ]
         if len(target_histories) != len(decoded_target_ids):
             raise glx_exceptions.MessageException("You lack permission for one or more destination histories.")
@@ -244,8 +244,8 @@ class HistoryContentsManager(base.SortableManager):
             else:
                 raise glx_exceptions.MessageException("Unknown content type.")
 
-        contents = list(map(trans.sa_session.query(model.HistoryDatasetAssociation).get, decoded_ds))
-        contents.extend(map(trans.sa_session.query(model.HistoryDatasetCollectionAssociation).get, decoded_dc))
+        contents = [trans.sa_session.get(model.HistoryDatasetAssociation, i) for i in decoded_ds]
+        contents.extend(trans.sa_session.get(model.HistoryDatasetCollectionAssociation, i) for i in decoded_dc)
         contents.sort(key=lambda c: c.hid)
 
         for c in contents:

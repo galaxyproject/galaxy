@@ -1149,7 +1149,9 @@ class SelectToolParameter(ToolParameter):
         return value
 
     def to_python(self, value, app):
-        return history_item_dict_to_python(value, app, self.name) or super().to_python(value, app)
+        if isinstance(value, MutableMapping) and "src" in value:
+            return history_item_dict_to_python(value, app, self.name)
+        return super().to_python(value, app)
 
     def get_initial_value(self, trans, other_values):
         try:
@@ -2201,7 +2203,9 @@ class DataToolParameter(BaseDataToolParameter):
                         # support that for integer column types.
                         log.warning("Encoded ID where unencoded ID expected.")
                         single_value = trans.security.decode_id(single_value)
-                    rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(single_value))
+                    if single_value is None:
+                        raise ParameterValueError("unexpected None in data parameter value list", self.name)
+                    rval.append(trans.sa_session.get(HistoryDatasetAssociation, single_value))
                 if len(found_srcs) > 1 and "hdca" in found_srcs:
                     raise ParameterValueError(
                         "if collections are supplied to multiple data input parameter, only collections may be used",
@@ -2976,10 +2980,11 @@ parameter_types: dict[str, type[ToolParameter]] = dict(
 
 
 def history_item_dict_to_python(value, app, name):
-    if isinstance(value, MutableMapping) and "src" in value:
-        if value["src"] not in ("hda", "dce", "ldda", "hdca", "CollectionAdapter"):
-            raise ParameterValueError(f"Invalid value {value}", name)
-        return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
+    if not (isinstance(value, MutableMapping) and "src" in value):
+        raise ParameterValueError(f"Invalid value {value}", name)
+    if value["src"] not in ("hda", "dce", "ldda", "hdca", "CollectionAdapter"):
+        raise ParameterValueError(f"Invalid value {value}", name)
+    return src_id_to_item(sa_session=app.model.context, security=app.security, value=value)
 
 
 def history_item_to_json(value, app, use_security):

@@ -947,7 +947,7 @@ class JobContext(BaseJobContext):
         return library_folder
 
     def get_hdca(self, object_id):
-        hdca = self.sa_session.query(HistoryDatasetCollectionAssociation).get(int(object_id))
+        hdca = self.sa_session.get(HistoryDatasetCollectionAssociation, int(object_id))
         return hdca
 
     def create_library_folder(self, parent_folder: "LibraryFolder", name: str, description: str):

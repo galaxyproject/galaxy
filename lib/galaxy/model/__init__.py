@@ -916,8 +916,8 @@ class User(Base, Dictifiable, RepresentById):
     data_manager_histories: Mapped[list["DataManagerHistoryAssociation"]] = relationship(back_populates="user")
     roles: Mapped[list["UserRoleAssociation"]] = relationship(back_populates="user")
     stored_workflows: Mapped[list["StoredWorkflow"]] = relationship(
-        back_populates="user",
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
+        viewonly=True,
     )
     all_notifications: Mapped[list["UserNotificationAssociation"]] = relationship(back_populates="user")
 
@@ -3522,7 +3522,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     archive_export_id: Mapped[Optional[int]] = mapped_column(ForeignKey("store_export_association.id"), default=None)
 
     datasets: Mapped[list["HistoryDatasetAssociation"]] = relationship(
-        back_populates="history", order_by=lambda: asc(HistoryDatasetAssociation.hid)
+        primaryjoin=(lambda: HistoryDatasetAssociation.history_id == History.id),
+        order_by=lambda: asc(HistoryDatasetAssociation.hid),
+        viewonly=True,
     )
     exports: Mapped[list["JobExportHistoryArchive"]] = relationship(
         back_populates="history",
@@ -3635,7 +3637,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         self.user = user
         # Objects to eventually add to history
         self._pending_additions = []
-        self._item_by_hid_cache = None
+        self._copied_from_object_id_cache = None
 
     @reconstructor
     def init_on_load(self):
@@ -3828,14 +3830,20 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             hdas = self.datasets
         else:
             hdas = self.active_datasets
+        copied_from_object_id_map = {}
         for hda in hdas:
             # Copy HDA.
             new_hda = hda.copy(flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
+            copied_from_object_id_map[hda.id] = new_hda
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
                 new_hda.copy_tags_from(target_user, hda)
+
+        # Pre-populate cache so HDCA copy's minimize_copies can find
+        # the just-created HDAs (viewonly self.datasets won't see unflushed rows).
+        new_history._copied_from_object_id_cache = copied_from_object_id_map
 
         # Copy history dataset collections
         if all_datasets:
@@ -3861,10 +3869,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
 
         return new_history
 
-    def get_dataset_by_hid(self, hid):
-        if self._item_by_hid_cache is None:
-            self._item_by_hid_cache = {dataset.hid: dataset for dataset in self.datasets}
-        return self._item_by_hid_cache.get(hid)
+    def get_copied_dataset(self, id):
+        if self._copied_from_object_id_cache is None:
+            return None
+        return self._copied_from_object_id_cache.get(id)
 
     @property
     def has_possible_members(self):
@@ -7955,7 +7963,7 @@ class HistoryDatasetCollectionAssociation(
             subq = subq1.union(subq2)
 
             # Build and return final query
-            stm = select().select_from(subq)
+            stm = select().select_from(subq.subquery())
             # Add aggregate columns for each job state
             for state in enum_values(Job.states):
                 col = func.sum(case((column(state_label) == state, 1), else_=0)).label(state)
@@ -8434,12 +8442,8 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             elif isinstance(element_object, HistoryDatasetAssociation):
                 new_element_object = None
                 if minimize_copies:
-                    new_element_object = element_destination.get_dataset_by_hid(element_object.hid)
-                if (
-                    new_element_object
-                    and new_element_object.dataset
-                    and new_element_object.dataset.id == element_object.dataset_id
-                ):
+                    new_element_object = element_destination.get_copied_dataset(element_object.id)
+                if new_element_object:
                     element_object = new_element_object
                 else:
                     new_element_object = element_object.copy(
@@ -8593,7 +8597,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
     published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
 
     user: Mapped["User"] = relationship(
-        primaryjoin=(lambda: User.id == StoredWorkflow.user_id), back_populates="stored_workflows"
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
     )
     workflows: Mapped[list["Workflow"]] = relationship(
         back_populates="stored_workflow",
@@ -8794,7 +8798,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     parent_workflow_steps = relationship(
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
-        back_populates="subworkflow",
+        viewonly=True,
     )
     stored_workflow = relationship(
         "StoredWorkflow",
@@ -9007,7 +9011,6 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
 
     subworkflow: Mapped[Optional["Workflow"]] = relationship(
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
-        back_populates="parent_workflow_steps",
     )
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship(
         primaryjoin=(lambda: DynamicTool.id == WorkflowStep.dynamic_tool_id)
@@ -11432,7 +11435,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         (Required by social_core.storage.UserMixin interface)
         """
         stmt_user = select(User).filter_by(*args, **kwargs)
-        stmt_count = select(func.count()).select_from(stmt_user)
+        stmt_count = select(func.count()).select_from(stmt_user.subquery())
         return cls.sa_session.scalar(stmt_count) > 0
 
     @classmethod
@@ -12922,7 +12925,7 @@ mapper_registry.map_imperatively(
         _metadata=deferred(HistoryDatasetAssociation.table.c._metadata),
         dependent_jobs=relationship(JobToInputDatasetAssociation, back_populates="dataset"),
         creating_job_associations=relationship(JobToOutputDatasetAssociation, back_populates="dataset"),
-        history=relationship(History, back_populates="datasets"),
+        history=relationship(History),
         implicitly_converted_datasets=relationship(
             ImplicitlyConvertedDatasetAssociation,
             primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),

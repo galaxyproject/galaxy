@@ -703,5 +703,5 @@ def _build_page_query(select_clause, user: User, slug: str):
 
 
 def get_count(session, statement):
-    stmt = select(func.count()).select_from(statement)
+    stmt = select(func.count()).select_from(statement.subquery())
     return session.scalar(stmt)

@@ -157,7 +157,7 @@ class JobIO(UsesDictVisibleKeys):
             # Drop in 24.0
             io_dict.pop("model_class", None)
         job_id = io_dict.pop("job_id")
-        job = sa_session.query(Job).get(job_id)
+        job = sa_session.get(Job, job_id)
         return cls(sa_session=sa_session, job=job, **io_dict)
 
     @classmethod
