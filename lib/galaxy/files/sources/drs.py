@@ -60,12 +60,21 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
     ):
         user_context = context.user_data.context if context.user_data.context else None
         config = context.config
+        headers = dict(config.http_headers)
+        if config.attach_oidc_token and user_context:
+            access_token = getattr(user_context, "oidc_access_token", None)
+            if access_token:
+                headers.setdefault("Authorization", f"Bearer {access_token}")
+                log.info("Attaching OIDC access token to DRS request")
+        log.info(f"Config: {config}")
+        log.info(f"Headers: {headers}")
+        log.info(f"User context: {user_context}")
         fetch_drs_to_file(
             source_path,
             native_path,
             user_context=user_context,
             fetch_url_allowlist=self._allowlist,
-            headers=config.http_headers,
+            headers=headers or None,
             force_http=config.force_http,
         )
 
