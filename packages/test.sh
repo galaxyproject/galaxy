@@ -36,30 +36,18 @@ fi
 # Change to packages directory.
 cd "$(dirname "$0")"
 
-# Use a throw-away virtualenv
 TEST_PYTHON=${TEST_PYTHON:-"python3"}
-TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 if command -v uv >/dev/null; then
-    uv venv --python "$TEST_PYTHON" "$TEST_ENV_DIR"
+    VENV_CMD="uv venv --python $TEST_PYTHON"
     PIP_CMD="$(command -v uv) pip"
     BUILD_WHEEL_CMD="$(command -v uv) build"
     TWINE_CMD="$(command -v uvx) twine"
 else
-    "$TEST_PYTHON" -m venv "$TEST_ENV_DIR"
+    VENV_CMD="$TEST_PYTHON -m venv"
     PIP_CMD='python -m pip'
     BUILD_WHEEL_CMD='python -m build'
     TWINE_CMD=twine
-fi
-
-# shellcheck disable=SC1091
-. "${TEST_ENV_DIR}/bin/activate"
-if [ "${PIP_CMD}" = 'python -m pip' ]; then
-    ${PIP_CMD} install --upgrade build pip setuptools twine wheel
-fi
-if [ $FOR_PULSAR -eq 0 ]; then
-    # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
-    ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 fi
 
 # Ensure ordered by dependency DAG
@@ -81,8 +69,17 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
 
     cd "$package_dir"
 
+    # Use a throw-away virtualenv
+    TEST_ENV_DIR=$(mktemp -d -t gxpkgtestenvXXXXXX)
+    ${VENV_CMD} "$TEST_ENV_DIR"
+    # shellcheck disable=SC1091
+    . "${TEST_ENV_DIR}/bin/activate"
+    if [ "${PIP_CMD}" = 'python -m pip' ]; then
+        ${PIP_CMD} install --upgrade pip setuptools wheel
+    fi
+
     # Install extras (if needed)
-    # shellcheck disable=SC2086 - word splitting is intentional for PIP_EXTRA_ARGS
+    # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
     if [ "$package_dir" = "util" ]; then
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
@@ -101,6 +98,8 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # Ignore exit code 5 (no tests ran)
     pytest "${marker_args[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
+        # shellcheck disable=SC2086 # word splitting is intentional for PIP_EXTRA_ARGS
+        ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
         mypy .
