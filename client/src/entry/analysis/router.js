@@ -43,6 +43,7 @@ import GridVisualization from "@/components/Grid/GridVisualization.vue";
 import HelpTerm from "@/components/Help/HelpTerm.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import HistoryExportTasks from "@/components/History/Export/HistoryExport.vue";
+import HistoryGraphView from "@/components/History/Graph/HistoryGraphView.vue";
 import HistoryAccessibility from "@/components/History/HistoryAccessibility.vue";
 import HistoryDatasetPermissions from "@/components/History/HistoryDatasetPermissions.vue";
 import HistoryList from "@/components/History/HistoryList.vue";
@@ -425,6 +426,14 @@ export function getRouter(Galaxy) {
                         path: "histories/:historyId/extract_workflow",
                         component: WorkflowExtractionForm,
                         props: true,
+                    },
+                    {
+                        path: "histories/:historyId/graph",
+                        component: HistoryGraphView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            seedNodeId: route.query.seed || undefined,
+                        }),
                     },
                     {
                         path: "interactivetool_entry_points/list",
