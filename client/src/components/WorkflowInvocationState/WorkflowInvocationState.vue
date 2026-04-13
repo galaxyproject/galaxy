@@ -1,10 +1,18 @@
 <script setup lang="ts">
-import { faExclamation, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
+import {
+    faAngleDoubleDown,
+    faAngleDoubleUp,
+    faExclamation,
+    faSpinner,
+    faSquare,
+    faTimes,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import { type InvocationStep, isWorkflowInvocationElementView } from "@/api/invocations";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useInvocationStore } from "@/stores/invocationStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -58,6 +66,8 @@ const invocationLoaded = ref(false);
 const errorMessage = ref<string | null>(null);
 const cancellingInvocation = ref(false);
 const isPolling = ref(false);
+
+const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle("invocation-header-collapsed");
 
 const uniqueMessages = computed(() => {
     const messages = invocation.value?.messages || [];
@@ -239,6 +249,19 @@ watch(
     },
 );
 
+// If a workflow is run just now (success prop), we want to have the header expanded
+watch(
+    () => props.success,
+    (success) => {
+        if (success && headerCollapsed.value) {
+            setTimeout(() => {
+                headerCollapsed.value = false;
+            }, 1500);
+        }
+    },
+    { immediate: true },
+);
+
 onUnmounted(() => {
     clearTimeout(stepStatesInterval.value);
     clearTimeout(jobStatesInterval.value);
@@ -283,6 +306,17 @@ async function onCancel() {
             :invocation="invocation"
             :workflow-id="invocation.workflow_id"
             :success="props.success">
+            <template v-slot:before-icon>
+                <GButton
+                    transparent
+                    size="small"
+                    :title="headerCollapsed ? 'Expand header' : 'Collapse header'"
+                    icon-only
+                    inline
+                    @click="toggleHeaderCollapse">
+                    <FontAwesomeIcon :icon="headerCollapsed ? faAngleDoubleDown : faAngleDoubleUp" fixed-width />
+                </GButton>
+            </template>
             <template v-slot:workflow-title-actions>
                 <GButton
                     v-if="!invocationAndJobTerminal"
@@ -304,48 +338,50 @@ async function onCancel() {
             </template>
         </WorkflowNavigationTitle>
 
-        <WorkflowAnnotation
-            v-if="props.isFullPage"
-            :workflow-id="invocation.workflow_id"
-            :invocation-create-time="invocation.create_time"
-            :history-id="invocation.history_id">
-            <template v-slot:middle-content>
-                <div class="progress-bars mx-1">
-                    <ProgressBar
-                        v-if="!stepCount"
-                        note="Loading step state summary..."
-                        :loading="true"
-                        class="steps-progress" />
-                    <ProgressBar
-                        v-else-if="invocationState == 'cancelled'"
-                        note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
-                        :error-count="1"
-                        class="steps-progress" />
-                    <ProgressBar
-                        v-else-if="invocationState == 'failed'"
-                        note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
-                        :error-count="1"
-                        class="steps-progress" />
-                    <ProgressBar
-                        v-else
-                        :note="stepStatesStr"
-                        :total="stepCount"
-                        :ok-count="stepStates.scheduled"
-                        :loading="!invocationSchedulingTerminal"
-                        class="steps-progress" />
-                    <ProgressBar
-                        v-if="stateCounts"
-                        :note="jobStatesStr"
-                        :total="jobCount"
-                        :ok-count="stateCounts.okCount"
-                        :running-count="stateCounts.runningCount"
-                        :new-count="stateCounts.newCount"
-                        :error-count="stateCounts.errorCount"
-                        :loading="!invocationAndJobTerminal"
-                        class="jobs-progress" />
-                </div>
-            </template>
-        </WorkflowAnnotation>
+        <Transition name="header-collapse">
+            <WorkflowAnnotation
+                v-if="props.isFullPage && !headerCollapsed"
+                :workflow-id="invocation.workflow_id"
+                :invocation-create-time="invocation.create_time"
+                :history-id="invocation.history_id">
+                <template v-slot:middle-content>
+                    <div class="progress-bars mx-1">
+                        <ProgressBar
+                            v-if="!stepCount"
+                            note="Loading step state summary..."
+                            :loading="true"
+                            class="steps-progress" />
+                        <ProgressBar
+                            v-else-if="invocationState == 'cancelled'"
+                            note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
+                            :error-count="1"
+                            class="steps-progress" />
+                        <ProgressBar
+                            v-else-if="invocationState == 'failed'"
+                            note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
+                            :error-count="1"
+                            class="steps-progress" />
+                        <ProgressBar
+                            v-else
+                            :note="stepStatesStr"
+                            :total="stepCount"
+                            :ok-count="stepStates.scheduled"
+                            :loading="!invocationSchedulingTerminal"
+                            class="steps-progress" />
+                        <ProgressBar
+                            v-if="stateCounts"
+                            :note="jobStatesStr"
+                            :total="jobCount"
+                            :ok-count="stateCounts.okCount"
+                            :running-count="stateCounts.runningCount"
+                            :new-count="stateCounts.newCount"
+                            :error-count="stateCounts.errorCount"
+                            :loading="!invocationAndJobTerminal"
+                            class="jobs-progress" />
+                    </div>
+                </template>
+            </WorkflowAnnotation>
+        </Transition>
 
         <BNav v-if="props.isFullPage" pills class="mb-2 p-2 bg-light border-bottom">
             <BNavItem title="Overview" :active="onOverviewTab" :to="`/workflows/invocations/${props.invocationId}`">
@@ -508,6 +544,25 @@ async function onCancel() {
 </style>
 
 <style scoped lang="scss">
+.header-collapse-enter-active,
+.header-collapse-leave-active {
+    overflow: hidden;
+    max-height: 600px;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        max-height 0.3s ease,
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+.header-collapse-enter,
+.header-collapse-leave-to {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
 .progress-bars {
     // progress bar shrinks to fit divs on either side
     flex-grow: 1;
