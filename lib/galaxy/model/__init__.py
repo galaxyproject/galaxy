@@ -2658,11 +2658,15 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
-    dataset_id: Mapped[int] = mapped_column(ForeignKey("history_dataset_association.id"), index=True, nullable=True)
+    dataset_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("history_dataset_association.id"), index=True, nullable=True
+    )
     dataset_version: Mapped[Optional[int]]
     name: Mapped[str] = mapped_column(String(255), nullable=True)
     adapter: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
-    dataset: Mapped["HistoryDatasetAssociation"] = relationship(lazy="joined", back_populates="dependent_jobs")
+    dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
+        lazy="joined", back_populates="dependent_jobs"
+    )
     job: Mapped["Job"] = relationship(back_populates="input_datasets")
 
     def __init__(self, name, dataset, adapter_json=None):
