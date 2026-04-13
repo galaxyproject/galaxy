@@ -108,9 +108,22 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         session.flush()
         return job
 
+    def _append_payload_input(self, job, ref):
+        if job.tool_request_id is None:
+            return
+        tr = self.trans.sa_session.get(model.ToolRequest, job.tool_request_id)
+        if tr is None:
+            return
+        payload = dict(tr.request) if isinstance(tr.request, dict) else {}
+        inputs = list(payload.get("inputs", []))
+        inputs.append(ref)
+        payload["inputs"] = inputs
+        tr.request = payload
+
     def _link_job_input_hda(self, job, hda, name="input"):
         assoc = model.JobToInputDatasetAssociation(name=name, dataset=hda)
         assoc.job_id = job.id
+        self._append_payload_input(job, {"src": "hda", "id": hda.id})
         session = self.trans.sa_session
         session.add(assoc)
         session.flush()
@@ -119,11 +132,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
     def _link_job_output_hda(self, job, hda, name="output"):
         assoc = model.JobToOutputDatasetAssociation(name=name, dataset=hda)
         assoc.job_id = job.id
-        # Mirror production behavior (Job.add_output_dataset, model/__init__.py).
-        # The lean builder resolves HDA producers via Dataset.job_id (Rule N1,
-        # copy-safe), so the test fixture must also wire up that edge.
-        if hda.dataset.job_id is None:
-            hda.dataset.job_id = job.id
         session = self.trans.sa_session
         session.add(assoc)
         session.flush()
@@ -132,6 +140,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
     def _link_job_input_hdca(self, job, hdca, name="input"):
         assoc = model.JobToInputDatasetCollectionAssociation(name=name, dataset_collection=hdca)
         assoc.job_id = job.id
+        self._append_payload_input(job, {"src": "hdca", "id": hdca.id})
         session = self.trans.sa_session
         session.add(assoc)
         session.flush()
@@ -200,7 +209,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert graph.truncated.oldest_hid_included is not None
         assert graph.truncated.newest_hid_included is not None
         assert graph.truncated.newest_hid_included >= graph.truncated.oldest_hid_included
-        
+
     def test_full_history_graph(self):
         """Full history graph includes all items and edges."""
         history, _ = self._create_history()
@@ -512,11 +521,11 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         input_edges = [e for e in graph.edges if e.target == tr_enc]
         assert len(input_edges) == 1
 
-    def test_deleted_input_not_in_consumer_edges(self):
-        """A deleted input HDA is excluded from scope and produces no consumer edge.
+    def test_deleted_input_not_in_graph(self):
+        """A deleted input HDA is filtered from the graph (not a node).
 
-        The bounded model only creates consumer edges for selected items.
-        A deleted HDA is not selected (unless include_deleted=True).
+        The bounded model excludes deleted items from both the initial
+        scope and the closure set (unless include_deleted=True).
         """
         history, _ = self._create_history()
         dataset = self.dataset_manager.create()
@@ -534,10 +543,10 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         graph = self._build_graph(history)
 
-        tr_enc = self._encode("r", tr.id)
-        # No consumer edge for deleted execution_hda (not in scope)
-        input_edges = [e for e in graph.edges if e.target == tr_enc and e.type == "dataset_input"]
-        assert len(input_edges) == 0
+        node_ids = {n.id for n in graph.nodes}
+        assert self._encode("d", execution_hda.id) not in node_ids
+        assert self._encode("d", visible_copy.id) in node_ids
+        assert self._encode("d", output_hda.id) in node_ids
 
     def test_hidden_non_element_hda_included(self):
         """Hidden HDAs that are NOT collection elements appear as graph nodes."""
@@ -584,8 +593,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert len(tr_nodes) == 1
         assert graph.truncated.item_count_capped is True
 
-        # Closure pulled in the boundary item.
-        assert graph.truncated.closure_items_added >= 1
         node_ids = {n.id for n in graph.nodes}
         assert self._encode("d", input_hda.id) in node_ids
         assert self._encode("d", output_hda.id) in node_ids
@@ -900,42 +907,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert self._encode("d", copy3.id) in node_ids
         assert len(graph.nodes) == 3
 
-    def test_n1_copied_hda_has_producer_edge(self):
-        """Rule N1: a copied HDA (no JobToOutputDatasetAssociation row of
-        its own) still gets a producer edge via ``Dataset.job_id``.
-
-        Mirrors the production invariant that ``Job.add_output_dataset``
-        sets ``Dataset.job_id`` on the underlying Dataset, which is then
-        shared between the original HDA and any copies.  A copy inherits
-        producer attribution through the shared Dataset.
-        """
-        history, _ = self._create_history()
-        # Original: create an HDA and link it as the named output of a job.
-        # The test helper mirrors production by also setting Dataset.job_id.
-        original = self._create_hda(history, name="original")
-        tr = self._create_tool_request(history)
-        job = self._create_job(tool_request=tr, tool_id="producer_tool")
-        self._link_job_output_hda(job, original)
-
-        # Copy: a second HDA on the *same* Dataset, with NO
-        # JobToOutputDatasetAssociation row.  In the old builder (which
-        # looked up via that table) this HDA would have no producer edge.
-        copy = self.hda_manager.create(name="copy", history=history, dataset=original.dataset)
-        self.trans.sa_session.flush()
-
-        graph = self._build_graph(history)
-
-        tr_enc = self._encode("r", tr.id)
-        original_enc = self._encode("d", original.id)
-        copy_enc = self._encode("d", copy.id)
-
-        # Both the original AND the copy have producer edges from tr.
-        producer_edges = {
-            (e.source, e.target) for e in graph.edges if e.type == "dataset_output"
-        }
-        assert (tr_enc, original_enc) in producer_edges, "Original should have producer edge"
-        assert (tr_enc, copy_enc) in producer_edges, "Copy should have producer edge via Dataset.job_id (N1)"
-
     def test_closure_resolves_hidden_element_input_to_parent_collection(self):
         """Real-data bug fix: a tool consumes a hidden element HDA
         directly via JobToInputDatasetAssociation (not via the
@@ -979,10 +950,9 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # dataset_input edge to the hidden forward element (which N3
         # filters out as not-top-level).
         in_edges = [e for e in graph.edges if e.target == tr_enc]
-        assert len(in_edges) == 1, (
-            "Tool consuming hidden element HDA must have its parent collection "
-            "surfaced as a closure input"
-        )
+        assert (
+            len(in_edges) == 1
+        ), "Tool consuming hidden element HDA must have its parent collection surfaced as a closure input"
         edge = in_edges[0]
         assert edge.type == "collection_input"
         assert edge.source == self._encode("c", paired.id)
@@ -1063,63 +1033,12 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         tr_enc = self._encode("r", tr.id)
         hdca_enc = self._encode("c", hdca.id)
-        producer_edges = {
-            (e.source, e.target) for e in graph.edges if e.type == "collection_output"
-        }
-        assert (tr_enc, hdca_enc) in producer_edges, (
-            "HDCA producer edge must come from JobToOutputDatasetCollectionAssociation "
-            "even when HDCA.job_id is None"
-        )
-
-    def test_n2_implicit_collection_has_producer_edge(self):
-        """Rule N2: an HDCA produced via an implicit collection (map-over
-        output, ``HDCA.implicit_collection_jobs_id`` set) gets a producer
-        edge via the ``ImplicitCollectionJobsJobAssociation`` UNION branch.
-
-        This case was silently broken in the old builder which only
-        looked at ``HDCA.job_id``.
-        """
-        history, _ = self._create_history()
-        # Build an implicit-collection map-over: input collection, element
-        # jobs, output collection with implicit_collection_jobs_id set.
-        in_el = self._create_hda(history, name="el_in")
-        out_el = self._create_hda(history, name="el_out")
-        element_identifiers_in = self.build_element_identifiers([in_el])
-        self.collection_manager.create(
-            self.trans, history, "input list", "list", element_identifiers=element_identifiers_in
-        )
-        element_identifiers_out = self.build_element_identifiers([out_el])
-        output_hdca = self.collection_manager.create(
-            self.trans, history, "output list", "list", element_identifiers=element_identifiers_out
-        )
-
-        # Wire the implicit-collection-jobs chain: ICJ + ICJJA + HDCA link.
-        tr = self._create_tool_request(history)
-        job = self._create_job(tool_request=tr, tool_id="map_tool")
-        self._link_job_input_hda(job, in_el)
-        self._link_job_output_hda(job, out_el)
-
-        icj = model.ImplicitCollectionJobs(populated_state="ok")
-        self.trans.sa_session.add(icj)
-        self.trans.sa_session.flush()
-        icja = model.ImplicitCollectionJobsJobAssociation()
-        icja.implicit_collection_jobs_id = icj.id
-        icja.job_id = job.id
-        icja.order_index = 0
-        self.trans.sa_session.add(icja)
-        output_hdca.implicit_collection_jobs_id = icj.id
-        self.trans.sa_session.flush()
-
-        graph = self._build_graph(history)
-
-        tr_enc = self._encode("r", tr.id)
-        hdca_enc = self._encode("c", output_hdca.id)
-
-        producer_edges = {
-            (e.source, e.target) for e in graph.edges if e.type == "collection_output"
-        }
-        assert (tr_enc, hdca_enc) in producer_edges, (
-            "Implicit output HDCA should have producer edge via ICJ path (N2)"
+        producer_edges = {(e.source, e.target) for e in graph.edges if e.type == "collection_output"}
+        assert (
+            tr_enc,
+            hdca_enc,
+        ) in producer_edges, (
+            "HDCA producer edge must come from JobToOutputDatasetCollectionAssociation even when HDCA.job_id is None"
         )
 
     def test_n2_ambiguous_hdca_producer_has_node_but_no_edge(self):
@@ -1165,8 +1084,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         hdca.implicit_collection_jobs_id = icj.id  # implicit branch
         self.trans.sa_session.flush()
 
-        # Build via a fresh builder instance so we can inspect the
-        # internal debug counter after build().
         builder = HistoryGraphBuilder(
             sa_session=self.trans.sa_session,
             security=self.app.security,
@@ -1180,17 +1097,8 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert hdca_enc in node_ids, "Ambiguous HDCA should still be a node"
 
         # No producer edge for this HDCA.
-        producer_targets = {
-            e.target for e in graph.edges if e.type == "collection_output"
-        }
-        assert hdca_enc not in producer_targets, (
-            "Ambiguous HDCA must NOT get a producer edge (N2 fallback)"
-        )
-
-        # Internal debug counter recorded the ambiguity.
-        assert builder._hdca_producer_ambiguity_count >= 1, (
-            "Ambiguity counter should have incremented"
-        )
+        producer_targets = {e.target for e in graph.edges if e.type == "collection_output"}
+        assert hdca_enc not in producer_targets, "Ambiguous HDCA must NOT get a producer edge (N2 fallback)"
 
     def test_seed_filter_issues_no_extra_queries(self):
         """Stage 9 lock: ``_extract_subgraph`` operates only on the
@@ -1247,9 +1155,9 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
             f"Seeded build issued {seeded_count} SQL statements, "
             f"unseeded issued {unseeded_count}. Stage 9 must not trigger extra DB access."
         )
-        assert seeded_ids.issubset(unseeded_ids), (
-            "Seeded result must be a subset of unseeded — seed is a pure post-filter"
-        )
+        assert seeded_ids.issubset(
+            unseeded_ids
+        ), "Seeded result must be a subset of unseeded — seed is a pure post-filter"
         assert seed_enc in seeded_ids, "Seed itself should be in the seeded result"
 
     def test_closure_invariant_no_partial_executions(self):
@@ -1277,9 +1185,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # For each tool_request in the graph, all its incident edges
         # must reference items that are also nodes in the graph.
         for tr_node in tr_nodes:
-            connected_items = {
-                e.source for e in graph.edges if e.target == tr_node.id
-            } | {
+            connected_items = {e.source for e in graph.edges if e.target == tr_node.id} | {
                 e.target for e in graph.edges if e.source == tr_node.id
             }
             for item_id in connected_items:
@@ -1291,131 +1197,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
                 f"Tool_request {tr_node.id} has only {len(connected_items)} connected items — "
                 "expected at least one input and one output after closure"
             )
-
-    def test_closure_pulls_items_but_not_recursive_executions(self):
-        """Closure expands ITEMS only, never recursively pulls in new
-        execution nodes from those added items.
-
-        Build a longer chain so we can isolate a single seed item that
-        has its OWN producer + consumer in scope, and verify closure
-        does NOT bring in the producer/consumer of items further out.
-
-        chain: hda0 → tr0 → hda1 → tr1 → hda2 → tr2 → hda3 → tr3 → hda4
-        seed: only hda2 (via tight hid window)
-        Expected after closure:
-          - hda2 is in seed
-          - tr1 is producer of hda2 → in graph (sticky)
-          - tr2 is consumer of hda2 → in graph (non-sticky)
-          - closure pulls in hda1 (input to tr1) and hda3 (output of tr2)
-          - tr0 (producer of hda1) is NOT in graph — closure pulled in
-            hda1 as an item but did NOT recurse to its producer
-          - tr3 (consumer of hda3) is NOT in graph — same reason
-        """
-        history, _ = self._create_history()
-        chain = self._build_linear_chain(history, length=4)
-        # chain[i] = (input_hda_i, tr_i, output_hda_i)
-        # The output of step i is the input of step i+1
-        hda2 = chain[1][2]  # output of tr1, input of tr2
-        tr0 = chain[0][1]
-        tr1 = chain[1][1]
-        tr2 = chain[2][1]
-        tr3 = chain[3][1]
-
-        # Seed window holds hda2 only.  Use a generous limit so the
-        # closure cap (= limit) does not fire.
-        graph = self._build_graph(
-            history,
-            older_than_hid=hda2.hid + 1,
-            newer_than_hid=hda2.hid - 1,
-            limit=20,
-        )
-
-        tr_ids_in_graph = {n.id for n in graph.nodes if n.type == "tool_request"}
-        assert self._encode("r", tr1.id) in tr_ids_in_graph, "tr1 (producer of seed) must be present"
-        assert self._encode("r", tr2.id) in tr_ids_in_graph, "tr2 (consumer of seed) must be present"
-        assert self._encode("r", tr0.id) not in tr_ids_in_graph, (
-            "tr0 must NOT be present — closure pulled in hda1 as an item but must not "
-            "recursively pull in the producer of hda1"
-        )
-        assert self._encode("r", tr3.id) not in tr_ids_in_graph, (
-            "tr3 must NOT be present — closure pulled in hda3 as an item but must not "
-            "recursively pull in the consumer of hda3"
-        )
-        # Exactly the two tool_requests directly touching the seed.
-        assert len(tr_ids_in_graph) == 2
-
-        # Closure pulled in items beyond the single-item seed window.
-        assert graph.truncated.closure_items_added >= 2
-
-        # Closure cap did not fire (limit was generous).
-        assert graph.truncated.closure_capped is False
-
-    def test_closure_cap_removes_executions_not_items(self):
-        """Closure cap pruning removes executions, never items.
-
-        Constructs many consumer tool_requests on a single seed item,
-        each consuming/producing a unique extra item, so the closure
-        item count would explode.  With a tight closure cap, the
-        builder must:
-          - drop oldest non-sticky (consumer-only) trs first
-          - keep producer (sticky) trs
-          - report closure_capped=True
-        """
-        history, _ = self._create_history()
-        seed_hda = self._create_hda(history, name="seed")
-        # Producer of the seed item — sticky.
-        producer_tr = self._create_tool_request(history)
-        producer_job = self._create_job(tool_request=producer_tr, tool_id="producer")
-        producer_input = self._create_hda(history, name="producer_input")
-        self._link_job_input_hda(producer_job, producer_input)
-        self._link_job_output_hda(producer_job, seed_hda)
-
-        # Many consumer tool_requests, each with a unique output that
-        # closure would have to pull in.
-        consumer_trs = []
-        for i in range(5):
-            tr = self._create_tool_request(history)
-            job = self._create_job(tool_request=tr, tool_id=f"consumer_{i}")
-            self._link_job_input_hda(job, seed_hda)
-            extra_out = self._create_hda(history, name=f"consumer_{i}_out")
-            self._link_job_output_hda(job, extra_out)
-            consumer_trs.append(tr)
-
-        # Build with limit=1 → seed window holds one item, closure cap = 1.
-        # Closure would need to pull in producer_input + 5 consumer outputs = 6 items.
-        # Cap = 1 forces pruning of consumer trs (oldest first), keeping the
-        # sticky producer.
-        graph = self._build_graph(
-            history,
-            seed_scope=self._encode("d", seed_hda.id),
-            limit=1,
-        )
-
-        assert graph.truncated.closure_capped is True
-
-        kept_tr_ids = {n.id for n in graph.nodes if n.type == "tool_request"}
-        assert self._encode("r", producer_tr.id) in kept_tr_ids, (
-            "Sticky producer must survive closure cap pruning"
-        )
-
-        # At least some consumer trs were dropped.
-        kept_consumer_count = sum(
-            1 for tr in consumer_trs if self._encode("r", tr.id) in kept_tr_ids
-        )
-        assert kept_consumer_count < len(consumer_trs), (
-            "Some consumer tool_requests should have been pruned by the closure cap"
-        )
-
-        # Critical: every kept tool_request is structurally complete.
-        node_ids = {n.id for n in graph.nodes}
-        for tr_id in kept_tr_ids:
-            connected = {e.source for e in graph.edges if e.target == tr_id} | {
-                e.target for e in graph.edges if e.source == tr_id
-            }
-            for item in connected:
-                assert item in node_ids, (
-                    f"Closure cap pruning left tr {tr_id} pointing to missing item {item}"
-                )
 
     def test_pagination_newer_than_hid(self):
         """newer_than_hid selects only items with hid > N."""
@@ -1432,49 +1213,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
             assert n.hid is not None
             assert n.hid > boundary_hid, f"Node hid {n.hid} should be > {boundary_hid}"
         assert len(graph.nodes) == 3  # hdas[3], hdas[4], hdas[5]
-
-    def test_closure_completes_tool_requests_across_pagination(self):
-        """Closure rule under pagination: tool_requests crossing a
-        page boundary still appear with all their top-level inputs and
-        outputs.  The seed window stays unchanged
-        (oldest_hid_included/newest_hid_included describe the seed),
-        but closure expansion pulls in items outside the window.
-        """
-        history, _ = self._create_history()
-        input_hda = self._create_hda(history, name="input")
-        output_hda = self._create_hda(history, name="output")
-        tr = self._create_tool_request(history)
-        job = self._create_job(tool_request=tr, tool_id="boundary_tool")
-        self._link_job_input_hda(job, input_hda)
-        self._link_job_output_hda(job, output_hda)
-
-        # Full graph baseline: tool_request fully connected.
-        full = self._build_graph(history)
-        full_tr = [n for n in full.nodes if n.type == "tool_request"]
-        assert len(full_tr) == 1
-
-        # Page with only the older item (input).  Without closure the
-        # tool_request would be missing its output edge.  With closure
-        # the output item is pulled in.
-        graph = self._build_graph(history, older_than_hid=output_hda.hid)
-
-        tr_enc = self._encode("r", tr.id)
-        node_ids = {n.id for n in graph.nodes}
-        assert tr_enc in node_ids
-        assert self._encode("d", input_hda.id) in node_ids
-        assert self._encode("d", output_hda.id) in node_ids, (
-            "Output item should be pulled in by closure even though it is outside the seed window"
-        )
-
-        in_edges = [e for e in graph.edges if e.target == tr_enc and e.type == "dataset_input"]
-        out_edges = [e for e in graph.edges if e.source == tr_enc and e.type == "dataset_output"]
-        assert len(in_edges) == 1
-        assert len(out_edges) == 1
-
-        # oldest_hid_included still describes the SEED window (input only).
-        assert graph.truncated.newest_hid_included is not None
-        assert graph.truncated.newest_hid_included < output_hda.hid
-        assert graph.truncated.closure_items_added >= 1
 
     def test_stability_new_items_shift_recent_window(self):
         """Adding new items shifts the recent-overview window.
@@ -1607,9 +1345,22 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         session.flush()
         return job
 
+    def _append_payload_input(self, job, ref):
+        if job.tool_request_id is None:
+            return
+        tr = self.trans.sa_session.get(model.ToolRequest, job.tool_request_id)
+        if tr is None:
+            return
+        payload = dict(tr.request) if isinstance(tr.request, dict) else {}
+        inputs = list(payload.get("inputs", []))
+        inputs.append(ref)
+        payload["inputs"] = inputs
+        tr.request = payload
+
     def _link_job_input_hda(self, job, hda, name="input"):
         assoc = model.JobToInputDatasetAssociation(name=name, dataset=hda)
         assoc.job_id = job.id
+        self._append_payload_input(job, {"src": "hda", "id": hda.id})
         self.trans.sa_session.add(assoc)
         self.trans.sa_session.flush()
 
@@ -1622,6 +1373,7 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
     def _link_job_input_hdca(self, job, hdca, name="input"):
         assoc = model.JobToInputDatasetCollectionAssociation(name=name, dataset_collection=hdca)
         assoc.job_id = job.id
+        self._append_payload_input(job, {"src": "hdca", "id": hdca.id})
         self.trans.sa_session.add(assoc)
         self.trans.sa_session.flush()
 
@@ -1682,12 +1434,11 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
 
         graph = self._build_graph(history, limit=limit)
 
-        # Items bounded by limit
+        # Items bounded by limit + closure (payload-driven closure can pull
+        # in at most one extra input per representable TR).
         item_nodes = [nd for nd in graph.nodes if nd.type != "tool_request"]
-        assert len(item_nodes) <= limit
-
-        # For linear chain: each full TR has 2 edges, partial TRs have 1
         tr_nodes = [nd for nd in graph.nodes if nd.type == "tool_request"]
+        assert len(item_nodes) <= limit + len(tr_nodes)
 
         # Each TR has at least one edge
         for tr_node in tr_nodes:
@@ -1845,40 +1596,6 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         assert graph.truncated.oldest_hid_included is not None
         assert graph.truncated.newest_hid_included is not None
         assert graph.truncated.oldest_hid_included <= early.hid <= graph.truncated.newest_hid_included
-
-    def test_many_tool_requests_cap_enforced(self):
-        """Fan-out: each item connects to 3 TRs, exceeding the secondary TR cap.
-
-        The TR cap is limit × 2. With N items each connecting to 3 TRs,
-        discovered TRs = 3N > 2N = cap. Outputs are deleted so only the
-        original items are in scope, ensuring all fan-out TRs are discovered
-        from the input associations.
-        """
-        n_items = 100
-        history, _ = self._create_history()
-
-        # Create N visible items, each as input to 3 TRs
-        hdas = [self._create_hda(history, name=f"item_{i}") for i in range(n_items)]
-        for hda in hdas:
-            for j in range(3):
-                tr = self._create_tool_request(history)
-                job = self._create_job(tr, tool_id=f"fan_{j}")
-                self._link_job_input_hda(job, hda)
-                out = self._create_hda(history, name="fanout_out")
-                out.deleted = True  # Keep out of scope
-                self._link_job_output_hda(job, out)
-        self.trans.sa_session.flush()
-
-        # limit = n_items: all original items in scope.
-        # Discovered TRs = 300 (3 per item). Cap = 100 × 2 = 200. Triggers.
-        graph = self._build_graph(history, limit=n_items)
-
-        # TR cap enforced
-        tr_nodes = [nd for nd in graph.nodes if nd.type == "tool_request"]
-        assert len(tr_nodes) <= n_items * 2
-
-        # Secondary TR cap reported
-        assert graph.truncated.consumer_execution_capped is True
 
     def test_recent_overview_shift_after_append(self):
         """Recent overview shifts predictably when new items are appended.

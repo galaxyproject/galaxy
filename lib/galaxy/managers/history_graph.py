@@ -5,7 +5,6 @@ tool_request and that tool_request's declared inputs from the
 submission payload.  One hop only.  No consumers.  No transitive
 traversal.
 
-See ``~/claude/history_graph/reduced_provenance_model.md``.
 """
 
 import json
@@ -13,6 +12,7 @@ import logging
 from typing import Optional
 
 from sqlalchemy import (
+    Select,
     select,
     union_all,
 )
@@ -197,7 +197,7 @@ class HistoryGraphBuilder:
         self.newer_than_hid = row.hid - half - 1
 
     def _select_items(self) -> tuple[set[int], set[int], bool, Optional[int], Optional[int]]:
-        hda_q = select(
+        hda_q: Select = select(
             HistoryDatasetAssociation.id,
             HistoryDatasetAssociation.hid,
             literal_column("'dataset'").label("item_type"),
@@ -209,7 +209,7 @@ class HistoryGraphBuilder:
         if self.newer_than_hid is not None:
             hda_q = hda_q.where(HistoryDatasetAssociation.hid > self.newer_than_hid)
 
-        hdca_q = select(
+        hdca_q: Select = select(
             HistoryDatasetCollectionAssociation.id,
             HistoryDatasetCollectionAssociation.hid,
             literal_column("'collection'").label("item_type"),
@@ -222,7 +222,11 @@ class HistoryGraphBuilder:
             hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid > self.newer_than_hid)
 
         combined = union_all(hda_q, hdca_q).subquery()
-        stmt = select(combined.c.id, combined.c.hid, combined.c.item_type).order_by(combined.c.hid.desc()).limit(self.limit + 1)
+        stmt = (
+            select(combined.c.id, combined.c.hid, combined.c.item_type)
+            .order_by(combined.c.hid.desc())
+            .limit(self.limit + 1)
+        )
 
         dataset_ids: set[int] = set()
         collection_ids: set[int] = set()
@@ -253,7 +257,10 @@ class HistoryGraphBuilder:
             stmt = (
                 select(HistoryDatasetAssociation.id)
                 .join(DatasetCollectionElement, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
-                .where(HistoryDatasetAssociation.id.in_(chunk), HistoryDatasetAssociation.visible == False)  # noqa: E712
+                .where(
+                    HistoryDatasetAssociation.id.in_(chunk),
+                    HistoryDatasetAssociation.visible == False,  # noqa: E712
+                )
                 .distinct()
             )
             for row in self.sa_session.execute(stmt):
@@ -450,16 +457,18 @@ class HistoryGraphBuilder:
                 .where(HistoryDatasetAssociation.id.in_(chunk))
             )
             for row in self.sa_session.execute(stmt):
-                nodes.append(GraphNode(
-                    id=self._encode("dataset", row.id),
-                    type="dataset",
-                    name=row.name,
-                    hid=row.hid,
-                    state=row._state if row._state else row.dataset_state,
-                    extension=row.extension,
-                    deleted=row.deleted,
-                    visible=row.visible,
-                ))
+                nodes.append(
+                    GraphNode(
+                        id=self._encode("dataset", row.id),
+                        type="dataset",
+                        name=row.name,
+                        hid=row.hid,
+                        state=row._state if row._state else row.dataset_state,
+                        extension=row.extension,
+                        deleted=row.deleted,
+                        visible=row.visible,
+                    )
+                )
         return nodes
 
     def _collection_nodes(self, db_ids: set[int]) -> list[GraphNode]:
@@ -479,16 +488,18 @@ class HistoryGraphBuilder:
                 .where(HistoryDatasetCollectionAssociation.id.in_(chunk))
             )
             for row in self.sa_session.execute(stmt):
-                nodes.append(GraphNode(
-                    id=self._encode("collection", row.id),
-                    type="collection",
-                    name=row.name,
-                    hid=row.hid,
-                    state=row.populated_state,
-                    collection_type=row.collection_type,
-                    deleted=row.deleted,
-                    visible=row.visible,
-                ))
+                nodes.append(
+                    GraphNode(
+                        id=self._encode("collection", row.id),
+                        type="collection",
+                        name=row.name,
+                        hid=row.hid,
+                        state=row.populated_state,
+                        collection_type=row.collection_type,
+                        deleted=row.deleted,
+                        visible=row.visible,
+                    )
+                )
         return nodes
 
     def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
@@ -517,9 +528,7 @@ class HistoryGraphBuilder:
 
     # ── Seed subgraph filter (in-memory only) ──
 
-    def _seed_filter(
-        self, nodes: list[GraphNode], edges: list[GraphEdge]
-    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+    def _seed_filter(self, nodes: list[GraphNode], edges: list[GraphEdge]) -> tuple[list[GraphNode], list[GraphEdge]]:
         from galaxy.exceptions import RequestParameterInvalidException
 
         if not self.seed or len(self.seed) < 2:
@@ -557,11 +566,13 @@ class HistoryGraphBuilder:
     def _sort(self, nodes: list[GraphNode], edges: list[GraphEdge]) -> tuple[list[GraphNode], list[GraphEdge]]:
         fallback = (99, 0)
         nodes.sort(key=lambda n: self._sort_keys.get(n.id, fallback))
-        edges.sort(key=lambda e: (
-            self._sort_keys.get(e.source, fallback),
-            self._sort_keys.get(e.target, fallback),
-            EDGE_TYPE_RANK.get(e.type, 99),
-        ))
+        edges.sort(
+            key=lambda e: (
+                self._sort_keys.get(e.source, fallback),
+                self._sort_keys.get(e.target, fallback),
+                EDGE_TYPE_RANK.get(e.type, 99),
+            )
+        )
         return nodes, edges
 
     # ── Utilities ──
@@ -573,4 +584,4 @@ class HistoryGraphBuilder:
 
     @staticmethod
     def _chunks(items: list) -> list[list]:
-        return [items[i:i + CHUNK] for i in range(0, len(items), CHUNK)] if items else []
+        return [items[i : i + CHUNK] for i in range(0, len(items), CHUNK)] if items else []

@@ -13382,11 +13382,6 @@ export interface components {
             id: string;
             /** Name */
             name?: string | null;
-            /**
-             * Partial
-             * @description True if this tool_request has edges on only one side (input or output) within the current graph scope. This can mean the other side is outside the scope window, was suppressed during collapsing, or the tool genuinely has no inputs. None for fully connected tool_requests and non-tool_request nodes.
-             */
-            partial?: boolean | null;
             /** State */
             state?: string | null;
             /** Tool Id */
@@ -23815,26 +23810,6 @@ export interface components {
             scope_type: "recent" | "window" | "seed_centered";
             /** Seed In Scope */
             seed_in_scope?: boolean | null;
-            /**
-             * Tool Request Count Capped
-             * @default false
-             */
-            tool_request_count_capped: boolean;
-            /**
-             * Tool Requests Omitted
-             * @default 0
-             */
-            tool_requests_omitted: number;
-            /**
-             * Tool Requests Partial
-             * @default 0
-             */
-            tool_requests_partial: number;
-            /**
-             * Total History Items
-             * @default 0
-             */
-            total_history_items: number;
         };
         /** UndeleteHistoriesPayload */
         UndeleteHistoriesPayload: {

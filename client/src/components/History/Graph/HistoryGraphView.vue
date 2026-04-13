@@ -46,10 +46,7 @@ function onNodeSelected(node: GraphNode | null) {
 }
 
 const isLoading = computed(() => loading.value || layoutLoading.value);
-const isTruncated = computed(() => {
-    const t = graphData.value?.truncated;
-    return t?.item_count_capped || t?.tool_request_count_capped || (t?.tool_requests_omitted ?? 0) > 0;
-});
+const isTruncated = computed(() => graphData.value?.truncated?.item_count_capped ?? false);
 </script>
 
 <template>
