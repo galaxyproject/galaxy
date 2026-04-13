@@ -75,7 +75,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # shellcheck disable=SC1091
     . "${TEST_ENV_DIR}/bin/activate"
     if [ "${PIP_CMD}" = 'python -m pip' ]; then
-        ${PIP_CMD} install --upgrade pip setuptools wheel
+        ${PIP_CMD} install --upgrade build pip setuptools twine wheel
     fi
 
     # Install extras (if needed)
