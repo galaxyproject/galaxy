@@ -48,6 +48,7 @@ FileSourceTemplateType = Literal[
     "rspace",
     "dataverse",
     "huggingface",
+    "iiif",
     "omero",
 ]
 
@@ -353,6 +354,18 @@ class HuggingFaceFileSourceConfiguration(StrictModel):
     endpoint: Optional[str] = None
 
 
+class IIIFFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["iiif"]
+    manifest_url: Union[str, TemplateExpansion]
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class IIIFFileSourceConfiguration(StrictModel):
+    type: Literal["iiif"]
+    manifest_url: str
+
+
 class OmeroFileSourceTemplateConfiguration(StrictModel):
     type: Literal["omero"]
     username: Union[str, TemplateExpansion]
@@ -391,6 +404,7 @@ FileSourceTemplateConfiguration = Annotated[
         RSpaceFileSourceTemplateConfiguration,
         DataverseFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
+        IIIFFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
@@ -414,6 +428,7 @@ FileSourceConfiguration = Annotated[
         RSpaceFileSourceConfiguration,
         DataverseFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
+        IIIFFileSourceConfiguration,
         OmeroFileSourceConfiguration,
     ],
     Field(discriminator="type"),
@@ -495,6 +510,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
+    "iiif": IIIFFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
 }
 

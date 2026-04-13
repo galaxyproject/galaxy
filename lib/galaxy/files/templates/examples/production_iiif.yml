@@ -1,0 +1,20 @@
+- id: iiif
+  version: 0
+  name: IIIF Manifest
+  description: |
+      Browse and import image canvases from an [IIIF (International Image Interoperability Framework)](https://iiif.io/) Presentation API manifest. IIIF is a framework used by museums, libraries, and archives to deliver high-quality digital images of cultural heritage materials through a standardized API. You can find public IIIF resources at [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/).
+
+      The images imported from the IIIF manifest will be added to your Galaxy history as new datasets, allowing you to analyze and work with them using Galaxy's tools and workflows.
+  variables:
+      manifest_url:
+          label: IIIF Manifest URL
+          type: string
+          help: |
+              Full URL to a IIIF Presentation manifest JSON document. IIIF manifests are structured descriptions of digitized collections that can include metadata, image sequences, and navigation information.
+
+              For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
+
+              Example: https://iiif.io/api/cookbook/recipe/0001-mvm-image/manifest.json
+  configuration:
+      type: iiif
+      manifest_url: "{{ variables.manifest_url }}"

@@ -31,6 +31,7 @@ export const URI_PREFIXES = [
     "elabftw://",
     "zip://",
     "ascp://",
+    "iiif://",
 ];
 
 export function isUrl(content: string): boolean {

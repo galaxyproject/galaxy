@@ -313,3 +313,12 @@
   api_key: ${user.user_vault.read_secret('preferences/elabftw/api_key')}
   writable: true
   endpoint: ${user.preferences['elabftw|endpoint']}
+
+# IIIF (International Image Interoperability Framework) file source
+# For examples and to find public IIIF resources, visit: [https://iiif.io/guides/finding_resources/](https://iiif.io/guides/finding_resources/)
+- type: iiif
+  id: iiif-cambridge-scientific-instrument
+  label: Cambridge Scientific Instrument Company
+  doc: Browse and import canvases from the Cambridge Digital Library
+  manifest_url: "https://cudl.lib.cam.ac.uk/iiif/collection/csic"
+  writable: false
