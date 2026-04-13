@@ -2551,13 +2551,6 @@ class BaseWorkflowPopulator(BasePopulator):
         )
         return ROCrate(crate_response)
 
-    def validate_invocation_crate_directory(self, crate_directory):
-        # TODO: where can a ro_crate be extracted
-        metadata_json_path = crate_directory / "ro-crate-metadata.json"
-        with metadata_json_path.open() as f:
-            metadata_json = json.load(f)
-            assert metadata_json["@context"] == "https://w3id.org/ro/crate/1.1/context"
-
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request, json=True)
