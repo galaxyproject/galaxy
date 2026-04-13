@@ -1856,8 +1856,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
-        if object_store_id is None and job.workflow_invocation_step:
-            workflow_invocation_step = job.workflow_invocation_step
+        workflow_invocation_step = job.effective_workflow_invocation_step
+        if object_store_id is None and workflow_invocation_step:
             invocation_object_stores = workflow_invocation_step.preferred_object_stores
             if invocation_object_stores.is_split_configuration:
                 # Redo for subworkflows...
