@@ -74,7 +74,7 @@ from galaxy_test.base.testcase import FunctionalTestCase
 try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
-    GalaxyTestDriver = None  # type: ignore[misc,assignment]
+    GalaxyTestDriver = None  # type: ignore[assignment, misc, unused-ignore]
 
 
 def _load_config_file() -> None:

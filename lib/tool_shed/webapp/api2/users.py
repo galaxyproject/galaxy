@@ -19,6 +19,7 @@ from sqlalchemy import (
 
 import tool_shed.util.shed_util_common as suc
 from galaxy.exceptions import (
+    AuthenticationRequired,
     InsufficientPermissionsException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -134,7 +135,7 @@ class FastAPIUsers:
     def current(self, trans: SessionRequestContext = DependsOnTrans) -> User:
         user = trans.user
         if not user:
-            raise ObjectNotFound()
+            raise AuthenticationRequired()
 
         return get_api_user(trans.app, user)
 

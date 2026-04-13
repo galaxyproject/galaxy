@@ -711,6 +711,89 @@ OUTPUTS_FILTER_EXPRESSION = """
 </tool>
 """
 
+OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_QUALIFIED = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="paired">Paired</option>
+            </param>
+            <when value="paired">
+                <param name="input1" type="data_collection" collection_type="paired" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="cond|input1" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_STRUCTURED_LIKE_MISSING = """
+<tool id="id" name="name">
+    <inputs>
+        <param name="input2" type="data" format="data" />
+    </inputs>
+    <outputs>
+        <collection name="list_output" structured_like="nonexistent" type="paired" inherit_format="true" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_UNQUALIFIED = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <param name="input1" type="data" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="input1" />
+    </outputs>
+</tool>
+"""
+
+OUTPUTS_FORMAT_SOURCE_QUALIFIED = """
+<tool id="id" name="name">
+    <inputs>
+        <conditional name="cond">
+            <param name="cond_param" type="select">
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <param name="input1" type="data" format="data" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output1" format_source="cond|input1" />
+    </outputs>
+</tool>
+"""
+
 # tool xml for repeats linter
 REPEATS = """
 <tool id="id" name="name">
@@ -1881,6 +1964,41 @@ def test_outputs_filter_expression(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_outputs_structured_like_unqualified(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_UNQUALIFIED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "unqualified structured_like='input1'" in lint_ctx.warn_messages
+    assert "cond|input1" in lint_ctx.warn_messages
+    assert "structured_like" not in lint_ctx.error_messages
+
+
+def test_outputs_structured_like_qualified(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_QUALIFIED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "structured_like" not in lint_ctx.warn_messages
+    assert "structured_like" not in lint_ctx.error_messages
+
+
+def test_outputs_structured_like_missing(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_STRUCTURED_LIKE_MISSING)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "does not match any input" in lint_ctx.error_messages
+
+
+def test_outputs_format_source_unqualified(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_UNQUALIFIED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "unqualified format_source='input1'" in lint_ctx.warn_messages
+    assert "cond|input1" in lint_ctx.warn_messages
+
+
+def test_outputs_format_source_qualified(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_SOURCE_QUALIFIED)
+    run_lint_module(lint_ctx, output, tool_source)
+    assert "format_source" not in lint_ctx.warn_messages
+    assert "format_source" not in lint_ctx.error_messages
+
+
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
     run_lint_module(lint_ctx, stdio, tool_source)
@@ -2425,7 +2543,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 143
+    assert len(linter_names) == 145
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

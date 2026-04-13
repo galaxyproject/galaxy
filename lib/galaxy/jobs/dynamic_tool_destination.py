@@ -1310,8 +1310,8 @@ def map_tool_to_destination(
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data: dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets}
-    inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
+    inp_data: dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets if da.dataset}
+    inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets if da.dataset])
 
     if config is not None and str(tool.old_id) in config["tools"]:
         if "rules" in config["tools"][str(tool.old_id)]:

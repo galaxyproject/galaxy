@@ -558,7 +558,7 @@ class JobSearch:
         # and the ids that have been used in the job that has already been run in `used_ids`.
         requested_ids = []
         data_types = []
-        used_ids: list[Label[int]] = []
+        used_ids: list[Label[int] | Label[int | None]] = []
         for k, input_list in input_data.items():
             # k will be matched against the JobParameter.name column. This can be prefixed depending on whether
             # the input is in a repeat, or not (section and conditional)
@@ -672,21 +672,18 @@ class JobSearch:
         history_id: Union[int, None],
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
-        job_ids_materialized_cte = stmt.cte("job_ids_cte")
-        outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
-        stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
-        stmt = (
-            stmt.join(model.Job, model.Job.id == job_ids_materialized_cte.c.job_id)
-            .join(model.History, model.Job.history_id == model.History.id)
-            .where(
-                and_(
-                    model.Job.tool_id == tool_id,
-                    or_(
-                        model.Job.user_id == user_id,
-                        model.History.published == true(),
-                    ),
-                    model.Job.copied_from_job_id.is_(None),  # Always pick original job
-                )
+        # Apply job-level filters BEFORE the CTE so they are included in the
+        # materialized result.  This lets PostgreSQL use selective indexes
+        # (e.g. on tool_id) inside the CTE instead of scanning the entire job
+        # table first and filtering afterwards.
+        stmt = stmt.join(model.History, model.Job.history_id == model.History.id).where(
+            and_(
+                model.Job.tool_id == tool_id,
+                or_(
+                    model.Job.user_id == user_id,
+                    model.History.published == true(),
+                ),
+                model.Job.copied_from_job_id.is_(None),  # Always pick original job
             )
         )
         if tool_version:
@@ -711,6 +708,14 @@ class JobSearch:
         if wildcard_param_dump.get("__when_value__") is False:
             job_states = {Job.states.SKIPPED}
         stmt = stmt.where(Job.state.in_(job_states))
+
+        # Wrap in a CTE to materialize the filtered job IDs.  This prevents
+        # the planner from choosing poor join orders for the subsequent
+        # job_parameter joins (important when tool_id is not highly selective).
+        job_ids_materialized_cte = stmt.cte("job_ids_cte")
+        outer_select_columns = [job_ids_materialized_cte.c[col.name] for col in stmt.selected_columns]
+        stmt = select(*outer_select_columns).select_from(job_ids_materialized_cte)
+        stmt = stmt.join(model.Job, model.Job.id == job_ids_materialized_cte.c.job_id)
 
         for k, v in wildcard_param_dump.items():
             if v == {"__class__": "RuntimeValue"}:
@@ -793,7 +798,7 @@ class JobSearch:
         self,
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
-        used_ids: list["Label[int]"],
+        used_ids: list["Label[int] | Label[int | None]"],
         k,
         v,
         identifier,
@@ -860,7 +865,7 @@ class JobSearch:
         self,
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
-        used_ids: list["Label[int]"],
+        used_ids: list["Label[int] | Label[int | None]"],
         k,
         v,
         value_index: int,
@@ -883,7 +888,7 @@ class JobSearch:
         self,
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
-        used_ids: list["Label[int]"],
+        used_ids: list["Label[int] | Label[int | None]"],
         k,
         v,
         user_id: int,
@@ -1131,7 +1136,7 @@ class JobSearch:
         self,
         stmt: "Select[tuple[int]]",
         data_conditions: list["ColumnElement[bool]"],
-        used_ids: list["Label[int]"],
+        used_ids: list["Label[int] | Label[int | None]"],
         k,
         v,
         user_id: int,

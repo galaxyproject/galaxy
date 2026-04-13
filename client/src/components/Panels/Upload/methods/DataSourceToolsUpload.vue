@@ -10,7 +10,7 @@ import ToolsListTable from "@/components/ToolsList/ToolsListTable.vue";
 const toolStore = useToolStore();
 const { loading } = storeToRefs(toolStore);
 
-const whooshQuery = computed(() => createWhooshQuery({ section: "Get Data" }));
+const whooshQuery = computed(() => createWhooshQuery({ section: '"Get Data"' }));
 
 const toolsInGetDataSection = computed(() => Object.values(toolStore.getToolsById(whooshQuery.value)));
 

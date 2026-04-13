@@ -964,6 +964,7 @@ class DefaultToolAction(ToolAction):
             job.user = trans.user
         if history:
             job.history_id = model.cached_id(history)
+            job.history = history
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
