@@ -701,6 +701,11 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         name = item_body.name.wait_for_text()
         assert name == expected_name, name
 
+    def assert_item_extension(self, hid, expected_extension):
+        item_body = self.history_panel_item_component(hid=hid)
+        extension = item_body.datatype.wait_for_text()
+        assert extension == expected_extension, extension
+
     def assert_item_hid_text(self, hid):
         # Check the text HID matches HID returned from API.  The hid span includes a colon.
         item_body = self.history_panel_item_component(hid=hid)
