@@ -1,0 +1,576 @@
+"""Bounded user-action provenance graph for Galaxy histories.
+
+For each selected top-level history item, resolves its producing
+tool_request and that tool_request's declared inputs from the
+submission payload.  One hop only.  No consumers.  No transitive
+traversal.
+
+See ``~/claude/history_graph/reduced_provenance_model.md``.
+"""
+
+import json
+import logging
+from typing import Optional
+
+from sqlalchemy import (
+    select,
+    union_all,
+)
+from sqlalchemy.orm import Session
+from sqlalchemy.sql.expression import literal_column
+
+from galaxy.model import (
+    Dataset,
+    DatasetCollection,
+    DatasetCollectionElement,
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    Job,
+    JobToOutputDatasetAssociation,
+    JobToOutputDatasetCollectionAssociation,
+    ToolRequest,
+)
+from galaxy.schema.history_graph import (
+    GraphEdge,
+    GraphNode,
+    HistoryGraphResponse,
+    TruncationInfo,
+)
+from galaxy.security.idencoding import IdEncodingHelper
+
+log = logging.getLogger(__name__)
+
+TYPE_RANK = {"dataset": 0, "collection": 1, "tool_request": 2}
+EDGE_TYPE_RANK = {"dataset_input": 0, "dataset_output": 1, "collection_input": 2, "collection_output": 3}
+NODE_TYPE_PREFIX = {"dataset": "d", "collection": "c", "tool_request": "r"}
+CHUNK = 1000
+
+
+class HistoryGraphBuilder:
+    """Builds a bounded provenance graph from selected history items.
+
+    Invariants enforced in code:
+    - HDA producer: JTODA only.  No Dataset.job_id fallback.
+    - HDCA producer: JODCA only.  No TRICA.  No HDCA.job_id.
+    - Inputs: tool_request.request payload only.  No job association tables.
+    - One hop.  No consumers.  No sibling outputs.  No transitive traversal.
+    - Ambiguity (≥2 distinct tool_request_ids): skip, log debug.
+    - Missing producer: no edge.
+    - Malformed payload: skip inputs.
+    """
+
+    def __init__(
+        self,
+        sa_session: Session,
+        security: IdEncodingHelper,
+        history_id: int,
+        limit: int = 500,
+        toolbox=None,
+        include_deleted: bool = False,
+        seed: Optional[str] = None,
+        direction: str = "both",
+        depth: int = 5,
+        older_than_hid: Optional[int] = None,
+        newer_than_hid: Optional[int] = None,
+        seed_scope: Optional[str] = None,
+    ):
+        self.sa_session = sa_session
+        self.security = security
+        self.history_id = history_id
+        self.limit = limit
+        self.toolbox = toolbox
+        self.include_deleted = include_deleted
+        self.seed = seed
+        self.direction = direction
+        self.depth = depth
+        self.older_than_hid = older_than_hid
+        self.newer_than_hid = newer_than_hid
+        self.seed_scope = seed_scope
+        self._sort_keys: dict[str, tuple[int, int]] = {}
+
+    def build(self) -> HistoryGraphResponse:
+        truncation = TruncationInfo()
+        if self.seed_scope:
+            truncation.scope_type = "seed_centered"
+            self._resolve_seed_scope()
+        elif self.older_than_hid is not None or self.newer_than_hid is not None:
+            truncation.scope_type = "window"
+
+        # 1. Select top-level items in scope.
+        dataset_ids, collection_ids, item_capped, oldest_hid, newest_hid = self._select_items()
+        truncation.item_count_capped = item_capped
+        truncation.oldest_hid_included = oldest_hid
+        truncation.newest_hid_included = newest_hid
+
+        # 2. Remove hidden collection elements.
+        dataset_ids = self._remove_hidden_elements(dataset_ids)
+
+        # 3. Producer lookup + payload input resolution.
+        edges: list[GraphEdge] = []
+        tr_nodes: dict[int, Optional[str]] = {}  # tr_id -> tool_id
+        closure_dataset_ids: set[int] = set()
+        closure_collection_ids: set[int] = set()
+
+        hda_producers = self._hda_producers(dataset_ids)
+        hdca_producers = self._hdca_producers(collection_ids)
+        all_producers = {**hda_producers, **hdca_producers}
+
+        # Emit output edges and collect tr_ids.
+        seen_edges: set[tuple[str, str, str]] = set()
+        for item_key, (tr_id, tool_id) in all_producers.items():
+            item_type, item_id = item_key
+            tr_nodes[tr_id] = tool_id
+            src = self._encode("tool_request", tr_id)
+            tgt = self._encode(item_type, item_id)
+            etype = "dataset_output" if item_type == "dataset" else "collection_output"
+            edge_key = (src, tgt, etype)
+            if edge_key not in seen_edges:
+                seen_edges.add(edge_key)
+                edges.append(GraphEdge(source=src, target=tgt, type=etype))
+
+        # Batch-fetch all payloads, parse inputs, emit input edges.
+        payloads = self._fetch_payloads(set(tr_nodes.keys()))
+        for tr_id, payload in payloads.items():
+            input_refs = self._extract_inputs(payload)
+            for ref_type, ref_id in input_refs:
+                src = self._encode(ref_type, ref_id)
+                tgt = self._encode("tool_request", tr_id)
+                etype = "dataset_input" if ref_type == "dataset" else "collection_input"
+                edge_key = (src, tgt, etype)
+                if edge_key not in seen_edges:
+                    seen_edges.add(edge_key)
+                    edges.append(GraphEdge(source=src, target=tgt, type=etype))
+                if ref_type == "dataset" and ref_id not in dataset_ids:
+                    closure_dataset_ids.add(ref_id)
+                elif ref_type == "collection" and ref_id not in collection_ids:
+                    closure_collection_ids.add(ref_id)
+
+        # 4. Filter closure items by the same deleted policy as seed selection.
+        if not self.include_deleted and (closure_dataset_ids or closure_collection_ids):
+            closure_dataset_ids = self._filter_deleted_hdas(closure_dataset_ids)
+            closure_collection_ids = self._filter_deleted_hdcas(closure_collection_ids)
+
+        # Build nodes.
+        all_dataset_ids = dataset_ids | closure_dataset_ids
+        all_collection_ids = collection_ids | closure_collection_ids
+        nodes: list[GraphNode] = []
+        nodes.extend(self._dataset_nodes(all_dataset_ids))
+        nodes.extend(self._collection_nodes(all_collection_ids))
+        nodes.extend(self._tr_nodes(tr_nodes))
+
+        # 5. Resolve tool names.
+        if self.toolbox:
+            self._resolve_tool_names(nodes)
+
+        # 6. Optional seed subgraph filter (in-memory only).
+        if self.seed:
+            node_ids = {n.id for n in nodes}
+            truncation.seed_in_scope = self.seed in node_ids
+            nodes, edges = self._seed_filter(nodes, edges)
+
+        # 7. Sort.
+        nodes, edges = self._sort(nodes, edges)
+        return HistoryGraphResponse(nodes=nodes, edges=edges, truncated=truncation)
+
+    # ── Item selection ──
+
+    def _resolve_seed_scope(self):
+        from galaxy.exceptions import RequestParameterInvalidException
+
+        if not self.seed_scope or len(self.seed_scope) < 2:
+            raise RequestParameterInvalidException(f"Invalid seed_scope: {self.seed_scope!r}")
+        prefix = self.seed_scope[0]
+        if prefix not in ("d", "c"):
+            raise RequestParameterInvalidException(f"Invalid seed_scope prefix: {prefix!r}")
+        try:
+            db_id = self.security.decode_id(self.seed_scope[1:])
+        except Exception:
+            raise RequestParameterInvalidException(f"Invalid seed_scope encoding: {self.seed_scope!r}")
+        model = HistoryDatasetAssociation if prefix == "d" else HistoryDatasetCollectionAssociation
+        row = self.sa_session.execute(
+            select(model.hid).where(model.id == db_id, model.history_id == self.history_id)
+        ).first()
+        if row is None or row.hid is None:
+            raise RequestParameterInvalidException(f"seed_scope {self.seed_scope} not found in history.")
+        half = self.limit // 2
+        self.older_than_hid = row.hid + half + (self.limit % 2)
+        self.newer_than_hid = row.hid - half - 1
+
+    def _select_items(self) -> tuple[set[int], set[int], bool, Optional[int], Optional[int]]:
+        hda_q = select(
+            HistoryDatasetAssociation.id,
+            HistoryDatasetAssociation.hid,
+            literal_column("'dataset'").label("item_type"),
+        ).where(HistoryDatasetAssociation.history_id == self.history_id)
+        if not self.include_deleted:
+            hda_q = hda_q.where(HistoryDatasetAssociation.deleted == False)  # noqa: E712
+        if self.older_than_hid is not None:
+            hda_q = hda_q.where(HistoryDatasetAssociation.hid < self.older_than_hid)
+        if self.newer_than_hid is not None:
+            hda_q = hda_q.where(HistoryDatasetAssociation.hid > self.newer_than_hid)
+
+        hdca_q = select(
+            HistoryDatasetCollectionAssociation.id,
+            HistoryDatasetCollectionAssociation.hid,
+            literal_column("'collection'").label("item_type"),
+        ).where(HistoryDatasetCollectionAssociation.history_id == self.history_id)
+        if not self.include_deleted:
+            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.deleted == False)  # noqa: E712
+        if self.older_than_hid is not None:
+            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid < self.older_than_hid)
+        if self.newer_than_hid is not None:
+            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid > self.newer_than_hid)
+
+        combined = union_all(hda_q, hdca_q).subquery()
+        stmt = select(combined.c.id, combined.c.hid, combined.c.item_type).order_by(combined.c.hid.desc()).limit(self.limit + 1)
+
+        dataset_ids: set[int] = set()
+        collection_ids: set[int] = set()
+        min_hid: Optional[int] = None
+        max_hid: Optional[int] = None
+        count = 0
+        for row in self.sa_session.execute(stmt):
+            count += 1
+            if count > self.limit:
+                break
+            if row.item_type == "dataset":
+                dataset_ids.add(row.id)
+            else:
+                collection_ids.add(row.id)
+            hid = row.hid
+            if hid is not None:
+                if min_hid is None or hid < min_hid:
+                    min_hid = hid
+                if max_hid is None or hid > max_hid:
+                    max_hid = hid
+        return dataset_ids, collection_ids, count > self.limit, min_hid, max_hid
+
+    def _remove_hidden_elements(self, dataset_ids: set[int]) -> set[int]:
+        if not dataset_ids:
+            return dataset_ids
+        to_remove: set[int] = set()
+        for chunk in self._chunks(list(dataset_ids)):
+            stmt = (
+                select(HistoryDatasetAssociation.id)
+                .join(DatasetCollectionElement, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
+                .where(HistoryDatasetAssociation.id.in_(chunk), HistoryDatasetAssociation.visible == False)  # noqa: E712
+                .distinct()
+            )
+            for row in self.sa_session.execute(stmt):
+                to_remove.add(row.id)
+        return dataset_ids - to_remove
+
+    def _filter_deleted_hdas(self, ids: set[int]) -> set[int]:
+        if not ids:
+            return ids
+        kept: set[int] = set()
+        for chunk in self._chunks(list(ids)):
+            stmt = select(HistoryDatasetAssociation.id).where(
+                HistoryDatasetAssociation.id.in_(chunk),
+                HistoryDatasetAssociation.deleted == False,  # noqa: E712
+            )
+            for row in self.sa_session.execute(stmt):
+                kept.add(row.id)
+        return kept
+
+    def _filter_deleted_hdcas(self, ids: set[int]) -> set[int]:
+        if not ids:
+            return ids
+        kept: set[int] = set()
+        for chunk in self._chunks(list(ids)):
+            stmt = select(HistoryDatasetCollectionAssociation.id).where(
+                HistoryDatasetCollectionAssociation.id.in_(chunk),
+                HistoryDatasetCollectionAssociation.deleted == False,  # noqa: E712
+            )
+            for row in self.sa_session.execute(stmt):
+                kept.add(row.id)
+        return kept
+
+    # ── Producer lookup (strictly minimal) ──
+
+    def _hda_producers(self, dataset_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
+        """JTODA only.  No Dataset.job_id.  No fallback.
+        Collect all candidates first, then emit only items with
+        exactly one distinct producer."""
+        candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
+        for chunk in self._chunks(list(dataset_ids)):
+            stmt = (
+                select(
+                    JobToOutputDatasetAssociation.dataset_id.label("hda_id"),
+                    Job.tool_request_id,
+                    Job.tool_id,
+                )
+                .join(Job, Job.id == JobToOutputDatasetAssociation.job_id)
+                .where(
+                    JobToOutputDatasetAssociation.dataset_id.in_(chunk),
+                    Job.tool_request_id.isnot(None),
+                    Job.tool_id.isnot(None),
+                    Job.tool_id != "__DATA_FETCH__",
+                )
+            )
+            for row in self.sa_session.execute(stmt):
+                candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
+
+        result: dict[tuple[str, int], tuple[int, str]] = {}
+        for hda_id, tr_map in candidates.items():
+            if len(tr_map) == 1:
+                tr_id, tool_id = next(iter(tr_map.items()))
+                result[("dataset", hda_id)] = (tr_id, tool_id)
+            else:
+                log.debug("history_graph: skipping HDA %d — ambiguous producer (%s)", hda_id, set(tr_map.keys()))
+        return result
+
+    def _hdca_producers(self, collection_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
+        """JODCA only.  No TRICA.  No HDCA.job_id.  No fallback.
+        Collect all candidates first, then emit only items with
+        exactly one distinct producer."""
+        candidates: dict[int, dict[int, str]] = {}
+        for chunk in self._chunks(list(collection_ids)):
+            stmt = (
+                select(
+                    JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("hdca_id"),
+                    Job.tool_request_id,
+                    Job.tool_id,
+                )
+                .join(Job, Job.id == JobToOutputDatasetCollectionAssociation.job_id)
+                .where(
+                    JobToOutputDatasetCollectionAssociation.dataset_collection_id.in_(chunk),
+                    Job.tool_request_id.isnot(None),
+                    Job.tool_id.isnot(None),
+                    Job.tool_id != "__DATA_FETCH__",
+                )
+            )
+            for row in self.sa_session.execute(stmt):
+                candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
+
+        result: dict[tuple[str, int], tuple[int, str]] = {}
+        for hdca_id, tr_map in candidates.items():
+            if len(tr_map) == 1:
+                tr_id, tool_id = next(iter(tr_map.items()))
+                result[("collection", hdca_id)] = (tr_id, tool_id)
+            else:
+                log.debug("history_graph: skipping HDCA %d — ambiguous producer (%s)", hdca_id, set(tr_map.keys()))
+        return result
+
+    # ── Payload input resolution ──
+
+    def _fetch_payloads(self, tr_ids: set[int]) -> dict[int, dict]:
+        """Batch-fetch all tool_request.request payloads in one query."""
+        result: dict[int, dict] = {}
+        for chunk in self._chunks(list(tr_ids)):
+            stmt = select(ToolRequest.id, ToolRequest.request).where(ToolRequest.id.in_(chunk))
+            for row in self.sa_session.execute(stmt):
+                try:
+                    payload = json.loads(row.request) if isinstance(row.request, str) else row.request
+                    if isinstance(payload, dict):
+                        result[row.id] = payload
+                except (json.JSONDecodeError, TypeError):
+                    log.debug("history_graph: malformed payload for tool_request %d", row.id)
+        return result
+
+    def _extract_inputs(self, payload: dict) -> set[tuple[str, int]]:
+        """Extract and normalize input refs from a single payload."""
+        raw_refs = self._walk_payload(payload)
+        return self._normalize_refs(raw_refs)
+
+    @staticmethod
+    def _walk_payload(obj) -> set[tuple[str, int]]:
+        """Recursively extract {src, id} references.
+        Unknown src types are rejected with a DEBUG log."""
+        refs: set[tuple[str, int]] = set()
+        if isinstance(obj, dict):
+            src = obj.get("src")
+            if src is not None:
+                item_id = obj.get("id")
+                if src in ("hda", "hdca") and isinstance(item_id, int):
+                    refs.add(("dataset" if src == "hda" else "collection", item_id))
+                else:
+                    log.debug("history_graph: rejected unknown payload ref src=%r id=%r", src, item_id)
+                return refs  # leaf ref node, do not recurse into src/id
+            if obj.get("__class__") == "Batch" and "values" in obj:
+                for v in obj["values"]:
+                    refs |= HistoryGraphBuilder._walk_payload(v)
+            else:
+                for k, v in obj.items():
+                    if k != "__class__":
+                        refs |= HistoryGraphBuilder._walk_payload(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                refs |= HistoryGraphBuilder._walk_payload(item)
+        return refs
+
+    def _normalize_refs(self, refs: set[tuple[str, int]]) -> set[tuple[str, int]]:
+        """Single normalization rule: hidden-element HDA → parent HDCA."""
+        result: set[tuple[str, int]] = set()
+        hda_ids = [item_id for t, item_id in refs if t == "dataset"]
+        hdca_parents: dict[int, int] = {}
+        for chunk in self._chunks(hda_ids):
+            stmt = (
+                select(
+                    HistoryDatasetAssociation.id.label("hda_id"),
+                    HistoryDatasetCollectionAssociation.id.label("hdca_id"),
+                )
+                .join(DatasetCollectionElement, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
+                .join(
+                    HistoryDatasetCollectionAssociation,
+                    HistoryDatasetCollectionAssociation.collection_id == DatasetCollectionElement.dataset_collection_id,
+                )
+                .where(
+                    HistoryDatasetAssociation.id.in_(chunk),
+                    HistoryDatasetAssociation.visible == False,  # noqa: E712
+                )
+            )
+            for row in self.sa_session.execute(stmt):
+                hdca_parents[row.hda_id] = row.hdca_id
+
+        for ref_type, ref_id in refs:
+            if ref_type == "dataset" and ref_id in hdca_parents:
+                result.add(("collection", hdca_parents[ref_id]))
+            else:
+                result.add((ref_type, ref_id))
+        return result
+
+    # ── Node construction ──
+
+    def _dataset_nodes(self, db_ids: set[int]) -> list[GraphNode]:
+        nodes = []
+        for chunk in self._chunks(list(db_ids)):
+            stmt = (
+                select(
+                    HistoryDatasetAssociation.id,
+                    HistoryDatasetAssociation.name,
+                    HistoryDatasetAssociation.hid,
+                    HistoryDatasetAssociation._state,
+                    Dataset.state.label("dataset_state"),
+                    HistoryDatasetAssociation.extension,
+                    HistoryDatasetAssociation.deleted,
+                    HistoryDatasetAssociation.visible,
+                )
+                .join(Dataset, HistoryDatasetAssociation.dataset_id == Dataset.id)
+                .where(HistoryDatasetAssociation.id.in_(chunk))
+            )
+            for row in self.sa_session.execute(stmt):
+                nodes.append(GraphNode(
+                    id=self._encode("dataset", row.id),
+                    type="dataset",
+                    name=row.name,
+                    hid=row.hid,
+                    state=row._state if row._state else row.dataset_state,
+                    extension=row.extension,
+                    deleted=row.deleted,
+                    visible=row.visible,
+                ))
+        return nodes
+
+    def _collection_nodes(self, db_ids: set[int]) -> list[GraphNode]:
+        nodes = []
+        for chunk in self._chunks(list(db_ids)):
+            stmt = (
+                select(
+                    HistoryDatasetCollectionAssociation.id,
+                    HistoryDatasetCollectionAssociation.name,
+                    HistoryDatasetCollectionAssociation.hid,
+                    HistoryDatasetCollectionAssociation.deleted,
+                    HistoryDatasetCollectionAssociation.visible,
+                    DatasetCollection.collection_type,
+                    DatasetCollection.populated_state,
+                )
+                .join(DatasetCollection, HistoryDatasetCollectionAssociation.collection_id == DatasetCollection.id)
+                .where(HistoryDatasetCollectionAssociation.id.in_(chunk))
+            )
+            for row in self.sa_session.execute(stmt):
+                nodes.append(GraphNode(
+                    id=self._encode("collection", row.id),
+                    type="collection",
+                    name=row.name,
+                    hid=row.hid,
+                    state=row.populated_state,
+                    collection_type=row.collection_type,
+                    deleted=row.deleted,
+                    visible=row.visible,
+                ))
+        return nodes
+
+    def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
+        return [
+            GraphNode(
+                id=self._encode("tool_request", tr_id),
+                type="tool_request",
+                tool_id=tool_id,
+            )
+            for tr_id, tool_id in tr_map.items()
+        ]
+
+    def _resolve_tool_names(self, nodes: list[GraphNode]):
+        tool_ids = {n.tool_id for n in nodes if n.type == "tool_request" and n.tool_id}
+        name_map: dict[str, str] = {}
+        for tool_id in tool_ids:
+            try:
+                tool = self.toolbox.get_tool(tool_id)
+                if tool and tool.name:
+                    name_map[tool_id] = tool.name
+            except Exception:
+                pass
+        for node in nodes:
+            if node.type == "tool_request" and node.tool_id and node.tool_id in name_map:
+                node.tool_name = name_map[node.tool_id]
+
+    # ── Seed subgraph filter (in-memory only) ──
+
+    def _seed_filter(
+        self, nodes: list[GraphNode], edges: list[GraphEdge]
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
+        from galaxy.exceptions import RequestParameterInvalidException
+
+        if not self.seed or len(self.seed) < 2:
+            raise RequestParameterInvalidException(f"Invalid seed: {self.seed!r}")
+        node_ids = {n.id for n in nodes}
+        if self.seed not in node_ids:
+            raise RequestParameterInvalidException(f"Seed {self.seed} not found in graph.")
+
+        out_map: dict[str, set[str]] = {}
+        in_map: dict[str, set[str]] = {}
+        for e in edges:
+            out_map.setdefault(e.source, set()).add(e.target)
+            in_map.setdefault(e.target, set()).add(e.source)
+
+        reachable: set[str] = {self.seed}
+        frontier = {self.seed}
+        for _ in range(self.depth):
+            nxt: set[str] = set()
+            for nid in frontier:
+                if self.direction in ("forward", "both"):
+                    nxt |= out_map.get(nid, set()) - reachable
+                if self.direction in ("backward", "both"):
+                    nxt |= in_map.get(nid, set()) - reachable
+            if not nxt:
+                break
+            reachable |= nxt
+            frontier = nxt
+        return (
+            [n for n in nodes if n.id in reachable],
+            [e for e in edges if e.source in reachable and e.target in reachable],
+        )
+
+    # ── Sort ──
+
+    def _sort(self, nodes: list[GraphNode], edges: list[GraphEdge]) -> tuple[list[GraphNode], list[GraphEdge]]:
+        fallback = (99, 0)
+        nodes.sort(key=lambda n: self._sort_keys.get(n.id, fallback))
+        edges.sort(key=lambda e: (
+            self._sort_keys.get(e.source, fallback),
+            self._sort_keys.get(e.target, fallback),
+            EDGE_TYPE_RANK.get(e.type, 99),
+        ))
+        return nodes, edges
+
+    # ── Utilities ──
+
+    def _encode(self, node_type: str, db_id: int) -> str:
+        encoded = f"{NODE_TYPE_PREFIX[node_type]}{self.security.encode_id(db_id)}"
+        self._sort_keys[encoded] = (TYPE_RANK[node_type], db_id)
+        return encoded
+
+    @staticmethod
+    def _chunks(items: list) -> list[list]:
+        return [items[i:i + CHUNK] for i in range(0, len(items), CHUNK)] if items else []
