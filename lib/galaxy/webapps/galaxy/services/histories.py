@@ -39,6 +39,7 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
+from galaxy.managers.history_graph import HistoryGraphBuilder
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -378,6 +379,37 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         else:
             history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return self._serialize_history(trans, history, serialization_params)
+
+    def graph(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        limit: int = 500,
+        include_deleted: bool = False,
+        seed: Optional[str] = None,
+        direction: str = "both",
+        depth: int = 20,
+        older_than_hid: Optional[int] = None,
+        newer_than_hid: Optional[int] = None,
+        seed_scope: Optional[str] = None,
+    ):
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        toolbox = getattr(trans.app, "toolbox", None)
+        builder = HistoryGraphBuilder(
+            sa_session=trans.sa_session,
+            security=self.security,
+            history_id=history.id,
+            limit=limit,
+            toolbox=toolbox,
+            include_deleted=include_deleted,
+            seed=seed,
+            direction=direction,
+            depth=depth,
+            older_than_hid=older_than_hid,
+            newer_than_hid=newer_than_hid,
+            seed_scope=seed_scope,
+        )
+        return builder.build()
 
     def prepare_download(
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: StoreExportPayload

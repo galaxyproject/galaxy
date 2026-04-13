@@ -2803,6 +2803,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/histories/{history_id}/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Returns a history-scoped structural graph. */
+        get: operations["graph_api_histories__history_id__graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/histories/{history_id}/jobs_summary": {
         parameters: {
             query?: never;
@@ -13339,6 +13356,51 @@ export interface components {
              */
             type: "genomebuild";
         };
+        /** GraphEdge */
+        GraphEdge: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "dataset_input" | "dataset_output" | "collection_input" | "collection_output";
+        };
+        /** GraphNode */
+        GraphNode: {
+            /** Collection Type */
+            collection_type?: string | null;
+            /** Deleted */
+            deleted?: boolean | null;
+            /** Extension */
+            extension?: string | null;
+            /** Hid */
+            hid?: number | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Partial
+             * @description True if this tool_request has edges on only one side (input or output) within the current graph scope. This can mean the other side is outside the scope window, was suppressed during collapsing, or the tool genuinely has no inputs. None for fully connected tool_requests and non-tool_request nodes.
+             */
+            partial?: boolean | null;
+            /** State */
+            state?: string | null;
+            /** Tool Id */
+            tool_id?: string | null;
+            /** Tool Name */
+            tool_name?: string | null;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "dataset" | "collection" | "tool_request";
+            /** Visible */
+            visible?: boolean | null;
+        };
         /**
          * GroupCreatePayload
          * @description Payload schema for creating a group.
@@ -15608,6 +15670,14 @@ export interface components {
              * @description The relative URL in the form of /u/{username}/h/{slug}
              */
             username_and_slug?: string | null;
+        };
+        /** HistoryGraphResponse */
+        HistoryGraphResponse: {
+            /** Edges */
+            edges: components["schemas"]["GraphEdge"][];
+            /** Nodes */
+            nodes: components["schemas"]["GraphNode"][];
+            truncated: components["schemas"]["TruncationInfo"];
         };
         /**
          * HistorySummary
@@ -23725,6 +23795,46 @@ export interface components {
              * @description Title displayed in the header of the step container
              */
             title?: string | null;
+        };
+        /** TruncationInfo */
+        TruncationInfo: {
+            /**
+             * Item Count Capped
+             * @default false
+             */
+            item_count_capped: boolean;
+            /** Newest Hid Included */
+            newest_hid_included?: number | null;
+            /** Oldest Hid Included */
+            oldest_hid_included?: number | null;
+            /**
+             * Scope Type
+             * @default recent
+             * @enum {string}
+             */
+            scope_type: "recent" | "window" | "seed_centered";
+            /** Seed In Scope */
+            seed_in_scope?: boolean | null;
+            /**
+             * Tool Request Count Capped
+             * @default false
+             */
+            tool_request_count_capped: boolean;
+            /**
+             * Tool Requests Omitted
+             * @default 0
+             */
+            tool_requests_omitted: number;
+            /**
+             * Tool Requests Partial
+             * @default 0
+             */
+            tool_requests_partial: number;
+            /**
+             * Total History Items
+             * @default 0
+             */
+            total_history_items: number;
         };
         /** UndeleteHistoriesPayload */
         UndeleteHistoriesPayload: {
@@ -35045,6 +35155,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkflowExtractionSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    graph_api_histories__history_id__graph_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of nodes. Applied at history scope. */
+                limit?: number;
+                /** @description Include deleted datasets and collections. */
+                include_deleted?: boolean;
+                /** @description Optional: focus on subgraph reachable from this node (e.g. d<encoded_id>). */
+                seed?: string | null;
+                /** @description Direction for seed-based subgraph extraction. */
+                direction?: "backward" | "forward" | "both";
+                /** @description Max depth for seed-based subgraph extraction. */
+                depth?: number;
+                /** @description Pagination: select items with hid less than this value (older items). */
+                older_than_hid?: number | null;
+                /** @description Pagination: select items with hid greater than this value (newer items). */
+                newer_than_hid?: number | null;
+                /** @description Center the selection window on this item's hid position. Format: d{encoded_id} or c{encoded_id}. */
+                seed_scope?: string | null;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The encoded database identifier of the History. */
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryGraphResponse"];
                 };
             };
             /** @description Request Error */
