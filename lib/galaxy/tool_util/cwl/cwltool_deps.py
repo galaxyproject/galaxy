@@ -16,7 +16,7 @@ try:
     from cwl_utils.types import CWLObjectType
 except ImportError:
     try:
-        from cwltool.utils import CWLObjectType  # type: ignore[attr-defined, unused-ignore]
+        from cwltool.utils import CWLObjectType  # type: ignore[assignment, attr-defined, unused-ignore]
     except ImportError:
         CWLObjectType = object  # type: ignore[assignment, misc]
 
@@ -77,12 +77,14 @@ try:
     from cwltool.utils import (
         JobsType,
         normalizeFilesDirs,
+        OutputCallbackType,
         visit_class,
     )
 except ImportError:
     JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
+    OutputCallbackType = None  # type: ignore[misc]
 
 try:
     import schema_salad
@@ -138,6 +140,7 @@ __all__ = (
     "main",
     "needs_shell_quoting",
     "normalizeFilesDirs",
+    "OutputCallbackType",
     "pathmapper",
     "process",
     "Process",
