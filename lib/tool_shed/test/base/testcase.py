@@ -559,7 +559,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
             installed_repository.id,
         )
         response = CheckForUpdatesResponse(message=message, status=status)
-        response_dict = response.dict()
+        response_dict = response.model_dump()
         if verify_no_updates:
             assert "message" in response_dict
             message = response_dict["message"]
