@@ -16,7 +16,7 @@ try:
     from cwl_utils.types import CWLObjectType
 except ImportError:
     try:
-        from cwltool.utils import CWLObjectType  # type: ignore[attr-defined, unused-ignore]
+        from cwltool.utils import CWLObjectType  # type: ignore[attr-defined, assignment, unused-ignore]
     except ImportError:
         CWLObjectType = object  # type: ignore[assignment, misc]
 
