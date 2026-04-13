@@ -815,6 +815,7 @@ workflow_run:
     selectors:
       _: '[data-label="${label}"]'
       upload: '${_} [data-description="upload"]'
+      upload_beta: '${_} [data-description="upload-beta"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
       collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
       # data inputs
@@ -1399,12 +1400,33 @@ beta_upload:
       type: xpath
       selector: '//button[contains(., "Beta Upload")]'
     method_card: '[data-method-id="${method_id}"]'
+    local_file_input: '#local-file-input'
+    paste_content_textarea: '.paste-textarea'
     paste_textarea: '#paste-links-textarea'
     add_urls_button: '[data-test-id="add-urls"]'
     collection_section: '[data-test-id="collection-toggle"] label'
     collection_name_input: '#collection-name-input'
     collection_type_select: '#collection-type-select'
+    composite_type_selector: '#composite-type-selector'
     start_button: '[data-test-id="start-upload"]'
+    cancel_button:
+      type: xpath
+      selector: '//button[normalize-space() = "Cancel"]'
+    row_name_input: '[data-test-id="upload-row-${row}-name"]'
+    row_extension_select: '[data-test-id="upload-row-${row}-extension"] .single-item-selector'
+    row_dbkey_select: '[data-test-id="upload-row-${row}-dbkey"] .single-item-selector'
+    paste_content_row_toggle_button: '[data-test-id="paste-content-toggle-${row}"]'
+    paste_content_row_textarea: '[data-test-id="paste-content-textarea-${row}"]'
+    row_remove_button: '[data-test-id="upload-row-${row}-remove"]'
+    paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] input[type="checkbox"]'
+    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] label'
+
+upload_method_modal:
+  selectors:
+    start_button: '[data-test-id="upload-method-modal-start"]'
+    cancel_button:
+      type: xpath
+      selector: '//button[normalize-space() = "Cancel"]'
 
 new_user_welcome:
   selectors:
