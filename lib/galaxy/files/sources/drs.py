@@ -22,12 +22,14 @@ class DRSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     url_regex: str = r"^drs://"
     force_http: Union[bool, TemplateExpansion] = False
     http_headers: Union[dict[str, str], TemplateExpansion] = {}
+    attach_oidc_token: Union[bool, TemplateExpansion] = False
 
 
 class DRSFileSourceConfiguration(BaseFileSourceConfiguration):
     url_regex: str = r"^drs://"
     force_http: bool = False
     http_headers: dict[str, str] = {}
+    attach_oidc_token: bool = False
 
 
 class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFileSourceConfiguration]):
