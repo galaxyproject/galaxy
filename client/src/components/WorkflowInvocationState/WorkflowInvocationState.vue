@@ -38,6 +38,7 @@ import WorkflowInvocationFeedback from "./WorkflowInvocationFeedback.vue";
 import WorkflowInvocationInputOutputTabs from "./WorkflowInvocationInputOutputTabs.vue";
 import WorkflowInvocationMetrics from "./WorkflowInvocationMetrics.vue";
 import WorkflowInvocationOverview from "./WorkflowInvocationOverview.vue";
+import WorkflowInvocationSearch from "./WorkflowInvocationSearch.vue";
 import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -436,16 +437,16 @@ async function onCancel() {
                 Debug
             </BNavItem>
 
-            <div class="ml-auto d-flex align-items-center">
-                <BBadge
-                    v-if="tabsDisabled"
-                    v-g-tooltip.hover
-                    class="mr-1"
-                    :title="disabledTabTooltip"
-                    variant="primary">
+            <div class="ml-auto d-flex align-items-center flex-gapx-1">
+                <WorkflowInvocationSearch
+                    v-if="!props.tab || ['steps', 'inputs', 'outputs'].includes(props.tab)"
+                    :tab="props.tab"
+                    :invocation-id="props.invocationId"
+                    :workflow-id="invocation.workflow_id" />
+                <BBadge v-if="tabsDisabled" v-g-tooltip.hover :title="disabledTabTooltip" variant="primary">
                     <FontAwesomeIcon :icon="faExclamation" />
                 </BBadge>
-                <BBadge v-if="isPolling" v-g-tooltip.hover class="mr-1" title="Polling for updates" variant="link">
+                <BBadge v-if="isPolling" v-g-tooltip.hover title="Polling for updates" variant="link">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton
