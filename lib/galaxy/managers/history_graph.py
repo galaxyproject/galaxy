@@ -154,8 +154,10 @@ class HistoryGraphBuilder:
 
         # 4. Filter closure items by the same deleted policy as seed selection.
         if not self.include_deleted and (closure_dataset_ids or closure_collection_ids):
-            closure_dataset_ids = self._filter_deleted_hdas(closure_dataset_ids)
-            closure_collection_ids = self._filter_deleted_hdcas(closure_collection_ids)
+            closure_dataset_ids = self._filter_deleted_ids(HistoryDatasetAssociation, closure_dataset_ids)
+            closure_collection_ids = self._filter_deleted_ids(
+                HistoryDatasetCollectionAssociation, closure_collection_ids
+            )
 
         # Build nodes.
         all_dataset_ids = dataset_ids | closure_dataset_ids
@@ -279,27 +281,18 @@ class HistoryGraphBuilder:
                 to_remove.add(row.id)
         return dataset_ids - to_remove
 
-    def _filter_deleted_hdas(self, ids: set[int]) -> set[int]:
-        if not ids:
-            return ids
-        kept: set[int] = set()
-        for chunk in self._chunks(list(ids)):
-            stmt = select(HistoryDatasetAssociation.id).where(
-                HistoryDatasetAssociation.id.in_(chunk),
-                HistoryDatasetAssociation.deleted == False,  # noqa: E712
-            )
-            for row in self.sa_session.execute(stmt):
-                kept.add(row.id)
-        return kept
+    def _filter_deleted_ids(self, model_cls: type, ids: set[int]) -> set[int]:
+        """Return the subset of ``ids`` whose rows are not marked deleted.
 
-    def _filter_deleted_hdcas(self, ids: set[int]) -> set[int]:
+        Used to apply the seed-side deleted policy to closure items
+        pulled in via payload refs."""
         if not ids:
             return ids
         kept: set[int] = set()
         for chunk in self._chunks(list(ids)):
-            stmt = select(HistoryDatasetCollectionAssociation.id).where(
-                HistoryDatasetCollectionAssociation.id.in_(chunk),
-                HistoryDatasetCollectionAssociation.deleted == False,  # noqa: E712
+            stmt = select(model_cls.id).where(
+                model_cls.id.in_(chunk),
+                model_cls.deleted == False,  # noqa: E712
             )
             for row in self.sa_session.execute(stmt):
                 kept.add(row.id)
@@ -376,7 +369,11 @@ class HistoryGraphBuilder:
     # ── Payload input resolution ──
 
     def _fetch_payloads(self, tr_ids: set[int]) -> dict[int, dict]:
-        """Batch-fetch all tool_request.request payloads in one query."""
+        """Return raw ``tool_request.request`` payloads keyed by tool
+        request id.  Fetched in chunks of ``CHUNK`` ids. Rows whose
+        ``request`` field is not a dict (after decoding a JSON string
+        form) are silently dropped with a debug log, on the assumption
+        that a malformed payload contributes no usable input refs."""
         result: dict[int, dict] = {}
         for chunk in self._chunks(list(tr_ids)):
             stmt = select(ToolRequest.id, ToolRequest.request).where(ToolRequest.id.in_(chunk))
@@ -390,13 +387,19 @@ class HistoryGraphBuilder:
         return result
 
     def _extract_inputs(self, payload: dict) -> set[tuple[str, int]]:
-        """Walk a tool_request payload and return ``{(type, id)}`` refs,
-        with hidden element HDAs mapped to their parent HDCA.
+        """Sole payload entry point inside the builder. Walks a single
+        ``tool_request.request`` payload and returns the deduplicated
+        set of input refs the builder will emit edges for.
 
-        Uses the same ``boltons.iterutils.remap`` traversal idiom as
-        ``jobs.py::populate_input_data_input_id`` — when we hit a leaf
-        keyed ``id``, we peek at its sibling ``src`` on the parent
-        container to decide whether it is an HDA/HDCA reference.
+        Contract, in order:
+        1. Extract declared ``{src, id}`` refs from the payload, using
+           the same ``boltons.iterutils.remap`` traversal idiom as
+           ``jobs.py::populate_input_data_input_id`` — when we hit a
+           leaf keyed ``id``, we peek at its sibling ``src`` on the
+           parent container to decide whether it is an HDA/HDCA ref.
+        2. Normalize refs so that each one points at a top-level
+           history item (see ``_normalize_refs``).
+        3. Return as a set — the caller does not need to dedupe.
 
         Payload shape is trusted to be Pydantic-validated upstream when
         the tool_request was accepted; no explicit depth or ref caps are
@@ -420,7 +423,11 @@ class HistoryGraphBuilder:
         return self._normalize_refs(refs)
 
     def _normalize_refs(self, refs: set[tuple[str, int]]) -> set[tuple[str, int]]:
-        """Map hidden-element HDA refs in the payload to their parent HDCA."""
+        """Apply the single normalization rule: a hidden-element HDA
+        ref is replaced with its parent HDCA. Single-hop only — the
+        replacement is not re-normalized. No other rules apply here
+        by design; adding more cases should be weighed against the
+        invariant that every emitted ref points at a top-level item."""
         result: set[tuple[str, int]] = set()
         hda_ids = [item_id for t, item_id in refs if t == "dataset"]
         hdca_parents: dict[int, int] = {}
