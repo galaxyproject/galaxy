@@ -2,9 +2,7 @@
 
 For each selected top-level history item, resolves its producing
 tool_request and that tool_request's declared inputs from the
-submission payload.  One hop only.  No consumers.  No transitive
-traversal.
-
+submission payload, one hop out from the seed.
 """
 
 import json
@@ -44,19 +42,27 @@ TYPE_RANK = {"dataset": 0, "collection": 1, "tool_request": 2}
 EDGE_TYPE_RANK = {"dataset_input": 0, "dataset_output": 1, "collection_input": 2, "collection_output": 3}
 NODE_TYPE_PREFIX = {"dataset": "d", "collection": "c", "tool_request": "r"}
 CHUNK = 1000
+MAX_LIMIT = 1000
 
 
 class HistoryGraphBuilder:
-    """Builds a bounded provenance graph from selected history items.
+    """Builds a provenance graph from selected history items.
 
-    Invariants enforced in code:
-    - HDA producer: JTODA only.  No Dataset.job_id fallback.
-    - HDCA producer: JODCA only.  No TRICA.  No HDCA.job_id.
-    - Inputs: tool_request.request payload only.  No job association tables.
-    - One hop.  No consumers.  No sibling outputs.  No transitive traversal.
-    - Ambiguity (≥2 distinct tool_request_ids): skip, log debug.
-    - Missing producer: no edge.
-    - Malformed payload: skip inputs.
+    Behaviors:
+    - HDA producer edges come from JobToOutputDatasetAssociation joined
+      to Job.
+    - HDCA producer edges come from JobToOutputDatasetCollectionAssociation
+      joined to Job.
+    - Input edges come from the tool_request.request submission payload.
+    - When an item resolves to more than one distinct producing
+      tool_request, the item is kept as a node and the producer edge is
+      skipped with a debug log.
+    - Malformed payloads are logged at debug level and the item becomes
+      a node with no input edges.
+    - Hidden HDAs that belong to a collection are filtered before
+      producer lookup and surfaced via their parent HDCA instead.
+    - ``limit`` is clamped to ``MAX_LIMIT`` to keep per-request work
+      bounded regardless of caller input.
     """
 
     def __init__(
@@ -77,7 +83,7 @@ class HistoryGraphBuilder:
         self.sa_session = sa_session
         self.security = security
         self.history_id = history_id
-        self.limit = limit
+        self.limit = min(limit, MAX_LIMIT)
         self.toolbox = toolbox
         self.include_deleted = include_deleted
         self.seed = seed
@@ -293,12 +299,13 @@ class HistoryGraphBuilder:
                 kept.add(row.id)
         return kept
 
-    # ── Producer lookup (strictly minimal) ──
+    # ── Producer lookup ──
 
     def _hda_producers(self, dataset_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
-        """JTODA only.  No Dataset.job_id.  No fallback.
-        Collect all candidates first, then emit only items with
-        exactly one distinct producer."""
+        """Resolve each HDA's producing (tool_request_id, tool_id) by
+        joining JobToOutputDatasetAssociation to Job. Only HDAs with
+        exactly one distinct producing tool_request are returned;
+        ambiguous ones are logged at debug level."""
         candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
         for chunk in self._chunks(list(dataset_ids)):
             stmt = (
@@ -328,9 +335,10 @@ class HistoryGraphBuilder:
         return result
 
     def _hdca_producers(self, collection_ids: set[int]) -> dict[tuple[str, int], tuple[int, str]]:
-        """JODCA only.  No TRICA.  No HDCA.job_id.  No fallback.
-        Collect all candidates first, then emit only items with
-        exactly one distinct producer."""
+        """Resolve each HDCA's producing (tool_request_id, tool_id) by
+        joining JobToOutputDatasetCollectionAssociation to Job. Only
+        HDCAs with exactly one distinct producing tool_request are
+        returned; ambiguous ones are logged at debug level."""
         candidates: dict[int, dict[int, str]] = {}
         for chunk in self._chunks(list(collection_ids)):
             stmt = (
@@ -407,7 +415,7 @@ class HistoryGraphBuilder:
         return refs
 
     def _normalize_refs(self, refs: set[tuple[str, int]]) -> set[tuple[str, int]]:
-        """Single normalization rule: hidden-element HDA → parent HDCA."""
+        """Map hidden-element HDA refs in the payload to their parent HDCA."""
         result: set[tuple[str, int]] = set()
         hda_ids = [item_id for t, item_id in refs if t == "dataset"]
         hdca_parents: dict[int, int] = {}
