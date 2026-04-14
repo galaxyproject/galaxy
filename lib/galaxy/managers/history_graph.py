@@ -165,9 +165,14 @@ class HistoryGraphBuilder:
         nodes.extend(self._collection_nodes(all_collection_ids))
         nodes.extend(self._tr_nodes(tr_nodes))
 
+        # Invariant: every edge endpoint must be a node. Edges were emitted
+        # before closure deletion filtering, so drop any that now reference
+        # an item that did not survive.
+        node_id_set = {n.id for n in nodes}
+        edges = [e for e in edges if e.source in node_id_set and e.target in node_id_set]
+
         # 5. Resolve tool names.
-        if self.toolbox:
-            self._resolve_tool_names(nodes)
+        self._resolve_tool_names(nodes)
 
         # 6. Optional seed subgraph filter (in-memory only).
         if self.seed:
@@ -391,7 +396,11 @@ class HistoryGraphBuilder:
         Uses the same ``boltons.iterutils.remap`` traversal idiom as
         ``jobs.py::populate_input_data_input_id`` — when we hit a leaf
         keyed ``id``, we peek at its sibling ``src`` on the parent
-        container to decide whether it is an HDA/HDCA reference."""
+        container to decide whether it is an HDA/HDCA reference.
+
+        Payload shape is trusted to be Pydantic-validated upstream when
+        the tool_request was accepted; no explicit depth or ref caps are
+        applied here by design."""
         refs: set[tuple[str, int]] = set()
 
         def visit(path, key, value):
@@ -517,11 +526,14 @@ class HistoryGraphBuilder:
         ]
 
     def _resolve_tool_names(self, nodes: list[GraphNode]):
+        toolbox = self.toolbox
+        if toolbox is None:
+            return
         tool_ids = {n.tool_id for n in nodes if n.type == "tool_request" and n.tool_id}
         name_map: dict[str, str] = {}
         for tool_id in tool_ids:
             try:
-                tool = self.toolbox.get_tool(tool_id)
+                tool = toolbox.get_tool(tool_id)
                 if tool and tool.name:
                     name_map[tool_id] = tool.name
             except Exception:
