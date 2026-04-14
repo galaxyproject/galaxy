@@ -21,9 +21,7 @@ fastmcp>=2.13.0
 redis>=5.3.0,<6
 
 # For file sources plugins
-fs.webdavfs>=0.4.2  # type: webdav
-# webdavclient3 on the develop branch contains an important fix for username-based authentification containing the '@' symbol
-webdavclient3 @ git+https://github.com/ezhov-evgeny/webdav-client-python-3@98c23d1abd15efc3db9cfc756429f00041578bc2
+webdav4[fsspec]  # type: webdav
 fs.dropboxfs>=1.0.3  # type: dropbox
 fs.sshfs  # type: ssh
 fs.anvilfs # type: anvil

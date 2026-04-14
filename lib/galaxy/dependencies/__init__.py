@@ -258,12 +258,14 @@ class ConditionalDependencies:
     def check_fs_dropboxfs(self):
         return "dropbox" in self.file_sources
 
-    def check_fs_webdavfs(self):
+    def check_webdav4(self):
         return "webdav" in self.file_sources
 
+    def check_fs_webdavfs(self):
+        return self.check_webdav4()
+
     def check_webdavclient3(self):
-        # fs.webdavfs dependency for which we need an unreleased version
-        return self.check_fs_webdavfs()
+        return self.check_webdav4()
 
     def check_fs_anvilfs(self):
         # pyfilesystem plugin access to terra on anvil
