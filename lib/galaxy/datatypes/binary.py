@@ -12,6 +12,7 @@ import struct
 import subprocess
 import tarfile
 import tempfile
+import xml.etree.ElementTree as ET
 import zipfile
 from collections.abc import Iterable
 from json import dumps
@@ -25,7 +26,6 @@ from typing import (
 import h5py
 import numpy as np
 import pysam
-import xml.etree.ElementTree as ET
 from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
