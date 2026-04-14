@@ -1113,11 +1113,14 @@ MultiDataRequestInternalDereferenced: Type = union_type(
 
 
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
+    model_config = ConfigDict(populate_by_name=True)
+
     parameter_type: Literal["gx_data"] = "gx_data"
     type: Literal["data"]
     extensions: Annotated[
         List[str],
         Field(
+            validation_alias=AliasChoices("extensions", "format"),
             description="Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.",
             examples=["txt", "tabular", "tiff"],
         ),
@@ -1125,6 +1128,13 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     multiple: Annotated[bool, Field(description="Allow multiple values to be selected.")] = False
     min: Optional[int] = None
     max: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_extensions_and_format(cls, data):
+        if isinstance(data, dict) and "extensions" in data and "format" in data:
+            raise ValueError("Specify either 'extensions' or 'format', not both")
+        return data
 
     def field_kwargs(self) -> Dict[str, Any]:
         kwargs = super().field_kwargs()
@@ -1341,11 +1351,23 @@ DataCollectionJobInternal: Type = Union[DataCollectionRequestInternal, AdaptedDa
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
+    model_config = ConfigDict(populate_by_name=True)
+
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
     type: Literal["data_collection"]
     collection_type: Optional[str] = None
-    extensions: List[str] = ["data"]
+    extensions: Annotated[
+        List[str],
+        Field(validation_alias=AliasChoices("extensions", "format")),
+    ] = ["data"]
     value: Optional[Dict[str, Any]]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_extensions_and_format(cls, data):
+        if isinstance(data, dict) and "extensions" in data and "format" in data:
+            raise ValueError("Specify either 'extensions' or 'format', not both")
+        return data
 
     def field_kwargs(self) -> Dict[str, Any]:
         kwargs = super().field_kwargs()

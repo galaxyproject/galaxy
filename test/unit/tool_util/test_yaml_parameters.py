@@ -16,6 +16,7 @@ from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
     ConditionalParameterModel,
     create_job_runtime_model,
+    DataCollectionParameterModel,
     DataParameterModel,
     HiddenParameterModel,
     RepeatParameterModel,
@@ -353,3 +354,46 @@ def test_published_tool_source_schema_has_no_xml_only_leaks():
     all_property_names.update(raw.get("properties", {}).keys())
     leaks = [bad for bad in _BLACKLIST_SUBSTRINGS if bad in all_property_names]
     assert not leaks, f"XML-only fields leaked into published schema: {leaks}"
+
+
+def test_data_param_accepts_format_alias():
+    m = DataParameterModel(type="data", name="x", format=["txt", "tabular"])
+    assert m.extensions == ["txt", "tabular"]
+
+
+def test_data_param_accepts_extensions_name():
+    m = DataParameterModel(type="data", name="x", extensions=["bam"])
+    assert m.extensions == ["bam"]
+
+
+def test_data_param_default_extensions():
+    m = DataParameterModel(type="data", name="x")
+    assert m.extensions == ["data"]
+
+
+def test_data_param_serializes_as_extensions():
+    dumped = DataParameterModel(type="data", name="x", format=["txt"]).model_dump()
+    assert "extensions" in dumped
+    assert "format" not in dumped
+    assert dumped["extensions"] == ["txt"]
+
+
+def test_data_param_rejects_both_format_and_extensions():
+    with pytest.raises(ValidationError):
+        DataParameterModel(type="data", name="x", extensions=["a"], format=["b"])
+
+
+def test_data_collection_param_accepts_format_alias():
+    m = DataCollectionParameterModel(type="data_collection", name="c", format=["bam"], value=None)
+    assert m.extensions == ["bam"]
+
+
+def test_data_collection_param_serializes_as_extensions():
+    dumped = DataCollectionParameterModel(type="data_collection", name="c", format=["bam"], value=None).model_dump()
+    assert "extensions" in dumped
+    assert "format" not in dumped
+
+
+def test_data_collection_param_rejects_both_format_and_extensions():
+    with pytest.raises(ValidationError):
+        DataCollectionParameterModel(type="data_collection", name="c", extensions=["a"], format=["b"], value=None)
