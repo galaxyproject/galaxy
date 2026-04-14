@@ -24,8 +24,10 @@ Example usage:
 from typing import (
     Literal,
     Optional,
+    overload,
     TypedDict,
     TypeVar,
+    Union,
 )
 
 from .framework import NavigatesGalaxyMixin
@@ -50,24 +52,9 @@ class UploadMetadata(TypedDict, total=False):
 
 
 class UploadItem:
-    """Represents a single item staged for upload.
-
-    This class provides methods to manipulate the metadata of a staged upload
-    item before executing the upload. Items are created by calling stage methods
-    on an UploadContext.
-
-    Attributes:
-        index: The index of this item in the staged items list (0-based)
-        context: The UploadContext this item belongs to
-    """
+    """Represents a single item staged for upload."""
 
     def __init__(self, index: int, context: "UploadContext"):
-        """Initialize a new UploadItem.
-
-        Args:
-            index: The index of this staged item (0-based)
-            context: The UploadContext this item belongs to
-        """
         self.index = index
         self.context = context
 
@@ -158,10 +145,8 @@ class DataLibraryUploadItem(UploadItem):
 
 
 class UploadContext:
-    """Manages an upload session with staging and execution."""
 
     def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
-        """Initialize a new UploadContext."""
         self.driver_wrapper = driver_wrapper
         self._item_count = 0
         self._current_method_id: Optional[UploadMethodId] = None
@@ -435,18 +420,7 @@ class UploadContext:
         input_target.wait_for_visible()
 
     def select_target_history(self, history_id: str) -> "UploadContext":
-        """Change the upload target history using the TargetHistorySelector UI.
-
-        Clicks the "Choose another" link in the target-history banner, waits for
-        the history selector modal to appear, clicks the history card matching
-        ``history_id``, and waits for the modal to close.
-
-        Args:
-            history_id: The Galaxy history ID to select as upload target.
-
-        Returns:
-            self for method chaining
-        """
+        """Change the upload target history using the TargetHistorySelector UI."""
         self.components.beta_upload.target_history_change_link.wait_for_and_click()
         self.components.beta_upload.history_selector_modal_item(history_id=history_id).wait_for_and_click()
         # Wait for modal to dismiss before proceeding
@@ -491,16 +465,181 @@ class UploadContext:
         return self.components.beta_upload.paste_links_row_deferred_label(row=row)
 
 
+# Mode-specific context classes that provide restricted APIs
+class BaseUploadContext:
+    """Base context with common methods shared across all upload modes."""
+
+    def __init__(self, context: UploadContext):
+        self._context = context
+
+    def start(self) -> None:
+        self._context.start()
+
+    def cancel(self) -> None:
+        """Cancel all staged items without uploading."""
+        self._context.cancel()
+
+    def select_target_history(self, history_id: str) -> "BaseUploadContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+class LocalFileContext(BaseUploadContext):
+
+    def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> LocalUploadItem:
+        return self._context.stage_local_file(test_path, metadata)
+
+    def select_target_history(self, history_id: str) -> "LocalFileContext":
+
+        self._context.select_target_history(history_id)
+        return self
+
+
+class PasteContentContext(BaseUploadContext):
+
+    def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
+        return self._context.stage_paste_content(content, metadata)
+
+    def select_target_history(self, history_id: str) -> "PasteContentContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+class PasteLinksContext(BaseUploadContext):
+    """Restricted context for paste link uploads only."""
+
+    def stage_paste_link(self, url: str, metadata: Optional["UploadMetadata"] = None) -> UploadItem:
+        """Stage a file link URL for upload. Returns the new item.
+
+        You cannot chain-stage multiple links with this method - use stage_paste_links instead. This is for single URLs only.
+        """
+        return self._context.stage_paste_link(url, metadata)
+
+    def stage_paste_links(
+        self, url_metadata_pairs: list[tuple[str, Optional["UploadMetadata"]]]
+    ) -> "PasteLinksContext":
+        """Stage multiple file link URLs for upload, each with optional metadata.
+
+        Args:
+            url_metadata_pairs: List of (url, metadata) tuples where metadata is optional.
+                Example: [(url1, {"name": "link1", "extension": "txt"}), (url2, None)]
+
+        Returns:
+            self for method chaining
+        """
+        self._context.stage_paste_links(url_metadata_pairs)
+        return self
+
+    def select_target_history(self, history_id: str) -> "PasteLinksContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+class RemoteFilesContext(BaseUploadContext):
+
+    def stage_remote_file(
+        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+    ) -> RemoteFileUploadItem:
+        return self._context.stage_remote_file(source_label, file_label, metadata)
+
+    def select_target_history(self, history_id: str) -> "RemoteFilesContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+class CompositeFileContext(BaseUploadContext):
+
+    def select_composite(self, composite_type: str) -> "CompositeFileContext":
+        """Select composite datatype in the composite-file method."""
+        self._context.select_composite(composite_type)
+        return self
+
+    def stage_composite_url_slot(self, slot: int, url: str) -> "CompositeFileContext":
+        """Set a composite slot to URL mode and populate its URL."""
+        self._context.stage_composite_url_slot(slot, url)
+        return self
+
+    def stage_composite_paste_slot(self, slot: int, content: str) -> "CompositeFileContext":
+        """Set a composite slot to paste mode and populate content."""
+        self._context.stage_composite_paste_slot(slot, content)
+        return self
+
+    def stage_composite_file_slot(self, slot: int, file_path: str) -> "CompositeFileContext":
+        """Set a composite slot to local-file mode and attach a file path."""
+        self._context.stage_composite_file_slot(slot, file_path)
+        return self
+
+    def select_target_history(self, history_id: str) -> "CompositeFileContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+class DataLibraryContext(BaseUploadContext):
+
+    def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
+        return self._context.stage_data_library_dataset(library_label, dataset_label)
+
+    def select_target_history(self, history_id: str) -> "DataLibraryContext":
+        """Change the upload target history using the TargetHistorySelector UI."""
+        self._context.select_target_history(history_id)
+        return self
+
+
+# Mapping of upload method IDs to their corresponding context classes
+_CONTEXT_CLASS_MAP: dict[UploadMethodId, type[BaseUploadContext]] = {
+    "local-file": LocalFileContext,
+    "paste-content": PasteContentContext,
+    "paste-links": PasteLinksContext,
+    "remote-files": RemoteFilesContext,
+    "composite-file": CompositeFileContext,
+    "data-library": DataLibraryContext,
+}
+
+
 class UsesUploadActivity(NavigatesGalaxyMixin):
     """Mixin for using the Upload Activity in the testing framework."""
 
-    def upload_context(self, method_id: UploadMethodId) -> UploadContext:
+    @overload
+    def upload_context(self, method_id: Literal["local-file"]) -> LocalFileContext: ...
+
+    @overload
+    def upload_context(self, method_id: Literal["paste-content"]) -> PasteContentContext: ...
+
+    @overload
+    def upload_context(self, method_id: Literal["paste-links"]) -> PasteLinksContext: ...
+
+    @overload
+    def upload_context(self, method_id: Literal["remote-files"]) -> RemoteFilesContext: ...
+
+    @overload
+    def upload_context(self, method_id: Literal["composite-file"]) -> CompositeFileContext: ...
+
+    @overload
+    def upload_context(self, method_id: Literal["data-library"]) -> DataLibraryContext: ...
+
+    def upload_context(self, method_id: UploadMethodId) -> Union[
+        LocalFileContext,
+        PasteContentContext,
+        PasteLinksContext,
+        RemoteFilesContext,
+        CompositeFileContext,
+        DataLibraryContext,
+    ]:
         """Create an upload context for the specified method.
 
         Args:
             method_id: The upload method to use
 
         Returns:
-            An UploadContext object for staging and executing uploads
+            A mode-specific context object for staging and executing uploads.
         """
-        return UploadContext(method_id, self)
+        base_context = UploadContext(method_id, self)
+        context_class = _CONTEXT_CLASS_MAP[method_id]
+        # mypy cannot infer the return type here due to the dynamic mapping,
+        # but the overloads provide correct type hints for callers
+        return context_class(base_context)  # type: ignore[return-value]
