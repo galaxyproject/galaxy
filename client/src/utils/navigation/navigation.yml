@@ -1408,6 +1408,15 @@ beta_upload:
     collection_name_input: '#collection-name-input'
     collection_type_select: '#collection-type-select'
     composite_type_selector: '#composite-type-selector'
+    composite_type_enabled_dropdown: '#composite-type-selector .single-item-selector:not(.multiselect--disabled) .multiselect__select'
+    composite_type_dropdown: '#composite-type-selector .single-item-selector .multiselect__select'
+    composite_type_input: '#composite-type-selector .single-item-selector input.multiselect__input'
+    composite_type_options: '#composite-type-selector .single-item-selector .multiselect__option'
+    composite_type_option: '#composite-type-selector [data-test-id="single-item-selector-option"][data-label="${label}"]'
+    composite_type_option_by_id: '#composite-type-selector [data-test-id="single-item-selector-option"][data-id="${id}"]'
+    composite_type_option_by_id_visible: '#composite-type-selector .single-item-selector.multiselect--active [data-test-id="single-item-selector-option"][data-id="${id}"]'
+    composite_type_options_visible: '#composite-type-selector .single-item-selector.multiselect--active [data-test-id="single-item-selector-option"]'
+    composite_first_slot: '.composite-file-upload .composite-slot-row:nth-of-type(1)'
     start_button: '[data-test-id="start-upload"]'
     cancel_button:
       type: xpath
@@ -1420,6 +1429,36 @@ beta_upload:
     row_remove_button: '[data-test-id="upload-row-${row}-remove"]'
     paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] input[type="checkbox"]'
     paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] label'
+    # Target-history selectors (TargetHistorySelector inside UploadMethodView)
+    target_history_change_link: '.target-history-banner .change-history-link'
+    history_selector_modal: '.g-dialog'
+    history_selector_modal_item: '.g-dialog [data-pk="${history_id}"]'
+    # Composite-file selectors
+    composite_slot_mode_dropdown: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-mode-dropdown"] .dropdown-toggle'
+    composite_slot_enter_local_action: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-enter-local"]'
+    composite_slot_enter_url_action: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-enter-url"]'
+    composite_slot_url_input: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-url-input"]'
+    composite_slot_enter_paste_action: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-enter-paste"]'
+    composite_slot_enter_local_action_visible: '.dropdown-menu.show [data-test-id="composite-slot-enter-local"]'
+    composite_slot_enter_url_action_visible: '.dropdown-menu.show [data-test-id="composite-slot-enter-url"]'
+    composite_slot_enter_paste_action_visible: '.dropdown-menu.show [data-test-id="composite-slot-enter-paste"]'
+    composite_slot_paste_textarea: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-paste-textarea"]'
+    composite_slot_file_input: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-file-input"]'
+    # Remote-files selectors
+    remote_files_browser_label: '[data-test-id="remote-files-browser-label"][data-label="${label}"]'
+    remote_files_select_all: '[data-test-id="remote-files-select-all"] .custom-control-label'
+    remote_files_item_checkbox: 
+      type: xpath
+      selector: '//span[contains(@data-test-id, "remote-files-browser-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
+    remote_files_add_selected: '[data-test-id="remote-files-add-selected"]'
+    # Data-library selectors
+    data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
+    data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
+    data_library_select_all: '[data-test-id="data-library-select-all"] input[type="checkbox"]'
+    data_library_item_checkbox: 
+      type: xpath
+      selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
+    data_library_add_selected: '[data-test-id="data-library-add-selected"]'
 
 upload_method_modal:
   selectors:
