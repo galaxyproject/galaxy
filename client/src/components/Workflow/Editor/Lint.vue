@@ -7,7 +7,6 @@ import { type ConfirmDialogOptions, useConfirmDialog } from "@/composables/confi
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Steps } from "@/stores/workflowStepStore";
 
-import type { Rectangle } from "./modules/geometry";
 import {
     bestPracticeWarningAnnotation,
     bestPracticeWarningAnnotationLength,
@@ -85,7 +84,6 @@ const emit = defineEmits<{
             | ReturnType<typeof fixAllIssues>,
     ): void;
     (e: "onScrollTo", stepId: Number): void;
-    (e: "onHighlightRegion", bounds: Rectangle): void;
 }>();
 
 function onAttributes(highlight: string) {
@@ -176,7 +174,7 @@ function onHighlight(item: LintState) {
         "name" in item ? item.name : undefined,
     );
     if (bounds) {
-        emit("onHighlightRegion", bounds);
+        stateStore.pendingHighlight = { bounds, moveTo: false };
     }
 }
 

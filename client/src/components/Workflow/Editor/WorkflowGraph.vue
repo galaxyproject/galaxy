@@ -13,7 +13,7 @@ import { useD3Zoom } from "./composables/d3Zoom";
 import { useFocusedNodes } from "./composables/useFocusedNodes";
 import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Rectangle, Vector } from "./modules/geometry";
+import type { Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -210,19 +210,27 @@ const { comments } = storeToRefs(commentStore);
 
 const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
 
-function highlightGraphRegion(bounds: Rectangle, moveToPosition: boolean = true) {
-    const centerPosition = { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
-    areaHighlight.value?.show(bounds);
-    if (moveToPosition) {
-        moveTo(centerPosition);
-    }
-}
+watch(
+    () => stateStore.pendingHighlight,
+    (pending) => {
+        if (pending) {
+            const centerPosition = {
+                x: pending.bounds.x + pending.bounds.width / 2.0,
+                y: pending.bounds.y + pending.bounds.height / 2.0,
+            };
+            areaHighlight.value?.show(pending.bounds);
+            if (pending.moveTo !== false) {
+                moveTo(centerPosition);
+            }
+            stateStore.pendingHighlight = null;
+        }
+    },
+);
 
 defineExpose({
     fitWorkflow,
     setZoom,
     moveTo,
-    highlightGraphRegion,
     setTransform: d3SetTransform,
 });
 </script>

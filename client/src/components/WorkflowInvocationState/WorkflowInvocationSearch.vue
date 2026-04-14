@@ -4,9 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import type { SearchData } from "@/stores/workflowSearchStore";
 import { capitalizeFirstLetter } from "@/utils/strings";
-
-import type { Rectangle } from "../Workflow/Editor/modules/geometry";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GraphSearch from "../Workflow/GraphSearch.vue";
@@ -20,7 +19,7 @@ const props = defineProps<{
 
 const storeId = computed(() => `invocation-${props.invocationId}`);
 
-provideScopedWorkflowStores(storeId);
+const { stateStore } = provideScopedWorkflowStores(storeId);
 
 const toggled = ref(false);
 
@@ -55,9 +54,11 @@ watch(
     },
 );
 
-function onHighlightRegion(bounds: Rectangle) {
-    // TODO: Implement the logic to highlight the region in the workflow graph based on the bounds
-    console.log("Highlighting region:", bounds);
+function onHighlightRegion(data: SearchData) {
+    stateStore.pendingHighlight = { bounds: data.bounds };
+    // TODO: It would make sense to activate the node in the graph in the case of
+    // a step, input or output search result; but for that we need the `SearchData`
+    // to contain a `stepId` field.
 }
 </script>
 
@@ -81,7 +82,7 @@ function onHighlightRegion(bounds: Rectangle) {
 
         <Transition name="search-results">
             <div v-if="toggled && canvasContainerEl" class="workflow-invocation-search-results">
-                <GraphSearch :current-query="currentQuery" @result-clicked="(data) => onHighlightRegion(data.bounds)" />
+                <GraphSearch :current-query="currentQuery" @result-clicked="onHighlightRegion" />
             </div>
         </Transition>
     </div>
