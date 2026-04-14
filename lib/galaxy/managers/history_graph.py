@@ -9,6 +9,7 @@ import json
 import logging
 from typing import Optional
 
+from boltons.iterutils import remap
 from sqlalchemy import (
     Select,
     select,
@@ -384,35 +385,30 @@ class HistoryGraphBuilder:
         return result
 
     def _extract_inputs(self, payload: dict) -> set[tuple[str, int]]:
-        """Extract and normalize input refs from a single payload."""
-        raw_refs = self._walk_payload(payload)
-        return self._normalize_refs(raw_refs)
+        """Walk a tool_request payload and return ``{(type, id)}`` refs,
+        with hidden element HDAs mapped to their parent HDCA.
 
-    @staticmethod
-    def _walk_payload(obj) -> set[tuple[str, int]]:
-        """Recursively extract {src, id} references.
-        Unknown src types are rejected with a DEBUG log."""
+        Uses the same ``boltons.iterutils.remap`` traversal idiom as
+        ``jobs.py::populate_input_data_input_id`` — when we hit a leaf
+        keyed ``id``, we peek at its sibling ``src`` on the parent
+        container to decide whether it is an HDA/HDCA reference."""
         refs: set[tuple[str, int]] = set()
-        if isinstance(obj, dict):
-            src = obj.get("src")
-            if src is not None:
-                item_id = obj.get("id")
-                if src in ("hda", "hdca") and isinstance(item_id, int):
-                    refs.add(("dataset" if src == "hda" else "collection", item_id))
-                else:
-                    log.debug("history_graph: rejected unknown payload ref src=%r id=%r", src, item_id)
-                return refs  # leaf ref node, do not recurse into src/id
-            if obj.get("__class__") == "Batch" and "values" in obj:
-                for v in obj["values"]:
-                    refs |= HistoryGraphBuilder._walk_payload(v)
-            else:
-                for k, v in obj.items():
-                    if k != "__class__":
-                        refs |= HistoryGraphBuilder._walk_payload(v)
-        elif isinstance(obj, list):
-            for item in obj:
-                refs |= HistoryGraphBuilder._walk_payload(item)
-        return refs
+
+        def visit(path, key, value):
+            if key == "id" and isinstance(value, int) and not isinstance(value, bool):
+                parent = payload
+                for step in path:
+                    parent = parent[step]
+                if isinstance(parent, dict):
+                    src = parent.get("src")
+                    if src == "hda":
+                        refs.add(("dataset", value))
+                    elif src == "hdca":
+                        refs.add(("collection", value))
+            return key, value
+
+        remap(payload, visit=visit)
+        return self._normalize_refs(refs)
 
     def _normalize_refs(self, refs: set[tuple[str, int]]) -> set[tuple[str, int]]:
         """Map hidden-element HDA refs in the payload to their parent HDCA."""
