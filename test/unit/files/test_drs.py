@@ -7,6 +7,8 @@ from unittest import mock
 
 import responses
 
+from galaxy.files import DictFileSourcesUserContext
+
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,
@@ -16,6 +18,7 @@ from ._util import (
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_file_sources_conf.yml")
+DRS_OIDC_FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_oidc_file_sources_conf.yml")
 
 
 @responses.activate
@@ -126,3 +129,65 @@ def test_file_source_drs_s3():
     assert_realizes_contains(
         file_sources, test_url, "PMID:30101859-Cao-2018-TGFBR2-Patient_4", user_context=user_context
     )
+
+
+@responses.activate
+def test_file_source_drs_attach_oidc_token():
+    """When http_headers is configured with a template referencing the user's OIDC token, it is sent as a Bearer header."""
+    oidc_token = "MyOIDCAccessToken"
+
+    def drs_repo_handler(request):
+        assert request.headers["Authorization"] == f"Bearer {oidc_token}"
+        data = {
+            "id": "999",
+            "name": "oidc-test-file",
+            "access_methods": [
+                {
+                    "type": "https",
+                    "access_id": "abc",
+                }
+            ],
+        }
+        return (200, {}, json.dumps(data))
+
+    def access_handler(request):
+        assert request.headers["Authorization"] == f"Bearer {oidc_token}"
+        access_data = {
+            "url": "https://my.repository.org/oidcfile.txt",
+            "headers": [],
+        }
+        return (200, {}, json.dumps(access_data))
+
+    responses.add_callback(
+        responses.GET,
+        "https://drs.oidc-example.org/ga4gh/drs/v1/objects/999",
+        callback=drs_repo_handler,
+        content_type="application/json",
+    )
+    responses.add_callback(
+        responses.GET,
+        "https://drs.oidc-example.org/ga4gh/drs/v1/objects/999/access/abc",
+        callback=access_handler,
+        content_type="application/json",
+    )
+
+    test_url = "drs://drs.oidc-example.org/999"
+
+    def check_download(request, **kwargs):
+        response: Any = io.StringIO("hello oidc world")
+        response.headers = {}
+        response.geturl = lambda: test_url
+        return response
+
+    with mock.patch.object(urllib.request, "urlopen", new=check_download):
+        user_context = DictFileSourcesUserContext(
+            username="alice",
+            email="alice@galaxyproject.org",
+            preferences={},
+            role_names=set(),
+            group_names=set(),
+            is_admin=False,
+            oidc_access_tokens={"oidc": oidc_token},
+        )
+        file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
+        assert_realizes_as(file_sources, test_url, "hello oidc world", user_context=user_context)
