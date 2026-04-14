@@ -42,9 +42,11 @@ import WorkflowInvocationSearch from "./WorkflowInvocationSearch.vue";
 import WorkflowInvocationShare from "./WorkflowInvocationShare.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+type InvocationViewTab = "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
+
 interface Props {
     invocationId: string;
-    tab?: "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
+    tab?: InvocationViewTab;
     isSubworkflow?: boolean;
     isFullPage?: boolean;
     success?: boolean;
@@ -268,6 +270,10 @@ onUnmounted(() => {
     clearTimeout(jobStatesInterval.value);
 });
 
+function isValidSearchTab(tab: InvocationViewTab): tab is "steps" | "inputs" | "outputs" {
+    return ["steps", "inputs", "outputs"].includes(tab);
+}
+
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
         await invocationStore.fetchInvocationById({ id: props.invocationId });
@@ -439,7 +445,7 @@ async function onCancel() {
 
             <div class="ml-auto d-flex align-items-center flex-gapx-1">
                 <WorkflowInvocationSearch
-                    v-if="!props.tab || ['steps', 'inputs', 'outputs'].includes(props.tab)"
+                    v-if="!props.tab || isValidSearchTab(props.tab)"
                     :tab="props.tab"
                     :invocation-id="props.invocationId"
                     :workflow-id="invocation.workflow_id" />
@@ -485,6 +491,7 @@ async function onCancel() {
                     :is-full-page="props.isFullPage" />
             </div>
             <WorkflowInvocationInputOutputTabs
+                v-if="props.tab === 'inputs' || props.tab === 'outputs'"
                 :invocation="invocation"
                 :terminal="invocationAndJobTerminal"
                 :tab="props.tab" />
