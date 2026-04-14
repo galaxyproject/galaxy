@@ -5,9 +5,13 @@ import urllib
 from typing import Any
 from unittest import mock
 
+import pytest
 import responses
 
-from galaxy.files import DictFileSourcesUserContext
+from galaxy.files import (
+    DictFileSourcesUserContext,
+    ProvidesFileSourcesUserContext,
+)
 
 from ._util import (
     assert_realizes_as,
@@ -19,6 +23,86 @@ from ._util import (
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_file_sources_conf.yml")
 DRS_OIDC_FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_oidc_file_sources_conf.yml")
+
+
+def test_provides_file_sources_user_context_oidc_access_tokens():
+    """ProvidesFileSourcesUserContext.oidc_access_tokens reads all providers from social_auth."""
+
+    class DummyToken:
+        def __init__(self, provider, access_token):
+            self.provider = provider
+            self.extra_data = {"access_token": access_token}
+
+    class DummyUser:
+        social_auth = [
+            DummyToken("oidc", "oidc-token"),
+            DummyToken("keycloak", "keycloak-token"),
+            DummyToken("no_token_provider", None),  # skipped — no access_token
+        ]
+
+    class DummyTrans:
+        user = DummyUser()
+
+    tokens = ProvidesFileSourcesUserContext(DummyTrans()).oidc_access_tokens
+    assert tokens == {"oidc": "oidc-token", "keycloak": "keycloak-token"}
+
+
+def test_provides_file_sources_user_context_oidc_access_tokens_anonymous():
+    """ProvidesFileSourcesUserContext.oidc_access_tokens returns None for anonymous users."""
+
+    class DummyTrans:
+        user = None
+
+    assert ProvidesFileSourcesUserContext(DummyTrans()).oidc_access_tokens is None
+
+
+def test_drs_http_headers_template_expansion():
+    """Dict values in http_headers are expanded as templates during file source serialization."""
+    oidc_token = "my-token"
+    file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
+    user_context = DictFileSourcesUserContext(
+        username="alice",
+        email="alice@galaxyproject.org",
+        preferences={},
+        role_names=set(),
+        group_names=set(),
+        is_admin=False,
+        oidc_access_tokens={"oidc": oidc_token},
+    )
+    file_sources_dict = file_sources.to_dict(for_serialization=True, user_context=user_context)
+    drs_source = next(s for s in file_sources_dict["file_sources"] if s.get("type") == "drs")
+    assert drs_source["http_headers"]["Authorization"] == f"Bearer {oidc_token}"
+
+
+def test_drs_oidc_token_wrong_provider_raises():
+    """Referencing a provider the user doesn't have raises KeyError at serialization time."""
+    file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
+    user_context = DictFileSourcesUserContext(
+        username="alice",
+        email="alice@galaxyproject.org",
+        preferences={},
+        role_names=set(),
+        group_names=set(),
+        is_admin=False,
+        oidc_access_tokens={"keycloak": "kc-token"},
+    )
+    with pytest.raises(KeyError):
+        file_sources.to_dict(for_serialization=True, user_context=user_context)
+
+
+def test_drs_oidc_token_no_tokens_raises():
+    """A user with no OIDC tokens raises TypeError at serialization time."""
+    file_sources = configured_file_sources(DRS_OIDC_FILE_SOURCES_CONF)
+    user_context = DictFileSourcesUserContext(
+        username="alice",
+        email="alice@galaxyproject.org",
+        preferences={},
+        role_names=set(),
+        group_names=set(),
+        is_admin=False,
+    )
+    with pytest.raises(TypeError):
+        file_sources.to_dict(for_serialization=True, user_context=user_context)
 
 
 @responses.activate
