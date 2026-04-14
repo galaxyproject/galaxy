@@ -270,10 +270,6 @@ onUnmounted(() => {
     clearTimeout(jobStatesInterval.value);
 });
 
-function isValidSearchTab(tab: InvocationViewTab): tab is "steps" | "inputs" | "outputs" {
-    return ["steps", "inputs", "outputs"].includes(tab);
-}
-
 async function pollStepStatesUntilTerminal() {
     if (!invocationSchedulingTerminal.value) {
         await invocationStore.fetchInvocationById({ id: props.invocationId });
@@ -445,8 +441,7 @@ async function onCancel() {
 
             <div class="ml-auto d-flex align-items-center flex-gapx-1">
                 <WorkflowInvocationSearch
-                    v-if="!props.tab || isValidSearchTab(props.tab)"
-                    :tab="props.tab"
+                    v-if="!props.tab"
                     :invocation-id="props.invocationId"
                     :workflow-id="invocation.workflow_id" />
                 <BBadge v-if="tabsDisabled" v-g-tooltip.hover :title="disabledTabTooltip" variant="primary">
@@ -456,7 +451,7 @@ async function onCancel() {
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
                 <GButton
-                    v-if="!props.isFullPage && !invocationAndJobTerminal"
+                    v-if="!invocationAndJobTerminal"
                     tooltip
                     class="my-1"
                     title="Cancel scheduling of workflow invocation"
@@ -469,7 +464,7 @@ async function onCancel() {
             </div>
         </BNav>
 
-        <div class="mt-1 d-flex flex-column overflow-auto">
+        <div class="mt-1 d-flex flex-column overflow-auto tab-content-container">
             <div v-if="onOverviewTab">
                 <WorkflowInvocationOverview
                     class="invocation-overview"
@@ -480,7 +475,7 @@ async function onCancel() {
                     :is-subworkflow="isSubworkflow"
                     :invocation-messages="uniqueMessages" />
             </div>
-            <div v-if="props.tab === 'steps'">
+            <div v-if="props.tab === 'steps'" class="steps-tab-content">
                 <BAlert v-if="isSubworkflow" variant="info" show>
                     <span v-localize>Subworkflow steps are not available.</span>
                 </BAlert>
@@ -569,6 +564,17 @@ async function onCancel() {
     max-height: 0;
     opacity: 0;
     transform: translateY(-6px);
+}
+
+.tab-content-container {
+    flex: 1;
+    min-height: 0;
+}
+
+.steps-tab-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .progress-bars {

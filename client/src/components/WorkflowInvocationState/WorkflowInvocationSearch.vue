@@ -5,7 +5,6 @@ import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { SearchData } from "@/stores/workflowSearchStore";
-import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "../BaseComponents/GButton.vue";
 import GraphSearch from "../Workflow/GraphSearch.vue";
@@ -14,7 +13,6 @@ import DelayedInput from "@/components/Common/DelayedInput.vue";
 const props = defineProps<{
     invocationId: string;
     workflowId: string;
-    tab?: "steps" | "inputs" | "outputs";
 }>();
 
 const storeId = computed(() => `invocation-${props.invocationId}`);
@@ -37,23 +35,6 @@ watch(toggled, (val) => {
         canvasContainerEl.value = document.getElementById("canvas-container");
     }
 });
-
-const buttonTitle = computed(() => {
-    if (!props.tab) {
-        return "Search Invocation Graph";
-    } else {
-        return `Search Invocation ${capitalizeFirstLetter(props.tab)}`;
-    }
-});
-
-// reset query, and toggled when tab changes
-watch(
-    () => props.tab,
-    () => {
-        currentQuery.value = "";
-        toggled.value = false;
-    },
-);
 
 function onHighlightRegion(data: SearchData) {
     stateStore.pendingHighlight = { bounds: data.bounds };
@@ -78,12 +59,11 @@ async function toggleSearch() {
                 v-if="toggled"
                 ref="searchInput"
                 placeholder="search workflow"
-                :expanded.sync="toggled"
                 :delay="200"
                 @change="(v) => (currentQuery = v)" />
             <GButton
                 tooltip
-                :title="toggled ? 'Close Search' : buttonTitle"
+                :title="toggled ? 'Close Search' : 'Search Invocation Graph'"
                 :transparent="toggled"
                 @click="toggleSearch">
                 <FontAwesomeIcon :icon="toggled ? faChevronRight : faSearch" fixed-width />
