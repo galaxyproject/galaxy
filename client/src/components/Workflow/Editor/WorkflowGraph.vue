@@ -46,7 +46,7 @@ const props = defineProps({
 });
 
 const { stateStore, stepStore, connectionStore } = useWorkflowStores();
-const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
+const { scale, activeNodeId, draggingPosition, draggingTerminal, pendingHighlight } = storeToRefs(stateStore);
 
 const { focusedNodeIds } = useFocusedNodes(activeNodeId, connectionStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
@@ -210,22 +210,19 @@ const { comments } = storeToRefs(commentStore);
 
 const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
 
-watch(
-    () => stateStore.pendingHighlight,
-    (pending) => {
-        if (pending) {
-            const centerPosition = {
-                x: pending.bounds.x + pending.bounds.width / 2.0,
-                y: pending.bounds.y + pending.bounds.height / 2.0,
-            };
-            areaHighlight.value?.show(pending.bounds);
-            if (pending.moveTo !== false) {
-                moveTo(centerPosition);
-            }
-            stateStore.pendingHighlight = null;
+watch(pendingHighlight, (pending) => {
+    if (pending) {
+        pendingHighlight.value = null;
+        const centerPosition = {
+            x: pending.bounds.x + pending.bounds.width / 2.0,
+            y: pending.bounds.y + pending.bounds.height / 2.0,
+        };
+        areaHighlight.value?.show(pending.bounds);
+        if (pending.moveTo !== false) {
+            moveTo(centerPosition);
         }
-    },
-);
+    }
+});
 
 defineExpose({
     fitWorkflow,
