@@ -56,9 +56,9 @@ watch(
 
 function onHighlightRegion(data: SearchData) {
     stateStore.pendingHighlight = { bounds: data.bounds };
-    // TODO: It would make sense to activate the node in the graph in the case of
-    // a step, input or output search result; but for that we need the `SearchData`
-    // to contain a `stepId` field.
+    if ("stepId" in data) {
+        stateStore.activeNodeId = Number(data.stepId);
+    }
 }
 </script>
 
