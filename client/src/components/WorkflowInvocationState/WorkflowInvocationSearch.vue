@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faSearch, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faChevronRight, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -75,13 +75,15 @@ function onHighlightRegion(bounds: Rectangle) {
                 :title="toggled ? 'Close Search' : buttonTitle"
                 :transparent="toggled"
                 @click="toggled = !toggled">
-                <FontAwesomeIcon :icon="toggled ? faTimes : faSearch" fixed-width />
+                <FontAwesomeIcon :icon="toggled ? faChevronRight : faSearch" fixed-width />
             </GButton>
         </div>
 
-        <div v-if="toggled && canvasContainerEl" class="workflow-invocation-search-results">
-            <GraphSearch :current-query="currentQuery" @result-clicked="(data) => onHighlightRegion(data.bounds)" />
-        </div>
+        <Transition name="search-results">
+            <div v-if="toggled && canvasContainerEl" class="workflow-invocation-search-results">
+                <GraphSearch :current-query="currentQuery" @result-clicked="(data) => onHighlightRegion(data.bounds)" />
+            </div>
+        </Transition>
     </div>
 </template>
 
@@ -105,5 +107,28 @@ function onHighlightRegion(bounds: Rectangle) {
 
     max-height: 50vh;
     overflow-y: auto;
+}
+
+.search-results-enter-active {
+    animation: search-drop-in 0.2s ease;
+}
+
+.search-results-leave-active {
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    transform-origin: top right;
+}
+
+.search-results-leave-to {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.95);
+}
+
+@keyframes search-drop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scaleY(0.95);
+    }
 }
 </style>
