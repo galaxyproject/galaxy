@@ -10,7 +10,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
-import type { Rectangle, Vector } from "@/utils/geometry";
+import type { Vector } from "@/utils/geometry";
 
 import { useFocusedNodes } from "./composables/useFocusedNodes";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";

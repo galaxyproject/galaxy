@@ -7,7 +7,10 @@ submission payload, one hop out from the seed.
 
 import json
 import logging
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from boltons.iterutils import remap
 from sqlalchemy import (
@@ -281,7 +284,11 @@ class HistoryGraphBuilder:
                 to_remove.add(row.id)
         return dataset_ids - to_remove
 
-    def _filter_deleted_ids(self, model_cls: type, ids: set[int]) -> set[int]:
+    def _filter_deleted_ids(
+        self,
+        model_cls: Union[type[HistoryDatasetAssociation], type[HistoryDatasetCollectionAssociation]],
+        ids: set[int],
+    ) -> set[int]:
         """Return the subset of ``ids`` whose rows are not marked deleted.
 
         Used to apply the seed-side deleted policy to closure items
