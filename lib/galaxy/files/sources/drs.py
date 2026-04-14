@@ -22,14 +22,12 @@ class DRSFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     url_regex: str = r"^drs://"
     force_http: Union[bool, TemplateExpansion] = False
     http_headers: Union[dict[str, str], TemplateExpansion] = {}
-    attach_oidc_token: Union[bool, TemplateExpansion] = False
 
 
 class DRSFileSourceConfiguration(BaseFileSourceConfiguration):
     url_regex: str = r"^drs://"
     force_http: bool = False
     http_headers: dict[str, str] = {}
-    attach_oidc_token: bool = False
 
 
 class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFileSourceConfiguration]):
@@ -61,11 +59,6 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
         user_context = context.user_data.context if context.user_data.context else None
         config = context.config
         headers = dict(config.http_headers)
-        if config.attach_oidc_token and user_context:
-            access_token = getattr(user_context, "oidc_access_token", None)
-            if access_token:
-                headers.setdefault("Authorization", f"Bearer {access_token}")
-                log.info("Attaching OIDC access token to DRS request")
         log.info(f"Config: {config}")
         log.info(f"Headers: {headers}")
         log.info(f"User context: {user_context}")
