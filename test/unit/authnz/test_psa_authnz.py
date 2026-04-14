@@ -373,6 +373,111 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
 
 
+def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+    return PSAAuthnz(
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
+    )
+
+
+def _make_token(*, auth_time, expires, has_refresh_token=True, has_access_token=True):
+    extra_data = {"auth_time": auth_time, "expires": expires}
+    if has_refresh_token:
+        extra_data["refresh_token"] = "dummy-refresh-token"
+    if has_access_token:
+        extra_data["access_token"] = "old-access-token"
+    return SimpleNamespace(extra_data=extra_data, refresh_token=MagicMock())
+
+
+def test_refresh_for_job_returns_false_when_no_extra_data(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Returns False when extra_data is None."""
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    token = SimpleNamespace(extra_data=None, refresh_token=MagicMock())
+    assert backend.refresh_for_job(MagicMock(), token) is False
+
+
+def test_refresh_for_job_returns_false_when_no_refresh_token(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Returns False when refresh_token is missing from extra_data."""
+    import time
+
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    token = _make_token(auth_time=int(time.time()) - 4000, expires=3600, has_refresh_token=False)
+    assert backend.refresh_for_job(MagicMock(), token) is False
+
+
+def test_refresh_for_job_returns_false_when_no_expires(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Returns False when expiry information is absent from extra_data."""
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    token = SimpleNamespace(extra_data={"refresh_token": "tok", "auth_time": 0}, refresh_token=MagicMock())
+    assert backend.refresh_for_job(MagicMock(), token) is False
+
+
+def test_refresh_for_job_returns_false_when_token_still_young(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Returns False when the token is less than halfway through its lifetime."""
+    import time
+
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    # Token issued 10 minutes ago with 1-hour lifetime → only 17% through lifetime
+    token = _make_token(auth_time=int(time.time()) - 600, expires=3600)
+    assert backend.refresh_for_job(MagicMock(), token) is False
+
+
+def test_refresh_for_job_refreshes_when_token_past_half_lifetime(
+    mock_oidc_config_file, mock_oidc_backend_config_file
+):
+    """Calls refresh_token when the access token is past 50% of its lifetime (not yet expired)."""
+    import time
+
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    # Token issued 40 minutes ago with 1-hour lifetime → 67% through lifetime
+    token = _make_token(auth_time=int(time.time()) - 2400, expires=3600)
+    sa_session = MagicMock()
+
+    with patch("galaxy.authnz.psa_authnz.on_the_fly_config") as mock_config:
+        token.refresh_token = MagicMock()
+        result = backend.refresh_for_job(sa_session, token)
+
+    assert result is True
+    mock_config.assert_called_once_with(sa_session)
+    token.refresh_token.assert_called_once()
+
+
+def test_refresh_for_job_refreshes_when_token_already_expired(
+    mock_oidc_config_file, mock_oidc_backend_config_file
+):
+    """Calls refresh_token even when the access token has already expired.
+
+    This is the key difference from refresh(), which only handles the 50–100%
+    lifetime window and does nothing for expired tokens.
+    """
+    import time
+
+    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+    # Token issued 90 minutes ago with 1-hour lifetime → expired 30 minutes ago
+    token = _make_token(auth_time=int(time.time()) - 5400, expires=3600)
+    sa_session = MagicMock()
+
+    with patch("galaxy.authnz.psa_authnz.on_the_fly_config") as mock_config:
+        token.refresh_token = MagicMock()
+        result = backend.refresh_for_job(sa_session, token)
+
+    assert result is True
+    mock_config.assert_called_once_with(sa_session)
+    token.refresh_token.assert_called_once()
+
+
 def test_sync_user_profile_skips_when_account_interface_enabled():
     manager = MagicMock()
     session = MagicMock()

@@ -301,6 +301,29 @@ class AuthnzManager:
         for auth in user.social_auth or []:
             self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
+    def refresh_expiring_oidc_tokens_for_job(self, sa_session, user):
+        """Refresh OIDC tokens for a user in an async job context.
+
+        Unlike refresh_expiring_oidc_tokens(), this doesn't require a web transaction
+        and will also attempt to refresh already-expired tokens (not just those
+        approaching expiry).
+        """
+        if not isinstance(user, model.User):
+            return
+        for auth in user.social_auth or []:
+            try:
+                success, message, backend = self._get_authnz_backend(auth.provider)
+                if not success:
+                    log.error(
+                        f"An error occurred when refreshing user token on `{auth.provider}` identity provider in job context: {message}"
+                    )
+                    continue
+                refreshed = backend.refresh_for_job(sa_session, auth)
+                if refreshed:
+                    log.debug(f"Refreshed user token via `{auth.provider}` identity provider in job context")
+            except Exception:
+                log.exception(f"An error occurred when refreshing user token for provider `{auth.provider}` in job context")
+
     def authenticate(self, provider, trans, idphint=None):
         """
         :type provider: string
