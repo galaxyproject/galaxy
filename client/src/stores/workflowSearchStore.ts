@@ -187,7 +187,7 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
 
     /** caches the results of `collectSearchData` depending on the changeId of the `undoRedoStore` */
     function collectSearchDataCached() {
-        if (undoRedoStore.changeId === searchDataCacheId.value && searchDataCacheData) {
+        if (undoRedoStore.changeId === searchDataCacheId.value && searchDataCacheData.value !== null) {
             return searchDataCacheData.value as SearchData[];
         }
 
