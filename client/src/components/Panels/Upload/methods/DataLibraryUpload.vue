@@ -760,7 +760,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     @row-click="onLibraryRowClick">
                     <template v-slot:cell(name)="{ item }">
                         <FontAwesomeIcon :icon="faDatabase" class="mr-2 text-primary" />
-                        <strong>{{ item.name }}</strong>
+                        <strong data-test-id="data-library-browser-library-label" :data-label="item.name">
+                            {{ item.name }}
+                        </strong>
                     </template>
                 </GTable>
 
@@ -793,6 +795,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:head(select)>
                         <BFormCheckbox
                             v-if="props.multiple !== false && datasetsOnCurrentPage.length > 0"
+                            data-test-id="data-library-select-all"
                             :checked="allDatasetsSelected"
                             :indeterminate="someDatasetsSelected"
                             @change="toggleSelectAll" />
@@ -801,6 +804,8 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(select)="{ item }">
                         <BFormCheckbox
                             v-if="item.isLeaf"
+                            data-test-id="data-library-browser-item-checkbox"
+                            :data-label="item.label"
                             :checked="isSelected(item)"
                             @change="toggleFileSelection(item)"
                             @click.stop />
@@ -824,7 +829,12 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                     <template v-slot:cell(name)="{ item }">
                         <div class="d-flex align-items-center">
-                            <span>{{ item.label }}</span>
+                            <span
+                                data-test-id="data-library-browser-item-label"
+                                :data-label="item.label"
+                                :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
+                                {{ item.label }}
+                            </span>
                         </div>
                     </template>
 
@@ -863,7 +873,12 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                 <GButton v-if="hasItems && !hasSelection" color="grey" outline @click="showDatasetList">
                     View Selected Datasets ({{ libraryDatasetItems.length }})
                 </GButton>
-                <GButton color="blue" :disabled="!hasSelection" class="ml-auto" @click="addSelectedDatasets">
+                <GButton
+                    color="blue"
+                    :disabled="!hasSelection"
+                    class="ml-auto"
+                    data-test-id="data-library-add-selected"
+                    @click="addSelectedDatasets">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                     Add Selected Datasets ({{ selectionCount }})
                 </GButton>

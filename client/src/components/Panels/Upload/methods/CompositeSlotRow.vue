@@ -217,11 +217,15 @@ const display = computed(() => {
             </small>
 
             <!-- Source mode dropdown -->
-            <BDropdown size="sm" :variant="isFilled ? 'secondary' : 'primary'" class="mr-1 flex-shrink-0">
+            <BDropdown
+                size="sm"
+                :variant="isFilled ? 'secondary' : 'primary'"
+                class="mr-1 flex-shrink-0"
+                data-test-id="composite-slot-mode-dropdown">
                 <template v-slot:button-content>
                     {{ dropdownLabel }}
                 </template>
-                <BDropdownItem @click="openFileBrowser">
+                <BDropdownItem data-test-id="composite-slot-enter-local" @click="openFileBrowser">
                     <FontAwesomeIcon :icon="faLaptop" fixed-width class="mr-1" />
                     Choose local file
                 </BDropdownItem>
@@ -229,11 +233,11 @@ const display = computed(() => {
                     <FontAwesomeIcon :icon="faCloud" fixed-width class="mr-1" />
                     Browse remote files
                 </BDropdownItem>
-                <BDropdownItem @click="selectMode('url')">
+                <BDropdownItem data-test-id="composite-slot-enter-url" @click="selectMode('url')">
                     <FontAwesomeIcon :icon="faLink" fixed-width class="mr-1" />
                     Enter URL
                 </BDropdownItem>
-                <BDropdownItem @click="selectMode('paste')">
+                <BDropdownItem data-test-id="composite-slot-enter-paste" @click="selectMode('paste')">
                     <FontAwesomeIcon :icon="faEdit" fixed-width class="mr-1" />
                     Paste content
                 </BDropdownItem>
@@ -267,6 +271,7 @@ const display = computed(() => {
                 size="sm"
                 placeholder="https://example.com/file.ext"
                 class="slot-url-input font-monospace"
+                data-test-id="composite-slot-url-input"
                 :state="urlInputState"
                 @input="onUrlInput" />
             <small v-if="urlValidationMessage" class="text-danger">
@@ -281,6 +286,7 @@ const display = computed(() => {
                 rows="3"
                 size="sm"
                 placeholder="Paste file content here"
+                data-test-id="composite-slot-paste-textarea"
                 @input="onPasteInput" />
         </div>
 
@@ -293,7 +299,12 @@ const display = computed(() => {
         </div>
 
         <!-- Hidden file input -->
-        <input ref="fileInputRef" type="file" class="d-none" @change="onFileInputChange" />
+        <input
+            ref="fileInputRef"
+            type="file"
+            class="d-none"
+            data-test-id="composite-slot-file-input"
+            @change="onFileInputChange" />
 
         <!-- Remote file browser modal -->
         <RemoteFileBrowserModal
