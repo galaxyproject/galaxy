@@ -206,7 +206,7 @@ pydantic-evals==1.80.0
 pydantic-graph==1.80.0
 pydantic-handlebars==0.1.0
 pydantic-settings==2.13.1
-pydantic-tes==0.3.0
+pydantic-tes==0.4.0
 pydicom==3.0.2
 pydot==4.0.1
 pyeventsystem==0.1.0
