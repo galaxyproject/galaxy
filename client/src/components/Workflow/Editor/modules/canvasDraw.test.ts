@@ -6,18 +6,30 @@ import type { Step } from "@/stores/workflowStepStore";
 
 import { drawStepBorders, drawSteps, getStepColor, initStateColors } from "./canvasDraw";
 
+/**
+ * Makes a mock CSSStyleDeclaration whose `getPropertyValue` resolves CSS custom properties
+ * from a plain object. Simulates how `initStateColors` reads `--state-color-*` vars from
+ * a real element's computed style at mount time.
+ */
 function makeMockStyle(vars: Record<string, string>): CSSStyleDeclaration {
     return { getPropertyValue: (prop: string) => vars[prop] ?? "" } as unknown as CSSStyleDeclaration;
 }
 
+/** Makes a mock Step object provided with default values, allowing overrides. */
 function makeStep(overrides: Partial<Step> = {}): Step {
     return { id: 0, position: { left: 10, top: 20 }, errors: null, type: "tool", ...overrides } as unknown as Step;
 }
 
-function makeGraphStep(overrides: Partial<GraphStep> = {}): Step {
-    return makeStep(overrides as Partial<Step>);
+/** Makes a mock GraphStep object provided with default values, allowing overrides. */
+function makeGraphStep(overrides: Partial<GraphStep> = {}): GraphStep {
+    return makeStep(overrides as Partial<Step>) as unknown as GraphStep;
 }
 
+/**
+ * Makes a mock CanvasRenderingContext2D with spied drawing methods. Simulates the canvas
+ * context passed to `drawSteps`/`drawStepBorders` so tests can assert on draw calls
+ * without needing a real DOM canvas element.
+ */
 function makeCtx(): CanvasRenderingContext2D {
     return {
         beginPath: vi.fn(),
@@ -30,24 +42,22 @@ function makeCtx(): CanvasRenderingContext2D {
     } as unknown as CanvasRenderingContext2D;
 }
 
+/** Makes a mock workflow state store with specified step positions. */
 function makeStateStore(
     positions: Record<number, { width: number; height: number }>,
 ): ReturnType<typeof useWorkflowStateStore> {
     return { stepPosition: positions } as unknown as ReturnType<typeof useWorkflowStateStore>;
 }
 
-const STATE_COLORS = {
-    "--state-color-ok": "#d4edda",
-    "--state-color-error": "#f8d7da",
-    "--state-color-running": "#fff3cd",
-    "--state-color-new": "#e2e3e5",
-    "--state-color-waiting": "#e2e3e5",
-    "--state-color-queued": "#e2e3e5",
+const MOCK_COLORS: Record<string, string> = {
+    "--state-color-ok": "#ok-color",
+    "--state-color-error": "#error-color",
+    "--state-color-uninitialized": "#uninitialized-color",
 };
 
 describe("initStateColors + getStepColor", () => {
     beforeEach(() => {
-        initStateColors(makeMockStyle(STATE_COLORS));
+        initStateColors(makeMockStyle(MOCK_COLORS));
     });
 
     describe("plain editor steps (no headerClass)", () => {
@@ -56,41 +66,40 @@ describe("initStateColors + getStepColor", () => {
         });
 
         it("returns errorColor when step has errors", () => {
-            expect(getStepColor(makeStep({ errors: "something went wrong" } as any), "#node", "#error")).toBe("#error");
+            expect(getStepColor(makeStep({ errors: ["something went wrong"] }), "#node", "#error")).toBe("#error");
         });
     });
 
     describe("invocation steps (with headerClass)", () => {
-        it("returns the matching state color for an active header-* class", () => {
-            const step = makeGraphStep({ headerClass: { "node-header-invocation": true, "header-ok": true } } as any);
-            expect(getStepColor(step, "#node", "#error")).toBe(STATE_COLORS["--state-color-ok"]);
+        it("returns the CSS var color for an active header-* class", () => {
+            const step = makeGraphStep({ headerClass: { "node-header-invocation": true, "header-ok": true } });
+            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-ok"]);
         });
 
-        it("returns the error state color for header-error", () => {
+        it("returns the CSS var color for header-error", () => {
             const step = makeGraphStep({
                 headerClass: { "node-header-invocation": true, "header-error": true },
-            } as any);
-            expect(getStepColor(step, "#node", "#error")).toBe(STATE_COLORS["--state-color-error"]);
+            });
+            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-error"]);
         });
 
         it("ignores inactive header-* classes and falls back to nodeColor", () => {
             const step = makeGraphStep({
                 headerClass: { "node-header-invocation": true, "header-ok": false },
-            } as any);
+            });
             expect(getStepColor(step, "#node", "#error")).toBe("#node");
         });
 
         it("falls back to nodeColor when headerClass has no active header-* keys", () => {
-            const step = makeGraphStep({ headerClass: { "node-header-invocation": true } } as any);
+            const step = makeGraphStep({ headerClass: { "node-header-invocation": true } });
             expect(getStepColor(step, "#node", "#error")).toBe("#node");
         });
 
-        it("returns the uninitialized state color for header-uninitialized", () => {
-            initStateColors(makeMockStyle({ ...STATE_COLORS, "--state-color-uninitialized": "#dee2e6" }));
+        it("returns the CSS var color for header-uninitialized", () => {
             const step = makeGraphStep({
                 headerClass: { "node-header-invocation": true, "header-uninitialized": true },
-            } as any);
-            expect(getStepColor(step, "#node", "#error")).toBe("#dee2e6");
+            });
+            expect(getStepColor(step, "#node", "#error")).toBe(MOCK_COLORS["--state-color-uninitialized"]);
         });
     });
 });
@@ -98,7 +107,7 @@ describe("initStateColors + getStepColor", () => {
 describe("drawSteps", () => {
     it("fills each step rect using the provided color", () => {
         const ctx = makeCtx();
-        const steps = [makeStep({ id: 1, position: { left: 5, top: 10 } } as any)];
+        const steps = [makeStep({ id: 1, position: { left: 5, top: 10 } })];
         const stateStore = makeStateStore({ 1: { width: 100, height: 40 } });
 
         drawSteps(ctx, steps, "#ff0000", stateStore);
@@ -111,7 +120,7 @@ describe("drawSteps", () => {
 
     it("skips steps with no recorded position", () => {
         const ctx = makeCtx();
-        const steps = [makeStep({ id: 99 } as any)];
+        const steps = [makeStep({ id: 99 })];
         const stateStore = makeStateStore({});
 
         drawSteps(ctx, steps, "#ff0000", stateStore);
@@ -123,7 +132,7 @@ describe("drawSteps", () => {
 describe("drawStepBorders", () => {
     it("strokes each step rect using the provided border color", () => {
         const ctx = makeCtx();
-        const steps = [makeStep({ id: 1, position: { left: 5, top: 10 } } as any)];
+        const steps = [makeStep({ id: 1, position: { left: 5, top: 10 } })];
         const stateStore = makeStateStore({ 1: { width: 100, height: 40 } });
 
         drawStepBorders(ctx, steps, "#0000ff", stateStore);
@@ -136,7 +145,7 @@ describe("drawStepBorders", () => {
 
     it("skips steps with no recorded position", () => {
         const ctx = makeCtx();
-        const steps = [makeStep({ id: 99 } as any)];
+        const steps = [makeStep({ id: 99 })];
         const stateStore = makeStateStore({});
 
         drawStepBorders(ctx, steps, "#0000ff", stateStore);
