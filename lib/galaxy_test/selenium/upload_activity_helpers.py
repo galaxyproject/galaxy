@@ -32,7 +32,14 @@ from .framework import NavigatesGalaxyMixin
 
 T = TypeVar("T", bound="UploadItem")
 
-UploadMethodId = Literal["local-file", "paste-content", "paste-links"]
+UploadMethodId = Literal[
+    "local-file",
+    "paste-content",
+    "paste-links",
+    "remote-files",
+    "composite-file",
+    "data-library",
+]
 
 
 class UploadMetadata(TypedDict, total=False):
@@ -134,6 +141,20 @@ class PasteContentUploadItem(UploadItem):
     ) -> "PasteContentUploadItem":
         """Stage another paste content and return the new item."""
         return self.context.stage_paste_content(content, metadata)
+
+
+class RemoteFileUploadItem(UploadItem):
+    def stage_remote_file(
+        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+    ) -> "RemoteFileUploadItem":
+        """Stage another remote file and return the new item."""
+        return self.context.stage_remote_file(source_label, file_label, metadata)
+
+
+class DataLibraryUploadItem(UploadItem):
+    def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> "DataLibraryUploadItem":
+        """Stage another data library dataset and return the new item."""
+        return self.context.stage_data_library_dataset(library_label, dataset_label)
 
 
 class UploadContext:
@@ -249,6 +270,188 @@ class UploadContext:
     def cancel(self) -> None:
         """Cancel all staged items without uploading."""
         self.components.beta_upload.cancel_button.wait_for_and_click()
+
+    def stage_remote_file(
+        self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
+    ) -> RemoteFileUploadItem:
+        """Stage a single remote file via the remote-files upload method.
+
+        Args:
+            source_label: Display label of the remote file source (for example "Posix").
+            file_label: Display label of the file to stage from inside that source.
+            metadata: Optional dataset metadata to apply after staging.
+
+        Returns:
+            RemoteFileUploadItem for the staged remote file.
+        """
+        if self._current_method_id != "remote-files":
+            raise AssertionError("stage_remote_file is only available for the remote-files method")
+
+        # Navigate into the source by clicking its label
+        self.components.beta_upload.remote_files_browser_label(label=source_label).wait_for_and_click()
+        # Wait for the file list to load and become visible
+        self.components.beta_upload.remote_files_browser_label(label=file_label).wait_for_visible()
+        # Select the file by clicking its label (toggles selection)
+        self.components.beta_upload.remote_files_browser_label(label=file_label).wait_for_and_click()
+        # Click "Add Selected Files" button
+        self.components.beta_upload.remote_files_add_selected.wait_for_and_click()
+        return self._create_item(RemoteFileUploadItem, metadata)
+
+    def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
+        """Stage a single dataset from a data library via the data-library method.
+
+        Args:
+            library_label: Display name of the library to open.
+            dataset_label: Display name of the dataset to select and stage.
+            metadata: Optional dataset metadata to apply after staging.
+
+        Returns:
+            DataLibraryUploadItem for the staged library dataset.
+        """
+        if self._current_method_id != "data-library":
+            raise AssertionError("stage_data_library_dataset is only available for the data-library method")
+
+        self.components.beta_upload.data_library_library_label(label=library_label).wait_for_and_click()
+        self.components.beta_upload.data_library_item_label(label=dataset_label).wait_for_and_click()
+        self.components.beta_upload.data_library_add_selected.wait_for_and_click()
+        return self._create_item(DataLibraryUploadItem)
+
+    def select_composite(self, composite_type: str) -> "UploadContext":
+        """Select composite datatype in the composite-file method."""
+        if self._current_method_id != "composite-file":
+            raise AssertionError("select_composite is only available for the composite-file method")
+
+        self._select_composite_type(composite_type)
+        return self
+
+    def stage_composite_url_slot(self, slot: int, url: str) -> "UploadContext":
+        """Set a composite slot to URL mode and populate its URL."""
+        if self._current_method_id != "composite-file":
+            raise AssertionError("stage_composite_url_slot is only available for the composite-file method")
+        if slot < 1:
+            raise AssertionError("slot must be >= 1")
+
+        self._select_composite_slot_mode(row=slot, mode="url")
+        url_input = self.components.beta_upload.composite_slot_url_input(row=slot).wait_for_visible()
+        url_input.clear()
+        url_input.send_keys(url)
+        return self
+
+    def stage_composite_paste_slot(self, slot: int, content: str) -> "UploadContext":
+        """Set a composite slot to paste mode and populate content."""
+        if self._current_method_id != "composite-file":
+            raise AssertionError("stage_composite_paste_slot is only available for the composite-file method")
+        if slot < 1:
+            raise AssertionError("slot must be >= 1")
+
+        self._select_composite_slot_mode(row=slot, mode="paste")
+        paste_textarea = self.components.beta_upload.composite_slot_paste_textarea(row=slot).wait_for_visible()
+        paste_textarea.clear()
+        paste_textarea.send_keys(content)
+        return self
+
+    def stage_composite_file_slot(self, slot: int, file_path: str) -> "UploadContext":
+        """Set a composite slot to local-file mode and attach a file path."""
+        if self._current_method_id != "composite-file":
+            raise AssertionError("stage_composite_file_slot is only available for the composite-file method")
+        if slot < 1:
+            raise AssertionError("slot must be >= 1")
+
+        self._select_composite_slot_mode(row=slot, mode="local")
+        file_input = self.components.beta_upload.composite_slot_file_input(row=slot).wait_for_present()
+        if self.driver_wrapper.backend_type == "playwright":
+            file_input.element_handle.set_input_files(file_path)
+        else:
+            file_input.send_keys(file_path)
+        return self
+
+    def _select_composite_type(self, composite_type: str) -> None:
+        composite_type_lower = composite_type.lower()
+        self.components.beta_upload.composite_type_enabled_dropdown.wait_for_and_click()
+
+        visible_options = self.components.beta_upload.composite_type_options_visible.all()
+        candidates: list[tuple[str, str]] = []
+        for option in visible_options:
+            option_id = option.get_attribute("data-id") or ""
+            option_label = (option.get_attribute("data-label") or option.text or "").strip()
+            if option_id:
+                candidates.append((option_id, option_label))
+
+        target_id: Optional[str] = None
+        for option_id, option_label in candidates:
+            if option_id.lower() == composite_type_lower or option_label.lower() == composite_type_lower:
+                target_id = option_id
+                break
+        if target_id is None:
+            for option_id, option_label in candidates:
+                if composite_type_lower in option_label.lower():
+                    target_id = option_id
+                    break
+        if target_id is None and candidates:
+            target_id = candidates[0][0]
+
+        if not target_id:
+            raise AssertionError(f"No composite type candidates found for '{composite_type}'")
+
+        self.components.beta_upload.composite_type_option_by_id_visible(id=target_id).wait_for_and_click()
+        try:
+            self.components.beta_upload.composite_first_slot.wait_for_visible(timeout=5)
+        except Exception as exc:
+            raise AssertionError(
+                f"Composite slots did not render after selecting '{composite_type}'. Candidates: {candidates}"
+            ) from exc
+
+    def _select_composite_slot_mode(self, row: int, mode: Literal["local", "url", "paste"]) -> None:
+        if mode == "local":
+            visible_action_target = self.components.beta_upload.composite_slot_enter_local_action_visible
+            input_target = self.components.beta_upload.composite_slot_file_input(row=row)
+        elif mode == "url":
+            visible_action_target = self.components.beta_upload.composite_slot_enter_url_action_visible
+            input_target = self.components.beta_upload.composite_slot_url_input(row=row)
+        else:
+            visible_action_target = self.components.beta_upload.composite_slot_enter_paste_action_visible
+            input_target = self.components.beta_upload.composite_slot_paste_textarea(row=row)
+
+        for _ in range(2):
+            dropdown = self.components.beta_upload.composite_slot_mode_dropdown(row=row).wait_for_visible()
+            if dropdown.get_attribute("aria-expanded") != "true":
+                try:
+                    dropdown.click()
+                except Exception:
+                    self.driver_wrapper.action_chains().move_to_element(dropdown).click().perform()
+
+            action_element = visible_action_target.wait_for_visible()
+            try:
+                action_element.click()
+            except Exception:
+                self.driver_wrapper.action_chains().move_to_element(action_element).click().perform()
+
+            if mode == "local":
+                return
+            if input_target.is_displayed:
+                return
+
+        # Let the underlying wait raise a clear timeout if mode was not applied.
+        input_target.wait_for_visible()
+
+    def select_target_history(self, history_id: str) -> "UploadContext":
+        """Change the upload target history using the TargetHistorySelector UI.
+
+        Clicks the "Choose another" link in the target-history banner, waits for
+        the history selector modal to appear, clicks the history card matching
+        ``history_id``, and waits for the modal to close.
+
+        Args:
+            history_id: The Galaxy history ID to select as upload target.
+
+        Returns:
+            self for method chaining
+        """
+        self.components.beta_upload.target_history_change_link.wait_for_and_click()
+        self.components.beta_upload.history_selector_modal_item(history_id=history_id).wait_for_and_click()
+        # Wait for modal to dismiss before proceeding
+        self.components.beta_upload.history_selector_modal.wait_for_absent_or_hidden()
+        return self
 
     def _select_method(self, method_id: UploadMethodId) -> None:
         if self._current_method_id == method_id:
