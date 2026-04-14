@@ -731,6 +731,7 @@ class RepositoryMetadata(Dictifiable):
         "includes_tool_dependencies",
         "includes_tools_for_display_in_tool_panel",
         "includes_workflows",
+        "create_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -746,6 +747,7 @@ class RepositoryMetadata(Dictifiable):
         "includes_tool_dependencies",
         "includes_tools_for_display_in_tool_panel",
         "includes_workflows",
+        "create_time",
         "repository_dependencies",
     ]
 

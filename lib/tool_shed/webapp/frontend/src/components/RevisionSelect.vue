@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue"
+import { parseISO, format } from "date-fns"
 import { useModelWrapper } from "@/modelWrapper"
 
 import { components } from "@/schema"
@@ -19,9 +20,15 @@ const options = computed(() => {
     const opts = []
     const revisions = props.revisions || {}
     for (const key of Object.keys(revisions)) {
+        const revision = revisions[key]
+        let label = key
+        if (revision?.create_time) {
+            const date = parseISO(`${revision.create_time}Z`)
+            label = `${key} (${format(date, "yyyy-MM-dd")})`
+        }
         opts.push({
-            label: key,
-            value: revisions[key]?.changeset_revision,
+            label,
+            value: revision?.changeset_revision,
         })
     }
     return opts
@@ -51,7 +58,7 @@ const selection = useModelWrapper(props, emit, "modelValue")
             map-options
             emit-value
             class="q-mr-sm"
-            style="width: 250px"
+            style="width: 350px"
         >
             <template #no-option>
                 <q-item>

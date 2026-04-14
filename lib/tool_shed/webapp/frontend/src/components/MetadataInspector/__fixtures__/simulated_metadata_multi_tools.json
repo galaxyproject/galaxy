@@ -76,7 +76,8 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     },
     "1:m1m1m1m1m1m1": {
         "model_class": "RepositoryMetadata",
@@ -155,7 +156,8 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     },
     "2:m2m2m2m2m2m2": {
         "model_class": "RepositoryMetadata",
@@ -254,6 +256,7 @@
                 "version_string_cmd": null
             }
         ],
-        "invalid_tools": []
+        "invalid_tools": [],
+        "create_time": "2024-01-15T10:30:00.000000"
     }
 }

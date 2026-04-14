@@ -2707,6 +2707,8 @@ export interface components {
         RepositoryDependency: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time: string
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
@@ -2805,6 +2807,8 @@ export interface components {
         RepositoryRevisionMetadata: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time: string
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
@@ -2848,6 +2852,8 @@ export interface components {
         RepositoryRevisionMetadataPreview: {
             /** Changeset Revision */
             changeset_revision: string
+            /** Create Time */
+            create_time?: string | null
             /** Downloadable */
             downloadable: boolean
             /** Has Repository Dependencies */
