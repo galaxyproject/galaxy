@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronRight, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import type { SearchData } from "@/stores/workflowSearchStore";
@@ -21,6 +21,7 @@ const storeId = computed(() => `invocation-${props.invocationId}`);
 
 const { stateStore } = provideScopedWorkflowStores(storeId);
 
+const searchInput = ref<InstanceType<typeof DelayedInput> | null>(null);
 const toggled = ref(false);
 
 const currentQuery = ref("");
@@ -60,6 +61,14 @@ function onHighlightRegion(data: SearchData) {
         stateStore.activeNodeId = Number(data.stepId);
     }
 }
+
+async function toggleSearch() {
+    toggled.value = !toggled.value;
+    if (toggled.value) {
+        await nextTick();
+        searchInput.value?.focusInput();
+    }
+}
 </script>
 
 <template>
@@ -67,6 +76,7 @@ function onHighlightRegion(data: SearchData) {
         <div class="d-flex align-items-center flex-gapx-1">
             <DelayedInput
                 v-if="toggled"
+                ref="searchInput"
                 placeholder="search workflow"
                 :expanded.sync="toggled"
                 :delay="200"
@@ -75,7 +85,7 @@ function onHighlightRegion(data: SearchData) {
                 tooltip
                 :title="toggled ? 'Close Search' : buttonTitle"
                 :transparent="toggled"
-                @click="toggled = !toggled">
+                @click="toggleSearch">
                 <FontAwesomeIcon :icon="toggled ? faChevronRight : faSearch" fixed-width />
             </GButton>
         </div>

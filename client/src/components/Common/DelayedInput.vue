@@ -38,7 +38,7 @@ const queryInput = ref<string>();
 const queryTimer = ref<ReturnType<typeof setTimeout> | null>(null);
 const titleClear = ref("Clear Search (esc)");
 const titleAdvanced = ref("Toggle Advanced Search");
-const toolInput = ref<InstanceType<typeof GFormInput> | null>(null);
+const inputField = ref<InstanceType<typeof GFormInput> | null>(null);
 
 function clearTimer() {
     if (queryTimer.value) {
@@ -70,8 +70,12 @@ watch(
 function clearBox(event?: KeyboardEvent) {
     if (!event || event.key === "Escape") {
         queryInput.value = "";
-        toolInput.value?.focus();
+        focusInput();
     }
+}
+
+function focusInput() {
+    inputField.value?.focus();
 }
 
 function onToggle() {
@@ -84,12 +88,16 @@ watchImmediate(
         queryInput.value = newQuery;
     },
 );
+
+defineExpose({
+    focusInput,
+});
 </script>
 
 <template>
     <BInputGroup>
         <GFormInput
-            ref="toolInput"
+            ref="inputField"
             v-model="queryInput"
             class="search-query form-control"
             autocomplete="off"
