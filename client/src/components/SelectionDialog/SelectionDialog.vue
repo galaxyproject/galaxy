@@ -348,7 +348,7 @@ defineExpose({
                     </template>
                 </GTable>
 
-                <div v-if="isBusy" class="text-center">
+                <div v-if="isBusy" class="text-center" data-description="selection dialog busy spinners">
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />

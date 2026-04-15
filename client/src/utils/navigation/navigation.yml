@@ -1282,9 +1282,9 @@ libraries:
       import_datasets_from_history_modal: '.selection-dialog-modal'
       import_datasets_from_history_modal_history_search: '.selection-dialog-modal .search-query'
       import_datasets_from_history_modal_dataset_search: '.selection-dialog-modal input[placeholder="search datasets"]'
-      import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal .selection-dialog-table[aria-busy="false"]'
+      import_datasets_from_history_modal_list_is_ready: '.selection-dialog-modal [data-description="selection dialog busy spinners"]'
       import_datasets_from_history_modal_select_list_items: '.selection-dialog-modal table tbody tr'
-      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[aria-rowindex="${row_index}"] td[aria-colindex="1"]'
+      import_datasets_from_history_modal_select_list_item_by_index: '.selection-dialog-modal table tbody tr[id^="g-table-row-${row_index}-"]'
       import_datasets_from_history_modal_ok: '.selection-dialog-modal [data-description="selection dialog ok"]'
       import_datasets_from_history_modal_cancel: '.selection-dialog-modal [data-description="selection dialog cancel"]'
       add_to_history_as_collection:
