@@ -2935,6 +2935,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
         tool_dict["hidden"] = self.hidden
         tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
+        tool_dict["versions"] = self.tool_versions
+        tool_dict["hidden_versions"] = self.hidden_tool_versions
 
         if self.dynamic_tool:
             tool_dict["uuid"] = str(self.dynamic_tool.uuid)
