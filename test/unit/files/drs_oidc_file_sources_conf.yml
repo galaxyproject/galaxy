@@ -1,0 +1,5 @@
+- type: drs
+  id: test_oidc
+  doc: Test drs repository filesource with OIDC token attachment
+  http_headers:
+    Authorization: "Bearer ${user.oidc_access_tokens['oidc']}"
