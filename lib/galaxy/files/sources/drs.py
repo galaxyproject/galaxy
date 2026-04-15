@@ -59,9 +59,6 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
         user_context = context.user_data.context if context.user_data.context else None
         config = context.config
         headers = dict(config.http_headers)
-        log.info(f"Config: {config}")
-        log.info(f"Headers: {headers}")
-        log.info(f"User context: {user_context}")
         fetch_drs_to_file(
             source_path,
             native_path,
