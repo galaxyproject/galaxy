@@ -45,7 +45,6 @@ log = logging.getLogger(__name__)
 TYPE_RANK = {"dataset": 0, "collection": 1, "tool_request": 2}
 EDGE_TYPE_RANK = {"dataset_input": 0, "dataset_output": 1, "collection_input": 2, "collection_output": 3}
 NODE_TYPE_PREFIX = {"dataset": "d", "collection": "c", "tool_request": "r"}
-CHUNK = 1000
 MAX_LIMIT = 1000
 
 
@@ -269,19 +268,16 @@ class HistoryGraphBuilder:
     def _remove_hidden_elements(self, dataset_ids: set[int]) -> set[int]:
         if not dataset_ids:
             return dataset_ids
-        to_remove: set[int] = set()
-        for chunk in self._chunks(list(dataset_ids)):
-            stmt = (
-                select(HistoryDatasetAssociation.id)
-                .join(DatasetCollectionElement, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
-                .where(
-                    HistoryDatasetAssociation.id.in_(chunk),
-                    HistoryDatasetAssociation.visible == False,  # noqa: E712
-                )
-                .distinct()
+        stmt = (
+            select(HistoryDatasetAssociation.id)
+            .join(DatasetCollectionElement, DatasetCollectionElement.hda_id == HistoryDatasetAssociation.id)
+            .where(
+                HistoryDatasetAssociation.id.in_(dataset_ids),
+                HistoryDatasetAssociation.visible == False,  # noqa: E712
             )
-            for row in self.sa_session.execute(stmt):
-                to_remove.add(row.id)
+            .distinct()
+        )
+        to_remove = {row.id for row in self.sa_session.execute(stmt)}
         return dataset_ids - to_remove
 
     def _filter_deleted_ids(
@@ -295,15 +291,11 @@ class HistoryGraphBuilder:
         pulled in via payload refs."""
         if not ids:
             return ids
-        kept: set[int] = set()
-        for chunk in self._chunks(list(ids)):
-            stmt = select(model_cls.id).where(
-                model_cls.id.in_(chunk),
-                model_cls.deleted == False,  # noqa: E712
-            )
-            for row in self.sa_session.execute(stmt):
-                kept.add(row.id)
-        return kept
+        stmt = select(model_cls.id).where(
+            model_cls.id.in_(ids),
+            model_cls.deleted == False,  # noqa: E712
+        )
+        return {row.id for row in self.sa_session.execute(stmt)}
 
     # ── Producer lookup ──
 
@@ -312,24 +304,25 @@ class HistoryGraphBuilder:
         joining JobToOutputDatasetAssociation to Job. Only HDAs with
         exactly one distinct producing tool_request are returned;
         ambiguous ones are logged at debug level."""
-        candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
-        for chunk in self._chunks(list(dataset_ids)):
-            stmt = (
-                select(
-                    JobToOutputDatasetAssociation.dataset_id.label("hda_id"),
-                    Job.tool_request_id,
-                    Job.tool_id,
-                )
-                .join(Job, Job.id == JobToOutputDatasetAssociation.job_id)
-                .where(
-                    JobToOutputDatasetAssociation.dataset_id.in_(chunk),
-                    Job.tool_request_id.isnot(None),
-                    Job.tool_id.isnot(None),
-                    Job.tool_id != "__DATA_FETCH__",
-                )
+        if not dataset_ids:
+            return {}
+        stmt = (
+            select(
+                JobToOutputDatasetAssociation.dataset_id.label("hda_id"),
+                Job.tool_request_id,
+                Job.tool_id,
             )
-            for row in self.sa_session.execute(stmt):
-                candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
+            .join(Job, Job.id == JobToOutputDatasetAssociation.job_id)
+            .where(
+                JobToOutputDatasetAssociation.dataset_id.in_(dataset_ids),
+                Job.tool_request_id.isnot(None),
+                Job.tool_id.isnot(None),
+                Job.tool_id != "__DATA_FETCH__",
+            )
+        )
+        candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
+        for row in self.sa_session.execute(stmt):
+            candidates.setdefault(row.hda_id, {})[row.tool_request_id] = row.tool_id
 
         result: dict[tuple[str, int], tuple[int, str]] = {}
         for hda_id, tr_map in candidates.items():
@@ -345,24 +338,25 @@ class HistoryGraphBuilder:
         joining JobToOutputDatasetCollectionAssociation to Job. Only
         HDCAs with exactly one distinct producing tool_request are
         returned; ambiguous ones are logged at debug level."""
-        candidates: dict[int, dict[int, str]] = {}
-        for chunk in self._chunks(list(collection_ids)):
-            stmt = (
-                select(
-                    JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("hdca_id"),
-                    Job.tool_request_id,
-                    Job.tool_id,
-                )
-                .join(Job, Job.id == JobToOutputDatasetCollectionAssociation.job_id)
-                .where(
-                    JobToOutputDatasetCollectionAssociation.dataset_collection_id.in_(chunk),
-                    Job.tool_request_id.isnot(None),
-                    Job.tool_id.isnot(None),
-                    Job.tool_id != "__DATA_FETCH__",
-                )
+        if not collection_ids:
+            return {}
+        stmt = (
+            select(
+                JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("hdca_id"),
+                Job.tool_request_id,
+                Job.tool_id,
             )
-            for row in self.sa_session.execute(stmt):
-                candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
+            .join(Job, Job.id == JobToOutputDatasetCollectionAssociation.job_id)
+            .where(
+                JobToOutputDatasetCollectionAssociation.dataset_collection_id.in_(collection_ids),
+                Job.tool_request_id.isnot(None),
+                Job.tool_id.isnot(None),
+                Job.tool_id != "__DATA_FETCH__",
+            )
+        )
+        candidates: dict[int, dict[int, str]] = {}
+        for row in self.sa_session.execute(stmt):
+            candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
 
         result: dict[tuple[str, int], tuple[int, str]] = {}
         for hdca_id, tr_map in candidates.items():
@@ -377,20 +371,21 @@ class HistoryGraphBuilder:
 
     def _fetch_payloads(self, tr_ids: set[int]) -> dict[int, dict]:
         """Return raw ``tool_request.request`` payloads keyed by tool
-        request id.  Fetched in chunks of ``CHUNK`` ids. Rows whose
-        ``request`` field is not a dict (after decoding a JSON string
-        form) are silently dropped with a debug log, on the assumption
-        that a malformed payload contributes no usable input refs."""
+        request id. Rows whose ``request`` field is not a dict (after
+        decoding a JSON string form) are silently dropped with a debug
+        log, on the assumption that a malformed payload contributes no
+        usable input refs."""
+        if not tr_ids:
+            return {}
+        stmt = select(ToolRequest.id, ToolRequest.request).where(ToolRequest.id.in_(tr_ids))
         result: dict[int, dict] = {}
-        for chunk in self._chunks(list(tr_ids)):
-            stmt = select(ToolRequest.id, ToolRequest.request).where(ToolRequest.id.in_(chunk))
-            for row in self.sa_session.execute(stmt):
-                try:
-                    payload = json.loads(row.request) if isinstance(row.request, str) else row.request
-                    if isinstance(payload, dict):
-                        result[row.id] = payload
-                except (json.JSONDecodeError, TypeError):
-                    log.debug("history_graph: malformed payload for tool_request %d", row.id)
+        for row in self.sa_session.execute(stmt):
+            try:
+                payload = json.loads(row.request) if isinstance(row.request, str) else row.request
+                if isinstance(payload, dict):
+                    result[row.id] = payload
+            except (json.JSONDecodeError, TypeError):
+                log.debug("history_graph: malformed payload for tool_request %d", row.id)
         return result
 
     def _extract_inputs(self, payload: dict) -> set[tuple[str, int]]:
@@ -435,10 +430,9 @@ class HistoryGraphBuilder:
         replacement is not re-normalized. No other rules apply here
         by design; adding more cases should be weighed against the
         invariant that every emitted ref points at a top-level item."""
-        result: set[tuple[str, int]] = set()
         hda_ids = [item_id for t, item_id in refs if t == "dataset"]
         hdca_parents: dict[int, int] = {}
-        for chunk in self._chunks(hda_ids):
+        if hda_ids:
             stmt = (
                 select(
                     HistoryDatasetAssociation.id.label("hda_id"),
@@ -450,13 +444,14 @@ class HistoryGraphBuilder:
                     HistoryDatasetCollectionAssociation.collection_id == DatasetCollectionElement.dataset_collection_id,
                 )
                 .where(
-                    HistoryDatasetAssociation.id.in_(chunk),
+                    HistoryDatasetAssociation.id.in_(hda_ids),
                     HistoryDatasetAssociation.visible == False,  # noqa: E712
                 )
             )
             for row in self.sa_session.execute(stmt):
                 hdca_parents[row.hda_id] = row.hdca_id
 
+        result: set[tuple[str, int]] = set()
         for ref_type, ref_id in refs:
             if ref_type == "dataset" and ref_id in hdca_parents:
                 result.add(("collection", hdca_parents[ref_id]))
@@ -467,67 +462,65 @@ class HistoryGraphBuilder:
     # ── Node construction ──
 
     def _dataset_nodes(self, db_ids: set[int]) -> list[GraphNode]:
-        nodes = []
-        for chunk in self._chunks(list(db_ids)):
-            stmt = (
-                select(
-                    HistoryDatasetAssociation.id,
-                    HistoryDatasetAssociation.name,
-                    HistoryDatasetAssociation.hid,
-                    HistoryDatasetAssociation._state,
-                    Dataset.state.label("dataset_state"),
-                    HistoryDatasetAssociation.extension,
-                    HistoryDatasetAssociation.deleted,
-                    HistoryDatasetAssociation.visible,
-                )
-                .join(Dataset, HistoryDatasetAssociation.dataset_id == Dataset.id)
-                .where(HistoryDatasetAssociation.id.in_(chunk))
+        if not db_ids:
+            return []
+        stmt = (
+            select(
+                HistoryDatasetAssociation.id,
+                HistoryDatasetAssociation.name,
+                HistoryDatasetAssociation.hid,
+                HistoryDatasetAssociation._state,
+                Dataset.state.label("dataset_state"),
+                HistoryDatasetAssociation.extension,
+                HistoryDatasetAssociation.deleted,
+                HistoryDatasetAssociation.visible,
             )
-            for row in self.sa_session.execute(stmt):
-                nodes.append(
-                    GraphNode(
-                        id=self._encode("dataset", row.id),
-                        type="dataset",
-                        name=row.name,
-                        hid=row.hid,
-                        state=row._state if row._state else row.dataset_state,
-                        extension=row.extension,
-                        deleted=row.deleted,
-                        visible=row.visible,
-                    )
-                )
-        return nodes
+            .join(Dataset, HistoryDatasetAssociation.dataset_id == Dataset.id)
+            .where(HistoryDatasetAssociation.id.in_(db_ids))
+        )
+        return [
+            GraphNode(
+                id=self._encode("dataset", row.id),
+                type="dataset",
+                name=row.name,
+                hid=row.hid,
+                state=row._state if row._state else row.dataset_state,
+                extension=row.extension,
+                deleted=row.deleted,
+                visible=row.visible,
+            )
+            for row in self.sa_session.execute(stmt)
+        ]
 
     def _collection_nodes(self, db_ids: set[int]) -> list[GraphNode]:
-        nodes = []
-        for chunk in self._chunks(list(db_ids)):
-            stmt = (
-                select(
-                    HistoryDatasetCollectionAssociation.id,
-                    HistoryDatasetCollectionAssociation.name,
-                    HistoryDatasetCollectionAssociation.hid,
-                    HistoryDatasetCollectionAssociation.deleted,
-                    HistoryDatasetCollectionAssociation.visible,
-                    DatasetCollection.collection_type,
-                    DatasetCollection.populated_state,
-                )
-                .join(DatasetCollection, HistoryDatasetCollectionAssociation.collection_id == DatasetCollection.id)
-                .where(HistoryDatasetCollectionAssociation.id.in_(chunk))
+        if not db_ids:
+            return []
+        stmt = (
+            select(
+                HistoryDatasetCollectionAssociation.id,
+                HistoryDatasetCollectionAssociation.name,
+                HistoryDatasetCollectionAssociation.hid,
+                HistoryDatasetCollectionAssociation.deleted,
+                HistoryDatasetCollectionAssociation.visible,
+                DatasetCollection.collection_type,
+                DatasetCollection.populated_state,
             )
-            for row in self.sa_session.execute(stmt):
-                nodes.append(
-                    GraphNode(
-                        id=self._encode("collection", row.id),
-                        type="collection",
-                        name=row.name,
-                        hid=row.hid,
-                        state=row.populated_state,
-                        collection_type=row.collection_type,
-                        deleted=row.deleted,
-                        visible=row.visible,
-                    )
-                )
-        return nodes
+            .join(DatasetCollection, HistoryDatasetCollectionAssociation.collection_id == DatasetCollection.id)
+            .where(HistoryDatasetCollectionAssociation.id.in_(db_ids))
+        )
+        return [
+            GraphNode(
+                id=self._encode("collection", row.id),
+                type="collection",
+                name=row.name,
+                hid=row.hid,
+                state=row.populated_state,
+                collection_type=row.collection_type,
+                deleted=row.deleted,
+                visible=row.visible,
+            )
+            for row in self.sa_session.execute(stmt)
+        ]
 
     def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
         return [
@@ -611,7 +604,3 @@ class HistoryGraphBuilder:
         encoded = f"{NODE_TYPE_PREFIX[node_type]}{self.security.encode_id(db_id)}"
         self._sort_keys[encoded] = (TYPE_RANK[node_type], db_id)
         return encoded
-
-    @staticmethod
-    def _chunks(items: list) -> list[list]:
-        return [items[i : i + CHUNK] for i in range(0, len(items), CHUNK)] if items else []
