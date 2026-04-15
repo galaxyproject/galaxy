@@ -48,6 +48,8 @@
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
             :hide-panel="reportActive"
+            :header-icon="faSitemap"
+            header-title="Editor"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
@@ -247,7 +249,16 @@
 </template>
 
 <script>
-import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faArrowLeft,
+    faArrowRight,
+    faCog,
+    faKey,
+    faSave,
+    faSitemap,
+    faTimes,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -723,6 +734,7 @@ export default {
             workflowActivities,
             faKey,
             faWrench,
+            faSitemap,
             showDropdown: false,
             lintData,
             onHighlightRegion,

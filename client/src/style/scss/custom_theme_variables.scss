@@ -85,6 +85,9 @@ html,
     --masthead-height: #{$masthead-height};
     --masthead-logo-height: calc(var(--masthead-height) - 0.5rem);
 
+    --border-color: #{$border-color};
+    --border-default: #{$border-default};
+
     --masthead-color: #{$masthead-color};
     --masthead-text-color: #{$masthead-text-color};
     --masthead-text-hover: #{$masthead-text-hover};

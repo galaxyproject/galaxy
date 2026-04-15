@@ -18,6 +18,7 @@ import localize from "@/utils/localization";
 
 import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
+import ActivityBarHeader from "./ActivityBarHeader.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -47,6 +48,8 @@ const props = withDefaults(
         optionsSearchPlaceholder?: string;
         initialActivity?: string;
         hidePanel?: boolean;
+        headerIcon?: IconDefinition;
+        headerTitle?: string;
     }>(),
     {
         defaultActivities: undefined,
@@ -61,6 +64,8 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
+        headerIcon: undefined,
+        headerTitle: undefined,
     },
 );
 
@@ -252,6 +257,11 @@ defineExpose({
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
+            <ActivityBarHeader
+                :icon="props.headerIcon"
+                :title="props.headerTitle"
+                :is-side-bar-open="isSideBarOpen"
+                @close-sidebar="activityStore.closeSideBar" />
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     v-model="activities"
