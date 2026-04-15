@@ -188,14 +188,14 @@
                             variant="secondary"
                             :disabled="!undoRedoStore.hasUndo"
                             @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon :icon="faArrowLeft" />
+                            <FontAwesomeIcon :icon="faUndo" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             variant="secondary"
                             :disabled="!undoRedoStore.hasRedo"
                             @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon :icon="faArrowRight" />
+                            <FontAwesomeIcon :icon="faRedo" />
                         </b-button>
                         <b-button
                             id="workflow-save-button"
@@ -254,16 +254,7 @@
 </template>
 
 <script>
-import {
-    faArrowLeft,
-    faArrowRight,
-    faCog,
-    faKey,
-    faSave,
-    faSitemap,
-    faTimes,
-    faWrench,
-} from "@fortawesome/free-solid-svg-icons";
+import { faCog, faKey, faRedo, faSave, faSitemap, faTimes, faUndo, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -773,11 +764,11 @@ export default {
             showSaveChangesModal: false,
             saveChangesAppendVersion: false,
             navUrl: "",
-            faArrowLeft,
-            faArrowRight,
             faTimes,
             faCog,
             faSave,
+            faRedo,
+            faUndo,
         };
     },
     computed: {
