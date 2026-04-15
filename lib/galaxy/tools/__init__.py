@@ -62,6 +62,7 @@ from galaxy.model import (
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.types.paired_or_unpaired import SINGLETON_IDENTIFIER
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
@@ -4036,14 +4037,26 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
 
         def _handle_unpaired(dce):
             element_identifier = dce.element_identifier
-            assert getattr(dce.element_object, "history_content_type", None) == "dataset"
-            copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
+            element_object = dce.element_object
+            # In list:paired_or_unpaired collections, unpaired elements are
+            # wrapped in a 1-element sub-collection. Unwrap to get the dataset.
+            if getattr(element_object, "elements", None):
+                inner_element = element_object.elements[0]
+                assert inner_element.element_identifier == SINGLETON_IDENTIFIER
+                element_object = inner_element.element_object
+            assert element_object.history_content_type == "dataset"
+            copied_value = element_object.copy(copy_tags=element_object.tags, flush=False)
             unpaired_dce_copies[element_identifier] = copied_value
             unpaired_dce_columns[element_identifier] = dce.columns
 
         def _handle_paired(dce):
             element_identifier = dce.element_identifier
             copied_value = dce.element_object.copy(flush=False)
+            # Normalize to 'paired' for list:paired output, since a
+            # list:paired_or_unpaired input may contain 2-element
+            # paired_or_unpaired sub-collections that are structurally
+            # equivalent to paired but carry the wider collection_type.
+            copied_value.collection_type = "paired"
             paired_dce_copies[element_identifier] = copied_value
             paired_datasets.append(copied_value.elements[0].element_object)
             paired_datasets.append(copied_value.elements[1].element_object)
@@ -4057,7 +4070,8 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
                 _handle_paired(element)
         elif collection_type == "list:paired_or_unpaired":
             for element in collection.elements:
-                if getattr(element.element_object, "history_content_type", None) == "dataset":
+                sub_collection = element.element_object
+                if len(sub_collection.elements) == 1:
                     _handle_unpaired(element)
                 else:
                     _handle_paired(element)
