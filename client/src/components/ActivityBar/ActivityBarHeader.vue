@@ -3,6 +3,8 @@ import type { IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { faChevronLeft, faHome } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import ActivityBarSeparator from "./ActivityBarSeparator.vue";
+
 interface Props {
     /** Whether an activity's side panel is currently open. */
     isSideBarOpen: boolean;
@@ -41,7 +43,7 @@ function closeSidebar(event: KeyboardEvent | MouseEvent) {
             <FontAwesomeIcon :icon="props.isSideBarOpen ? faChevronLeft : props.icon" size="sm" fixed-width />
             <span class="activity-bar-header-text">{{ props.title }}</span>
         </div>
-        <div class="activity-bar-header-divider" />
+        <ActivityBarSeparator />
     </div>
 </template>
 
@@ -65,10 +67,5 @@ function closeSidebar(event: KeyboardEvent | MouseEvent) {
     .activity-bar-header-text {
         font-size: var(--font-size-small);
     }
-}
-
-.activity-bar-header-divider {
-    border-top: var(--border-default);
-    border-top-style: dotted;
 }
 </style>

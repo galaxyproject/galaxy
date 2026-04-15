@@ -19,6 +19,7 @@ import localize from "@/utils/localization";
 import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityBarHeader from "./ActivityBarHeader.vue";
+import ActivityBarSeparator from "./ActivityBarSeparator.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -332,7 +333,8 @@ defineExpose({
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
+            <ActivityBarSeparator />
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -464,11 +466,6 @@ defineExpose({
 
 .activity-drag-class {
     display: none;
-}
-
-.activity-footer {
-    border-top: $border-default;
-    border-top-style: dotted;
 }
 
 .activity-popper-disabled {
