@@ -2,7 +2,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BPagination, BSpinner } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
@@ -15,6 +15,7 @@ import GModal from "../BaseComponents/GModal.vue";
 import Heading from "../Common/Heading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -348,10 +349,8 @@ defineExpose({
                     </template>
                 </GTable>
 
-                <div v-if="isBusy" class="text-center">
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
+                <div v-if="isBusy" class="text-center" data-description="selection dialog busy spinners">
+                    <LoadingSpan />
                 </div>
                 <div v-else-if="totalItems === 0">
                     <div v-if="filter">
