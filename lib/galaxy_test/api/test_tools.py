@@ -1654,10 +1654,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert tool_info["version"] == "0.2"
 
     @skip_without_tool("multiple_versions_hidden")
-    def test_show_filters_hidden_versions(self):
+    def test_show_lists_hidden_versions_separately(self):
         tool_info = self._show_valid_tool("multiple_versions_hidden", tool_version="0.1")
         assert tool_info["version"] == "0.1"
-        assert tool_info["versions"] == ["0.2"]
+        assert tool_info["versions"] == ["0.1", "0.2"]
+        assert tool_info["hidden_versions"] == ["0.1"]
 
     @skip_without_tool("multiple_versions_hidden")
     def test_run_hidden_version(self):

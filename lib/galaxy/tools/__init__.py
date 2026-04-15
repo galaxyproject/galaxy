@@ -1124,15 +1124,15 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             return []
 
     @property
-    def visible_tool_versions(self):
+    def hidden_tool_versions(self):
         if not self.lineage:
             return []
-        visible_versions = []
+        hidden_versions = []
         for lineage_version in self.lineage.get_versions():
             tool = self.app.tool_cache.get_tool_by_id(lineage_version.id)
-            if tool and not tool.hidden:
-                visible_versions.append(tool.version)
-        return visible_versions
+            if tool and tool.hidden:
+                hidden_versions.append(tool.version)
+        return hidden_versions
 
     @property
     def is_latest_version(self):
@@ -3087,7 +3087,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
                 "sharable_url": self.sharable_url,
                 "message": tool_message,
                 "warnings": tool_warnings,
-                "versions": self.visible_tool_versions,
+                "versions": self.tool_versions,
+                "hidden_versions": self.hidden_tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
                 "credentials": [credential.to_dict() for credential in self.credentials] if self.credentials else [],
                 "errors": state_errors,
