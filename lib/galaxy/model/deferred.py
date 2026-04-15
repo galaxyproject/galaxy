@@ -16,7 +16,10 @@ from galaxy.datatypes.sniff import (
     stream_url_to_file,
 )
 from galaxy.exceptions import ObjectAttributeInvalidException
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    OptionalUserContext,
+)
 from galaxy.model import (
     Dataset,
     DatasetCollection,
@@ -79,18 +82,24 @@ class DatasetInstanceMaterializer:
         transient_path_mapper: Optional[TransientPathMapper] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
         sa_session: Optional[Session] = None,
+        user_context: OptionalUserContext = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
 
         If attached is true, these objects should be created in a supplied object store.
         If not, this class produces transient HDAs with external_filename and
         external_extra_files_path set.
+
+        ``user_context`` is forwarded to file source operations so that access
+        controls (``requires_roles`` / ``requires_groups``) are enforced when
+        materializing from ``gxfiles://`` URIs.
         """
         self._attached = attached
         self._transient_path_mapper = transient_path_mapper
         self._object_store_populator = object_store_populator
         self._file_sources = file_sources
         self._sa_session = sa_session
+        self._user_context = user_context
         self._previously_materialized: dict[int, HistoryDatasetAssociation] = {}
 
     def ensure_materialized(
@@ -252,7 +261,7 @@ class DatasetInstanceMaterializer:
         source_uri = target_source.source_uri
         if source_uri is None:
             raise Exception("Cannot stream from dataset source without specified source_uri")
-        path = stream_url_to_file(source_uri, file_sources=self._file_sources)
+        path = stream_url_to_file(source_uri, file_sources=self._file_sources, user_context=self._user_context)
         if target_source.hashes:
             for source_hash in target_source.hashes:
                 _validate_hash(path, source_hash, "downloaded file")
@@ -385,6 +394,7 @@ def materializer_factory(
     transient_directory: Optional[str] = None,
     file_sources: Optional[ConfiguredFileSources] = None,
     sa_session: Optional[Session] = None,
+    user_context: OptionalUserContext = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:
         object_store_populator = ObjectStorePopulator(object_store, None)
@@ -396,6 +406,7 @@ def materializer_factory(
         transient_path_mapper=transient_path_mapper,
         file_sources=file_sources,
         sa_session=sa_session,
+        user_context=user_context,
     )
 
 
