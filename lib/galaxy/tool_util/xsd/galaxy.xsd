@@ -76,6 +76,10 @@ List of behavior changes associated with profile versions:
 
 - Do not use user preferences to store credentials for tools anymore. Use the new `<credentials>` tag in the `<requirements>` section of the tool XML instead.
 
+### 26.1
+
+- Mandatory select parameters do not automatically use the first option as default
+
 ### Examples
 
 A normal tool:
@@ -5013,8 +5017,7 @@ value is ``select`` (i.e. ``<param type="select" ...>``).
 ```
 
 An option can also be annotated with ``selected="true"`` to specify a
-default option (note that the first option is selected automatically
-if ``optional="false"``).
+default option.
 
 ```xml
 <param name="col" type="select" label="From">
