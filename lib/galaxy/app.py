@@ -357,7 +357,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.config.tool_configs.append(self.config.migrated_tools_config)
 
     def _configure_toolbox(self):
-        self.citations_manager = CitationsManager(self)
+        self.citations_manager = self._register_singleton(CitationsManager, CitationsManager(self))
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         self.dynamic_tool_manager = DynamicToolManager(self)
