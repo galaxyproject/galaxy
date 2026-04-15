@@ -185,7 +185,8 @@ describe("FilesDialog, file mode", () => {
         // go inside directory1
         await utils.openDirectoryById(targetDirectoryId);
 
-        utils.expectSelectAllIconStatusToBe(SELECTION_STATES.SELECTED);
+        utils.expectSelectAllChecked();
+        utils.expectSelectAllNotIndeterminate();
 
         //every item should be selected
         utils.expectAllRenderedItemsSelected();
@@ -212,8 +213,9 @@ describe("FilesDialog, file mode", () => {
         await utils.clickOn(utils.findRenderedDirectory(subSubDirectoryId));
         // directory should be unselected
         expect(utils.findRenderedDirectory(subSubDirectoryId).selectionState).toBe(SELECTION_STATES.UNSELECTED);
-        // selectAllIcon should be unselected
-        utils.expectSelectAllIconStatusToBe(SELECTION_STATES.UNSELECTED);
+        // selectAll checkbox should be unchecked
+        utils.expectSelectAllUnchecked();
+        utils.expectSelectAllNotIndeterminate();
         await utils.navigateBack();
         await utils.navigateBack();
         expect(utils.findRenderedDirectory(directoryId).selectionState).toBe(SELECTION_STATES.MIXED);
@@ -461,8 +463,25 @@ class Utils {
         expect(this.getOkButton().attributes("disabled")).toBeFalsy();
     }
 
-    expectSelectAllIconStatusToBe(status: string) {
-        expect(this.getSelectionDialog().props("selectAllVariant")).toBe(status);
+    getSelectAllCheckbox(): Wrapper<any> {
+        const checkbox = this.wrapper.find("input[id^='g-table-select-all-']");
+        expect(checkbox.exists()).toBe(true);
+        return checkbox;
+    }
+
+    expectSelectAllChecked() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+    }
+
+    expectSelectAllUnchecked() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+    }
+
+    expectSelectAllNotIndeterminate() {
+        const checkbox = this.getSelectAllCheckbox();
+        expect((checkbox.element as HTMLInputElement).indeterminate).toBe(false);
     }
 
     expectNoErrorMessage() {

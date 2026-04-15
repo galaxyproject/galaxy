@@ -236,6 +236,14 @@ watch(
     { immediate: true },
 );
 
+watch(
+    tableItems,
+    () => {
+        syncSelectedItems();
+    },
+    { immediate: true, deep: true },
+);
+
 defineExpose({
     resetFilter,
     resetPagination,
