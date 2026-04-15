@@ -43,8 +43,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         direction="both",
         depth=20,
         limit=500,
-        older_than_hid=None,
-        newer_than_hid=None,
         seed_scope=None,
     ):
         builder = HistoryGraphBuilder(
@@ -55,8 +53,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
             seed=seed,
             direction=direction,
             depth=depth,
-            older_than_hid=older_than_hid,
-            newer_than_hid=newer_than_hid,
             seed_scope=seed_scope,
         )
         return builder.build()
@@ -194,8 +190,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert len(graph.nodes) == 0
         assert len(graph.edges) == 0
         assert graph.truncated.scope_type == "recent"
-        assert graph.truncated.oldest_hid_included is None
-        assert graph.truncated.newest_hid_included is None
         assert graph.truncated.seed_in_scope is None
 
     def test_standalone_datasets_included(self):
@@ -206,9 +200,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history)
         assert len(graph.nodes) == 2
         assert len(graph.edges) == 0
-        assert graph.truncated.oldest_hid_included is not None
-        assert graph.truncated.newest_hid_included is not None
-        assert graph.truncated.newest_hid_included >= graph.truncated.oldest_hid_included
 
     def test_full_history_graph(self):
         """Full history graph includes all items and edges."""
@@ -413,7 +404,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
             assert e.source != e.target, f"Self-loop: {e.source}"
 
     def test_seed_scope_centers_on_item(self):
-        """seed_scope centers the selection window on the specified item's hid."""
+        """seed_scope centers the selection window on the specified item."""
         history, _ = self._create_history()
         # Create 10 standalone datasets
         hdas = [self._create_hda(history, name=f"dataset_{i}") for i in range(10)]
@@ -427,19 +418,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # The seed item must be in scope
         node_ids = {n.id for n in graph.nodes}
         assert seed_scope in node_ids
-        # Scope metadata should reflect the window
         assert graph.truncated.scope_type == "seed_centered"
-        assert graph.truncated.oldest_hid_included is not None
-        assert graph.truncated.newest_hid_included is not None
-        assert graph.truncated.oldest_hid_included <= middle.hid <= graph.truncated.newest_hid_included
-
-    def test_pagination_scope_type(self):
-        """Pagination params produce scope_type='window'."""
-        history, _ = self._create_history()
-        for i in range(5):
-            self._create_hda(history, name=f"dataset_{i}")
-        graph = self._build_graph(history, older_than_hid=4)
-        assert graph.truncated.scope_type == "window"
 
     def test_seed_in_scope_true(self):
         """seed_in_scope is true when seed is in the constructed graph."""
@@ -624,24 +603,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         )
         graph = builder.build()
         assert len(graph.nodes) == 1
-
-    def test_pagination_no_overlap(self):
-        """Consecutive pages share no items."""
-        history, _ = self._create_history()
-        for i in range(10):
-            self._create_hda(history, name=f"ds_{i}")
-
-        # Page 1: most recent 5
-        page1 = self._build_graph(history, limit=5)
-        page1_ids = {n.id for n in page1.nodes}
-        oldest_hid = page1.truncated.oldest_hid_included
-
-        # Page 2: older than page 1's oldest
-        page2 = self._build_graph(history, limit=5, older_than_hid=oldest_hid)
-        page2_ids = {n.id for n in page2.nodes}
-
-        assert len(page1_ids & page2_ids) == 0, "Pages must not overlap"
-        assert len(page1_ids) + len(page2_ids) == 10
 
     def test_determinism_identical_requests(self):
         """Identical requests produce identical output."""
@@ -1174,9 +1135,11 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # 5-step chain: hda0 → tr0 → hda1 → tr1 → hda2 → tr2 → hda3 → tr3 → hda4 → tr4 → hda5
         chain = self._build_linear_chain(history, length=5)
 
-        # Pick a small seed window in the middle of the chain.
-        middle_input_hid = chain[2][0].hid
-        graph = self._build_graph(history, older_than_hid=middle_input_hid + 1, newer_than_hid=middle_input_hid - 1)
+        # Center the seed window on the middle hda with limit=1, so the
+        # window holds just that one item and closure must complete the
+        # tool_request from there.
+        middle_hda = chain[2][0]
+        graph = self._build_graph(history, seed_scope=self._encode("d", middle_hda.id), limit=1)
 
         node_ids = {n.id for n in graph.nodes}
         tr_nodes = [n for n in graph.nodes if n.type == "tool_request"]
@@ -1197,22 +1160,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
                 f"Tool_request {tr_node.id} has only {len(connected_items)} connected items — "
                 "expected at least one input and one output after closure"
             )
-
-    def test_pagination_newer_than_hid(self):
-        """newer_than_hid selects only items with hid > N."""
-        history, _ = self._create_history()
-        hdas = [self._create_hda(history, name=f"ds_{i}") for i in range(6)]
-
-        # Get the middle item's hid as boundary
-        boundary_hid = hdas[2].hid
-
-        graph = self._build_graph(history, newer_than_hid=boundary_hid)
-
-        # Only items with hid > boundary_hid should be included
-        for n in graph.nodes:
-            assert n.hid is not None
-            assert n.hid > boundary_hid, f"Node hid {n.hid} should be > {boundary_hid}"
-        assert len(graph.nodes) == 3  # hdas[3], hdas[4], hdas[5]
 
     def test_stability_new_items_shift_recent_window(self):
         """Adding new items shifts the recent-overview window.
@@ -1241,29 +1188,6 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # The rest of the original items are still in scope
         for hda in original[1:]:
             assert self._encode("d", hda.id) in ids2
-
-    def test_stability_hid_window_does_not_mutate(self):
-        """A fixed hid-based window returns the same results even after new items are added."""
-        history, _ = self._create_history()
-        for i in range(5):
-            self._create_hda(history, name=f"ds_{i}")
-
-        # Take a snapshot with older_than_hid to define a fixed window
-        snapshot = self._build_graph(history, older_than_hid=4)
-        snapshot_ids = {n.id for n in snapshot.nodes}
-        snapshot_hids = sorted(n.hid for n in snapshot.nodes if n.hid is not None)
-
-        # Add new items to the history (higher hids)
-        for i in range(5, 10):
-            self._create_hda(history, name=f"ds_{i}")
-
-        # Same window query returns identical results
-        after = self._build_graph(history, older_than_hid=4)
-        after_ids = {n.id for n in after.nodes}
-        after_hids = sorted(n.hid for n in after.nodes if n.hid is not None)
-
-        assert snapshot_ids == after_ids
-        assert snapshot_hids == after_hids
 
 
 # ── Scalability / Boundedness Tests ──
@@ -1409,9 +1333,6 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         assert len(graph.nodes) == min(n, limit)
         assert len(graph.edges) == 0
         assert graph.truncated.item_count_capped == (n > limit)
-        assert graph.truncated.oldest_hid_included is not None
-        assert graph.truncated.newest_hid_included is not None
-        assert graph.truncated.oldest_hid_included <= graph.truncated.newest_hid_included
 
     def test_deep_linear_chain(self):
         """N-step linear chain: A→tr→B→tr→C→...
@@ -1530,42 +1451,6 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         # Total edge count bounded: not m*k element edges
         assert len(graph.edges) <= 2 * len(tr_nodes)
 
-    def test_pagination_non_overlapping_windows(self):
-        """Two consecutive pages on a large history.
-
-        Assert: no overlap, deterministic ordering, expected hid ranges.
-        """
-        n = GRAPH_SCALE_HISTORY_SIZE
-        limit = n // 2
-        history, _ = self._create_history()
-        for i in range(n):
-            self._create_hda(history, name=f"ds_{i}")
-
-        # Page 1: most recent
-        page1 = self._build_graph(history, limit=limit)
-        page1_ids = {nd.id for nd in page1.nodes}
-        page1_hids = sorted(nd.hid for nd in page1.nodes if nd.hid is not None)
-
-        assert len(page1.nodes) == limit
-        assert page1.truncated.item_count_capped is True
-        oldest_hid_p1 = page1.truncated.oldest_hid_included
-
-        # Page 2: older items
-        page2 = self._build_graph(history, limit=limit, older_than_hid=oldest_hid_p1)
-        page2_ids = {nd.id for nd in page2.nodes}
-        page2_hids = sorted(nd.hid for nd in page2.nodes if nd.hid is not None)
-
-        # No overlap
-        assert len(page1_ids & page2_ids) == 0, "Pages must not overlap"
-
-        # Deterministic ordering: page1 has higher hids than page2
-        if page1_hids and page2_hids:
-            assert min(page1_hids) > max(page2_hids), "Page 1 should contain newer items than page 2"
-
-        # Expected hid ranges
-        assert page1.truncated.newest_hid_included >= page1.truncated.oldest_hid_included
-        assert page2.truncated.newest_hid_included >= page2.truncated.oldest_hid_included
-
     def test_seed_scope_on_older_item(self):
         """seed_scope on an early item in a large history.
 
@@ -1590,12 +1475,7 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
 
         # Response bounded
         assert len(graph.nodes) <= limit
-
-        # Scope metadata valid
         assert graph.truncated.scope_type == "seed_centered"
-        assert graph.truncated.oldest_hid_included is not None
-        assert graph.truncated.newest_hid_included is not None
-        assert graph.truncated.oldest_hid_included <= early.hid <= graph.truncated.newest_hid_included
 
     def test_recent_overview_shift_after_append(self):
         """Recent overview shifts predictably when new items are appended.

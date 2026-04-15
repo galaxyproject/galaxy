@@ -28,9 +28,7 @@ class GraphEdge(BaseModel):
 
 class TruncationInfo(BaseModel):
     item_count_capped: bool = False
-    scope_type: Literal["recent", "window", "seed_centered"] = "recent"
-    oldest_hid_included: Optional[int] = None
-    newest_hid_included: Optional[int] = None
+    scope_type: Literal["recent", "seed_centered"] = "recent"
     seed_in_scope: Optional[bool] = None
 
 

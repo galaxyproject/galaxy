@@ -79,8 +79,6 @@ class HistoryGraphBuilder:
         seed: Optional[str] = None,
         direction: str = "both",
         depth: int = 5,
-        older_than_hid: Optional[int] = None,
-        newer_than_hid: Optional[int] = None,
         seed_scope: Optional[str] = None,
     ):
         self.sa_session = sa_session
@@ -92,9 +90,9 @@ class HistoryGraphBuilder:
         self.seed = seed
         self.direction = direction
         self.depth = depth
-        self.older_than_hid = older_than_hid
-        self.newer_than_hid = newer_than_hid
         self.seed_scope = seed_scope
+        self._older_than_hid: Optional[int] = None
+        self._newer_than_hid: Optional[int] = None
         self._sort_keys: dict[str, tuple[int, int]] = {}
 
     def build(self) -> HistoryGraphResponse:
@@ -102,14 +100,10 @@ class HistoryGraphBuilder:
         if self.seed_scope:
             truncation.scope_type = "seed_centered"
             self._resolve_seed_scope()
-        elif self.older_than_hid is not None or self.newer_than_hid is not None:
-            truncation.scope_type = "window"
 
         # 1. Select top-level items in scope.
-        dataset_ids, collection_ids, item_capped, oldest_hid, newest_hid = self._select_items()
+        dataset_ids, collection_ids, item_capped = self._select_items()
         truncation.item_count_capped = item_capped
-        truncation.oldest_hid_included = oldest_hid
-        truncation.newest_hid_included = newest_hid
 
         # 2. Remove hidden collection elements.
         dataset_ids = self._remove_hidden_elements(dataset_ids)
@@ -202,10 +196,10 @@ class HistoryGraphBuilder:
         if row is None or row.hid is None:
             raise RequestParameterInvalidException(f"seed_scope {self.seed_scope} not found in history.")
         half = self.limit // 2
-        self.older_than_hid = row.hid + half + (self.limit % 2)
-        self.newer_than_hid = row.hid - half - 1
+        self._older_than_hid = row.hid + half + (self.limit % 2)
+        self._newer_than_hid = row.hid - half - 1
 
-    def _select_items(self) -> tuple[set[int], set[int], bool, Optional[int], Optional[int]]:
+    def _select_items(self) -> tuple[set[int], set[int], bool]:
         hda_q: Select = select(
             HistoryDatasetAssociation.id,
             HistoryDatasetAssociation.hid,
@@ -213,10 +207,10 @@ class HistoryGraphBuilder:
         ).where(HistoryDatasetAssociation.history_id == self.history_id)
         if not self.include_deleted:
             hda_q = hda_q.where(HistoryDatasetAssociation.deleted == False)  # noqa: E712
-        if self.older_than_hid is not None:
-            hda_q = hda_q.where(HistoryDatasetAssociation.hid < self.older_than_hid)
-        if self.newer_than_hid is not None:
-            hda_q = hda_q.where(HistoryDatasetAssociation.hid > self.newer_than_hid)
+        if self._older_than_hid is not None:
+            hda_q = hda_q.where(HistoryDatasetAssociation.hid < self._older_than_hid)
+        if self._newer_than_hid is not None:
+            hda_q = hda_q.where(HistoryDatasetAssociation.hid > self._newer_than_hid)
 
         hdca_q: Select = select(
             HistoryDatasetCollectionAssociation.id,
@@ -225,22 +219,23 @@ class HistoryGraphBuilder:
         ).where(HistoryDatasetCollectionAssociation.history_id == self.history_id)
         if not self.include_deleted:
             hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.deleted == False)  # noqa: E712
-        if self.older_than_hid is not None:
-            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid < self.older_than_hid)
-        if self.newer_than_hid is not None:
-            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid > self.newer_than_hid)
+        if self._older_than_hid is not None:
+            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid < self._older_than_hid)
+        if self._newer_than_hid is not None:
+            hdca_q = hdca_q.where(HistoryDatasetCollectionAssociation.hid > self._newer_than_hid)
 
         combined = union_all(hda_q, hdca_q).subquery()
+        # Deterministic order: hid desc, then id desc as a stable tiebreaker
+        # so duplicate hids (theoretically possible across imported data) do
+        # not affect internal selection stability.
         stmt = (
             select(combined.c.id, combined.c.hid, combined.c.item_type)
-            .order_by(combined.c.hid.desc())
+            .order_by(combined.c.hid.desc(), combined.c.id.desc())
             .limit(self.limit + 1)
         )
 
         dataset_ids: set[int] = set()
         collection_ids: set[int] = set()
-        min_hid: Optional[int] = None
-        max_hid: Optional[int] = None
         count = 0
         for row in self.sa_session.execute(stmt):
             count += 1
@@ -250,13 +245,7 @@ class HistoryGraphBuilder:
                 dataset_ids.add(row.id)
             else:
                 collection_ids.add(row.id)
-            hid = row.hid
-            if hid is not None:
-                if min_hid is None or hid < min_hid:
-                    min_hid = hid
-                if max_hid is None or hid > max_hid:
-                    max_hid = hid
-        return dataset_ids, collection_ids, count > self.limit, min_hid, max_hid
+        return dataset_ids, collection_ids, count > self.limit
 
     def _remove_hidden_elements(self, dataset_ids: set[int]) -> set[int]:
         if not dataset_ids:

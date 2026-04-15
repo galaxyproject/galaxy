@@ -389,8 +389,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         seed: Optional[str] = None,
         direction: str = "both",
         depth: int = 20,
-        older_than_hid: Optional[int] = None,
-        newer_than_hid: Optional[int] = None,
         seed_scope: Optional[str] = None,
     ):
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
@@ -405,8 +403,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             seed=seed,
             direction=direction,
             depth=depth,
-            older_than_hid=older_than_hid,
-            newer_than_hid=newer_than_hid,
             seed_scope=seed_scope,
         )
         return builder.build()

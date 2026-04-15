@@ -373,17 +373,9 @@ class FastAPIHistories:
             ge=1,
             le=20,
         ),
-        older_than_hid: Optional[int] = Query(
-            default=None,
-            description="Pagination: select items with hid less than this value (older items).",
-        ),
-        newer_than_hid: Optional[int] = Query(
-            default=None,
-            description="Pagination: select items with hid greater than this value (newer items).",
-        ),
         seed_scope: Optional[str] = Query(
             default=None,
-            description="Center the selection window on this item's hid position. Format: d{encoded_id} or c{encoded_id}.",
+            description="Center the selection window on this item. Format: d{encoded_id} or c{encoded_id}.",
         ),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> HistoryGraphResponse:
@@ -395,8 +387,6 @@ class FastAPIHistories:
             seed=seed,
             direction=direction,
             depth=depth,
-            older_than_hid=older_than_hid,
-            newer_than_hid=newer_than_hid,
             seed_scope=seed_scope,
         )
 
