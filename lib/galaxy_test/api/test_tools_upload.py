@@ -19,6 +19,7 @@ from galaxy_test.base.constants import (
     ONE_TO_SIX_WITH_TABS,
     ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE,
 )
+from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     DatasetPopulator,
     skip_without_datatype,
@@ -147,7 +148,7 @@ class TestToolsUpload(ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "fastqsanger.gz", details
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_fetch_compressed_auto_decompress_target(self, history_id):
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -189,7 +190,7 @@ class TestToolsUpload(ApiTestCase):
             details = self._upload_and_get_details(fh, file_type="auto", assert_ok=False, auto_decompress=False)
         assert details["file_ext"] == "binary", details
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     def test_fetch_compressed_with_auto(self, history_id):
         # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         # TODO: this should definitely be fixed to allow auto decompression via that API.
