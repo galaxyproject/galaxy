@@ -23798,16 +23798,12 @@ export interface components {
              * @default false
              */
             item_count_capped: boolean;
-            /** Newest Hid Included */
-            newest_hid_included?: number | null;
-            /** Oldest Hid Included */
-            oldest_hid_included?: number | null;
             /**
              * Scope Type
              * @default recent
              * @enum {string}
              */
-            scope_type: "recent" | "window" | "seed_centered";
+            scope_type: "recent" | "seed_centered";
             /** Seed In Scope */
             seed_in_scope?: boolean | null;
         };
@@ -35165,11 +35161,7 @@ export interface operations {
                 direction?: "backward" | "forward" | "both";
                 /** @description Max depth for seed-based subgraph extraction. */
                 depth?: number;
-                /** @description Pagination: select items with hid less than this value (older items). */
-                older_than_hid?: number | null;
-                /** @description Pagination: select items with hid greater than this value (newer items). */
-                newer_than_hid?: number | null;
-                /** @description Center the selection window on this item's hid position. Format: d{encoded_id} or c{encoded_id}. */
+                /** @description Center the selection window on this item. Format: d{encoded_id} or c{encoded_id}. */
                 seed_scope?: string | null;
             };
             header?: {
