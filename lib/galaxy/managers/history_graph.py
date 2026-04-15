@@ -125,17 +125,13 @@ class HistoryGraphBuilder:
         all_producers = {**hda_producers, **hdca_producers}
 
         # Emit output edges and collect tr_ids.
-        seen_edges: set[tuple[str, str, str]] = set()
         for item_key, (tr_id, tool_id) in all_producers.items():
             item_type, item_id = item_key
             tr_nodes[tr_id] = tool_id
             src = self._encode("tool_request", tr_id)
             tgt = self._encode(item_type, item_id)
             etype = "dataset_output" if item_type == "dataset" else "collection_output"
-            edge_key = (src, tgt, etype)
-            if edge_key not in seen_edges:
-                seen_edges.add(edge_key)
-                edges.append(GraphEdge(source=src, target=tgt, type=etype))
+            edges.append(GraphEdge(source=src, target=tgt, type=etype))
 
         # Batch-fetch all payloads, parse inputs, emit input edges.
         payloads = self._fetch_payloads(set(tr_nodes.keys()))
@@ -145,10 +141,7 @@ class HistoryGraphBuilder:
                 src = self._encode(ref_type, ref_id)
                 tgt = self._encode("tool_request", tr_id)
                 etype = "dataset_input" if ref_type == "dataset" else "collection_input"
-                edge_key = (src, tgt, etype)
-                if edge_key not in seen_edges:
-                    seen_edges.add(edge_key)
-                    edges.append(GraphEdge(source=src, target=tgt, type=etype))
+                edges.append(GraphEdge(source=src, target=tgt, type=etype))
                 if ref_type == "dataset" and ref_id not in dataset_ids:
                     closure_dataset_ids.add(ref_id)
                 elif ref_type == "collection" and ref_id not in collection_ids:
