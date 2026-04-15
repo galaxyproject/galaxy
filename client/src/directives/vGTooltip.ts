@@ -24,7 +24,9 @@ import {
     shift,
 } from "@floating-ui/dom";
 import purify from "dompurify";
-import type { DirectiveOptions, VNode } from "vue";
+import type { ObjectDirective, VNode } from "vue";
+
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS, useDelayedAction } from "@/utils/tooltipTiming";
 
 interface TooltipState {
     tooltipEl: HTMLElement;
@@ -34,6 +36,7 @@ interface TooltipState {
     cleanupListeners: () => void;
     placement: Placement;
     isHtml: boolean;
+    showDelay: ReturnType<typeof useDelayedAction>;
 }
 
 const stateMap = new WeakMap<HTMLElement, TooltipState>();
@@ -216,10 +219,7 @@ function showTooltip(el: HTMLElement) {
         return;
     }
 
-    // Suppress native tooltip while ours is visible
-    if (el.hasAttribute("title")) {
-        el.setAttribute("title", "");
-    }
+    suppressNativeTooltip(el);
 
     if (!state.tooltipEl.isConnected) {
         document.body.appendChild(state.tooltipEl);
@@ -229,19 +229,52 @@ function showTooltip(el: HTMLElement) {
     state.cleanupAutoUpdate = autoUpdate(el, state.tooltipEl, () => updatePosition(el, state));
 }
 
+function suppressNativeTooltip(el: HTMLElement) {
+    if (el.hasAttribute("title")) {
+        el.setAttribute("title", "");
+    }
+}
+
+function restoreNativeTooltip(el: HTMLElement) {
+    if (el.dataset.gTooltipTitle) {
+        el.setAttribute("title", el.dataset.gTooltipTitle);
+    }
+}
+
+function clearPendingShow(el: HTMLElement) {
+    const state = stateMap.get(el);
+    if (!state) {
+        return;
+    }
+
+    state.showDelay.clear();
+}
+
+function scheduleShowTooltip(el: HTMLElement) {
+    const state = stateMap.get(el);
+    if (!state) {
+        return;
+    }
+
+    clearPendingShow(el);
+    suppressNativeTooltip(el);
+    state.showDelay.schedule(() => {
+        showTooltip(el);
+    });
+}
+
 function hideTooltip(el: HTMLElement) {
     const state = stateMap.get(el);
     if (!state) {
         return;
     }
 
+    clearPendingShow(el);
+
     state.cleanupAutoUpdate?.();
     state.cleanupAutoUpdate = null;
 
-    // Restore native title attribute
-    if (el.dataset.gTooltipTitle) {
-        el.setAttribute("title", el.dataset.gTooltipTitle);
-    }
+    restoreNativeTooltip(el);
 
     if (state.tooltipEl.isConnected) {
         state.tooltipEl.remove();
@@ -257,7 +290,11 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     }
 
     const focusOnly = (modifiers.focus || arg === "focus") && !modifiers.hover && arg !== "hover";
-    const showHandler = () => showTooltip(el);
+    const hoverShowHandler = () => scheduleShowTooltip(el);
+    const focusShowHandler = () => {
+        clearPendingShow(el);
+        showTooltip(el);
+    };
     const hideHandler = () => hideTooltip(el);
     const keyHandler = (e: Event) => {
         if ((e as KeyboardEvent).key === "Escape") {
@@ -266,10 +303,10 @@ function setupListeners(el: HTMLElement, modifiers: Record<string, boolean>, arg
     };
 
     if (!focusOnly) {
-        addListener("mouseenter", showHandler);
+        addListener("mouseenter", hoverShowHandler);
         addListener("mouseleave", hideHandler);
     }
-    addListener("focusin", showHandler);
+    addListener("focusin", focusShowHandler);
     addListener("focusout", hideHandler);
     addListener("keydown", keyHandler);
 
@@ -297,7 +334,7 @@ function updateContent(el: HTMLElement, bindingValue: unknown, state: TooltipSta
     }
 }
 
-export const vGTooltip: DirectiveOptions = {
+export const vGTooltip: ObjectDirective<HTMLElement> = {
     inserted(el, binding, vnode) {
         const modifiers = binding.modifiers || {};
         const isDanger = !!modifiers["v-danger"];
@@ -319,6 +356,7 @@ export const vGTooltip: DirectiveOptions = {
             cleanupListeners,
             placement,
             isHtml,
+            showDelay: useDelayedAction(DEFAULT_TOOLTIP_HOVER_DELAY_MS),
         };
 
         stateMap.set(el, state);
@@ -346,8 +384,10 @@ export const vGTooltip: DirectiveOptions = {
             return;
         }
         state.cleanupListeners();
+        clearPendingShow(el);
         state.cleanupAutoUpdate?.();
         state.tooltipEl.remove();
+        restoreNativeTooltip(el);
         el.removeAttribute("aria-describedby");
         if (el.dataset.gTooltipAriaLabel) {
             el.removeAttribute("aria-label");

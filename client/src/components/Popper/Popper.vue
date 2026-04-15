@@ -20,20 +20,34 @@
 import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
-import type { PropType } from "vue";
 import { ref } from "vue";
+
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 import { type Trigger, usePopper } from "./usePopper";
 
-const props = defineProps({
-    arrow: { type: Boolean, default: true },
-    disabled: { type: Boolean, default: false },
-    interactive: { type: Boolean, default: false },
-    mode: { type: String, default: "dark" },
-    placement: String as PropType<Placement>,
-    referenceEl: HTMLElement,
-    title: String,
-    trigger: String as PropType<Trigger>,
+interface Props {
+    arrow?: boolean;
+    disabled?: boolean;
+    hoverDelay?: number;
+    interactive?: boolean;
+    mode?: string;
+    placement?: Placement;
+    referenceEl?: HTMLElement;
+    title?: string;
+    trigger?: Trigger;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    arrow: true,
+    disabled: false,
+    hoverDelay: DEFAULT_TOOLTIP_HOVER_DELAY_MS,
+    interactive: false,
+    mode: "dark",
+    placement: "bottom",
+    referenceEl: undefined,
+    title: undefined,
+    trigger: "hover",
 });
 
 const reference = props.referenceEl ? ref(props.referenceEl) : ref();
@@ -41,6 +55,7 @@ const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 const popper = ref();
 
 const { visible } = usePopper(reference, popper, {
+    hoverDelay: props.hoverDelay,
     interactive: props.interactive,
     placement: props.placement,
     trigger: props.trigger,
