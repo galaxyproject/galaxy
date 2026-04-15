@@ -973,6 +973,7 @@ class SelectToolParameter(ToolParameter):
     def __init__(self, tool: Optional["Tool"], input_source, context=None):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
+        self.profile = tool.profile if tool else None
         self.multiple = input_source.get_bool("multiple", False)
         # Multiple selects are optional by default, single selection is the inverse.
         self.optional = input_source.parse_optional(self.multiple)
@@ -1160,7 +1161,7 @@ class SelectToolParameter(ToolParameter):
             return None
         value = [option.value for option in options if option.selected]
         if len(value) == 0:
-            if not self.optional and not self.multiple and options:
+            if Version(str(self.tool.profile)) < Version("26.1") and not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
                 value2: Optional[Union[str, list[str]]] = options[0].value
