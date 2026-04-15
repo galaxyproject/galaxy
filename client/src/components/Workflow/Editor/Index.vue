@@ -118,7 +118,7 @@
                 ref="markdownEditor"
                 :markdown-text="report.markdown"
                 mode="report"
-                :title="'Workflow Report: ' + name"
+                :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
                 :steps="steps"
                 @insert="insertMarkdown"

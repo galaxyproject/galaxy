@@ -103,8 +103,8 @@ export function useWorkflowActivities(
         {
             title: "Report",
             id: "workflow-editor-report",
-            description: "Edit the report for this workflow.",
-            tooltip: "Edit workflow report",
+            description: "Edit the report template for this workflow.",
+            tooltip: "Edit workflow report template",
             icon: faEdit,
             panel: true,
             visible: true,
