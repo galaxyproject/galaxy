@@ -1125,13 +1125,14 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
 
     @property
     def hidden_tool_versions(self):
-        if not self.lineage:
+        if not self.lineage or not self.id:
             return []
+        versions_by_id = self.app.toolbox._tool_versions_by_id.get(self.id, {})
         hidden_versions = []
-        for lineage_version in self.lineage.get_versions():
-            tool = self.app.tool_cache.get_tool_by_id(lineage_version.id)
+        for version in self.lineage.tool_versions:
+            tool = versions_by_id.get(version)
             if tool and tool.hidden:
-                hidden_versions.append(tool.version)
+                hidden_versions.append(version)
         return hidden_versions
 
     @property
