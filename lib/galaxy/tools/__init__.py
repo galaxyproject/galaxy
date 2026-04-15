@@ -189,7 +189,6 @@ from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     in_directory,
-    listify,
     Params,
     parse_xml_string,
     rst_to_html,
@@ -202,7 +201,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import get_fileobj_raw
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.form_builder import SelectField
 from galaxy.util.json import (
     safe_loads,
     swap_inf_nan,
@@ -687,37 +685,6 @@ class ToolBox(AbstractToolBox):
             tool.name = tool.id
         return tool
 
-    def get_tool_components(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
-        selection of a different version, the list of the tool's loaded versions, and the specified tool.
-        """
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which
-        # are now using only GALAXY_URL.
-        tool_ids = listify(tool_id)
-        for tool_id in tool_ids:
-            if tool_id.endswith("/"):
-                # Some data sources send back redirects ending with `/`, this takes care of that case
-                tool_id = tool_id[:-1]
-            if get_loaded_tools_by_lineage:
-                tools = self.get_loaded_tools_by_lineage(tool_id)
-            else:
-                tools = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
-            if tools:
-                tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
-                assert tool
-                visible_tools = [candidate for candidate in tools if not candidate.hidden]
-                if len(visible_tools) > 1:
-                    tool_version_select_field = self.__build_tool_version_select_field(
-                        visible_tools, tool.id, set_selected
-                    )
-                tools = visible_tools
-                break
-        return tool_version_select_field, tools, tool
-
     def _path_template_kwds(self):
         return {
             "model_tools_path": MODEL_TOOLS_PATH,
@@ -766,20 +733,6 @@ class ToolBox(AbstractToolBox):
         session = self.app.model.context
         stored = session.get_one(StoredWorkflow, id)
         return stored.latest_workflow
-
-    def __build_tool_version_select_field(self, tools, tool_id, set_selected):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options: list[tuple[str, str]] = []
-        for tool in tools:
-            options.insert(0, (tool.version, tool.id))
-        select_field = SelectField(name="tool_id")
-        for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
-            if selected:
-                select_field.add_option(f"version {option_tup[0]}", option_tup[1], selected=True)
-            else:
-                select_field.add_option(f"version {option_tup[0]}", option_tup[1])
-        return select_field
 
 
 class DefaultToolState:
@@ -3235,9 +3188,8 @@ class Tool(UsesDictVisibleKeys, ToolParameterBundle):
             return None
         message = ""
         try:
-            select_field, tools, tool = self.app.toolbox.get_tool_components(
-                tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True
-            )
+            tools = self.app.toolbox.get_tool(tool_id, tool_version=tool_version, get_all_versions=True) or []
+            tool = self.app.toolbox.get_tool(tool_id, tool_version=tool_version) if tools else None
             if tool is None:
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."

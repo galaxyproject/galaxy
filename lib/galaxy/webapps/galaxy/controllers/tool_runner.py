@@ -37,11 +37,10 @@ class ToolRunner(BaseUIController):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
-    def __get_tool(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        tool_version_select_field, tools, tool = self.get_toolbox().get_tool_components(
-            tool_id, tool_version, get_loaded_tools_by_lineage, set_selected
-        )
-        return tool
+    def __get_tool(self, tool_id, tool_version=None):
+        # Some data sources send back redirects ending with `/`, this takes care of that case
+        tool_id = tool_id.rstrip("/")
+        return self.get_toolbox().get_tool(tool_id, tool_version=tool_version)
 
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
