@@ -39,6 +39,7 @@
             :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             :exit-activity="exitWorkflowActivity"
+            :run-activity="runWorkflowActivity"
             activity-bar-id="workflow-editor"
             :show-admin="false"
             options-title="Options"
@@ -621,7 +622,7 @@ export default {
         const isNewTempWorkflow = computed(() => !props.workflowId);
         const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
-        const { specialWorkflowActivities, exitWorkflowActivity } = useSpecialWorkflowActivities(
+        const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
             computed(() => ({
                 hasInvalidConnections: hasInvalidConnections.value,
                 lintData: lintData,
@@ -727,6 +728,7 @@ export default {
             insertMarkdown,
             specialWorkflowActivities,
             exitWorkflowActivity,
+            runWorkflowActivity,
             isNewTempWorkflow,
             saveWorkflowTitle,
             confirm,

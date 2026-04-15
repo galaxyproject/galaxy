@@ -40,6 +40,7 @@ const props = withDefaults(
         activityBarId?: string;
         specialActivities?: Activity[];
         exitActivity?: Activity;
+        runActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -56,6 +57,7 @@ const props = withDefaults(
         activityBarId: "default",
         specialActivities: () => [],
         exitActivity: undefined,
+        runActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -387,6 +389,17 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
+                <ActivityItem
+                    v-if="props.runActivity"
+                    :id="`${props.runActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.runActivity.icon"
+                    :indicator="props.runActivity.indicator"
+                    :indicator-variant="props.runActivity.indicatorVariant"
+                    :title="props.runActivity.title"
+                    :tooltip="props.runActivity.tooltip"
+                    :variant="props.runActivity.variant"
+                    @click="onActivityClicked(props.runActivity)" />
                 <ActivityItem
                     v-if="props.exitActivity"
                     :id="`${props.exitActivity.id}`"

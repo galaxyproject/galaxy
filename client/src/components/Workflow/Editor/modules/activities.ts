@@ -124,16 +124,6 @@ export function useWorkflowActivities(
             indicatorVariant: "primary",
         },
         {
-            title: "Run",
-            id: "workflow-run",
-            description: "Run this workflow with specific parameters.",
-            tooltip: "Run workflow",
-            icon: faPlay,
-            visible: true,
-            click: true,
-            optional: true,
-        },
-        {
             description: "Save this workflow.",
             icon: faSave,
             id: "save-workflow",
@@ -281,6 +271,17 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         },
     ]);
 
+    const runWorkflowActivity: Activity = {
+        title: "Run",
+        id: "workflow-run",
+        description: "Run this workflow with specific parameters.",
+        tooltip: "Run workflow",
+        icon: faPlay,
+        visible: true,
+        click: true,
+        optional: true,
+    };
+
     const exitWorkflowActivity = computed<Activity>(() => ({
         description: "",
         icon: faSave,
@@ -295,5 +296,6 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
     return {
         specialWorkflowActivities,
         exitWorkflowActivity,
+        runWorkflowActivity,
     };
 }
