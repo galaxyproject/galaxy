@@ -434,9 +434,7 @@ def test_refresh_for_job_returns_false_when_token_still_young(mock_oidc_config_f
     assert backend.refresh_for_job(MagicMock(), token) is False
 
 
-def test_refresh_for_job_refreshes_when_token_past_half_lifetime(
-    mock_oidc_config_file, mock_oidc_backend_config_file
-):
+def test_refresh_for_job_refreshes_when_token_past_half_lifetime(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Calls refresh_token when the access token is past 50% of its lifetime (not yet expired)."""
     import time
 
@@ -454,9 +452,7 @@ def test_refresh_for_job_refreshes_when_token_past_half_lifetime(
     token.refresh_token.assert_called_once()
 
 
-def test_refresh_for_job_refreshes_when_token_already_expired(
-    mock_oidc_config_file, mock_oidc_backend_config_file
-):
+def test_refresh_for_job_refreshes_when_token_already_expired(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Calls refresh_token even when the access token has already expired.
 
     This is the key difference from refresh(), which only handles the 50–100%

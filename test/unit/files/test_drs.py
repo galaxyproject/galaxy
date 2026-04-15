@@ -12,7 +12,6 @@ from galaxy.files import (
     DictFileSourcesUserContext,
     ProvidesFileSourcesUserContext,
 )
-
 from ._util import (
     assert_realizes_as,
     assert_realizes_contains,

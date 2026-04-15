@@ -322,7 +322,9 @@ class AuthnzManager:
                 if refreshed:
                     log.debug(f"Refreshed user token via `{auth.provider}` identity provider in job context")
             except Exception:
-                log.exception(f"An error occurred when refreshing user token for provider `{auth.provider}` in job context")
+                log.exception(
+                    f"An error occurred when refreshing user token for provider `{auth.provider}` in job context"
+                )
 
     def authenticate(self, provider, trans, idphint=None):
         """
