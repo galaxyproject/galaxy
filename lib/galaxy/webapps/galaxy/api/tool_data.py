@@ -1,5 +1,7 @@
+from functools import partial
 from typing import Optional
 
+import anyio
 from fastapi import (
     Body,
     Path,
@@ -117,7 +119,7 @@ class FastAPIToolData:
         field_name: str = ToolDataTableFieldName,
     ) -> ToolDataField:
         """Displays information about a data table field."""
-        return self.tool_data_manager.show_field(table_name, field_name)
+        return await anyio.to_thread.run_sync(partial(self.tool_data_manager.show_field, table_name, field_name))
 
     @router.get(
         "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",
