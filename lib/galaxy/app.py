@@ -58,6 +58,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
@@ -636,6 +637,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
+        self.landing_request_manager = self._register_singleton(LandingRequestManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
