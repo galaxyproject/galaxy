@@ -3,6 +3,7 @@ from typing import Optional
 from galaxy import exceptions
 from galaxy.util import bunch
 from .structure import (
+    get_collection,
     get_structure,
     leaf,
 )
@@ -32,11 +33,6 @@ class CollectionsToMatch:
         return self.collections.items()
 
 
-def get_child_collection(item):
-    # item could be HDCA or DCE
-    return getattr(item, "child_collection", item.collection)
-
-
 class MatchingCollections:
     """Structure holding the result of matching a list of collections
     together. This class being different than the class above and being
@@ -59,7 +55,7 @@ class MatchingCollections:
         self, input_name, hdca, child_collection, collection_type_description, subcollection_type
     ):
         structure = get_structure(
-            hdca, collection_type_description, leaf_subcollection_type=subcollection_type, collection=child_collection
+            child_collection, collection_type_description, leaf_subcollection_type=subcollection_type
         )
         if not self.linked_structure:
             self.linked_structure = structure
@@ -73,7 +69,7 @@ class MatchingCollections:
 
     def slice_collections(self):
         self.linked_structure.when_values = self.when_values
-        return self.linked_structure.walk_collections(self.collections)
+        return self.linked_structure.walk_collections({k: get_collection(v) for k, v in self.collections.items()})
 
     def subcollection_mapping_type(self, input_name):
         return self.subcollection_types[input_name]
@@ -94,7 +90,7 @@ class MatchingCollections:
     def map_over_action_tuples(self, input_name):
         if input_name not in self.action_tuples:
             collection_instance = self.collections[input_name]
-            self.action_tuples[input_name] = get_child_collection(collection_instance).dataset_action_tuples
+            self.action_tuples[input_name] = get_collection(collection_instance).dataset_action_tuples
         return self.action_tuples[input_name]
 
     def is_mapped_over(self, input_name):
@@ -113,7 +109,7 @@ class MatchingCollections:
             # (not dce.collection which is the *parent*).
             # Both collection_type_description and get_structure must
             # use the same collection so the type and elements agree.
-            child_collection = get_child_collection(hdca)
+            child_collection = get_collection(hdca)
             collection_type_description = collection_type_descriptions.for_collection_type(
                 child_collection.collection_type
             )
@@ -125,10 +121,9 @@ class MatchingCollections:
                 )
             else:
                 structure = get_structure(
-                    hdca,
+                    child_collection,
                     collection_type_description,
                     leaf_subcollection_type=subcollection_type,
-                    collection=child_collection,
                 )
                 matching_collections.unlinked_structures.append(structure)
 

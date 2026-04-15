@@ -25,6 +25,7 @@ from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model import ToolRequest
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
+    get_collection,
     get_structure,
     tool_output_to_structure,
 )
@@ -518,7 +519,9 @@ class ExecutionTracker:
             subcollection_mapping_type = collection_info.subcollection_mapping_type(input_name)
 
         return get_structure(
-            input_collection, collection_type_description, leaf_subcollection_type=subcollection_mapping_type
+            get_collection(input_collection),
+            collection_type_description,
+            leaf_subcollection_type=subcollection_mapping_type,
         )
 
     def _structure_for_output(self, trans, tool_output):
@@ -708,7 +711,9 @@ class ExecutionTracker:
     def walk_implicit_collections(self):
         collection_info = self.collection_info
         assert collection_info
-        return collection_info.structure.walk_collections(self.implicit_collections)
+        return collection_info.structure.walk_collections(
+            {k: get_collection(v) for k, v in self.implicit_collections.items()}
+        )
 
     def new_execution_slices(self):
         if self.collection_info is None:
