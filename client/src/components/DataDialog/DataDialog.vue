@@ -14,6 +14,7 @@ import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import { Model } from "./model";
 import { Services } from "./services";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
