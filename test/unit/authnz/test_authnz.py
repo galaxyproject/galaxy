@@ -275,3 +275,19 @@ def test_redirects_to_oidc_login_on_terminal_refresh_failure() -> None:
             StubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
 
     assert exc_info.value.location == "/authnz/oidc/login?redirect=true&next=%2F"
+
+
+def test_returns_401_for_api_request_on_terminal_refresh_failure() -> None:
+    app = cast(Any, galaxy_mock.MockApp())
+    app.config = CORSParsingMockConfig(oidc_require_refresh=True)
+    app.authnz_manager = MagicMock()
+    app.authnz_manager.refresh_expiring_oidc_tokens.return_value = "oidc"
+    webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
+    environ = galaxy_mock.buildMockEnviron(PATH_INFO="/api/users/current", is_api_request=True)
+
+    trans = StubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
+
+    assert trans.response.status == 401
+    assert trans.error_message == "Authentication session expired. Please log in again."
+    assert trans.user is None
+    assert trans.galaxy_session is None
