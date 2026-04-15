@@ -85,3 +85,32 @@ export function isTerminal(jobSummary: InvocationJobsSummary) {
         return !anyNonTerminal;
     }
 }
+
+export function getStepTitle(
+    stepIndex: number,
+    stepType: string,
+    stepLabel?: string,
+    toolName = "Unknown tool",
+    subworkflowName = "Subworkflow",
+): string {
+    const oneBasedStepIndex = stepIndex + 1;
+    if (stepLabel) {
+        return `Step ${oneBasedStepIndex}: ${stepLabel}`;
+    }
+    const workflowStepType = stepType;
+    switch (workflowStepType) {
+        case "tool":
+            return `Step ${oneBasedStepIndex}: ${toolName}`;
+        case "subworkflow": {
+            return `Step ${oneBasedStepIndex}: ${subworkflowName}`;
+        }
+        case "parameter_input":
+            return `Step ${oneBasedStepIndex}: Parameter input`;
+        case "data_input":
+            return `Step ${oneBasedStepIndex}: Data input`;
+        case "data_collection_input":
+            return `Step ${oneBasedStepIndex}: Data collection input`;
+        default:
+            return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
+    }
+}

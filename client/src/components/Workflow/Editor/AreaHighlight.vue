@@ -21,6 +21,8 @@ async function show(area: Rectangle) {
     blink.value = false;
     await wait(100);
     blink.value = true;
+    await wait(1000);
+    blink.value = false;
 }
 
 defineExpose({

@@ -18,7 +18,7 @@ const OUTPUTS_NOT_AVAILABLE_YET_MSG =
 
 const props = defineProps<{
     invocation: WorkflowInvocationElementView;
-    tab?: "steps" | "inputs" | "outputs" | "report" | "export" | "metrics" | "debug";
+    tab?: "inputs" | "outputs";
     terminal?: boolean;
 }>();
 

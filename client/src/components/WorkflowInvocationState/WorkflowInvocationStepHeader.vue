@@ -26,14 +26,6 @@ const props = defineProps<Props>();
 
 const invocationStore = useInvocationStore();
 
-const stepLabel = computed(() => {
-    const rawStepLabel = props.invocationStep?.workflow_step_label;
-    if (rawStepLabel == null) {
-        return undefined;
-    }
-    return rawStepLabel;
-});
-
 const isPolling = computed(() =>
     props.invocationStep ? invocationStore.isLoadingInvocationStep(props.invocationStep.id) : false,
 );
@@ -52,15 +44,7 @@ const isPolling = computed(() =>
                 :tool-version="props.workflowStep.tool_version" />
             <span class="portlet-title-text">
                 <u class="step-title">
-                    <WorkflowStepTitle
-                        :step-index="props.workflowStep.id"
-                        :step-label="stepLabel"
-                        :step-type="props.workflowStep.type"
-                        :step-tool-id="props.workflowStep.tool_id"
-                        :step-tool-uuid="props.workflowStep.tool_uuid"
-                        :step-subworkflow-id="
-                            'workflow_id' in props.workflowStep ? props.workflowStep.workflow_id : null
-                        " />
+                    <WorkflowStepTitle :invocation-step="props.invocationStep" :workflow-step="props.workflowStep" />
                 </u>
             </span>
         </div>

@@ -70,7 +70,6 @@
                             showAttributes(e);
                         }
                     "
-                    @onHighlightRegion="(bounds) => onHighlightRegion(bounds, false)"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
@@ -646,7 +645,7 @@ export default {
         const scrollToId = ref(null);
 
         function onHighlightRegion(bounds, moveTo = true) {
-            workflowGraph.value.highlightGraphRegion(bounds, moveTo);
+            stateStore.pendingHighlight = { bounds, moveTo };
         }
 
         function onScrollTo(stepId) {
