@@ -111,18 +111,4 @@ describe("useSpecialWorkflowActivities", () => {
             );
         });
     });
-
-    describe("exitWorkflowActivity tooltip", () => {
-        it("shows save and exit message when connections are valid", () => {
-            const { exitWorkflowActivity } = setUpBestPractices(false);
-            expect(exitWorkflowActivity.value.tooltip).toBe("Save this workflow, then exit the workflow editor");
-        });
-
-        it("shows invalid connections warning when hasInvalidConnections is true", () => {
-            const { exitWorkflowActivity } = setUpBestPractices(true);
-            expect(exitWorkflowActivity.value.tooltip).toBe(
-                "Workflow has invalid connections, review and remove invalid connections",
-            );
-        });
-    });
 });

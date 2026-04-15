@@ -188,33 +188,14 @@ export function useWorkflowActivities(
             click: true,
             optional: true,
         },
-        {
-            description: "Exit the workflow editor and return to the start screen.",
-            icon: faSignOutAlt,
-            id: "exit",
-            title: "Exit",
-            tooltip: "Exit workflow editor",
-            visible: false,
-            click: true,
-            optional: true,
-        },
     ]);
 }
 
 interface SpecialActivityOptions {
-    hasInvalidConnections: boolean;
     lintData: LintData;
 }
 
 export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
-    const saveHover = computed(() => {
-        if (options.value.hasInvalidConnections) {
-            return "Workflow has invalid connections, review and remove invalid connections";
-        } else {
-            return "Save this workflow, then exit the workflow editor";
-        }
-    });
-
     /** Indicator for best practices activity
      * @returns
      * - `number`: count of critical issues remaining
@@ -282,16 +263,17 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         optional: true,
     };
 
-    const exitWorkflowActivity = computed<Activity>(() => ({
-        description: "",
-        icon: faSave,
-        id: "save-and-exit",
-        title: "Save + Exit",
-        tooltip: saveHover.value,
+    const exitWorkflowActivity: Activity = {
+        description:
+            "Exit the workflow editor and return to your Galaxy. If you have unsaved changes you will be prompted to save or discard them.",
+        icon: faSignOutAlt,
+        id: "exit",
+        title: "Exit",
+        tooltip: "Exit workflow editor",
         visible: false,
         click: true,
-        mutable: false,
-    }));
+        optional: true,
+    };
 
     return {
         specialWorkflowActivities,

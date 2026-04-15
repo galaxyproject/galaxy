@@ -15,7 +15,11 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
+        <SaveChangesModal
+            :append-version="saveChangesAppendVersion"
+            :nav-url="navUrl"
+            :show-modal.sync="showSaveChangesModal"
+            @on-proceed="onNavigate" />
         <GModal
             :show.sync="showSaveAsModal"
             confirm
@@ -624,7 +628,6 @@ export default {
 
         const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
             computed(() => ({
-                hasInvalidConnections: hasInvalidConnections.value,
                 lintData: lintData,
             })),
         );
@@ -768,6 +771,7 @@ export default {
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
             debounceTimer: null,
             showSaveChangesModal: false,
+            saveChangesAppendVersion: false,
             navUrl: "",
             faArrowLeft,
             faArrowRight,
@@ -1008,13 +1012,8 @@ export default {
             }
         },
         async onActivityClicked(activityId) {
-            if (activityId === "save-and-exit") {
-                await this.saveOrCreate();
-                this.$router.push("/workflows/list");
-            }
-
             if (activityId === "exit") {
-                this.$router.push("/workflows/list");
+                this.onNavigate("/workflows/list");
             }
 
             if (activityId === "workflow-download") {
@@ -1123,6 +1122,7 @@ export default {
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
+                this.saveChangesAppendVersion = appendVersion;
                 this.showSaveChangesModal = true;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating
