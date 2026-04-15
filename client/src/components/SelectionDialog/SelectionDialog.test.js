@@ -40,4 +40,36 @@ describe("SelectionDialog.vue", () => {
         wrapper.find("[data-description='selection dialog cancel']").trigger("click");
         expect(wrapper.emitted().onCancel).toBeTruthy();
     });
+
+    it("syncs row selection state from incoming items", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            showSelectAll: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true, selectionState: "success" },
+                { id: "2", label: "file2", isLeaf: true, selectionState: "default" },
+            ],
+        });
+
+        const selectAllCheckbox = wrapper.find("input[id^='g-table-select-all-']").element;
+        expect(selectAllCheckbox.checked).toBe(false);
+        expect(selectAllCheckbox.indeterminate).toBe(true);
+    });
+
+    it("shows select-all as checked when all incoming items are selected", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            showSelectAll: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true, selectionState: "success" },
+                { id: "2", label: "file2", isLeaf: true, selectionState: "success" },
+            ],
+        });
+
+        const selectAllCheckbox = wrapper.find("input[id^='g-table-select-all-']").element;
+        expect(selectAllCheckbox.checked).toBe(true);
+        expect(selectAllCheckbox.indeterminate).toBe(false);
+    });
 });
