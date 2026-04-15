@@ -99,7 +99,7 @@ class HistoryGraphBuilder:
         truncation = TruncationInfo()
         if self.seed_scope:
             truncation.scope_type = "seed_centered"
-            self._resolve_seed_scope()
+            self._resolve_seed_scope(self.seed_scope)
 
         # 1. Select top-level items in scope.
         dataset_ids, collection_ids, item_capped = self._select_items()
@@ -169,7 +169,7 @@ class HistoryGraphBuilder:
         if self.seed:
             node_ids = {n.id for n in nodes}
             truncation.seed_in_scope = self.seed in node_ids
-            nodes, edges = self._seed_filter(nodes, edges)
+            nodes, edges = self._seed_filter(self.seed, nodes, edges)
 
         # 7. Sort.
         nodes, edges = self._sort(nodes, edges)
@@ -177,24 +177,20 @@ class HistoryGraphBuilder:
 
     # ── Item selection ──
 
-    def _resolve_seed_scope(self):
+    def _resolve_seed_scope(self, seed_scope: str):
         from galaxy.exceptions import RequestParameterInvalidException
 
-        if not self.seed_scope or len(self.seed_scope) < 2:
-            raise RequestParameterInvalidException(f"Invalid seed_scope: {self.seed_scope!r}")
-        prefix = self.seed_scope[0]
-        if prefix not in ("d", "c"):
-            raise RequestParameterInvalidException(f"Invalid seed_scope prefix: {prefix!r}")
+        prefix = seed_scope[0]
         try:
-            db_id = self.security.decode_id(self.seed_scope[1:])
+            db_id = self.security.decode_id(seed_scope[1:])
         except Exception:
-            raise RequestParameterInvalidException(f"Invalid seed_scope encoding: {self.seed_scope!r}")
+            raise RequestParameterInvalidException(f"Invalid seed_scope encoding: {seed_scope!r}")
         model = HistoryDatasetAssociation if prefix == "d" else HistoryDatasetCollectionAssociation
         row = self.sa_session.execute(
             select(model.hid).where(model.id == db_id, model.history_id == self.history_id)
         ).first()
         if row is None or row.hid is None:
-            raise RequestParameterInvalidException(f"seed_scope {self.seed_scope} not found in history.")
+            raise RequestParameterInvalidException(f"seed_scope {seed_scope} not found in history.")
         half = self.limit // 2
         self._older_than_hid = row.hid + half + (self.limit % 2)
         self._newer_than_hid = row.hid - half - 1
@@ -533,14 +529,14 @@ class HistoryGraphBuilder:
 
     # ── Seed subgraph filter (in-memory only) ──
 
-    def _seed_filter(self, nodes: list[GraphNode], edges: list[GraphEdge]) -> tuple[list[GraphNode], list[GraphEdge]]:
+    def _seed_filter(
+        self, seed: str, nodes: list[GraphNode], edges: list[GraphEdge]
+    ) -> tuple[list[GraphNode], list[GraphEdge]]:
         from galaxy.exceptions import RequestParameterInvalidException
 
-        if not self.seed or len(self.seed) < 2:
-            raise RequestParameterInvalidException(f"Invalid seed: {self.seed!r}")
         node_ids = {n.id for n in nodes}
-        if self.seed not in node_ids:
-            raise RequestParameterInvalidException(f"Seed {self.seed} not found in graph.")
+        if seed not in node_ids:
+            raise RequestParameterInvalidException(f"Seed {seed} not found in graph.")
 
         out_map: dict[str, set[str]] = {}
         in_map: dict[str, set[str]] = {}
@@ -548,8 +544,8 @@ class HistoryGraphBuilder:
             out_map.setdefault(e.source, set()).add(e.target)
             in_map.setdefault(e.target, set()).add(e.source)
 
-        reachable: set[str] = {self.seed}
-        frontier = {self.seed}
+        reachable: set[str] = {seed}
+        frontier = {seed}
         for _ in range(self.depth):
             nxt: set[str] = set()
             for nid in frontier:

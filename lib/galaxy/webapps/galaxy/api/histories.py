@@ -376,6 +376,7 @@ class FastAPIHistories:
         seed_scope: Optional[str] = Query(
             default=None,
             description="Center the selection window on this item. Format: d{encoded_id} or c{encoded_id}.",
+            pattern=r"^[dc].+$",
         ),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> HistoryGraphResponse:
