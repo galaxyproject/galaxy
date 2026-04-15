@@ -189,6 +189,8 @@ class AuthnzManager:
             rtv["end_user_registration_endpoint"] = config_xml.find("end_user_registration_endpoint").text
         if config_xml.find("profile_url") is not None:
             rtv["profile_url"] = config_xml.find("profile_url").text
+        if config_xml.find("domain") is not None:
+            rtv["domain"] = config_xml.find("domain").text
 
         # this is a EGI Check-in specific config
         if config_xml.find("checkin_env") is not None:

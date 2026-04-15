@@ -68,6 +68,7 @@ def mock_oidc_backend_config_file(tmp_path):
             <redirect_uri>$galaxy_url/authnz/$provider_name/callback</redirect_uri>
             <enable_idp_logout>true</enable_idp_logout>
             <accepted_audiences>gxyclient</accepted_audiences>
+            <domain>example.com</domain>
         </provider>
     </OIDC>
     """
@@ -321,6 +322,29 @@ def test_oidc_config_custom_auth_pipeline(mock_oidc_config_file, mock_oidc_backe
         app_config=mock_app.config,
     )
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline
+
+
+def test_oidc_backend_config_file_parsing(mock_oidc_config_file, mock_oidc_backend_config_file):
+    """Basic test of backend config XML parsing"""
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+
+    parsed = manager.oidc_backends_config["oidc"]
+    assert parsed["url"] == "login.example.com"
+    assert parsed["client_id"] == "gxyclient"
+    assert parsed["client_secret"] == "dummyclientsecret"
+    assert parsed["redirect_uri"] == "$galaxy_url/authnz/$provider_name/callback"
+    assert parsed["enable_idp_logout"] is True
+    assert parsed["accepted_audiences"] == "gxyclient"
+    assert parsed["domain"] == "example.com"
 
 
 def test_oidc_config_auth_pipeline_extra(mock_oidc_config_file, mock_oidc_backend_config_file):

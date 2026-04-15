@@ -72,6 +72,7 @@ BACKENDS = {
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
     "cilogon": "galaxy.authnz.cilogon.CILogonOpenIdConnect",
+    "auth0": "galaxy.authnz.auth0.GalaxyAuth0OpenIdConnect",
 }
 
 BACKENDS_NAME = {
@@ -88,6 +89,7 @@ BACKENDS_NAME = {
     "tapis": "tapis",
     "keycloak": "keycloak",
     "cilogon": "cilogon",
+    "auth0": "auth0",
 }
 
 AUTH_PIPELINE = (
@@ -221,6 +223,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
         if oidc_backend_config.get("username_key") is not None:
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
+        if oidc_backend_config.get("domain") is not None:
+            self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():
