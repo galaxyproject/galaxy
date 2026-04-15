@@ -1753,6 +1753,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.libraries_open()
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
+        return self.name
 
     def libraries_open(self):
         self.home()

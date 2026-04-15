@@ -315,11 +315,12 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </template>
 
                     <!-- Expand toggle column -->
-                    <template v-slot:cell(expand)="{ item, toggleDetails }">
+                    <template v-slot:cell(expand)="{ item, index, toggleDetails }">
                         <span class="sr-only">{{ registerRowToggle(item.id, toggleDetails) }}</span>
                         <button
                             v-g-tooltip.hover
                             class="btn btn-link btn-sm p-0"
+                            :data-test-id="`paste-content-toggle-${index + 1}`"
                             :title="getExpandToggleTitle(isExpanded(item.id))"
                             :aria-label="getExpandToggleTitle(isExpanded(item.id))"
                             @click="toggleRow(item, toggleDetails)"
@@ -332,6 +333,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <!-- Name column -->
                     <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell
+                            :data-test-id="`upload-row-${index + 1}-name`"
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             tooltip="Dataset name in your history (required)"
@@ -387,8 +389,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             @input="bulk.setAllExtensions" />
                     </template>
 
-                    <template v-slot:cell(extension)="{ item }">
+                    <template v-slot:cell(extension)="{ item, index }">
                         <UploadTableExtensionCell
+                            :data-test-id="`upload-row-${index + 1}-extension`"
                             :value="item.extension"
                             :extensions="effectiveExtensions"
                             :warning="bulk.getExtensionWarning(item.extension)"
@@ -406,8 +409,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             @input="bulk.setAllDbKeys" />
                     </template>
 
-                    <template v-slot:cell(dbKey)="{ item }">
+                    <template v-slot:cell(dbKey)="{ item, index }">
                         <UploadTableDbKeyCell
+                            :data-test-id="`upload-row-${index + 1}-dbkey`"
                             :value="item.dbkey"
                             :db-keys="listDbKeys"
                             :disabled="!configurationsReady"
@@ -436,10 +440,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </template>
 
                     <!-- Actions column -->
-                    <template v-slot:cell(actions)="{ item }">
+                    <template v-slot:cell(actions)="{ item, index }">
                         <GButton
                             v-g-tooltip.hover
                             class="remove-btn"
+                            :data-test-id="`upload-row-${index + 1}-remove`"
                             color="red"
                             outline
                             transparent
@@ -450,7 +455,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </template>
 
                     <!-- Row details for textarea -->
-                    <template v-slot:row-details="{ item }">
+                    <template v-slot:row-details="{ item, index }">
                         <div class="paste-content-row">
                             <label :for="`paste-content-${item.id}`" class="sr-only">
                                 Paste data for {{ item.name }}
@@ -458,6 +463,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             <textarea
                                 :id="`paste-content-${item.id}`"
                                 v-model="item.content"
+                                :data-test-id="`paste-content-textarea-${index + 1}`"
                                 class="form-control paste-textarea"
                                 rows="6"
                                 placeholder="Paste your data here"

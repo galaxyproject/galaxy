@@ -265,8 +265,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             <div ref="tableContainerRef" class="url-table-container">
                 <GTable hover striped fixed compact :items="urlItems" :fields="tableFields" class="url-table">
                     <!-- Name column -->
-                    <template v-slot:cell(name)="{ item }">
+                    <template v-slot:cell(name)="{ item, index }">
                         <UploadTableNameCell
+                            :data-test-id="`upload-row-${index + 1}-name`"
                             :value="item.name"
                             :state="isNameValid(item.name)"
                             @input="item.name = $event"
@@ -297,8 +298,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             @input="bulk.setAllExtensions" />
                     </template>
 
-                    <template v-slot:cell(extension)="{ item }">
+                    <template v-slot:cell(extension)="{ item, index }">
                         <UploadTableExtensionCell
+                            :data-test-id="`upload-row-${index + 1}-extension`"
                             :value="item.extension"
                             :extensions="effectiveExtensions"
                             :warning="bulk.getExtensionWarning(item.extension)"
@@ -316,8 +318,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             @input="bulk.setAllDbKeys" />
                     </template>
 
-                    <template v-slot:cell(dbKey)="{ item }">
+                    <template v-slot:cell(dbKey)="{ item, index }">
                         <UploadTableDbKeyCell
+                            :data-test-id="`upload-row-${index + 1}-dbkey`"
                             :value="item.dbkey"
                             :db-keys="listDbKeys"
                             :disabled="!configurationsReady"
@@ -353,10 +356,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     </template>
 
                     <!-- Actions column -->
-                    <template v-slot:cell(actions)="{ item }">
+                    <template v-slot:cell(actions)="{ item, index }">
                         <GButton
                             v-g-tooltip.hover
                             class="remove-btn"
+                            :data-test-id="`upload-row-${index + 1}-remove`"
                             color="red"
                             outline
                             transparent

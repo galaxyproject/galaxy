@@ -60,14 +60,15 @@ function updateDeferred(value: boolean) {
             @change="updateToPosixLines">
             <span class="small">POSIX</span>
         </BFormCheckbox>
-        <BFormCheckbox
-            v-if="showDeferred"
-            v-g-tooltip.hover
-            :checked="deferred"
-            size="sm"
-            title="Galaxy will store a reference and fetch data only when needed by a tool"
-            @change="updateDeferred">
-            <span class="small">Deferred</span>
-        </BFormCheckbox>
+        <div v-if="showDeferred" data-test-id="deferred-toggle">
+            <BFormCheckbox
+                v-g-tooltip.hover
+                :checked="deferred"
+                size="sm"
+                title="Galaxy will store a reference and fetch data only when needed by a tool"
+                @change="updateDeferred">
+                <span class="small">Deferred</span>
+            </BFormCheckbox>
+        </div>
     </div>
 </template>
