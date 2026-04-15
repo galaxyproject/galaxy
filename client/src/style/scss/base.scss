@@ -153,7 +153,28 @@ $galaxy-state-bg: (
     "hidden": $state-default-bg,
     "setting_metadata": $state-warning-bg,
     "inaccessible": darken($state-default-bg, 10%),
+    "paused": $state-info-bg,
+    "skipped": $state-default-bg,
+    "uninitialized": $gray-200,
 );
+
+// Replace all occurrences of $search in $string with $replace.
+@function str-replace($string, $search, $replace: "") {
+    $index: str-index($string, $search);
+    @if $index {
+        @return str-slice($string, 1, $index - 1) + $replace +
+            str-replace(str-slice($string, $index + str-length($search)), $search, $replace);
+    }
+    @return $string;
+}
+
+// Expose state background colors as CSS custom properties so canvas-based
+// rendering (e.g. the workflow minimap) can read them without duplicating values.
+:root {
+    @each $state, $color in $galaxy-state-bg {
+        --state-color-#{str-replace($state, "_", "-")}: #{$color};
+    }
+}
 
 @each $state in map-keys($galaxy-state-border) {
     .state-color-#{$state},
@@ -198,12 +219,6 @@ $galaxy-state-bg: (
         &.header-#{$state} {
             background-color: map-get($galaxy-state-bg, $state) !important;
         }
-    }
-    &.header-paused {
-        background-color: $state-info-bg !important;
-    }
-    &.header-skipped {
-        background-color: map-get($galaxy-state-bg, "hidden") !important;
     }
 }
 
