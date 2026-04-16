@@ -37,7 +37,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.managers.markdown_util import to_html
-from galaxy.managers.sse import SSEEventDispatcher
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,

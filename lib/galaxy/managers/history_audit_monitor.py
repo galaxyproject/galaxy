@@ -29,7 +29,7 @@ from sqlalchemy import select as sa_select
 from sqlalchemy.engine import Engine
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.managers.sse import SSEEventDispatcher
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
     History,
     HistoryAudit,

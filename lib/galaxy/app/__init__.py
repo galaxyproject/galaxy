@@ -77,10 +77,8 @@ from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.sse import (
-    SSEConnectionManager,
-    SSEEventDispatcher,
-)
+from galaxy.managers.sse import SSEConnectionManager
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,

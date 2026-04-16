@@ -9,7 +9,6 @@ import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from datetime import datetime
 from typing import (
     AsyncIterator,
     Optional,
@@ -18,8 +17,6 @@ from typing import (
 
 if TYPE_CHECKING:
     from starlette.requests import Request
-
-    from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
@@ -171,58 +168,3 @@ class SSEConnectionManager:
                     yield ": keepalive\n\n"
         finally:
             self.disconnect(user_id, queue)
-
-
-class SSEEventDispatcher:
-    """Fans out SSE events across all Galaxy worker processes via the control queue.
-
-    Thin wrapper around ``send_control_task`` so that managers can depend on a
-    narrow, injectable collaborator instead of importing the queue-worker
-    module directly. Works in both web-worker and Celery-worker contexts —
-    ``GalaxyManagerApplication`` sets up a publisher-only ``queue_worker`` for
-    the Celery side.
-    """
-
-    def __init__(self, app: "MinimalManagerApp") -> None:
-        self._app = app
-
-    def _send(self, task: str, kwargs: dict) -> None:
-        if getattr(self._app, "queue_worker", None) is None:
-            # AMQP not configured at all (e.g. unit-test mock app). Skip silently.
-            log.debug("SSE dispatch skipped: no queue_worker configured (task=%s)", task)
-            return
-        from galaxy.queue_worker import send_control_task  # circular: queue_worker -> app -> managers
-        from galaxy.queues import all_control_queues_for_declare
-
-        # Only fan out to webapp processes — job handlers and workflow schedulers
-        # don't have browser SSE connections to push to.
-        declare_queues = all_control_queues_for_declare(self._app.application_stack, webapp_only=True)
-        send_control_task(self._app, task, kwargs=kwargs, expiration=10, declare_queues=declare_queues)
-
-    def notify_users(self, user_ids: list[int], payload: str, event_id: Optional[str] = None) -> None:
-        self._send(
-            "notify_users",
-            {
-                "user_ids": user_ids,
-                "payload": payload,
-                "event_id": event_id or datetime.utcnow().isoformat(),
-            },
-        )
-
-    def notify_broadcast(self, payload: str, event_id: Optional[str] = None) -> None:
-        self._send(
-            "notify_broadcast",
-            {
-                "payload": payload,
-                "event_id": event_id or datetime.utcnow().isoformat(),
-            },
-        )
-
-    def history_update(self, user_updates: dict[str, list], event_id: Optional[str] = None) -> None:
-        self._send(
-            "history_update",
-            {
-                "user_updates": user_updates,
-                "event_id": event_id or datetime.utcnow().isoformat(),
-            },
-        )
