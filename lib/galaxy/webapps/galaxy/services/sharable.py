@@ -109,7 +109,10 @@ class ShareableService:
         users, errors = self._get_users(trans, payload.user_ids)
         extra, users_to_notify = self._share_with_options(trans, item, users, errors, payload.share_option)
         base_status = self._get_sharing_status(trans, item)
-        status = self.share_with_status_cls.model_construct(**base_status.model_dump(), extra=extra)
+        # Use dict() for a shallow field copy so nested UserEmail instances in
+        # users_shared_with survive; model_dump() would deep-serialize them to
+        # dicts that model_construct won't re-validate back to UserEmail.
+        status = self.share_with_status_cls.model_construct(**dict(base_status), extra=extra)
         status.errors.extend(errors)
         galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
         self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
