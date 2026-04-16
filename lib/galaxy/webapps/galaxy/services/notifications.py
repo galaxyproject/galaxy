@@ -14,6 +14,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.sse import SSEEvent
 from galaxy.model import User
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -97,6 +98,28 @@ class NotificationService(ServiceBase):
         notification = self.notification_manager.create_broadcast_notification(payload)
         return NotificationCreatedResponse(
             total_notifications_sent=1, notification=NotificationResponse.model_validate(notification)
+        )
+
+    def build_status_catchup(
+        self, user_context: ProvidesUserContext, last_event_id: Optional[str]
+    ) -> Optional[SSEEvent]:
+        """Build a ``notification_status`` SSE event covering everything since ``last_event_id``.
+
+        Returns ``None`` when catch-up isn't possible (no ``Last-Event-ID``,
+        unparseable timestamp, or notifications disabled) so callers can simply
+        pass the result to ``SSEConnectionManager.stream`` without extra guards.
+        """
+        if not last_event_id or not self.notification_manager.notifications_enabled:
+            return None
+        try:
+            since = datetime.fromisoformat(last_event_id)
+        except (ValueError, TypeError):
+            return None
+        catchup = self.get_notifications_status(user_context, since)
+        return SSEEvent(
+            event="notification_status",
+            data=catchup.model_dump_json(),
+            id=datetime.utcnow().isoformat(),
         )
 
     def get_notifications_status(self, user_context: ProvidesUserContext, since: datetime) -> NotificationStatusSummary:

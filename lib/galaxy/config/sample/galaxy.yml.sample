@@ -3129,6 +3129,20 @@ galaxy:
   # Message to display on the export citations tool page
   #citations_export_message_html: When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
 
+  # Enables real-time history update notifications via Server-Sent
+  # Events (SSE). When enabled, a background monitor watches for history
+  # changes (via PostgreSQL LISTEN/NOTIFY or audit table polling as a
+  # fallback for SQLite) and pushes update signals to connected
+  # browsers, replacing aggressive 3-second polling.
+  #enable_sse_history_updates: false
+
+  # The interval in seconds between history audit table polls when using
+  # the polling fallback (SQLite or when PostgreSQL LISTEN/NOTIFY is
+  # unavailable). Only used when enable_sse_history_updates is true.
+  # Lower values mean faster updates but more database queries.
+  # Recommended range: 1-5 seconds.
+  #history_audit_monitor_poll_interval: 2
+
   # Enables the Notification System integrated in Galaxy.
   # Users can receive automatic notifications when a certain resource is
   # shared with them or when some long running operations have finished,

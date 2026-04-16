@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.interactivetool import InteractiveToolManager
     from galaxy.managers.jobs import JobSearch
+    from galaxy.managers.sse import SSEConnectionManager
     from galaxy.managers.tools import DynamicToolManager
     from galaxy.managers.users import UserManager
     from galaxy.managers.workflows import (
@@ -57,7 +58,9 @@ if TYPE_CHECKING:
         WorkflowsManager,
     )
     from galaxy.tool_shed.galaxy_install.client import DataManagersInterface
-    from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+    from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
+        InstalledRepositoryManager,
+    )
     from galaxy.tool_util.data import ToolDataTableManager
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
@@ -174,6 +177,7 @@ class StructuredApp(MinimalManagerApp):
     vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
+    sse_connection_manager: "SSEConnectionManager"
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_cache: "ToolCache"
     tool_shed_repository_cache: Optional[ToolShedRepositoryCache]

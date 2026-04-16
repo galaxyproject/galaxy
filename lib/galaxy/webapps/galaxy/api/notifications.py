@@ -10,12 +10,16 @@ from typing import (
 
 from fastapi import (
     Body,
+    Header,
     Query,
+    Request,
     Response,
     status,
 )
+from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.schema.notifications import (
     BroadcastNotificationCreateRequest,
     BroadcastNotificationListResponse,
@@ -51,6 +55,39 @@ router = Router(tags=["notifications"])
 @router.cbv
 class FastAPINotifications:
     service: NotificationService = depends(NotificationService)
+    sse_manager: SSEConnectionManager = depends(SSEConnectionManager)
+
+    @router.get(
+        "/api/notifications/stream",
+        summary="Server-Sent Events stream for real-time notification updates.",
+        response_class=StreamingResponse,
+    )
+    async def stream_notifications(
+        self,
+        request: Request,
+        trans: ProvidesUserContext = DependsOnTrans,
+        last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
+    ):
+        """Opens a Server-Sent Events (SSE) connection that pushes notification updates in real-time.
+
+        On reconnect, the browser sends the ``Last-Event-ID`` header automatically.
+        Any notifications created since that timestamp are delivered as a catch-up
+        ``notification_status`` event before the stream begins.
+
+        Anonymous users receive only broadcast events.
+        """
+        self.service.notification_manager.ensure_notifications_enabled()
+        user_id = trans.user.id if not trans.anonymous else None
+        catch_up = self.service.build_status_catchup(trans, last_event_id)
+        return StreamingResponse(
+            self.sse_manager.stream(request, user_id, catch_up=catch_up),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @router.get(
         "/api/notifications/status",

@@ -54,12 +54,18 @@ def _postgres_install(engine):
                 RETURNS TRIGGER
                 LANGUAGE 'plpgsql'
             AS $BODY$
+                DECLARE
+                    _history_id integer;
                 BEGIN
                     INSERT INTO history_audit (history_id, update_time)
                     SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
                     FROM new_table
                     WHERE {id_field} IS NOT NULL
                     ON CONFLICT DO NOTHING;
+                    FOR _history_id IN SELECT DISTINCT {id_field} FROM new_table WHERE {id_field} IS NOT NULL
+                    LOOP
+                        PERFORM pg_notify('galaxy_history_update', _history_id::text);
+                    END LOOP;
                     RETURN NULL;
                 END;
             $BODY$
@@ -77,6 +83,7 @@ def _postgres_install(engine):
                     INSERT INTO history_audit (history_id, update_time)
                     VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
                     ON CONFLICT DO NOTHING;
+                    PERFORM pg_notify('galaxy_history_update', NEW.{id_field}::text);
                     RETURN NULL;
                 END;
             $BODY$

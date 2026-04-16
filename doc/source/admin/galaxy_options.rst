@@ -5805,6 +5805,34 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_history_updates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables real-time history update notifications via Server-Sent
+    Events (SSE). When enabled, a background monitor watches for
+    history changes (via PostgreSQL LISTEN/NOTIFY or audit table
+    polling as a fallback for SQLite) and pushes update signals to
+    connected browsers, replacing aggressive 3-second polling.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_monitor_poll_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between history audit table polls when
+    using the polling fallback (SQLite or when PostgreSQL
+    LISTEN/NOTIFY is unavailable). Only used when
+    enable_sse_history_updates is true. Lower values mean faster
+    updates but more database queries. Recommended range: 1-5 seconds.
+:Default: ``2``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_notification_system``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

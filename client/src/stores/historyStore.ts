@@ -15,6 +15,7 @@ import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { useSSE } from "@/composables/useNotificationSSE";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
     createAndSelectNewHistory,
@@ -31,6 +32,7 @@ import {
     ACTIVE_POLLING_INTERVAL,
     INACTIVE_POLLING_INTERVAL,
     watchHistory as watchHistorySuppliedApp,
+    watchHistoryOnce as watchHistoryOnceSuppliedApp,
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
@@ -391,6 +393,26 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return watchHistorySuppliedApp(app);
     }
 
+    // SSE-driven history updates: when we receive a history_update event,
+    // immediately trigger a refresh of the current history
+    const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
+    const { connect: sseHistoryConnect } = useSSE(handleHistorySSEEvent, SSE_HISTORY_EVENT_TYPES);
+
+    function handleHistorySSEEvent(event: MessageEvent) {
+        try {
+            const data = JSON.parse(event.data);
+            const changedHistoryIds: string[] = data.history_ids ?? [];
+            // If the current history was updated, trigger a refresh
+            if (currentHistoryId.value && changedHistoryIds.includes(currentHistoryId.value)) {
+                const app = getGalaxyInstance();
+                watchHistoryOnceSuppliedApp(app);
+            }
+        } catch (e) {
+            console.error("Error handling history SSE event:", e);
+        }
+    }
+
+    // Polling fallback — keeps running as a safety net even when SSE is connected
     const {
         startWatchingResource: startWatchingHistory,
         stopWatchingResource: stopWatchingHistory,
@@ -399,6 +421,13 @@ export const useHistoryStore = defineStore("historyStore", () => {
         shortPollingInterval: ACTIVE_POLLING_INTERVAL,
         longPollingInterval: INACTIVE_POLLING_INTERVAL,
     });
+
+    function startWatchingHistoryWithSSE() {
+        // Always start polling as a baseline
+        startWatchingHistory();
+        // Also connect SSE for instant updates
+        sseHistoryConnect();
+    }
 
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
@@ -525,7 +554,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistory,
         restoreHistories,
         handleTotalCountChange,
-        startWatchingHistory,
+        startWatchingHistory: startWatchingHistoryWithSSE,
         stopWatchingHistory,
         isWatchingHistory,
         loadCurrentHistory,
