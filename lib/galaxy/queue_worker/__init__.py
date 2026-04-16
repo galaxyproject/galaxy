@@ -75,6 +75,7 @@ def send_control_task(
     routing_key="control.*",
     kwargs=None,
     expiration: Optional[int] = None,
+    declare_queues=None,
 ):
     """
     This sends a control task out to all processes, useful for things like
@@ -84,6 +85,8 @@ def send_control_task(
     Set get_response to True to wait for and return the task results
     as a list.
     Set expiration to a number of seconds for message TTL.
+    Pass ``declare_queues`` to override the default active-processes list —
+    e.g. the SSE dispatcher uses this to restrict fan-out to webapp processes.
     """
     if kwargs is None:
         kwargs = {}
@@ -93,7 +96,11 @@ def send_control_task(
         payload["noop"] = app.config.server_name
     control_task = ControlTask(app.queue_worker)
     return control_task.send_task(
-        payload=payload, routing_key=routing_key, get_response=get_response, expiration=expiration
+        payload=payload,
+        routing_key=routing_key,
+        get_response=get_response,
+        expiration=expiration,
+        declare_queues=declare_queues,
     )
 
 
@@ -136,10 +143,11 @@ class ControlTask:
         get_response=False,
         timeout=10,
         expiration: Optional[int] = None,
+        declare_queues=None,
     ):
         if local:
             declare_queues = self.control_queues
-        else:
+        elif declare_queues is None:
             declare_queues = self.declare_queues
         reply_to = None
         callback_queue = []
@@ -459,8 +467,24 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     @property
     def declare_queues(self):
-        # dynamically produce queues, allows addressing all known processes at a given time
+        # Dynamically produce queues, allows addressing all known processes at a given time.
         return galaxy.queues.all_control_queues_for_declare(self.app.application_stack)
+
+    def bind_publisher(self):
+        """Set up the queues needed to PUBLISH control tasks (no consumer thread).
+
+        Safe to call from any process that needs to produce control messages — notably
+        Celery workers, which want to fan out SSE events to web workers but must not
+        start a consumer themselves.
+
+        Always (re)binds. A prefork call in ``GalaxyManagerApplication.__init__`` binds
+        using the parent's ``config.server_name``; under gunicorn with ``--preload``
+        the child's ``set_postfork_server_name`` mutates ``server_name`` to e.g.
+        ``main.1`` after fork. ``bind_and_start`` calls back into this so the
+        consumer's queues match what post-fork producers declare.
+        """
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.control_queues = [self.exchange_queue, self.direct_queue]
 
     def bind_and_start(self):
         # This is post-forking, so we got the correct sever name
@@ -468,8 +492,7 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
             "Binding and starting galaxy control worker for %s",
             self.app.config.server_name,
         )
-        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
-        self.control_queues = [self.exchange_queue, self.direct_queue]
+        self.bind_publisher()
         self.epoch = time.time()
         self.start()
 

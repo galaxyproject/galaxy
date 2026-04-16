@@ -682,6 +682,14 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
 
+        # AMQP connection + a publisher-ready queue worker. Celery worker processes
+        # inherit this via GalaxyManagerApplication so they can fan out SSE events
+        # to web workers (no consumer thread is started here — see bind_publisher).
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        if self.amqp_internal_connection_obj is not None:
+            self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+            self.queue_worker.bind_publisher()
+
         # SSE dispatcher must be registered before NotificationManager so Lagom
         # can auto-inject the Optional[SSEEventDispatcher] constructor arg.
         self._register_singleton(SSEEventDispatcher, SSEEventDispatcher(self))
@@ -840,10 +848,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
-        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
-        # queue_worker *can* be initialized with a queue, but here we don't
-        # want to and we'll allow postfork to bind and start it.
-        self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+        # amqp_internal_connection_obj and queue_worker are built in GalaxyManagerApplication
+        # (so Celery workers also get a publisher); here we only register the consumer path,
+        # which is started later via the application_stack postfork hook.
         # SSE connection manager for real-time notification push
         self.sse_connection_manager = self._register_singleton(SSEConnectionManager)
 

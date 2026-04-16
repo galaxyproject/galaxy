@@ -176,14 +176,11 @@ class SSEConnectionManager:
 class SSEEventDispatcher:
     """Fans out SSE events across all Galaxy worker processes via the control queue.
 
-    This is a thin wrapper around ``send_control_task`` so that managers can
-    depend on a narrow, injectable collaborator instead of importing the
-    queue-worker module directly.
-
-    In Celery / background-task processes the app object has no ``queue_worker``
-    (it's only built in ``UniverseApplication``), so dispatch is silently a
-    no-op there — notifications created from Celery tasks will still be
-    delivered the next time a client polls, just not pushed in real time.
+    Thin wrapper around ``send_control_task`` so that managers can depend on a
+    narrow, injectable collaborator instead of importing the queue-worker
+    module directly. Works in both web-worker and Celery-worker contexts —
+    ``GalaxyManagerApplication`` sets up a publisher-only ``queue_worker`` for
+    the Celery side.
     """
 
     def __init__(self, app: "MinimalManagerApp") -> None:
@@ -191,12 +188,16 @@ class SSEEventDispatcher:
 
     def _send(self, task: str, kwargs: dict) -> None:
         if getattr(self._app, "queue_worker", None) is None:
-            # No control-queue publisher available (e.g. Celery worker context).
-            log.debug("SSE dispatch skipped: app has no queue_worker (task=%s)", task)
+            # AMQP not configured at all (e.g. unit-test mock app). Skip silently.
+            log.debug("SSE dispatch skipped: no queue_worker configured (task=%s)", task)
             return
         from galaxy.queue_worker import send_control_task  # circular: queue_worker -> app -> managers
+        from galaxy.queues import all_control_queues_for_declare
 
-        send_control_task(self._app, task, kwargs=kwargs, expiration=10)
+        # Only fan out to webapp processes — job handlers and workflow schedulers
+        # don't have browser SSE connections to push to.
+        declare_queues = all_control_queues_for_declare(self._app.application_stack, webapp_only=True)
+        send_control_task(self._app, task, kwargs=kwargs, expiration=10, declare_queues=declare_queues)
 
     def notify_users(self, user_ids: list[int], payload: str, event_id: Optional[str] = None) -> None:
         self._send(
