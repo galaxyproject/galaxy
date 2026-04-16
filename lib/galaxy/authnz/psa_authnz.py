@@ -22,6 +22,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
 from galaxy import exceptions as galaxy_exceptions
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
@@ -44,7 +45,6 @@ from .oidc_utils import (
     is_oidc_backend,
     verify_oidc_response,
 )
-from ..config import GalaxyAppConfiguration
 
 if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2

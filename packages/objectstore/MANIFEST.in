@@ -1,2 +1,0 @@
-include *.rst *.txt LICENSE */py.typed
-include galaxy/objectstore/templates/examples/*yml
