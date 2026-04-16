@@ -1161,7 +1161,7 @@ class SelectToolParameter(ToolParameter):
             return None
         value = [option.value for option in options if option.selected]
         if len(value) == 0:
-            if Version(str(self.tool.profile)) < Version("26.1") and not self.optional and not self.multiple and options:
+            if (self.profile is None or Version(str(self.profile)) < Version("26.1")) and not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
                 value2: Optional[Union[str, list[str]]] = options[0].value
