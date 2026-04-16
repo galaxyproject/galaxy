@@ -334,6 +334,7 @@ export function createFileUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: true,
     };
 }
 

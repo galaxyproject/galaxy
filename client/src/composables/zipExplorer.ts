@@ -185,6 +185,7 @@ export function useZipExplorer() {
                 ext: defaultModel.extension,
                 space_to_tab: defaultModel.spaceToTab,
                 to_posix_lines: defaultModel.toPosixLines,
+                auto_decompress: defaultModel.autoDecompress,
                 deferred: defaultModel.deferred ?? false,
             };
             uploadItems.push(uploadItem);
