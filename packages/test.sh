@@ -102,19 +102,11 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
-        if [ -d tests ] ; then mypy tests ; fi
-        if [ -d src/ ] ; then
-          pkgs="$(python -c 'import pkgutil; print(" ".join(f"-p {m.name}" for m in list(pkgutil.iter_modules(["./src"]))))')"
-          # shellcheck disable=SC2086 # word splitting is intentional for the mypy invocation
-          if [ -n "${pkgs}" ]; then mypy ${pkgs}; fi
-        fi
-        if [ -d src/galaxy ] ; then
-          pkgs=$(python -c 'import pkgutil; print(" ".join(f"-p galaxy.{p.name}" for p in pkgutil.iter_modules(["./src/galaxy"]) if p.ispkg))')
-          # shellcheck disable=SC2086 # word splitting is intentional for the mypy invocation
-          if [ -n "${pkgs}" ] ; then mypy ${pkgs} ; fi
-          mods=$(python -c 'import pkgutil; print(" ".join(f"galaxy/{m.name}.py" for m in pkgutil.iter_modules(["./src/galaxy"]) if not m.ispkg))')
-          # shellcheck disable=SC2086 # word splitting is intentional for the mypy invocation
-          if [ -n "${mods}" ] ; then cd src ; mypy ${mods} ; cd ..; fi
+        cd src
+        mypy .
+        cd ..
+        if [ -d tests ]; then
+            mypy tests
         fi
 
         # shellcheck disable=SC2086 - word splitting is intentional for BUILD_WHEEL_CMD
