@@ -261,12 +261,6 @@ class ConditionalDependencies:
     def check_webdav4(self):
         return "webdav" in self.file_sources
 
-    def check_fs_webdavfs(self):
-        return self.check_webdav4()
-
-    def check_webdavclient3(self):
-        return self.check_webdav4()
-
     def check_fs_anvilfs(self):
         # pyfilesystem plugin access to terra on anvil
         return "anvil" in self.file_sources

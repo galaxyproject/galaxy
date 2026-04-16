@@ -45,6 +45,8 @@ def _normalize_base_url(base_url: Optional[str]) -> Optional[str]:
 
 
 def _compose_base_url(url: Optional[str], root: Optional[str]) -> Optional[str]:
+    # WebDAV "root" is the service endpoint path (for example Nextcloud's
+    # /remote.php/dav/files/user), not a directory prefix inside the file source.
     if not url:
         return None
     url = url.rstrip("/")
@@ -69,7 +71,6 @@ class WebDavFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigur
         if not isinstance(data, dict):
             return data
         normalized = dict(data)
-        normalized["root"] = _normalize_root(normalized.get("root"))
         normalized["base_url"] = _normalize_base_url(
             normalized.get("base_url") or _compose_base_url(normalized.get("url"), normalized.get("root"))
         )
@@ -97,7 +98,6 @@ class WebDavFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
         if not isinstance(data, dict):
             return data
         normalized = dict(data)
-        normalized["root"] = _normalize_root(normalized.get("root"))
         normalized["base_url"] = _normalize_base_url(
             normalized.get("base_url") or _compose_base_url(normalized.get("url"), normalized.get("root"))
         )

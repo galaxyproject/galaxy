@@ -75,7 +75,7 @@ def test_fs_default():
     with _config_context() as cc:
         cds = cc.get_cond_deps()
         assert not cds.check_fs_dropboxfs()
-        assert not cds.check_fs_webdavfs()
+        assert not cds.check_webdav4()
 
 
 def test_fs_configured():
@@ -86,7 +86,7 @@ def test_fs_configured():
         }
         cds = cc.get_cond_deps(config=config)
         assert cds.check_fs_dropboxfs()
-        assert cds.check_fs_webdavfs()
+        assert cds.check_webdav4()
 
 
 def test_yaml_jobconf_runners():
