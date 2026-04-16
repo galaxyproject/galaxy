@@ -513,8 +513,10 @@ class SingularityCliContainerResolver(CliContainerResolver):
             assert self.app_info.container_image_cache_path
             cache_directory_path = os.path.join(self.app_info.container_image_cache_path, "singularity", "mulled")
         self.cache_directory = cacher_class(cache_directory_path, hash_func=self.hash_func)
-        safe_makedirs(self.cache_directory.path)
-
+        try:
+            safe_makedirs(self.cache_directory.path)
+        except PermissionError:
+            pass
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):
     resolver_type = "cached_mulled"
