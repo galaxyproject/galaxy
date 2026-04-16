@@ -199,6 +199,7 @@ class ConfiguredFileSources:
 
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
+        uri = uri.strip()
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
         file_source = self.find_best_match(uri)

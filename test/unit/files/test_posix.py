@@ -549,3 +549,10 @@ def test_score_url_match_requires_prefix():
     # Embedded scheme must not match
     assert file_source.score_url_match("gxfiles://test1http://evil.com/foo") == 0
     assert file_source.score_url_match("http://evil.com/gxfiles://test1/a") == 0
+
+
+def test_get_file_source_path_strips_whitespace():
+    file_sources = _configured_file_sources()
+    resolved = file_sources.get_file_source_path("\ngxfiles://test1/a\n")
+    assert resolved.file_source is not None
+    assert resolved.path == "/a"
