@@ -8459,8 +8459,8 @@ export interface components {
         /** CollectionElementCollectionRequestUri */
         CollectionElementCollectionRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "Collection";
             /** Collection Type */
@@ -8479,8 +8479,8 @@ export interface components {
         /** CollectionElementDataRequestUri */
         CollectionElementDataRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "File";
             /** Created From Basename */
