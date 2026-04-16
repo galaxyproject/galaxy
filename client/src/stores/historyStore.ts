@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, del, ref, set, watch } from "vue";
 
 import {
     type AnyHistory,
@@ -31,8 +31,8 @@ import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
     INACTIVE_POLLING_INTERVAL,
+    refreshHistoryFromPush as refreshHistoryFromPushSuppliedApp,
     watchHistory as watchHistorySuppliedApp,
-    watchHistoryOnce as watchHistoryOnceSuppliedApp,
 } from "@/watch/watchHistory";
 
 const PAGINATION_LIMIT = 10;
@@ -396,23 +396,28 @@ export const useHistoryStore = defineStore("historyStore", () => {
     // SSE-driven history updates: when we receive a history_update event,
     // immediately trigger a refresh of the current history
     const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
-    const { connect: sseHistoryConnect } = useSSE(handleHistorySSEEvent, SSE_HISTORY_EVENT_TYPES);
+    const { connect: sseHistoryConnect, connected: sseHistoryConnected } = useSSE(
+        handleHistorySSEEvent,
+        SSE_HISTORY_EVENT_TYPES,
+    );
 
     function handleHistorySSEEvent(event: MessageEvent) {
         try {
             const data = JSON.parse(event.data);
             const changedHistoryIds: string[] = data.history_ids ?? [];
-            // If the current history was updated, trigger a refresh
             if (currentHistoryId.value && changedHistoryIds.includes(currentHistoryId.value)) {
+                // SSE is itself the signal that the history changed — force the
+                // refresh so the update_time short-circuit in watchHistoryOnce
+                // can't suppress the contents fetch.
                 const app = getGalaxyInstance();
-                watchHistoryOnceSuppliedApp(app);
+                refreshHistoryFromPushSuppliedApp(app).catch((err) =>
+                    console.error("Error refreshing history from SSE push:", err),
+                );
             }
         } catch (e) {
             console.error("Error handling history SSE event:", e);
         }
     }
-
-    // Polling fallback — keeps running as a safety net even when SSE is connected
     const {
         startWatchingResource: startWatchingHistory,
         stopWatchingResource: stopWatchingHistory,
@@ -422,11 +427,32 @@ export const useHistoryStore = defineStore("historyStore", () => {
         longPollingInterval: INACTIVE_POLLING_INTERVAL,
     });
 
+    // When the SSE pipeline is live it delivers history_update events directly
+    // and we stop the 3-second poll. If SSE drops (server unsupported, repeated
+    // errors, network blip) the watch below resumes polling as the fallback.
+    //
+    // The public `startWatchingHistory` alias is called from many places (component
+    // mounts, upload/tool/workflow completion callbacks). We must NOT reconnect SSE
+    // on every call — that would flap `connected` false→true repeatedly, and
+    // `onopen` may never stably fire. Initialize SSE exactly once.
+    let sseInitialized = false;
     function startWatchingHistoryWithSSE() {
-        // Always start polling as a baseline
-        startWatchingHistory();
-        // Also connect SSE for instant updates
+        if (sseInitialized) {
+            return;
+        }
+        sseInitialized = true;
         sseHistoryConnect();
+        watch(
+            sseHistoryConnected,
+            (isConnected) => {
+                if (isConnected) {
+                    stopWatchingHistory();
+                } else {
+                    startWatchingHistory();
+                }
+            },
+            { immediate: true },
+        );
     }
 
     async function loadHistoryById(historyId: string) {

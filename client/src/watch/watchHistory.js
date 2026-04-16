@@ -39,53 +39,62 @@ export async function watchHistory(app) {
 }
 
 export async function watchHistoryOnce(app) {
+    return _fetchHistoryAndChangedItems(app, { force: false });
+}
+
+/**
+ * Forces a fresh history + changed-items fetch, ignoring the `lastUpdateTime`
+ * short-circuit. Use this when an out-of-band signal (SSE `history_update`)
+ * already told us the history changed — we shouldn't re-gate on update_time.
+ */
+export async function refreshHistoryFromPush(app) {
+    return _fetchHistoryAndChangedItems(app, { force: true });
+}
+
+async function _fetchHistoryAndChangedItems(app, { force }) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
     const collectionElementsStore = useCollectionElementsStore();
 
-    // get current history
     const checkForUpdate = new Date();
-    const history = await historyStore.loadCurrentHistory(lastUpdateTime);
+    // When forced, skip the `since` filter so the server always returns the history.
+    const history = await historyStore.loadCurrentHistory(force ? undefined : lastUpdateTime);
     const { lastCheckedTime } = storeToRefs(historyItemsStore);
     lastCheckedTime.value = checkForUpdate;
     if (!history || !history.id) {
         return;
     }
 
-    // continue if the history update time has changed
-    if (!lastUpdateTime || lastUpdateTime < history.update_time) {
-        const historyId = history.id;
-        lastUpdateTime = history.update_time;
-        historyItemsStore.setLastUpdateTime();
-        // execute request to obtain recently changed items
-        const params = {
-            v: "dev",
-            limit: limit,
-            q: "update_time-ge",
-            qv: lastRequestDate.toISOString(),
-        };
-        // request detailed info only for the expanded datasets
-        const detailedIds = getCurrentlyExpandedHistoryContentIds();
-        if (detailedIds.length) {
-            params["details"] = detailedIds.join(",");
-        }
-        const url = `/api/histories/${historyId}/contents`;
-        lastRequestDate = new Date();
-        const payload = await urlData({ url, params });
-        // show warning that not all changes have been obtained
-        if (payload && payload.length == limit) {
-            console.debug(`Reached limit of monitored changes (limit=${limit}).`);
-        }
-        // pass changed items to attached stores
-        historyStore.setHistory(history);
-        datasetStore.saveDatasets(payload);
-        historyItemsStore.saveHistoryItems(historyId, payload);
-        collectionElementsStore.saveCollections(payload);
-        // trigger changes in legacy handler
-        if (app) {
-            app.user.loadFromApi(app.user.id || "current");
-        }
+    if (!force && lastUpdateTime && lastUpdateTime >= history.update_time) {
+        return;
+    }
+
+    const historyId = history.id;
+    lastUpdateTime = history.update_time;
+    historyItemsStore.setLastUpdateTime();
+    const params = {
+        v: "dev",
+        limit: limit,
+        q: "update_time-ge",
+        qv: lastRequestDate.toISOString(),
+    };
+    const detailedIds = getCurrentlyExpandedHistoryContentIds();
+    if (detailedIds.length) {
+        params["details"] = detailedIds.join(",");
+    }
+    const url = `/api/histories/${historyId}/contents`;
+    lastRequestDate = new Date();
+    const payload = await urlData({ url, params });
+    if (payload && payload.length == limit) {
+        console.debug(`Reached limit of monitored changes (limit=${limit}).`);
+    }
+    historyStore.setHistory(history);
+    datasetStore.saveDatasets(payload);
+    historyItemsStore.saveHistoryItems(historyId, payload);
+    collectionElementsStore.saveCollections(payload);
+    if (app) {
+        app.user.loadFromApi(app.user.id || "current");
     }
 }
 
