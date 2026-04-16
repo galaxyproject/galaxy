@@ -115,6 +115,8 @@ interface UploadItemCommon {
     deferred: boolean;
     /** Optional hash values for verification */
     hashes?: FetchDatasetHash[];
+    /** Whether to auto-decompress the upload */
+    auto_decompress: boolean;
 }
 
 /** Upload item from a local file */
@@ -332,6 +334,7 @@ export function createFileUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: true,
     };
 }
 
@@ -368,6 +371,7 @@ export function createPastedUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: true,
     };
 }
 
@@ -408,6 +412,7 @@ export function createUrlUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: true,
     };
 }
 
@@ -432,6 +437,7 @@ export function toApiUploadItem(item: NewUploadItem): ApiUploadItem {
         to_posix_lines: item.toPosixLines,
         deferred: item.deferred,
         hashes: item.hashes,
+        auto_decompress: true,
     };
 
     switch (item.uploadMode) {
@@ -519,7 +525,7 @@ function buildDataElement(item: ApiUploadItem): ApiDataElement {
         name: normalizeFileName(item.name),
         space_to_tab: item.space_to_tab,
         to_posix_lines: item.to_posix_lines,
-        auto_decompress: false,
+        auto_decompress: true,
         deferred: item.deferred,
     };
 
@@ -656,7 +662,7 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
         history_id: historyId,
         targets: [
             {
-                auto_decompress: false,
+                auto_decompress: true,
                 destination: { type: "hdas" },
                 elements,
             },
