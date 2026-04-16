@@ -1,9 +1,21 @@
 """Module for reasoning about structure of and matching hierarchical collections of data."""
 
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
+
+from galaxy.model import DatasetCollectionElement
 
 if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetCollection,
+        HistoryDatasetCollectionAssociation,
+    )
     from .type_description import CollectionTypeDescription
+
+    CollectionLike = Union[DatasetCollectionElement, "HistoryDatasetCollectionAssociation"]
 
 
 class Leaf:
@@ -100,8 +112,8 @@ class Tree(BaseTree):
             column_definitions=dataset_collection.column_definitions,
         )
 
-    def walk_collections(self, hdca_dict):
-        return self._walk_collections(dict_map(lambda hdca: hdca.collection, hdca_dict))
+    def walk_collections(self, collection_dict):
+        return self._walk_collections(collection_dict)
 
     def _walk_collections(self, collection_dict):
         for index, (_identifier, substructure) in enumerate(self.children):
@@ -215,20 +227,55 @@ def dict_map(func, input_dict):
     return {k: func(v) for k, v in input_dict.items()}
 
 
+def get_collection(
+    dataset_collection_instance: "CollectionLike",
+) -> "DatasetCollection":
+    """Return the DatasetCollection contained by a collection instance.
+
+    A DatasetCollectionElement has two collection references:
+      - ``collection``: the **parent** collection this element belongs to
+      - ``child_collection``: the nested collection this element *contains*
+
+    An HDCA has one:
+      - ``collection``: the collection it wraps
+
+    This helper returns the *contained* collection in both cases
+    (child_collection for DCE, collection for HDCA/adapters) and is
+    intended for callers that still hold a wrapper object and need a
+    DatasetCollection to pass to ``get_structure`` or ``walk_collections``.
+    """
+    if (
+        isinstance(dataset_collection_instance, DatasetCollectionElement)
+        and dataset_collection_instance.child_collection
+    ):
+        return dataset_collection_instance.child_collection
+    return dataset_collection_instance.collection
+
+
 def get_structure(
-    dataset_collection_instance, collection_type_description: "CollectionTypeDescription", leaf_subcollection_type=None
+    collection: "DatasetCollection",
+    collection_type_description: "CollectionTypeDescription",
+    leaf_subcollection_type: Optional[str] = None,
 ):
+    """Build a Tree (or UninitializedTree) describing a collection's shape.
+
+    ``collection_type_description`` controls the depth of the tree:
+    elements below ``leaf_subcollection_type`` are treated as leaves.
+    """
     if leaf_subcollection_type:
-        collection_type_description = collection_type_description.effective_collection_type_description(
-            leaf_subcollection_type
-        )
-        if hasattr(dataset_collection_instance, "child_collection"):
-            collection_type_description = (
+        if not collection_type_description.has_subcollections_of_type(leaf_subcollection_type):
+            # The described collection IS the leaf subcollection (no deeper
+            # structure to strip). Don't enumerate its elements; just record
+            # the type so multiply() can combine it with the mapping structure.
+            return UninitializedTree(
                 collection_type_description.collection_type_description_factory.for_collection_type(
                     leaf_subcollection_type
                 )
             )
-            return UninitializedTree(collection_type_description)
-
-    collection = dataset_collection_instance.collection
+        # Strip the leaf type from the description so it becomes a leaf
+        # in the resulting tree. E.g. "list:paired" with
+        # leaf_subcollection_type="paired" → description becomes "list".
+        collection_type_description = collection_type_description.effective_collection_type_description(
+            leaf_subcollection_type
+        )
     return Tree.for_dataset_collection(collection, collection_type_description)

@@ -12,7 +12,7 @@ factory = CollectionTypeDescriptionFactory(None)
 
 def test_get_structure_simple():
     paired_type_description = factory.for_collection_type("paired")
-    tree = get_structure(pair_instance(), paired_type_description)
+    tree = get_structure(pair_instance().collection, paired_type_description)
     assert len(tree.children) == 2
     assert tree.children[0][0] == "left"  # why not forward?
     assert tree.children[0][1].is_leaf
@@ -20,7 +20,7 @@ def test_get_structure_simple():
 
 def test_get_structure_list_paired_over_paired():
     paired_type_description = factory.for_collection_type("list:paired")
-    tree = get_structure(list_paired_instance(), paired_type_description, "paired")
+    tree = get_structure(list_paired_instance().collection, paired_type_description, "paired")
     assert tree.collection_type_description.collection_type == "list"
     assert len(tree.children) == 3
     assert tree.children[0][0] == "data1"
@@ -29,7 +29,7 @@ def test_get_structure_list_paired_over_paired():
 
 def test_get_structure_list_of_lists():
     list_of_lists_type_description = factory.for_collection_type("list:list")
-    tree = get_structure(list_of_lists_instance(), list_of_lists_type_description)
+    tree = get_structure(list_of_lists_instance().collection, list_of_lists_type_description)
     assert tree.collection_type_description.collection_type == "list:list"
     assert len(tree.children) == 2
     assert tree.children[0][0] == "outer1"
@@ -38,7 +38,7 @@ def test_get_structure_list_of_lists():
 
 def test_get_structure_list_of_lists_over_list():
     list_of_lists_type_description = factory.for_collection_type("list:list")
-    tree = get_structure(list_of_lists_instance(), list_of_lists_type_description, "list")
+    tree = get_structure(list_of_lists_instance().collection, list_of_lists_type_description, "list")
     assert tree.collection_type_description.collection_type == "list"
     assert len(tree.children) == 2
     assert tree.children[0][0] == "outer1"
@@ -47,7 +47,7 @@ def test_get_structure_list_of_lists_over_list():
 
 def test_get_structure_list_paired_or_unpaired():
     list_pair_or_unpaired_description = factory.for_collection_type("list:paired_or_unpaired")
-    tree = get_structure(list_of_paired_and_unpaired_instance(), list_pair_or_unpaired_description)
+    tree = get_structure(list_of_paired_and_unpaired_instance().collection, list_pair_or_unpaired_description)
     assert tree.collection_type_description.collection_type == "list:paired_or_unpaired"
     assert len(tree.children) == 2
     assert tree.children[0][0] == "el1"
@@ -57,7 +57,7 @@ def test_get_structure_list_paired_or_unpaired():
 def test_get_structure_list_paired_or_unpaired_over_paired_or_unpaired():
     list_pair_or_unpaired_description = factory.for_collection_type("list:paired_or_unpaired")
     tree = get_structure(
-        list_of_paired_and_unpaired_instance(), list_pair_or_unpaired_description, "paired_or_unpaired"
+        list_of_paired_and_unpaired_instance().collection, list_pair_or_unpaired_description, "paired_or_unpaired"
     )
     assert tree.collection_type_description.collection_type == "list"
     assert len(tree.children) == 2
@@ -67,7 +67,7 @@ def test_get_structure_list_paired_or_unpaired_over_paired_or_unpaired():
 
 def test_get_structure_list_of_lists_over_single_datasests():
     list_of_lists_type_description = factory.for_collection_type("list:list")
-    tree = get_structure(list_of_lists_instance(), list_of_lists_type_description, "single_datasets")
+    tree = get_structure(list_of_lists_instance().collection, list_of_lists_type_description, "single_datasets")
     assert tree.collection_type_description.collection_type == "list:list"
     assert len(tree.children) == 2
     assert tree.children[0][0] == "outer1"
