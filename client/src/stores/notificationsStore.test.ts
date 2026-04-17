@@ -34,7 +34,7 @@ function makeNotificationFixture(overrides: Partial<UserNotification> = {}): Use
         expiration_time: null,
         seen_time: null,
         deleted: false,
-        content: { subject: "hello", message: "welcome" },
+        content: { category: "message", subject: "hello", message: "welcome" },
         ...overrides,
     } as UserNotification;
 }
@@ -136,7 +136,7 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
 
             const pushed = makeNotificationFixture({
                 id: "notif-2",
-                content: { subject: "pushed via sse", message: "hi" },
+                content: { category: "message", subject: "pushed via sse", message: "hi" },
             });
             emitSse(sseState, "notification_update", pushed);
             await flushPromises();
