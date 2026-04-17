@@ -144,6 +144,35 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     return json.dumps({"error": str(e)})
 
             @agent.tool
+            async def search_gtn_faqs(
+                ctx: RunContext[GalaxyAgentDependencies],
+                query: str,
+                category: Optional[str] = None,
+                limit: int = 5,
+            ) -> str:
+                """Search Galaxy / GTN FAQs for short, definitional or how-do-I questions.
+
+                FAQs are curated short answers covering Galaxy interface basics
+                ("what is a history", "how do I share a workflow"). Prefer this
+                over ``search_gtn_tutorials`` for queries shorter than about
+                eight words or phrased as ``what is X`` / ``how do I X``.
+                """
+                if not self.gtn_db:
+                    return json.dumps({"error": "GTN database not available"})
+
+                try:
+                    results = self.gtn_db.search_faqs(query=query, category=category, limit=limit)
+                    return json.dumps(
+                        {
+                            "results": [r.to_dict() for r in results],
+                            "count": len(results),
+                        }
+                    )
+                except (AttributeError, KeyError, TypeError) as e:
+                    log.warning(f"GTN FAQ search failed: {e}")
+                    return json.dumps({"error": str(e)})
+
+            @agent.tool
             async def search_tutorials_by_tools(
                 ctx: RunContext[GalaxyAgentDependencies],
                 tool_names: list[str],
