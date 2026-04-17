@@ -30,12 +30,25 @@ def manager():
 
 
 def _create_installed_package(manager, viz_id, package_name="@galaxyproject/test", version="1.0.0"):
-    """Helper to simulate an installed package (directory + package.json + config entry)."""
+    """Helper to simulate an installed runtime package in the managed package store."""
     pkg_dir = manager.get_package_path(viz_id)
     os.makedirs(pkg_dir, exist_ok=True)
     with open(os.path.join(pkg_dir, "package.json"), "w") as f:
         json.dump({"name": package_name, "version": version}, f)
     manager.add_package_to_config(viz_id, package_name, version, enabled=True)
+    return pkg_dir
+
+
+def _create_runtime_viz_package(manager, viz_id, package_name="@galaxyproject/test", version="1.0.0", content="test"):
+    """Helper to create a managed runtime package with static assets."""
+    pkg_dir = _create_installed_package(manager, viz_id, package_name, version)
+    static_dir = os.path.join(pkg_dir, "static")
+    os.makedirs(static_dir, exist_ok=True)
+    plugin_name = viz_id.split("/")[-1]
+    with open(os.path.join(static_dir, f"{plugin_name}.xml"), "w") as f:
+        f.write(f"<visualization name='{plugin_name}' />")
+    with open(os.path.join(static_dir, "index.html"), "w") as f:
+        f.write(content)
     return pkg_dir
 
 
@@ -52,6 +65,9 @@ def _create_viz_static(manager, viz_name, content="test"):
     os.makedirs(plugins_dir, exist_ok=True)
     with open(os.path.join(plugins_dir, "index.html"), "w") as f:
         f.write(content)
+    plugin_name = viz_name.split("/")[-1]
+    with open(os.path.join(plugins_dir, f"{plugin_name}.xml"), "w") as f:
+        f.write(f"<visualization name='{plugin_name}' />")
     return plugins_dir
 
 
@@ -348,16 +364,19 @@ class TestInstallLifecycle:
         """Full flow: install from npm, then stage so Galaxy can serve it."""
         self._mock_install(manager, "my_viz", "@galaxyproject/my-viz", "1.0.0")
         manager.add_package_to_config("my_viz", "@galaxyproject/my-viz", "1.0.0")
-
-        # Create config/plugins static dir (simulating what the package provides)
-        _create_viz_static(manager, "my_viz", "<html>viz content</html>")
+        static_dir = os.path.join(manager.get_package_path("my_viz"), "static")
+        os.makedirs(static_dir, exist_ok=True)
+        with open(os.path.join(static_dir, "my_viz.xml"), "w") as f:
+            f.write("<visualization name='my_viz' />")
+        with open(os.path.join(static_dir, "index.html"), "w") as f:
+            f.write("<html>viz content</html>")
 
         result = manager.stage_visualization("my_viz")
         assert result["visualization_id"] == "my_viz"
 
         # Verify the static content is now in the serving directory
-        static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
-        staged_file = os.path.join(static_dir, "my_viz", "static", "index.html")
+        staged_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
+        staged_file = os.path.join(staged_dir, "my_viz", "static", "index.html")
         assert os.path.exists(staged_file)
         with open(staged_file) as f:
             assert "viz content" in f.read()
@@ -378,6 +397,15 @@ class TestStaging:
         static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
         assert os.path.exists(os.path.join(static_dir, "circster", "static", "index.html"))
         assert os.path.exists(os.path.join(static_dir, "trackster", "static", "index.html"))
+
+    def test_stage_runtime_visualization(self, manager):
+        _create_runtime_viz_package(manager, "runtime_viz", content="<html>runtime</html>")
+
+        result = manager.stage_visualization("runtime_viz")
+        assert result["visualization_id"] == "runtime_viz"
+        assert result["source_path"] == manager.get_package_path("runtime_viz")
+        assert result["target_path"] == manager.get_staged_path("runtime_viz")
+        assert os.path.exists(os.path.join(manager.get_staged_path("runtime_viz"), "static", "runtime_viz.xml"))
 
     def test_stage_single_visualization(self, manager):
         _create_viz_static(manager, "circster", content="<html>circster</html>")
@@ -452,6 +480,17 @@ class TestStaging:
         static_dir = os.path.join(manager.app.config.root, "static", "plugins", "visualizations")
         for viz_name in ["circster", "trackster", "sweepster", "phyloviz"]:
             assert os.path.exists(os.path.join(static_dir, viz_name, "static", "index.html"))
+
+    def test_stage_all_includes_runtime_and_legacy_visualizations(self, manager):
+        _create_runtime_viz_package(manager, "runtime_viz", content="<html>runtime</html>")
+        _create_viz_static(manager, "legacy_viz", "<html>legacy</html>")
+
+        result = manager.stage_all_visualizations()
+
+        assert result["staged_count"] == 2
+        assert set(result["staged_visualizations"]) == {"runtime_viz", "legacy_viz"}
+        assert os.path.exists(os.path.join(manager.get_staged_path("runtime_viz"), "static", "index.html"))
+        assert os.path.exists(os.path.join(manager.get_staged_path("legacy_viz"), "static", "index.html"))
 
 
 # --- npm registry query ---
@@ -540,8 +579,13 @@ class TestCleanupPackageFiles:
         os.makedirs(pkg_dir)
         with open(os.path.join(pkg_dir, "file.txt"), "w") as f:
             f.write("data")
+        staged_dir = manager.get_staged_path("circster")
+        os.makedirs(staged_dir)
+        with open(os.path.join(staged_dir, "staged.txt"), "w") as f:
+            f.write("served")
         manager.cleanup_package_files("circster")
         assert not os.path.exists(pkg_dir)
+        assert not os.path.exists(staged_dir)
 
     def test_cleanup_nonexistent_is_noop(self, manager):
         manager.cleanup_package_files("nonexistent")
