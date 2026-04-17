@@ -9,17 +9,18 @@ inline imports in the hot path.
 """
 
 import logging
-from datetime import datetime
 from typing import (
+    Any,
     Optional,
-    TYPE_CHECKING,
 )
 
-from galaxy.queue_worker import send_control_task
+from galaxy.managers.sse import make_event_id
+from galaxy.queue_worker import (
+    ControlTask,
+    GalaxyQueueWorker,
+)
 from galaxy.queues import all_control_queues_for_declare
-
-if TYPE_CHECKING:
-    from galaxy.structured_app import MinimalManagerApp
+from galaxy.web_stack import ApplicationStack
 
 log = logging.getLogger(__name__)
 
@@ -27,25 +28,35 @@ log = logging.getLogger(__name__)
 class SSEEventDispatcher:
     """Fans out SSE events across all Galaxy worker processes via the control queue.
 
-    Thin wrapper around ``send_control_task`` so managers can depend on a narrow,
-    injectable collaborator instead of reaching into the queue-worker module
-    directly. Works in both web-worker and Celery-worker contexts —
-    ``GalaxyManagerApplication`` sets up a publisher-only ``queue_worker`` for
-    the Celery side.
+    Dependencies are injected individually so the dispatcher can be unit-tested
+    without a full ``app``. ``queue_worker`` is ``Optional`` because unit-test
+    mock apps and Galaxy configurations without AMQP don't construct one — the
+    dispatcher silently no-ops in that case.
     """
 
-    def __init__(self, app: "MinimalManagerApp") -> None:
-        self._app = app
+    def __init__(
+        self,
+        queue_worker: Optional[GalaxyQueueWorker],
+        application_stack: ApplicationStack,
+    ) -> None:
+        self._queue_worker = queue_worker
+        self._application_stack = application_stack
 
-    def _send(self, task: str, kwargs: dict) -> None:
-        if getattr(self._app, "queue_worker", None) is None:
+    def _send(self, task: str, kwargs: dict[str, Any]) -> None:
+        if self._queue_worker is None:
             # AMQP not configured at all (e.g. unit-test mock app). Skip silently.
             log.debug("SSE dispatch skipped: no queue_worker configured (task=%s)", task)
             return
         # Only fan out to webapp processes — job handlers and workflow schedulers
         # don't have browser SSE connections to push to.
-        declare_queues = all_control_queues_for_declare(self._app.application_stack, webapp_only=True)
-        send_control_task(self._app, task, kwargs=kwargs, expiration=10, declare_queues=declare_queues)
+        declare_queues = all_control_queues_for_declare(self._application_stack, webapp_only=True)
+        control_task = ControlTask(self._queue_worker)
+        control_task.send_task(
+            payload={"task": task, "kwargs": kwargs},
+            routing_key="control.*",
+            expiration=10,
+            declare_queues=declare_queues,
+        )
 
     def notify_users(self, user_ids: list[int], payload: str, event_id: Optional[str] = None) -> None:
         self._send(
@@ -53,7 +64,7 @@ class SSEEventDispatcher:
             {
                 "user_ids": user_ids,
                 "payload": payload,
-                "event_id": event_id or datetime.utcnow().isoformat(),
+                "event_id": event_id or make_event_id(),
             },
         )
 
@@ -62,15 +73,15 @@ class SSEEventDispatcher:
             "notify_broadcast",
             {
                 "payload": payload,
-                "event_id": event_id or datetime.utcnow().isoformat(),
+                "event_id": event_id or make_event_id(),
             },
         )
 
-    def history_update(self, user_updates: dict[str, list], event_id: Optional[str] = None) -> None:
+    def history_update(self, user_updates: dict[str, list[int]], event_id: Optional[str] = None) -> None:
         self._send(
             "history_update",
             {
                 "user_updates": user_updates,
-                "event_id": event_id or datetime.utcnow().isoformat(),
+                "event_id": event_id or make_event_id(),
             },
         )

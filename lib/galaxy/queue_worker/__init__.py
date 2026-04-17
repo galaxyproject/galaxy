@@ -68,14 +68,14 @@ def send_local_control_task(
 
 
 def send_control_task(
-    app,
-    task,
-    noop_self=False,
-    get_response=False,
-    routing_key="control.*",
-    kwargs=None,
+    app: "StructuredApp",
+    task: str,
+    noop_self: bool = False,
+    get_response: bool = False,
+    routing_key: str = "control.*",
+    kwargs: Optional[dict] = None,
     expiration: Optional[int] = None,
-    declare_queues=None,
+    declare_queues: Optional[list[Queue]] = None,
 ):
     """
     This sends a control task out to all processes, useful for things like
@@ -137,13 +137,13 @@ class ControlTask:
 
     def send_task(
         self,
-        payload,
-        routing_key,
-        local=False,
-        get_response=False,
-        timeout=10,
+        payload: dict,
+        routing_key: str,
+        local: bool = False,
+        get_response: bool = False,
+        timeout: int = 10,
         expiration: Optional[int] = None,
-        declare_queues=None,
+        declare_queues: Optional[list[Queue]] = None,
     ):
         if local:
             declare_queues = self.control_queues
@@ -359,7 +359,7 @@ def admin_job_lock(app, **kwargs):
     log.info(f"Administrative Job Lock is now set to {job_lock}. Jobs will {'not' if job_lock else 'now'} dispatch.")
 
 
-def notify_users(app, **kwargs):
+def notify_users(app: "MinimalManagerApp", **kwargs) -> None:
     """Push SSE events to connected users on this worker process."""
     sse_manager = app[SSEConnectionManager]
     user_ids = kwargs.get("user_ids", [])
@@ -370,7 +370,7 @@ def notify_users(app, **kwargs):
         sse_manager.push_to_user(user_id, event)
 
 
-def notify_broadcast(app, **kwargs):
+def notify_broadcast(app: "MinimalManagerApp", **kwargs) -> None:
     """Push SSE broadcast events to all connected clients on this worker process."""
     sse_manager = app[SSEConnectionManager]
     payload = kwargs.get("payload", "{}")
@@ -379,7 +379,7 @@ def notify_broadcast(app, **kwargs):
     sse_manager.push_broadcast(event)
 
 
-def history_update(app, **kwargs):
+def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     """Push SSE history update events to connected users on this worker process.
 
     Encodes integer history IDs here (not in the monitor) so the manager layer

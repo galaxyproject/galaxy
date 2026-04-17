@@ -15,8 +15,7 @@ from fastapi import (
 from starlette.responses import StreamingResponse
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.sse import SSEConnectionManager
-from galaxy.webapps.galaxy.services.notifications import NotificationService
+from galaxy.webapps.galaxy.services.events import EventsService
 from . import (
     depends,
     DependsOnTrans,
@@ -30,8 +29,7 @@ router = Router(tags=["events"])
 
 @router.cbv
 class FastAPIEvents:
-    sse_manager: SSEConnectionManager = depends(SSEConnectionManager)
-    notifications: NotificationService = depends(NotificationService)
+    service: EventsService = depends(EventsService)
 
     @router.get(
         "/api/events/stream",
@@ -43,7 +41,7 @@ class FastAPIEvents:
         request: Request,
         trans: ProvidesUserContext = DependsOnTrans,
         last_event_id: Optional[str] = Header(None, alias="Last-Event-ID"),
-    ):
+    ) -> StreamingResponse:
         """Opens a Server-Sent Events (SSE) connection that pushes real-time
         updates for notifications, history changes, and other events.
 
@@ -53,10 +51,8 @@ class FastAPIEvents:
 
         Anonymous users receive only broadcast events.
         """
-        user_id = trans.user.id if not trans.anonymous else None
-        catch_up = self.notifications.build_status_catchup(trans, last_event_id)
         return StreamingResponse(
-            self.sse_manager.stream(request, user_id, catch_up=catch_up),
+            self.service.open_stream(trans, last_event_id, request.is_disconnected),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",

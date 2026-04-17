@@ -690,7 +690,13 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         # SSE dispatcher must be registered before NotificationManager so Lagom
         # can auto-inject the Optional[SSEEventDispatcher] constructor arg.
-        self._register_singleton(SSEEventDispatcher, SSEEventDispatcher(self))
+        self._register_singleton(
+            SSEEventDispatcher,
+            SSEEventDispatcher(
+                queue_worker=getattr(self, "queue_worker", None),
+                application_stack=self.application_stack,
+            ),
+        )
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 
@@ -849,8 +855,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # amqp_internal_connection_obj and queue_worker are built in GalaxyManagerApplication
         # (so Celery workers also get a publisher); here we only register the consumer path,
         # which is started later via the application_stack postfork hook.
-        # SSE connection manager for real-time notification push
-        self.sse_connection_manager = self._register_singleton(SSEConnectionManager)
+        # SSE connection manager for real-time notification push.
+        # Consumed via ``depends(SSEConnectionManager)`` / ``app[SSEConnectionManager]``,
+        # so no module-level attribute is needed — keep the container wiring only.
+        self._register_singleton(SSEConnectionManager)
 
         # AI agent registry and service
         agent_registry = build_agent_registry(self.config)

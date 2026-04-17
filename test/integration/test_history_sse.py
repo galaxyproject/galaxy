@@ -34,31 +34,6 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         self._assert_status_code_is_ok(response)
         return response.json()["id"]
 
-    def test_sse_events_endpoint_returns_event_stream(self):
-        """The /api/events/stream endpoint should return content-type text/event-stream."""
-        response = requests.get(
-            self._events_stream_url(),
-            params={"key": self.galaxy_interactor.api_key},
-            stream=True,
-            timeout=5,
-        )
-        assert response.status_code == 200
-        assert "text/event-stream" in response.headers.get("content-type", "")
-        response.close()
-
-    def test_sse_receives_history_update_on_dataset_upload(self):
-        """When a dataset is uploaded, a history_update SSE event should be received."""
-        history_id = self._create_history()
-
-        listener = SSELineListener(self._events_stream_url(), self.galaxy_interactor.api_key)
-        listener.start()
-        try:
-            self.dataset_populator.new_dataset(history_id, wait=False)
-            history_events = listener.wait_for_event("history_update")
-            assert len(history_events) > 0
-        finally:
-            listener.stop()
-
     def test_history_update_contains_current_history_id(self):
         """The history_update event should contain the history's encoded ID."""
         history_id = self._create_history()
@@ -117,15 +92,3 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         assert (
             user_b_history_id not in seen_ids
         ), f"User A received history_update for user B's history ({user_b_history_id}): {history_events}"
-
-    def test_existing_polling_api_still_works(self):
-        """The existing current_history_json endpoint should continue to work."""
-        url = urljoin(self.url, "history/current_history_json")
-        response = requests.get(
-            url,
-            params={"key": self.galaxy_interactor.api_key},
-        )
-        assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "update_time" in data

@@ -9,16 +9,40 @@ import asyncio
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
+from datetime import datetime
 from typing import (
     AsyncIterator,
+    Awaitable,
+    Callable,
     Optional,
-    TYPE_CHECKING,
 )
 
-if TYPE_CHECKING:
-    from starlette.requests import Request
+from galaxy.model.orm.now import now
 
 log = logging.getLogger(__name__)
+
+
+def make_event_id() -> str:
+    """Return an SSE ``id`` string for Last-Event-ID replay.
+
+    Uses ``galaxy.model.orm.now`` so the timestamp format matches the rest of
+    Galaxy's database-backed timestamps (timezone-naive UTC). Kept in one place
+    so producers and the parse path cannot drift.
+    """
+    return now().isoformat()
+
+
+def parse_event_id(event_id: str) -> Optional[datetime]:
+    """Inverse of :func:`make_event_id`. Returns ``None`` if unparseable."""
+    try:
+        return datetime.fromisoformat(event_id)
+    except (ValueError, TypeError):
+        return None
+
+
+#: Async callable returning True when the client has disconnected. The SSE
+#: stream loop polls this each iteration so managers don't depend on starlette.
+IsDisconnected = Callable[[], Awaitable[bool]]
 
 
 @dataclass
@@ -142,7 +166,7 @@ class SSEConnectionManager:
 
     async def stream(
         self,
-        request: "Request",
+        is_disconnected: IsDisconnected,
         user_id: Optional[int],
         catch_up: Optional[SSEEvent] = None,
         keepalive: float = 30.0,
@@ -151,15 +175,16 @@ class SSEConnectionManager:
 
         Handles ``connect``, optional catch-up event priming, the main event
         loop with a keepalive comment on timeout, disconnect detection, and
-        ``disconnect`` in ``finally``. Controllers should call this and return
-        the iterator wrapped in a ``StreamingResponse``.
+        ``disconnect`` in ``finally``. The ``is_disconnected`` callable is
+        what the service passes in (typically ``request.is_disconnected`` from
+        starlette) so the manager stays framework-agnostic.
         """
         queue = self.connect(user_id)
         if catch_up is not None:
             await queue.put(catch_up)
         try:
             while True:
-                if await request.is_disconnected():
+                if await is_disconnected():
                     break
                 try:
                     event: SSEEvent = await asyncio.wait_for(queue.get(), timeout=keepalive)

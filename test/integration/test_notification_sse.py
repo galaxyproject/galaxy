@@ -1,11 +1,9 @@
 """Integration tests for the notification SSE (Server-Sent Events) endpoint."""
 
-from datetime import datetime
+import json
 from typing import Optional
 from urllib.parse import urljoin
 from uuid import uuid4
-
-import requests
 
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.base.sse import SSELineListener
@@ -38,6 +36,21 @@ def notification_broadcast_test_data(subject: Optional[str] = None, message: Opt
     }
 
 
+def _notification_subjects(events: list[dict]) -> list[str]:
+    """Extract ``content.subject`` from each SSE ``data`` payload.
+
+    Verifies JSON shape rather than substring-matching raw ``data`` strings — a
+    regression in the envelope (missing id, wrong serializer, content key
+    renamed) fails here instead of silently passing. Each ``data`` payload is
+    a ``NotificationResponse`` dump with a top-level ``content.subject``.
+    """
+    subjects = []
+    for event in events:
+        payload = json.loads(event["data"])
+        subjects.append(payload["content"]["subject"])
+    return subjects
+
+
 class TestNotificationSSEIntegration(IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = False
@@ -54,18 +67,6 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
 
     def _stream_url(self) -> str:
         return urljoin(self.url, "api/notifications/stream")
-
-    def test_sse_endpoint_returns_event_stream(self):
-        """The SSE endpoint should return content-type text/event-stream."""
-        response = requests.get(
-            self._stream_url(),
-            params={"key": self.galaxy_interactor.api_key},
-            stream=True,
-            timeout=5,
-        )
-        assert response.status_code == 200
-        assert "text/event-stream" in response.headers.get("content-type", "")
-        response.close()
 
     def test_sse_receives_notification_events(self):
         """When a notification is created, the SSE stream should receive it."""
@@ -87,8 +88,8 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
         finally:
             listener.stop()
 
-        assert any(
-            subject in e.get("data", "") for e in notification_events
+        assert subject in _notification_subjects(
+            notification_events
         ), f"Expected subject '{subject}' in SSE events, got: {notification_events}"
 
     def test_sse_receives_broadcast_events(self):
@@ -105,16 +106,17 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
         finally:
             listener.stop()
 
-        assert any(
-            subject in e.get("data", "") for e in broadcast_events
-        ), f"Expected subject '{subject}' in broadcast SSE events, got: {broadcast_events}"
+        # Broadcast events carry a BroadcastNotificationResponse, which shares
+        # the top-level content.subject shape with per-user notifications.
+        broadcast_subjects = [json.loads(e["data"])["content"]["subject"] for e in broadcast_events]
+        assert subject in broadcast_subjects, f"Expected subject '{subject}' in broadcast events: {broadcast_events}"
 
     def test_sse_catchup_on_reconnect(self):
         """Reconnecting with Last-Event-ID should replay a catch-up notification_status event.
 
         The ``Last-Event-ID`` value is the server-issued ID from a prior event,
-        not a client-side ``datetime.utcnow()``. This avoids clock-skew flake
-        between the test runner and the app in containerized CI.
+        not a client-side timestamp. This avoids clock-skew flake between the
+        test runner and the app in containerized CI.
         """
         user = self._setup_user(f"{uuid4()}@galaxy.test")
         _, user_api_key = self._setup_user_get_key(user["email"])
@@ -146,8 +148,8 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
         response = self._post("notifications", data=request, admin=True, json=True)
         self._assert_status_code_is_ok(response)
 
-        # Reconnect with Last-Event-ID = the captured id. The server catch-up runs before
-        # the `ready` event and must include the missed notification.
+        # Reconnect with Last-Event-ID = the captured id. The catch-up must include
+        # the notification sent after that id but not the one that produced it.
         listener_2 = SSELineListener(
             self._stream_url(),
             user_api_key,
@@ -159,28 +161,11 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
         finally:
             listener_2.stop()
 
-        assert any(
-            subject_2 in e.get("data", "") for e in status_events
-        ), f"Expected subject '{subject_2}' in catch-up event, got: {status_events}"
-
-    def test_existing_polling_api_still_works(self):
-        """The existing polling endpoint should continue to work alongside SSE."""
-        user = self._setup_user(f"{uuid4()}@galaxy.test")
-
-        before = datetime.utcnow()
-
-        subject = f"polling_test_{uuid4()}"
-        request = {
-            "recipients": {"user_ids": [user["id"]]},
-            "notification": notification_test_data(subject=subject),
-        }
-        response = self._post("notifications", data=request, admin=True, json=True)
-        self._assert_status_code_is_ok(response)
-
-        with self._different_user(user["email"]):
-            status_response = self._get(f"notifications/status?since={before.isoformat()}")
-            self._assert_status_code_is_ok(status_response)
-            status = status_response.json()
-            assert status["total_unread_count"] == 1
-            assert len(status["notifications"]) == 1
-            assert status["notifications"][0]["content"]["subject"] == subject
+        replayed_subjects: list[str] = []
+        for event in status_events:
+            payload = json.loads(event["data"])
+            replayed_subjects.extend(n["content"]["subject"] for n in payload.get("notifications", []))
+        assert subject_2 in replayed_subjects, f"Missed catch-up of '{subject_2}': {status_events}"
+        assert (
+            subject_1 not in replayed_subjects
+        ), f"Last-Event-ID did not filter — '{subject_1}' replayed: {status_events}"

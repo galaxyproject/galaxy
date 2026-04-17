@@ -15,6 +15,7 @@ from galaxy_test.selenium.framework import (
 from .framework import SeleniumIntegrationTestCase
 
 SSE_CONNECT_TIMEOUT_SECONDS = 15
+SSE_EVENT_TIMEOUT_SECONDS = 15
 
 
 class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
@@ -39,6 +40,23 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
             timeout=SSE_CONNECT_TIMEOUT_SECONDS,
         )
 
+    def _last_sse_event_ts(self) -> int:
+        """Return the last SSE event timestamp recorded by the composable, or 0."""
+        return self.driver.execute_script("return window.__galaxy_sse_last_event_ts || 0") or 0
+
+    def _wait_for_sse_event_after(self, baseline_ts: int) -> None:
+        """Block until an SSE event arrives after ``baseline_ts``.
+
+        Guards against a silent regression where the UI update originates from
+        the polling fallback rather than the SSE push: ``__galaxy_sse_last_event_ts``
+        only advances when the composable's event listener fires.
+        """
+        wait_on(
+            lambda: True if self._last_sse_event_ts() > baseline_ts else None,
+            "window.__galaxy_sse_last_event_ts advanced past baseline",
+            timeout=SSE_EVENT_TIMEOUT_SECONDS,
+        )
+
     @selenium_test
     @managed_history
     def test_notification_appears_via_sse(self):
@@ -50,6 +68,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # Navigate to notifications page so the store is watching
         self.driver.get(f"{self.target_url_from_selenium}/user/notifications")
         self._wait_for_sse_connected()
+        baseline_ts = self._last_sse_event_ts()
         self.screenshot("notification_sse_before")
 
         # Send a notification to this user via the admin API
@@ -70,10 +89,12 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         response = self._post("notifications", data=notification_request, admin=True, json=True)
         self._assert_status_code_is_ok(response)
 
-        # Wait for the notification to appear in the UI — SSE should push it
-        # within a few seconds, without needing a page refresh.
-        # We wait up to 15 seconds checking for the subject text to appear.
-        self.driver.wait_for_selector_visible(f"text={subject}", timeout=15000)
+        # Prove the incoming update arrived via SSE: the event-timestamp hook
+        # only advances when useSSE's listener fires. If this times out while
+        # the UI still shows the notification, polling picked it up — a silent
+        # regression this assertion catches.
+        self._wait_for_sse_event_after(baseline_ts)
+        self.driver.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
         self.screenshot("notification_sse_after")
 
     @selenium_test
@@ -86,6 +107,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # Go to home page (bell is in masthead)
         self.home()
         self._wait_for_sse_connected()
+        baseline_ts = self._last_sse_event_ts()
 
         # Send a notification
         subject = f"Bell Test {uuid4()}"
@@ -105,6 +127,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         response = self._post("notifications", data=notification_request, admin=True, json=True)
         self._assert_status_code_is_ok(response)
 
+        self._wait_for_sse_event_after(baseline_ts)
         # The indicator dot should appear on the bell (within the #activity-notifications element)
-        self.driver.wait_for_selector_visible("#activity-notifications .indicator", timeout=15000)
+        self.driver.wait_for_selector_visible("#activity-notifications .indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
         self.screenshot("notification_bell_indicator")

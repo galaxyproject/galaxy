@@ -7,7 +7,10 @@ All message queues used by Galaxy
 import datetime
 import logging
 import socket
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from kombu import (
     Connection,
@@ -19,6 +22,9 @@ from sqlalchemy import select
 from galaxy.model import WorkerProcess
 from galaxy.model.orm.now import now
 
+if TYPE_CHECKING:
+    from galaxy.web_stack import ApplicationStack
+
 log = logging.getLogger(__name__)
 
 ALL_CONTROL = "control.*"
@@ -29,7 +35,7 @@ DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS = 120
 WEBAPP_APP_TYPE = "webapp"
 
 
-def all_control_queues_for_declare(application_stack, webapp_only: bool = False):
+def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp_only: bool = False) -> list[Queue]:
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
     build the entire routing table in producers.
