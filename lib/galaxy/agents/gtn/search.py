@@ -149,9 +149,23 @@ class GTNSearchDB:
                 cursor = conn.cursor()
                 cursor.execute("SELECT COUNT(*) FROM tutorials")
                 count = cursor.fetchone()[0]
-                log.info(f"GTN database loaded with {count} tutorials")
+                version = self._read_meta(cursor, "version") or "unknown"
+                build_date = self._read_meta(cursor, "build_date") or "unknown"
+                log.info(
+                    f"GTN database loaded from {self.db_path} "
+                    f"(version={version}, built={build_date}, tutorials={count})"
+                )
         except sqlite3.Error as e:
             raise RuntimeError(f"Failed to initialize GTN database: {e}") from e
+
+    @staticmethod
+    def _read_meta(cursor: sqlite3.Cursor, key: str) -> Optional[str]:
+        try:
+            cursor.execute("SELECT value FROM metadata WHERE key = ?", (key,))
+        except sqlite3.Error:
+            return None
+        row = cursor.fetchone()
+        return row[0] if row else None
 
     def _download_database(self):
         """Download the GTN database from the configured URL."""
