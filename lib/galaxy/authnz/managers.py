@@ -1,7 +1,7 @@
 import builtins
 import logging
 from typing import (
-    TYPE_CHECKING,
+    Optional, TYPE_CHECKING,
     TypedDict,
 )
 
@@ -32,6 +32,8 @@ from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
 )
+from ..model import UserAuthnzToken
+from ..webapps.base.webapp import GalaxyWebTransaction
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
@@ -287,7 +289,7 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
-    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth) -> RefreshResult:
+    def refresh_expiring_oidc_tokens_for_provider(self, trans: GalaxyWebTransaction, auth: UserAuthnzToken) -> RefreshResult:
         """
         Refresh expiring OIDC tokens for a specific provider.
 
@@ -312,7 +314,7 @@ class AuthnzManager:
             log.warning(f"An error occurred when refreshing user token: {e}")
             return {"refreshed": False, "reauthentication_required": False}
 
-    def refresh_expiring_oidc_tokens(self, trans, user=None) -> str | None:
+    def refresh_expiring_oidc_tokens(self, trans: GalaxyWebTransaction, user: Optional[model.User] = None) -> str | None:
         """
         Refresh expiring OIDC tokens for all providers associated with a user.
 

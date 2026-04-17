@@ -898,7 +898,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         elif self.webapp.name == "tool_shed":
             self.__update_session_cookie(name="galaxycommunitysession")
 
-    def handle_user_reauthentication(self, reauth_provider: str):
+    def handle_user_reauthentication(self, reauth_provider: str) -> None:
         """
         Handle user being required to log in again after failed OIDC refresh
         """
@@ -912,7 +912,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self.galaxy_session = None
         else:
             self.response.send_redirect(url_for(f"/authnz/{reauth_provider}/login", redirect="true", next="/"))
-        return
 
     def get_galaxy_session(self):
         """
