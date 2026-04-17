@@ -127,8 +127,8 @@ jobs:
         run: npm run sync-version
         working-directory: 'client/packages/api-client'
       - name: build client-api
-        run: pnpm install && pnpm run build
-        working-directory: 'client/packages/api-client'
+        run: pnpm --filter @galaxyproject/galaxy-api-client run build
+        working-directory: 'client'
       - name: publish client-api
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: npm publish --provenance --access public
