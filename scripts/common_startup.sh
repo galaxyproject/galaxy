@@ -215,7 +215,7 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Check client build state.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
     if [ -f static/client_build_hash.txt ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
@@ -239,7 +239,7 @@ else
 fi
 
 # Build client if necessary.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
     # Ensure pnpm is installed
     INSTALL_PNPM=0
     if ! command -v pnpm >/dev/null; then
@@ -277,9 +277,8 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         fi
         cd -
     else
-        # Install prebuilt client
-        # shellcheck disable=SC2086
-        if pnpm install $PNPM_INSTALL_OPTS; then
+        # No root pnpm-lock.yaml is shipped, so --frozen-lockfile can't apply here.
+        if pnpm install; then
             if ! (pnpm run stage) then
                 echo "ERROR: Galaxy prebuilt client install failed. See ./client/README.md for more information, including how to get help."
                 exit 1
