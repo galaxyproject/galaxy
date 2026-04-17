@@ -89,6 +89,7 @@ class SearchResult:
 
         Returns only the fields the LLM needs to pick tutorials and
         construct get_tutorial_content calls, keeping token usage low.
+        Includes ``score`` so the agent can gauge match quality.
         """
         snippet = self.snippet.replace("<mark>", "").replace("</mark>", "")
         return {
@@ -99,6 +100,7 @@ class SearchResult:
             "difficulty": self.difficulty,
             "time_estimation": self.time_estimation,
             "snippet": snippet,
+            "score": round(self.score, 2),
         }
 
 
@@ -117,14 +119,13 @@ class FAQResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
+        snippet = self.snippet.replace("<mark>", "").replace("</mark>", "")
         return {
-            "id": self.id,
-            "category": self.category,
-            "filename": self.filename,
             "title": self.title,
+            "category": self.category,
             "area": self.area,
-            "snippet": self.snippet,
-            "score": self.score,
+            "snippet": snippet,
+            "score": round(self.score, 2),
             "result_type": "faq",
         }
 
@@ -214,6 +215,10 @@ class GTNSearchDB:
                 cursor = conn.cursor()
 
                 fts_query = sanitize_fts5_query(query, preserve_phrases=True)
+                # tutorials_fts columns: title, description, content, topic
+                # Weight title/description/topic above raw content so broad
+                # queries surface the tutorial that's actually about the topic
+                # rather than the one that mentions it most.
                 sql = """
                     SELECT
                         t.id,
@@ -226,7 +231,7 @@ class GTNSearchDB:
                         t.hands_on,
                         t.time_estimation,
                         snippet(tutorials_fts, 2, '<mark>', '</mark>', '...', 30) as snippet,
-                        bm25(tutorials_fts) as score
+                        bm25(tutorials_fts, 10.0, 3.0, 1.0, 2.0) as score
                     FROM tutorials_fts
                     JOIN tutorials t ON t.id = tutorials_fts.rowid
                     WHERE tutorials_fts MATCH ?
@@ -293,6 +298,7 @@ class GTNSearchDB:
                 cursor = conn.cursor()
 
                 fts_query = sanitize_fts5_query(query, preserve_phrases=True)
+                # faqs_fts columns: title, content, category, area
                 sql = """
                     SELECT
                         f.id,
@@ -302,7 +308,7 @@ class GTNSearchDB:
                         f.area,
                         f.content,
                         snippet(faqs_fts, 1, '<mark>', '</mark>', '...', 30) as snippet,
-                        bm25(faqs_fts) as score
+                        bm25(faqs_fts, 10.0, 1.0, 2.0, 2.0) as score
                     FROM faqs_fts
                     JOIN faqs f ON f.id = faqs_fts.rowid
                     WHERE faqs_fts MATCH ?
