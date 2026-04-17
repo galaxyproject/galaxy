@@ -9,7 +9,7 @@ import jwt as pyjwt
 from social_core.exceptions import (
     AuthAlreadyAssociated,
     AuthCanceled,
-    AuthTokenError,
+    AuthForbidden, AuthTokenError,
 )
 
 from galaxy import (
@@ -287,19 +287,6 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
-    @staticmethod
-    def _reauth_required_from_refresh_exception(exc):
-        """
-        Check if the exception is due to a failed refresh attempt.
-        """
-        response = getattr(exc, "response", None)
-        if response is None:
-            return False
-        # Auth failures on token refresh should force re-authentication.
-        if response.status_code in (400, 401, 403):
-            return True
-        return False
-
     def refresh_expiring_oidc_tokens_for_provider(self, trans, auth) -> RefreshResult:
         """
         Refresh expiring OIDC tokens for a specific provider.
@@ -318,10 +305,11 @@ class AuthnzManager:
             if refreshed:
                 log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
             return {"refreshed": refreshed, "reauthentication_required": False}
+        except (AuthTokenError, AuthCanceled, AuthForbidden):
+            log.warning("Authentication session has expired or is invalid, reauth required.")
+            return {"refreshed": False, "reauthentication_required": True}
         except Exception as e:
-            log.exception("An error occurred when refreshing user token")
-            if self._reauth_required_from_refresh_exception(e):
-                return {"refreshed": False, "reauthentication_required": True}
+            log.warning(f"An error occurred when refreshing user token: {e}")
             return {"refreshed": False, "reauthentication_required": False}
 
     def refresh_expiring_oidc_tokens(self, trans, user=None) -> str | None:

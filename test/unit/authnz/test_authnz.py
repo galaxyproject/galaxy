@@ -11,6 +11,11 @@ from unittest.mock import (
 )
 
 import pytest
+from social_core.exceptions import (
+    AuthCanceled,
+    AuthForbidden,
+    AuthTokenError,
+)
 from social_core.utils import setting_name
 from webob.exc import HTTPFound
 
@@ -237,18 +242,22 @@ def test_refresh_expiring_oidc_tokens_returns_none_after_successful_refresh(mock
     backend.refresh.assert_called_once_with(trans, auth)
 
 
-def test_refresh_expiring_oidc_tokens_returns_provider_on_terminal_refresh_failure(mock_app):
+@pytest.mark.parametrize(
+    "refresh_exception",
+    [
+        AuthTokenError(backend=None),
+        AuthCanceled(backend=None),
+        AuthForbidden(backend=None),
+    ],
+)
+def test_refresh_expiring_oidc_tokens_returns_provider_on_terminal_refresh_failure(mock_app, refresh_exception):
     _, oidc_path = create_oidc_config()
     _, backend_path = create_backend_config(provider_name="oidc")
     mock_app.config.oidc = {}
     manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
 
-    class RefreshFailure(Exception):
-        def __init__(self):
-            self.response = SimpleNamespace(status_code=400)
-
     backend = MagicMock()
-    backend.refresh.side_effect = RefreshFailure()
+    backend.refresh.side_effect = refresh_exception
 
     user = model.User(email="user@example.com", password="password")
     auth = model.UserAuthnzToken(provider="oidc", uid="user-1", extra_data={"refresh_token": "refresh"}, user=user)
@@ -259,6 +268,27 @@ def test_refresh_expiring_oidc_tokens_returns_provider_on_terminal_refresh_failu
         reauth_provider = manager.refresh_expiring_oidc_tokens(trans)
 
     assert reauth_provider == "oidc"
+    backend.refresh.assert_called_once_with(trans, auth)
+
+
+def test_refresh_expiring_oidc_tokens_returns_none_on_unexpected_refresh_failure(mock_app):
+    _, oidc_path = create_oidc_config()
+    _, backend_path = create_backend_config(provider_name="oidc")
+    mock_app.config.oidc = {}
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+
+    backend = MagicMock()
+    backend.refresh.side_effect = RuntimeError("unexpected refresh failure")
+
+    user = model.User(email="user@example.com", password="password")
+    auth = model.UserAuthnzToken(provider="oidc", uid="user-1", extra_data={"refresh_token": "refresh"}, user=user)
+    user.social_auth.append(auth)
+    trans = SimpleNamespace(user=user, app=SimpleNamespace(config=SimpleNamespace(oidc_require_refresh=True)))
+
+    with patch.object(manager, "_get_authnz_backend", return_value=(True, None, backend)):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(trans)
+
+    assert reauth_provider is None
     backend.refresh.assert_called_once_with(trans, auth)
 
 
