@@ -56,13 +56,13 @@ _test:
 
 test: setup-venv _test
 
-_dist: galaxy/web_client/client_build_hash.txt
+_dist: src/galaxy/web_client/client_build_hash.txt
 	uv build -o $(DIST)
 	ls -l $(DIST)
 
 dist: clean _dist
 
-galaxy/web_client/client_build_hash.txt:
+src/galaxy/web_client/client_build_hash.txt:
 	# Use the main Galaxy virtualenv, since that's what `make client-production` uses
 	cd ../..; \
 		uv venv --allow-existing $(VENV); \

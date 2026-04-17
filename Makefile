@@ -178,12 +178,6 @@ update-cwl-conformance-tests: ## update CWL conformance tests
 skip-client: ## Run only the server, skipping the client build.
 	GALAXY_SKIP_CLIENT_BUILD=1 sh run.sh
 
-node-deps: ## Install NodeJS dependencies.
-ifndef PNPM
-	corepack enable pnpm;
-endif
-	$(IN_VENV) pnpm install $(PNPM_INSTALL_OPTS)
-
 client-node-deps: ## Install NodeJS dependencies for the client.
 ifndef PNPM
 	corepack enable pnpm;
@@ -217,8 +211,8 @@ lint-api-schema: build-api-schema
 update-navigation-schema: client-node-deps
 	$(IN_VENV) cd client && node navigation_to_schema.mjs
 
-install-client: node-deps ## Install prebuilt client as defined in root package.json
-	$(IN_VENV) pnpm install && pnpm run stage
+install-client: ## Install prebuilt client wheel from PyPI matching the current Galaxy version
+	$(IN_VENV) pip install "galaxy-web-client==$$(PYTHONPATH=lib python -c 'from galaxy.version import VERSION; print(VERSION)')"
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
 	$(IN_VENV) cd client && $(NODE_ENV) pnpm run build
