@@ -180,6 +180,12 @@ class GTNSearchDB:
             tmp_path.unlink(missing_ok=True)
             raise FileNotFoundError(f"GTN database not found at {self.db_path} and download failed: {e}") from e
 
+    def refresh(self) -> None:
+        """Force-redownload the database from ``download_url``, replacing any local copy."""
+        if self.db_path.exists():
+            self.db_path.unlink()
+        self._download_database()
+
     def _get_connection(self) -> sqlite3.Connection:
         """Open a read-only, autocommit connection to the GTN database."""
         conn = sqlite3.connect(
