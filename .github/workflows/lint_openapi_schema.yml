@@ -35,7 +35,7 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: 'galaxy root/client/package.json'
       - uses: actions/setup-python@v6
