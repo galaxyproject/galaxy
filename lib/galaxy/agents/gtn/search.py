@@ -167,8 +167,13 @@ class GTNSearchDB:
             raise FileNotFoundError(f"GTN database not found at {self.db_path} and download failed: {e}") from e
 
     def _get_connection(self) -> sqlite3.Connection:
-        """Get a database connection."""
-        conn = sqlite3.connect(str(self.db_path))
+        """Open a read-only, autocommit connection to the GTN database."""
+        conn = sqlite3.connect(
+            f"file:{self.db_path}?mode=ro",
+            uri=True,
+            isolation_level=None,
+            check_same_thread=False,
+        )
         conn.row_factory = sqlite3.Row
         return conn
 
