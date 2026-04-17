@@ -1,3 +1,8 @@
+from collections.abc import (
+    Callable,
+    Iterable,
+)
+
 from sqlalchemy import (
     and_,
     false,
@@ -99,3 +104,18 @@ def get_private_role_user_emails_dict(session, role_ids: set[int] | None = None)
         stmt = stmt.where(UserRoleAssociation.role_id.in_(role_ids))
     roleid_email_tuples = session.execute(stmt).all()
     return dict(roleid_email_tuples)
+
+
+def role_name_id_pairs(
+    roles: Iterable[Role],
+    private_role_emails: dict[int, str],
+    encode_id: Callable[[int], str],
+) -> list[list[str]]:
+    """Build [displayed_name, encoded_id] pairs for a set of roles.
+
+    Private roles render as the owning user's email (looked up via
+    ``private_role_emails``); other roles render as their role name.
+    The return shape matches RoleNameIdTuple in the API schema, which
+    is declared as list[str] (a 2-element array on the wire).
+    """
+    return [[private_role_emails.get(role.id, role.name), encode_id(role.id)] for role in roles]

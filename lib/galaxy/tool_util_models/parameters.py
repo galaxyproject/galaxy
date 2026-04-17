@@ -609,12 +609,7 @@ class CollectionElementCollectionRequestUri(StrictModel):
         validation_alias=AliasChoices("identifier", "name"),
     )
     collection_type: StrictStr
-    elements: List[
-        Annotated[
-            Union["CollectionElementCollectionRequestUri", CollectionElementDataRequestUri],
-            Field(discriminator="class_"),
-        ]
-    ]
+    elements: List["CollectionRequestUriElement"]
 
     @model_validator(mode="before")
     @classmethod
@@ -628,14 +623,39 @@ class CollectionElementCollectionRequestUri(StrictModel):
         return data
 
 
+def _collection_element_discriminator(value: Any) -> Optional[str]:
+    if isinstance(value, dict):
+        return value.get("class") or value.get("class_")
+    return getattr(value, "class_", None)
+
+
+# A callable Discriminator avoids the PydanticJsonSchemaWarning emitted for
+# the recursive Field(discriminator="class_") on this self-referential union;
+# json_schema_extra restores the OpenAPI discriminator metadata.
+CollectionRequestUriElement = Annotated[
+    Union[
+        Annotated[CollectionElementCollectionRequestUri, Tag("Collection")],
+        Annotated[CollectionElementDataRequestUri, Tag("File")],
+    ],
+    Discriminator(_collection_element_discriminator),
+    Field(
+        json_schema_extra={
+            "discriminator": {
+                "propertyName": "class",
+                "mapping": {
+                    "Collection": "#/components/schemas/CollectionElementCollectionRequestUri",
+                    "File": "#/components/schemas/CollectionElementDataRequestUri",
+                },
+            }
+        }
+    ),
+]
+
+
 class DataRequestCollectionUri(StrictModel):
     class_: Literal["Collection"] = Field(..., alias="class")
     collection_type: str
-    elements: List[
-        Annotated[
-            Union[CollectionElementCollectionRequestUri, CollectionElementDataRequestUri], Field(discriminator="class_")
-        ]
-    ]
+    elements: List[CollectionRequestUriElement]
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
@@ -658,6 +678,7 @@ DataRequestLdda.model_rebuild()
 DataRequestDce.model_rebuild()
 DataRequestUri.model_rebuild()
 DataRequestHdca.model_rebuild()
+CollectionElementCollectionRequestUri.model_rebuild()
 DataRequestCollectionUri.model_rebuild()
 
 DataOrCollectionRequestAdapter: TypeAdapter[DataOrCollectionRequest] = TypeAdapter(DataOrCollectionRequest)

@@ -2394,7 +2394,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return sa_session.execute(stmnt.order_by(model.StoredWorkflow.id.desc()).limit(1)).scalar()
 
 
-def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> str:
+def safe_wraps(v: Any, nxt: SerializerFunctionWrapHandler) -> Any:
     try:
         return nxt(v)
     except Exception:

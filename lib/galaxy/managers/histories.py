@@ -15,6 +15,7 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+from uuid import UUID
 
 from sqlalchemy import (
     asc,
@@ -718,6 +719,11 @@ class HistoryExportManager:
         if "target_uri" in payload_raw:
             payload = WriteStoreToPayload.model_construct(**payload_raw)
         else:
+            # UUID field bypasses validation under model_construct, so coerce the
+            # stored string to UUID so Pydantic's serializer emits it cleanly.
+            request_id = payload_raw.get("short_term_storage_request_id")
+            if isinstance(request_id, str):
+                payload_raw["short_term_storage_request_id"] = UUID(request_id)
             payload = ShortTermStoreExportPayload.model_construct(**payload_raw)
         request_data = ExportObjectRequestMetadata.model_construct(
             object_id=request_data_raw.get("object_id"),

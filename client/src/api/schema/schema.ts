@@ -8459,8 +8459,8 @@ export interface components {
         /** CollectionElementCollectionRequestUri */
         CollectionElementCollectionRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "Collection";
             /** Collection Type */
@@ -8479,8 +8479,8 @@ export interface components {
         /** CollectionElementDataRequestUri */
         CollectionElementDataRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "File";
             /** Created From Basename */
@@ -20712,7 +20712,7 @@ export interface components {
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
-            workflow: string;
+            workflow: unknown;
         };
         /** RegexJobMessage */
         RegexJobMessage: {

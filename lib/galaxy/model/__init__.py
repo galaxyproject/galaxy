@@ -10230,7 +10230,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def add_message(self, message: "InvocationMessageUnion"):
 
-        message_dict = message.dict(
+        message_dict = message.model_dump(
             exclude_unset=True,
             exclude={"history_id"},  # history_id comes in through workflow_invocation and isn't persisted in database
         )

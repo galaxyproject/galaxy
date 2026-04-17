@@ -22,6 +22,10 @@ from fastapi import (
     Response,
     status,
 )
+from pydantic import (
+    Discriminator,
+    Tag,
+)
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
@@ -183,6 +187,19 @@ IndexExportsAcceptHeader = Annotated[
     ],
     AcceptHeaderValidator,
     Header(description="Accept header to determine the response format. Default is 'application/json'."),
+]
+
+
+def _index_exports_response_discriminator(value: Any) -> str:
+    return "tasks" if isinstance(value, ExportTaskListResponse) else "jobs"
+
+
+IndexExportsResponse = Annotated[
+    Union[
+        Annotated[JobExportHistoryArchiveListResponse, Tag("jobs")],
+        Annotated[ExportTaskListResponse, Tag("tasks")],
+    ],
+    Discriminator(_index_exports_response_discriminator),
 ]
 
 
@@ -551,7 +568,7 @@ class FastAPIHistories:
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         accept: IndexExportsAcceptHeader = "application/json",
-    ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
+    ) -> IndexExportsResponse:
         """
         By default the legacy job-based history exports (jeha) are returned.
 

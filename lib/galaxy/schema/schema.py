@@ -22,11 +22,13 @@ from pydantic import (
     BaseModel,
     BeforeValidator,
     ConfigDict,
+    Discriminator,
     Field,
     HttpUrl,
     Json,
     model_validator,
     RootModel,
+    Tag,
     UUID4,
 )
 from pydantic_core import core_schema
@@ -1979,11 +1981,25 @@ class ExportObjectType(str, Enum):
     INVOCATION = "invocation"
 
 
+def _store_export_payload_discriminator(value: Any) -> str:
+    # Route untagged persisted/constructed payloads to the right union branch
+    # without requiring a tag field on the payload classes themselves.
+    if isinstance(value, dict):
+        return "short_term" if "short_term_storage_request_id" in value else "write"
+    return "short_term" if isinstance(value, ShortTermStoreExportPayload) else "write"
+
+
 class ExportObjectRequestMetadata(Model):
     object_id: EncodedDatabaseIdField
     object_type: ExportObjectType
     user_id: Optional[EncodedDatabaseIdField] = None
-    payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
+    payload: Annotated[
+        Union[
+            Annotated[WriteStoreToPayload, Tag("write")],
+            Annotated[ShortTermStoreExportPayload, Tag("short_term")],
+        ],
+        Discriminator(_store_export_payload_discriminator),
+    ]
 
 
 class ExportObjectResultMetadata(Model):

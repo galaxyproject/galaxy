@@ -871,7 +871,7 @@ class TabularToolDataField(Dictifiable):
         rval = super().to_dict(view, value_mapper)
         rval["name"] = self.data["value"]
         rval["fields"] = self.data
-        rval["base_dir"] = (self.get_base_dir(),)
+        rval["base_dir"] = [self.get_base_dir()]
         rval["files"] = self.get_filesize_map(True)
         rval["fingerprint"] = self.get_fingerprint()
         return rval

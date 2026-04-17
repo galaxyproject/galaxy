@@ -395,7 +395,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             duration=short_term_storage_target.duration,
             user=trans.async_request_user,
             export_association_id=export_association.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
@@ -412,7 +412,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             user=trans.async_request_user,
             history_id=history.id,
             export_association_id=export_association.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
