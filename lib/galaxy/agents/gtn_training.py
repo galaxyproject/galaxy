@@ -51,9 +51,12 @@ class GTNTrainingAgent(BaseGalaxyAgent):
     def __init__(self, deps: GalaxyAgentDependencies):
         super().__init__(deps)
 
+        db_path = getattr(deps.config, "gtn_database_path", None)
+        download_url = getattr(deps.config, "gtn_database_url", None)
+
         self.gtn_db: GTNSearchDB | None = None
         try:
-            self.gtn_db = GTNSearchDB()
+            self.gtn_db = GTNSearchDB(db_path=db_path, download_url=download_url)
             log.info("GTN database initialized successfully")
         except (OSError, RuntimeError) as e:
             log.warning(f"GTN database not available: {e}")
