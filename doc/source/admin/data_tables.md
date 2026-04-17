@@ -146,7 +146,8 @@ more than one version, append the version:
 
 ```
 black-forest-labs/FLUX.1-dev
-black-forest-labs/FLUX.1-dev_2
+sentence-transformers/all-MiniLM-L6-v2
+openai/whisper-large-v3_3.0
 ```
 
 **`pipeline_tag` (column 2)**
@@ -206,6 +207,15 @@ only relevant model types are shown to the user.  Add a `version` or
         <!-- <filter type="static_value" column="4" value="<free_tag>"/> -->
     </options>
 </param>
+```
+
+Example from the Flux tool (filters by `free_tag` to restrict to Flux-specific model variants):
+
+```xml
+<options from_data_table="huggingface">
+    <filter type="static_value" column="4" value="flux"/>
+    <filter type="static_value" column="5" value="1"/>
+</options>
 ```
 
 ### Example `.loc` entry
