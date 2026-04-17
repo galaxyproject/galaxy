@@ -3,12 +3,77 @@ from sqlalchemy import DDL
 # function name prefix
 fn_prefix = "fn_audit_history_by"
 
+# channel used by pg_notify so HistoryAuditMonitor can LISTEN for updates
+NOTIFY_CHANNEL = "galaxy_history_update"
+
 # map between source table and associated incoming id field
 trigger_config = {
     "history_dataset_association": "history_id",
     "history_dataset_collection_association": "history_id",
     "history": "id",
 }
+
+
+def use_statement_trigger(version: int) -> bool:
+    """Return True when the postgres version supports the STATEMENT variant.
+
+    Fresh installs and the pg_notify migration share this predicate to ensure
+    the trigger function body (STATEMENT references new_table, ROW references NEW)
+    matches the trigger definition installed at that version.
+    """
+    return version > 10
+
+
+def build_trigger_fn(function_name: str, id_field: str, *, use_statement: bool, with_notify: bool = True) -> str:
+    """Build the plpgsql CREATE OR REPLACE FUNCTION body for an audit trigger.
+
+    Shared between runtime install (update_audit_table.install) and alembic
+    migrations so the two cannot drift.
+    """
+    if use_statement:
+        notify_block = (
+            f"""
+                    FOR _history_id IN SELECT DISTINCT {id_field} FROM new_table WHERE {id_field} IS NOT NULL
+                    LOOP
+                        PERFORM pg_notify('{NOTIFY_CHANNEL}', _history_id::text);
+                    END LOOP;
+            """
+            if with_notify
+            else ""
+        )
+        declare_block = "DECLARE _history_id integer;" if with_notify else ""
+        return f"""
+            CREATE OR REPLACE FUNCTION {function_name}()
+                RETURNS TRIGGER
+                LANGUAGE 'plpgsql'
+            AS $BODY$
+                {declare_block}
+                BEGIN
+                    INSERT INTO history_audit (history_id, update_time)
+                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
+                    FROM new_table
+                    WHERE {id_field} IS NOT NULL
+                    ON CONFLICT DO NOTHING;
+                    {notify_block}
+                    RETURN NULL;
+                END;
+            $BODY$
+        """
+    notify_stmt = f"PERFORM pg_notify('{NOTIFY_CHANNEL}', NEW.{id_field}::text);" if with_notify else ""
+    return f"""
+        CREATE OR REPLACE FUNCTION {function_name}()
+            RETURNS TRIGGER
+            LANGUAGE 'plpgsql'
+        AS $BODY$
+            BEGIN
+                INSERT INTO history_audit (history_id, update_time)
+                VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
+                ON CONFLICT DO NOTHING;
+                {notify_stmt}
+                RETURN NULL;
+            END;
+        $BODY$
+    """
 
 
 def install(engine):
@@ -41,54 +106,6 @@ def _postgres_install(engine):
 
     sql = []
 
-    # PostgreSQL trigger function template
-    # need to make separate functions purely because the incoming history_id field name will be
-    # different for different source tables. There may be a fancier way to dynamically choose
-    # between incoming fields, but having 2 triggers fns seems straightforward
-
-    def statement_trigger_fn(id_field):
-        fn = f"{fn_prefix}_{id_field}"
-
-        return f"""
-            CREATE OR REPLACE FUNCTION {fn}()
-                RETURNS TRIGGER
-                LANGUAGE 'plpgsql'
-            AS $BODY$
-                DECLARE
-                    _history_id integer;
-                BEGIN
-                    INSERT INTO history_audit (history_id, update_time)
-                    SELECT DISTINCT {id_field}, clock_timestamp() AT TIME ZONE 'UTC'
-                    FROM new_table
-                    WHERE {id_field} IS NOT NULL
-                    ON CONFLICT DO NOTHING;
-                    FOR _history_id IN SELECT DISTINCT {id_field} FROM new_table WHERE {id_field} IS NOT NULL
-                    LOOP
-                        PERFORM pg_notify('galaxy_history_update', _history_id::text);
-                    END LOOP;
-                    RETURN NULL;
-                END;
-            $BODY$
-        """
-
-    def row_trigger_fn(id_field):
-        fn = f"{fn_prefix}_{id_field}"
-
-        return f"""
-            CREATE OR REPLACE FUNCTION {fn}()
-                RETURNS TRIGGER
-                LANGUAGE 'plpgsql'
-            AS $BODY$
-                BEGIN
-                    INSERT INTO history_audit (history_id, update_time)
-                    VALUES (NEW.{id_field}, clock_timestamp() AT TIME ZONE 'UTC')
-                    ON CONFLICT DO NOTHING;
-                    PERFORM pg_notify('galaxy_history_update', NEW.{id_field}::text);
-                    RETURN NULL;
-                END;
-            $BODY$
-        """
-
     def trigger_def(source_table: str, id_field: str, operation: str, version: int, when: str = "AFTER") -> str:
         fn = f"{fn_prefix}_{id_field}"
         # PostgreSQL supports many triggers per operation/table so the label can
@@ -100,7 +117,7 @@ def _postgres_install(engine):
         # The use of the keyword PROCEDURE here is historical and deprecated (https://www.postgresql.org/docs/11/sql-createtrigger.html).
         function_keyword = "FUNCTION" if version >= 11 else "PROCEDURE"
         create_or_replace = "CREATE OR REPLACE" if version >= 14 else "CREATE"
-        if version >= 10 and when == "AFTER":
+        if use_statement_trigger(version) and when == "AFTER":
             return f"""
                 {create_or_replace} TRIGGER {trigger_name}
                 AFTER {operation}
@@ -121,10 +138,11 @@ def _postgres_install(engine):
 
     # pick row or statement triggers depending on postgres version
     version = engine.dialect.server_version_info[0]
-    trigger_fn = statement_trigger_fn if version >= 10 else row_trigger_fn
+    statement = use_statement_trigger(version)
 
     for id_field in ["history_id", "id"]:
-        sql.append(trigger_fn(id_field))
+        fn_name = f"{fn_prefix}_{id_field}"
+        sql.append(build_trigger_fn(fn_name, id_field, use_statement=statement, with_notify=True))
 
     for source_table, id_field in trigger_config.items():
         for operation in ["UPDATE", "INSERT"]:
