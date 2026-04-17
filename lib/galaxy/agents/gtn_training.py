@@ -25,6 +25,7 @@ from .base import (
     AgentResponse,
     AgentType,
     BaseGalaxyAgent,
+    extract_usage_info,
     GalaxyAgentDependencies,
     normalize_llm_text,
 )
@@ -197,6 +198,16 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 )
 
             result = await self._run_with_retry(query)
+
+            usage = extract_usage_info(result)
+            if usage:
+                log.info(
+                    "GTN agent token usage: input=%s output=%s total=%s (query_len=%d)",
+                    usage.get("input_tokens", 0),
+                    usage.get("output_tokens", 0),
+                    usage.get("total_tokens", 0),
+                    len(query),
+                )
 
             if self._supports_structured_output():
                 if hasattr(result, "output"):
