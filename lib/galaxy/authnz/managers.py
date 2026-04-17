@@ -246,7 +246,7 @@ class AuthnzManager:
 
     def _get_authnz_backend(self, provider: str, idphint: str | None = None) -> tuple[bool, str, PSAAuthnz | None]:
         unified_provider_name = self._unify_provider_name(provider)
-        if unified_provider_name in self.oidc_backends_config:
+        if unified_provider_name is not None and unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
@@ -302,7 +302,13 @@ class AuthnzManager:
             indicating if reauthentication is required
         """
         try:
+            if auth.provider is None:
+                raise exceptions.AuthenticationFailed("Provider is not set")
             success, message, backend = self._get_authnz_backend(auth.provider)
+            if backend is None:
+                msg = f"Provider `{auth.provider}` not found"
+                log.error(msg)
+                return {"refreshed": False, "reauthentication_required": False}
             if success is False:
                 msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
                 log.error(msg)
@@ -350,6 +356,8 @@ class AuthnzManager:
         """
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            if backend is None:
+                return False, f"Provider `{provider}` not found", None
             if success is False:
                 return False, message, None
             # Check allowed IDPs for providers that support idphint (keycloak, cilogon)
@@ -404,6 +412,8 @@ class AuthnzManager:
     def create_user(self, provider: str, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
         try:
             success, message, backend = self._get_authnz_backend(provider)
+            if backend is None:
+                raise ValueError(f"Provider `{provider}` not found")
             if success is False:
                 return False, message, (None, None)
             return success, message, backend.create_user(token, trans, login_redirect_url)
