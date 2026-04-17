@@ -164,7 +164,7 @@ class FastAPIAdminVisualizations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> StagingResultResponse:
-        """Stage all visualization assets from config/plugins to static/plugins for Galaxy to serve."""
+        """Stage all visualization assets into Galaxy's static serving directory."""
         return self.service.stage_all_visualizations(trans)
 
     @router.delete(
@@ -261,5 +261,5 @@ class FastAPIAdminVisualizations:
         viz_id: VisualizationIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> VisualizationStagingResultResponse:
-        """Stage assets for a specific visualization from config/plugins to static/plugins."""
+        """Stage assets for a specific visualization into Galaxy's static serving directory."""
         return self.service.stage_visualization(trans, viz_id)

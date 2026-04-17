@@ -3,8 +3,8 @@
         <Heading id="visualizations-admin-heading" h1 size="lg">Visualizations Management</Heading>
 
         <p class="text-muted mb-3">
-            Install and manage visualization packages from the npm registry. Installed visualizations are automatically
-            staged so Galaxy can serve them to users.
+            Install and manage visualization packages from the npm registry. Installed packages are kept separately from
+            Galaxy's served static assets and staged into the serving directory when needed.
         </p>
 
         <b-tabs v-model="activeTabIndex" class="mb-3">
@@ -153,8 +153,8 @@
         <!-- Staging Tab -->
         <div v-if="activeTab === 'staging'">
             <p class="text-muted mb-3">
-                Staging copies visualization assets into Galaxy's static serving directory. Visualizations are
-                automatically staged after installation, but you can manually re-stage here if needed.
+                Staging copies visualization assets into Galaxy's static serving directory. Install and update actions
+                automatically re-stage packages, and you can manually re-stage here if needed.
             </p>
             <div class="row">
                 <div class="col-md-6">
@@ -401,8 +401,10 @@ async function handleUpdate(viz: Visualization, newVersion: string) {
 
     try {
         await updateVisualization(viz.id, newVersion);
-        toast.success(`Updated ${viz.id} to version ${newVersion}`);
+        await stageVisualization(viz.id);
+        toast.success(`Updated and staged ${viz.id} to version ${newVersion}`);
         await loadInstalledPackages();
+        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to update ${viz.id}: ${errorMessage(error)}`);
     } finally {
@@ -423,6 +425,7 @@ async function handleUninstall(viz: Visualization) {
         await uninstallVisualization(viz.id);
         toast.success(`Uninstalled ${viz.id}`);
         await loadInstalledPackages();
+        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to uninstall ${viz.id}: ${errorMessage(error)}`);
     } finally {
@@ -455,17 +458,11 @@ async function confirmInstall(vizId: string) {
 
     try {
         await installVisualization(vizId, selectedVisualization.value!.name, selectedVisualization.value!.version);
+        await stageVisualization(vizId);
         showInstallModal.value = false;
-
-        // Auto-stage so the visualization is immediately available
-        try {
-            await stageVisualization(vizId);
-            toast.success(`Installed and staged ${vizId} -- it should now be available to users`);
-        } catch {
-            toast.warning(`Installed ${vizId}, but staging failed. Go to the Staging tab to stage it manually.`);
-        }
-
+        toast.success(`Installed and staged ${vizId}`);
         await loadInstalledPackages();
+        await loadStagingStatus();
     } catch (error) {
         toast.error(`Failed to install ${vizId}: ${errorMessage(error)}`);
     } finally {
