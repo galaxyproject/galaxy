@@ -224,7 +224,7 @@ class AdminVisualizationsService(ServiceBase):
         )
 
     def stage_all_visualizations(self, trans: ProvidesUserContext) -> StagingResultResponse:
-        """Stage all visualization assets from config/plugins to static/plugins."""
+        """Stage all visualization assets from managed and legacy sources to static/plugins."""
         try:
             result = self.package_manager.stage_all_visualizations()
 
