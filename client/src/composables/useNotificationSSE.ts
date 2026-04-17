@@ -26,11 +26,9 @@ export type SSEEventType = (typeof SSE_EVENT_TYPES)[number];
 export function useSSE(onEvent: (event: MessageEvent) => void, eventTypes: readonly SSEEventType[] = SSE_EVENT_TYPES) {
     const connected = ref(false);
     let eventSource: EventSource | null = null;
-    let consecutiveErrors = 0;
 
     function connect() {
         disconnect();
-        consecutiveErrors = 0;
         const url = withPrefix("/api/events/stream");
         eventSource = new EventSource(url);
 
@@ -40,22 +38,18 @@ export function useSSE(onEvent: (event: MessageEvent) => void, eventTypes: reado
 
         eventSource.onopen = () => {
             connected.value = true;
-            consecutiveErrors = 0;
             // Expose a global readiness flag so Selenium tests can distinguish
             // a working SSE pipeline from the polling fallback.
             (window as unknown as { __galaxy_sse_connected?: boolean }).__galaxy_sse_connected = true;
         };
 
         eventSource.onerror = () => {
+            // EventSource auto-reconnects natively; SSE-vs-polling is a
+            // config-level decision (see historyStore / notificationsStore),
+            // so we must not give up on transient errors here — doing so
+            // would leave the client with no updates at all.
             connected.value = false;
             (window as unknown as { __galaxy_sse_connected?: boolean }).__galaxy_sse_connected = false;
-            consecutiveErrors++;
-            // EventSource auto-reconnects, but if we get too many errors
-            // in a row, the server likely doesn't support SSE — give up
-            // and let the caller fall back to polling.
-            if (consecutiveErrors > 5) {
-                disconnect();
-            }
         };
     }
 

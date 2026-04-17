@@ -17,6 +17,7 @@ import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useSSE } from "@/composables/useNotificationSSE";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useConfigStore } from "@/stores/configurationStore";
 import {
     createAndSelectNewHistory,
     getCurrentHistoryFromServer,
@@ -396,7 +397,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     // SSE-driven history updates: when we receive a history_update event,
     // immediately trigger a refresh of the current history
     const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
-    const { connect: sseHistoryConnect, connected: sseHistoryConnected } = useSSE(
+    const { connect: sseHistoryConnect, disconnect: sseHistoryDisconnect } = useSSE(
         handleHistorySSEEvent,
         SSE_HISTORY_EVENT_TYPES,
     );
@@ -418,41 +419,70 @@ export const useHistoryStore = defineStore("historyStore", () => {
             console.error("Error handling history SSE event:", e);
         }
     }
-    const {
-        startWatchingResource: startWatchingHistory,
-        stopWatchingResource: stopWatchingHistory,
-        isWatchingResource: isWatchingHistory,
-    } = useResourceWatcher(watchHistory, {
-        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-        longPollingInterval: INACTIVE_POLLING_INTERVAL,
-    });
 
-    // When the SSE pipeline is live it delivers history_update events directly
-    // and we stop the 3-second poll. If SSE drops (server unsupported, repeated
-    // errors, network blip) the watch below resumes polling as the fallback.
+    // Choose between SSE and polling based on the server config flag
+    // `enable_sse_history_updates`. SSE success at the socket level is not a
+    // reliable proxy: the `/api/events/stream` endpoint accepts connections
+    // even when the HistoryAuditMonitor is disabled, so relying on the
+    // EventSource `connected` state would silently stop polling without any
+    // events ever arriving.
     //
-    // The public `startWatchingHistory` alias is called from many places (component
-    // mounts, upload/tool/workflow completion callbacks). We must NOT reconnect SSE
-    // on every call — that would flap `connected` false→true repeatedly, and
-    // `onopen` may never stably fire. Initialize SSE exactly once.
-    let sseInitialized = false;
+    // `useResourceWatcher` is instantiated lazily because it registers a
+    // `visibilitychange` listener that calls `startWatchingResourceIfNeeded`
+    // every time the tab regains focus — in SSE mode that would re-start
+    // polling we explicitly don't want.
+    const isWatchingHistory = ref(false);
+    let watchingInitialized = false;
+    let stopWatchingHistoryResource: (() => void) | null = null;
     function startWatchingHistoryWithSSE() {
-        if (sseInitialized) {
+        if (watchingInitialized) {
             return;
         }
-        sseInitialized = true;
-        sseHistoryConnect();
-        watch(
-            sseHistoryConnected,
-            (isConnected) => {
-                if (isConnected) {
-                    stopWatchingHistory();
-                } else {
-                    startWatchingHistory();
-                }
-            },
-            { immediate: true },
-        );
+        watchingInitialized = true;
+
+        const configStore = useConfigStore();
+        const decide = () => {
+            if (configStore.config?.enable_sse_history_updates) {
+                // SSE delivers incremental updates only; the store still needs
+                // a baseline fetch so the history panel isn't empty until the
+                // first change arrives.
+                watchHistory().catch((err) => console.warn("Initial history load failed", err));
+                sseHistoryConnect();
+            } else {
+                // The resource watcher fires its handler once immediately and
+                // then re-schedules on the polling interval, which covers the
+                // initial load as well as ongoing updates.
+                const { startWatchingResource, stopWatchingResource, isWatchingResource } = useResourceWatcher(
+                    watchHistory,
+                    {
+                        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+                        longPollingInterval: INACTIVE_POLLING_INTERVAL,
+                    },
+                );
+                stopWatchingHistoryResource = stopWatchingResource;
+                watch(isWatchingResource, (v) => (isWatchingHistory.value = v), { immediate: true });
+                startWatchingResource();
+            }
+        };
+
+        if (configStore.isLoaded) {
+            decide();
+        } else {
+            const stop = watch(
+                () => configStore.isLoaded,
+                (loaded) => {
+                    if (loaded) {
+                        stop();
+                        decide();
+                    }
+                },
+            );
+        }
+    }
+
+    function stopWatchingHistory() {
+        sseHistoryDisconnect();
+        stopWatchingHistoryResource?.();
     }
 
     async function loadHistoryById(historyId: string) {

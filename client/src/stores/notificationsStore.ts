@@ -5,6 +5,7 @@ import { GalaxyApi } from "@/api";
 import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { useSSE } from "@/composables/useNotificationSSE";
+import { useConfigStore } from "@/stores/configurationStore";
 import { rethrowSimple } from "@/utils/simple-error";
 import { mergeObjectListsById } from "@/utils/utils";
 
@@ -21,47 +22,12 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
     const loadingNotifications = ref<boolean>(false);
     const lastNotificationUpdate = ref<Date | null>(null);
-    const wantSSE = ref(true);
 
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     // --- SSE setup (listen only for notification event types) ---
     const NOTIFICATION_EVENT_TYPES = ["notification_update", "broadcast_update", "notification_status"] as const;
-    const {
-        connect: sseConnect,
-        disconnect: sseDisconnect,
-        connected: sseConnected,
-    } = useSSE(handleSSEEvent, NOTIFICATION_EVENT_TYPES);
-
-    // --- Polling fallback ---
-    const { startWatchingResource: startPolling, stopWatchingResource: stopPolling } = useResourceWatcher(
-        getNotificationStatus,
-        {
-            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-            longPollingInterval: INACTIVE_POLLING_INTERVAL,
-        },
-    );
-
-    function stopWatchingNotifications() {
-        sseDisconnect();
-        stopPolling();
-    }
-
-    // When SSE connection drops and doesn't recover, fall back to polling
-    watch(sseConnected, (isConnected) => {
-        if (!isConnected && wantSSE.value) {
-            // SSE disconnected but we still want updates — don't start polling
-            // immediately, EventSource will auto-reconnect. Only if useSSE is
-            // set to false (after too many errors) do we fall back.
-        }
-    });
-
-    watch(wantSSE, (wantSSE) => {
-        if (!wantSSE) {
-            sseDisconnect();
-            startPolling();
-        }
-    });
+    const { connect: sseConnect, disconnect: sseDisconnect } = useSSE(handleSSEEvent, NOTIFICATION_EVENT_TYPES);
 
     function handleSSEEvent(event: MessageEvent) {
         try {
@@ -145,6 +111,55 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         }
     }
 
+    // Choose between SSE and polling based on the server config flag
+    // `enable_notification_system`. The `/api/events/stream` endpoint accepts
+    // connections regardless of the flag, so we cannot rely on EventSource
+    // connectivity to decide — config is the source of truth.
+    //
+    // `useResourceWatcher` is instantiated lazily because it registers a
+    // `visibilitychange` listener that calls `startWatchingResourceIfNeeded`
+    // every time the tab regains focus — in SSE mode that would re-start
+    // polling we explicitly don't want.
+    let watchingInitialized = false;
+    let stopPolling: (() => void) | null = null;
+    function ensureWatchingWithConfig() {
+        if (watchingInitialized) {
+            return;
+        }
+        watchingInitialized = true;
+
+        const configStore = useConfigStore();
+        const decide = () => {
+            if (configStore.config?.enable_notification_system) {
+                sseConnect();
+            } else {
+                const { startWatchingResource: startPollingResource, stopWatchingResource } = useResourceWatcher(
+                    getNotificationStatus,
+                    {
+                        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+                        longPollingInterval: INACTIVE_POLLING_INTERVAL,
+                    },
+                );
+                stopPolling = stopWatchingResource;
+                startPollingResource();
+            }
+        };
+
+        if (configStore.isLoaded) {
+            decide();
+        } else {
+            const stop = watch(
+                () => configStore.isLoaded,
+                (loaded) => {
+                    if (loaded) {
+                        stop();
+                        decide();
+                    }
+                },
+            );
+        }
+    }
+
     async function startWatchingNotifications() {
         // Always do an initial load first
         if (!lastNotificationUpdate.value) {
@@ -161,11 +176,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
             }
         }
 
-        if (wantSSE.value) {
-            sseConnect();
-        } else {
-            startPolling();
-        }
+        ensureWatchingWithConfig();
     }
 
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
@@ -180,8 +191,9 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         if (request.changes.deleted) {
             notifications.value = notifications.value.filter((n) => !request.notification_ids.includes(n.id));
         }
-        // If not using SSE, trigger a poll to refresh state
-        if (!sseConnected.value) {
+        // If the notification system (and therefore SSE) is disabled, trigger
+        // a poll to refresh state after a local mutation.
+        if (!useConfigStore().config?.enable_notification_system) {
             startWatchingNotifications();
         }
     }
@@ -192,6 +204,11 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
     function updateUnreadCount() {
         totalUnreadCount.value = notifications.value.filter((n) => !n.seen_time).length;
+    }
+
+    function stopWatchingNotifications() {
+        sseDisconnect();
+        stopPolling?.();
     }
 
     return {
