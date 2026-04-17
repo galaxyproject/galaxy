@@ -254,7 +254,7 @@ if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
                 ;;
         esac
         # shellcheck disable=SC2086
-        if ! ${PIP_CMD} install "galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}" --extra-index-url "${GALAXY_WHEELS_INDEX_URL}"; then
+        if ! ${PIP_CMD} install "galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"; then
             echo "ERROR: Galaxy prebuilt client install failed.  See ./client/README.md for more information, including how to get help."
             exit 1
         fi
