@@ -771,33 +771,38 @@ class BamNative(CompressedArchive, _BamOrSam):
                 with pysam.AlignmentFile(dataset.get_file_name(), "rb", check_sq=False) as bamfile:
                     if ck_size is None:
                         ck_size = 300  # 300 lines
-                    if offset == 0:
-                        offset = bamfile.tell()
-                        ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
+                    if offset < bamfile.tell():
+                        # interpret an offset before the first alignment start as the index of
+                        # the header line at which the chunk should start
+                        header_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
+                        ck_lines = header_lines[offset:offset+ck_size]
+                        offset += len(ck_lines)
+                        if offset >= len(header_lines):
+                            # consumed the entire header, now jump forward to the first alignment
+                            offset = bamfile.tell()
                     else:
-                        bamfile.seek(offset)
                         ck_lines = []
-                    for line_number, alignment in enumerate(bamfile, len(ck_lines)):
-                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
-                        # FIXME: Can be problematic if bam has million lines of header
-                        if line_number >= ck_size:
-                            break
+                    if len(ck_lines) < ck_size:
+                        bamfile.seek(offset)
+                        for line_number, alignment in enumerate(bamfile, len(ck_lines)):
+                            if line_number >= ck_size:
+                                break
 
-                        offset = bamfile.tell()
-                        bamline = alignment.to_string()
-                        # With multiple tags, Galaxy would display each as a separate column
-                        # because the 'to_string()' function uses tabs also between tags.
-                        # Below code will turn these extra tabs into spaces.
-                        n_tabs = bamline.count("\t")
-                        if n_tabs > 11:
-                            bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
-                            bamline = f"{bamline} {' '.join(extra_tags)}"
-                        ck_lines.append(bamline)
-                    else:
-                        # Nothing to enumerate; we've either offset to the end
-                        # of the bamfile, or there is no data. (possible with
-                        # header-only bams)
-                        offset = -1
+                            offset = bamfile.tell()
+                            bamline = alignment.to_string()
+                            # With multiple tags, Galaxy would display each as a separate column
+                            # because the 'to_string()' function uses tabs also between tags.
+                            # Below code will turn these extra tabs into spaces.
+                            n_tabs = bamline.count("\t")
+                            if n_tabs > 11:
+                                bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
+                                bamline = f"{bamline} {' '.join(extra_tags)}"
+                            ck_lines.append(bamline)
+                        else:
+                            # Nothing to enumerate; we've either offset to the end
+                            # of the bamfile, or there is no data. (possible with
+                            # header-only bams)
+                            offset = -1
                     ck_data = "\n".join(ck_lines)
             except Exception as e:
                 offset = -1
