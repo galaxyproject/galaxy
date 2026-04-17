@@ -775,7 +775,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                         # interpret an offset before the first alignment start as the index of
                         # the header line at which the chunk should start
                         header_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
-                        ck_lines = header_lines[offset:offset + ck_size]
+                        ck_lines = header_lines[offset : offset + ck_size]
                         offset += len(ck_lines)
                         if offset >= len(header_lines):
                             # consumed the entire header, now jump forward to the first alignment
