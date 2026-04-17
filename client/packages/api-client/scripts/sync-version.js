@@ -13,7 +13,7 @@ import { fileURLToPath } from "url";
 // Get directory paths
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const galaxyRoot = process.env.GALAXY_ROOT || path.resolve(__dirname, "../..");
+const galaxyRoot = process.env.GALAXY_ROOT || path.resolve(__dirname, "../../../..");
 const clientApiRoot = path.resolve(__dirname, "..");
 
 // File paths

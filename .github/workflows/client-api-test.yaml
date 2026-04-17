@@ -2,12 +2,12 @@ name: Client API Testing
 on:
   push:
     paths:
-      - 'client-api/**'
+      - 'client/packages/api-client/**'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'
   pull_request:
     paths:
-      - 'client-api/**'
+      - 'client/packages/api-client/**'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'
 concurrency:
@@ -36,10 +36,10 @@ jobs:
         working-directory: client
       - name: Install client-api dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: client-api
+        working-directory: client/packages/api-client
       - name: Build client-api
         run: pnpm run build
-        working-directory: client-api
+        working-directory: client/packages/api-client
       - name: Run client-api tests
         run: pnpm test
-        working-directory: client-api
+        working-directory: client/packages/api-client
