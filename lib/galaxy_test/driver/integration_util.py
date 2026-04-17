@@ -37,6 +37,7 @@ from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
+from galaxy_test.base.testcase import host_port_and_url
 from .driver_util import GalaxyTestDriver
 
 if TYPE_CHECKING:
@@ -203,11 +204,7 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
 
     def _configure_interactor(self):
         # Setup attributes needed for API testing...
-        server_wrapper = self._test_driver.server_wrappers[0]
-        host = server_wrapper.host
-        port = server_wrapper.port
-        prefix = server_wrapper.prefix or ""
-        self.url = f"http://{host}:{port}{prefix.rstrip('/')}/"
+        self.host, self.port, self.url = host_port_and_url(self._test_driver)
         self._setup_interactor()
 
     def restart(self, handle_reconfig=None):
