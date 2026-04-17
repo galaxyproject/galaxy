@@ -24,7 +24,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
         with:
-          package_json_file: 'galaxy root/package.json'
+          package_json_file: 'galaxy root/client/package.json'
       - name: get client commit
         id: client-commit
         shell: bash
