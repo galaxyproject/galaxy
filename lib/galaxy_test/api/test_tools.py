@@ -410,6 +410,47 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "--ex1" in option_values
         assert "ex2" in option_values
 
+    @skip_without_tool("gx_int")
+    def test_tool_interop(self):
+        """GET /api/tools/{tool_id}/interop returns ParsedTool JSON."""
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        assert interop["id"] == "gx_int"
+        assert "inputs" in interop
+        assert "outputs" in interop
+        assert len(interop["inputs"]) > 0
+
+    @skip_without_tool("gx_int")
+    def test_tool_interop_versioned(self):
+        """GET /api/tools/{tool_id}/versions/{version}/interop returns same result."""
+        # Get version from the unversioned endpoint first
+        response = self._get("tools/gx_int/interop")
+        self._assert_status_code_is(response, 200)
+        interop = response.json()
+        version = interop["version"]
+
+        versioned_response = self._get(f"tools/gx_int/versions/{version}/interop")
+        self._assert_status_code_is(versioned_response, 200)
+        versioned_interop = versioned_response.json()
+        assert versioned_interop["id"] == interop["id"]
+        assert versioned_interop["version"] == version
+        assert len(versioned_interop["inputs"]) == len(interop["inputs"])
+
+    @skip_without_tool("gx_int")
+    def test_versioned_schema_endpoints(self):
+        """Versioned /versions/{v}/parameter_*_schema endpoints mirror unversioned ones."""
+        response = self._get("tools/gx_int/parsed")
+        version = response.json()["version"]
+
+        for schema_type in ["request", "landing_request", "test_case_xml"]:
+            unversioned = self._get(f"tools/gx_int/parameter_{schema_type}_schema")
+            self._assert_status_code_is(unversioned, 200)
+
+            versioned = self._get(f"tools/gx_int/versions/{version}/parameter_{schema_type}_schema")
+            self._assert_status_code_is(versioned, 200)
+            assert unversioned.json() == versioned.json()
+
     @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self, mock_http_server):
         with self.dataset_populator.test_history() as history_id:
