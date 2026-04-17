@@ -7,8 +7,8 @@ configuration. When notifications are disabled the catch-up event is simply
 skipped; the stream still delivers other push events.
 """
 
+from collections.abc import AsyncIterator
 from typing import (
-    AsyncIterator,
     Optional,
 )
 

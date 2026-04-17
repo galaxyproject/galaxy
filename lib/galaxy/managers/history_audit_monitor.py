@@ -15,13 +15,13 @@ from collections import (
     defaultdict,
     OrderedDict,
 )
+from collections.abc import Iterator
 from datetime import (
     datetime,
     timedelta,
 )
 from typing import (
     Any,
-    Iterator,
     Optional,
 )
 
@@ -120,7 +120,7 @@ class HistoryAuditMonitor:
         self._thread: Optional[threading.Thread] = None
         self._active = False
         # Bounded LRU cache: history_id -> user_id, refreshed on miss.
-        self._history_owner_cache: "OrderedDict[int, int]" = OrderedDict()
+        self._history_owner_cache: OrderedDict[int, int] = OrderedDict()
 
     def start(self) -> None:
         if self._active:

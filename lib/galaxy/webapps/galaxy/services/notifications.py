@@ -1,6 +1,6 @@
+from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import (
-    AsyncIterator,
     NoReturn,
     Optional,
     Union,

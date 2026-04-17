@@ -8,12 +8,14 @@ to async SSE endpoint handlers running in the uvicorn event loop.
 import asyncio
 import logging
 from collections import defaultdict
-from dataclasses import dataclass
-from datetime import datetime
-from typing import (
+from collections.abc import (
     AsyncIterator,
     Awaitable,
     Callable,
+)
+from dataclasses import dataclass
+from datetime import datetime
+from typing import (
     Optional,
 )
 

@@ -71,7 +71,7 @@ class SSELineListener:
         self._collected: list[str] = []
         self._stop = threading.Event()
         self._ready = threading.Event()
-        self._errors: "queue.Queue[BaseException]" = queue.Queue()
+        self._errors: queue.Queue[BaseException] = queue.Queue()
         self._thread = threading.Thread(target=self._listen, daemon=True)
 
     def start(self) -> None:
@@ -130,7 +130,7 @@ class SSELineListener:
                 if self._stop.is_set():
                     break
             resp.close()
-        except BaseException as exc:
+        except Exception as exc:
             self._errors.put(exc)
             # Ensure start() doesn't hang forever on connection failure.
             self._ready.set()
