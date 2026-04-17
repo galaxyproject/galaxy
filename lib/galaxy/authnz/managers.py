@@ -1,7 +1,8 @@
 import builtins
 import logging
 from typing import (
-    Optional, TYPE_CHECKING,
+    Optional,
+    TYPE_CHECKING,
     TypedDict,
 )
 
@@ -9,7 +10,8 @@ import jwt as pyjwt
 from social_core.exceptions import (
     AuthAlreadyAssociated,
     AuthCanceled,
-    AuthForbidden, AuthTokenError,
+    AuthForbidden,
+    AuthTokenError,
 )
 
 from galaxy import (
@@ -234,7 +236,7 @@ class AuthnzManager:
         # None, if no allowed idp list is set, and a list of EntityIDs if configured (in oidc_backend)
         return self.allowed_idps
 
-    def _unify_provider_name(self, provider):
+    def _unify_provider_name(self, provider: str) -> str | None:
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
         for k, v in BACKENDS_NAME.items():
@@ -242,7 +244,7 @@ class AuthnzManager:
                 return k.lower()
         return None
 
-    def _get_authnz_backend(self, provider: str, idphint=None):
+    def _get_authnz_backend(self, provider: str, idphint: str | None = None) -> tuple[bool, str, PSAAuthnz | None]:
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
@@ -331,7 +333,9 @@ class AuthnzManager:
                 return auth.provider
         return None
 
-    def authenticate(self, provider, trans, idphint=None):
+    def authenticate(
+        self, provider: str, trans: GalaxyWebTransaction, idphint: str | None = None
+    ) -> tuple[bool, str, str | None]:
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
