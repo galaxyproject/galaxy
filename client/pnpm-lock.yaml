@@ -46,6 +46,9 @@ importers:
       '@fortawesome/vue-fontawesome':
         specifier: ^2.0.9
         version: 2.0.9(@fortawesome/fontawesome-svg-core@6.2.1)(vue@2.7.16)
+      '@galaxyproject/galaxy-api-client':
+        specifier: workspace:*
+        version: link:packages/api-client
       '@guolao/vue-monaco-editor':
         specifier: ^1.5.4
         version: 1.5.4(monaco-editor@0.52.2)(vue@2.7.16)

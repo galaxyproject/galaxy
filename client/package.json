@@ -42,6 +42,7 @@
     "@fortawesome/free-regular-svg-icons": "^5.15.4",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.9",
+    "@galaxyproject/galaxy-api-client": "workspace:*",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",
@@ -138,6 +139,7 @@
     "yaml": "^2.6.1"
   },
   "scripts": {
+    "postinstall": "pnpm --filter @galaxyproject/galaxy-api-client run build",
     "develop": "NODE_ENV=development vite",
     "build": "NODE_ENV=development node scripts/build.mjs && vite build && pnpm run stage-build",
     "build-production": "NODE_ENV=production node scripts/build.mjs && vite build && pnpm run stage-build",

@@ -197,7 +197,7 @@ remove-api-schema:
 	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema ## Update client API schema
-	$(IN_VENV) cd client && pnpm openapi-typescript ../_schema.yaml -o src/api/schema/schema.ts && pnpm prettier --write src/api/schema/schema.ts
+	$(IN_VENV) cd client && pnpm openapi-typescript ../_schema.yaml -o packages/api-client/src/schema/schema.ts && pnpm prettier --write packages/api-client/src/schema/schema.ts
 	$(IN_VENV) cd client && pnpm openapi-typescript ../_shed_schema.yaml -o ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && pnpm prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
