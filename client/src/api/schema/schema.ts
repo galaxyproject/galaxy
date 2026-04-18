@@ -15518,32 +15518,7 @@ export interface components {
             type: "in_range";
         };
         /** IncomingToolOutputCollection */
-        "IncomingToolOutputCollection-Input": {
-            /**
-             * hidden
-             * @description If true, the output will not be shown in the history.
-             */
-            hidden?: boolean | null;
-            /**
-             * label
-             * @description Output label. Will be used as dataset name in history.
-             */
-            label?: string | null;
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows.
-             */
-            name?: string | null;
-            /** structure */
-            structure: components["schemas"]["ToolOutputCollectionStructure"];
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "collection";
-        };
-        /** IncomingToolOutputCollection */
-        "IncomingToolOutputCollection-Output": {
+        IncomingToolOutputCollection: {
             /**
              * hidden
              * @description If true, the output will not be shown in the history.
@@ -24795,7 +24770,7 @@ export interface components {
              */
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection-Input"]
+                | components["schemas"]["IncomingToolOutputCollection"]
                 | components["schemas"]["ToolOutputText"]
                 | components["schemas"]["ToolOutputInteger"]
                 | components["schemas"]["ToolOutputFloat"]
@@ -24894,7 +24869,7 @@ export interface components {
              */
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection-Output"]
+                | components["schemas"]["IncomingToolOutputCollection"]
                 | components["schemas"]["ToolOutputText"]
                 | components["schemas"]["ToolOutputInteger"]
                 | components["schemas"]["ToolOutputFloat"]
@@ -26591,7 +26566,7 @@ export interface components {
              */
             outputs: (
                 | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection-Input"]
+                | components["schemas"]["IncomingToolOutputCollection"]
                 | components["schemas"]["ToolOutputText"]
                 | components["schemas"]["ToolOutputInteger"]
                 | components["schemas"]["ToolOutputFloat"]
