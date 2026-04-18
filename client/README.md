@@ -48,6 +48,18 @@ for inspection of live javascript to facilitate debugging, use:
 Important Note: The Galaxy repository does not include client script artifacts,
 and these should not be committed.
 
+## Workspace Packages
+
+`client/` is a pnpm workspace. Shared library-shaped code (currently just
+`@galaxyproject/galaxy-api-client`) lives under `packages/` as workspace
+members, consumed by the main client via `workspace:*` deps. See
+[packages/README.md](./packages/README.md) for the layout, the criteria
+for adding a package, and common `pnpm --filter` ops. Running `pnpm
+install` at `client/` handles the whole workspace (including building
+packages so their `dist/` is available to `vue-tsc` and production
+builds). Dev-mode edits to package source trigger HMR in the main client
+without a rebuild step.
+
 ## Automatic Rebuilding
 
 When you're actively developing, it is convenient to have the client
