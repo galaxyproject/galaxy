@@ -47,10 +47,21 @@ function d3v3CompatPlugin() {
     };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     // Use relative base so CSS asset references work with any proxy prefix.
     // The HTML script tags use url_for() which handles the prefix correctly.
     base: "./",
+    resolve:
+        command === "serve"
+            ? {
+                  // In dev, resolve @galaxyproject/* workspace packages directly to
+                  // source so edits trigger HMR without a rebuild. Production builds
+                  // use the packages' published dist/ via their package.json exports.
+                  alias: {
+                      "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts"),
+                  },
+              }
+            : {},
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -181,4 +192,4 @@ export default defineConfig({
             ],
         },
     },
-});
+}));
