@@ -187,7 +187,7 @@ class ShareableService:
             )
             # We can set force_sync=True here because we already have the set of users to notify
             # and there is no need to resolve them asynchronously as no groups or roles are involved.
-            self.notification_service.send_notification_internal(request, force_sync=True)
+            self.notification_service.notification_manager.send_notification_internal(request, force_sync=True)
 
 
 class SharedItemNotificationFactory:

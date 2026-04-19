@@ -38,7 +38,9 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         """The history_update event should contain the history's encoded ID."""
         history_id = self._create_history()
 
-        listener = SSELineListener(self._events_stream_url(), self.galaxy_interactor.api_key)
+        api_key = self.galaxy_interactor.api_key
+        assert api_key is not None
+        listener = SSELineListener(self._events_stream_url(), api_key)
         listener.start()
         try:
             self.dataset_populator.new_dataset(history_id, wait=False)
@@ -61,7 +63,9 @@ class TestHistorySSEIntegration(IntegrationTestCase):
 
         user_a_history_id = self._create_history()
 
-        listener = SSELineListener(self._events_stream_url(), self.galaxy_interactor.api_key)
+        api_key = self.galaxy_interactor.api_key
+        assert api_key is not None
+        listener = SSELineListener(self._events_stream_url(), api_key)
         listener.start()
         try:
             # User B creates a history and uploads to it. User A must NOT see this.

@@ -798,8 +798,6 @@ def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> N
             NotificationVariant,
             PersonalNotificationCategory,
         )
-        from galaxy.webapps.galaxy.services.notifications import NotificationService
-
         labels: dict[str, str] = {
             "email": "email address",
             "username": "public name",
@@ -819,7 +817,7 @@ def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> N
             ),
             galaxy_url=None,
         )
-        NotificationService(trans.app.notification_manager).send_notification_internal(request, force_sync=True)
+        trans.app.notification_manager.send_notification_internal(request, force_sync=True)
     except Exception as exc:
         log.warning("OIDC profile update notification failed for user %s: %s", user.id, exc)
 

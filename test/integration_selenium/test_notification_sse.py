@@ -94,7 +94,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # the UI still shows the notification, polling picked it up — a silent
         # regression this assertion catches.
         self._wait_for_sse_event_after(baseline_ts)
-        self.driver.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
+        self.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
         self.screenshot("notification_sse_after")
 
     @selenium_test
@@ -129,7 +129,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
 
         self._wait_for_sse_event_after(baseline_ts)
         # The indicator dot should appear on the bell (within the #activity-notifications element)
-        self.driver.wait_for_selector_visible(
+        self.wait_for_selector_visible(
             "#activity-notifications .indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000
         )
         self.screenshot("notification_bell_indicator")

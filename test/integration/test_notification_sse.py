@@ -94,7 +94,9 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
 
     def test_sse_receives_broadcast_events(self):
         """When a broadcast is created, the SSE stream should receive it."""
-        listener = SSELineListener(self._stream_url(), self.galaxy_interactor.api_key)
+        api_key = self.galaxy_interactor.api_key
+        assert api_key is not None
+        listener = SSELineListener(self._stream_url(), api_key)
         listener.start()
         try:
             subject = f"broadcast_sse_test_{uuid4()}"

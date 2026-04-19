@@ -6,7 +6,6 @@ from typing import (
     Union,
 )
 
-from galaxy.celery.tasks import send_notification_to_recipients_async
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
@@ -43,10 +42,7 @@ from galaxy.schema.notifications import (
     UserNotificationUpdateRequest,
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
 class NotificationService(ServiceBase):
@@ -87,28 +83,7 @@ class NotificationService(ServiceBase):
             recipients=payload.recipients,
             galaxy_url=galaxy_url,
         )
-        return self.send_notification_internal(request)
-
-    def send_notification_internal(
-        self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
-        """Sends a notification to a list of recipients (users, groups or roles).
-
-        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
-        in a background task.
-
-        Note: This function is meant for internal use from other services that don't need to check sender permissions.
-        """
-        if self.notification_manager.can_send_notifications_async and not force_sync:
-            result = send_notification_to_recipients_async.delay(request)
-            summary = async_task_summary(result)
-            return summary
-
-        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(request)
-        return NotificationCreatedResponse(
-            total_notifications_sent=recipient_user_count,
-            notification=NotificationResponse.model_validate(notification),
-        )
+        return self.notification_manager.send_notification_internal(request)
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest

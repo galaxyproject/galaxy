@@ -5,6 +5,7 @@ from typing import (
     cast,
     NamedTuple,
     Optional,
+    Union,
 )
 from urllib.parse import urlparse
 
@@ -28,6 +29,7 @@ from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
 from galaxy import util
+from galaxy.celery.helpers import async_task_summary
 from galaxy.config import (
     GalaxyAppConfiguration,
     templates,
@@ -57,6 +59,7 @@ from galaxy.schema.notifications import (
     NotificationBroadcastUpdateRequest,
     NotificationCategorySettings,
     NotificationChannelSettings,
+    NotificationCreatedResponse,
     NotificationCreateData,
     NotificationCreateRequest,
     NotificationRecipients,
@@ -67,6 +70,7 @@ from galaxy.schema.notifications import (
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
 )
+from galaxy.schema.schema import AsyncTaskResultSummary
 
 log = logging.getLogger(__name__)
 
@@ -178,6 +182,30 @@ class NotificationManager:
         self._notify_users_via_sse(user_ids, notification)
 
         return notification, notifications_sent
+
+    def send_notification_internal(
+        self, request: NotificationCreateRequest, force_sync: bool = False
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Sends a notification to a list of recipients (users, groups or roles).
+
+        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
+        in a background task.
+
+        Note: This function is meant for internal use from other callers that don't need to check sender permissions.
+        """
+        if self.can_send_notifications_async and not force_sync:
+            # Local import: galaxy.celery.tasks imports NotificationManager at module load,
+            # so importing it at module level here would be a circular dependency.
+            from galaxy.celery.tasks import send_notification_to_recipients_async
+
+            result = send_notification_to_recipients_async.delay(request)
+            return async_task_summary(result)
+
+        notification, recipient_user_count = self.send_notification_to_recipients(request)
+        return NotificationCreatedResponse(
+            total_notifications_sent=recipient_user_count,
+            notification=NotificationResponse.model_validate(notification),
+        )
 
     def _create_associations(self, notification: Notification, users: list[User]) -> int:
         success_count = 0
