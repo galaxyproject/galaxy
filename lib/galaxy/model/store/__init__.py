@@ -3082,7 +3082,7 @@ def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion
     """
     Builds a filename for a dataset using its name an extension.
     """
-    base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)
+    base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)[:150]
     if not conversion_key:
         return f"{base}_{encoded_id}.{ext}"
     else:
