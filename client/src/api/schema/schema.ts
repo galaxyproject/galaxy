@@ -23564,16 +23564,6 @@ export interface components {
              */
             requester_affiliation?: string | null;
             /**
-             * Requester email
-             * @description The email address of the requester for follow-up.
-             */
-            requester_email?: string | null;
-            /**
-             * Requester name
-             * @description The name of the person requesting the tool.
-             */
-            requester_name: string;
-            /**
              * Scientific domain
              * @description The scientific domain for the requested tool.
              */
