@@ -11,8 +11,6 @@ TOOL_REQUEST_PAYLOAD = {
     "requested_version": "0.12.1",
     "conda_available": True,
     "test_data_available": True,
-    "requester_name": "Dr. Smith",
-    "requester_email": "smith@example.com",
     "requester_affiliation": "Example University",
 }
 
@@ -63,9 +61,16 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
             len(tool_request_notifications) >= 1
         ), f"Expected at least one tool_request notification for admin, got: {notifications}"
 
-        notification = tool_request_notifications[0]
+        sender_notifications = [
+            n for n in tool_request_notifications if n["content"].get("requester_email") == user["email"]
+        ]
+        assert (
+            len(sender_notifications) >= 1
+        ), f"Expected notification from {user['email']}, got: {tool_request_notifications}"
+        notification = sender_notifications[0]
         assert notification["content"]["tool_name"] == TOOL_REQUEST_PAYLOAD["tool_name"]
-        assert notification["content"]["requester_name"] == TOOL_REQUEST_PAYLOAD["requester_name"]
+        assert notification["content"]["requester_name"] == user["username"]
+        assert notification["content"]["requester_email"] == user["email"]
         assert notification["content"]["description"] == TOOL_REQUEST_PAYLOAD["description"]
 
     def test_missing_required_fields_returns_400(self):
@@ -74,19 +79,18 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
         with self._different_user(user["email"]):
             # Missing tool_name and description (both required)
             incomplete_payload = {
-                "requester_name": "Dr. Smith",
+                "requester_affiliation": "Example University",
             }
             response = self._post("tool_request_form", data=incomplete_payload, json=True)
             self._assert_status_code_is(response, 400)
 
     def test_minimal_payload_succeeds(self):
-        """Only required fields should be enough to submit."""
+        """Only required fields (tool_name, description) should be enough to submit."""
         user = self._setup_user("tool_request_minimal@galaxy.test")
         with self._different_user(user["email"]):
             minimal_payload = {
                 "tool_name": "Samtools",
                 "description": "Tools for manipulating alignments in SAM format.",
-                "requester_name": "Dr. Jones",
             }
             response = self._post("tool_request_form", data=minimal_payload, json=True)
             self._assert_status_code_is(response, 204)
@@ -101,7 +105,6 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
                 "but not installed: toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17, "
                 "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13."
             ),
-            "requester_name": "Dr. Smith",
             "tool_ids": [
                 "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
                 "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
