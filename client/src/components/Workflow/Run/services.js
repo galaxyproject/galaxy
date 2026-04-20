@@ -4,7 +4,7 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 /**
  * Error thrown when a workflow cannot run because required tools are not installed.
@@ -37,7 +37,7 @@ export async function getRunData(workflowId, version = null, instance = false) {
     } catch (e) {
         const missingToolIds = e?.response?.data?.missing_tool_ids;
         if (missingToolIds && missingToolIds.length > 0) {
-            const errMsg = e?.response?.data?.err_msg || "Following tools are not installed.";
+            const errMsg = errorMessageAsString(e, "Following tools are not installed.");
             throw new WorkflowMissingToolsError(errMsg, missingToolIds);
         }
         rethrowSimple(e);
