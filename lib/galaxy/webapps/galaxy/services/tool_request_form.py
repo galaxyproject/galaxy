@@ -53,10 +53,6 @@ class ToolRequestFormData(Model):
     test_data_available: Optional[bool] = Field(
         None, title="Test data available", description="Whether test data for this tool is available."
     )
-    requester_name: str = Field(..., title="Requester name", description="The name of the person requesting the tool.")
-    requester_email: Optional[str] = Field(
-        None, title="Requester email", description="The email address of the requester for follow-up."
-    )
     requester_affiliation: Optional[str] = Field(
         None, title="Requester affiliation", description="The affiliation/lab of the requester."
     )
@@ -98,7 +94,7 @@ class ToolRequestFormService(ServiceBase):
         if not self.config.enable_tool_request_form:
             raise ServerNotConfiguredForRequest("The tool request form is not enabled in the configuration.")
 
-        if trans.anonymous:
+        if trans.anonymous or trans.user is None:
             raise AuthenticationRequired("You must be logged in to submit a tool request.")
 
         if not self.config.enable_notification_system:
@@ -116,8 +112,8 @@ class ToolRequestFormService(ServiceBase):
             requested_version=payload.requested_version,
             conda_available=payload.conda_available,
             test_data_available=payload.test_data_available,
-            requester_name=payload.requester_name,
-            requester_email=payload.requester_email,
+            requester_name=trans.user.username,
+            requester_email=trans.user.email,
             requester_affiliation=payload.requester_affiliation,
             tool_ids=payload.tool_ids,
             workflow_name=payload.workflow_name,
