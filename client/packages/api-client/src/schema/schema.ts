@@ -25121,12 +25121,12 @@ export interface components {
              * Requester email
              * @description The email address of the requester for follow-up.
              */
-            requester_email?: string | null;
+            requester_email: string;
             /**
              * Requester name
              * @description The name of the person requesting the tool.
              */
-            requester_name: string;
+            requester_name?: string | null;
             /**
              * Scientific domain
              * @description The scientific domain for the requested tool.
