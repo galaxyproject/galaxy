@@ -13,7 +13,6 @@ from typing import (
 )
 
 from pydantic import (
-    AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
@@ -28,9 +27,14 @@ from typing_extensions import (
     TypedDict,
 )
 
-from ._base import ToolSourceBaseModel
+from ._base import (
+    CollectionType,
+    StrictModel,
+    ToolSourceBaseModel,
+)
 from .assertions import assertions
 from .parameters import ToolParameterT
+from .test_job import Job
 from .tool_outputs import (
     IncomingToolOutput,
     ToolOutput,
@@ -165,11 +169,6 @@ class ParsedTool(ToolSourceBaseModel):
     help: Optional[HelpContent]
 
 
-class StrictModel(BaseModel):
-
-    model_config = ConfigDict(extra="forbid", field_title_generator=lambda field_name, field_info: field_name.lower())
-
-
 class BaseTestOutputModel(StrictModel):
     file: Optional[str] = None
     path: Optional[str] = None
@@ -203,19 +202,6 @@ TestCollectionElementAssertion = Union[
     TestCollectionDatasetElementAssertions, TestCollectionCollectionElementAssertions
 ]
 TestCollectionCollectionElementAssertions.model_rebuild()
-
-
-def _check_collection_type(v: str) -> str:
-    if len(v) == 0:
-        raise ValueError("Invalid empty collection_type specified.")
-    collection_levels = v.split(":")
-    for collection_level in collection_levels:
-        if collection_level not in ["list", "paired", "paired_or_unpaired", "record", "sample_sheet"]:
-            raise ValueError(f"Invalid collection_type specified [{v}]")
-    return v
-
-
-CollectionType = Annotated[Optional[str], AfterValidator(_check_collection_type)]
 
 
 class CollectionAttributes(StrictModel):
@@ -307,12 +293,15 @@ class YamlToolTest(BaseModel):
 UserToolSource.model_rebuild()
 YamlToolSource.model_rebuild()
 
+# Loose alias retained for TestJobDict / TypedDict consumers where helpers
+# still tolerate Dict[str, Any]. The strict, validated shape is `Job` (see
+# galaxy.tool_util_models.test_job).
 JobDict = Dict[str, Any]
 
 
 class TestJob(StrictModel):
     doc: Optional[str]
-    job: JobDict
+    job: Job
     outputs: Dict[str, TestOutputAssertions]
     expect_failure: Optional[bool] = False
 

@@ -1,0 +1,5 @@
+multi_data:
+  - class: File
+    path: a.txt
+  - class: File
+    path: b.txt

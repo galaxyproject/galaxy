@@ -1,0 +1,14 @@
+input:
+  class: File
+  path: 1.fasta
+  filetype: fasta
+  dbkey: hg19
+  decompress: true
+  to_posix_lines: true
+  space_to_tab: false
+  deferred: false
+  name: reference-genome
+  info: sample info
+  tags:
+    - group:project
+    - name:reference

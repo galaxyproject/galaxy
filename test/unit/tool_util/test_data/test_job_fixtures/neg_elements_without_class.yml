@@ -1,0 +1,6 @@
+input:
+  collection_type: list
+  elements:
+    - identifier: el1
+      class: File
+      path: a.txt
