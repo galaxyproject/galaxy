@@ -7,9 +7,10 @@ from .util import (
     MockDatasetDataset,
 )
 
+
 @pytest.mark.parametrize(
-        "kraken2db_loader, input_file",
-        [Kraken2DatabaseArchive, "1.kraken2db.tar.gz"]
+    "kraken2db_loader, input_file",
+    [Kraken2DatabaseArchive, "1.kraken2db.tar.gz"]
 )
 def test_kraken2dbarchive_sniff(kraken2db_loader, input_file):
     loader = kraken2db_loader()
@@ -18,8 +19,8 @@ def test_kraken2dbarchive_sniff(kraken2db_loader, input_file):
 
 
 @pytest.mark.parametrize(
-        "kraken2db_loader, input_file",
-        [Kraken2DatabaseArchive, "1.kraken2db.tar.gz"]
+    "kraken2db_loader, input_file",
+    [Kraken2DatabaseArchive, "1.kraken2db.tar.gz"]
 )
 def test_kraken2dbarchive_set_peek(kraken2db_loader, input_file):
     loader = kraken2db_loader()
