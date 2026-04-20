@@ -2718,8 +2718,18 @@ class BaseWorkflowPopulator(BasePopulator):
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
         job_dir: Optional[str] = None,
+        test_data_format: Optional[Literal["cwl_style"]] = None,
     ):
-        """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
+        """High-level wrapper around workflow API, etc. to invoke format 2 workflows.
+
+        ``test_data_format="cwl_style"`` opts in to strict CWL-style semantics:
+        bare scalars in the ``job:`` dict are routed as literal params (int/text/
+        bool/select values for workflow inputs), and staging goes through
+        :func:`stage_inputs` unconditionally. Legacy ``type: File``/``raw``/
+        ``Directory`` dict forms are rejected at this layer so callers migrate
+        fixtures to ``class: File`` + ``path``/``location``/``contents``.
+        Default ``None`` preserves today's behavior for all existing callers.
+        """
         workflow_populator = self
         if client_convert is None:
             client_convert = not round_trip_format_conversion
@@ -2750,15 +2760,34 @@ class BaseWorkflowPopulator(BasePopulator):
         replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        if _uses_class_syntax(test_data_dict):
+        use_stage_inputs = test_data_format == "cwl_style" or _uses_class_syntax(test_data_dict)
+        if use_stage_inputs:
             # Copy because galactic_job_json() mutates the dict in-place
             job_copy = dict(test_data_dict)
-            # Extract raw parameters before staging — galactic_job_json
-            # doesn't understand type: raw and would misinterpret them
             raw_params = {}
             for k, v in list(job_copy.items()):
                 if isinstance(v, dict) and v.get("type") == "raw":
+                    if test_data_format == "cwl_style":
+                        raise ValueError(
+                            f"Legacy 'type: raw' form in job input '{k}' is not allowed with "
+                            "test_data_format='cwl_style'. Use a bare scalar value."
+                        )
                     raw_params[k] = v["value"]
+                    del job_copy[k]
+                elif test_data_format == "cwl_style" and isinstance(v, dict) and v.get("type") in ("File", "Directory"):
+                    raise ValueError(
+                        f"Legacy 'type: {v['type']}' form in job input '{k}' is not allowed with "
+                        "test_data_format='cwl_style'. Use 'class: File' + path/location/contents."
+                    )
+                elif test_data_format == "cwl_style" and not isinstance(v, (dict, list)):
+                    raw_params[k] = v
+                    del job_copy[k]
+                elif (
+                    test_data_format == "cwl_style"
+                    and isinstance(v, list)
+                    and not any(isinstance(x, (dict, list)) for x in v)
+                ):
+                    raw_params[k] = v
                     del job_copy[k]
             staged_job, datasets = stage_inputs(
                 self.dataset_populator.galaxy_interactor,

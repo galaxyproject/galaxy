@@ -2,11 +2,9 @@
     Test that workflows can run with multiple text parameter fed into a multi select parameter.
   job:
     input:
-      value:
-        - --ex1
-        - ex2
-        - --ex3
-      type: raw
+      - --ex1
+      - ex2
+      - --ex3
   outputs:
     output:
       class: File

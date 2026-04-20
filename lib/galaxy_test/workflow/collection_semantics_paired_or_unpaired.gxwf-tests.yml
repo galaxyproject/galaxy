@@ -52,7 +52,6 @@
       elements:
         - identifier: test_level_1
           class: Collection
-          type: paired
           elements:
             - identifier: forward
               class: File
@@ -75,11 +74,9 @@
       elements:
         - identifier: test_level_2
           class: Collection
-          type: list:paired
           elements:
             - identifier: test_level_1
               class: Collection
-              type: paired
               elements:
                 - identifier: forward
                   class: File
@@ -102,7 +99,6 @@
       elements:
         - identifier: test_level_1
           class: Collection
-          type: paired_or_unpaired
           elements:
             - identifier: forward
               class: File
@@ -127,7 +123,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired
           elements:
             - identifier: forward
               class: File
@@ -152,7 +147,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired
           elements:
             - identifier: forward
               class: File
