@@ -60,6 +60,7 @@ from galaxy.schema.notifications import (
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    ToolRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -744,12 +745,24 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
         return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
+class ToolRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = ToolRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
+        return content
+
+    def get_subject(self) -> str:
+        content = cast(ToolRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        return f"[Galaxy] Tool installation request: {content.tool_name}"
+
+
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):
 
     # Register the supported email templates here
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_request: ToolRequestEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):
