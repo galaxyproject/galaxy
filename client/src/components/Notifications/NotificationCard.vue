@@ -193,10 +193,7 @@ function markNotificationAsSeen() {
                     <template v-if="props.notification.content.tool_url">
                         <dt>URL</dt>
                         <dd>
-                            <BLink :href="props.notification.content.tool_url" target="_blank">
-                                {{ props.notification.content.tool_url }}
-                                <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
-                            </BLink>
+                            <span class="text-break">{{ props.notification.content.tool_url }}</span>
                         </dd>
                     </template>
                     <template v-if="props.notification.content.scientific_domain">
