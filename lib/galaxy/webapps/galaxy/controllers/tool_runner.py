@@ -9,6 +9,7 @@ from markupsafe import escape
 import galaxy.util
 from galaxy import web
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tools import DataSourceTool
 from galaxy.web import (
     error,
@@ -74,7 +75,7 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         # FIXME: Tool class should define behavior
         if tool.tool_type in ["default", "interactivetool"]:
-            return trans.response.send_redirect(url_for(f"/?tool_id={tool_id}"))
+            return trans.response.send_redirect(url_for(f"/?tool_id={uri_safe_tool_id(tool_id)}"))
 
         # execute tool without displaying form
         # (used for datasource tools, but note that data_source_async tools
