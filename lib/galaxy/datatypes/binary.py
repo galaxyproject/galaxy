@@ -347,10 +347,11 @@ class Kraken2DatabaseArchive(CompressedArchive):
     """
 
     file_ext = "kraken2db.tar.gz"
+    peek_text = "Compressed Kraken2 database"
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Compressed Kraken2 database"
+            dataset.peek = self.peek_text
             dataset.blurb = f"{nice_size(dataset.get_size())}"
         else:
             dataset.peek = "file does not exist"
