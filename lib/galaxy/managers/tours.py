@@ -247,7 +247,7 @@ class TourGenerator:
                                 dataset = self._test.inputs[tour_id][0]
                                 step_msg = f"Select dataset: <b>{hid}: {dataset}</b>"
                             else:
-                                case_params = ", ".join(self._test.inputs[tour_id])
+                                case_params = ", ".join(str(v) for v in self._test.inputs[tour_id])
                                 step_msg = f"Select parameter(s): <b>{case_params}</b>"
                             cond_case_steps.append(
                                 TourStep(
