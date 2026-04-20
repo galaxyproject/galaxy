@@ -426,6 +426,13 @@ describe("createUrlUploadItem", () => {
         expect(item.deferred).toBe(true);
         expect(item.dbkey).toBe("hg38");
     });
+
+    test("trims surrounding whitespace from URL", () => {
+        const item = createUrlUploadItem("  http://example.com/data.bed\n", "historyId");
+
+        expect(item.url).toBe("http://example.com/data.bed");
+        expect(item.name).toBe("data.bed");
+    });
 });
 
 describe("parseContentToUploadItems", () => {
@@ -459,6 +466,22 @@ describe("parseContentToUploadItems", () => {
         expect(() => parseContentToUploadItems("http://example.com/valid.txt\ninvalid-not-a-url", "historyId")).toThrow(
             "Invalid URL: invalid-not-a-url",
         );
+    });
+
+    test("throws on network URL with empty DNS labels", () => {
+        expect(() => parseContentToUploadItems("https://.../SRR1957099.fastq.gz", "historyId")).toThrow(
+            "Invalid URL: https://.../SRR1957099.fastq.gz",
+        );
+    });
+
+    test("accepts Galaxy file-source URIs", () => {
+        const content = "gxfiles://myftp/file.txt\ndrs://example.org/abc\nzenodo://record/123";
+        const items = parseContentToUploadItems(content, "historyId");
+
+        expect(items).toHaveLength(3);
+        expect((items[0] as { url: string }).url).toBe("gxfiles://myftp/file.txt");
+        expect((items[1] as { url: string }).url).toBe("drs://example.org/abc");
+        expect((items[2] as { url: string }).url).toBe("zenodo://record/123");
     });
 
     test("handles whitespace around URLs", () => {
@@ -535,6 +558,12 @@ describe("buildUploadPayload", () => {
         const items: ApiUploadItem[] = [createUrlUploadItem("not-a-valid-url", "historyId")];
 
         expect(() => buildUploadPayload(items)).toThrow("Invalid URL: not-a-valid-url");
+    });
+
+    test("rejects network URL with empty DNS labels", () => {
+        const items: ApiUploadItem[] = [createUrlUploadItem("https://.../SRR1957099.fastq.gz", "historyId")];
+
+        expect(() => buildUploadPayload(items)).toThrow("Invalid URL: https://.../SRR1957099.fastq.gz");
     });
 });
 

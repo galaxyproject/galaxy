@@ -48,7 +48,7 @@ import type { UploadRowModel } from "@/components/Upload/model";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { isUrl } from "@/utils/url";
+import { isUrl, isValidUrl } from "@/utils/url";
 
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
@@ -397,12 +397,13 @@ export function createUrlUploadItem(
     historyId: string,
     options: Partial<Omit<UrlUploadItem, "src" | "url" | "historyId">> = {},
 ): UrlUploadItem {
+    const trimmedUrl = url.trim();
     // Extract filename from URL if not provided
-    const defaultName = url.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
+    const defaultName = trimmedUrl.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
 
     return {
         src: "url",
-        url,
+        url: trimmedUrl,
         historyId,
         name: options.name ?? defaultName,
         size: options.size ?? 0,
@@ -499,7 +500,7 @@ export function parseContentToUploadItems(
     // If first line is a URL, treat all lines as URLs
     if (isUrl(firstLine)) {
         return lines.filter(Boolean).map((urlLine) => {
-            if (!isUrl(urlLine)) {
+            if (!isValidUrl(urlLine)) {
                 throw new Error(`Invalid URL: ${urlLine}`);
             }
             return createUrlUploadItem(urlLine, historyId, options);
@@ -587,7 +588,7 @@ function validateItemContent(item: ApiUploadItem): void {
             if (!item.url || item.url.trim().length === 0) {
                 throw new Error(`No URL for upload item: ${item.name}`);
             }
-            if (!isUrl(item.url)) {
+            if (!isValidUrl(item.url)) {
                 throw new Error(`Invalid URL: ${item.url}`);
             }
             break;

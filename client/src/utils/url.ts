@@ -37,6 +37,44 @@ export function isUrl(content: string): boolean {
     return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
 }
 
+const NETWORK_SCHEMES = ["http://", "https://", "ftp://", "ftps://"];
+
+export function isNetworkUrl(content: string): boolean {
+    return NETWORK_SCHEMES.some((prefix) => content.startsWith(prefix));
+}
+
+/**
+ * Structural validation for http(s)/ftp(s) URLs destined for the server
+ * fetch endpoint. Rejects empty DNS labels (leading/trailing dot, consecutive
+ * dots, or pure punctuation) that would otherwise crash server-side idna
+ * encoding and surface as an opaque 500.
+ */
+export function isValidNetworkUrl(content: string): boolean {
+    const prefix = NETWORK_SCHEMES.find((p) => content.startsWith(p));
+    if (!prefix) {
+        return false;
+    }
+    const afterScheme = content.slice(prefix.length);
+    const authorityEnd = afterScheme.search(/[/?#]/);
+    const authority = authorityEnd === -1 ? afterScheme : afterScheme.slice(0, authorityEnd);
+    const hostAndPort = authority.includes("@") ? authority.slice(authority.lastIndexOf("@") + 1) : authority;
+    let host = hostAndPort;
+    if (!host.startsWith("[")) {
+        const portIdx = host.lastIndexOf(":");
+        if (portIdx !== -1) {
+            host = host.slice(0, portIdx);
+        }
+    }
+    if (!host) {
+        return false;
+    }
+    // IPv6 literals are bracketed; they have no DNS labels to validate.
+    if (host.startsWith("[")) {
+        return true;
+    }
+    return !host.split(".").some((label) => label.length === 0);
+}
+
 export async function urlData<R>({ url, headers, params, errorSimplify = true }: UrlDataOptions): Promise<R> {
     try {
         headers = headers || {};
@@ -75,41 +113,24 @@ export interface UrlValidationResult {
 }
 
 /**
- * Validates a URL string and returns detailed validation results.
- * Checks for required fields, valid hostname, and meaningful content.
- *
- * @param url - The URL string to validate
- * @returns Validation result with isValid flag and error message
- *
- * @example
- * ```typescript
- * const result = validateUrl("https://example.org/data.txt");
- * if (!result.isValid) {
- *   console.error(result.message);
- * }
- * ```
+ * Validates a URL string for use in upload flows. Accepts any URI whose scheme
+ * appears in URI_PREFIXES (including Galaxy file-source schemes like
+ * gxfiles://, drs://, zenodo://, etc.). For http(s)/ftp(s) URLs it also applies
+ * a structural host check to reject empty DNS labels that would crash
+ * server-side idna encoding.
  */
 export function validateUrl(url: string): UrlValidationResult {
-    if (!url.trim()) {
+    const trimmed = url.trim();
+    if (!trimmed) {
         return { isValid: false, message: "URL is required" };
     }
-
-    try {
-        const urlObj = new URL(url);
-
-        if (!urlObj.host) {
-            return { isValid: false, message: "URL must include a valid hostname" };
-        }
-
-        const hasContent = urlObj.pathname !== "/" || urlObj.search || urlObj.hash;
-        if (!hasContent) {
-            return { isValid: false, message: "URL should point to a specific file or resource" };
-        }
-
-        return { isValid: true, message: null };
-    } catch {
+    if (!isUrl(trimmed)) {
         return { isValid: false, message: "URL format is invalid or missing protocol" };
     }
+    if (isNetworkUrl(trimmed) && !isValidNetworkUrl(trimmed)) {
+        return { isValid: false, message: "URL must include a valid hostname" };
+    }
+    return { isValid: true, message: null };
 }
 
 /**
