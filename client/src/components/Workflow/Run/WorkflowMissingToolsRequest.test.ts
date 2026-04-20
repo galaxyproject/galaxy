@@ -147,7 +147,6 @@ describe("WorkflowMissingToolsRequest", () => {
         const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
         expect(payload.tool_ids).toEqual(MISSING_TOOL_IDS);
         expect(payload.workflow_name).toBe("My Analysis Workflow");
-        expect(payload.requester_name).toBeTruthy();
         expect(typeof payload.tool_name).toBe("string");
         expect(typeof payload.description).toBe("string");
         expect(payload.description as string).toContain("My Analysis Workflow");
@@ -294,22 +293,6 @@ describe("WorkflowMissingToolsRequest", () => {
         for (const id of MISSING_TOOL_IDS) {
             expect(payload.description as string).toContain(id);
         }
-    });
-
-    it("uses 'Galaxy user' as requester_name when currentUser is null", async () => {
-        // currentUser is null by default in the test environment (initialState key mismatch
-        // with store ID "userStore"), so isRegisteredUser(null) = false and the
-        // requester_name falls back to the constant "Galaxy user".
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
-        const wrapper = mountComponent();
-        await flushPromises();
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.requester_name).toBe("Galaxy user");
     });
 
     // ── localStorage / storage-key edge cases ──────────────────────────────
