@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref } from "vue";
 
-import type { ColorVariant } from "@/components/Common";
 import { useMarkdown } from "@/composables/markdown";
+
+import type { ColorVariant } from "./componentVariants";
 
 interface Props {
     /** List of tip messages. Supports markdown formatting. Must contain at least one entry. */
