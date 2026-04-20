@@ -1,10 +1,12 @@
 import axios from "axios";
 import isEqual from "lodash.isequal";
 import { defineStore } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { useSSE } from "@/composables/useNotificationSSE";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useConfigStore } from "@/stores/configurationStore";
 import { rethrowSimple } from "@/utils/simple-error";
 
 const ACTIVE_POLLING_INTERVAL = 10000;
@@ -23,22 +25,7 @@ interface EntryPoint {
 }
 
 export const useEntryPointStore = defineStore("entryPointStore", () => {
-    const { startWatchingResource: startWatchingEntryPoints, stopWatchingResource: stopWatchingEntryPoints } =
-        useResourceWatcher(fetchEntryPoints, {
-            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-            enableBackgroundPolling: false, // No need to poll in the background
-        });
-
     const entryPoints = ref<EntryPoint[]>([]);
-
-    const entryPointsForJob = computed(() => {
-        return (jobId: string) => entryPoints.value.filter((entryPoint) => entryPoint["job_id"] === jobId);
-    });
-
-    const entryPointsForHda = computed(() => {
-        return (hdaId: string) =>
-            entryPoints.value.filter((entryPoint) => entryPoint["output_datasets_ids"].includes(hdaId));
-    });
 
     async function fetchEntryPoints() {
         const url = `${getAppRoot()}api/entry_points`;
@@ -50,6 +37,79 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
             rethrowSimple(e);
         }
     }
+
+    // SSE-driven path: on each entry_point_update signal, refetch the canonical
+    // list from REST. The event carries no data — it's a pure wake-up.
+    function handleEntryPointSSEEvent(_event: MessageEvent) {
+        fetchEntryPoints().catch((err) => console.error("Error refreshing entry points from SSE push:", err));
+    }
+    const {
+        connect: sseConnect,
+        disconnect: sseDisconnect,
+        connected: sseConnected,
+    } = useSSE(handleEntryPointSSEEvent, ["entry_point_update"]);
+
+    let watchingInitialized = false;
+    let stopWatchingEntryPointsResource: (() => void) | null = null;
+
+    // Callers opt in via ``startWatchingEntryPoints()`` (App.vue gates this on
+    // ``interactivetools_enable``). We then pick SSE or polling based on the
+    // server flag — mutually exclusive, mirroring historyStore / notificationsStore.
+    // ``useConfigStore`` is resolved lazily here so tests that only exercise
+    // the data methods don't need a ``/api/configuration`` handler registered.
+    function startWatchingEntryPoints() {
+        if (watchingInitialized) {
+            return;
+        }
+        watchingInitialized = true;
+        const configStore = useConfigStore();
+
+        const decide = () => {
+            if (configStore.config?.enable_sse_entry_point_updates) {
+                // Baseline fetch + SSE. Reconnect-refetch closes the "user
+                // navigated away and missed events" window.
+                fetchEntryPoints().catch((err) => console.warn("Initial entry-point load failed", err));
+                sseConnect();
+                watch(sseConnected, (isConnected, wasConnected) => {
+                    if (isConnected && !wasConnected) {
+                        fetchEntryPoints().catch((err) =>
+                            console.error("Error refreshing entry points on SSE reconnect:", err),
+                        );
+                    }
+                });
+            } else {
+                const { startWatchingResource, stopWatchingResource } = useResourceWatcher(fetchEntryPoints, {
+                    shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+                    enableBackgroundPolling: false,
+                });
+                stopWatchingEntryPointsResource = stopWatchingResource;
+                startWatchingResource();
+            }
+        };
+
+        if (configStore.isLoaded) {
+            decide();
+        } else {
+            const stop = watch(
+                () => configStore.isLoaded,
+                (loaded) => {
+                    if (loaded) {
+                        stop();
+                        decide();
+                    }
+                },
+            );
+        }
+    }
+
+    const entryPointsForJob = computed(() => {
+        return (jobId: string) => entryPoints.value.filter((entryPoint) => entryPoint["job_id"] === jobId);
+    });
+
+    const entryPointsForHda = computed(() => {
+        return (hdaId: string) =>
+            entryPoints.value.filter((entryPoint) => entryPoint["output_datasets_ids"].includes(hdaId));
+    });
 
     function updateEntryPoints(data: EntryPoint[]) {
         let hasChanged = entryPoints.value.length !== data.length ? true : false;
@@ -74,6 +134,11 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
 
     function mergeEntryPoints(original: EntryPoint, updated: EntryPoint) {
         return { ...original, ...updated };
+    }
+
+    function stopWatchingEntryPoints() {
+        sseDisconnect();
+        stopWatchingEntryPointsResource?.();
     }
 
     function removeEntryPoint(toolId: string) {

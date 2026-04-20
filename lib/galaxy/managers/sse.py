@@ -20,6 +20,7 @@ from typing import (
 )
 
 from galaxy.model.orm.now import now
+from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
 
 log = logging.getLogger(__name__)
 
@@ -78,10 +79,11 @@ class SSEConnectionManager:
       (typically the Kombu daemon thread via control task handlers).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, statsd_client: Optional[VanillaGalaxyStatsdClient] = None) -> None:
         self._connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._broadcast_connections: set[asyncio.Queue] = set()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._statsd_client = statsd_client
 
     def _ensure_loop(self) -> None:
         """Capture the running asyncio event loop. Must be called from async context."""
@@ -148,13 +150,14 @@ class SSEConnectionManager:
             # Event loop is closed or shutting down
             pass
 
-    @staticmethod
-    def _do_put(queue: asyncio.Queue, event: SSEEvent) -> None:
+    def _do_put(self, queue: asyncio.Queue, event: SSEEvent) -> None:
         """Runs ON the event loop thread. Safe to touch asyncio.Queue here."""
         try:
             queue.put_nowait(event)
         except asyncio.QueueFull:
             log.warning("SSE queue full, dropping event: %s", event.event)
+            if self._statsd_client is not None:
+                self._statsd_client.incr("galaxy.sse.connections.dropped")
 
     @property
     def connected_user_ids(self) -> set[int]:
@@ -163,6 +166,20 @@ class SSEConnectionManager:
     @property
     def total_connections(self) -> int:
         return len(self._broadcast_connections)
+
+    @property
+    def total_broadcast_connections(self) -> int:
+        """Number of all active SSE connections (includes anonymous).
+
+        Every connection is added to ``_broadcast_connections``; this is the
+        most accurate "SSE clients currently connected" gauge.
+        """
+        return len(self._broadcast_connections)
+
+    @property
+    def total_per_user_connections(self) -> int:
+        """Number of active SSE connections bound to a specific user_id."""
+        return sum(len(queues) for queues in self._connections.values())
 
     # -- High-level streaming helper --
 

@@ -129,7 +129,5 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
 
         self._wait_for_sse_event_after(baseline_ts)
         # The indicator dot should appear on the bell (within the #activity-notifications element)
-        self.wait_for_selector_visible(
-            "#activity-notifications .indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000
-        )
+        self.wait_for_selector_visible("#activity-notifications .indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
         self.screenshot("notification_bell_indicator")

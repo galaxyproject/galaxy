@@ -6,6 +6,7 @@ from typing import (
 
 from pydantic import Field
 
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     prepare_invocation_download,
     write_invocation_to,
@@ -61,7 +62,6 @@ from galaxy.schema.tasks import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
     ensure_celery_tasks_enabled,
     model_store_storage_target,

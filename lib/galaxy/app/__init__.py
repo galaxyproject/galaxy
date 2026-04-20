@@ -695,6 +695,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             SSEEventDispatcher(
                 queue_worker=getattr(self, "queue_worker", None),
                 application_stack=self.application_stack,
+                statsd_client=self.execution_timer_factory.galaxy_statsd_client,
             ),
         )
         self.notification_manager = self._register_singleton(NotificationManager)
@@ -858,7 +859,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # SSE connection manager for real-time notification push.
         # Consumed via ``depends(SSEConnectionManager)`` / ``app[SSEConnectionManager]``,
         # so no module-level attribute is needed — keep the container wiring only.
-        self._register_singleton(SSEConnectionManager)
+        self._register_singleton(
+            SSEConnectionManager,
+            SSEConnectionManager(
+                statsd_client=self.execution_timer_factory.galaxy_statsd_client,
+            ),
+        )
 
         # AI agent registry and service
         agent_registry = build_agent_registry(self.config)

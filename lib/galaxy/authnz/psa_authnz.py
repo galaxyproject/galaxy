@@ -798,6 +798,7 @@ def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> N
             NotificationVariant,
             PersonalNotificationCategory,
         )
+
         labels: dict[str, str] = {
             "email": "email address",
             "username": "public name",

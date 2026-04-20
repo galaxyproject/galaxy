@@ -2512,6 +2512,14 @@ mapping:
           Mock out statsd client calls - only used by testing infrastructure really.
           Do not set this in production environments.
 
+      queue_metrics_interval:
+        type: int
+        default: 15
+        required: false
+        desc: |
+          How often (in seconds) the Celery beat task emits queue-depth, SSE-connection,
+          and WorkerProcess gauges. Only active when statsd_host is set. Set to 0 to disable.
+
       library_import_dir:
         type: str
         required: false
@@ -4302,6 +4310,16 @@ mapping:
           When enabled, a background monitor watches for history changes (via PostgreSQL
           LISTEN/NOTIFY or audit table polling as a fallback for SQLite) and pushes update
           signals to connected browsers, replacing aggressive 3-second polling.
+
+      enable_sse_entry_point_updates:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables real-time interactive-tool entry-point update notifications via
+          Server-Sent Events. When enabled, the client subscribes to entry_point_update
+          SSE events and refetches the entry-point list on each event, replacing the
+          10-second polling loop. When disabled, polling remains the source of updates.
 
       history_audit_monitor_poll_interval:
         type: int

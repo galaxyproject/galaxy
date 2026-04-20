@@ -76,7 +76,10 @@ from galaxy.security.vault import (
     Vault,
 )
 from galaxy.short_term_storage import ShortTermStorageMonitor
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
@@ -626,6 +629,14 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""
     if count := notification_manager.dispatch_pending_notifications_via_channels():
         log.info(f"Successfully dispatched {count} notifications.")
+
+
+@galaxy_task(action="emit queue and SSE observability metrics")
+def emit_queue_metrics_task(app: StructuredApp):
+    """Sample control-queue depth, SSE connection count, and worker rows → statsd."""
+    from galaxy.webapps.galaxy.metrics.queue_metrics import emit_queue_metrics
+
+    emit_queue_metrics(app)
 
 
 @galaxy_task(action="clean up job working directories")

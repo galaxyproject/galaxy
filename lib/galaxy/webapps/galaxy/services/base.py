@@ -7,7 +7,6 @@ from typing import (
     Optional,
 )
 
-from galaxy.celery.helpers import async_task_summary as async_task_summary  # re-export for existing callers
 from galaxy.exceptions import (
     AuthenticationRequired,
     ConfigDoesNotAllowException,

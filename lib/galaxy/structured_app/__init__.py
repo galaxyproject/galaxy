@@ -176,6 +176,7 @@ class StructuredApp(MinimalManagerApp):
     vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
+    execution_timer_factory: Any  # 'galaxy.app.ExecutionTimerFactory'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_cache: "ToolCache"
     tool_shed_repository_cache: Optional[ToolShedRepositoryCache]

@@ -3408,6 +3408,18 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``queue_metrics_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How often (in seconds) the Celery beat task emits queue-depth,
+    SSE-connection, and WorkerProcess gauges. Only active when
+    statsd_host is set. Set to 0 to disable.
+:Default: ``15``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``library_import_dir``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5814,6 +5826,20 @@
     history changes (via PostgreSQL LISTEN/NOTIFY or audit table
     polling as a fallback for SQLite) and pushes update signals to
     connected browsers, replacing aggressive 3-second polling.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_entry_point_updates``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables real-time interactive-tool entry-point update
+    notifications via Server-Sent Events. When enabled, the client
+    subscribes to entry_point_update SSE events and refetches the
+    entry-point list on each event, replacing the 10-second polling
+    loop. When disabled, polling remains the source of updates.
 :Default: ``false``
 :Type: bool
 

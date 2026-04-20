@@ -24,6 +24,7 @@ from galaxy import (
     exceptions as glx_exceptions,
     model,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     import_model_store,
     prepare_history_download,
@@ -87,7 +88,6 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
     model_store_storage_target,
     ServesExportStores,

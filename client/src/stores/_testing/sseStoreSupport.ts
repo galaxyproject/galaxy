@@ -20,14 +20,20 @@ export interface SSEMockState {
     onEvent: ((event: MessageEvent) => void) | null;
     connect: ReturnType<typeof vi.fn>;
     disconnect: ReturnType<typeof vi.fn>;
+    connected?: Ref<boolean>;
 }
 
 /** Build the factory used with ``vi.mock("@/composables/useNotificationSSE", ...)``. */
 export function sseMockFactory(state: SSEMockState) {
+    // Lazily initialize ``connected`` so existing callers that don't pass it
+    // still get a working ref.
+    if (!state.connected) {
+        state.connected = ref(false);
+    }
     return {
         useSSE: vi.fn((onEvent: (event: MessageEvent) => void) => {
             state.onEvent = onEvent;
-            return { connect: state.connect, disconnect: state.disconnect };
+            return { connect: state.connect, disconnect: state.disconnect, connected: state.connected };
         }),
     };
 }

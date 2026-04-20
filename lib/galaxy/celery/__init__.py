@@ -252,6 +252,9 @@ def setup_periodic_tasks(config, celery_app):
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
 
+    if config.statsd_host:
+        schedule_task("emit_queue_metrics_task", config.queue_metrics_interval)
+
     if config.enable_notification_system:
         schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
         schedule_task("dispatch_pending_notifications", config.dispatch_notifications_interval)

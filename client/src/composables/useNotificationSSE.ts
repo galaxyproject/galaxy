@@ -10,6 +10,7 @@ export const SSE_EVENT_TYPES = [
     "broadcast_update",
     "notification_status",
     "history_update",
+    "entry_point_update",
 ] as const;
 
 export type SSEEventType = (typeof SSE_EVENT_TYPES)[number];

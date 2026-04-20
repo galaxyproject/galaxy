@@ -4,6 +4,7 @@ from typing import (
 )
 
 from galaxy import exceptions
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import prepare_pdf_download
 from galaxy.managers import base
 from galaxy.managers.markdown_util import (
@@ -34,7 +35,6 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.api.common import PageIdPathParam
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ensure_celery_tasks_enabled,
     ServiceBase,
 )
