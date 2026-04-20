@@ -18,6 +18,8 @@ import localize from "@/utils/localization";
 
 import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
+import ActivityBarHeader from "./ActivityBarHeader.vue";
+import ActivityBarSeparator from "./ActivityBarSeparator.vue";
 import ActivityItem from "./ActivityItem.vue";
 import InteractiveItem from "./Items/InteractiveItem.vue";
 import NotificationItem from "./Items/NotificationItem.vue";
@@ -39,6 +41,7 @@ const props = withDefaults(
         activityBarId?: string;
         specialActivities?: Activity[];
         exitActivity?: Activity;
+        runActivity?: Activity;
         showAdmin?: boolean;
         optionsTitle?: string;
         optionsTooltip?: string;
@@ -47,12 +50,15 @@ const props = withDefaults(
         optionsSearchPlaceholder?: string;
         initialActivity?: string;
         hidePanel?: boolean;
+        headerIcon?: IconDefinition;
+        headerTitle?: string;
     }>(),
     {
         defaultActivities: undefined,
         activityBarId: "default",
         specialActivities: () => [],
         exitActivity: undefined,
+        runActivity: undefined,
         showAdmin: true,
         optionsTitle: "More",
         optionsHeading: "Additional Activities",
@@ -61,6 +67,8 @@ const props = withDefaults(
         optionsTooltip: "View additional activities",
         initialActivity: undefined,
         hidePanel: false,
+        headerIcon: undefined,
+        headerTitle: undefined,
     },
 );
 
@@ -252,6 +260,11 @@ defineExpose({
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
+            <ActivityBarHeader
+                :icon="props.headerIcon"
+                :title="props.headerTitle"
+                :is-side-bar-open="isSideBarOpen"
+                @close-sidebar="activityStore.closeSideBar" />
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     v-model="activities"
@@ -320,7 +333,8 @@ defineExpose({
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav v-if="!isAnonymous" vertical class="activity-footer flex-nowrap p-1">
+            <ActivityBarSeparator />
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
                 <template v-for="activity in props.specialActivities">
                     <ActivityItem
                         v-if="activity.panel"
@@ -377,6 +391,17 @@ defineExpose({
                     tooltip="Administer this Galaxy"
                     variant="danger"
                     @click="toggleSidebar('admin')" />
+                <ActivityItem
+                    v-if="props.runActivity"
+                    :id="`${props.runActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.runActivity.icon"
+                    :indicator="props.runActivity.indicator"
+                    :indicator-variant="props.runActivity.indicatorVariant"
+                    :title="props.runActivity.title"
+                    :tooltip="props.runActivity.tooltip"
+                    :variant="props.runActivity.variant"
+                    @click="onActivityClicked(props.runActivity)" />
                 <ActivityItem
                     v-if="props.exitActivity"
                     :id="`${props.exitActivity.id}`"
@@ -441,11 +466,6 @@ defineExpose({
 
 .activity-drag-class {
     display: none;
-}
-
-.activity-footer {
-    border-top: $border-default;
-    border-top-style: dotted;
 }
 
 .activity-popper-disabled {
