@@ -86,33 +86,31 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-@import "@/style/scss/theme/blue.scss";
-
 .g-tip {
     position: relative;
     padding: 0.5rem 0.75rem;
-    background-color: $gray-100;
-    border-radius: $border-radius-base;
-    border-left: 3px solid $brand-primary;
+    background-color: var(--color-grey-100);
+    border-radius: 0.25rem;
+    border-left: 3px solid var(--color-blue-600);
 
     &.tip-info {
-        background-color: $gray-100;
-        border-left-color: $brand-primary;
+        background-color: var(--color-grey-100);
+        border-left-color: var(--color-blue-600);
     }
 
     &.tip-warning {
-        background-color: scale-color($brand-warning, $lightness: +75%);
-        border-left-color: $brand-warning;
+        background-color: var(--color-orange-200);
+        border-left-color: var(--color-orange-600);
     }
 
     &.tip-success {
-        background-color: scale-color($brand-success, $lightness: +75%);
-        border-left-color: $brand-success;
+        background-color: var(--color-green-200);
+        border-left-color: var(--color-green-600);
     }
 
     &.tip-danger {
-        background-color: scale-color($brand-danger, $lightness: +75%);
-        border-left-color: $brand-danger;
+        background-color: var(--color-red-200);
+        border-left-color: var(--color-red-600);
     }
 }
 
