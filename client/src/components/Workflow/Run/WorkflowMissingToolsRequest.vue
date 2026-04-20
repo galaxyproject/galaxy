@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { isRegisteredUser } from "@/api";
+
 import { submitToolRequest } from "@/api/toolRequestForm";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
@@ -51,7 +51,6 @@ async function requestInstallation() {
     submitting.value = true;
     errorMessage.value = "";
 
-    const username = isRegisteredUser(userStore.currentUser) ? userStore.currentUser.username : "Galaxy user";
     const toolListText = props.missingToolIds.join(", ");
     const workflowLabel = props.workflowName ? `workflow "${props.workflowName}"` : "a workflow";
     const toolVerb = toolCount.value === 1 ? "tool is" : "tools are";
@@ -66,7 +65,6 @@ async function requestInstallation() {
                     ? props.missingToolIds[0]!
                     : `${toolCount.value} tools required by ${workflowLabel}`,
             description,
-            requester_name: username,
             tool_ids: props.missingToolIds,
             workflow_name: props.workflowName,
         });
