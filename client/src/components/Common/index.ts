@@ -1,11 +1,9 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import type { RawLocation } from "vue-router";
 
-/**
- * Basic color variants for components that only support
- * color-based styling like alerts, badges, and backgrounds (no outline variants).
- */
-export type ColorVariant = "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark";
+import type { ColorVariant } from "@/components/BaseComponents/componentVariants";
+
+export type { ColorVariant } from "@/components/BaseComponents/componentVariants";
 
 /**
  * Bootstrap Vue variants for styling components.
