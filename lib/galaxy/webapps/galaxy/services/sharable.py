@@ -114,7 +114,11 @@ class ShareableService:
         # dicts that model_construct won't re-validate back to UserEmail.
         status = self.share_with_status_cls.model_construct(**dict(base_status), extra=extra)
         status.errors.extend(errors)
-        galaxy_url = str(trans.url_builder("/", qualified=True)).rstrip("/") if trans.url_builder else None
+        galaxy_url = (
+            str(trans.url_builder("/", qualified=True)).rstrip("/")
+            if trans.url_builder
+            else trans.app.config.galaxy_external_url
+        )
         self._send_notification_to_users(users_to_notify, item, status, galaxy_url)
         return status
 
