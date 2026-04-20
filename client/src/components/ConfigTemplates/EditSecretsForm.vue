@@ -29,6 +29,7 @@ async function update(secretName: string, secretValue: string) {
                     :name="secret.name"
                     :help="secret.help || ''"
                     :is-set="true"
+                    :multiline="secret.multiline || false"
                     @update="update">
                 </VaultSecret>
             </div>

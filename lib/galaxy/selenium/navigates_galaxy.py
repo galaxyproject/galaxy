@@ -3041,7 +3041,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             name,
         )
         if description:
-            self.components.tool_form.parameter_input(parameter="_meta_description").wait_for_and_send_keys(
+            self.components.tool_form.parameter_textarea(parameter="_meta_description").wait_for_and_send_keys(
                 description,
             )
 

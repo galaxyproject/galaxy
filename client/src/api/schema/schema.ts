@@ -12847,7 +12847,8 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
-                | "omero";
+                | "omero"
+                | "ssh";
             /** Variables */
             variables?:
                 | (
@@ -23022,6 +23023,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23035,6 +23038,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23061,6 +23066,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23087,6 +23094,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23113,6 +23122,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -24487,7 +24498,8 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
-                | "omero";
+                | "omero"
+                | "ssh";
             /** Uri Root */
             uri_root: string;
             /**
