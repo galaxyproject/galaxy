@@ -204,21 +204,19 @@ function markNotificationAsSeen() {
                         <dt>Version</dt>
                         <dd>{{ props.notification.content.requested_version }}</dd>
                     </template>
-                    <template v-if="props.notification.content.requester_name">
-                        <dt>Requested by</dt>
-                        <dd>
+                    <dt>Requested by</dt>
+                    <dd>
+                        <span v-if="props.notification.content.requester_name">
                             {{ props.notification.content.requester_name }}
                             <span v-if="props.notification.content.requester_affiliation">
                                 ({{ props.notification.content.requester_affiliation }})
                             </span>
-                            <span v-if="props.notification.content.requester_email">
-                                &mdash;
-                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
-                                    {{ props.notification.content.requester_email }}
-                                </BLink>
-                            </span>
-                        </dd>
-                    </template>
+                            &mdash;
+                        </span>
+                        <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                            {{ props.notification.content.requester_email }}
+                        </BLink>
+                    </dd>
                 </dl>
             </template>
             <template v-else>

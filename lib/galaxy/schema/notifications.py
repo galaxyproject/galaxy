@@ -137,9 +137,11 @@ class ToolRequestNotificationContent(Model):
     test_data_available: Optional[bool] = Field(
         None, title="Test data available", description="Whether test data for this tool is available."
     )
-    requester_name: str = Field(..., title="Requester name", description="The name of the person requesting the tool.")
-    requester_email: Optional[str] = Field(
-        None, title="Requester email", description="The email address of the requester for follow-up."
+    requester_name: Optional[str] = Field(
+        None, title="Requester name", description="The name of the person requesting the tool."
+    )
+    requester_email: str = Field(
+        ..., title="Requester email", description="The email address of the requester for follow-up."
     )
     requester_affiliation: Optional[str] = Field(
         None, title="Requester affiliation", description="The affiliation/lab of the requester."

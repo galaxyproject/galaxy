@@ -45,7 +45,7 @@ Tool name:    {{ content['tool_name'] }}
 {% endif %}{% if content['conda_available'] is not none %}Conda pkg:    {{ "Yes" if content['conda_available'] else "No" }}
 {% endif %}{% if content['test_data_available'] is not none %}Test data:    {{ "Yes" if content['test_data_available'] else "No" }}
 {% endif %}{% if content['workflow_name'] %}Workflow:     {{ content['workflow_name'] }}
-{% endif %}Requested by: {{ content['requester_name'] }}{% if content['requester_affiliation'] %} ({{ content['requester_affiliation'] }}){% endif %}{% if content['requester_email'] %} — {{ content['requester_email'] }}{% endif %}
+{% endif %}Requested by: {% if content['requester_name'] %}{{ content['requester_name'] }} — {% endif %}{{ content['requester_email'] }}{% if content['requester_affiliation'] %} ({{ content['requester_affiliation'] }}){% endif %}
 
 {% if galaxy_url %}
 You can review the notification in Galaxy: {{ galaxy_url }}/user/notifications

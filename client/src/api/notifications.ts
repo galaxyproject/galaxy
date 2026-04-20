@@ -37,8 +37,8 @@ export interface ToolRequestNotificationContent {
     requested_version?: string;
     conda_available?: boolean;
     test_data_available?: boolean;
-    requester_name: string;
-    requester_email?: string;
+    requester_name?: string;
+    requester_email: string;
     requester_affiliation?: string;
 }
 
