@@ -2,7 +2,6 @@
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-
 import { submitToolRequest } from "@/api/toolRequestForm";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
