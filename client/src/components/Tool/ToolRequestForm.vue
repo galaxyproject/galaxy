@@ -150,7 +150,7 @@ async function submit() {
                 type="text"
                 title="Homepage / Repository URL"
                 help="e.g. https://github.com/..."
-                :error="urlError" />
+                :error="urlError || undefined" />
 
             <FormElement
                 id="tool-request-description"

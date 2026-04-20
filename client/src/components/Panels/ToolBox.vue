@@ -500,7 +500,7 @@ function onLabelToggle(labelId: string) {
             </section>
         </div>
 
-        <ToolRequestForm :show.sync="showToolRequestForm" />
+        <ToolRequestForm v-if="showToolRequestForm" :show.sync="showToolRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
