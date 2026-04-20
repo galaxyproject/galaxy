@@ -18,7 +18,7 @@ import { useUid } from "@/composables/utils/uid";
 import { match } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
-import Heading from "@/components/Common/Heading.vue";
+import GHeading from "@/components/BaseComponents/GHeading.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -190,7 +190,7 @@ defineExpose({ showModal, hideModal });
         @click="onClickDialog">
         <section>
             <header>
-                <Heading
+                <GHeading
                     v-if="props.title"
                     h2
                     :separator="props.size === 'large'"
@@ -198,7 +198,7 @@ defineExpose({ showModal, hideModal });
                     class="g-modal-title mb-0"
                     :class="props.size === 'large' ? '' : 'ml-2'">
                     {{ props.title }}
-                </Heading>
+                </GHeading>
 
                 <slot name="header"></slot>
 
