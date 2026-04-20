@@ -96,9 +96,7 @@ Template begins here >>>>>>
       <tr>
         <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested by</td>
         <td style="padding: 4px 8px;">
-          {{ content['requester_name'] }}
-          {% if content['requester_affiliation'] %} ({{ content['requester_affiliation'] }}){% endif %}
-          {% if content['requester_email'] %} &mdash; {{ content['requester_email'] }}{% endif %}
+          {% if content['requester_name'] %}{{ content['requester_name'] }} &mdash; {% endif %}{{ content['requester_email'] }}{% if content['requester_affiliation'] %} ({{ content['requester_affiliation'] }}){% endif %}
         </td>
       </tr>
     </table>
