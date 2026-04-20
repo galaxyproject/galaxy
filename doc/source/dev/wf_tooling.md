@@ -14,18 +14,27 @@ Galaxy's workflow CLI tooling spans three packages at different abstraction leve
 | `planemo run`                | planemo          | Execute workflow via CLI with full Galaxy orchestration    |
 | `planemo workflow_test_init` | planemo          | Stub out test YAML from scratch or from an invocation      |
 | `planemo autoupdate`         | planemo          | Update tool versions in a workflow                         |
-| `gxwf-state-validate`        | galaxy-tool-util | Validate tool_state against tool definitions               |
-| `gxwf-state-clean`           | galaxy-tool-util | Strip stale/obsolete tool_state keys                       |
-| `gxwf-roundtrip-validate`    | galaxy-tool-util | Prove native↔Format2 round-trip equivalence               |
-| `gxwf-to-format2-stateful`   | galaxy-tool-util | Schema-aware native→Format2 export                         |
-| `gxwf-to-native-stateful`    | galaxy-tool-util | Schema-aware Format2→native conversion                     |
-| `gxwf-lint-stateful`         | galaxy-tool-util | Structural lint + tool state validation                    |
+| `gxwf validate`              | galaxy-tool-util | Validate tool_state against tool definitions               |
+| `gxwf clean`                 | galaxy-tool-util | Strip stale/obsolete tool_state keys                       |
+| `gxwf roundtrip`             | galaxy-tool-util | Prove native↔Format2 round-trip equivalence               |
+| `gxwf lint`                  | galaxy-tool-util | Structural lint + tool state validation                    |
+| `gxwf convert`               | galaxy-tool-util | Convert between .ga and .gxwf.yml (auto-detects direction) |
+| `gxwf validate-tree`         | galaxy-tool-util | Validate all workflows under a directory tree              |
+| `gxwf clean-tree`            | galaxy-tool-util | Strip stale state from all workflows in a directory tree   |
+| `gxwf roundtrip-tree`        | galaxy-tool-util | Round-trip validate all workflows in a directory           |
+| `gxwf lint-tree`             | galaxy-tool-util | Lint all workflows in a directory                          |
+| `gxwf convert-tree`          | galaxy-tool-util | Batch convert workflows in a directory                     |
+| `gxwf viz`                   | galaxy-tool-util | Interactive Cytoscape graph (requires gxformat2)           |
+| `gxwf abstract-export`       | galaxy-tool-util | Abstract CWL export (requires gxformat2)                   |
+| `gxwf mermaid`               | galaxy-tool-util | Mermaid diagram (requires gxformat2)                       |
 | `galaxy-tool-cache`          | galaxy-tool-util | Manage local ToolShed tool metadata cache                  |
 | `gxwf-lint`                  | gxformat2        | Structural/syntax validation (no tool defs)                |
 | `gxwf-to-native`             | gxformat2        | Format2→native conversion (no schema awareness)            |
 | `gxwf-to-format2`            | gxformat2        | Native→Format2 conversion (no schema awareness)            |
 | `gxwf-viz`                   | gxformat2        | Cytoscape graph visualization                              |
 | `gxwf-abstract-export`       | gxformat2        | Abstract CWL export                                        |
+
+Each `gxwf` subcommand is also available as a standalone binary (`gxwf-state-validate`, `gxwf-state-clean`, `gxwf-roundtrip-validate`, `gxwf-lint-stateful`, `gxwf-to-format2-stateful`, `gxwf-to-native-stateful`). The `gxwf` unified interface is preferred.
 
 ## Part 1: Using the Tools
 
@@ -83,20 +92,20 @@ See the [Planemo best practices docs](https://planemo.readthedocs.io/en/latest/b
 
 ```bash
 # Full lint: structural checks + tool state validation
-gxwf-lint-stateful --populate-cache my-workflow.ga
+gxwf lint --populate-cache my-workflow.ga
 
 # Skip best practice checks (annotation, creator, license)
-gxwf-lint-stateful --skip-best-practices my-workflow.ga
+gxwf lint --skip-best-practices my-workflow.ga
 
 # With connection type validation
-gxwf-lint-stateful --connections my-workflow.ga
+gxwf lint --connections my-workflow.ga
 
 # Strict: treat missing tool defs as failures
-gxwf-lint-stateful --strict my-workflow.ga
+gxwf lint --strict my-workflow.ga
 
 # Structured output
-gxwf-lint-stateful --report-json report.json my-workflow.ga
-gxwf-lint-stateful --report-markdown report.md my-workflow.ga
+gxwf lint --report-json report.json my-workflow.ga
+gxwf lint --report-markdown report.md my-workflow.ga
 ```
 
 Runs gxformat2's full structural lint pipeline (format validation, pydantic schema checks, best practices) followed by per-step tool state validation. Output groups results under "Structural Lint" and "State Validation" headers. Exit codes: 0 = clean, 1 = errors/failures, 2 = skips (with `--strict`).
@@ -105,19 +114,19 @@ Runs gxformat2's full structural lint pipeline (format validation, pydantic sche
 
 ```bash
 # Single file (auto-detects native vs Format2)
-gxwf-state-validate my-workflow.ga
-gxwf-state-validate my-workflow.gxwf.yml
+gxwf validate my-workflow.ga
+gxwf validate my-workflow.gxwf.yml
 
 # Entire directory tree
-gxwf-state-validate ./workflows/
+gxwf validate-tree ./workflows/
 
 # Auto-fetch tool defs, strict mode (skips = failures)
-gxwf-state-validate --populate-cache --strict ./workflows/
+gxwf validate-tree --populate-cache --strict ./workflows/
 
 # Structured output
-gxwf-state-validate --report-json report.json my-workflow.ga
-gxwf-state-validate --report-markdown report.md my-workflow.ga
-gxwf-state-validate --summary ./workflows/
+gxwf validate --report-json report.json my-workflow.ga
+gxwf validate --report-markdown report.md my-workflow.ga
+gxwf validate-tree --summary ./workflows/
 ```
 
 Validates parameter names, types (integers, floats, selects against declared options, booleans, data columns), conditional branch consistency, and connection completeness. Recurses into subworkflows. Use `--connections` to also validate inter-step connection type compatibility. Exit codes: 0 = pass, 1 = failures, 2 = skips (with `--strict`).
@@ -125,22 +134,22 @@ Validates parameter names, types (integers, floats, selects against declared opt
 **Round-trip equivalence** — proves a workflow survives native→Format2→native without data loss:
 
 ```bash
-gxwf-roundtrip-validate my-workflow.ga
+gxwf roundtrip my-workflow.ga
 
 # Write intermediate artifacts for inspection
-gxwf-roundtrip-validate \
+gxwf roundtrip \
   --output-format2 intermediate.gxwf.yml \
   --output-native roundtripped.ga \
   my-workflow.ga
 
 # Strip bookkeeping keys before comparison
-gxwf-roundtrip-validate --strip-bookkeeping my-workflow.ga
+gxwf roundtrip --strip-bookkeeping my-workflow.ga
 
 # Strict: treat benign diffs (dropped empty repeats, all-None sections) as errors
-gxwf-roundtrip-validate --strict my-workflow.ga
+gxwf roundtrip --strict my-workflow.ga
 
 # Sweep a directory
-gxwf-roundtrip-validate --populate-cache ./workflows/
+gxwf roundtrip-tree --populate-cache ./workflows/
 ```
 
 Diffs are classified by severity — **error** (real data loss) vs **benign** (known representation artifacts like empty repeats dropped by Format2, all-None sections omitted, multiple-select scalar→list normalization).
@@ -151,27 +160,27 @@ Diffs are classified by severity — **error** (real data loss) vs **benign** (k
 
 ```bash
 # Dry run (default) — shows what would be removed
-gxwf-state-clean --populate-cache my-workflow.ga
+gxwf clean --populate-cache my-workflow.ga
 
 # Show unified diff
-gxwf-state-clean --diff my-workflow.ga
+gxwf clean --diff my-workflow.ga
 
 # Write cleaned file in-place
-gxwf-state-clean --output-template "{path}" my-workflow.ga
+gxwf clean --output-template "{path}" my-workflow.ga
 
 # Write adjacent file
-gxwf-state-clean \
+gxwf clean \
   --output-template "{dir}/{stem}.cleaned{ext}" \
   my-workflow.ga
 
 # Sweep a directory in-place
-gxwf-state-clean \
+gxwf clean-tree \
   --populate-cache --output-template "{path}" \
   ./workflows/
 
 # Structured output
-gxwf-state-clean --report-json report.json my-workflow.ga
-gxwf-state-clean --report-markdown report.md my-workflow.ga
+gxwf clean --report-json report.json my-workflow.ga
+gxwf clean --report-markdown report.md my-workflow.ga
 ```
 
 Stale keys are classified into categories that can be individually controlled:
@@ -196,41 +205,32 @@ See [Planemo automating workflows](https://planemo.readthedocs.io/en/latest/auto
 
 ### Converting and Exporting Workflows
 
-**Schema-aware Format2 export** — produces clean `state` blocks (not raw `tool_state`):
+**Schema-aware conversion** — `gxwf convert` auto-detects direction from the input file extension (`.ga` → format2, `.gxwf.yml` → native) and uses tool definitions for correct type encoding:
 
 ```bash
-# Export to YAML (default, stdout)
-gxwf-to-format2-stateful --populate-cache my-workflow.ga > my-workflow.gxwf.yml
+# .ga → format2 (auto-detected), output to stdout
+gxwf convert --populate-cache my-workflow.ga
 
-# Export to file
-gxwf-to-format2-stateful -o my-workflow.gxwf.yml my-workflow.ga
+# .gxwf.yml → native (auto-detected), output to file
+gxwf convert -o my-workflow.ga my-workflow.gxwf.yml
 
-# Export as JSON
-gxwf-to-format2-stateful --json my-workflow.ga
+# Override direction explicitly
+gxwf convert --to format2 my-workflow.ga
+gxwf convert --to native my-workflow.gxwf.yml
 
-# Compact (strip positions)
-gxwf-to-format2-stateful --compact my-workflow.ga
+# format2 output options (ignored when converting to native)
+gxwf convert --compact my-workflow.ga      # strip positions
+gxwf convert --json my-workflow.ga        # JSON instead of YAML
 
 # Strict: fail if any step can't be converted
-gxwf-to-format2-stateful --strict my-workflow.ga
+gxwf convert --strict my-workflow.ga
+
+# Batch convert a directory (--to required)
+gxwf convert-tree --to format2 --output-dir ./format2/ ./workflows/
+gxwf convert-tree --to native  --output-dir ./native/  ./workflows/
 ```
 
-Best-effort by default — steps where conversion fails retain their `tool_state`. Use `--strict` to fail instead. Stale key policy (`--allow`/`--deny`) applies during conversion — same categories as validation.
-
-**Schema-aware native conversion** — produces correctly-typed native `tool_state` from Format2:
-
-```bash
-# Convert to stdout (JSON)
-gxwf-to-native-stateful --populate-cache my-workflow.gxwf.yml
-
-# Convert to file
-gxwf-to-native-stateful -o my-workflow.ga my-workflow.gxwf.yml
-
-# Strict: fail if any step can't be schema-encoded
-gxwf-to-native-stateful --strict my-workflow.gxwf.yml
-```
-
-Without schema encoding, `gxwf-to-native` uses `json.dumps` for every state value — multiple-select lists stay as lists (should be comma-delimited strings), data columns stay as integers (should be strings). `gxwf-to-native-stateful` uses tool definitions to reverse these Format2 conveniences.
+Stale key policy (`--allow`/`--deny`) applies during format2 export — same categories as validation.
 
 **Structural format conversion** — no tool definitions, no state decoding:
 
@@ -242,17 +242,20 @@ gxwf-to-format2 my-workflow.ga --json              # JSON output to stdout
 gxwf-to-format2 --compact my-workflow.ga            # strip positions
 ```
 
-Both commands share `--compact`, `--json`, and `-o` flags. The key difference: `gxwf-to-format2-stateful` produces proper `state` dicts by consulting tool definitions to decode double-encoded JSON strings. `gxwf-to-format2` copies the raw `tool_state` strings as-is since it has no tool schema.
+Both commands share `--compact`, `--json`, and `-o` flags. The key difference: `gxwf convert` (schema-aware) produces proper `state` dicts by consulting tool definitions to decode double-encoded JSON strings. `gxwf-to-format2` copies the raw `tool_state` strings as-is since it has no tool schema.
 
 ### Visualization and Abstract Export
 
+These subcommands are pass-throughs to the corresponding gxformat2 binaries (require gxformat2 installed):
+
 ```bash
-gxwf-viz my-workflow.ga graph.html          # interactive Cytoscape HTML
-gxwf-viz my-workflow.ga graph.json          # Cytoscape JSON for desktop
-gxwf-abstract-export my-workflow.ga out.cwl # abstract CWL (non-executable)
+gxwf viz my-workflow.ga graph.html          # interactive Cytoscape HTML
+gxwf viz my-workflow.ga graph.json          # Cytoscape JSON for desktop
+gxwf abstract-export my-workflow.ga out.cwl # abstract CWL (non-executable)
+gxwf mermaid my-workflow.ga                 # Mermaid diagram
 ```
 
-These work on either format. See the [gxformat2 CLI docs](https://gxformat2.readthedocs.io/en/latest/cli.html) for details.
+All arguments after the subcommand are forwarded verbatim to the underlying gxformat2 binary. See the [gxformat2 CLI docs](https://gxformat2.readthedocs.io/en/latest/cli.html) for details.
 
 ### Running and Testing Workflows
 
@@ -278,29 +281,29 @@ See [Running Galaxy workflows](https://planemo.readthedocs.io/en/latest/running.
 galaxy-tool-cache populate-workflow ./workflows/
 
 # 2. Validate everything
-gxwf-state-validate --summary ./workflows/
+gxwf validate-tree --summary ./workflows/
 
 # 3. Clean stale state in-place
-gxwf-state-clean --output-template "{path}" ./workflows/
+gxwf clean-tree --output-template "{path}" ./workflows/
 
 # 4. Verify round-trip safety
-gxwf-roundtrip-validate ./workflows/
+gxwf roundtrip-tree ./workflows/
 ```
 
 **Export a workflow to Format2 with full verification:**
 
 ```bash
 # 1. Validate the source
-gxwf-state-validate --populate-cache my-workflow.ga
+gxwf validate --populate-cache my-workflow.ga
 
 # 2. Export with schema-aware conversion
-gxwf-to-format2-stateful -o my-workflow.gxwf.yml my-workflow.ga
+gxwf convert -o my-workflow.gxwf.yml my-workflow.ga
 
 # 3. Validate the exported Format2
-gxwf-state-validate my-workflow.gxwf.yml
+gxwf validate my-workflow.gxwf.yml
 
 # 4. Prove round-trip equivalence
-gxwf-roundtrip-validate \
+gxwf roundtrip \
   --output-format2 /dev/null \
   my-workflow.ga
 ```
@@ -322,10 +325,11 @@ Workflow CLI tooling is split across three packages, each with a distinct scope.
 │                      galaxy-tool-util                               │
 │  Schema-aware · uses ParsedTool from ToolShed 2.0 · no runtime     │
 │                                                                     │
-│  gxwf-state-validate        gxwf-state-clean                       │
-│  gxwf-roundtrip-validate    gxwf-lint-stateful                     │
-│  gxwf-to-format2-stateful   gxwf-to-native-stateful               │
-│  galaxy-tool-cache                                                  │
+│  gxwf <subcommand>                                                    │
+│    validate · clean · lint · roundtrip · convert                    │
+│    validate-tree · clean-tree · lint-tree · roundtrip-tree          │
+│    convert-tree · viz · abstract-export · mermaid                   │
+│  galaxy-tool-cache                                                   │
 │                                                                     │
 │  Protocols: GetToolInfo · ToolInputs                               │
 │  Infrastructure: _walker.py · Pydantic parameter models             │
@@ -334,7 +338,7 @@ Workflow CLI tooling is split across three packages, each with a distinct scope.
 │  Structural · no tool definitions · format conversion               │
 │                                                                     │
 │  gxwf-lint  gxwf-to-native  gxwf-to-format2  gxwf-viz             │
-│  gxwf-abstract-export                                               │
+│  gxwf-abstract-export  gxwf-mermaid                                 │
 │                                                                     │
 │  ConversionOptions callbacks:                                       │
 │    state_encode_to_format2 · state_encode_to_native                 │
@@ -358,38 +362,52 @@ The key architectural insight: **gxformat2's `ConversionOptions` defines callbac
 
 All `galaxy-tool-util` workflow CLIs share infrastructure in `_cli_common.py`:
 
-- **`build_base_parser(prog, description)`** — creates an `argparse.ArgumentParser` with common args (`--tool-source-cache-dir`, `-v`)
+- **`build_base_parser(prog, description)`** — creates a top-level `argparse.ArgumentParser` with common args (`--tool-source-cache-dir`, `-v`, `--populate-cache`, `--tool-source`, `--galaxy-url`, `workflow_path` positional)
+- **`build_base_subparser_args(parser, stale_key_mode)`** — same as above but mutates an existing subparser (no `prog`/`description`); used by `register()` functions
 - **`add_populate_args(parser)`** — adds `--populate-cache`, `--tool-source`, `--galaxy-url`
 - **`add_stale_key_args(parser, mode)`** — adds category policy flags (`--allow`/`--deny` for validate mode, `--preserve`/`--strip` for clean mode)
-- **`cli_main(parser, options_cls, run_fn)`** — shared entry-point pattern: parse → `options_cls.from_namespace(args)` → `run_fn(options)` → `sys.exit` with return code
+- **`cli_main(parser, options_cls, run_fn)`** — top-level entry-point: parse → `options_cls.from_namespace(args)` → `run_fn(options)` → `sys.exit`
+- **`cli_main_from_args(options_cls, run_fn, args)`** — subcommand variant: takes pre-parsed `Namespace`, returns int exit code
 - **`setup_tool_info(options)`** — configures logging, builds `GetToolInfo` from options, optionally populates cache
 
-Each CLI script follows the same pattern:
+Each script exposes a `register(subparsers)` function called by `gxwf.py` and a `main()` for the standalone binary:
 
 ```python
 # scripts/my_new_command.py
-from .._cli_common import build_base_parser, cli_main
+from .._cli_common import build_base_parser, build_base_subparser_args, cli_main, cli_main_from_args
 from ..my_module import MyOptions, run_my_command
 
-def build_parser():
-    parser = build_base_parser("galaxy-my-command", "Description here.")
-    # add command-specific args
+SUBCOMMAND = "my-command"
+
+def _add_args(parser):
     parser.add_argument("--strict", action="store_true")
+
+def build_parser():
+    parser = build_base_parser("gxwf-my-command", "Description here.")
+    _add_args(parser)
     return parser
 
 def main(argv=None):
     cli_main(build_parser(), MyOptions, run_my_command, argv)
+
+def register(subparsers):
+    p = subparsers.add_parser(SUBCOMMAND, help="Short help for gxwf my-command")
+    build_base_subparser_args(p)
+    _add_args(p)
+    p.set_defaults(func=lambda args: cli_main_from_args(MyOptions, run_my_command, args))
 ```
 
-`build_base_parser` already adds `--populate-cache`, `--tool-source`, `--tool-source-cache-dir`, `-v`, and the `workflow_path` positional. `MyOptions` must extend `ToolCacheOptions` and implement `from_namespace(args)` (inherited from `ToolCacheOptions`).
+`MyOptions` must extend `ToolCacheOptions` and implement `from_namespace(args)` (inherited from `ToolCacheOptions`).
 
-Register the entry point in `packages/tool_util/setup.cfg`:
+Register the standalone binary in `packages/tool_util/setup.cfg`:
 
 ```ini
 [options.entry_points]
 console_scripts =
-    galaxy-my-command = galaxy.tool_util.workflow_state.scripts.my_command:main
+    gxwf-my-command = galaxy.tool_util.workflow_state.scripts.my_command:main
 ```
+
+The `gxwf` entry point is registered once; adding a subcommand only requires implementing `register()` and importing the module in `gxwf.py`.
 
 ### Report Models
 
@@ -427,9 +445,10 @@ To add a new schema-aware transformation: add a callback slot on `ConversionOpti
 ### Adding a New CLI Command — Checklist
 
 1. Implement domain logic in a module under `workflow_state/` (e.g. `my_feature.py`)
-2. Define a typed options model (Pydantic `BaseModel`)
+2. Define a typed options model (Pydantic `BaseModel` extending `ToolCacheOptions`)
 3. Define a `run_my_feature(options) -> int` entry point returning an exit code
-4. Create `scripts/my_command.py` using the `cli_main` pattern
-5. Register in `packages/tool_util/setup.cfg` as a `console_scripts` entry
-6. Add tests — both unit tests for the domain logic and CLI parser tests
-7. Update this document
+4. Create `scripts/my_command.py` with `main()` and `register(subparsers)` following the pattern above
+5. Register the standalone binary in `packages/tool_util/setup.cfg` as a `console_scripts` entry
+6. Import the module in `scripts/gxwf.py` and add it to `_SINGLE_FILE` or `_TREE`
+7. Add tests — unit tests for domain logic and integration tests in `test_gxwf_cli.py`
+8. Update this document
