@@ -1,4 +1,7 @@
-import { getLocalVue } from "@tests/vitest/helpers";
+import "@/composables/__mocks__/filter";
+
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, suppressExpectedErrorMessages } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -17,26 +20,27 @@ vi.mock("@/api/toolRequestForm", () => ({
 const localVue = getLocalVue(true);
 
 async function mountForm(show = true): Promise<Wrapper<Vue>> {
-    // Suppress FormBoolean null-value prop warnings — condaAvailable and testDataAvailable
-    // are intentionally null until the user interacts with them.
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    // Suppress only the known BootstrapVue prop warnings for null boolean values
+    // (condaAvailable and testDataAvailable are intentionally null until the user interacts).
+    suppressExpectedErrorMessages(["Invalid prop: type check failed for prop"]);
 
+    const pinia = createTestingPinia({ createSpy: vi.fn });
     const wrapper = mount(ToolRequestForm as object, {
         localVue,
         propsData: { show },
+        pinia,
         attachTo: document.body,
     });
     await flushPromises();
     return wrapper;
 }
 
-/** Fill the three required fields: tool_name, description, requester_name. */
+/** Fill the two required fields: tool_name and description. */
 async function fillRequiredFields(wrapper: Wrapper<Vue>, overrides: Record<string, string> = {}) {
     await wrapper.find("#tool-request-name").setValue(overrides["tool_name"] ?? "FastQC");
     await wrapper
         .find("#tool-request-description")
         .setValue(overrides["description"] ?? "Quality control for sequencing data");
-    await wrapper.find("#tool-request-requester-name").setValue(overrides["requester_name"] ?? "Dr. Smith");
     await flushPromises();
 }
 
@@ -61,9 +65,11 @@ describe("ToolRequestForm", () => {
         const wrapper = await mountForm(true);
         expect(wrapper.find("#tool-request-name").exists()).toBe(true);
         expect(wrapper.find("#tool-request-description").exists()).toBe(true);
-        expect(wrapper.find("#tool-request-requester-name").exists()).toBe(true);
         expect(wrapper.find("#tool-request-url").exists()).toBe(true);
-        expect(wrapper.find("#tool-request-requester-email").exists()).toBe(true);
+        expect(wrapper.find("#tool-request-requester-affiliation").exists()).toBe(true);
+        // Name and email are filled server-side; no fields for them in the form
+        expect(wrapper.find("#tool-request-requester-name").exists()).toBe(false);
+        expect(wrapper.find("#tool-request-requester-email").exists()).toBe(false);
     });
 
     it("ok button is disabled when required fields are empty", async () => {
@@ -87,8 +93,6 @@ describe("ToolRequestForm", () => {
         await wrapper.find("#tool-request-description").setValue("Quality control for sequencing data");
         await wrapper.find("#tool-request-domain").setValue("Genomics");
         await wrapper.find("#tool-request-version").setValue("0.12.1");
-        await wrapper.find("#tool-request-requester-name").setValue("Dr. Smith");
-        await wrapper.find("#tool-request-requester-email").setValue("smith@example.com");
         await wrapper.find("#tool-request-requester-affiliation").setValue("Example University");
         await flushPromises();
 
@@ -104,10 +108,21 @@ describe("ToolRequestForm", () => {
             description: "Quality control for sequencing data",
             scientific_domain: "Genomics",
             requested_version: "0.12.1",
-            requester_name: "Dr. Smith",
-            requester_email: "smith@example.com",
             requester_affiliation: "Example University",
         });
+        // Requester name and email come from the server (authenticated user), not the form
+        expect(payload).not.toHaveProperty("requester_name");
+        expect(payload).not.toHaveProperty("requester_email");
+    });
+
+    it("rejects non-https URL and does not submit", async () => {
+        const wrapper = await mountForm(true);
+        await fillRequiredFields(wrapper);
+        await wrapper.find("#tool-request-url").setValue("http://example.com/tool");
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+        expect(mockSubmitToolRequest).not.toHaveBeenCalled();
+        expect(wrapper.text()).toContain("https://");
     });
 
     it("shows success alert after successful submission", async () => {
@@ -131,6 +146,7 @@ describe("ToolRequestForm", () => {
 
     it("does not call API when required fields are missing", async () => {
         const wrapper = await mountForm(true);
+        // Only fill tool_name, leave description empty
         await wrapper.find("#tool-request-name").setValue("Samtools");
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");

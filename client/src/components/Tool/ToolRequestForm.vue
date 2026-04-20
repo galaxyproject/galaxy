@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { BAlert, BFormGroup, BFormInput, BFormSelect, BFormTextarea } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { submitToolRequest } from "@/api/toolRequestForm";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
+import FormElement from "@/components/Form/FormElement.vue";
 
 const props = defineProps<{
     show: boolean;
@@ -22,15 +23,34 @@ const scientificDomain = ref("");
 const requestedVersion = ref("");
 const condaAvailable = ref<boolean | null>(null);
 const testDataAvailable = ref<boolean | null>(null);
-const requesterName = ref("");
-const requesterEmail = ref("");
 const requesterAffiliation = ref("");
 
 const submitting = ref(false);
 const successMessage = ref("");
 const errorMessage = ref("");
+const urlError = ref("");
 
-const formValid = () => !!(toolName.value.trim() && description.value.trim() && requesterName.value.trim());
+const formValid = () => !!(toolName.value.trim() && description.value.trim());
+
+function validateUrl(): boolean {
+    const url = toolUrl.value.trim();
+    if (!url) {
+        urlError.value = "";
+        return true;
+    }
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== "https:") {
+            urlError.value = "Only https:// URLs are allowed.";
+            return false;
+        }
+    } catch {
+        urlError.value = "Please enter a valid URL (e.g. https://example.com).";
+        return false;
+    }
+    urlError.value = "";
+    return true;
+}
 
 function resetForm() {
     toolName.value = "";
@@ -40,10 +60,9 @@ function resetForm() {
     requestedVersion.value = "";
     condaAvailable.value = null;
     testDataAvailable.value = null;
-    requesterName.value = "";
-    requesterEmail.value = "";
     requesterAffiliation.value = "";
     errorMessage.value = "";
+    urlError.value = "";
     successMessage.value = "";
 }
 
@@ -55,6 +74,10 @@ function close() {
 async function submit() {
     if (!formValid()) {
         errorMessage.value = "Please fill in all required fields.";
+        return;
+    }
+
+    if (!validateUrl()) {
         return;
     }
 
@@ -71,8 +94,6 @@ async function submit() {
             requested_version: requestedVersion.value.trim() || undefined,
             conda_available: condaAvailable.value ?? undefined,
             test_data_available: testDataAvailable.value ?? undefined,
-            requester_name: requesterName.value.trim(),
-            requester_email: requesterEmail.value.trim() || undefined,
             requester_affiliation: requesterAffiliation.value.trim() || undefined,
         });
 
@@ -115,102 +136,86 @@ async function submit() {
 
             <h6 v-localize class="font-weight-bold mb-2">Tool Information</h6>
 
-            <BFormGroup label="Tool Name *" label-for="tool-request-name">
-                <BFormInput
-                    id="tool-request-name"
-                    v-model="toolName"
-                    placeholder="e.g. FastQC"
-                    :disabled="submitting"
-                    required />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-name"
+                v-model="toolName"
+                type="text"
+                title="Tool Name"
+                help="e.g. FastQC"
+                :attributes="{ optional: false }" />
 
-            <BFormGroup label="Homepage / Repository URL" label-for="tool-request-url">
-                <BFormInput
-                    id="tool-request-url"
-                    v-model="toolUrl"
-                    placeholder="e.g. https://github.com/..."
-                    :disabled="submitting" />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-url"
+                v-model="toolUrl"
+                type="text"
+                title="Homepage / Repository URL"
+                help="e.g. https://github.com/..."
+                :error="urlError" />
 
-            <BFormGroup label="Description *" label-for="tool-request-description">
-                <BFormTextarea
-                    id="tool-request-description"
-                    v-model="description"
-                    placeholder="Describe the tool and its scientific use case"
-                    rows="3"
-                    :disabled="submitting"
-                    required />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-description"
+                v-model="description"
+                type="text"
+                title="Description"
+                help="Describe the tool and its scientific use case"
+                :attributes="{ area: true, optional: false }" />
 
-            <BFormGroup label="Scientific Domain" label-for="tool-request-domain">
-                <BFormInput
-                    id="tool-request-domain"
-                    v-model="scientificDomain"
-                    placeholder="e.g. Genomics, Proteomics, AI/ML"
-                    :disabled="submitting" />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-domain"
+                v-model="scientificDomain"
+                type="text"
+                title="Scientific Domain"
+                help="e.g. Genomics, Proteomics, AI/ML" />
 
-            <BFormGroup label="Requested Version" label-for="tool-request-version">
-                <BFormInput
-                    id="tool-request-version"
-                    v-model="requestedVersion"
-                    placeholder="e.g. 1.2.0"
-                    :disabled="submitting" />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-version"
+                v-model="requestedVersion"
+                type="text"
+                title="Requested Version"
+                help="e.g. 1.2.0" />
 
             <div class="d-flex gap-3 mb-3">
-                <BFormGroup label="Conda package available?" label-for="tool-request-conda" class="flex-fill mb-0">
-                    <BFormSelect
-                        id="tool-request-conda"
-                        v-model="condaAvailable"
-                        :options="[
-                            { value: null, text: 'Not specified' },
-                            { value: true, text: 'Yes' },
-                            { value: false, text: 'No' },
-                        ]"
-                        :disabled="submitting" />
-                </BFormGroup>
+                <FormElement
+                    id="tool-request-conda"
+                    v-model="condaAvailable"
+                    type="select"
+                    title="Conda package available?"
+                    class="flex-fill"
+                    :attributes="{
+                        data: [
+                            { label: 'Not specified', value: null },
+                            { label: 'Yes', value: true },
+                            { label: 'No', value: false },
+                        ],
+                    }" />
 
-                <BFormGroup label="Test data available?" label-for="tool-request-test-data" class="flex-fill mb-0">
-                    <BFormSelect
-                        id="tool-request-test-data"
-                        v-model="testDataAvailable"
-                        :options="[
-                            { value: null, text: 'Not specified' },
-                            { value: true, text: 'Yes' },
-                            { value: false, text: 'No' },
-                        ]"
-                        :disabled="submitting" />
-                </BFormGroup>
+                <FormElement
+                    id="tool-request-test-data"
+                    v-model="testDataAvailable"
+                    type="select"
+                    title="Test data available?"
+                    class="flex-fill"
+                    :attributes="{
+                        data: [
+                            { label: 'Not specified', value: null },
+                            { label: 'Yes', value: true },
+                            { label: 'No', value: false },
+                        ],
+                    }" />
             </div>
 
             <h6 v-localize class="font-weight-bold mb-2 mt-3">Requester Information</h6>
 
-            <BFormGroup label="Name *" label-for="tool-request-requester-name">
-                <BFormInput
-                    id="tool-request-requester-name"
-                    v-model="requesterName"
-                    placeholder="Your name"
-                    :disabled="submitting"
-                    required />
-            </BFormGroup>
+            <p class="mb-2 text-muted small">
+                Your account name and email will be automatically included in the request.
+            </p>
 
-            <BFormGroup label="Email (for follow-up)" label-for="tool-request-requester-email">
-                <BFormInput
-                    id="tool-request-requester-email"
-                    v-model="requesterEmail"
-                    type="email"
-                    placeholder="your@email.com"
-                    :disabled="submitting" />
-            </BFormGroup>
-
-            <BFormGroup label="Affiliation / Lab" label-for="tool-request-requester-affiliation">
-                <BFormInput
-                    id="tool-request-requester-affiliation"
-                    v-model="requesterAffiliation"
-                    placeholder="Your institution or lab"
-                    :disabled="submitting" />
-            </BFormGroup>
+            <FormElement
+                id="tool-request-requester-affiliation"
+                v-model="requesterAffiliation"
+                type="text"
+                title="Affiliation / Lab"
+                help="Your institution or lab" />
         </div>
     </GModal>
 </template>
