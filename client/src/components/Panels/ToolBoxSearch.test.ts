@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
