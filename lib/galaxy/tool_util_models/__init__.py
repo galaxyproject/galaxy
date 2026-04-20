@@ -16,9 +16,11 @@ from pydantic import (
     AnyUrl,
     BaseModel,
     ConfigDict,
+    Discriminator,
     Field,
     model_validator,
     RootModel,
+    Tag,
 )
 from typing_extensions import (
     Annotated,
@@ -190,16 +192,33 @@ class TestDataOutputAssertions(BaseTestOutputModel):
 
 
 class TestCollectionCollectionElementAssertions(StrictModel):
+    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class")
     elements: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
     element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
 
 
 class TestCollectionDatasetElementAssertions(BaseTestOutputModel):
-    pass
+    class_: Optional[Literal["File"]] = Field("File", alias="class")
 
 
-TestCollectionElementAssertion = Union[
-    TestCollectionDatasetElementAssertions, TestCollectionCollectionElementAssertions
+def _discriminate_collection_element(v):
+    if isinstance(v, dict):
+        if v.get("class") == "Collection":
+            return "Collection"
+        return "File"
+    if isinstance(v, TestCollectionCollectionElementAssertions):
+        return "Collection"
+    if isinstance(v, TestCollectionDatasetElementAssertions):
+        return "File"
+    return None
+
+
+TestCollectionElementAssertion = Annotated[
+    Union[
+        Annotated[TestCollectionDatasetElementAssertions, Tag("File")],
+        Annotated[TestCollectionCollectionElementAssertions, Tag("Collection")],
+    ],
+    Discriminator(_discriminate_collection_element),
 ]
 TestCollectionCollectionElementAssertions.model_rebuild()
 
@@ -219,7 +238,29 @@ class TestCollectionOutputAssertions(StrictModel):
 
 TestOutputLiteral = Union[bool, int, float, str]
 
-TestOutputAssertions = Union[TestCollectionOutputAssertions, TestDataOutputAssertions, TestOutputLiteral]
+
+def _discriminate_output(v):
+    if isinstance(v, dict):
+        if v.get("class") == "Collection":
+            return "Collection"
+        return "File"
+    if isinstance(v, TestCollectionOutputAssertions):
+        return "Collection"
+    if isinstance(v, TestDataOutputAssertions):
+        return "File"
+    if isinstance(v, (bool, int, float, str)):
+        return "scalar"
+    return None
+
+
+TestOutputAssertions = Annotated[
+    Union[
+        Annotated[TestCollectionOutputAssertions, Tag("Collection")],
+        Annotated[TestDataOutputAssertions, Tag("File")],
+        Annotated[TestOutputLiteral, Tag("scalar")],
+    ],
+    Discriminator(_discriminate_output),
+]
 
 
 TestInputValue = Union[bool, int, float, str, List[Any], Dict[str, Any]]

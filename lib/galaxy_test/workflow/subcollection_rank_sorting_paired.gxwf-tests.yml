@@ -81,6 +81,7 @@
       collection_type: list:list
       elements:
         test_level_3:
+          class: Collection
           elements:
             test_level_2:
               asserts:
