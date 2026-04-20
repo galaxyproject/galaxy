@@ -3616,6 +3616,9 @@ class DatabaseOperationTool(Tool):
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
+            if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
+                raise ToolInputsNotReadyException(f"Input '{input_key}' is paused; the file is not yet available.")
+
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
                     # TODO: frontend component should intercept and point to problematic input
