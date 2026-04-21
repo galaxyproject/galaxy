@@ -1,8 +1,10 @@
 import tarfile
+from unittest.mock import patch
 
 from celery import shared_task
 from sqlalchemy import select
 
+from galaxy.authnz.managers import AuthnzManager
 from galaxy.celery import galaxy_task
 from galaxy.celery.tasks import (
     prepare_pdf_download,
@@ -42,6 +44,15 @@ def use_session(sa_session: galaxy_scoped_session):
     sa_session().query(HistoryDatasetAssociation).get(1)
 
 
+@galaxy_task
+def inspect_authnz_manager(authnz_manager: AuthnzManager | None = None):
+    return authnz_manager.__class__.__name__ if authnz_manager is not None else None
+
+
+class FakeAuthnzManager:
+    pass
+
+
 class TestCeleryTasksIntegration(IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
@@ -67,6 +78,16 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
             process_page.delay(request).get(timeout=10)
             == "content_format is markdown with annotation my cool annotation"
         )
+
+    def test_authnz_manager_injected_into_task(self):
+        fake_authnz_manager = FakeAuthnzManager()
+        app_with_authnz_override = self._app.clone()
+        app_with_authnz_override.define(AuthnzManager, fake_authnz_manager)
+
+        with patch.object(self._app, "magic_partial", app_with_authnz_override.magic_partial), patch.object(
+            self._app, "authnz_manager", fake_authnz_manager
+        ):
+            assert inspect_authnz_manager.delay().get(timeout=10) == "FakeAuthnzManager"
 
     def test_galaxy_task(self):
         history_id = self.dataset_populator.new_history()
