@@ -25,6 +25,7 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
@@ -301,7 +302,7 @@ class AuthnzManager:
         for auth in user.social_auth or []:
             self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
-    def refresh_expiring_oidc_tokens_for_job(self, sa_session, user):
+    def refresh_expiring_oidc_tokens_for_job(self, sa_session: galaxy_scoped_session, user: model.User) -> None:
         """Refresh OIDC tokens for a user in an async job context.
 
         Unlike refresh_expiring_oidc_tokens(), this doesn't require a web transaction

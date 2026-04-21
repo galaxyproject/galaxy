@@ -21,7 +21,7 @@ from social_core.utils import (
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from galaxy import exceptions as galaxy_exceptions
+from galaxy import exceptions as galaxy_exceptions, model
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
@@ -45,6 +45,7 @@ from .oidc_utils import (
     verify_oidc_response,
 )
 from ..config import GalaxyAppConfiguration
+from ..model.scoped_session import galaxy_scoped_session
 
 if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
@@ -286,7 +287,7 @@ class PSAAuthnz(IdentityProvider):
             return True
         return False
 
-    def refresh_for_job(self, sa_session, user_authnz_token):
+    def refresh_for_job(self, sa_session: galaxy_scoped_session, user_authnz_token: model.UserAuthnzToken) -> bool:
         """
         Refresh token for use in async job context (no web transaction available).
         """
