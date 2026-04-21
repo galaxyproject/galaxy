@@ -1,6 +1,7 @@
 {
   "name": "@galaxyproject/galaxy-client",
   "version": "26.1.dev0",
+  "packageManager": "pnpm@10.26.1",
   "description": "Galaxy client application build system",
   "keywords": [
     "galaxy"

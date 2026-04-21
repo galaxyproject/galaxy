@@ -12,7 +12,7 @@ scripts/scramble/archives
 # Python build artifacts
 build
 dist
-lib/galaxy.egg-info
+*.egg-info/
 .eggs
 
 # Generated static content
@@ -165,7 +165,6 @@ client/webpack-stats.json
 # Packages
 packages/*/build
 packages/*/dist
-packages/*/*.egg-info
 packages/meta/requirements.txt
 
 # Standalone script + main, or build into dist

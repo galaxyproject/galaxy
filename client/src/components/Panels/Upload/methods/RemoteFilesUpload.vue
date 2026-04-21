@@ -660,6 +660,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             v-if="
                                 props.multiple !== false && !urlTracker.isAtRoot.value && filesOnCurrentPage.length > 0
                             "
+                            data-test-id="remote-files-select-all"
                             :checked="allFilesSelected"
                             :indeterminate="someFilesSelected"
                             @change="toggleSelectAll"
@@ -670,6 +671,8 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(select)="{ item }">
                         <BFormCheckbox
                             v-if="item.isLeaf"
+                            data-test-id="remote-files-browser-item-checkbox"
+                            :data-label="item.label"
                             :checked="isSelected(item)"
                             @change="toggleFileSelection(item)"
                             @click.stop />
@@ -679,13 +682,13 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     <template v-slot:cell(user)="{ item }">
                         <span
                             v-if="urlTracker.isAtRoot.value && !item.isLeaf && item.url.startsWith(USER_FILE_PREFIX)"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="You created this file source">
                             <FontAwesomeIcon :icon="faUser" class="text-primary" fixed-width />
                         </span>
                         <span
                             v-else-if="urlTracker.isAtRoot.value && !item.isLeaf"
-                            v-b-tooltip.hover.noninteractive
+                            v-g-tooltip.hover.noninteractive
                             title="This file source was created by an administrator and is globally available">
                             <FontAwesomeIcon :icon="faGlobe" class="text-primary" fixed-width />
                         </span>
@@ -699,7 +702,12 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                                 :icon="faFolder"
                                 class="mr-2 text-warning"
                                 fixed-width />
-                            <span>{{ item.label }}</span>
+                            <span
+                                data-test-id="remote-files-browser-label"
+                                :data-label="item.label"
+                                :data-entry-kind="item.isLeaf ? 'file' : 'directory'">
+                                {{ item.label }}
+                            </span>
                         </div>
                     </template>
 
@@ -748,6 +756,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                     color="blue"
                     :disabled="!hasSelection"
                     class="ml-auto"
+                    data-test-id="remote-files-add-selected"
                     @click="addSelectedFiles">
                     <FontAwesomeIcon :icon="faPlus" class="mr-1" />
                     Add Selected Files ({{ selectionCount }})

@@ -188,6 +188,7 @@ class RepositoryRevisionMetadata(BaseModel):
     has_repository_dependencies: bool
     includes_tools: bool
     includes_tools_for_display_in_tool_panel: bool
+    create_time: str
     # Deprecate these...
     includes_tool_dependencies: Optional[bool] = None
     includes_datatypes: Optional[bool] = None
@@ -241,6 +242,7 @@ class RepositoryRevisionMetadataPreview(BaseModel):
     has_repository_dependencies: bool
     includes_tools: bool
     includes_tools_for_display_in_tool_panel: bool
+    create_time: Optional[str] = None
     includes_tool_dependencies: Optional[bool] = None
     includes_datatypes: Optional[bool] = None
     includes_workflows: Optional[bool] = None

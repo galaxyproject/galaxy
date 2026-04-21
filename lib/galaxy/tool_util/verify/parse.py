@@ -145,7 +145,7 @@ def _description_from_tool_source(
     request_schema: Optional[Dict[str, Any]] = None
     if request_and_schema:
         request = request_and_schema.request.input_state
-        request_schema = request_and_schema.request_schema.dict()
+        request_schema = request_and_schema.request_schema.model_dump()
 
     value_state_representation = raw_test_dict.get("value_state_representation", "test_case_xml")
     tool_id, tool_version = _tool_id_and_version(tool_source, tool_guid)

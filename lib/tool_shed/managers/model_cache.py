@@ -59,4 +59,4 @@ class ModelCache:
         if not os.path.exists(parent_directory):
             os.makedirs(parent_directory)
         with open(cache_target, "w") as f:
-            json.dump(model_object.dict(), f)
+            json.dump(model_object.model_dump(), f)

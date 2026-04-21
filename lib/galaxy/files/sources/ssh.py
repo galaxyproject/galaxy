@@ -1,23 +1,46 @@
-try:
-    from fs.sshfs.sshfs import SSHFS
-except ImportError:
-    SSHFS = None
-
+from io import StringIO
 from typing import (
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
-from galaxy.files.models import (
-    BaseFileSourceConfiguration,
-    BaseFileSourceTemplateConfiguration,
-    FilesSourceRuntimeContext,
+try:
+    from fsspec.implementations.sftp import SFTPFileSystem
+    from paramiko.ecdsakey import ECDSAKey
+    from paramiko.ed25519key import Ed25519Key
+    from paramiko.rsakey import RSAKey
+except ImportError:
+    SFTPFileSystem = None
+    if TYPE_CHECKING:
+        from paramiko.ecdsakey import ECDSAKey
+        from paramiko.ed25519key import Ed25519Key
+        from paramiko.rsakey import RSAKey
+
+from galaxy.exceptions import AuthenticationFailed
+from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.sources._fsspec import (
+    CacheOptionsDictType,
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
-from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+def _parse_private_key(private_key: str, password: Optional[str]):
+    # Paramiko cannot autodetect the key type, so try the supported key classes.
+    for pkey_class in (RSAKey, ECDSAKey, Ed25519Key):
+        try:
+            with StringIO(private_key) as pkey_file:
+                return pkey_class.from_private_key(pkey_file, password=password)
+        except Exception:
+            continue
+
+    return None
+
+
+class SshFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
     host: Union[str, TemplateExpansion]
     user: Optional[Union[str, TemplateExpansion]] = None
     passwd: Optional[Union[str, TemplateExpansion]] = None
@@ -25,11 +48,10 @@ class SshFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
     timeout: Union[int, TemplateExpansion] = 10
     port: Union[int, TemplateExpansion] = 22
     compress: Union[bool, TemplateExpansion] = False
-    config_path: Union[str, TemplateExpansion] = "~/.ssh/config"
     path: Union[str, TemplateExpansion]
 
 
-class SshFileSourceConfiguration(BaseFileSourceConfiguration):
+class SshFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     host: str
     user: Optional[str] = None
     passwd: Optional[str] = None
@@ -37,34 +59,44 @@ class SshFileSourceConfiguration(BaseFileSourceConfiguration):
     timeout: int = 10
     port: int = 22
     compress: bool = False
-    config_path: str = "~/.ssh/config"
     path: str
 
 
-class SshFilesSource(PyFilesystem2FilesSource[SshFileSourceTemplateConfiguration, SshFileSourceConfiguration]):
+class SshFilesSource(FsspecFilesSource[SshFileSourceTemplateConfiguration, SshFileSourceConfiguration]):
     plugin_type = "ssh"
-    required_module = SSHFS
-    required_package = "fs.sshfs"
+    required_module = SFTPFileSystem
+    required_package = "fsspec"
 
     template_config_class = SshFileSourceTemplateConfiguration
     resolved_config_class = SshFileSourceConfiguration
 
-    def _open_fs(self, context: FilesSourceRuntimeContext[SshFileSourceConfiguration]):
-        if SSHFS is None:
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[SshFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,  # Ignored because fsspec's SFTPFileSystem does not support caching options.
+    ):
+        if SFTPFileSystem is None:
             raise self.required_package_exception
 
         config = context.config
-        handle = SSHFS(
+        pkey = None
+        password = config.passwd
+        if config.pkey:
+            pkey = _parse_private_key(config.pkey, config.passwd)
+            if pkey is None:
+                raise AuthenticationFailed("Invalid or unsupported SSH private key provided.")
+            password = None
+
+        fs = SFTPFileSystem(
             host=config.host,
-            user=config.user,
-            passwd=config.passwd,
-            pkey=config.pkey,
+            username=config.user,
+            password=password,
+            pkey=pkey,
             port=config.port,
             timeout=config.timeout,
             compress=config.compress,
-            config_path=config.config_path,
         )
-        return handle
+        return fs
 
     def _to_filesystem_path(self, path: str, config: SshFileSourceConfiguration) -> str:
         base = config.path.rstrip("/")

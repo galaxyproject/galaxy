@@ -216,8 +216,10 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Check client build state.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    if [ -f static/client_build_hash.txt ]; then
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        echo "The Galaxy prebuilt client will be installed from PyPI."
+    elif [ -f static/client_build_hash.txt ]; then
         # If git is not used and static/client_build_hash.txt is present, next
         # client rebuilds must be done manually by the admin
         if [ "$GIT_BRANCH" = "0" ]; then
@@ -239,32 +241,49 @@ else
     echo "The Galaxy client build is being skipped due to the SKIP_CLIENT_BUILD environment variable."
 fi
 
-# Build client if necessary.
-if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
-    # Ensure pnpm is installed
-    INSTALL_PNPM=0
-    if ! command -v pnpm >/dev/null; then
-        INSTALL_PNPM=1
-    fi
-    if [ $INSTALL_PNPM -eq 1 ]; then
-        if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-            echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
-        elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
-            echo "Installing pnpm into $VIRTUAL_ENV with corepack."
-            corepack enable pnpm
-        else
-            echo "Installing pnpm locally with npm."
-            npm install -g pnpm
+# Build or install client if necessary.
+if [ "$SKIP_CLIENT_BUILD" -eq 0 ]; then
+    if [ "$INSTALL_PREBUILT_CLIENT" -ne 0 ]; then
+        # Prebuilt install: pull the matching galaxy-web-client wheel from PyPI.
+        # webapp.py picks it up via `import galaxy.web_client` and serves its
+        # bundled dist/ directly -- no pnpm or staging required.
+        GALAXY_WEB_CLIENT_VERSION=$(PYTHONPATH=lib python -c "from galaxy.version import VERSION; print(VERSION)")
+        case "$GALAXY_WEB_CLIENT_VERSION" in
+            *dev*)
+                echo "ERROR: Galaxy is at development version ${GALAXY_WEB_CLIENT_VERSION}, for which no galaxy-web-client wheel is published to PyPI."
+                echo "The prebuilt client install path (GALAXY_INSTALL_PREBUILT_CLIENT=1) is only supported against tagged releases.  Unset GALAXY_INSTALL_PREBUILT_CLIENT to build the client from source instead."
+                exit 1
+                ;;
+        esac
+        # shellcheck disable=SC2086
+        if ! ${PIP_CMD} install "galaxy-web-client==${GALAXY_WEB_CLIENT_VERSION}"; then
+            echo "ERROR: Galaxy prebuilt client install failed.  See ./client/README.md for more information, including how to get help."
+            exit 1
         fi
-    fi
-    # We need GALAXY_CONFIG_FILE here, ensure it's set.
-    set_galaxy_config_file_var
-    # Set plugin path
-    GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
+    else
+        # Dev build: use pnpm to build client from source.
+        # Ensure pnpm is installed.
+        INSTALL_PNPM=0
+        if ! command -v pnpm >/dev/null; then
+            INSTALL_PNPM=1
+        fi
+        if [ $INSTALL_PNPM -eq 1 ]; then
+            if [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+                echo "Installing pnpm into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+                $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" pnpm
+            elif [ -n "$VIRTUAL_ENV" ] && in_venv "$(command -v npm)"; then
+                echo "Installing pnpm into $VIRTUAL_ENV with corepack."
+                corepack enable pnpm
+            else
+                echo "Installing pnpm locally with npm."
+                npm install -g pnpm
+            fi
+        fi
+        # We need GALAXY_CONFIG_FILE here, ensure it's set.
+        set_galaxy_config_file_var
+        # Set plugin path
+        GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
 
-    if [ "${INSTALL_PREBUILT_CLIENT}" -eq 0 ]; then
-        # If we have not opted to use a prebuilt client, then build client.
         cd client
         # shellcheck disable=SC2086
         if pnpm install $PNPM_INSTALL_OPTS; then
@@ -277,19 +296,5 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
             exit 1
         fi
         cd -
-    else
-        # Install prebuilt client
-        # shellcheck disable=SC2086
-        if pnpm install $PNPM_INSTALL_OPTS; then
-            if ! (pnpm run stage) then
-                echo "ERROR: Galaxy prebuilt client install failed. See ./client/README.md for more information, including how to get help."
-                exit 1
-            fi
-        else
-            echo "ERROR: Galaxy prebuilt client dependency installation failed. See ./client/README.md for more information, including how to get help."
-            exit 1
-        fi
-
     fi
-
 fi

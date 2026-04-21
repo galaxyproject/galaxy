@@ -15,10 +15,10 @@ from galaxy.tool_util.verify.interactor import (
     verify_collection,
 )
 from galaxy.tool_util_models import (
+    JobTestDict,
     OutputChecks,
     OutputsDict,
     TestDicts,
-    TestJobDict,
 )
 from galaxy.util import asbool
 from galaxy_test.api._framework import ApiTestCase
@@ -59,7 +59,7 @@ class TestWorkflow(ApiTestCase):
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     @pytest.mark.workflow
-    def test_workflow(self, workflow_path: Path, test_job: TestJobDict):
+    def test_workflow(self, workflow_path: Path, test_job: JobTestDict):
         with workflow_path.open() as f:
             yaml_content = ordered_load(f)
         with self.dataset_populator.test_history() as history_id:

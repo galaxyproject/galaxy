@@ -20,6 +20,7 @@ import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { useAccessibleHover } from "@/composables/accessibleHover";
 import { useUid } from "@/composables/utils/uid";
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
 const props = defineProps<{
     /** Optional id override. Will auto generate an id if none is provided */
@@ -126,7 +127,10 @@ watch(
     },
 );
 
-useAccessibleHover(() => props.reference, show, hide);
+useAccessibleHover(() => props.reference, show, hide, {
+    showDelayMs: DEFAULT_TOOLTIP_HOVER_DELAY_MS,
+    delayFocusEnter: false,
+});
 
 defineExpose({
     show,

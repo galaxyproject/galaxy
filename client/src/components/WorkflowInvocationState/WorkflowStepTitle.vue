@@ -3,17 +3,16 @@ import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref, watch } from "vue";
 
+import type { InvocationStep } from "@/api/invocations";
+import type { WorkflowStepTyped } from "@/api/workflows";
+import { getStepTitle } from "@/components/WorkflowInvocationState/util";
 import { useToolStore } from "@/stores/toolStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 interface WorkflowInvocationStepTitleProps {
-    stepIndex: number;
-    stepLabel?: string;
-    stepType: string;
-    stepToolId?: string | null;
-    stepToolUuid?: string | null;
-    stepSubworkflowId?: string | null;
+    workflowStep: WorkflowStepTyped;
+    invocationStep?: InvocationStep;
 }
 
 const props = defineProps<WorkflowInvocationStepTitleProps>();
@@ -21,55 +20,33 @@ const props = defineProps<WorkflowInvocationStepTitleProps>();
 const workflowStore = useWorkflowStore();
 const toolStore = useToolStore();
 
-const subWorkflow = computed(() => {
-    if (props.stepSubworkflowId) {
-        return workflowStore.getStoredWorkflowByInstanceId(props.stepSubworkflowId);
-    }
-    return null;
-});
-const toolName = computed(() => {
-    const toolId = props.stepToolUuid || props.stepToolId;
-    if (toolId) {
-        return toolStore.getToolNameById(toolId);
-    }
-    return "";
-});
+const stepSubworkflowId = computed(() => ("workflow_id" in props.workflowStep ? props.workflowStep.workflow_id : null));
+const toolId = computed(() => props.workflowStep.tool_uuid || props.workflowStep.tool_id);
 
 const title = computed(() => {
-    const oneBasedStepIndex = props.stepIndex + 1;
-    if (props.stepLabel) {
-        return `Step ${oneBasedStepIndex}: ${props.stepLabel}`;
-    }
-    const workflowStepType = props.stepType;
-    switch (workflowStepType) {
-        case "tool":
-            return `Step ${oneBasedStepIndex}: ${toolName.value}`;
-        case "subworkflow": {
-            const subworkflow = subWorkflow.value;
-            const label = subworkflow ? subworkflow.name : "Subworkflow";
-            return `Step ${oneBasedStepIndex}: ${label}`;
-        }
-        case "parameter_input":
-            return `Step ${oneBasedStepIndex}: Parameter input`;
-        case "data_input":
-            return `Step ${oneBasedStepIndex}: Data input`;
-        case "data_collection_input":
-            return `Step ${oneBasedStepIndex}: Data collection input`;
-        default:
-            return `Step ${oneBasedStepIndex}: Unknown step type '${workflowStepType}'`;
-    }
+    const toolName = toolId.value ? toolStore.getToolNameById(toolId.value) : undefined;
+    const subworkflowName = stepSubworkflowId.value
+        ? workflowStore.getStoredWorkflowByInstanceId(stepSubworkflowId.value)?.name
+        : undefined;
+    return getStepTitle(
+        props.workflowStep.id,
+        props.workflowStep.type,
+        props.invocationStep?.workflow_step_label || undefined,
+        toolName || undefined,
+        subworkflowName,
+    );
 });
+
 const hoverError = ref("");
 
 async function initStores() {
-    const toolId = props.stepToolUuid || props.stepToolId;
-    if (toolId && !toolStore.getToolForId(toolId)) {
-        toolStore.fetchToolForId(toolId);
+    if (toolId.value && !toolStore.getToolForId(toolId.value)) {
+        toolStore.fetchToolForId(toolId.value);
     }
 
-    if (props.stepSubworkflowId) {
+    if (stepSubworkflowId.value) {
         try {
-            await workflowStore.fetchWorkflowForInstanceId(props.stepSubworkflowId);
+            await workflowStore.fetchWorkflowForInstanceId(stepSubworkflowId.value);
         } catch (e) {
             hoverError.value = errorMessageAsString(e, "Error fetching subworkflow");
         }
@@ -77,7 +54,7 @@ async function initStores() {
 }
 
 watch(
-    props,
+    () => [props.workflowStep, props.invocationStep],
     async () => {
         await initStores();
     },

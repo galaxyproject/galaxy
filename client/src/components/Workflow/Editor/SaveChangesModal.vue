@@ -13,10 +13,13 @@ interface Props {
     showModal: boolean;
     /** The URL to navigate to before saving/ignoring changes */
     navUrl: string;
+    /** Whether to append the version to the URL */
+    appendVersion: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     showModal: false,
+    appendVersion: false,
 });
 
 const busy = ref(false);
@@ -24,8 +27,6 @@ const busy = ref(false);
 const emit = defineEmits<{
     /** Proceed with or without saving the changes */
     (e: "on-proceed", url: string, forceSave: boolean, ignoreChanges: boolean, appendVersion: boolean): void;
-    /** Update the nav URL prop */
-    (e: "update:nav-url", url: string): void;
     /** Update the show modal boolean prop */
     (e: "update:show-modal", showModal: boolean): void;
 }>();
@@ -43,18 +44,17 @@ const buttonTitles = {
 
 function closeModal() {
     emit("update:show-modal", false);
-    emit("update:nav-url", "");
 }
 
 function dontSave() {
     busy.value = true;
-    emit("on-proceed", props.navUrl, false, true, true);
+    emit("on-proceed", props.navUrl, false, true, props.appendVersion);
 }
 
 function saveChanges() {
     busy.value = true;
     closeModal();
-    emit("on-proceed", props.navUrl, true, false, true);
+    emit("on-proceed", props.navUrl, true, false, props.appendVersion);
 }
 </script>
 

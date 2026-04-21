@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import ExternalLink from "../ExternalLink.vue";
 import DirectiveHelpSection from "./DirectiveHelpSection.vue";
 
 interface MarkdownHelpProps {
@@ -24,7 +25,7 @@ const page = computed(() => props.mode == "page");
 
         <p>
             For an overview of standard Markdown visit the
-            <a href="https://commonmark.org/help/tutorial/">commonmark.org tutorial</a>.
+            <ExternalLink href="https://commonmark.org/help/tutorial/">commonmark.org tutorial</ExternalLink>.
         </p>
 
         <p>

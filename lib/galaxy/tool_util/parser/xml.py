@@ -1528,7 +1528,7 @@ class XmlInputSource(InputSource):
 
         root_options: List[DrillDownOptionsDict] = []
         options_elem = elem.find("options")
-        assert options_elem, "Non-dynamic drilldown parameters must supply an options element"
+        assert options_elem is not None, "Non-dynamic drilldown parameters must supply an options element"
         _recurse_drill_down_elems(root_options, options_elem.findall("option"))
         return root_options
 
@@ -1589,7 +1589,7 @@ class XmlInputSource(InputSource):
             for element in elements:
                 identifier = element.get("name")
                 subcollection_elem = element.find("collection")
-                if subcollection_elem:
+                if subcollection_elem is not None:
                     collection_type = subcollection_elem.get("collection_type")
                     element_dicts.append(
                         {

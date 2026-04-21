@@ -46,7 +46,7 @@ clean-tests:
 # Removing .venv instead of $(VENV) is intentional, because we can't guarantee we created $(VENV)
 clean-web-client:
 	rm -rf .venv
-	rm -rf galaxy/web_client/dist galaxy/web_client/client_build_hash.txt
+	rm -rf src/galaxy/web_client/dist src/galaxy/web_client/client_build_hash.txt
 
 setup-venv:
 	uv sync --inexact --all-extras
@@ -56,21 +56,21 @@ _test:
 
 test: setup-venv _test
 
-_dist: galaxy/web_client/client_build_hash.txt
+_dist: src/galaxy/web_client/client_build_hash.txt
 	uv build -o $(DIST)
 	ls -l $(DIST)
 
 dist: clean _dist
 
-galaxy/web_client/client_build_hash.txt:
+src/galaxy/web_client/client_build_hash.txt:
 	# Use the main Galaxy virtualenv, since that's what `make client-production` uses
 	cd ../..; \
 		uv venv --allow-existing $(VENV); \
 		$(IN_VENV) \
 		uv pip install "nodejs-wheel==$$(cat client/.node_version)"; \
 		make client-production
-	mv ../../client/dist galaxy/web_client/
-	git rev-parse HEAD > galaxy/web_client/client_build_hash.txt
+	mv ../../client/dist src/galaxy/web_client/
+	git rev-parse HEAD > src/galaxy/web_client/client_build_hash.txt
 
 _setup-mypy-venv: setup-venv
 	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt

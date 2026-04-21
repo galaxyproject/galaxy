@@ -107,6 +107,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
+      # TODO(post-26.1): the @galaxyproject/galaxy-client npm publish is now
+      # redundant with the galaxy-web-client PyPI wheel used by
+      # scripts/common_startup.sh and the install-client make target.  Keep
+      # publishing for at least one release cycle in case external consumers
+      # depend on it; once verified unused, drop the build+publish steps
+      # below (leave the client-api publish intact).
       - name: build client
         run: pnpm install && pnpm build-production
         working-directory: 'client'

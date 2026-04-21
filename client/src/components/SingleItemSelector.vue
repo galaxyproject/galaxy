@@ -14,7 +14,13 @@
             :searchable="true"
             :title="title"
             :track-by="trackBy"
-            @select="onSelectItem" />
+            @select="onSelectItem">
+            <template v-slot:option="{ option }">
+                <span data-test-id="single-item-selector-option" :data-id="option[trackBy]" :data-label="option[label]">
+                    {{ option[label] }}
+                </span>
+            </template>
+        </Multiselect>
     </div>
 </template>
 

@@ -687,7 +687,7 @@ if [ -n "$generate_cwl_conformance_tests" ]; then
 fi
 export GALAXY_TEST_TOOL_CONF
 if [ "$coverage_arg" = '--with-coverage' ]; then
-    coverage_arg="--cov-report xml --cov-report term --cov=lib"
+    coverage_arg="--cov-report xml --cov=lib"
 fi
 if [ -n "$marker" ]; then
     marker_args=(-m "$marker")
@@ -698,6 +698,9 @@ args=(-v $debug $structured_data_args --html "$report_file" --self-contained-htm
 "$test_script" "${args[@]}"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
+if [ -n "$coverage_arg" ] && [ -f .coverage ]; then
+    echo "Total coverage: $(coverage report --format=total)%" 1>&2
+fi
 if [ "$structured_data_html" = '1' ]; then
    python scripts/tests_markdown.py --output_path "${structured_data_report_file%.json}.html" "$structured_data_report_file"
 fi

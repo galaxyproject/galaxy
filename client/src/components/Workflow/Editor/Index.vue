@@ -15,7 +15,11 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
+        <SaveChangesModal
+            :append-version="saveChangesAppendVersion"
+            :nav-url="navUrl"
+            :show-modal.sync="showSaveChangesModal"
+            @on-proceed="onNavigate" />
         <GModal
             :show.sync="showSaveAsModal"
             confirm
@@ -39,6 +43,7 @@
             :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             :exit-activity="exitWorkflowActivity"
+            :run-activity="runWorkflowActivity"
             activity-bar-id="workflow-editor"
             :show-admin="false"
             options-title="Options"
@@ -48,6 +53,8 @@
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
             :hide-panel="reportActive"
+            :header-icon="faSitemap"
+            header-title="Editor"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
@@ -70,7 +77,6 @@
                             showAttributes(e);
                         }
                     "
-                    @onHighlightRegion="(bounds) => onHighlightRegion(bounds, false)"
                     @onRefactor="onAttemptRefactor"
                     @onScrollTo="onScrollTo" />
                 <UndoRedoStack v-else-if="isActiveSideBar('workflow-undo-redo')" :store-id="id" />
@@ -117,7 +123,7 @@
                 ref="markdownEditor"
                 :markdown-text="report.markdown"
                 mode="report"
-                :title="'Workflow Report: ' + name"
+                :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
                 :steps="steps"
                 @insert="insertMarkdown"
@@ -182,14 +188,14 @@
                             variant="secondary"
                             :disabled="!undoRedoStore.hasUndo"
                             @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon :icon="faArrowLeft" />
+                            <FontAwesomeIcon :icon="faUndo" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             variant="secondary"
                             :disabled="!undoRedoStore.hasRedo"
                             @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon :icon="faArrowRight" />
+                            <FontAwesomeIcon :icon="faRedo" />
                         </b-button>
                         <b-button
                             id="workflow-save-button"
@@ -248,7 +254,7 @@
 </template>
 
 <script>
-import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faKey, faRedo, faSave, faSitemap, faTimes, faUndo, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -611,9 +617,8 @@ export default {
         const isNewTempWorkflow = computed(() => !props.workflowId);
         const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
-        const { specialWorkflowActivities, exitWorkflowActivity } = useSpecialWorkflowActivities(
+        const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
             computed(() => ({
-                hasInvalidConnections: hasInvalidConnections.value,
                 lintData: lintData,
             })),
         );
@@ -646,7 +651,7 @@ export default {
         const scrollToId = ref(null);
 
         function onHighlightRegion(bounds, moveTo = true) {
-            workflowGraph.value.highlightGraphRegion(bounds, moveTo);
+            stateStore.pendingHighlight = { bounds, moveTo };
         }
 
         function onScrollTo(stepId) {
@@ -717,6 +722,7 @@ export default {
             insertMarkdown,
             specialWorkflowActivities,
             exitWorkflowActivity,
+            runWorkflowActivity,
             isNewTempWorkflow,
             saveWorkflowTitle,
             confirm,
@@ -724,6 +730,7 @@ export default {
             workflowActivities,
             faKey,
             faWrench,
+            faSitemap,
             showDropdown: false,
             lintData,
             onHighlightRegion,
@@ -755,12 +762,13 @@ export default {
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
             debounceTimer: null,
             showSaveChangesModal: false,
+            saveChangesAppendVersion: false,
             navUrl: "",
-            faArrowLeft,
-            faArrowRight,
             faTimes,
             faCog,
             faSave,
+            faRedo,
+            faUndo,
         };
     },
     computed: {
@@ -995,13 +1003,8 @@ export default {
             }
         },
         async onActivityClicked(activityId) {
-            if (activityId === "save-and-exit") {
-                await this.saveOrCreate();
-                this.$router.push("/workflows/list");
-            }
-
             if (activityId === "exit") {
-                this.$router.push("/workflows/list");
+                this.onNavigate("/workflows/list");
             }
 
             if (activityId === "workflow-download") {
@@ -1110,6 +1113,7 @@ export default {
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
+                this.saveChangesAppendVersion = appendVersion;
                 this.showSaveChangesModal = true;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating

@@ -8459,8 +8459,8 @@ export interface components {
         /** CollectionElementCollectionRequestUri */
         CollectionElementCollectionRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "Collection";
             /** Collection Type */
@@ -8479,8 +8479,8 @@ export interface components {
         /** CollectionElementDataRequestUri */
         CollectionElementDataRequestUri: {
             /**
-             * Class
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
             class: "File";
             /** Created From Basename */
@@ -12847,7 +12847,8 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
-                | "omero";
+                | "omero"
+                | "ssh";
             /** Variables */
             variables?:
                 | (
@@ -20712,7 +20713,7 @@ export interface components {
             /** Dry Run */
             dry_run: boolean;
             /** Workflow */
-            workflow: string;
+            workflow: unknown;
         };
         /** RegexJobMessage */
         RegexJobMessage: {
@@ -23022,6 +23023,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23035,6 +23038,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23061,6 +23066,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23087,6 +23094,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -23113,6 +23122,8 @@ export interface components {
             help?: string | null;
             /** Label */
             label?: string | null;
+            /** Multiline */
+            multiline?: boolean | null;
             /** Name */
             name: string;
             /** Optional */
@@ -24487,7 +24498,8 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
-                | "omero";
+                | "omero"
+                | "ssh";
             /** Uri Root */
             uri_root: string;
             /**

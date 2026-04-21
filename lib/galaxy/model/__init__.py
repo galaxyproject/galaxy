@@ -1638,7 +1638,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
     user: Mapped[Optional["User"]] = relationship()
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship()
-    history: Mapped[Optional["History"]] = relationship(back_populates="jobs")
+    history: Mapped[Optional["History"]] = relationship()
     library_folder: Mapped[Optional["LibraryFolder"]] = relationship()
     parameters = relationship("JobParameter")
     input_datasets: Mapped[list["JobToInputDatasetAssociation"]] = relationship(
@@ -3591,7 +3591,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     galaxy_sessions = relationship("GalaxySessionToHistoryAssociation", back_populates="history")
     workflow_invocations: Mapped[list["WorkflowInvocation"]] = relationship(back_populates="history")
     user: Mapped[Optional["User"]] = relationship(back_populates="histories")
-    jobs: Mapped[list["Job"]] = relationship(back_populates="history")
+    jobs: Mapped[list["Job"]] = relationship(
+        primaryjoin=(lambda: Job.history_id == History.id),
+        viewonly=True,
+    )
     tool_requests: Mapped[list["ToolRequest"]] = relationship(back_populates="history")
 
     update_time = column_property(
@@ -10227,7 +10230,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def add_message(self, message: "InvocationMessageUnion"):
 
-        message_dict = message.dict(
+        message_dict = message.model_dump(
             exclude_unset=True,
             exclude={"history_id"},  # history_id comes in through workflow_invocation and isn't persisted in database
         )

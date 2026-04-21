@@ -102,7 +102,12 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
         # make mypy uses uv now and so this legacy code should just run mypy
         # directly to use the venv we have already activated
+        cd src
         mypy .
+        cd ..
+        if [ -d tests ]; then
+            mypy tests
+        fi
 
         # shellcheck disable=SC2086 - word splitting is intentional for BUILD_WHEEL_CMD
         ${BUILD_WHEEL_CMD} -o dist

@@ -138,7 +138,15 @@ class FastAPIConfiguration:
 def _user_to_model(user):
     if user:
         return UserModel.model_construct(
-            **user.to_dict(view="element", value_mapper={"id": Security.security.encode_id})
+            **user.to_dict(
+                view="element",
+                value_mapper={
+                    "id": Security.security.encode_id,
+                    # Dictifiable otherwise stringifies datetimes via isoformat(); keep the
+                    # datetime object so UserModel.last_password_change serializes correctly.
+                    "last_password_change": lambda v: v,
+                },
+            )
         )
     return None
 

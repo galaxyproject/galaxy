@@ -12,6 +12,10 @@ from typing import (
     Union,
 )
 
+from pydantic import (
+    ConfigDict,
+    with_config,
+)
 from typing_extensions import (
     Literal,
     NotRequired,
@@ -31,6 +35,7 @@ SampleSheetColumnValueT = Union[int, float, bool, str, NoneType]
 
 
 # type ignore because mypy can't handle closed TypedDicts yet
+@with_config(ConfigDict(extra="forbid"))
 class SampleSheetColumnDefinition(TypedDict, closed=True):  # type: ignore[call-arg]
     name: str
     description: NotRequired[Optional[str]]

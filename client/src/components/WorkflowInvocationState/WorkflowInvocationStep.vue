@@ -260,20 +260,8 @@ onUnmounted(() => {
                                                     v-for="stepInput in Object.values(props.workflowStep.input_steps)"
                                                     :key="stepInput.source_step">
                                                     <WorkflowStepTitle
-                                                        :step-index="stepInput.source_step"
-                                                        :step-label="
-                                                            props.invocation.steps[stepInput.source_step]
-                                                                ?.workflow_step_label ||
-                                                            `Step ${stepInput.source_step + 1}`
-                                                        "
-                                                        :step-type="props.workflowStep.type"
-                                                        :step-tool-id="props.workflowStep.tool_id"
-                                                        :step-tool-uuid="props.workflowStep.tool_uuid"
-                                                        :step-subworkflow-id="
-                                                            'workflow_id' in props.workflowStep
-                                                                ? props.workflowStep.workflow_id
-                                                                : null
-                                                        " />
+                                                        :invocation-step="props.invocation.steps[stepInput.source_step]"
+                                                        :workflow-step="props.workflowStep" />
                                                 </li>
                                             </ul>
                                         </template>

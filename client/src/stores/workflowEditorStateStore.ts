@@ -1,6 +1,7 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed, reactive, ref, set, type UnwrapRef } from "vue";
 
+import type { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
 
@@ -46,6 +47,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
     const stepLoadingState = ref<StepLoadingState>({});
     const multiSelectedSteps = ref<Record<number, boolean>>({});
     const hasChanges = ref(false);
+    const pendingHighlight = ref<{ bounds: Rectangle; moveTo?: boolean } | null>(null);
     const report = ref<WorkflowReport>({
         markdown: reportDefault,
     });
@@ -61,6 +63,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         stepPosition.value = {};
         stepLoadingState.value = {};
         multiSelectedSteps.value = {};
+        pendingHighlight.value = null;
         report.value = {
             markdown: reportDefault,
         };
@@ -149,6 +152,7 @@ export const useWorkflowStateStore = defineScopedStore("workflowStateStore", () 
         hasChanges,
         stepPosition,
         stepLoadingState,
+        pendingHighlight,
         $reset,
         getInputTerminalPosition,
         getOutputTerminalPosition,

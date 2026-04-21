@@ -6,7 +6,9 @@ from typing import (
 )
 
 from pydantic import (
+    ConfigDict,
     Field,
+    with_config,
 )
 from typing_extensions import (
     Annotated,
@@ -173,6 +175,7 @@ FieldType = Union[CwlType, List[CwlType]]
 
 
 # type ignore because mypy can't handle closed TypedDicts yet
+@with_config(ConfigDict(extra="forbid"))
 class FieldDict(TypedDict, closed=True):  # type: ignore[call-arg]
     name: str
     type: FieldType

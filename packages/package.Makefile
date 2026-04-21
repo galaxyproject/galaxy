@@ -32,7 +32,7 @@ clean: clean-build clean-pyc clean-tests
 clean-build:
 	rm -fr build/
 	rm -fr $(DIST)/
-	rm -fr galaxy_*.egg-info
+	find . -name "*.egg-info" -type d -exec rm -rf {} +
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +

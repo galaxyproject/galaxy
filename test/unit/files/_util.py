@@ -178,14 +178,14 @@ def assert_can_write_and_read_to_conf(conf: dict):
     file_source_id = conf["id"]
     file_sources = configured_file_sources([conf])
     test_uri = f"gxfiles://{file_source_id}/{test_filename}"
-    actual_uri = write_from(
+    write_from(
         file_sources,
         test_uri,
         test_contents,
     )
     assert_realizes_contains(
         file_sources,
-        actual_uri,
+        test_uri,
         test_contents,
     )
 

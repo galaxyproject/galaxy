@@ -22,8 +22,9 @@ def test_common_base_config(appconfig):
     if running_from_source:
         expected_path = os.path.join(appconfig.root, "lib", "galaxy", "config", "sample")
     else:
-        expected_path = os.path.join(appconfig.root, "galaxy", "config", "sample")
+        expected_path = os.path.join(os.path.dirname(config.__file__), "sample")
     assert appconfig.sample_config_dir == expected_path
+    assert os.path.isfile(os.path.join(appconfig.sample_config_dir, "job_conf.xml.sample_advanced"))
 
 
 def test_base_config_if_running_from_source(monkeypatch):

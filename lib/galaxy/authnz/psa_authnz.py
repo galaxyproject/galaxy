@@ -25,6 +25,7 @@ from galaxy import (
     exceptions as galaxy_exceptions,
     model,
 )
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
@@ -35,6 +36,7 @@ from galaxy.model import (
     User,
     UserAuthnzToken,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     ready_name_for_url,
@@ -47,8 +49,6 @@ from .oidc_utils import (
     is_oidc_backend,
     verify_oidc_response,
 )
-from ..config import GalaxyAppConfiguration
-from ..model.scoped_session import galaxy_scoped_session
 
 if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
@@ -76,6 +76,7 @@ BACKENDS = {
     "tapis": "galaxy.authnz.tapis.TapisOAuth2",
     "keycloak": "galaxy.authnz.keycloak.KeycloakOpenIdConnect",
     "cilogon": "galaxy.authnz.cilogon.CILogonOpenIdConnect",
+    "auth0": "galaxy.authnz.auth0.GalaxyAuth0OpenIdConnect",
 }
 
 BACKENDS_NAME = {
@@ -92,6 +93,7 @@ BACKENDS_NAME = {
     "tapis": "tapis",
     "keycloak": "keycloak",
     "cilogon": "cilogon",
+    "auth0": "auth0",
 }
 
 AUTH_PIPELINE = (
@@ -225,6 +227,8 @@ class PSAAuthnz(IdentityProvider):
             self.config[setting_name("URL")] = oidc_backend_config.get("url")
         if oidc_backend_config.get("username_key") is not None:
             self.config[setting_name("USERNAME_KEY")] = oidc_backend_config.get("username_key")
+        if oidc_backend_config.get("domain") is not None:
+            self.config[setting_name("DOMAIN")] = oidc_backend_config.get("domain")
 
         # OIDC-specific settings (only set for OIDC backends)
         if self._is_oidc_backend():

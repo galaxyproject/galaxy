@@ -1753,6 +1753,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.libraries_open()
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
+        return self.name
 
     def libraries_open(self):
         self.home()
@@ -3040,7 +3041,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             name,
         )
         if description:
-            self.components.tool_form.parameter_input(parameter="_meta_description").wait_for_and_send_keys(
+            self.components.tool_form.parameter_textarea(parameter="_meta_description").wait_for_and_send_keys(
                 description,
             )
 

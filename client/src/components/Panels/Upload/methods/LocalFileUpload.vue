@@ -236,8 +236,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                 <div class="file-table-container">
                     <GTable hover striped compact fixed :items="selectedFiles" :fields="tableFields" class="file-table">
-                        <template v-slot:cell(name)="{ item }">
+                        <template v-slot:cell(name)="{ item, index }">
                             <UploadTableNameCell
+                                :data-test-id="`upload-row-${index + 1}-name`"
                                 :value="item.name"
                                 :state="isNameValid(item.name)"
                                 tooltip="Dataset name in your history (required)"
@@ -259,8 +260,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                                 @input="bulk.setAllExtensions" />
                         </template>
 
-                        <template v-slot:cell(extension)="{ item }">
+                        <template v-slot:cell(extension)="{ item, index }">
                             <UploadTableExtensionCell
+                                :data-test-id="`upload-row-${index + 1}-extension`"
                                 :value="item.extension"
                                 :extensions="effectiveExtensions"
                                 :warning="bulk.getExtensionWarning(item.extension)"
@@ -277,8 +279,9 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                                 @input="bulk.setAllDbKeys" />
                         </template>
 
-                        <template v-slot:cell(dbKey)="{ item }">
+                        <template v-slot:cell(dbKey)="{ item, index }">
                             <UploadTableDbKeyCell
+                                :data-test-id="`upload-row-${index + 1}-dbkey`"
                                 :value="item.dbkey"
                                 :db-keys="listDbKeys"
                                 :disabled="!configurationsReady"
@@ -309,6 +312,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             <GButton
                                 v-g-tooltip.hover
                                 class="remove-btn"
+                                :data-test-id="`upload-row-${index + 1}-remove`"
                                 color="red"
                                 outline
                                 transparent

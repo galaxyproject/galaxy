@@ -22,6 +22,7 @@ export type SearchData =
     | {
           type: "step";
           id: string;
+          stepId: string;
           prettyName: string;
           stepType: NewStep["type"];
           bounds: Rectangle;
@@ -33,6 +34,7 @@ export type SearchData =
     | {
           type: "input";
           id: string;
+          stepId: string;
           prettyName: string;
           bounds: Rectangle;
           label: string;
@@ -41,6 +43,7 @@ export type SearchData =
     | {
           type: "output";
           id: string;
+          stepId: string;
           prettyName: string;
           bounds: Rectangle;
           name: string;
@@ -121,6 +124,7 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
                 return {
                     type: "input",
                     id: domId,
+                    stepId: String(step.id),
                     prettyName: `Input "${input.label ?? input.name}" for step ${step.id + 1}`,
                     bounds,
                     label: input.label,
@@ -137,6 +141,7 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
                 return {
                     type: "output",
                     id: domId,
+                    stepId: String(step.id),
                     prettyName: `Output "${workflowOutput?.label ?? output.name}" for step ${step.id + 1}`,
                     bounds,
                     name: output.name,
@@ -150,6 +155,7 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
                 {
                     type: "step",
                     id: domId,
+                    stepId: String(step.id),
                     prettyName: `${step.id + 1}: ${step.label ?? step.name}`,
                     stepType: step.type,
                     bounds,
@@ -187,7 +193,7 @@ export const useWorkflowSearchStore = defineScopedStore("WorkflowSearchStore", (
 
     /** caches the results of `collectSearchData` depending on the changeId of the `undoRedoStore` */
     function collectSearchDataCached() {
-        if (undoRedoStore.changeId === searchDataCacheId.value && searchDataCacheData) {
+        if (undoRedoStore.changeId === searchDataCacheId.value && searchDataCacheData.value !== null) {
             return searchDataCacheData.value as SearchData[];
         }
 

@@ -22,7 +22,7 @@ arcp==0.2.1
 argcomplete==3.6.3
 async-timeout==5.0.1 ; python_full_version < '3.11'
 attrs==26.1.0
-authlib==1.6.9
+authlib==1.6.11
 babel==2.18.0
 backports-tarfile==1.2.0 ; python_full_version < '3.12'
 bagit==1.9.0
@@ -95,7 +95,7 @@ google-auth==2.49.2
 google-cloud-batch==0.21.0
 google-genai==1.72.0
 googleapis-common-protos==1.74.0
-gravity==1.2.0
+gravity==1.2.1
 greenlet==3.4.0 ; platform_machine == 'AMD64' or platform_machine == 'WIN32' or platform_machine == 'aarch64' or platform_machine == 'amd64' or platform_machine == 'ppc64le' or platform_machine == 'win32' or platform_machine == 'x86_64'
 griffelib==2.0.2
 groq==1.1.2
@@ -140,7 +140,7 @@ limits==5.8.0
 logfire==4.32.0
 logfire-api==4.32.0
 lxml==6.0.3
-mako==1.3.10
+mako==1.3.11
 markdown==3.10.2
 markdown-it-py==3.0.0 ; python_full_version < '3.11'
 markdown-it-py==4.0.0 ; python_full_version >= '3.11'
@@ -206,7 +206,7 @@ pydantic-evals==1.80.0
 pydantic-graph==1.80.0
 pydantic-handlebars==0.1.0
 pydantic-settings==2.13.1
-pydantic-tes==0.3.0
+pydantic-tes==0.4.0
 pydicom==3.0.2
 pydot==4.0.1
 pyeventsystem==0.1.0

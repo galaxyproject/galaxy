@@ -81,6 +81,7 @@ class BaseTemplateVariable(StrictModel):
     label: Optional[str] = None
     help: Optional[MarkdownContent] = None
     optional: Optional[bool] = None
+    multiline: Optional[bool] = None
     validators: Optional[Sequence[AnySafeValidatorModel]] = None
 
 
@@ -115,6 +116,7 @@ class TemplateSecret(StrictModel):
     label: Optional[str] = None
     help: Optional[MarkdownContent] = None
     optional: Optional[bool] = None
+    multiline: Optional[bool] = None
 
 
 class TemplateEnvironmentSecret(StrictModel):
