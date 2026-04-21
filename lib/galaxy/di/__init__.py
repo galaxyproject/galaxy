@@ -2,9 +2,9 @@
 
 from typing import (
     Any,
+    cast,
     Optional,
     TypeVar,
-    cast,
 )
 
 from lagom import Container as LagomContainer
