@@ -185,6 +185,7 @@ from galaxy.workflow import scheduling_manager
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 from galaxy.workflow.completion_monitor import WorkflowCompletionMonitor
 from galaxy.workflow.trs_proxy import TrsProxy
+from .authnz.managers import AuthnzManager
 from .di import Container
 from .structured_app import (
     BasicSharedApp,
@@ -879,11 +880,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             self.heartbeat.daemon = True
             self.application_stack.register_postfork_function(self.heartbeat.start)
 
-        self.authnz_manager = None
+        # Authnz manager: only created if enable_oidc is set
+        authnz_manager = None
         if self.config.enable_oidc:
             from galaxy.authnz import managers
 
-            self.authnz_manager = managers.AuthnzManager(
+            authnz_manager = managers.AuthnzManager(
                 self, self.config.oidc_config_file, self.config.oidc_backends_config_file
             )
 
@@ -893,6 +895,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             self.config.fixed_delegated_auth = (
                 len(list(self.config.oidc)) == 1 and len(list(self.auth_manager.authenticators)) == 0
             )
+        self.authnz_manager: AuthnzManager | None = self._register_optional_singleton(AuthnzManager, authnz_manager)
 
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
             self.prune_history_audit_task = IntervalTask(
