@@ -176,6 +176,7 @@ typecheck = [
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",
+    "types-cachetools",
     "types-contextvars",
     "types-dataclasses",
     "types-docutils",

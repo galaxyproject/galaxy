@@ -18,6 +18,7 @@ tomli==2.4.1 ; python_full_version < '3.11'
 types-awscrt==0.31.3
 types-bleach==6.3.0.20260408
 types-boto==2.49.18.20241019
+types-cachetools==6.2.0.20260408
 types-contextvars==2.4.7.3
 types-dataclasses==0.6.6
 types-docutils==0.22.3.20260408
