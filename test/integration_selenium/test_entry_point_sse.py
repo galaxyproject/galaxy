@@ -30,17 +30,23 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_celery_tasks"] = False
+        # App.vue only calls entryPointStore.startWatchingEntryPoints() when
+        # interactivetools_enable is True, and the store only opens an SSE
+        # connection when enable_sse_entry_point_updates is True. Without both,
+        # __galaxy_sse_connected never becomes true and the gate below times out.
+        config["interactivetools_enable"] = True
+        config["enable_sse_entry_point_updates"] = True
 
     def _wait_for_sse_connected(self) -> None:
         """Block until the frontend confirms the SSE pipeline is live."""
         wait_on(
-            lambda: True if self.driver.execute_script("return window.__galaxy_sse_connected === true") else None,
+            lambda: True if self.execute_script("return window.__galaxy_sse_connected === true") else None,
             "window.__galaxy_sse_connected === true",
             timeout=SSE_CONNECT_TIMEOUT_SECONDS,
         )
 
     def _last_sse_event_ts(self) -> int:
-        return self.driver.execute_script("return window.__galaxy_sse_last_event_ts || 0") or 0
+        return self.execute_script("return window.__galaxy_sse_last_event_ts || 0") or 0
 
     def _wait_for_sse_event_after(self, baseline_ts: int) -> None:
         wait_on(
@@ -55,7 +61,10 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
             Job,
         )
 
-        user_info = self._get("users/current").json()
+        # Use the browser's cookie-authenticated user, not the API interactor's
+        # default: SSE connects under the Selenium-registered user, and the
+        # dispatch's user_id must match or push_to_user finds no queues.
+        user_info = self.api_get("users/current")
         user_id = self._app.security.decode_id(user_info["id"])
         sa_session = self._app.model.context
         job = Job()

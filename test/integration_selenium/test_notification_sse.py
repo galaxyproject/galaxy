@@ -35,14 +35,14 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         test would falsely pass.
         """
         wait_on(
-            lambda: True if self.driver.execute_script("return window.__galaxy_sse_connected === true") else None,
+            lambda: True if self.execute_script("return window.__galaxy_sse_connected === true") else None,
             "window.__galaxy_sse_connected === true",
             timeout=SSE_CONNECT_TIMEOUT_SECONDS,
         )
 
     def _last_sse_event_ts(self) -> int:
         """Return the last SSE event timestamp recorded by the composable, or 0."""
-        return self.driver.execute_script("return window.__galaxy_sse_last_event_ts || 0") or 0
+        return self.execute_script("return window.__galaxy_sse_last_event_ts || 0") or 0
 
     def _wait_for_sse_event_after(self, baseline_ts: int) -> None:
         """Block until an SSE event arrives after ``baseline_ts``.
@@ -61,12 +61,18 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
     @managed_history
     def test_notification_appears_via_sse(self):
         """Send a notification via the API and verify it appears in the UI without refresh."""
-        # Get the logged-in user's info so we can send a notification to them
-        user_info = self._get("users/current").json()
+        # Get the browser-logged-in user's info via the browser's cookie. ``self._get``
+        # uses the API interactor's default-user key, which does not match the Selenium
+        # user created by ``ensure_registered``, so the SSE push would target a
+        # different user than the one watching the stream.
+        user_info = self.api_get("users/current")
         user_id = user_info["id"]
 
-        # Navigate to notifications page so the store is watching
-        self.driver.get(f"{self.target_url_from_selenium}/user/notifications")
+        # Navigate to notifications page so the store is watching.
+        # ``get()`` uses ``build_url()`` which handles trailing slashes on the
+        # base correctly; concatenating against ``target_url_from_selenium``
+        # can produce a double-slash that Galaxy routes differently.
+        self.get("user/notifications")
         self._wait_for_sse_connected()
         baseline_ts = self._last_sse_event_ts()
         self.screenshot("notification_sse_before")
@@ -94,14 +100,16 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # the UI still shows the notification, polling picked it up — a silent
         # regression this assertion catches.
         self._wait_for_sse_event_after(baseline_ts)
-        self.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
+        self.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS)
         self.screenshot("notification_sse_after")
 
     @selenium_test
     @managed_history
     def test_notification_bell_updates_via_sse(self):
         """The notification bell indicator should update when a new notification arrives via SSE."""
-        user_info = self._get("users/current").json()
+        # See ``test_notification_appears_via_sse`` — must use the browser's user,
+        # not the API interactor's default user.
+        user_info = self.api_get("users/current")
         user_id = user_info["id"]
 
         # Go to home page (bell is in masthead)
@@ -128,6 +136,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         self._assert_status_code_is_ok(response)
 
         self._wait_for_sse_event_after(baseline_ts)
-        # The indicator dot should appear on the bell (within the #activity-notifications element)
-        self.wait_for_selector_visible("#activity-notifications .indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS * 1000)
+        # The activity-bar notifications item renders its unread-count badge as
+        # ``.nav-indicator`` (see ``ActivityItem.vue``) once ``totalUnreadCount > 0``.
+        self.wait_for_selector_visible("#activity-notifications .nav-indicator", timeout=SSE_EVENT_TIMEOUT_SECONDS)
         self.screenshot("notification_bell_indicator")
