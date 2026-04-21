@@ -43,6 +43,9 @@ const props = withDefaults(defineProps<Props>(), {
     position: absolute;
     text-align: center;
     width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .progress-container {
     position: relative;

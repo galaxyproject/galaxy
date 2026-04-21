@@ -38,7 +38,7 @@ const isCurrentTargetHistory = computed(() => {
                 v-else
                 v-b-tooltip.hover.noninteractive
                 data-description="not current history indicator"
-                class="text-warning"
+                class="text-warning text-nowrap"
                 title="This history is not your currently active history. You can click the link to switch to it.">
                 (not current)
             </span>
