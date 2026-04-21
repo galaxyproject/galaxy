@@ -1,0 +1,12 @@
+- doc: Both collection_type and type set with different values — should error
+  job:
+    input:
+      class: Collection
+      collection_type: list
+      type: paired
+      elements:
+        - class: File
+          identifier: a
+          path: test-data/a.fq
+  outputs:
+    out: expected.fq

@@ -8,31 +8,33 @@ Galaxy's workflow CLI tooling spans three packages at different abstraction leve
 
 ## Quick Reference
 
-| Command                      | Package          | What It Does                                               |
-| ---------------------------- | ---------------- | ---------------------------------------------------------- |
-| `planemo workflow_lint`      | planemo          | Best-practice checks (labels, annotations, outputs, tests) |
-| `planemo run`                | planemo          | Execute workflow via CLI with full Galaxy orchestration    |
-| `planemo workflow_test_init` | planemo          | Stub out test YAML from scratch or from an invocation      |
-| `planemo autoupdate`         | planemo          | Update tool versions in a workflow                         |
-| `gxwf validate`              | galaxy-tool-util | Validate tool_state against tool definitions               |
-| `gxwf clean`                 | galaxy-tool-util | Strip stale/obsolete tool_state keys                       |
-| `gxwf roundtrip`             | galaxy-tool-util | Prove native↔Format2 round-trip equivalence               |
-| `gxwf lint`                  | galaxy-tool-util | Structural lint + tool state validation                    |
-| `gxwf convert`               | galaxy-tool-util | Convert between .ga and .gxwf.yml (auto-detects direction) |
-| `gxwf validate-tree`         | galaxy-tool-util | Validate all workflows under a directory tree              |
-| `gxwf clean-tree`            | galaxy-tool-util | Strip stale state from all workflows in a directory tree   |
-| `gxwf roundtrip-tree`        | galaxy-tool-util | Round-trip validate all workflows in a directory           |
-| `gxwf lint-tree`             | galaxy-tool-util | Lint all workflows in a directory                          |
-| `gxwf convert-tree`          | galaxy-tool-util | Batch convert workflows in a directory                     |
-| `gxwf viz`                   | galaxy-tool-util | Interactive Cytoscape graph (requires gxformat2)           |
-| `gxwf abstract-export`       | galaxy-tool-util | Abstract CWL export (requires gxformat2)                   |
-| `gxwf mermaid`               | galaxy-tool-util | Mermaid diagram (requires gxformat2)                       |
-| `galaxy-tool-cache`          | galaxy-tool-util | Manage local ToolShed tool metadata cache                  |
-| `gxwf-lint`                  | gxformat2        | Structural/syntax validation (no tool defs)                |
-| `gxwf-to-native`             | gxformat2        | Format2→native conversion (no schema awareness)            |
-| `gxwf-to-format2`            | gxformat2        | Native→Format2 conversion (no schema awareness)            |
-| `gxwf-viz`                   | gxformat2        | Cytoscape graph visualization                              |
-| `gxwf-abstract-export`       | gxformat2        | Abstract CWL export                                        |
+| Command                      | Package          | What It Does                                                 |
+| ---------------------------- | ---------------- | ------------------------------------------------------------ |
+| `planemo workflow_lint`      | planemo          | Best-practice checks (labels, annotations, outputs, tests)   |
+| `planemo run`                | planemo          | Execute workflow via CLI with full Galaxy orchestration      |
+| `planemo workflow_test_init` | planemo          | Stub out test YAML from scratch or from an invocation        |
+| `planemo autoupdate`         | planemo          | Update tool versions in a workflow                           |
+| `gxwf validate`              | galaxy-tool-util | Validate tool_state against tool definitions                 |
+| `gxwf clean`                 | galaxy-tool-util | Strip stale/obsolete tool_state keys                         |
+| `gxwf roundtrip`             | galaxy-tool-util | Prove native↔Format2 round-trip equivalence                 |
+| `gxwf lint`                  | galaxy-tool-util | Structural lint + tool state validation                      |
+| `gxwf convert`               | galaxy-tool-util | Convert between .ga and .gxwf.yml (auto-detects direction)   |
+| `gxwf validate-tree`         | galaxy-tool-util | Validate all workflows under a directory tree                |
+| `gxwf validate-tests`        | galaxy-tool-util | Validate a workflow-tests YAML file against the Tests schema |
+| `gxwf validate-tests-tree`   | galaxy-tool-util | Validate all workflow-tests YAML files in a directory tree   |
+| `gxwf clean-tree`            | galaxy-tool-util | Strip stale state from all workflows in a directory tree     |
+| `gxwf roundtrip-tree`        | galaxy-tool-util | Round-trip validate all workflows in a directory             |
+| `gxwf lint-tree`             | galaxy-tool-util | Lint all workflows in a directory                            |
+| `gxwf convert-tree`          | galaxy-tool-util | Batch convert workflows in a directory                       |
+| `gxwf viz`                   | galaxy-tool-util | Interactive Cytoscape graph (requires gxformat2)             |
+| `gxwf abstract-export`       | galaxy-tool-util | Abstract CWL export (requires gxformat2)                     |
+| `gxwf mermaid`               | galaxy-tool-util | Mermaid diagram (requires gxformat2)                         |
+| `galaxy-tool-cache`          | galaxy-tool-util | Manage local ToolShed tool metadata cache                    |
+| `gxwf-lint`                  | gxformat2        | Structural/syntax validation (no tool defs)                  |
+| `gxwf-to-native`             | gxformat2        | Format2→native conversion (no schema awareness)              |
+| `gxwf-to-format2`            | gxformat2        | Native→Format2 conversion (no schema awareness)              |
+| `gxwf-viz`                   | gxformat2        | Cytoscape graph visualization                                |
+| `gxwf-abstract-export`       | gxformat2        | Abstract CWL export                                          |
 
 Each `gxwf` subcommand is also available as a standalone binary (`gxwf-state-validate`, `gxwf-state-clean`, `gxwf-roundtrip-validate`, `gxwf-lint-stateful`, `gxwf-to-format2-stateful`, `gxwf-to-native-stateful`). The `gxwf` unified interface is preferred.
 
@@ -130,6 +132,16 @@ gxwf validate-tree --summary ./workflows/
 ```
 
 Validates parameter names, types (integers, floats, selects against declared options, booleans, data columns), conditional branch consistency, and connection completeness. Recurses into subworkflows. Use `--connections` to also validate inter-step connection type compatibility. Exit codes: 0 = pass, 1 = failures, 2 = skips (with `--strict`).
+
+**Validating workflow-test files** — schema-checks `*-tests.yml` / `*.gxwf-tests.yml` against `galaxy.tool_util_models.Tests` (job block, File/Collection discriminators, assertions). Schema-only; no tool cache required.
+
+```bash
+gxwf validate-tests my-workflow-tests.yml
+gxwf validate-tests-tree ./workflows/
+gxwf validate-tests --report-json report.json my-workflow-tests.yml
+```
+
+Exit codes: 0 = valid, 1 = schema errors, 2 = load/parse error.
 
 **Round-trip equivalence** — proves a workflow survives native→Format2→native without data loss:
 

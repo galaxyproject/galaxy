@@ -1,0 +1,18 @@
+- doc: Nested list:paired collection input
+  job:
+    input:
+      class: Collection
+      collection_type: list:paired
+      elements:
+        - class: Collection
+          identifier: sample1
+          collection_type: paired
+          elements:
+            - class: File
+              identifier: forward
+              path: test-data/s1_f.fq
+            - class: File
+              identifier: reverse
+              path: test-data/s1_r.fq
+  outputs:
+    out: expected.fq

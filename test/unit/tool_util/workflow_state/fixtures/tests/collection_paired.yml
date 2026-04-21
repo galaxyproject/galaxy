@@ -1,0 +1,14 @@
+- doc: Paired collection input
+  job:
+    input:
+      class: Collection
+      collection_type: paired
+      elements:
+        - class: File
+          identifier: forward
+          path: test-data/f.fq
+        - class: File
+          identifier: reverse
+          path: test-data/r.fq
+  outputs:
+    out: expected.fq

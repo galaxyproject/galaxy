@@ -12,18 +12,22 @@ from . import (
     workflow_roundtrip_validate,
     workflow_roundtrip_validate_tree,
     workflow_validate,
+    workflow_validate_tests,
+    workflow_validate_tests_tree,
     workflow_validate_tree,
 )
 from ._gxformat2_passthrough import register_passthrough
 
 _SINGLE_FILE = [
     workflow_validate,
+    workflow_validate_tests,
     workflow_clean_stale_state,
     workflow_lint_stateful,
     workflow_roundtrip_validate,
 ]
 _TREE = [
     workflow_validate_tree,
+    workflow_validate_tests_tree,
     workflow_clean_stale_state_tree,
     workflow_lint_stateful_tree,
     workflow_roundtrip_validate_tree,
