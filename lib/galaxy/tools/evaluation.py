@@ -1099,7 +1099,14 @@ class UserToolEvaluator(ToolEvaluator):
             if self.tool.parameters is None:
                 raise RequestParameterInvalidException(f"Tool {self.tool.id} has no parameters defined")
             parameter_bundle = ToolParameterBundleModel(parameters=self.tool.parameters)
-            job_runtime_state = runtimeify(validated_tool_state, parameter_bundle, adapt_datasets, adapt_collections)
+            yaml_origin = self.tool.tool_source.parse_class() in ("GalaxyUserTool", "GalaxyTool")
+            job_runtime_state = runtimeify(
+                validated_tool_state,
+                parameter_bundle,
+                adapt_datasets,
+                adapt_collections,
+                yaml_origin=yaml_origin,
+            )
             cwl_style_inputs = job_runtime_state.input_state
         else:
             from galaxy.workflow.modules import to_cwl

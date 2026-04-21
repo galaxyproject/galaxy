@@ -32,6 +32,11 @@ from galaxy.tool_util_models.parameters import (
     ToolParameterBundleModel,
     ToolParameterT,
 )
+from galaxy.tool_util_models.testing_types import (
+    AssertionDict,
+    AssertionList,
+    DirectCredential,
+)
 from galaxy.tool_util_models.tool_source import (
     HelpContent,
     JsonTestCollectionDefDict,
@@ -40,9 +45,6 @@ from galaxy.tool_util_models.tool_source import (
 )
 from galaxy.util import listify
 from .interface import (
-    AssertionDict,
-    AssertionList,
-    DirectCredential,
     InputSource,
     PageSource,
     PagesSource,
@@ -273,7 +275,7 @@ class YamlToolSource(ToolSource):
         tests: List[ToolSourceTest] = []
         rval: ToolSourceTests = dict(tests=tests)
 
-        raw_tests = deepcopy(self.root_dict.get("tests", []))
+        raw_tests = deepcopy(self.root_dict.get("tests") or [])
         for i, test_dict in enumerate(raw_tests):
             inputs = test_dict.get("inputs", {})
             state = TestCaseJsonToolState(inputs)
@@ -530,7 +532,11 @@ class YamlInputSource(InputSource):
     def parse_extensions(self):
         extensions = self.input_dict.get("extensions")
         if not extensions:
-            extensions = self.get("format", "data").split(",")
+            format_raw = self.get("format", "data")
+            if isinstance(format_raw, str):
+                extensions = format_raw.split(",")
+            else:
+                extensions = format_raw
         return [ext.strip().lower() for ext in extensions]
 
     def parse_nested_inputs_source(self):

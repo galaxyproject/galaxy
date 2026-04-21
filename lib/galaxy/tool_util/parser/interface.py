@@ -26,6 +26,10 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util_models.parameter_validators import AnyValidatorModel
+from galaxy.tool_util_models.testing_types import (
+    AssertionList,
+    DirectCredential,
+)
 from galaxy.tool_util_models.tool_source import (
     BaseJsonTestCollectionDefCollectionElementDict,
     Citation,
@@ -66,13 +70,6 @@ NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool fea
 INPUT_CLASS_T = Literal["galaxy", "cwl"]
 
 
-class AssertionDict(TypedDict):
-    tag: str
-    attributes: Dict[str, Any]
-    children: "AssertionList"
-
-
-AssertionList = Optional[List[AssertionDict]]
 XmlInt = Union[str, int]
 
 
@@ -115,25 +112,6 @@ class ToolSourceTestInput(TypedDict):
     name: str
     value: Optional[Any]
     attributes: ToolSourceTestInputAttributes
-
-
-class DirectCredentialValue(TypedDict):
-    """Represents a credential value (variable or secret) provided directly."""
-
-    name: str
-    value: str
-
-
-class _DirectCredentialRequired(TypedDict):
-    name: str  # Name of the credentials group
-    variables: List[DirectCredentialValue]
-    secrets: List[DirectCredentialValue]
-
-
-class DirectCredential(_DirectCredentialRequired, total=False):
-    """Represents a credential group with variables and secrets provided directly."""
-
-    version: str  # Version of the credential definition (defaults to "1.0")
 
 
 ToolSourceTestInputs = List[ToolSourceTestInput]

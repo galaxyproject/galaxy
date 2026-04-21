@@ -9,6 +9,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
 )
 
 from galaxy.tool_util_models.parameters import (
@@ -537,12 +538,58 @@ DatasetToRuntimeJson = Callable[[DataJobInternalT], DataInternalJson]
 CollectionToRuntimeJson = Callable[[DataCollectionRequestInternal, Optional[str]], Any]
 
 
+# Parameter models the narrow YAML authoring layer is allowed to produce.
+# Mirrors the v1 supported set in `lib/galaxy/tool_util_models/yaml_parameters.py`.
+# Anything outside this set in a YAML-origin tool indicates a bug in the
+# authoring → internal mapping and should hard-fail before we try to build
+# runtime state.
+YAML_V1_SUPPORTED_PARAMETER_MODELS: frozenset = frozenset(
+    {
+        BooleanParameterModel,
+        IntegerParameterModel,
+        FloatParameterModel,
+        TextParameterModel,
+        SelectParameterModel,
+        DataParameterModel,
+        DataCollectionParameterModel,
+        ConditionalParameterModel,
+        RepeatParameterModel,
+        SectionParameterModel,
+    }
+)
+
+
+def assert_yaml_v1_parameters(parameters: Sequence[ToolParameterT]) -> None:
+    """Raise if any parameter (including nested ones) is outside the YAML v1 set.
+
+    Defense-in-depth: the narrow ``YamlGalaxyToolParameter`` cannot produce a
+    disallowed type, so this guard should never fire for a legitimately
+    constructed YAML tool. It exists to surface mapping bugs instead of letting
+    an unsupported type silently pass through ``runtimeify``'s default-case
+    ``VISITOR_NO_REPLACEMENT``.
+    """
+    for parameter in parameters:
+        if type(parameter) not in YAML_V1_SUPPORTED_PARAMETER_MODELS:
+            raise AssertionError(
+                f"YAML-origin tool produced unsupported parameter type "
+                f"{type(parameter).__name__} for parameter {getattr(parameter, 'name', '?')!r}"
+            )
+        if isinstance(parameter, ConditionalParameterModel):
+            for when in parameter.whens:
+                assert_yaml_v1_parameters(when.parameters)
+        elif isinstance(parameter, (RepeatParameterModel, SectionParameterModel)):
+            assert_yaml_v1_parameters(parameter.parameters)
+
+
 def runtimeify(
     internal_state: JobInternalToolState,
     input_models: ToolParameterBundle,
     adapt_dataset: DatasetToRuntimeJson,
     adapt_collection: CollectionToRuntimeJson,
+    yaml_origin: bool = False,
 ) -> JobRuntimeToolState:
+    if yaml_origin:
+        assert_yaml_v1_parameters(list(input_models.parameters))
 
     def adapt_dict(value: dict):
         assert isinstance(value, dict), str(value)

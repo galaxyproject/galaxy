@@ -7227,71 +7227,6 @@ export interface components {
              */
             type: string;
         };
-        /** AdminToolSource */
-        AdminToolSource: {
-            /** citations */
-            citations?: components["schemas"]["Citation"][] | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            class: "GalaxyTool";
-            /** command */
-            command: string;
-            /** container */
-            container?: string | null;
-            /** description */
-            description?: string | null;
-            /** edam_operations */
-            edam_operations?: string[] | null;
-            /** edam_topics */
-            edam_topics?: string[] | null;
-            /** help */
-            help?: components["schemas"]["HelpContent"] | null;
-            /** id */
-            id?: string | null;
-            /**
-             * inputs
-             * @default []
-             */
-            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
-            /** license */
-            license?: string | null;
-            /** name */
-            name?: string | null;
-            /**
-             * outputs
-             * @default []
-             */
-            outputs: (
-                | components["schemas"]["IncomingToolOutputDataset"]
-                | components["schemas"]["IncomingToolOutputCollection-Input"]
-                | components["schemas"]["ToolOutputText"]
-                | components["schemas"]["ToolOutputInteger"]
-                | components["schemas"]["ToolOutputFloat"]
-                | components["schemas"]["ToolOutputBoolean"]
-            )[];
-            /** profile */
-            profile?: number | null;
-            /**
-             * requirements
-             * @default []
-             */
-            requirements:
-                | (
-                      | components["schemas"]["JavascriptRequirement"]
-                      | components["schemas"]["ResourceRequirement"]
-                      | components["schemas"]["ContainerRequirement"]
-                  )[]
-                | null;
-            /**
-             * version
-             * @default 1.0
-             */
-            version: string | null;
-            /** xrefs */
-            xrefs?: components["schemas"]["XrefDict"][] | null;
-        };
         /**
          * AgentListResponse
          * @description Response listing available agents.
@@ -7799,8 +7734,8 @@ export interface components {
              */
             parameter_type: "gx_baseurl";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "baseurl";
         };
@@ -8046,8 +7981,8 @@ export interface components {
             /** truevalue */
             truevalue?: string | null;
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "boolean";
             /**
@@ -8456,6 +8391,11 @@ export interface components {
             /** Item Ids */
             item_ids: string[];
         };
+        /** CollectionAttributes */
+        CollectionAttributes: {
+            /** collection_type */
+            collection_type?: string | null;
+        };
         /** CollectionElementCollectionRequestUri */
         CollectionElementCollectionRequestUri: {
             /**
@@ -8608,8 +8548,8 @@ export interface components {
              */
             parameter_type: "gx_color";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "color";
             /** value */
@@ -8819,7 +8759,7 @@ export interface components {
             source: string | null;
         };
         /** ConditionalParameterModel */
-        "ConditionalParameterModel-Input": {
+        ConditionalParameterModel: {
             /**
              * argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
@@ -8867,71 +8807,15 @@ export interface components {
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "conditional";
-            /** whens */
-            whens: components["schemas"]["ConditionalWhen-Input"][];
-        };
-        /** ConditionalParameterModel */
-        "ConditionalParameterModel-Output": {
-            /**
-             * argument
-             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
-             */
-            argument?: string | null;
-            /**
-             * help
-             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
-             */
-            help?: string | null;
-            /**
-             * hidden
-             * @default false
-             */
-            hidden: boolean;
-            /**
-             * is_dynamic
-             * @default false
-             */
-            is_dynamic: boolean;
-            /**
-             * label
-             * @description Will be displayed on the tool page as the label of the parameter.
-             */
-            label?: string | null;
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
-             */
-            name: string;
-            /**
-             * optional
-             * @description If `false`, parameter must have a value.
-             * @default false
-             */
-            optional: boolean;
-            /**
-             * parameter_type
-             * @default gx_conditional
+             * type
              * @constant
              */
-            parameter_type: "gx_conditional";
-            /** test_parameter */
-            test_parameter:
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["SelectParameterModel"];
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
             type: "conditional";
             /** whens */
-            whens: components["schemas"]["ConditionalWhen-Output"][];
+            whens: components["schemas"]["ConditionalWhen"][];
         };
         /** ConditionalWhen */
-        "ConditionalWhen-Input": {
+        ConditionalWhen: {
             /** Discriminator */
             discriminator: boolean | string;
             /** Is Default When */
@@ -8945,7 +8829,7 @@ export interface components {
                 | components["schemas"]["CwlNullParameterModel"]
                 | components["schemas"]["CwlFileParameterModel"]
                 | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["CwlUnionParameterModel"]
                 | components["schemas"]["TextParameterModel"]
                 | components["schemas"]["IntegerParameterModel"]
                 | components["schemas"]["FloatParameterModel"]
@@ -8957,51 +8841,14 @@ export interface components {
                 | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Input"]
-                | components["schemas"]["RepeatParameterModel-Input"]
-                | components["schemas"]["SectionParameterModel-Input"]
-            )[];
-        };
-        /** ConditionalWhen */
-        "ConditionalWhen-Output": {
-            /** Discriminator */
-            discriminator: boolean | string;
-            /** Is Default When */
-            is_default_when: boolean;
-            /** Parameters */
-            parameters: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Output"]
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Output"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Output"]
-                | components["schemas"]["RepeatParameterModel-Output"]
-                | components["schemas"]["SectionParameterModel-Output"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
             )[];
         };
         /**
@@ -10477,7 +10324,7 @@ export interface components {
             parameter_type: "cwl_string";
         };
         /** CwlUnionParameterModel */
-        "CwlUnionParameterModel-Input": {
+        CwlUnionParameterModel: {
             /**
              * name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
@@ -10498,32 +10345,7 @@ export interface components {
                 | components["schemas"]["CwlNullParameterModel"]
                 | components["schemas"]["CwlFileParameterModel"]
                 | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Input"]
-            )[];
-        };
-        /** CwlUnionParameterModel */
-        "CwlUnionParameterModel-Output": {
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
-             */
-            name: string;
-            /**
-             * parameter_type
-             * @default cwl_union
-             * @constant
-             */
-            parameter_type: "cwl_union";
-            /** parameters */
-            parameters: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Output"]
+                | components["schemas"]["CwlUnionParameterModel"]
             )[];
         };
         /**
@@ -10689,8 +10511,8 @@ export interface components {
              */
             parameter_type: "gx_data_collection";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "data_collection";
             /** value */
@@ -10745,8 +10567,8 @@ export interface components {
              */
             parameter_type: "gx_data_column";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "data_column";
             /** value */
@@ -10889,8 +10711,8 @@ export interface components {
              */
             parameter_type: "gx_data";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "data";
         };
@@ -11668,8 +11490,8 @@ export interface components {
              */
             parameter_type: "gx_directory_uri";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "directory";
             /**
@@ -11733,29 +11555,18 @@ export interface components {
             version: string;
         };
         /** DrillDownOptionsDict */
-        "DrillDownOptionsDict-Input": {
+        DrillDownOptionsDict: {
             /** name */
             name: string | null;
             /** options */
-            options: components["schemas"]["DrillDownOptionsDict-Input"][];
-            /** selected */
-            selected: boolean;
-            /** value */
-            value: string;
-        };
-        /** DrillDownOptionsDict */
-        "DrillDownOptionsDict-Output": {
-            /** name */
-            name: string | null;
-            /** options */
-            options: components["schemas"]["DrillDownOptionsDict-Output"][];
+            options: components["schemas"]["DrillDownOptionsDict"][];
             /** selected */
             selected: boolean;
             /** value */
             value: string;
         };
         /** DrillDownParameterModel */
-        "DrillDownParameterModel-Input": {
+        DrillDownParameterModel: {
             /**
              * argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
@@ -11800,7 +11611,7 @@ export interface components {
              */
             optional: boolean;
             /** options */
-            options?: components["schemas"]["DrillDownOptionsDict-Input"][] | null;
+            options?: components["schemas"]["DrillDownOptionsDict"][] | null;
             /**
              * parameter_type
              * @default gx_drill_down
@@ -11808,67 +11619,8 @@ export interface components {
              */
             parameter_type: "gx_drill_down";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "drill_down";
-        };
-        /** DrillDownParameterModel */
-        "DrillDownParameterModel-Output": {
-            /**
-             * argument
-             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
-             */
-            argument?: string | null;
-            /**
-             * help
-             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
-             */
-            help?: string | null;
-            /**
-             * hidden
-             * @default false
-             */
-            hidden: boolean;
-            /**
-             * hierarchy
-             * @enum {string}
-             */
-            hierarchy: "recurse" | "exact";
-            /**
-             * is_dynamic
-             * @default false
-             */
-            is_dynamic: boolean;
-            /**
-             * label
-             * @description Will be displayed on the tool page as the label of the parameter.
-             */
-            label?: string | null;
-            /** multiple */
-            multiple: boolean;
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
-             */
-            name: string;
-            /**
-             * optional
-             * @description If `false`, parameter must have a value.
-             * @default false
-             */
-            optional: boolean;
-            /** options */
-            options?: components["schemas"]["DrillDownOptionsDict-Output"][] | null;
-            /**
-             * parameter_type
-             * @default gx_drill_down
+             * type
              * @constant
-             */
-            parameter_type: "gx_drill_down";
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
              */
             type: "drill_down";
         };
@@ -11974,7 +11726,7 @@ export interface components {
              */
             hidden: boolean | null;
             /** Representation */
-            representation: components["schemas"]["UserToolSource-Input"] | components["schemas"]["AdminToolSource"];
+            representation: components["schemas"]["UserToolSource-Input"] | components["schemas"]["YamlToolSource"];
             /**
              * Src
              * @default representation
@@ -13032,8 +12784,8 @@ export interface components {
              */
             parameter_type: "gx_float";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "float";
             /**
@@ -13228,48 +12980,6 @@ export interface components {
             /** Tags */
             tags?: string[] | null;
         };
-        /** GalaxyToolParameterModel */
-        "GalaxyToolParameterModel-Input":
-            | components["schemas"]["TextParameterModel"]
-            | components["schemas"]["IntegerParameterModel"]
-            | components["schemas"]["FloatParameterModel"]
-            | components["schemas"]["BooleanParameterModel"]
-            | components["schemas"]["HiddenParameterModel"]
-            | components["schemas"]["SelectParameterModel"]
-            | components["schemas"]["DataParameterModel"]
-            | components["schemas"]["DataCollectionParameterModel"]
-            | components["schemas"]["DataColumnParameterModel"]
-            | components["schemas"]["DirectoryUriParameterModel"]
-            | components["schemas"]["RulesParameterModel"]
-            | components["schemas"]["DrillDownParameterModel-Input"]
-            | components["schemas"]["GroupTagParameterModel"]
-            | components["schemas"]["BaseUrlParameterModel"]
-            | components["schemas"]["GenomeBuildParameterModel"]
-            | components["schemas"]["ColorParameterModel"]
-            | components["schemas"]["ConditionalParameterModel-Input"]
-            | components["schemas"]["RepeatParameterModel-Input"]
-            | components["schemas"]["SectionParameterModel-Input"];
-        /** GalaxyToolParameterModel */
-        "GalaxyToolParameterModel-Output":
-            | components["schemas"]["TextParameterModel"]
-            | components["schemas"]["IntegerParameterModel"]
-            | components["schemas"]["FloatParameterModel"]
-            | components["schemas"]["BooleanParameterModel"]
-            | components["schemas"]["HiddenParameterModel"]
-            | components["schemas"]["SelectParameterModel"]
-            | components["schemas"]["DataParameterModel"]
-            | components["schemas"]["DataCollectionParameterModel"]
-            | components["schemas"]["DataColumnParameterModel"]
-            | components["schemas"]["DirectoryUriParameterModel"]
-            | components["schemas"]["RulesParameterModel"]
-            | components["schemas"]["DrillDownParameterModel-Output"]
-            | components["schemas"]["GroupTagParameterModel"]
-            | components["schemas"]["BaseUrlParameterModel"]
-            | components["schemas"]["GenomeBuildParameterModel"]
-            | components["schemas"]["ColorParameterModel"]
-            | components["schemas"]["ConditionalParameterModel-Output"]
-            | components["schemas"]["RepeatParameterModel-Output"]
-            | components["schemas"]["SectionParameterModel-Output"];
         /** GenerateTourResponse */
         GenerateTourResponse: {
             /**
@@ -13335,8 +13045,8 @@ export interface components {
              */
             parameter_type: "gx_genomebuild";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "genomebuild";
         };
@@ -13500,8 +13210,8 @@ export interface components {
              */
             parameter_type: "gx_group_tag";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "group_tag";
         };
@@ -15321,8 +15031,8 @@ export interface components {
              */
             parameter_type: "gx_hidden";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "hidden";
             /**
@@ -16232,8 +15942,8 @@ export interface components {
              */
             parameter_type: "gx_integer";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "integer";
             /**
@@ -19559,6 +19269,11 @@ export interface components {
              */
             url: string;
         };
+        /**
+         * OutputCompareType
+         * @enum {string}
+         */
+        OutputCompareType: "diff" | "re_match" | "sim_size" | "re_match_multiline" | "contains" | "image_diff";
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -20869,7 +20584,7 @@ export interface components {
             action_type: "remove_unlabeled_workflow_outputs";
         };
         /** RepeatParameterModel */
-        "RepeatParameterModel-Input": {
+        RepeatParameterModel: {
             /**
              * argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
@@ -20925,7 +20640,7 @@ export interface components {
                 | components["schemas"]["CwlNullParameterModel"]
                 | components["schemas"]["CwlFileParameterModel"]
                 | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["CwlUnionParameterModel"]
                 | components["schemas"]["TextParameterModel"]
                 | components["schemas"]["IntegerParameterModel"]
                 | components["schemas"]["FloatParameterModel"]
@@ -20937,102 +20652,18 @@ export interface components {
                 | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Input"]
-                | components["schemas"]["RepeatParameterModel-Input"]
-                | components["schemas"]["SectionParameterModel-Input"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
             )[];
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "repeat";
-        };
-        /** RepeatParameterModel */
-        "RepeatParameterModel-Output": {
-            /**
-             * argument
-             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
-             */
-            argument?: string | null;
-            /**
-             * help
-             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
-             */
-            help?: string | null;
-            /**
-             * hidden
-             * @default false
-             */
-            hidden: boolean;
-            /**
-             * is_dynamic
-             * @default false
-             */
-            is_dynamic: boolean;
-            /**
-             * label
-             * @description Will be displayed on the tool page as the label of the parameter.
-             */
-            label?: string | null;
-            /** max */
-            max?: number | null;
-            /** min */
-            min?: number | null;
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
-             */
-            name: string;
-            /**
-             * optional
-             * @description If `false`, parameter must have a value.
-             * @default false
-             */
-            optional: boolean;
-            /**
-             * parameter_type
-             * @default gx_repeat
+             * type
              * @constant
-             */
-            parameter_type: "gx_repeat";
-            /** parameters */
-            parameters: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Output"]
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Output"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Output"]
-                | components["schemas"]["RepeatParameterModel-Output"]
-                | components["schemas"]["SectionParameterModel-Output"]
-            )[];
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
              */
             type: "repeat";
         };
@@ -21220,6 +20851,140 @@ export interface components {
              */
             url: string;
         };
+        /** RootModel[List[Union[Annotated[Union[has_line_model, has_line_matching_model, has_n_lines_model, has_text_model, has_text_matching_model, not_has_text_model, has_n_columns_model, attribute_is_model, attribute_matches_model, element_text_model, element_text_is_model, element_text_matches_model, has_element_with_path_model, has_n_elements_with_path_model, is_valid_xml_model, xml_element_model, has_json_property_with_text_model, has_json_property_with_value_model, has_h5_attribute_model, has_h5_keys_model, has_archive_member_model, has_size_model, has_image_center_of_mass_model, has_image_channels_model, has_image_depth_model, has_image_frames_model, has_image_height_model, has_image_mean_intensity_model, has_image_mean_object_size_model, has_image_n_labels_model, has_image_width_model], FieldInfo(annotation=NoneType, required=True, discriminator='that')], has_line_model_nested, has_line_matching_model_nested, has_n_lines_model_nested, has_text_model_nested, has_text_matching_model_nested, not_has_text_model_nested, has_n_columns_model_nested, attribute_is_model_nested, attribute_matches_model_nested, element_text_model_nested, element_text_is_model_nested, element_text_matches_model_nested, has_element_with_path_model_nested, has_n_elements_with_path_model_nested, is_valid_xml_model_nested, xml_element_model_nested, has_json_property_with_text_model_nested, has_json_property_with_value_model_nested, has_h5_attribute_model_nested, has_h5_keys_model_nested, has_archive_member_model_nested, has_size_model_nested, has_image_center_of_mass_model_nested, has_image_channels_model_nested, has_image_depth_model_nested, has_image_frames_model_nested, has_image_height_model_nested, has_image_mean_intensity_model_nested, has_image_mean_object_size_model_nested, has_image_n_labels_model_nested, has_image_width_model_nested]]] */
+        "RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input": (
+            | (
+                  | components["schemas"]["has_line_model"]
+                  | components["schemas"]["has_line_matching_model"]
+                  | components["schemas"]["has_n_lines_model"]
+                  | components["schemas"]["has_text_model"]
+                  | components["schemas"]["has_text_matching_model"]
+                  | components["schemas"]["not_has_text_model"]
+                  | components["schemas"]["has_n_columns_model"]
+                  | components["schemas"]["attribute_is_model"]
+                  | components["schemas"]["attribute_matches_model"]
+                  | components["schemas"]["element_text_model-Input"]
+                  | components["schemas"]["element_text_is_model"]
+                  | components["schemas"]["element_text_matches_model"]
+                  | components["schemas"]["has_element_with_path_model"]
+                  | components["schemas"]["has_n_elements_with_path_model"]
+                  | components["schemas"]["is_valid_xml_model"]
+                  | components["schemas"]["xml_element_model-Input"]
+                  | components["schemas"]["has_json_property_with_text_model"]
+                  | components["schemas"]["has_json_property_with_value_model"]
+                  | components["schemas"]["has_h5_attribute_model"]
+                  | components["schemas"]["has_h5_keys_model"]
+                  | components["schemas"]["has_archive_member_model-Input"]
+                  | components["schemas"]["has_size_model"]
+                  | components["schemas"]["has_image_center_of_mass_model"]
+                  | components["schemas"]["has_image_channels_model"]
+                  | components["schemas"]["has_image_depth_model"]
+                  | components["schemas"]["has_image_frames_model"]
+                  | components["schemas"]["has_image_height_model"]
+                  | components["schemas"]["has_image_mean_intensity_model"]
+                  | components["schemas"]["has_image_mean_object_size_model"]
+                  | components["schemas"]["has_image_n_labels_model"]
+                  | components["schemas"]["has_image_width_model"]
+              )
+            | components["schemas"]["has_line_model_nested"]
+            | components["schemas"]["has_line_matching_model_nested"]
+            | components["schemas"]["has_n_lines_model_nested"]
+            | components["schemas"]["has_text_model_nested"]
+            | components["schemas"]["has_text_matching_model_nested"]
+            | components["schemas"]["not_has_text_model_nested"]
+            | components["schemas"]["has_n_columns_model_nested"]
+            | components["schemas"]["attribute_is_model_nested"]
+            | components["schemas"]["attribute_matches_model_nested"]
+            | components["schemas"]["element_text_model_nested-Input"]
+            | components["schemas"]["element_text_is_model_nested"]
+            | components["schemas"]["element_text_matches_model_nested"]
+            | components["schemas"]["has_element_with_path_model_nested"]
+            | components["schemas"]["has_n_elements_with_path_model_nested"]
+            | components["schemas"]["is_valid_xml_model_nested"]
+            | components["schemas"]["xml_element_model_nested-Input"]
+            | components["schemas"]["has_json_property_with_text_model_nested"]
+            | components["schemas"]["has_json_property_with_value_model_nested"]
+            | components["schemas"]["has_h5_attribute_model_nested"]
+            | components["schemas"]["has_h5_keys_model_nested"]
+            | components["schemas"]["has_archive_member_model_nested-Input"]
+            | components["schemas"]["has_size_model_nested"]
+            | components["schemas"]["has_image_center_of_mass_model_nested"]
+            | components["schemas"]["has_image_channels_model_nested"]
+            | components["schemas"]["has_image_depth_model_nested"]
+            | components["schemas"]["has_image_frames_model_nested"]
+            | components["schemas"]["has_image_height_model_nested"]
+            | components["schemas"]["has_image_mean_intensity_model_nested"]
+            | components["schemas"]["has_image_mean_object_size_model_nested"]
+            | components["schemas"]["has_image_n_labels_model_nested"]
+            | components["schemas"]["has_image_width_model_nested"]
+        )[];
+        /** RootModel[List[Union[Annotated[Union[has_line_model, has_line_matching_model, has_n_lines_model, has_text_model, has_text_matching_model, not_has_text_model, has_n_columns_model, attribute_is_model, attribute_matches_model, element_text_model, element_text_is_model, element_text_matches_model, has_element_with_path_model, has_n_elements_with_path_model, is_valid_xml_model, xml_element_model, has_json_property_with_text_model, has_json_property_with_value_model, has_h5_attribute_model, has_h5_keys_model, has_archive_member_model, has_size_model, has_image_center_of_mass_model, has_image_channels_model, has_image_depth_model, has_image_frames_model, has_image_height_model, has_image_mean_intensity_model, has_image_mean_object_size_model, has_image_n_labels_model, has_image_width_model], FieldInfo(annotation=NoneType, required=True, discriminator='that')], has_line_model_nested, has_line_matching_model_nested, has_n_lines_model_nested, has_text_model_nested, has_text_matching_model_nested, not_has_text_model_nested, has_n_columns_model_nested, attribute_is_model_nested, attribute_matches_model_nested, element_text_model_nested, element_text_is_model_nested, element_text_matches_model_nested, has_element_with_path_model_nested, has_n_elements_with_path_model_nested, is_valid_xml_model_nested, xml_element_model_nested, has_json_property_with_text_model_nested, has_json_property_with_value_model_nested, has_h5_attribute_model_nested, has_h5_keys_model_nested, has_archive_member_model_nested, has_size_model_nested, has_image_center_of_mass_model_nested, has_image_channels_model_nested, has_image_depth_model_nested, has_image_frames_model_nested, has_image_height_model_nested, has_image_mean_intensity_model_nested, has_image_mean_object_size_model_nested, has_image_n_labels_model_nested, has_image_width_model_nested]]] */
+        "RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output": (
+            | (
+                  | components["schemas"]["has_line_model"]
+                  | components["schemas"]["has_line_matching_model"]
+                  | components["schemas"]["has_n_lines_model"]
+                  | components["schemas"]["has_text_model"]
+                  | components["schemas"]["has_text_matching_model"]
+                  | components["schemas"]["not_has_text_model"]
+                  | components["schemas"]["has_n_columns_model"]
+                  | components["schemas"]["attribute_is_model"]
+                  | components["schemas"]["attribute_matches_model"]
+                  | components["schemas"]["element_text_model-Output"]
+                  | components["schemas"]["element_text_is_model"]
+                  | components["schemas"]["element_text_matches_model"]
+                  | components["schemas"]["has_element_with_path_model"]
+                  | components["schemas"]["has_n_elements_with_path_model"]
+                  | components["schemas"]["is_valid_xml_model"]
+                  | components["schemas"]["xml_element_model-Output"]
+                  | components["schemas"]["has_json_property_with_text_model"]
+                  | components["schemas"]["has_json_property_with_value_model"]
+                  | components["schemas"]["has_h5_attribute_model"]
+                  | components["schemas"]["has_h5_keys_model"]
+                  | components["schemas"]["has_archive_member_model-Output"]
+                  | components["schemas"]["has_size_model"]
+                  | components["schemas"]["has_image_center_of_mass_model"]
+                  | components["schemas"]["has_image_channels_model"]
+                  | components["schemas"]["has_image_depth_model"]
+                  | components["schemas"]["has_image_frames_model"]
+                  | components["schemas"]["has_image_height_model"]
+                  | components["schemas"]["has_image_mean_intensity_model"]
+                  | components["schemas"]["has_image_mean_object_size_model"]
+                  | components["schemas"]["has_image_n_labels_model"]
+                  | components["schemas"]["has_image_width_model"]
+              )
+            | components["schemas"]["has_line_model_nested"]
+            | components["schemas"]["has_line_matching_model_nested"]
+            | components["schemas"]["has_n_lines_model_nested"]
+            | components["schemas"]["has_text_model_nested"]
+            | components["schemas"]["has_text_matching_model_nested"]
+            | components["schemas"]["not_has_text_model_nested"]
+            | components["schemas"]["has_n_columns_model_nested"]
+            | components["schemas"]["attribute_is_model_nested"]
+            | components["schemas"]["attribute_matches_model_nested"]
+            | components["schemas"]["element_text_model_nested-Output"]
+            | components["schemas"]["element_text_is_model_nested"]
+            | components["schemas"]["element_text_matches_model_nested"]
+            | components["schemas"]["has_element_with_path_model_nested"]
+            | components["schemas"]["has_n_elements_with_path_model_nested"]
+            | components["schemas"]["is_valid_xml_model_nested"]
+            | components["schemas"]["xml_element_model_nested-Output"]
+            | components["schemas"]["has_json_property_with_text_model_nested"]
+            | components["schemas"]["has_json_property_with_value_model_nested"]
+            | components["schemas"]["has_h5_attribute_model_nested"]
+            | components["schemas"]["has_h5_keys_model_nested"]
+            | components["schemas"]["has_archive_member_model_nested-Output"]
+            | components["schemas"]["has_size_model_nested"]
+            | components["schemas"]["has_image_center_of_mass_model_nested"]
+            | components["schemas"]["has_image_channels_model_nested"]
+            | components["schemas"]["has_image_depth_model_nested"]
+            | components["schemas"]["has_image_frames_model_nested"]
+            | components["schemas"]["has_image_height_model_nested"]
+            | components["schemas"]["has_image_mean_intensity_model_nested"]
+            | components["schemas"]["has_image_mean_object_size_model_nested"]
+            | components["schemas"]["has_image_n_labels_model_nested"]
+            | components["schemas"]["has_image_width_model_nested"]
+        )[];
         /** RootModel[dict[str, int]] */
         RootModel_dict_str__int__: {
             [key: string]: number;
@@ -21269,8 +21034,8 @@ export interface components {
              */
             parameter_type: "gx_rules";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "rules";
         };
@@ -21494,7 +21259,7 @@ export interface components {
             name: string;
         };
         /** SectionParameterModel */
-        "SectionParameterModel-Input": {
+        SectionParameterModel: {
             /**
              * argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
@@ -21546,7 +21311,7 @@ export interface components {
                 | components["schemas"]["CwlNullParameterModel"]
                 | components["schemas"]["CwlFileParameterModel"]
                 | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Input"]
+                | components["schemas"]["CwlUnionParameterModel"]
                 | components["schemas"]["TextParameterModel"]
                 | components["schemas"]["IntegerParameterModel"]
                 | components["schemas"]["FloatParameterModel"]
@@ -21558,98 +21323,18 @@ export interface components {
                 | components["schemas"]["DataColumnParameterModel"]
                 | components["schemas"]["DirectoryUriParameterModel"]
                 | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Input"]
+                | components["schemas"]["DrillDownParameterModel"]
                 | components["schemas"]["GroupTagParameterModel"]
                 | components["schemas"]["BaseUrlParameterModel"]
                 | components["schemas"]["GenomeBuildParameterModel"]
                 | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Input"]
-                | components["schemas"]["RepeatParameterModel-Input"]
-                | components["schemas"]["SectionParameterModel-Input"]
+                | components["schemas"]["ConditionalParameterModel"]
+                | components["schemas"]["RepeatParameterModel"]
+                | components["schemas"]["SectionParameterModel"]
             )[];
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "section";
-        };
-        /** SectionParameterModel */
-        "SectionParameterModel-Output": {
-            /**
-             * argument
-             * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
-             */
-            argument?: string | null;
-            /**
-             * help
-             * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
-             */
-            help?: string | null;
-            /**
-             * hidden
-             * @default false
-             */
-            hidden: boolean;
-            /**
-             * is_dynamic
-             * @default false
-             */
-            is_dynamic: boolean;
-            /**
-             * label
-             * @description Will be displayed on the tool page as the label of the parameter.
-             */
-            label?: string | null;
-            /**
-             * name
-             * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
-             */
-            name: string;
-            /**
-             * optional
-             * @description If `false`, parameter must have a value.
-             * @default false
-             */
-            optional: boolean;
-            /**
-             * parameter_type
-             * @default gx_section
+             * type
              * @constant
-             */
-            parameter_type: "gx_section";
-            /** parameters */
-            parameters: (
-                | components["schemas"]["CwlIntegerParameterModel"]
-                | components["schemas"]["CwlFloatParameterModel"]
-                | components["schemas"]["CwlStringParameterModel"]
-                | components["schemas"]["CwlBooleanParameterModel"]
-                | components["schemas"]["CwlNullParameterModel"]
-                | components["schemas"]["CwlFileParameterModel"]
-                | components["schemas"]["CwlDirectoryParameterModel"]
-                | components["schemas"]["CwlUnionParameterModel-Output"]
-                | components["schemas"]["TextParameterModel"]
-                | components["schemas"]["IntegerParameterModel"]
-                | components["schemas"]["FloatParameterModel"]
-                | components["schemas"]["BooleanParameterModel"]
-                | components["schemas"]["HiddenParameterModel"]
-                | components["schemas"]["SelectParameterModel"]
-                | components["schemas"]["DataParameterModel"]
-                | components["schemas"]["DataCollectionParameterModel"]
-                | components["schemas"]["DataColumnParameterModel"]
-                | components["schemas"]["DirectoryUriParameterModel"]
-                | components["schemas"]["RulesParameterModel"]
-                | components["schemas"]["DrillDownParameterModel-Output"]
-                | components["schemas"]["GroupTagParameterModel"]
-                | components["schemas"]["BaseUrlParameterModel"]
-                | components["schemas"]["GenomeBuildParameterModel"]
-                | components["schemas"]["ColorParameterModel"]
-                | components["schemas"]["ConditionalParameterModel-Output"]
-                | components["schemas"]["RepeatParameterModel-Output"]
-                | components["schemas"]["SectionParameterModel-Output"]
-            )[];
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
              */
             type: "section";
         };
@@ -21719,8 +21404,8 @@ export interface components {
              */
             parameter_type: "gx_select";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "select";
             /**
@@ -23142,6 +22827,234 @@ export interface components {
                   )[]
                 | null;
         };
+        /** TestCollectionCollectionElementAssertions */
+        "TestCollectionCollectionElementAssertions-Input": {
+            /** element_tests */
+            element_tests?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
+            } | null;
+            /** elements */
+            elements?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
+            } | null;
+        };
+        /** TestCollectionCollectionElementAssertions */
+        "TestCollectionCollectionElementAssertions-Output": {
+            /** element_tests */
+            element_tests?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
+            } | null;
+            /** elements */
+            elements?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
+            } | null;
+        };
+        /** TestCollectionDatasetElementAssertions */
+        "TestCollectionDatasetElementAssertions-Input": {
+            /** asserts */
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_dict-Input"]
+                | null;
+            /** checksum */
+            checksum?: string | null;
+            /** compare */
+            compare?: components["schemas"]["OutputCompareType"] | null;
+            /** decompress */
+            decompress?: boolean | null;
+            /** delta */
+            delta?: number | null;
+            /** delta_frac */
+            delta_frac?: number | null;
+            /** file */
+            file?: string | null;
+            /** ftype */
+            ftype?: string | null;
+            /** lines_diff */
+            lines_diff?: number | null;
+            /** location */
+            location?: string | null;
+            /** metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** path */
+            path?: string | null;
+            /** sort */
+            sort?: boolean | null;
+        };
+        /** TestCollectionDatasetElementAssertions */
+        "TestCollectionDatasetElementAssertions-Output": {
+            /** asserts */
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_dict-Output"]
+                | null;
+            /** checksum */
+            checksum?: string | null;
+            /** compare */
+            compare?: components["schemas"]["OutputCompareType"] | null;
+            /** decompress */
+            decompress?: boolean | null;
+            /** delta */
+            delta?: number | null;
+            /** delta_frac */
+            delta_frac?: number | null;
+            /** file */
+            file?: string | null;
+            /** ftype */
+            ftype?: string | null;
+            /** lines_diff */
+            lines_diff?: number | null;
+            /** location */
+            location?: string | null;
+            /** metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** path */
+            path?: string | null;
+            /** sort */
+            sort?: boolean | null;
+        };
+        /** TestCollectionOutputAssertions */
+        "TestCollectionOutputAssertions-Input": {
+            /** attributes */
+            attributes?: components["schemas"]["CollectionAttributes"] | null;
+            /**
+             * class_
+             * @default Collection
+             */
+            class: "Collection" | null;
+            /** collection_type */
+            collection_type?: string | null;
+            /** element_count */
+            element_count?: number | null;
+            /** element_tests */
+            element_tests?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
+            } | null;
+            /** elements */
+            elements?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
+            } | null;
+        };
+        /** TestCollectionOutputAssertions */
+        "TestCollectionOutputAssertions-Output": {
+            /** attributes */
+            attributes?: components["schemas"]["CollectionAttributes"] | null;
+            /**
+             * class_
+             * @default Collection
+             */
+            class: "Collection" | null;
+            /** collection_type */
+            collection_type?: string | null;
+            /** element_count */
+            element_count?: number | null;
+            /** element_tests */
+            element_tests?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
+            } | null;
+            /** elements */
+            elements?: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
+                    | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
+            } | null;
+        };
+        /** TestDataOutputAssertions */
+        "TestDataOutputAssertions-Input": {
+            /** asserts */
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_dict-Input"]
+                | null;
+            /** checksum */
+            checksum?: string | null;
+            /**
+             * class_
+             * @default File
+             */
+            class: "File" | null;
+            /** compare */
+            compare?: components["schemas"]["OutputCompareType"] | null;
+            /** decompress */
+            decompress?: boolean | null;
+            /** delta */
+            delta?: number | null;
+            /** delta_frac */
+            delta_frac?: number | null;
+            /** file */
+            file?: string | null;
+            /** ftype */
+            ftype?: string | null;
+            /** lines_diff */
+            lines_diff?: number | null;
+            /** location */
+            location?: string | null;
+            /** metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** path */
+            path?: string | null;
+            /** sort */
+            sort?: boolean | null;
+        };
+        /** TestDataOutputAssertions */
+        "TestDataOutputAssertions-Output": {
+            /** asserts */
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_dict-Output"]
+                | null;
+            /** checksum */
+            checksum?: string | null;
+            /**
+             * class_
+             * @default File
+             */
+            class: "File" | null;
+            /** compare */
+            compare?: components["schemas"]["OutputCompareType"] | null;
+            /** decompress */
+            decompress?: boolean | null;
+            /** delta */
+            delta?: number | null;
+            /** delta_frac */
+            delta_frac?: number | null;
+            /** file */
+            file?: string | null;
+            /** ftype */
+            ftype?: string | null;
+            /** lines_diff */
+            lines_diff?: number | null;
+            /** location */
+            location?: string | null;
+            /** metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** path */
+            path?: string | null;
+            /** sort */
+            sort?: boolean | null;
+        };
         /** TestUpdateInstancePayload */
         TestUpdateInstancePayload: {
             /** Variables */
@@ -23217,8 +23130,8 @@ export interface components {
              */
             parameter_type: "gx_text";
             /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
+             * type
+             * @constant
              */
             type: "text";
             /**
@@ -24859,12 +24772,12 @@ export interface components {
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
              * @example my-cool-tool
              */
-            id: string;
+            id?: string | null;
             /**
              * inputs
              * @default []
              */
-            inputs: components["schemas"]["GalaxyToolParameterModel-Input"][];
+            inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
             /**
              * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
@@ -24888,6 +24801,8 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
+            /** profile */
+            profile?: number | null;
             /**
              * requirements
              * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
@@ -24906,12 +24821,14 @@ export interface components {
              * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
+            /** tests */
+            tests?: components["schemas"]["YamlToolTest-Input"][] | null;
             /**
              * version
              * @description Version for the tool.
              * @example 0.1.0
              */
-            version: string;
+            version?: string | null;
             /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
@@ -24954,12 +24871,12 @@ export interface components {
              * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
              * @example my-cool-tool
              */
-            id: string;
+            id?: string | null;
             /**
              * inputs
              * @default []
              */
-            inputs: components["schemas"]["GalaxyToolParameterModel-Output"][];
+            inputs: components["schemas"]["YamlGalaxyToolParameter-Output"][];
             /**
              * license
              * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
@@ -24983,6 +24900,8 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[];
+            /** profile */
+            profile?: number | null;
             /**
              * requirements
              * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
@@ -25001,12 +24920,14 @@ export interface components {
              * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
              */
             shell_command: string;
+            /** tests */
+            tests?: components["schemas"]["YamlToolTest-Output"][] | null;
             /**
              * version
              * @description Version for the tool.
              * @example 0.1.0
              */
-            version: string;
+            version?: string | null;
             /** xrefs */
             xrefs?: components["schemas"]["XrefDict"][] | null;
         };
@@ -26106,6 +26027,420 @@ export interface components {
              */
             namespace: string;
         };
+        /** YamlBooleanParameter */
+        YamlBooleanParameter: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "boolean";
+            /**
+             * Value
+             * @default false
+             */
+            value: boolean | null;
+        };
+        /** YamlColorParameter */
+        YamlColorParameter: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "color";
+            /** Value */
+            value?: string | null;
+        };
+        /** YamlConditionalParameter */
+        "YamlConditionalParameter-Input": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["YamlBooleanParameter"]
+                | components["schemas"]["YamlSelectParameter"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
+            /** Whens */
+            whens: components["schemas"]["YamlConditionalWhen-Input"][];
+        };
+        /** YamlConditionalParameter */
+        "YamlConditionalParameter-Output": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Test Parameter */
+            test_parameter:
+                | components["schemas"]["YamlBooleanParameter"]
+                | components["schemas"]["YamlSelectParameter"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "conditional";
+            /** Whens */
+            whens: components["schemas"]["YamlConditionalWhen-Output"][];
+        };
+        /** YamlConditionalWhen */
+        "YamlConditionalWhen-Input": {
+            /** Discriminator */
+            discriminator: boolean | string;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
+        };
+        /** YamlConditionalWhen */
+        "YamlConditionalWhen-Output": {
+            /** Discriminator */
+            discriminator: boolean | string;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
+        };
+        /** YamlDataCollectionParameter */
+        YamlDataCollectionParameter: {
+            /** Collection Type */
+            collection_type?: string | null;
+            /**
+             * Format
+             * @default [
+             *       "data"
+             *     ]
+             */
+            format: string[];
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data_collection";
+        };
+        /** YamlDataParameter */
+        YamlDataParameter: {
+            /**
+             * Format
+             * @default [
+             *       "data"
+             *     ]
+             */
+            format: string[];
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "data";
+        };
+        /** YamlFloatParameter */
+        YamlFloatParameter: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "float";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
+        };
+        /** YamlGalaxyToolParameter */
+        "YamlGalaxyToolParameter-Input":
+            | components["schemas"]["YamlBooleanParameter"]
+            | components["schemas"]["YamlIntegerParameter"]
+            | components["schemas"]["YamlFloatParameter"]
+            | components["schemas"]["YamlTextParameter"]
+            | components["schemas"]["YamlSelectParameter"]
+            | components["schemas"]["YamlColorParameter"]
+            | components["schemas"]["YamlDataParameter"]
+            | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlConditionalParameter-Input"]
+            | components["schemas"]["YamlRepeatParameter-Input"]
+            | components["schemas"]["YamlSectionParameter-Input"];
+        /** YamlGalaxyToolParameter */
+        "YamlGalaxyToolParameter-Output":
+            | components["schemas"]["YamlBooleanParameter"]
+            | components["schemas"]["YamlIntegerParameter"]
+            | components["schemas"]["YamlFloatParameter"]
+            | components["schemas"]["YamlTextParameter"]
+            | components["schemas"]["YamlSelectParameter"]
+            | components["schemas"]["YamlColorParameter"]
+            | components["schemas"]["YamlDataParameter"]
+            | components["schemas"]["YamlDataCollectionParameter"]
+            | components["schemas"]["YamlConditionalParameter-Output"]
+            | components["schemas"]["YamlRepeatParameter-Output"]
+            | components["schemas"]["YamlSectionParameter-Output"];
+        /** YamlIntegerParameter */
+        YamlIntegerParameter: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "integer";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["InRangeParameterValidatorModel"][];
+            /** Value */
+            value?: number | null;
+        };
+        /**
+         * YamlLabelValue
+         * @description YAML-friendly option model — ``selected`` defaults to ``False``.
+         */
+        YamlLabelValue: {
+            /** Label */
+            label: string;
+            /**
+             * Selected
+             * @default false
+             */
+            selected: boolean;
+            /** Value */
+            value: string;
+        };
+        /** YamlRepeatParameter */
+        "YamlRepeatParameter-Input": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
+        };
+        /** YamlRepeatParameter */
+        "YamlRepeatParameter-Output": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Max */
+            max?: number | null;
+            /** Min */
+            min?: number | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "repeat";
+        };
+        /** YamlSectionParameter */
+        "YamlSectionParameter-Input": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Input"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
+        };
+        /** YamlSectionParameter */
+        "YamlSectionParameter-Output": {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * Parameters
+             * @default []
+             */
+            parameters: components["schemas"]["YamlGalaxyToolParameter-Output"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "section";
+        };
+        /** YamlSelectParameter */
+        YamlSelectParameter: {
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /**
+             * Multiple
+             * @default false
+             */
+            multiple: boolean;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /** Options */
+            options: components["schemas"]["YamlLabelValue"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "select";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
+        };
         /** YamlTemplateConfigFile */
         YamlTemplateConfigFile: {
             /** content */
@@ -26120,6 +26455,3323 @@ export interface components {
             filename?: string | null;
             /** name */
             name?: string | null;
+        };
+        /** YamlTestCredential */
+        YamlTestCredential: {
+            /**
+             * name
+             * @description Name of the credentials group.
+             */
+            name: string;
+            /**
+             * secrets
+             * @description Secrets exposed to the tool environment.
+             * @default []
+             */
+            secrets: components["schemas"]["YamlTestCredentialValue"][];
+            /**
+             * variables
+             * @description Variables exposed to the tool environment.
+             * @default []
+             */
+            variables: components["schemas"]["YamlTestCredentialValue"][];
+            /**
+             * version
+             * @description Version of the credential definition.
+             */
+            version?: string | null;
+        };
+        /** YamlTestCredentialValue */
+        YamlTestCredentialValue: {
+            /**
+             * name
+             * @description Name of the credential variable or secret.
+             */
+            name: string;
+            /**
+             * value
+             * @description Value of the credential variable or secret.
+             */
+            value: string;
+        };
+        /** YamlTextParameter */
+        YamlTextParameter: {
+            /**
+             * Area
+             * @default false
+             */
+            area: boolean;
+            /** Help */
+            help?: string | null;
+            /** Label */
+            label?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Optional
+             * @default false
+             */
+            optional: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+            /**
+             * Validators
+             * @default []
+             */
+            validators: (
+                | components["schemas"]["LengthParameterValidatorModel"]
+                | components["schemas"]["RegexParameterValidatorModel"]
+                | components["schemas"]["EmptyFieldParameterValidatorModel"]
+            )[];
+            /** Value */
+            value?: string | null;
+        };
+        /** YamlToolSource */
+        YamlToolSource: {
+            /** citations */
+            citations?: components["schemas"]["Citation"][] | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            class: "GalaxyTool";
+            /**
+             * configfiles
+             * @description A list of config files for this tool.
+             */
+            configfiles?: components["schemas"]["YamlTemplateConfigFile"][] | null;
+            /**
+             * container
+             * @description Container image to use for this tool.
+             * @example quay.io/biocontainers/python:3.13
+             */
+            container?: string | null;
+            /**
+             * description
+             * @description The description is displayed in the tool menu immediately following the hyperlink for the tool.
+             */
+            description?: string | null;
+            /** edam_operations */
+            edam_operations?: string[] | null;
+            /** edam_topics */
+            edam_topics?: string[] | null;
+            /**
+             * help
+             * @description Help text shown below the tool interface.
+             */
+            help?: components["schemas"]["HelpContent"] | null;
+            /**
+             * id
+             * @description Unique identifier for the tool. Should be all lower-case and should not include whitespace.
+             * @example my-cool-tool
+             */
+            id?: string | null;
+            /**
+             * inputs
+             * @default []
+             */
+            inputs: components["schemas"]["YamlGalaxyToolParameter-Input"][];
+            /**
+             * license
+             * @description A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.
+             * @example MIT
+             */
+            license?: string | null;
+            /**
+             * name
+             * @description The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.
+             */
+            name: string;
+            /**
+             * outputs
+             * @default []
+             */
+            outputs: (
+                | components["schemas"]["IncomingToolOutputDataset"]
+                | components["schemas"]["IncomingToolOutputCollection-Input"]
+                | components["schemas"]["ToolOutputText"]
+                | components["schemas"]["ToolOutputInteger"]
+                | components["schemas"]["ToolOutputFloat"]
+                | components["schemas"]["ToolOutputBoolean"]
+            )[];
+            /** profile */
+            profile?: number | null;
+            /**
+             * requirements
+             * @description A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images.
+             * @default []
+             */
+            requirements:
+                | (
+                      | components["schemas"]["JavascriptRequirement"]
+                      | components["schemas"]["ResourceRequirement"]
+                      | components["schemas"]["ContainerRequirement"]
+                  )[]
+                | null;
+            /**
+             * shell_command
+             * @description A string that contains the command to be executed. Parameters can be referenced inside $().
+             * @example head -n '$(inputs.n_lines)' '$(inputs.data_input.path)'
+             */
+            shell_command: string;
+            /** tests */
+            tests?: components["schemas"]["YamlToolTest-Input"][] | null;
+            /**
+             * version
+             * @description Version for the tool.
+             * @example 0.1.0
+             */
+            version?: string | null;
+            /** xrefs */
+            xrefs?: components["schemas"]["XrefDict"][] | null;
+        };
+        /**
+         * YamlToolTest
+         * @description In-tool test case as authored in YAML tool fixtures.
+         */
+        "YamlToolTest-Input": {
+            /**
+             * Assert Stderr
+             * @description Assertions to apply against the tool's standard error.
+             */
+            assert_stderr?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_dict-Input"]
+                | null;
+            /**
+             * Assert Stdout
+             * @description Assertions to apply against the tool's standard output.
+             */
+            assert_stdout?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_dict-Input"]
+                | null;
+            /**
+             * Command
+             * @description Assertions to apply against the executed command line.
+             */
+            command?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_dict-Input"]
+                | null;
+            /**
+             * Credentials
+             * @description Credentials to inject for this test case.
+             */
+            credentials?: components["schemas"]["YamlTestCredential"][] | null;
+            /**
+             * Doc
+             * @description Human-readable description of this test case.
+             */
+            doc?: string | null;
+            /**
+             * Expect Exit Code
+             * @description Expected process exit code.
+             */
+            expect_exit_code?: number | null;
+            /**
+             * Expect Failure
+             * @description If true, the tool is expected to produce an error.
+             */
+            expect_failure?: boolean | null;
+            /**
+             * Expect Test Failure
+             * @description If true, the test itself is expected to fail.
+             */
+            expect_test_failure?: boolean | null;
+            /**
+             * Inputs
+             * @description Mapping of input parameter names to test values.
+             */
+            inputs?: {
+                [key: string]:
+                    | boolean
+                    | number
+                    | string
+                    | unknown[]
+                    | {
+                          [key: string]: unknown;
+                      };
+            } | null;
+            /**
+             * Outputs
+             * @description Mapping of output names to expected values or assertions.
+             * @default {}
+             */
+            outputs: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionOutputAssertions-Input"]
+                    | components["schemas"]["TestDataOutputAssertions-Input"]
+                    | boolean
+                    | number
+                    | string;
+            };
+        };
+        /**
+         * YamlToolTest
+         * @description In-tool test case as authored in YAML tool fixtures.
+         */
+        "YamlToolTest-Output": {
+            /**
+             * Assert Stderr
+             * @description Assertions to apply against the tool's standard error.
+             */
+            assert_stderr?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_dict-Output"]
+                | null;
+            /**
+             * Assert Stdout
+             * @description Assertions to apply against the tool's standard output.
+             */
+            assert_stdout?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_dict-Output"]
+                | null;
+            /**
+             * Command
+             * @description Assertions to apply against the executed command line.
+             */
+            command?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_dict-Output"]
+                | null;
+            /**
+             * Credentials
+             * @description Credentials to inject for this test case.
+             */
+            credentials?: components["schemas"]["YamlTestCredential"][] | null;
+            /**
+             * Doc
+             * @description Human-readable description of this test case.
+             */
+            doc?: string | null;
+            /**
+             * Expect Exit Code
+             * @description Expected process exit code.
+             */
+            expect_exit_code?: number | null;
+            /**
+             * Expect Failure
+             * @description If true, the tool is expected to produce an error.
+             */
+            expect_failure?: boolean | null;
+            /**
+             * Expect Test Failure
+             * @description If true, the test itself is expected to fail.
+             */
+            expect_test_failure?: boolean | null;
+            /**
+             * Inputs
+             * @description Mapping of input parameter names to test values.
+             */
+            inputs?: {
+                [key: string]:
+                    | boolean
+                    | number
+                    | string
+                    | unknown[]
+                    | {
+                          [key: string]: unknown;
+                      };
+            } | null;
+            /**
+             * Outputs
+             * @description Mapping of output names to expected values or assertions.
+             * @default {}
+             */
+            outputs: {
+                [key: string]:
+                    | components["schemas"]["TestCollectionOutputAssertions-Output"]
+                    | components["schemas"]["TestDataOutputAssertions-Output"]
+                    | boolean
+                    | number
+                    | string;
+            };
+        };
+        /** assertion_dict */
+        "assertion_dict-Input": {
+            attribute_is?: components["schemas"]["base_attribute_is_model"] | null;
+            attribute_matches?: components["schemas"]["base_attribute_matches_model"] | null;
+            element_text?: components["schemas"]["base_element_text_model-Input"] | null;
+            element_text_is?: components["schemas"]["base_element_text_is_model"] | null;
+            element_text_matches?: components["schemas"]["base_element_text_matches_model"] | null;
+            has_archive_member?: components["schemas"]["base_has_archive_member_model-Input"] | null;
+            has_element_with_path?: components["schemas"]["base_has_element_with_path_model"] | null;
+            has_h5_attribute?: components["schemas"]["base_has_h5_attribute_model"] | null;
+            has_h5_keys?: components["schemas"]["base_has_h5_keys_model"] | null;
+            has_image_center_of_mass?: components["schemas"]["base_has_image_center_of_mass_model"] | null;
+            has_image_channels?: components["schemas"]["base_has_image_channels_model"] | null;
+            has_image_depth?: components["schemas"]["base_has_image_depth_model"] | null;
+            has_image_frames?: components["schemas"]["base_has_image_frames_model"] | null;
+            has_image_height?: components["schemas"]["base_has_image_height_model"] | null;
+            has_image_mean_intensity?: components["schemas"]["base_has_image_mean_intensity_model"] | null;
+            has_image_mean_object_size?: components["schemas"]["base_has_image_mean_object_size_model"] | null;
+            has_image_n_labels?: components["schemas"]["base_has_image_n_labels_model"] | null;
+            has_image_width?: components["schemas"]["base_has_image_width_model"] | null;
+            has_json_property_with_text?: components["schemas"]["base_has_json_property_with_text_model"] | null;
+            has_json_property_with_value?: components["schemas"]["base_has_json_property_with_value_model"] | null;
+            has_line?: components["schemas"]["base_has_line_model"] | null;
+            has_line_matching?: components["schemas"]["base_has_line_matching_model"] | null;
+            has_n_columns?: components["schemas"]["base_has_n_columns_model"] | null;
+            has_n_elements_with_path?: components["schemas"]["base_has_n_elements_with_path_model"] | null;
+            has_n_lines?: components["schemas"]["base_has_n_lines_model"] | null;
+            has_size?: components["schemas"]["base_has_size_model"] | null;
+            has_text?: components["schemas"]["base_has_text_model"] | null;
+            has_text_matching?: components["schemas"]["base_has_text_matching_model"] | null;
+            is_valid_xml?: components["schemas"]["base_is_valid_xml_model"] | null;
+            not_has_text?: components["schemas"]["base_not_has_text_model"] | null;
+            xml_element?: components["schemas"]["base_xml_element_model-Input"] | null;
+        };
+        /** assertion_dict */
+        "assertion_dict-Output": {
+            attribute_is?: components["schemas"]["base_attribute_is_model"] | null;
+            attribute_matches?: components["schemas"]["base_attribute_matches_model"] | null;
+            element_text?: components["schemas"]["base_element_text_model-Output"] | null;
+            element_text_is?: components["schemas"]["base_element_text_is_model"] | null;
+            element_text_matches?: components["schemas"]["base_element_text_matches_model"] | null;
+            has_archive_member?: components["schemas"]["base_has_archive_member_model-Output"] | null;
+            has_element_with_path?: components["schemas"]["base_has_element_with_path_model"] | null;
+            has_h5_attribute?: components["schemas"]["base_has_h5_attribute_model"] | null;
+            has_h5_keys?: components["schemas"]["base_has_h5_keys_model"] | null;
+            has_image_center_of_mass?: components["schemas"]["base_has_image_center_of_mass_model"] | null;
+            has_image_channels?: components["schemas"]["base_has_image_channels_model"] | null;
+            has_image_depth?: components["schemas"]["base_has_image_depth_model"] | null;
+            has_image_frames?: components["schemas"]["base_has_image_frames_model"] | null;
+            has_image_height?: components["schemas"]["base_has_image_height_model"] | null;
+            has_image_mean_intensity?: components["schemas"]["base_has_image_mean_intensity_model"] | null;
+            has_image_mean_object_size?: components["schemas"]["base_has_image_mean_object_size_model"] | null;
+            has_image_n_labels?: components["schemas"]["base_has_image_n_labels_model"] | null;
+            has_image_width?: components["schemas"]["base_has_image_width_model"] | null;
+            has_json_property_with_text?: components["schemas"]["base_has_json_property_with_text_model"] | null;
+            has_json_property_with_value?: components["schemas"]["base_has_json_property_with_value_model"] | null;
+            has_line?: components["schemas"]["base_has_line_model"] | null;
+            has_line_matching?: components["schemas"]["base_has_line_matching_model"] | null;
+            has_n_columns?: components["schemas"]["base_has_n_columns_model"] | null;
+            has_n_elements_with_path?: components["schemas"]["base_has_n_elements_with_path_model"] | null;
+            has_n_lines?: components["schemas"]["base_has_n_lines_model"] | null;
+            has_size?: components["schemas"]["base_has_size_model"] | null;
+            has_text?: components["schemas"]["base_has_text_model"] | null;
+            has_text_matching?: components["schemas"]["base_has_text_matching_model"] | null;
+            is_valid_xml?: components["schemas"]["base_is_valid_xml_model"] | null;
+            not_has_text?: components["schemas"]["base_not_has_text_model"] | null;
+            xml_element?: components["schemas"]["base_xml_element_model-Output"] | null;
+        };
+        /**
+         * attribute_is_model
+         * @description Asserts the XML ``attribute`` for the element (or tag) with the specified
+         *     XPath-like ``path`` is the specified ``text``.
+         *
+         *     For example:
+         *
+         *     ```xml
+         *     <attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" />
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the assertion (on the equality) can be inverted (the
+         *     implicit assertion on the existence of the path is not affected).
+         */
+        attribute_is_model: {
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * Text
+             * @description The expected attribute value to test against on the target XML element
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "attribute_is";
+        };
+        /**
+         * attribute_is_model_nested
+         * @description Nested version of this assertion model.
+         */
+        attribute_is_model_nested: {
+            attribute_is: components["schemas"]["base_attribute_is_model"];
+        };
+        /**
+         * attribute_matches_model
+         * @description Asserts the XML ``attribute`` for the element (or tag) with the specified
+         *     XPath-like ``path`` matches the regular expression specified by ``expression``.
+         *
+         *     For example:
+         *
+         *     ```xml
+         *     <attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\d+" />
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the assertion (on the matching) can be inverted (the
+         *     implicit assertion on the existence of the path is not affected).
+         */
+        attribute_matches_model: {
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute: string;
+            /**
+             * Expression
+             * @description The regular expressions to apply against the named attribute on the target XML element.
+             */
+            expression: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "attribute_matches";
+        };
+        /**
+         * attribute_matches_model_nested
+         * @description Nested version of this assertion model.
+         */
+        attribute_matches_model_nested: {
+            attribute_matches: components["schemas"]["base_attribute_matches_model"];
+        };
+        /**
+         * base_attribute_is_model
+         * @description base model for attribute_is describing attributes.
+         */
+        base_attribute_is_model: {
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * Text
+             * @description The expected attribute value to test against on the target XML element
+             */
+            text: string;
+        };
+        /**
+         * base_attribute_matches_model
+         * @description base model for attribute_matches describing attributes.
+         */
+        base_attribute_matches_model: {
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute: string;
+            /**
+             * Expression
+             * @description The regular expressions to apply against the named attribute on the target XML element.
+             */
+            expression: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_element_text_is_model
+         * @description base model for element_text_is describing attributes.
+         */
+        base_element_text_is_model: {
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * Text
+             * @description The expected element text (body of the XML tag) to test against on the target XML element
+             */
+            text: string;
+        };
+        /**
+         * base_element_text_matches_model
+         * @description base model for element_text_matches describing attributes.
+         */
+        base_element_text_matches_model: {
+            /**
+             * Expression
+             * @description The regular expressions to apply against the target element.
+             */
+            expression: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_element_text_model
+         * @description base model for element_text describing attributes.
+         */
+        "base_element_text_model-Input": {
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_element_text_model
+         * @description base model for element_text describing attributes.
+         */
+        "base_element_text_model-Output": {
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_has_archive_member_model
+         * @description base model for has_archive_member describing attributes.
+         */
+        "base_has_archive_member_model-Input": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The regular expression specifying the archive member.
+             */
+            path: string;
+        };
+        /**
+         * base_has_archive_member_model
+         * @description base model for has_archive_member describing attributes.
+         */
+        "base_has_archive_member_model-Output": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The regular expression specifying the archive member.
+             */
+            path: string;
+        };
+        /**
+         * base_has_element_with_path_model
+         * @description base model for has_element_with_path describing attributes.
+         */
+        base_has_element_with_path_model: {
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_has_h5_attribute_model
+         * @description base model for has_h5_attribute describing attributes.
+         */
+        base_has_h5_attribute_model: {
+            /**
+             * Key
+             * @description HDF5 attribute to check value of.
+             */
+            key: string;
+            /**
+             * Value
+             * @description Expected value of HDF5 attribute to check.
+             */
+            value: string;
+        };
+        /**
+         * base_has_h5_keys_model
+         * @description base model for has_h5_keys describing attributes.
+         */
+        base_has_h5_keys_model: {
+            /**
+             * Keys
+             * @description HDF5 attributes to check value of as a comma-separated string.
+             */
+            keys: string;
+        };
+        /**
+         * base_has_image_center_of_mass_model
+         * @description base model for has_image_center_of_mass describing attributes.
+         */
+        base_has_image_center_of_mass_model: {
+            /**
+             * Center Of Mass
+             * @description The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).
+             */
+            center_of_mass: string;
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+        };
+        /**
+         * base_has_image_channels_model
+         * @description base model for has_image_channels describing attributes.
+         */
+        base_has_image_channels_model: {
+            /**
+             * Channels
+             * @description Expected number of channels of the image.
+             */
+            channels?: number | null;
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of channels (default is 0). The observed number of channels has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Max
+             * @description Maximum allowed number of channels.
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of channels.
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_image_depth_model
+         * @description base model for has_image_depth describing attributes.
+         */
+        base_has_image_depth_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Depth
+             * @description Expected depth of the image (number of slices).
+             */
+            depth?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed depth of the image (number of slices).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed depth of the image (number of slices).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_image_frames_model
+         * @description base model for has_image_frames describing attributes.
+         */
+        base_has_image_frames_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Frames
+             * @description Expected number of frames in the image sequence (number of time steps).
+             */
+            frames?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed number of frames in the image sequence (number of time steps).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of frames in the image sequence (number of time steps).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_image_height_model
+         * @description base model for has_image_height describing attributes.
+         */
+        base_has_image_height_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Height
+             * @description Expected height of the image (in pixels).
+             */
+            height?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed height of the image (in pixels).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed height of the image (in pixels).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_image_mean_intensity_model
+         * @description base model for has_image_mean_intensity describing attributes.
+         */
+        base_has_image_mean_intensity_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Max
+             * @description An upper bound of the required mean value of the image intensities.
+             */
+            max?: number | null;
+            /**
+             * Mean Intensity
+             * @description The required mean value of the image intensities.
+             */
+            mean_intensity?: number | null;
+            /**
+             * Min
+             * @description A lower bound of the required mean value of the image intensities.
+             */
+            min?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+        };
+        /**
+         * base_has_image_mean_object_size_model
+         * @description base model for has_image_mean_object_size describing attributes.
+         */
+        base_has_image_mean_object_size_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Exclude Labels
+             * @description List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.
+             */
+            exclude_labels?: number[] | null;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Labels
+             * @description List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.
+             */
+            labels?: number[] | null;
+            /**
+             * Max
+             * @description An upper bound of the required mean size of the uniquely labeled objects.
+             */
+            max?: number | null;
+            /**
+             * Mean Object Size
+             * @description The required mean size of the uniquely labeled objects.
+             */
+            mean_object_size?: number | null;
+            /**
+             * Min
+             * @description A lower bound of the required mean size of the uniquely labeled objects.
+             */
+            min?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+        };
+        /**
+         * base_has_image_n_labels_model
+         * @description base model for has_image_n_labels describing attributes.
+         */
+        base_has_image_n_labels_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of labels (default is 0). The observed number of labels has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Exclude Labels
+             * @description List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.
+             */
+            exclude_labels?: number[] | null;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Labels
+             * @description List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.
+             */
+            labels?: number[] | null;
+            /**
+             * Max
+             * @description Maximum allowed number of labels.
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of labels.
+             */
+            min?: number | null;
+            /**
+             * N
+             * @description Expected number of labels.
+             */
+            n?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+        };
+        /**
+         * base_has_image_width_model
+         * @description base model for has_image_width describing attributes.
+         */
+        base_has_image_width_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image width (in pixels, default is 0). The observed width has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Max
+             * @description Maximum allowed width of the image (in pixels).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed width of the image (in pixels).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Width
+             * @description Expected width of the image (in pixels).
+             */
+            width?: number | null;
+        };
+        /**
+         * base_has_json_property_with_text_model
+         * @description base model for has_json_property_with_text describing attributes.
+         */
+        base_has_json_property_with_text_model: {
+            /**
+             * Property
+             * @description The property name to search the JSON document for.
+             */
+            property: string;
+            /**
+             * Text
+             * @description The expected text value of the target JSON attribute.
+             */
+            text: string;
+        };
+        /**
+         * base_has_json_property_with_value_model
+         * @description base model for has_json_property_with_value describing attributes.
+         */
+        base_has_json_property_with_value_model: {
+            /**
+             * Property
+             * @description The property name to search the JSON document for.
+             */
+            property: string;
+            /**
+             * Value
+             * @description The expected JSON value of the target JSON attribute (as a JSON encoded string).
+             */
+            value: string;
+        };
+        /**
+         * base_has_line_matching_model
+         * @description base model for has_line_matching describing attributes.
+         */
+        base_has_line_matching_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Expression
+             * @description The regular expressions to attempt match in the output.
+             */
+            expression: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_line_model
+         * @description base model for has_line describing attributes.
+         */
+        base_has_line_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Line
+             * @description The full line of text to search for in the output.
+             */
+            line: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_n_columns_model
+         * @description base model for has_n_columns describing attributes.
+         */
+        base_has_n_columns_model: {
+            /**
+             * Comment
+             * @description Comment character(s) used to skip comment lines (which should not be used for counting columns)
+             * @default
+             */
+            comment: string;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Sep
+             * @description Separator defining columns, default: tab
+             * @default
+             */
+            sep: string;
+        };
+        /**
+         * base_has_n_elements_with_path_model
+         * @description base model for has_n_elements_with_path describing attributes.
+         */
+        base_has_n_elements_with_path_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_has_n_lines_model
+         * @description base model for has_n_lines describing attributes.
+         */
+        base_has_n_lines_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_size_model
+         * @description base model for has_size describing attributes.
+         */
+        base_has_size_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Size
+             * @description Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            size?: string | number | null;
+            /**
+             * Value
+             * @description Deprecated alias for `size`
+             */
+            value?: string | number | null;
+        };
+        /**
+         * base_has_text_matching_model
+         * @description base model for has_text_matching describing attributes.
+         */
+        base_has_text_matching_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Expression
+             * @description The regular expressions to attempt match in the output.
+             */
+            expression: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+        };
+        /**
+         * base_has_text_model
+         * @description base model for has_text describing attributes.
+         */
+        base_has_text_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Text
+             * @description The text to search for in the output.
+             */
+            text: string;
+        };
+        /**
+         * base_is_valid_xml_model
+         * @description base model for is_valid_xml describing attributes.
+         */
+        base_is_valid_xml_model: Record<string, never>;
+        /**
+         * base_not_has_text_model
+         * @description base model for not_has_text describing attributes.
+         */
+        base_not_has_text_model: {
+            /**
+             * Text
+             * @description The text to search for in the output.
+             */
+            text: string;
+        };
+        /**
+         * base_xml_element_model
+         * @description base model for xml_element describing attributes.
+         */
+        "base_xml_element_model-Input": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute?: string | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * base_xml_element_model
+         * @description base model for xml_element describing attributes.
+         */
+        "base_xml_element_model-Output": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute?: string | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+        };
+        /**
+         * element_text_is_model
+         * @description Asserts the text of the XML element with the specified XPath-like ``path`` is
+         *     the specified ``text``.
+         *
+         *     For example:
+         *
+         *     ```xml
+         *     <element_text_is path="BlastOutput_program" text="blastp" />
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the assertion (on the equality) can be inverted (the
+         *     implicit assertion on the existence of the path is not affected).
+         */
+        element_text_is_model: {
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * Text
+             * @description The expected element text (body of the XML tag) to test against on the target XML element
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "element_text_is";
+        };
+        /**
+         * element_text_is_model_nested
+         * @description Nested version of this assertion model.
+         */
+        element_text_is_model_nested: {
+            element_text_is: components["schemas"]["base_element_text_is_model"];
+        };
+        /**
+         * element_text_matches_model
+         * @description Asserts the text of the XML element with the specified XPath-like ``path``
+         *     matches the regular expression defined by ``expression``.
+         *
+         *     For example:
+         *
+         *     ```xml
+         *     <element_text_matches path="BlastOutput_version" expression="BLASTP\s+2\.2.*"/>
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the assertion (on the matching) can be inverted (the
+         *     implicit assertion on the existence of the path is not affected).
+         */
+        element_text_matches_model: {
+            /**
+             * Expression
+             * @description The regular expressions to apply against the target element.
+             */
+            expression: string;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "element_text_matches";
+        };
+        /**
+         * element_text_matches_model_nested
+         * @description Nested version of this assertion model.
+         */
+        element_text_matches_model_nested: {
+            element_text_matches: components["schemas"]["base_element_text_matches_model"];
+        };
+        /**
+         * element_text_model
+         * @description This tag allows the developer to recurisively specify additional assertions as
+         *     child elements about just the text contained in the element specified by the
+         *     XPath-like ``path``, e.g.
+         *
+         *     ```xml
+         *     <element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+         *       <not_has_text text="EDK72998.1" />
+         *     </element_text>
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the implicit assertions can be inverted.
+         *     The sub-assertions, which have their own ``negate`` attribute, are not affected
+         *     by ``negate``.
+         */
+        "element_text_model-Input": {
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "element_text";
+        };
+        /**
+         * element_text_model
+         * @description This tag allows the developer to recurisively specify additional assertions as
+         *     child elements about just the text contained in the element specified by the
+         *     XPath-like ``path``, e.g.
+         *
+         *     ```xml
+         *     <element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def">
+         *       <not_has_text text="EDK72998.1" />
+         *     </element_text>
+         *     ```
+         *
+         *     The assertion implicitly also asserts that an element matching ``path`` exists.
+         *     With ``negate`` the result of the implicit assertions can be inverted.
+         *     The sub-assertions, which have their own ``negate`` attribute, are not affected
+         *     by ``negate``.
+         */
+        "element_text_model-Output": {
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "element_text";
+        };
+        /**
+         * element_text_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "element_text_model_nested-Input": {
+            element_text: components["schemas"]["base_element_text_model-Input"];
+        };
+        /**
+         * element_text_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "element_text_model_nested-Output": {
+            element_text: components["schemas"]["base_element_text_model-Output"];
+        };
+        /**
+         * has_archive_member_model
+         * @description This tag allows to check if ``path`` is contained in a compressed file.
+         *
+         *     The path is a regular expression that is matched against the full paths of the objects in
+         *     the compressed file (remember that "matching" means it is checked if a prefix of
+         *     the full path of an archive member is described by the regular expression).
+         *     Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
+         *     depending on the archive creation method:
+         *
+         *     - full paths of the members may be prefixed with ``./``
+         *     - directories may be treated as empty files
+         *
+         *     ```xml
+         *     <has_archive_member path="./path/to/my-file.txt"/>
+         *     ```
+         *
+         *     With ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of
+         *     archive members matching ``path`` can be expressed. The following could be used,
+         *     e.g., to assert an archive containing n&plusmn;1 elements out of which at least
+         *     4 need to have a ``txt`` extension.
+         *
+         *     ```xml
+         *     <has_archive_member path=".*" n="10" delta="1"/>
+         *     <has_archive_member path=".*\.txt" min="4"/>
+         *     ```
+         *
+         *     In addition the tag can contain additional assertions as child elements about
+         *     the first member in the archive matching the regular expression ``path``. For
+         *     instance
+         *
+         *     ```xml
+         *     <has_archive_member path=".*\/my-file.txt">
+         *       <not_has_text text="EDK72998.1"/>
+         *     </has_archive_member>
+         *     ```
+         *
+         *     If the ``all`` attribute is set to ``true`` then all archive members are subject
+         *     to the assertions. Note that, archive members matching the ``path`` are sorted
+         *     alphabetically.
+         *
+         *     The ``negate`` attribute of the ``has_archive_member`` assertion only affects
+         *     the asserts on the presence and number of matching archive members, but not any
+         *     sub-assertions (which can offer the ``negate`` attribute on their own).  The
+         *     check if the file is an archive at all, which is also done by the function, is
+         *     not affected.
+         */
+        "has_archive_member_model-Input": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The regular expression specifying the archive member.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_archive_member";
+        };
+        /**
+         * has_archive_member_model
+         * @description This tag allows to check if ``path`` is contained in a compressed file.
+         *
+         *     The path is a regular expression that is matched against the full paths of the objects in
+         *     the compressed file (remember that "matching" means it is checked if a prefix of
+         *     the full path of an archive member is described by the regular expression).
+         *     Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``. Note that
+         *     depending on the archive creation method:
+         *
+         *     - full paths of the members may be prefixed with ``./``
+         *     - directories may be treated as empty files
+         *
+         *     ```xml
+         *     <has_archive_member path="./path/to/my-file.txt"/>
+         *     ```
+         *
+         *     With ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of
+         *     archive members matching ``path`` can be expressed. The following could be used,
+         *     e.g., to assert an archive containing n&plusmn;1 elements out of which at least
+         *     4 need to have a ``txt`` extension.
+         *
+         *     ```xml
+         *     <has_archive_member path=".*" n="10" delta="1"/>
+         *     <has_archive_member path=".*\.txt" min="4"/>
+         *     ```
+         *
+         *     In addition the tag can contain additional assertions as child elements about
+         *     the first member in the archive matching the regular expression ``path``. For
+         *     instance
+         *
+         *     ```xml
+         *     <has_archive_member path=".*\/my-file.txt">
+         *       <not_has_text text="EDK72998.1"/>
+         *     </has_archive_member>
+         *     ```
+         *
+         *     If the ``all`` attribute is set to ``true`` then all archive members are subject
+         *     to the assertions. Note that, archive members matching the ``path`` are sorted
+         *     alphabetically.
+         *
+         *     The ``negate`` attribute of the ``has_archive_member`` assertion only affects
+         *     the asserts on the presence and number of matching archive members, but not any
+         *     sub-assertions (which can offer the ``negate`` attribute on their own).  The
+         *     check if the file is an archive at all, which is also done by the function, is
+         *     not affected.
+         */
+        "has_archive_member_model-Output": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The regular expression specifying the archive member.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_archive_member";
+        };
+        /**
+         * has_archive_member_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "has_archive_member_model_nested-Input": {
+            has_archive_member: components["schemas"]["base_has_archive_member_model-Input"];
+        };
+        /**
+         * has_archive_member_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "has_archive_member_model_nested-Output": {
+            has_archive_member: components["schemas"]["base_has_archive_member_model-Output"];
+        };
+        /**
+         * has_element_with_path_model
+         * @description Asserts the XML output contains at least one element (or tag) with the specified
+         *     XPath-like ``path``, e.g.
+         *
+         *     ```xml
+         *     <has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" />
+         *     ```
+         *
+         *     With ``negate`` the result of the assertion can be inverted.
+         */
+        has_element_with_path_model: {
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_element_with_path";
+        };
+        /**
+         * has_element_with_path_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_element_with_path_model_nested: {
+            has_element_with_path: components["schemas"]["base_has_element_with_path_model"];
+        };
+        /**
+         * has_h5_attribute_model
+         * @description Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.
+         *
+         *     ```xml
+         *     <has_h5_attribute key="nchroms" value="15" />
+         *     ```
+         */
+        has_h5_attribute_model: {
+            /**
+             * Key
+             * @description HDF5 attribute to check value of.
+             */
+            key: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_h5_attribute";
+            /**
+             * Value
+             * @description Expected value of HDF5 attribute to check.
+             */
+            value: string;
+        };
+        /**
+         * has_h5_attribute_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_h5_attribute_model_nested: {
+            has_h5_attribute: components["schemas"]["base_has_h5_attribute_model"];
+        };
+        /**
+         * has_h5_keys_model
+         * @description Asserts the specified HDF5 output has the given keys.
+         */
+        has_h5_keys_model: {
+            /**
+             * Keys
+             * @description HDF5 attributes to check value of as a comma-separated string.
+             */
+            keys: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_h5_keys";
+        };
+        /**
+         * has_h5_keys_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_h5_keys_model_nested: {
+            has_h5_keys: components["schemas"]["base_has_h5_keys_model"];
+        };
+        /**
+         * has_image_center_of_mass_model
+         * @description Asserts the specified output is an image and has the specified center of mass.
+         *
+         *     Asserts the output is an image and has a specific center of mass,
+         *     or has an Euclidean distance of ``eps`` or less to that point (e.g.,
+         *     ``<has_image_center_of_mass center_of_mass="511.07, 223.34" />``).
+         */
+        has_image_center_of_mass_model: {
+            /**
+             * Center Of Mass
+             * @description The required center of mass of the image intensities (horizontal and vertical coordinate, separated by a comma).
+             */
+            center_of_mass: string;
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The maximum allowed Euclidean distance to the required center of mass (defaults to ``0.01``).
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_center_of_mass";
+        };
+        /**
+         * has_image_center_of_mass_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_center_of_mass_model_nested: {
+            has_image_center_of_mass: components["schemas"]["base_has_image_center_of_mass_model"];
+        };
+        /**
+         * has_image_channels_model
+         * @description Asserts the output is an image and has a specific number of channels.
+         *
+         *     The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
+         *
+         *     Alternatively the range of the expected number of channels can be specified by ``min`` and/or ``max``.
+         */
+        has_image_channels_model: {
+            /**
+             * Channels
+             * @description Expected number of channels of the image.
+             */
+            channels?: number | null;
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of channels (default is 0). The observed number of channels has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Max
+             * @description Maximum allowed number of channels.
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of channels.
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_channels";
+        };
+        /**
+         * has_image_channels_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_channels_model_nested: {
+            has_image_channels: components["schemas"]["base_has_image_channels_model"];
+        };
+        /**
+         * has_image_depth_model
+         * @description Asserts the output is an image and has a specific depth (number of slices).
+         *
+         *     The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
+         *     Alternatively the range of the expected depth can be specified by ``min`` and/or ``max``.
+         */
+        has_image_depth_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image depth (number of slices, default is 0). The observed depth has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Depth
+             * @description Expected depth of the image (number of slices).
+             */
+            depth?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed depth of the image (number of slices).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed depth of the image (number of slices).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_depth";
+        };
+        /**
+         * has_image_depth_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_depth_model_nested: {
+            has_image_depth: components["schemas"]["base_has_image_depth_model"];
+        };
+        /**
+         * has_image_frames_model
+         * @description Asserts the output is an image and has a specific number of frames (number of time steps).
+         *
+         *     The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
+         *     Alternatively the range of the expected number of frames can be specified by ``min`` and/or ``max``.
+         */
+        has_image_frames_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of frames in the image sequence (number of time steps, default is 0). The observed number of frames has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Frames
+             * @description Expected number of frames in the image sequence (number of time steps).
+             */
+            frames?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed number of frames in the image sequence (number of time steps).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of frames in the image sequence (number of time steps).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_frames";
+        };
+        /**
+         * has_image_frames_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_frames_model_nested: {
+            has_image_frames: components["schemas"]["base_has_image_frames_model"];
+        };
+        /**
+         * has_image_height_model
+         * @description Asserts the output is an image and has a specific height (in pixels).
+         *
+         *     The height is plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
+         *     Alternatively the range of the expected height can be specified by ``min`` and/or ``max``.
+         */
+        has_image_height_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image height (in pixels, default is 0). The observed height has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Height
+             * @description Expected height of the image (in pixels).
+             */
+            height?: number | null;
+            /**
+             * Max
+             * @description Maximum allowed height of the image (in pixels).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed height of the image (in pixels).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_height";
+        };
+        /**
+         * has_image_height_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_height_model_nested: {
+            has_image_height: components["schemas"]["base_has_image_height_model"];
+        };
+        /**
+         * has_image_mean_intensity_model
+         * @description Asserts the output is an image and has a specific mean intensity value.
+         *
+         *     The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
+         *     Alternatively the range of the expected mean intensity value can be specified by ``min`` and/or ``max``.
+         */
+        has_image_mean_intensity_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean value of the image intensities has to be in the range ``value +- eps``.
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Max
+             * @description An upper bound of the required mean value of the image intensities.
+             */
+            max?: number | null;
+            /**
+             * Mean Intensity
+             * @description The required mean value of the image intensities.
+             */
+            mean_intensity?: number | null;
+            /**
+             * Min
+             * @description A lower bound of the required mean value of the image intensities.
+             */
+            min?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_mean_intensity";
+        };
+        /**
+         * has_image_mean_intensity_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_mean_intensity_model_nested: {
+            has_image_mean_intensity: components["schemas"]["base_has_image_mean_intensity_model"];
+        };
+        /**
+         * has_image_mean_object_size_model
+         * @description Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
+         *
+         *     The mean size is plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
+         *
+         *     The labels must be unique.
+         */
+        has_image_mean_object_size_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Eps
+             * @description The absolute tolerance to be used for ``value`` (defaults to ``0.01``). The observed mean size of the uniquely labeled objects has to be in the range ``value +- eps``.
+             * @default 0.01
+             */
+            eps: number;
+            /**
+             * Exclude Labels
+             * @description List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.
+             */
+            exclude_labels?: number[] | null;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Labels
+             * @description List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.
+             */
+            labels?: number[] | null;
+            /**
+             * Max
+             * @description An upper bound of the required mean size of the uniquely labeled objects.
+             */
+            max?: number | null;
+            /**
+             * Mean Object Size
+             * @description The required mean size of the uniquely labeled objects.
+             */
+            mean_object_size?: number | null;
+            /**
+             * Min
+             * @description A lower bound of the required mean size of the uniquely labeled objects.
+             */
+            min?: number | null;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_mean_object_size";
+        };
+        /**
+         * has_image_mean_object_size_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_mean_object_size_model_nested: {
+            has_image_mean_object_size: components["schemas"]["base_has_image_mean_object_size_model"];
+        };
+        /**
+         * has_image_n_labels_model
+         * @description Asserts the output is an image and has the specified labels.
+         *
+         *     Labels can be a number of labels or unique values (e.g.,
+         *     ``<has_image_n_labels n="187" exclude_labels="0" />``).
+         *
+         *     The primary usage of this assertion is to verify the number of objects in images with uniquely labeled objects.
+         */
+        has_image_n_labels_model: {
+            /**
+             * Channel
+             * @description Restricts the assertion to a specific channel of the image (where ``0`` corresponds to the first image channel).
+             */
+            channel?: number | null;
+            /**
+             * Delta
+             * @description Maximum allowed difference of the number of labels (default is 0). The observed number of labels has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Exclude Labels
+             * @description List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.
+             */
+            exclude_labels?: number[] | null;
+            /**
+             * Frame
+             * @description Restricts the assertion to a specific frame of the image sequence (where ``0`` corresponds to the first image frame).
+             */
+            frame?: number | null;
+            /**
+             * Labels
+             * @description List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.
+             */
+            labels?: number[] | null;
+            /**
+             * Max
+             * @description Maximum allowed number of labels.
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed number of labels.
+             */
+            min?: number | null;
+            /**
+             * N
+             * @description Expected number of labels.
+             */
+            n?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Slice
+             * @description Restricts the assertion to a specific slice of the image (where ``0`` corresponds to the first image slice).
+             */
+            slice?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_n_labels";
+        };
+        /**
+         * has_image_n_labels_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_n_labels_model_nested: {
+            has_image_n_labels: components["schemas"]["base_has_image_n_labels_model"];
+        };
+        /**
+         * has_image_width_model
+         * @description Asserts the output is an image and has a specific width (in pixels).
+         *
+         *     The width is plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
+         *     Alternatively the range of the expected width can be specified by ``min`` and/or ``max``.
+         */
+        has_image_width_model: {
+            /**
+             * Delta
+             * @description Maximum allowed difference of the image width (in pixels, default is 0). The observed width has to be in the range ``value +- delta``.
+             * @default 0
+             */
+            delta: number;
+            /**
+             * Max
+             * @description Maximum allowed width of the image (in pixels).
+             */
+            max?: number | null;
+            /**
+             * Min
+             * @description Minimum allowed width of the image (in pixels).
+             */
+            min?: number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_image_width";
+            /**
+             * Width
+             * @description Expected width of the image (in pixels).
+             */
+            width?: number | null;
+        };
+        /**
+         * has_image_width_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_image_width_model_nested: {
+            has_image_width: components["schemas"]["base_has_image_width_model"];
+        };
+        /**
+         * has_json_property_with_text_model
+         * @description Asserts the JSON document contains a property or key with the specified text (i.e. string) value.
+         *
+         *     ```xml
+         *     <has_json_property_with_text property="color" text="red" />
+         *     ```
+         */
+        has_json_property_with_text_model: {
+            /**
+             * Property
+             * @description The property name to search the JSON document for.
+             */
+            property: string;
+            /**
+             * Text
+             * @description The expected text value of the target JSON attribute.
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_json_property_with_text";
+        };
+        /**
+         * has_json_property_with_text_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_json_property_with_text_model_nested: {
+            has_json_property_with_text: components["schemas"]["base_has_json_property_with_text_model"];
+        };
+        /**
+         * has_json_property_with_value_model
+         * @description Asserts the JSON document contains a property or key with the specified JSON value.
+         *
+         *     ```xml
+         *     <has_json_property_with_value property="skipped_columns" value="[1, 3, 5]" />
+         *     ```
+         */
+        has_json_property_with_value_model: {
+            /**
+             * Property
+             * @description The property name to search the JSON document for.
+             */
+            property: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_json_property_with_value";
+            /**
+             * Value
+             * @description The expected JSON value of the target JSON attribute (as a JSON encoded string).
+             */
+            value: string;
+        };
+        /**
+         * has_json_property_with_value_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_json_property_with_value_model_nested: {
+            has_json_property_with_value: components["schemas"]["base_has_json_property_with_value_model"];
+        };
+        /**
+         * has_line_matching_model
+         * @description Asserts the specified output contains a line matching the
+         *     regular expression specified by the argument expression. If n is given
+         *     the assertion checks for exactly n occurrences.
+         */
+        has_line_matching_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Expression
+             * @description The regular expressions to attempt match in the output.
+             */
+            expression: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_line_matching";
+        };
+        /**
+         * has_line_matching_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_line_matching_model_nested: {
+            has_line_matching: components["schemas"]["base_has_line_matching_model"];
+        };
+        /**
+         * has_line_model
+         * @description Asserts the specified output contains the line specified by the
+         *     argument line. The exact number of occurrences can be optionally
+         *     specified by the argument n
+         */
+        has_line_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Line
+             * @description The full line of text to search for in the output.
+             */
+            line: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_line";
+        };
+        /**
+         * has_line_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_line_model_nested: {
+            has_line: components["schemas"]["base_has_line_model"];
+        };
+        /**
+         * has_n_columns_model
+         * @description Asserts tabular output  contains the specified
+         *     number (``n``) of columns.
+         *
+         *     For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
+         *     Number of columns can optionally also be specified with ``delta``. Alternatively the
+         *     range of expected occurrences can be specified by ``min`` and/or ``max``.
+         *
+         *     Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
+         *     can be specified (``comment``, default is empty string). The first non-comment
+         *     line is used for determining the number of columns.
+         */
+        has_n_columns_model: {
+            /**
+             * Comment
+             * @description Comment character(s) used to skip comment lines (which should not be used for counting columns)
+             * @default
+             */
+            comment: string;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Sep
+             * @description Separator defining columns, default: tab
+             * @default
+             */
+            sep: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_n_columns";
+        };
+        /**
+         * has_n_columns_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_n_columns_model_nested: {
+            has_n_columns: components["schemas"]["base_has_n_columns_model"];
+        };
+        /**
+         * has_n_elements_with_path_model
+         * @description Asserts the XML output contains the specified number (``n``, optionally with ``delta``) of elements (or
+         *     tags) with the specified XPath-like ``path``.
+         *
+         *     For example:
+         *
+         *     ```xml
+         *     <has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" />
+         *     ```
+         *
+         *     Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
+         *     can be used to specify the range of the expected number of occurrences.
+         *     With ``negate`` the result of the assertion can be inverted.
+         */
+        has_n_elements_with_path_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_n_elements_with_path";
+        };
+        /**
+         * has_n_elements_with_path_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_n_elements_with_path_model_nested: {
+            has_n_elements_with_path: components["schemas"]["base_has_n_elements_with_path_model"];
+        };
+        /**
+         * has_n_lines_model
+         * @description Asserts the specified output contains ``n`` lines allowing
+         *     for a difference in the number of lines (delta)
+         *     or relative differebce in the number of lines
+         */
+        has_n_lines_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_n_lines";
+        };
+        /**
+         * has_n_lines_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_n_lines_model_nested: {
+            has_n_lines: components["schemas"]["base_has_n_lines_model"];
+        };
+        /**
+         * has_size_model
+         * @description Asserts the specified output has a size of the specified value
+         *
+         *     Attributes size and value or synonyms though value is considered deprecated.
+         *     The size optionally allows for absolute (``delta``) difference.
+         */
+        has_size_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Size
+             * @description Desired size of the output (in bytes), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            size?: string | number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_size";
+            /**
+             * Value
+             * @description Deprecated alias for `size`
+             */
+            value?: string | number | null;
+        };
+        /**
+         * has_size_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_size_model_nested: {
+            has_size: components["schemas"]["base_has_size_model"];
+        };
+        /**
+         * has_text_matching_model
+         * @description Asserts the specified output contains text matching the
+         *     regular expression specified by the argument expression.
+         *     If n is given the assertion checks for exactly n (nonoverlapping)
+         *     occurrences.
+         */
+        has_text_matching_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Expression
+             * @description The regular expressions to attempt match in the output.
+             */
+            expression: string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_text_matching";
+        };
+        /**
+         * has_text_matching_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_text_matching_model_nested: {
+            has_text_matching: components["schemas"]["base_has_text_matching_model"];
+        };
+        /**
+         * has_text_model
+         * @description Asserts specified output contains the substring specified by
+         *     the argument text. The exact number of occurrences can be
+         *     optionally specified by the argument n
+         */
+        has_text_model: {
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Text
+             * @description The text to search for in the output.
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "has_text";
+        };
+        /**
+         * has_text_model_nested
+         * @description Nested version of this assertion model.
+         */
+        has_text_model_nested: {
+            has_text: components["schemas"]["base_has_text_model"];
+        };
+        /**
+         * is_valid_xml_model
+         * @description Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
+         */
+        is_valid_xml_model: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "is_valid_xml";
+        };
+        /**
+         * is_valid_xml_model_nested
+         * @description Nested version of this assertion model.
+         */
+        is_valid_xml_model_nested: {
+            is_valid_xml: components["schemas"]["base_is_valid_xml_model"];
+        };
+        /**
+         * not_has_text_model
+         * @description Asserts specified output does not contain the substring
+         *     specified by the argument text
+         */
+        not_has_text_model: {
+            /**
+             * Text
+             * @description The text to search for in the output.
+             */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "not_has_text";
+        };
+        /**
+         * not_has_text_model_nested
+         * @description Nested version of this assertion model.
+         */
+        not_has_text_model_nested: {
+            not_has_text: components["schemas"]["base_not_has_text_model"];
+        };
+        /**
+         * xml_element_model
+         * @description Assert if the XML file contains element(s) or tag(s) with the specified
+         *     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
+         *     or ``min`` and ``max`` are given also the number of occurrences is checked.
+         *
+         *     ```xml
+         *     <assert_contents>
+         *       <xml_element path="./elem"/>
+         *       <xml_element path="./elem/more[2]"/>
+         *       <xml_element path=".//more" n="3" delta="1"/>
+         *     </assert_contents>
+         *     ```
+         *
+         *     With ``negate="true"`` the outcome of the assertions wrt the presence and number
+         *     of ``path`` can be negated. If there are any sub assertions then check them against
+         *
+         *     - the content of the attribute ``attribute``
+         *     - the element's text if no attribute is given
+         *
+         *     ```xml
+         *     <assert_contents>
+         *       <xml_element path="./elem/more[2]" attribute="name">
+         *         <has_text_matching expression="foo$"/>
+         *       </xml_element>
+         *     </assert_contents>
+         *     ```
+         *
+         *     Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
+         *     If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
+         *
+         *     Note that all other XML assertions can be expressed by this assertion (Galaxy
+         *     also implements the other assertions by calling this one).
+         */
+        "xml_element_model-Input": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute?: string | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "xml_element";
+        };
+        /**
+         * xml_element_model
+         * @description Assert if the XML file contains element(s) or tag(s) with the specified
+         *     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
+         *     or ``min`` and ``max`` are given also the number of occurrences is checked.
+         *
+         *     ```xml
+         *     <assert_contents>
+         *       <xml_element path="./elem"/>
+         *       <xml_element path="./elem/more[2]"/>
+         *       <xml_element path=".//more" n="3" delta="1"/>
+         *     </assert_contents>
+         *     ```
+         *
+         *     With ``negate="true"`` the outcome of the assertions wrt the presence and number
+         *     of ``path`` can be negated. If there are any sub assertions then check them against
+         *
+         *     - the content of the attribute ``attribute``
+         *     - the element's text if no attribute is given
+         *
+         *     ```xml
+         *     <assert_contents>
+         *       <xml_element path="./elem/more[2]" attribute="name">
+         *         <has_text_matching expression="foo$"/>
+         *       </xml_element>
+         *     </assert_contents>
+         *     ```
+         *
+         *     Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
+         *     If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
+         *
+         *     Note that all other XML assertions can be expressed by this assertion (Galaxy
+         *     also implements the other assertions by calling this one).
+         */
+        "xml_element_model-Output": {
+            /**
+             * All
+             * @description Check the sub-assertions for all paths matching the path. Default: false, i.e. only the first
+             * @default false
+             */
+            all: boolean | string;
+            asserts?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Attribute
+             * @description The XML attribute name to test against from the target XML element.
+             */
+            attribute?: string | null;
+            children?:
+                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | null;
+            /**
+             * Delta
+             * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
+             * @default 0
+             */
+            delta: number | string;
+            /**
+             * Max
+             * @description Maximum number (default: infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            max?: string | number | null;
+            /**
+             * Min
+             * @description Minimum number (default: -infinity), can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            min?: string | number | null;
+            /**
+             * N
+             * @description Desired number, can be suffixed by ``(k|M|G|T|P|E)i?``
+             */
+            n?: string | number | null;
+            /**
+             * Negate
+             * @description A boolean that can be set to true to negate the outcome of the assertion.
+             * @default false
+             */
+            negate: boolean | string;
+            /**
+             * Path
+             * @description The Python xpath-like expression to find the target element.
+             */
+            path: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            that: "xml_element";
+        };
+        /**
+         * xml_element_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "xml_element_model_nested-Input": {
+            xml_element: components["schemas"]["base_xml_element_model-Input"];
+        };
+        /**
+         * xml_element_model_nested
+         * @description Nested version of this assertion model.
+         */
+        "xml_element_model_nested-Output": {
+            xml_element: components["schemas"]["base_xml_element_model-Output"];
         };
     };
     responses: never;
@@ -42731,7 +46383,7 @@ export interface operations {
                         | components["schemas"]["CwlNullParameterModel"]
                         | components["schemas"]["CwlFileParameterModel"]
                         | components["schemas"]["CwlDirectoryParameterModel"]
-                        | components["schemas"]["CwlUnionParameterModel-Output"]
+                        | components["schemas"]["CwlUnionParameterModel"]
                         | components["schemas"]["TextParameterModel"]
                         | components["schemas"]["IntegerParameterModel"]
                         | components["schemas"]["FloatParameterModel"]
@@ -42743,14 +46395,14 @@ export interface operations {
                         | components["schemas"]["DataColumnParameterModel"]
                         | components["schemas"]["DirectoryUriParameterModel"]
                         | components["schemas"]["RulesParameterModel"]
-                        | components["schemas"]["DrillDownParameterModel-Output"]
+                        | components["schemas"]["DrillDownParameterModel"]
                         | components["schemas"]["GroupTagParameterModel"]
                         | components["schemas"]["BaseUrlParameterModel"]
                         | components["schemas"]["GenomeBuildParameterModel"]
                         | components["schemas"]["ColorParameterModel"]
-                        | components["schemas"]["ConditionalParameterModel-Output"]
-                        | components["schemas"]["RepeatParameterModel-Output"]
-                        | components["schemas"]["SectionParameterModel-Output"]
+                        | components["schemas"]["ConditionalParameterModel"]
+                        | components["schemas"]["RepeatParameterModel"]
+                        | components["schemas"]["SectionParameterModel"]
                     )[];
                 };
             };
