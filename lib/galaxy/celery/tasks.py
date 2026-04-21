@@ -20,6 +20,7 @@ from sqlalchemy import (
 )
 
 from galaxy import model
+from galaxy.authnz.managers import AuthnzManager
 from galaxy.celery import (
     celery_app,
     galaxy_task,
@@ -422,6 +423,7 @@ def fetch_data(
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
+    authnz_manager: Optional[AuthnzManager] = None,
 ) -> Optional[str]:
     if setup_return is None:
         return None
@@ -431,7 +433,6 @@ def fetch_data(
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
 
     # Refresh OIDC tokens before fetching
-    authnz_manager = getattr(app, "authnz_manager", None)
     if authnz_manager and job.user:
         authnz_manager.refresh_expiring_oidc_tokens_for_job(sa_session, job.user)
 
