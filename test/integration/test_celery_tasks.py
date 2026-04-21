@@ -1,4 +1,5 @@
 import tarfile
+from typing import cast
 from unittest.mock import patch
 
 from celery import shared_task
@@ -82,7 +83,7 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
     def test_authnz_manager_injected_into_task(self):
         fake_authnz_manager = FakeAuthnzManager()
         app_with_authnz_override = self._app.clone()
-        app_with_authnz_override.define(AuthnzManager, fake_authnz_manager)
+        app_with_authnz_override.define(AuthnzManager, cast(AuthnzManager, fake_authnz_manager))
 
         with (
             patch.object(self._app, "magic_partial", app_with_authnz_override.magic_partial),
