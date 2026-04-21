@@ -168,9 +168,7 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
         )
 
 
-def include_legacy_openapi(app, gx_app):
-    if app.openapi_schema:
-        return app.openapi_schema
+def _build_merged_openapi(app, gx_app):
     openapi_schema = get_openapi(
         title="Galaxy API",
         version=VERSION,
@@ -180,7 +178,19 @@ def include_legacy_openapi(app, gx_app):
     legacy_openapi = gx_app.api_spec.to_dict()
     legacy_openapi["paths"].update(openapi_schema["paths"])
     openapi_schema["paths"] = legacy_openapi["paths"]
-    app.openapi_schema = openapi_schema
+    return openapi_schema
+
+
+def include_legacy_openapi(app, gx_app):
+    """Merge the legacy paste API spec into the FastAPI-generated schema.
+
+    Built eagerly so production workers can serve ``/openapi.json``
+    immediately on first request without paying a multi-second merge
+    latency on that request.
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    app.openapi_schema = _build_merged_openapi(app, gx_app)
     return app.openapi_schema
 
 
@@ -276,8 +286,8 @@ def include_mcp(app: FastAPI, gx_app, mcp_app):
 
 
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
+    """Build the FastAPI app that fronts the Galaxy web server."""
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
-
     mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
 
     if mcp_lifespan:
