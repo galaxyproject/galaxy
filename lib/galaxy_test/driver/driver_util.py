@@ -44,11 +44,15 @@ from galaxy.util import (
     galaxy_directory,
 )
 from galaxy.util.properties import load_app_properties
-from galaxy.webapps.base.api import GalaxyFileResponse
+from galaxy.webapps.base.api import build_route_name_index
 from galaxy.webapps.galaxy import buildapp
 from galaxy.webapps.galaxy.fast_app import (
     _build_merged_openapi,
+    add_galaxy_middleware,
+    GalaxyCORSMiddleware,
+    include_tus,
     initialize_fast_app as init_galaxy_fast_app,
+    XFrameOptionsMiddleware,
 )
 from galaxy_test.base.api_util import (
     get_admin_api_key,
@@ -778,19 +782,72 @@ def _find_root_wsgi_mount(app: FastAPI) -> Optional[Mount]:
     return None
 
 
+_TUS_PREFIXES = (
+    "/api/upload/resumable_upload",
+    "/api/job_files/resumable_upload",
+)
+
+
+def _rebind_tus_routes(app: FastAPI, gx_app) -> None:
+    """Replace TUS routes so they point at the current launch's upload store.
+
+    ``create_tus_router`` bakes ``files_dir`` / ``max_size`` into the route
+    handlers at build time, so the cached app's TUS routes would otherwise
+    keep writing to the first launch's ``tus_upload_store`` — a temp
+    directory that's removed when that test class tears down.
+    """
+    root_mount = _find_root_wsgi_mount(app)
+    tus_routes = [r for r in app.router.routes if _is_tus_route(r)]
+    for r in tus_routes:
+        app.router.routes.remove(r)
+    if root_mount is not None:
+        app.router.routes.remove(root_mount)
+    include_tus(app, gx_app)
+    if root_mount is not None:
+        app.router.routes.append(root_mount)
+
+
+def _is_tus_route(route) -> bool:
+    path = getattr(route, "path", None)
+    return bool(path and any(path.startswith(p) for p in _TUS_PREFIXES))
+
+
+def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
+    """Re-run ``add_galaxy_middleware`` against the current gx_app.
+
+    CORS / X-Frame-Options middleware capture ``gx_app.config`` at the
+    moment they're added to ``app.user_middleware``; without this the
+    cached app would keep enforcing the first test's
+    ``allowed_origin_hostnames`` / ``x_frame_options`` for every
+    subsequent test.
+    """
+    app.user_middleware = [
+        mw for mw in app.user_middleware if mw.cls not in (GalaxyCORSMiddleware, XFrameOptionsMiddleware)
+    ]
+    add_galaxy_middleware(app, gx_app)
+    # Force Starlette to rebuild its middleware stack on the next request
+    # so the re-added middleware actually takes effect.
+    app.middleware_stack = None
+
+
 def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app) -> None:
     """Re-bind the per-launch pieces of a cached FastAPI app.
 
     Galaxy routes resolve the current ``gx_app`` via the module global
     ``galaxy.app.app`` (set by ``buildapp.app_pair`` on every launch), so
-    the app's routes/middleware/route-name index are app-agnostic and can
-    be shared across repeated embedded-server launches within one Python
-    process (i.e. pytest). The only pieces that must be refreshed:
+    most of the app's routes are app-agnostic and can be shared across
+    repeated embedded-server launches within one Python process (i.e.
+    pytest). The pieces that must be refreshed:
 
     - the WSGI middleware wrapping this launch's paste webapp and its
       executor shutdown on ``gx_app.haltables``;
+    - the TUS routes, which bake this launch's ``tus_upload_store``
+      directory into their route handlers;
+    - Galaxy-specific middleware (CORS, X-Frame-Options), which capture
+      this launch's ``gx_app.config`` at add time;
     - the ``GalaxyFileResponse`` sendfile-mode class attributes (which
       ``add_galaxy_middleware`` wrote from the first build's ``gx_app``);
+    - the route-name index, since TUS routes were just replaced;
     - the merged OpenAPI schema, rebuilt lazily against the current
       ``gx_app`` if ``/openapi.json`` is requested (integration tests
       don't hit it, so eagerly rebuilding it per rebind would just add
@@ -802,8 +859,9 @@ def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app) -> None:
     new_wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", new_wsgi_handler.executor.shutdown))
     root_mount.app = new_wsgi_handler  # type: ignore[assignment]
-    GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
-    GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
+    _rebind_tus_routes(app, gx_app)
+    _rebind_galaxy_middleware(app, gx_app)
+    app.state.route_name_index = build_route_name_index(app)
     app.openapi_schema = None
 
     def _lazy_openapi() -> dict:
