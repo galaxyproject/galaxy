@@ -157,7 +157,7 @@ class HashicorpVault(Vault):
             return None
 
     def _read_legacy_and_migrate(self, key: str) -> Optional[str]:
-        # Galaxy < 26.x emitted a leading slash in Vault paths, which hvac's
+        # Galaxy <= 26.0 emitted a leading slash in Vault paths, which hvac's
         # format_url turned into a double-slash KV v2 key. Vault 1.x accepted
         # it silently; Vault 2.0 rejects it. Fall back to reading the legacy
         # form and rewrite under the canonical key so the secret survives the

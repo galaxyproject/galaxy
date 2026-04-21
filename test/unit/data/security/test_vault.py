@@ -145,13 +145,13 @@ def test_vault_key_prefix_wrapper_emits_canonical_path(prefix):
     inner.client.secrets.kv.read_secret_version.return_value = {"data": {"data": {"value": "v"}}}
     vault = VaultKeyValidationWrapper(VaultKeyPrefixWrapper(inner, prefix=prefix))
 
+    assert vault.read_secret("user/1/preferences/editor") == "v"
+    inner.client.secrets.kv.read_secret_version.assert_called_once_with(path="galaxy/user/1/preferences/editor")
+
     vault.write_secret("user/1/preferences/editor", "vscode")
     inner.client.secrets.kv.v2.create_or_update_secret.assert_called_once_with(
         path="galaxy/user/1/preferences/editor", secret={"value": "vscode"}
     )
-
-    assert vault.read_secret("user/1/preferences/editor") == "v"
-    inner.client.secrets.kv.read_secret_version.assert_called_once_with(path="galaxy/user/1/preferences/editor")
 
 
 @pytest.mark.parametrize("prefix", ["", "/", "gal//axy", "gal /axy", "gal/ axy"])
