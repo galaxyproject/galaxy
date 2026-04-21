@@ -1,5 +1,6 @@
 import base64
 import secrets
+import time
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -410,8 +411,6 @@ def test_refresh_for_job_returns_false_when_no_extra_data(mock_oidc_config_file,
 
 def test_refresh_for_job_returns_false_when_no_refresh_token(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Returns False when refresh_token is missing from extra_data."""
-    import time
-
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
     token = _make_token(auth_time=int(time.time()) - 4000, expires=3600, has_refresh_token=False)
     assert backend.refresh_for_job(MagicMock(), token) is False
@@ -426,8 +425,6 @@ def test_refresh_for_job_returns_false_when_no_expires(mock_oidc_config_file, mo
 
 def test_refresh_for_job_returns_false_when_token_still_young(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Returns False when the token is less than halfway through its lifetime."""
-    import time
-
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
     # Token issued 10 minutes ago with 1-hour lifetime → only 17% through lifetime
     token = _make_token(auth_time=int(time.time()) - 600, expires=3600)
@@ -436,8 +433,6 @@ def test_refresh_for_job_returns_false_when_token_still_young(mock_oidc_config_f
 
 def test_refresh_for_job_refreshes_when_token_past_half_lifetime(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Calls refresh_token when the access token is past 50% of its lifetime (not yet expired)."""
-    import time
-
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
     # Token issued 40 minutes ago with 1-hour lifetime → 67% through lifetime
     token = _make_token(auth_time=int(time.time()) - 2400, expires=3600)
@@ -458,8 +453,6 @@ def test_refresh_for_job_refreshes_when_token_already_expired(mock_oidc_config_f
     This is the key difference from refresh(), which only handles the 50–100%
     lifetime window and does nothing for expired tokens.
     """
-    import time
-
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
     # Token issued 90 minutes ago with 1-hour lifetime → expired 30 minutes ago
     token = _make_token(auth_time=int(time.time()) - 5400, expires=3600)
