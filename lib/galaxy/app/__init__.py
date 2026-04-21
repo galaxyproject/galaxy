@@ -192,11 +192,6 @@ from galaxy.workflow import scheduling_manager
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 from galaxy.workflow.completion_monitor import WorkflowCompletionMonitor
 from galaxy.workflow.trs_proxy import TrsProxy
-from .structured_app import (
-    BasicSharedApp,
-    MinimalManagerApp,
-    StructuredApp,
-)
 
 log = logging.getLogger(__name__)
 app = None
