@@ -109,7 +109,6 @@ def _start_vault_container(container_name):
         env_vars={
             "VAULT_DEV_ROOT_TOKEN_ID": VAULT_DEV_ROOT_TOKEN,
             "VAULT_DEV_LISTEN_ADDRESS": "0.0.0.0:8200",
-            "VAULT_ADDR": "http://0.0.0.0:8200",
             "SKIP_SETCAP": "1",
         },
     )
@@ -121,9 +120,7 @@ def _start_vault_container(container_name):
         # Dump container logs so the reason (image pull, bind failure, crash)
         # is visible when the health check doesn't come up.
         try:
-            logs = subprocess.check_output(["docker", "logs", container_name], stderr=subprocess.STDOUT).decode(
-                "utf-8", errors="replace"
-            )
+            logs = subprocess.check_output(["docker", "logs", container_name], stderr=subprocess.STDOUT, text=True)
             print(f"=== docker logs {container_name} ===\n{logs}\n=== end logs ===")
         except subprocess.CalledProcessError as log_err:
             print(f"Could not fetch docker logs for {container_name}: {log_err}")
