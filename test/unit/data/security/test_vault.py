@@ -1,7 +1,9 @@
 import os
 import string
 import tempfile
+from unittest.mock import MagicMock
 
+import hvac
 import pytest
 from cryptography.fernet import InvalidToken
 
@@ -12,10 +14,13 @@ from galaxy.model.unittest_utils.data_app import (
 from galaxy.security.vault import (
     _unwrap_vault,
     HashicorpVault,
+    InvalidVaultConfigException,
     InvalidVaultKeyException,
     renew_vault_token_if_needed,
     Vault,
     VaultFactory,
+    VaultKeyPrefixWrapper,
+    VaultKeyValidationWrapper,
 )
 from galaxy.util.unittest import TestCase
 
@@ -123,3 +128,62 @@ class TestDatabaseVault(AbstractTestCases.VaultTestBase):
         vault = VaultFactory.from_app(app)
         with self.assertRaises(InvalidToken):
             vault.read_secret("my/incorrect/secret")
+
+
+def _make_mocked_hashicorp_vault() -> HashicorpVault:
+    inner = HashicorpVault.__new__(HashicorpVault)
+    inner.client = MagicMock()
+    return inner
+
+
+@pytest.mark.parametrize("prefix", ["/galaxy", "galaxy", "/galaxy/"])
+def test_vault_key_prefix_wrapper_emits_canonical_path(prefix):
+    # Admins may write path_prefix with or without surrounding slashes; all
+    # canonical spellings must produce the same canonical Vault path. Vault 2.0
+    # rejects leading or double slashes in URLs.
+    inner = _make_mocked_hashicorp_vault()
+    inner.client.secrets.kv.read_secret_version.return_value = {"data": {"data": {"value": "v"}}}
+    vault = VaultKeyValidationWrapper(VaultKeyPrefixWrapper(inner, prefix=prefix))
+
+    assert vault.read_secret("user/1/preferences/editor") == "v"
+    inner.client.secrets.kv.read_secret_version.assert_called_once_with(path="galaxy/user/1/preferences/editor")
+
+    vault.write_secret("user/1/preferences/editor", "vscode")
+    inner.client.secrets.kv.v2.create_or_update_secret.assert_called_once_with(
+        path="galaxy/user/1/preferences/editor", secret={"value": "vscode"}
+    )
+
+
+@pytest.mark.parametrize("prefix", ["", "/", "gal//axy", "gal /axy", "gal/ axy"])
+def test_vault_key_prefix_wrapper_rejects_invalid_prefix(prefix):
+    # Anything that would still produce a non-canonical Vault path after
+    # stripping outer slashes must raise at construction time rather than
+    # silently getting normalized into something hvac sends on the wire.
+    with pytest.raises(InvalidVaultConfigException):
+        VaultKeyPrefixWrapper(_make_mocked_hashicorp_vault(), prefix=prefix)
+
+
+def test_hashicorp_vault_read_migrates_legacy_double_slash_secret():
+    inner = _make_mocked_hashicorp_vault()
+    # First canonical read raises InvalidPath; legacy read returns a value.
+    inner.client.secrets.kv.read_secret_version.side_effect = [
+        hvac.exceptions.InvalidPath(),
+        {"data": {"data": {"value": "legacy-value"}}},
+    ]
+
+    value = inner.read_secret("galaxy/user/1/x")
+
+    assert value == "legacy-value"
+    assert inner.client.secrets.kv.read_secret_version.call_args_list[0].kwargs == {"path": "galaxy/user/1/x"}
+    assert inner.client.secrets.kv.read_secret_version.call_args_list[1].kwargs == {"path": "/galaxy/user/1/x"}
+    inner.client.secrets.kv.v2.create_or_update_secret.assert_called_once_with(
+        path="galaxy/user/1/x", secret={"value": "legacy-value"}
+    )
+
+
+def test_hashicorp_vault_read_missing_returns_none_without_rewrite():
+    inner = _make_mocked_hashicorp_vault()
+    inner.client.secrets.kv.read_secret_version.side_effect = hvac.exceptions.InvalidPath()
+
+    assert inner.read_secret("galaxy/user/1/missing") is None
+    inner.client.secrets.kv.v2.create_or_update_secret.assert_not_called()
