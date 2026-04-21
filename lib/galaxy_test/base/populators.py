@@ -75,8 +75,8 @@ import yaml
 from bioblend.galaxyclient import GalaxyClient
 from gxformat2 import (
     convert_and_import_workflow,
-    ImporterGalaxyInterface,
 )
+from gxformat2.interface import ImporterGalaxyInterface
 from gxformat2.yaml import ordered_load
 from pydantic import (
     BaseModel,
