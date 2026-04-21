@@ -51,6 +51,24 @@ def _discover_native_workflows() -> List[str]:
     return sorted(str(p) for p in Path(iwc_dir).rglob("workflows/**/*.ga") if p.is_file())
 
 
+_IWC_TESTS_SUFFIXES = ("-tests.yml", "-tests.yaml", "-test.yml", "-test.yaml")
+
+
+def _discover_tests_files() -> List[str]:
+    iwc_dir = os.environ.get(IWC_ENV, "")
+    if not iwc_dir:
+        return []
+    results: List[str] = []
+    for suffix in _IWC_TESTS_SUFFIXES:
+        results.extend(str(p) for p in Path(iwc_dir).rglob(f"workflows/**/*{suffix}") if p.is_file())
+    return sorted(set(results))
+
+
+def _tests_file_id(path: str) -> str:
+    iwc_dir = os.environ.get(IWC_ENV, "")
+    return os.path.relpath(path, os.path.join(iwc_dir, "workflows"))
+
+
 def _workflow_id(path: str) -> str:
     iwc_dir = os.environ.get(IWC_ENV, "")
     return os.path.relpath(path, os.path.join(iwc_dir, "workflows"))
@@ -280,6 +298,29 @@ class TestIWCSweepStrictStructure:
         workflow = load_workflow(wf_path)
         errors = check_strict_structure(workflow)
         assert not errors, f"strict-structure errors in {wf_path}: {errors}"
+
+
+@skip_unless_environ(IWC_ENV)
+class TestIWCSweepValidateTests:
+    """Schema-validate every IWC workflow-tests file against ``Tests``.
+
+    Expected to expose real authoring drift (legacy ``type:``/``value:`` forms,
+    missing discriminators, unknown fields). Failures here are triage
+    candidates, not regressions in this validator.
+    """
+
+    @pytest.mark.parametrize("tests_path", _discover_tests_files(), ids=_tests_file_id)
+    def test_validate_tests(self, tests_path):
+        from galaxy.tool_util.workflow_state.validation_tests import (
+            load_tests_file,
+            validate_tests_file,
+        )
+
+        parsed = load_tests_file(tests_path)
+        result = validate_tests_file(parsed)
+        assert result.valid, f"Tests schema errors in {tests_path}:\n" + "\n".join(
+            f"  {d.path or '(root)'}: {d.message}" for d in result.diagnostics
+        )
 
 
 @skip_unless_environ(IWC_ENV)

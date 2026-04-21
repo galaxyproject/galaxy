@@ -1,0 +1,10 @@
+- doc: Collection element missing discriminator class
+  job:
+    input:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: sample1
+          path: test-data/s1.fq
+  outputs:
+    out: expected.fq

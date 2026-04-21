@@ -35,6 +35,7 @@ from typing_extensions import (
 
 from ._base import (
     CollectionType,
+    normalize_collection_type_alias,
     StrictModel,
     ToolSourceBaseModel,
 )
@@ -710,6 +711,11 @@ class TestCollectionOutputAssertions(StrictModel):
     element_count: Annotated[int | None, Field(title="Element Count")] = None
     attributes: Annotated[CollectionAttributes | None, Field(title="Attributes")] = None
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _normalize_type_alias(cls, values):
+        return normalize_collection_type_alias(values)
 
 
 TestOutputLiteral = bool | int | float | str

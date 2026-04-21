@@ -1,0 +1,7 @@
+- doc: Legacy type:raw form, not modeled
+  job:
+    input:
+      type: raw
+      value: literal-string
+  outputs:
+    out: expected.txt
