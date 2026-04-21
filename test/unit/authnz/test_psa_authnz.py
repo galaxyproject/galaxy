@@ -402,6 +402,21 @@ def _make_token(*, auth_time, expires, has_refresh_token=True, has_access_token=
     return SimpleNamespace(extra_data=extra_data, refresh_token=MagicMock())
 
 
+class FakeRefreshableToken:
+    def __init__(self, *, auth_time, expires, has_refresh_token=True, has_access_token=True):
+        self.refreshed = False
+        self.strategy = None
+        self.extra_data = {"auth_time": auth_time, "expires": expires}
+        if has_refresh_token:
+            self.extra_data["refresh_token"] = "dummy-refresh-token"
+        if has_access_token:
+            self.extra_data["access_token"] = "old-access-token"
+
+    def refresh_token(self, strategy):
+        self.refreshed = True
+        self.strategy = strategy
+
+
 def test_refresh_for_job_returns_false_when_no_extra_data(mock_oidc_config_file, mock_oidc_backend_config_file):
     """Returns False when extra_data is None."""
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
@@ -423,48 +438,45 @@ def test_refresh_for_job_returns_false_when_no_expires(mock_oidc_config_file, mo
     assert backend.refresh_for_job(MagicMock(), token) is False
 
 
-def test_refresh_for_job_returns_false_when_token_still_young(mock_oidc_config_file, mock_oidc_backend_config_file):
-    """Returns False when the token is less than halfway through its lifetime."""
+@pytest.mark.parametrize(
+    "auth_age,lifetime,expected",
+    [
+        (600, 3600, False),
+        (2400, 3600, True),
+        (5400, 3600, True),
+    ],
+)
+def test_refresh_for_job_refresh_decision_depends_on_token_age(
+    mock_oidc_config_file, mock_oidc_backend_config_file, auth_age, lifetime, expected
+):
+    """Refresh-for-job refreshes when token reaches half its lifetime, and when the token is expired."""
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
-    # Token issued 10 minutes ago with 1-hour lifetime → only 17% through lifetime
-    token = _make_token(auth_time=int(time.time()) - 600, expires=3600)
-    assert backend.refresh_for_job(MagicMock(), token) is False
-
-
-def test_refresh_for_job_refreshes_when_token_past_half_lifetime(mock_oidc_config_file, mock_oidc_backend_config_file):
-    """Calls refresh_token when the access token is past 50% of its lifetime (not yet expired)."""
-    backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
-    # Token issued 40 minutes ago with 1-hour lifetime → 67% through lifetime
-    token = _make_token(auth_time=int(time.time()) - 2400, expires=3600)
+    token = FakeRefreshableToken(auth_time=int(time.time()) - auth_age, expires=lifetime)
     sa_session = MagicMock()
 
-    with patch("galaxy.authnz.psa_authnz.on_the_fly_config") as mock_config:
-        token.refresh_token = MagicMock()
-        result = backend.refresh_for_job(sa_session, token)
+    result = backend.refresh_for_job(sa_session, token)
 
-    assert result is True
-    mock_config.assert_called_once_with(sa_session)
-    token.refresh_token.assert_called_once()
+    assert result is expected
+    assert token.refreshed is expected
 
 
-def test_refresh_for_job_refreshes_when_token_already_expired(mock_oidc_config_file, mock_oidc_backend_config_file):
-    """Calls refresh_token even when the access token has already expired.
-
-    This is the key difference from refresh(), which only handles the 50–100%
-    lifetime window and does nothing for expired tokens.
-    """
+def test_refresh_for_job_refreshes_expired_token_while_refresh_does_not(
+    mock_oidc_config_file, mock_oidc_backend_config_file
+):
+    """Test that refresh_for_job refreshes expired tokens while refresh does not."""
     backend = make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
-    # Token issued 90 minutes ago with 1-hour lifetime → expired 30 minutes ago
-    token = _make_token(auth_time=int(time.time()) - 5400, expires=3600)
+    auth_time = int(time.time()) - 5400
+
+    expired_for_web = FakeRefreshableToken(auth_time=auth_time, expires=3600)
+    expired_for_job = FakeRefreshableToken(auth_time=auth_time, expires=3600)
+    trans = SimpleNamespace(sa_session=MagicMock(), request=MagicMock(), session={})
     sa_session = MagicMock()
 
-    with patch("galaxy.authnz.psa_authnz.on_the_fly_config") as mock_config:
-        token.refresh_token = MagicMock()
-        result = backend.refresh_for_job(sa_session, token)
+    assert backend.refresh(trans, expired_for_web) is False
+    assert expired_for_web.refreshed is False
 
-    assert result is True
-    mock_config.assert_called_once_with(sa_session)
-    token.refresh_token.assert_called_once()
+    assert backend.refresh_for_job(sa_session, expired_for_job) is True
+    assert expired_for_job.refreshed is True
 
 
 def test_sync_user_profile_skips_when_account_interface_enabled():
