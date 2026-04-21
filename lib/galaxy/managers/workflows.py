@@ -16,12 +16,12 @@ from typing import (
 import yaml
 from gxformat2 import (
     from_galaxy_native,
-    ImporterGalaxyInterface,
     ImportOptions,
     python_to_workflow,
 )
 from gxformat2.abstract import from_dict
 from gxformat2.cytoscape import to_cytoscape
+from gxformat2.interface import ImporterGalaxyInterface
 from gxformat2.yaml import ordered_dump
 from pydantic import (
     BaseModel,

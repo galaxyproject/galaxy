@@ -21,8 +21,8 @@ import requests
 import yaml
 from gxformat2 import (
     convert_and_import_workflow,
-    ImporterGalaxyInterface,
 )
+from gxformat2.interface import ImporterGalaxyInterface
 from requests.models import Response
 
 from galaxy.selenium import driver_factory
