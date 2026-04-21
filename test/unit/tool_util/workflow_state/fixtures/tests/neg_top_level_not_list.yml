@@ -1,0 +1,7 @@
+doc: Top-level is a dict, not a list of jobs
+job:
+  input:
+    class: File
+    path: test-data/input.fq
+outputs:
+  out: expected.fq

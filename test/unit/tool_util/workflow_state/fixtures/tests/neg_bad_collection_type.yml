@@ -1,0 +1,11 @@
+- doc: Collection with invalid collection_type
+  job:
+    input:
+      class: Collection
+      collection_type: not_a_real_type
+      elements:
+        - class: File
+          identifier: sample1
+          path: test-data/s1.fq
+  outputs:
+    out: expected.fq

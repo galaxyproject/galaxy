@@ -1,0 +1,7 @@
+- doc: Single File input via path
+  job:
+    input:
+      class: File
+      path: test-data/input.fq
+  outputs:
+    out: expected.fq

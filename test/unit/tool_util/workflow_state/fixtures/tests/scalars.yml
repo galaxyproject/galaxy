@@ -1,0 +1,9 @@
+- doc: Scalar parameter inputs
+  job:
+    threshold: 0.5
+    count: 10
+    name: sample
+    enabled: true
+    optional: null
+  outputs:
+    out: expected.txt

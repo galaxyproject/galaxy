@@ -440,6 +440,93 @@ def wrap_single_lint(
     )
 
 
+# -- Workflow-test file validation (gxwf validate-tests) --
+
+
+class TestsDiagnostic(BaseModel):
+    path: str
+    message: str
+    severity: Literal["error", "warning", "info"] = "error"
+    category: Optional[str] = None
+
+
+class SingleTestsValidationReport(BaseModel):
+    """JSON shape for single-file workflow-test validation."""
+
+    tests_file: str
+    valid: bool
+    diagnostics: List[TestsDiagnostic] = []
+    load_error: Optional[str] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def error_count(self) -> int:
+        return sum(1 for d in self.diagnostics if d.severity == "error")
+
+
+class WorkflowTestsResult(BaseModel):
+    path: str = Field(exclude=True)
+    relative_path: str = Field(serialization_alias="path")
+    category: str = ""
+    valid: bool = True
+    diagnostics: List[TestsDiagnostic] = []
+    load_error: Optional[str] = None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def name(self) -> str:
+        return os.path.basename(self.relative_path)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def error_count(self) -> int:
+        return sum(1 for d in self.diagnostics if d.severity == "error")
+
+
+class TestsTreeReport(TreeReportBase):
+    results: List[WorkflowTestsResult] = Field(default=[], serialization_alias="tests_files")
+
+    def _workflow_results(self) -> list:
+        return self.results
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def summary(self) -> Dict[str, int]:
+        total = len(self.results)
+        invalid = sum(1 for r in self.results if not r.valid)
+        load_errors = sum(1 for r in self.results if r.load_error)
+        diagnostics = sum(len(r.diagnostics) for r in self.results)
+        return {
+            "total": total,
+            "valid": total - invalid,
+            "invalid": invalid,
+            "load_errors": load_errors,
+            "diagnostics": diagnostics,
+        }
+
+
+def wrap_single_tests_validation(
+    tests_path: str,
+    valid: bool,
+    diagnostics: List[TestsDiagnostic],
+    load_error: Optional[str] = None,
+) -> TestsTreeReport:
+    """Wrap single-file tests validation into a TestsTreeReport for Markdown rendering."""
+    return TestsTreeReport(
+        root=tests_path,
+        results=[
+            WorkflowTestsResult(
+                path=tests_path,
+                relative_path=os.path.basename(tests_path),
+                category="",
+                valid=valid,
+                diagnostics=diagnostics,
+                load_error=load_error,
+            )
+        ],
+    )
+
+
 def wrap_single_clean(workflow_path: str, step_results: List[CleanStepResult]) -> TreeCleanReport:
     """Wrap single-file results into a TreeCleanReport for Markdown rendering."""
     total = sum(len(r.removed_state_keys) + len(r.removed_step_keys) for r in step_results)
