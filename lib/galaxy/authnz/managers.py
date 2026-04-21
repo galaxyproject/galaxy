@@ -311,10 +311,11 @@ class AuthnzManager:
         and will also attempt to refresh already-expired tokens (not just those
         approaching expiry).
         """
-        if not isinstance(user, model.User):
-            return
         for auth in user.social_auth or []:
             try:
+                if auth.provider is None:
+                    log.warning("No provider specified for auth record, skipping: %s", auth)
+                    continue
                 success, message, backend = self._get_authnz_backend(auth.provider)
                 if not success:
                     log.error(
