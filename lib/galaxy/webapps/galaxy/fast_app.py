@@ -151,6 +151,13 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             max_age=600,
         )
 
+    from galaxy.web.framework.middleware.aiocop_integration import aiocop_enabled
+
+    if aiocop_enabled():
+        from galaxy.web.framework.middleware.aiocop_integration import AiocopMiddleware
+
+        app.add_middleware(AiocopMiddleware)
+
 
 def include_legacy_openapi(app, gx_app):
     if app.openapi_schema:

@@ -930,12 +930,16 @@ class GalaxyTestDriver(TestDriver):
                 if handle_galaxy_config_kwds is not None:
                     handle_galaxy_config_kwds(galaxy_config)
 
-            server_wrapper = launch_server(
+            launch_kwargs: dict[str, Any] = dict(
                 app_factory=lambda: self.build_galaxy_app(galaxy_config),
                 webapp_factory=lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                 galaxy_config=galaxy_config,
                 config_object=config_object,
             )
+            custom_init_fast_app = getattr(config_object, "init_fast_app", None)
+            if custom_init_fast_app is not None:
+                launch_kwargs["init_fast_app"] = custom_init_fast_app
+            server_wrapper = launch_server(**launch_kwargs)
             self.server_wrappers.append(server_wrapper)
         else:
             log.info(f"Functional tests will be run against test external Galaxy server {self.external_galaxy}")
