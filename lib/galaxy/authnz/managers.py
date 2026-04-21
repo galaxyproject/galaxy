@@ -13,6 +13,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     asbool,
     etree,
@@ -25,7 +26,6 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,

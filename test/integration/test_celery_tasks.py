@@ -84,8 +84,9 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
         app_with_authnz_override = self._app.clone()
         app_with_authnz_override.define(AuthnzManager, fake_authnz_manager)
 
-        with patch.object(self._app, "magic_partial", app_with_authnz_override.magic_partial), patch.object(
-            self._app, "authnz_manager", fake_authnz_manager
+        with (
+            patch.object(self._app, "magic_partial", app_with_authnz_override.magic_partial),
+            patch.object(self._app, "authnz_manager", fake_authnz_manager),
         ):
             assert inspect_authnz_manager.delay().get(timeout=10) == "FakeAuthnzManager"
 

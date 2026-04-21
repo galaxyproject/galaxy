@@ -21,7 +21,10 @@ from social_core.utils import (
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from galaxy import exceptions as galaxy_exceptions, model
+from galaxy import (
+    exceptions as galaxy_exceptions,
+    model,
+)
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
