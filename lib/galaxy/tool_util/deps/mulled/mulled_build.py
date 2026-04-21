@@ -30,6 +30,7 @@ from typing import (
 )
 
 import yaml
+from requests import Session
 from typing_extensions import Literal
 
 from galaxy.tool_util.deps import installable
@@ -57,6 +58,8 @@ from .util import (
     get_files_from_conda_package,
     PrintProgress,
     quay_repository,
+    quay_tag_exists,
+    QuayApiException,
     v1_image_name,
     v2_image_name,
 )
@@ -206,6 +209,18 @@ class BuildExistsException(Exception):
     """
 
 
+def _repo_data_contains_tag(repo_data: Dict[str, Any], target_tag: str) -> bool:
+    if "error_type" in repo_data and repo_data["error_type"] in {"invalid_token", "not_found"}:
+        return False
+
+    tags = repo_data.get("tags", {})
+    if isinstance(tags, dict):
+        return target_tag in tags
+    if isinstance(tags, list):
+        return target_tag in tags
+    raise QuayApiException(f"Unexpected response from quay.io - no tags description found [{repo_data}]")
+
+
 def mull_targets(
     targets: List[CondaTarget],
     involucro_context: Optional["InvolucroContext"] = None,
@@ -232,6 +247,7 @@ def mull_targets(
     determine_base_image: bool = True,
     invfile: str = INVFILE,
     strict_channel_priority: bool = True,
+    session: Optional[Session] = None,
 ) -> int:
     if involucro_context is None:
         involucro_context = InvolucroContext()
@@ -250,21 +266,37 @@ def mull_targets(
 
     if not rebuild or "push" in command:
         repo_name = repo_template_kwds["image"].split(":", 1)[0]
-        repo_data = quay_repository(repo_template_kwds["namespace"], repo_name)
+        repo_data = None
         if not rebuild:
-            tags = repo_data.get("tags", [])
-
             target_tag = None
             if ":" in repo_template_kwds["image"]:
                 image_name_parts = repo_template_kwds["image"].split(":")
                 assert len(image_name_parts) == 2, f": not allowed in image name [{repo_template_kwds['image']}]"
                 target_tag = image_name_parts[1]
-
-            if tags and (target_tag is None or target_tag in tags):
-                raise BuildExistsException()
-        if "push" in command and "error_type" in repo_data and oauth_token:
-            # Explicitly create the repository so it can be built as public.
-            create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
+            if target_tag is not None:
+                tag_exists = quay_tag_exists(repo_template_kwds["namespace"], repo_name, target_tag, session=session)
+                if tag_exists is None:
+                    log.warning(
+                        "Falling back to quay repository metadata for %s/%s:%s after registry manifest probe was inconclusive",
+                        repo_template_kwds["namespace"],
+                        repo_name,
+                        target_tag,
+                    )
+                    repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+                    tag_exists = _repo_data_contains_tag(repo_data, target_tag)
+                if tag_exists:
+                    raise BuildExistsException()
+            else:
+                repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+                tags = repo_data.get("tags", [])
+                if tags:
+                    raise BuildExistsException()
+        if "push" in command:
+            if repo_data is None:
+                repo_data = quay_repository(repo_template_kwds["namespace"], repo_name, session=session)
+            if "error_type" in repo_data and oauth_token:
+                # Explicitly create the repository so it can be built as public.
+                create_repository(repo_template_kwds["namespace"], repo_name, oauth_token)
 
     for channel in channels:
         if channel.startswith("file://"):

@@ -24,6 +24,7 @@ from typing import (
 )
 
 from galaxy.tool_util.deps.conda_util import CondaTarget
+from galaxy.util import requests
 from ._cli import arg_parser
 from .mulled_build import (
     add_build_arguments,
@@ -57,6 +58,7 @@ def main(argv=None):
         help="Path to directory (or single file) of TSV files describing composite recipes.",
     )
     args = parser.parse_args()
+    session = requests.session()
     for target in generate_targets(args.files):
         try:
             ret = mull_targets(
@@ -65,6 +67,7 @@ def main(argv=None):
                 name_override=target.name_override,
                 base_image=target.base_image,
                 determine_base_image=False,
+                session=session,
                 **args_to_mull_targets_kwds(args),
             )
         except BuildExistsException:
