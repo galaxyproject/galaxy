@@ -167,6 +167,7 @@ class HashicorpVault(Vault):
         try:
             response = self.client.secrets.kv.read_secret_version(path=legacy)
         except (hvac.exceptions.InvalidPath, hvac.exceptions.InvalidRequest):
+            log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
             return None
         value = response["data"]["data"].get("value")
         if value is not None:
