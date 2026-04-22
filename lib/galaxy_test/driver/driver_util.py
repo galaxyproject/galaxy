@@ -824,10 +824,12 @@ def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
     app.user_middleware = [
         mw for mw in app.user_middleware if mw.cls not in (GalaxyCORSMiddleware, XFrameOptionsMiddleware)
     ]
-    add_galaxy_middleware(app, gx_app)
-    # Force Starlette to rebuild its middleware stack on the next request
-    # so the re-added middleware actually takes effect.
+    # Reset the middleware stack BEFORE re-adding middleware: Starlette's
+    # ``add_middleware`` guards against mutations after the stack has been
+    # built (first request), so we have to clear it first. The stack will
+    # be rebuilt lazily from ``user_middleware`` on the next request.
     app.middleware_stack = None
+    add_galaxy_middleware(app, gx_app)
 
 
 def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app) -> None:
