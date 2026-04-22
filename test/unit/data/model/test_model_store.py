@@ -51,6 +51,19 @@ TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
 
 
+def test_get_export_dataset_filename_truncates_long_name():
+    long_name = "https___example.com_" + "a" * 2000 + ".fastq.gz"
+    filename = store.get_export_dataset_filename(long_name, "fastqsanger.gz", "abcdef1234567890", conversion_key=None)
+    assert len(filename.encode("utf-8")) <= 255
+    assert filename.endswith("_abcdef1234567890.fastqsanger.gz")
+
+    filename_conv = store.get_export_dataset_filename(
+        long_name, "bam", "abcdef1234567890", conversion_key="0123456789abcdef"
+    )
+    assert len(filename_conv.encode("utf-8")) <= 255
+    assert filename_conv.endswith("_abcdef1234567890_conversion_0123456789abcdef.bam")
+
+
 def test_import_export_history():
     """Test a simple job import/export after decompressing an archive (like history import/export tool)."""
     app = _mock_app()

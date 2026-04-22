@@ -8,6 +8,7 @@ from galaxy.model import (
     DataManagerJobAssociation,
     Job,
 )
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.util import (
     nice_size,
     unicodify,
@@ -34,7 +35,7 @@ class DataManager(BaseUIController):
         ):
             data_managers.append(
                 {
-                    "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
+                    "toolUrl": web.url_for(f"/?tool_id={uri_safe_tool_id(data_manager.tool.id)}"),
                     "id": data_manager_id,
                     "name": data_manager.name,
                     "description": data_manager.description.lower(),
@@ -90,7 +91,7 @@ class DataManager(BaseUIController):
             "dataManager": {
                 "name": data_manager.name,
                 "description": data_manager.description.lower(),
-                "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
+                "toolUrl": web.url_for(f"/?tool_id={uri_safe_tool_id(data_manager.tool.id)}"),
             },
             "jobs": jobs,
             "viewOnly": not_is_admin,
@@ -155,7 +156,7 @@ class DataManager(BaseUIController):
                 "id": data_manager_id,
                 "name": data_manager.name,
                 "description": data_manager.description.lower(),
-                "toolUrl": web.url_for(f"/?tool_id={data_manager.tool.id}"),
+                "toolUrl": web.url_for(f"/?tool_id={uri_safe_tool_id(data_manager.tool.id)}"),
             },
             "hdaInfo": hda_info,
             "dataManagerOutput": data_manager_output,

@@ -117,8 +117,16 @@ const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
-const versions = computed(() => props.options.versions);
-const showVersions = computed(() => props.options.versions?.length > 1);
+const versions = computed(() => props.options.versions ?? []);
+const hiddenVersions = computed(() => props.options.hidden_versions ?? []);
+const visibleVersions = computed(() => {
+    const filtered = versions.value.filter((v) => !hiddenVersions.value.includes(v));
+    if (props.version && !filtered.includes(props.version) && versions.value.includes(props.version)) {
+        filtered.push(props.version);
+    }
+    return filtered;
+});
+const showVersions = computed(() => visibleVersions.value.length > 1);
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -165,7 +173,7 @@ onBeforeMount(() => {
                 <ToolVersionsButton
                     v-if="showVersions"
                     :version="props.version"
-                    :versions="versions"
+                    :versions="visibleVersions"
                     @onChangeVersion="onChangeVersion" />
                 <ToolOptionsButton
                     :id="props.id"

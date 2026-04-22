@@ -122,6 +122,7 @@ Repository = "https://github.com/galaxyproject/galaxy"
 
 [dependency-groups]
 test = [
+    "aiocop",
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",

@@ -36,6 +36,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.managers import (
     annotatable,
     base,
@@ -69,7 +70,6 @@ from galaxy.schema.storage_cleaner import (
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
     PurgeDatasetsTaskRequest,
-    RequestUser,
 )
 from galaxy.structured_app import (
     MinimalManagerApp,
@@ -81,6 +81,7 @@ from galaxy.tool_util_models.parameters import (
     FileRequestUri,
 )
 from galaxy.util.compression_utils import get_fileobj
+from galaxy.work.context import WorkRequestContext
 
 if TYPE_CHECKING:
     from galaxy.model import LibraryDatasetDatasetAssociation
@@ -175,15 +176,17 @@ class HDAManager(
     def materialize(
         self, request: MaterializeDatasetInstanceTaskRequest, session: Session, in_place: bool = False
     ) -> bool:
-        request_user: RequestUser = request.user
+        request_user = request.user
+        assert request_user.user_id
+        user = self.user_manager.by_id(request_user.user_id)
+        user_context = ProvidesFileSourcesUserContext(WorkRequestContext(app=self.app, user=user))
         materializer = materializer_factory(
             True,  # attached...
             object_store=self.app.object_store,
             file_sources=self.app.file_sources,
             sa_session=session,
+            user_context=user_context,
         )
-        assert request_user.user_id
-        user = self.user_manager.by_id(request_user.user_id)
         if request.source == DatasetSourceType.hda:
             dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = self.get_accessible(
                 request.content, user

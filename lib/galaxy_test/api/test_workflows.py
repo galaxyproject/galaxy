@@ -6279,6 +6279,68 @@ test_data:
         assert message["workflow_step_id"] == 2
         assert "Invalid new collection identifier" in message["details"]
 
+    @skip_without_tool("__RELABEL_FROM_FILE__")
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    def test_relabel_from_file_with_paused_labels_does_not_crash(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22520:
+        # a PAUSED HDA wired as the labels input to __RELABEL_FROM_FILE__ used to
+        # crash produce_outputs with FileNotFoundError.
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_c:
+    type: collection
+    collection_type: list
+steps:
+  failing_step:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  paused_labels:
+    tool_id: cat1
+    in:
+      input1: failing_step/out_file1
+  relabel:
+    tool_id: "__RELABEL_FROM_FILE__"
+    in:
+      input: input_c
+      how|labels: paused_labels/out_file1
+""",
+            test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "A"
+""",
+            history_id=history_id,
+            wait=False,
+            assert_ok=False,
+        )
+        invocation_id = summary.invocation_id
+
+        def cat1_paused():
+            for j in self._history_jobs(history_id):
+                if j.get("tool_id") == "cat1" and j.get("state") == "paused":
+                    return True
+            return None
+
+        try:
+            wait_on(cat1_paused, "cat1 job to be paused after upstream failure")
+            # Give the scheduler a couple of iterations to attempt the relabel step.
+            time.sleep(3)
+
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["state"] != "failed", f"Relabel step crashed on paused input; invocation: {invocation}"
+            relabel_jobs = [j for j in self._history_jobs(history_id) if j.get("tool_id") == "__RELABEL_FROM_FILE__"]
+            for rj in relabel_jobs:
+                assert rj["state"] != "error", f"Relabel produced an errored job: {rj}"
+        finally:
+            self.workflow_populator.cancel_invocation(invocation_id)
+
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over(self, history_id):
         summary = self._run_workflow(
