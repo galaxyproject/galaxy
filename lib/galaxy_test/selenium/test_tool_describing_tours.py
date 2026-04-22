@@ -61,3 +61,15 @@ class TestToolDescribingTours(SeleniumTestCase):
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         self.screenshot("tool_describing_tour_3_after_execute")
+
+    @selenium_test
+    def test_generate_tour_boolean_conditional(self):
+        """Regression test for https://github.com/galaxyproject/galaxy/issues/22460.
+
+        Generating a tour for a tool whose conditional has a boolean inner parameter
+        (explicitly set in the first test case) previously raised a TypeError.
+        """
+        self.tool_open("gx_conditional_boolean")
+        self.tool_form_generate_tour()
+        popover_component = self.components.tour.popover._
+        popover_component.wait_for_visible()
