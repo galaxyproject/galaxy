@@ -6,10 +6,10 @@ import pytest
 from pydantic import ValidationError
 
 from galaxy.tool_util_models import (
-    Tests,
     TestCollectionCollectionElementAssertions,
     TestCollectionOutputAssertions,
     TestDataOutputAssertions,
+    Tests,
 )
 
 

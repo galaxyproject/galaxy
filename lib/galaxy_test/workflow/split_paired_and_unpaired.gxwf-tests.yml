@@ -8,7 +8,7 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired_or_unpaired
+          collection_type: paired_or_unpaired
           elements:
             - identifier: forward
               class: File
@@ -18,7 +18,7 @@
               contents: "reverse content"
         - identifier: el2
           class: Collection
-          type: paired_or_unpaired
+          collection_type: paired_or_unpaired
           elements:
             - identifier: unpaired
               class: File
@@ -37,6 +37,7 @@
       collection_type: list:paired
       elements:
         el1:
+          class: Collection
           elements:
             forward:
               asserts:
