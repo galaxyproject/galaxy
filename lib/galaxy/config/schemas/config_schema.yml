@@ -4359,7 +4359,7 @@ mapping:
         type: bool
         default: true
         desc: |
-          Default value for use_temp_files for webdav plugins that don't explicitly declare this.
+          Deprecated. This option is ignored by the fsspec-based WebDAV file source.
 
       file_source_listings_expiry_time:
         type: int

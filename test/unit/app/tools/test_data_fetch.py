@@ -429,7 +429,6 @@ def _execute_context(allow_localhost=False):
                             "ftp_upload_dir": None,
                             "ftp_upload_purge": True,
                             "tmp_dir": None,
-                            "webdav_use_temp_files": None,
                             "listings_expiry_time": None,
                         },
                     },

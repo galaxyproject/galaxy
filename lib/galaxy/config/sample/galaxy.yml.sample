@@ -3173,8 +3173,8 @@ galaxy:
   # to new_file_path if not set.
   #file_source_temp_dir: null
 
-  # Default value for use_temp_files for webdav plugins that don't
-  # explicitly declare this.
+  # Deprecated. This option is ignored by the fsspec-based WebDAV file
+  # source.
   #file_source_webdav_use_temp_files: true
 
   # Number of seconds before file source content listings are refreshed.
@@ -3231,4 +3231,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-

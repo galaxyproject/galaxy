@@ -8,6 +8,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -235,7 +236,7 @@ class OnedataFileSourceConfiguration(StrictModel):
 
 class WebdavFileSourceTemplateConfiguration(StrictModel):
     type: Literal["webdav"]
-    url: Union[str, TemplateExpansion]
+    base_url: Union[str, TemplateExpansion]
     root: Union[str, TemplateExpansion]
     login: Union[str, TemplateExpansion]
     password: Union[str, TemplateExpansion]
@@ -243,14 +244,34 @@ class WebdavFileSourceTemplateConfiguration(StrictModel):
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_base_url(cls, data: Any) -> Any:
+        # Keep persisted user file source templates created before the WebDAV
+        # url -> base_url rename loadable in the preferences UI.
+        if isinstance(data, dict) and "base_url" not in data and "url" in data:
+            data = dict(data)
+            data["base_url"] = data.pop("url")
+        return data
+
 
 class WebdavFileSourceConfiguration(StrictModel):
     type: Literal["webdav"]
-    url: str
+    base_url: str
     root: str
     login: str
     password: str
     writable: bool = False
+
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_base_url(cls, data: Any) -> Any:
+        # Keep persisted user file source configurations created before the WebDAV
+        # url -> base_url rename loadable in the preferences UI.
+        if isinstance(data, dict) and "base_url" not in data and "url" in data:
+            data = dict(data)
+            data["base_url"] = data.pop("url")
+        return data
 
 
 class eLabFTWFileSourceTemplateConfiguration(StrictModel):  # noqa
