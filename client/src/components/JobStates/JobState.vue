@@ -3,9 +3,10 @@ import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
-import { type JobBaseModel, NON_TERMINAL_STATES } from "@/api/jobs";
+import { deleteJob, type JobBaseModel, NON_TERMINAL_STATES } from "@/api/jobs";
 import { useToast } from "@/composables/toast";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "../BaseComponents/GButton.vue";
 
@@ -41,17 +42,11 @@ const stopping = ref(false);
 async function stopJob() {
     stopping.value = true;
     try {
-        // TODO: To be implemented: Call the API to stop the job, and handle any errors that may occur.
-        //      Ideally, we would want a job object returned from the API after stopping,
-        //      and we would want to update the job state in the UI accordingly. For now, I am just
-        //      using a Toast.
+        await deleteJob(props.job.id);
 
-        Toast.success("Job stopped successfully.");
-
-        // TODO: Handle job state returned by the API
+        Toast.success("Job scheduled to be stopped.");
     } catch (error) {
-        // TODO: Handle string errorMessageAsString, just casting to string for now
-        Toast.error(error as string, "Failed to stop the job.");
+        Toast.error(errorMessageAsString(error), "Failed to stop the job.");
     } finally {
         stopping.value = false;
     }

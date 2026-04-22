@@ -1,4 +1,7 @@
 import type { components } from "@/api/schema";
+import { rethrowSimple } from "@/utils/simple-error";
+
+import { GalaxyApi } from "./client";
 
 export type JobDestinationParams = components["schemas"]["JobDestinationParams"];
 export type ShowFullJobResponse = components["schemas"]["ShowFullJobResponse"];
@@ -39,4 +42,23 @@ export interface ResponseVal {
     jobDef: JobDef;
     jobResponse: JobResponse;
     toolName: string;
+}
+
+/**
+ * Delete/Stop a job.
+ * @param jobId The ID of the job to delete.
+ * @param message An optional message to be set on the job and output dataset(s) to explain the reason for stopping.
+ * @returns A promise that resolves to a boolean indicating whether the job was successfully deleted or job was already in a terminal state.
+ */
+export async function deleteJob(jobId: string, message?: string): Promise<boolean> {
+    const { data, error } = await GalaxyApi().DELETE("/api/jobs/{job_id}", {
+        params: { path: { job_id: jobId } },
+        data: { message },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
 }
