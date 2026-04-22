@@ -18,6 +18,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model import UserAuthnzToken
 from galaxy.util import (
     asbool,
     etree,
@@ -30,12 +31,11 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
+from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
 )
-from ..model import UserAuthnzToken
-from ..webapps.base.webapp import GalaxyWebTransaction
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
