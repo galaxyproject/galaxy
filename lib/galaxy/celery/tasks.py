@@ -20,7 +20,6 @@ from sqlalchemy import (
 )
 
 from galaxy import model
-from galaxy.authnz.managers import AuthnzManager
 from galaxy.celery import (
     celery_app,
     galaxy_task,
