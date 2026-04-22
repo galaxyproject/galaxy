@@ -102,6 +102,7 @@ from galaxy.util.json import (
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.search import (
+    filter_terms,
     FilteredTerm,
     parse_filters_structured,
     RawTextTerm,
@@ -210,7 +211,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         stmt = stmt.where(StoredWorkflow.hidden == (true() if show_hidden else false()))
         if payload.search:
             search_query = payload.search
-            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            parsed_search = filter_terms(parse_filters_structured(search_query, INDEX_SEARCH_FILTERS))
 
             def w_tag_exists(term_text: str, quoted: bool):
                 return tag_exists_filter(
