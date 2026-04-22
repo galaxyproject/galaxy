@@ -68,7 +68,7 @@ jsonschema-specifications==2025.9.1
 junit-xml==1.9
 kiwisolver==1.5.0
 librt==0.9.0 ; platform_python_implementation != 'PyPy'
-lxml==6.0.4
+lxml==6.1.0
 markdown-it-py==3.0.0 ; python_full_version < '3.11'
 markdown-it-py==4.0.0 ; python_full_version >= '3.11'
 markupsafe==3.0.3
