@@ -131,16 +131,15 @@ class ConditionalDependencies:
         except OSError:
             pass
 
-        # Parse oidc_backends_config_file specifically for PKCE support.
-        self.pkce_support = False
-        oidc_backend_conf_xml = self.config_object.oidc_backends_config_file
-        try:
-            for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
-                if pkce_support_element.text == "true":
-                    self.pkce_support = True
-                    break
-        except OSError:
-            pass
+        # Install pkce whenever OIDC is in use. PKCE can be toggled per-provider
+        # in oidc_backends_config.xml at runtime, so tying the install decision
+        # to any top-level OIDC signal avoids rebuilding the venv when
+        # pkce_support is flipped (issue #22502).
+        self.oidc_active = (
+            asbool(self.config.get("enable_oidc", False))
+            or bool(self.config.get("oidc_auth_pipeline"))
+            or bool(self.config.get("oidc_auth_pipeline_extra"))
+        )
 
         # Parse error report config
         error_report_yml = self.config_object.error_report_file
@@ -323,7 +322,7 @@ class ConditionalDependencies:
         return "hashicorp" == self.vault_type
 
     def check_pkce(self):
-        return self.pkce_support
+        return self.oidc_active
 
     def check_rucio_clients(self):
         return "rucio" in self.object_stores

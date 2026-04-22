@@ -7,6 +7,7 @@ from social_core.exceptions import (
     AuthCanceled,
     AuthTokenError,
 )
+from social_core.utils import module_member
 
 from galaxy import (
     exceptions,
@@ -25,6 +26,7 @@ from galaxy.util.resources import (
     resource_path,
 )
 from .psa_authnz import (
+    BACKENDS,
     BACKENDS_NAME,
     PSAAuthnz,
 )
@@ -143,6 +145,21 @@ class AuthnzManager:
 
             if len(self.oidc_backends_config) == 0:
                 raise exceptions.ConfigurationError("No valid provider configuration parsed.")
+            # Force-import each configured backend so missing conditional
+            # dependencies (e.g. pkce) fail Galaxy startup with an actionable
+            # error instead of surfacing as a silent 401 on first OIDC login
+            # (issue #22502).
+            for idp in self.oidc_backends_config:
+                try:
+                    module_member(BACKENDS[idp])
+                except ImportError as e:
+                    raise exceptions.ConfigurationError(
+                        f"Failed to import OIDC backend for provider '{idp}' "
+                        f"({BACKENDS[idp]}): {e}. This typically indicates a "
+                        "missing conditional dependency; re-run Galaxy's "
+                        "common_startup or install requirements from "
+                        "lib/galaxy/dependencies/conditional-requirements.txt."
+                    )
         except ImportError:
             raise
         except (etree.ParseError, exceptions.ConfigurationError) as e:

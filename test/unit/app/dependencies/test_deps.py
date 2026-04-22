@@ -109,6 +109,36 @@ def test_vault_hashicorp_configured():
         assert cds.check_hvac()
 
 
+def test_pkce_default_disabled():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert cds.check_pkce() is False
+
+
+def test_pkce_enabled_when_enable_oidc():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"enable_oidc": True})
+        assert cds.check_pkce() is True
+
+
+def test_pkce_disabled_when_enable_oidc_off():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"enable_oidc": False})
+        assert cds.check_pkce() is False
+
+
+def test_pkce_enabled_via_auth_pipeline():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"oidc_auth_pipeline": ["galaxy.authnz.psa_authnz.verify"]})
+        assert cds.check_pkce() is True
+
+
+def test_pkce_enabled_via_auth_pipeline_extra():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"oidc_auth_pipeline_extra": ["galaxy.authnz.psa_authnz.verify"]})
+        assert cds.check_pkce() is True
+
+
 @pytest.mark.parametrize(
     "config,expected",
     [
