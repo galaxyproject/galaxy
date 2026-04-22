@@ -43,60 +43,65 @@ class _StrictJobModel(StrictModel):
     model_config = ConfigDict(
         extra="forbid",
         populate_by_name=True,
-        field_title_generator=lambda field_name, field_info: field_name.lower(),
     )
 
 
 class HashEntry(_StrictJobModel):
-    hash_function: HashFunctionNames
-    hash_value: str
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="HashEntry")
+    hash_function: Annotated[HashFunctionNames, Field(title="Hash Function")]
+    hash_value: Annotated[str, Field(title="Hash Value")]
 
 
 class BaseFile(_StrictJobModel):
     """Fields common to every ``class: File`` variant."""
 
-    class_: Literal["File"] = Field(alias="class")
-    filetype: Optional[str] = None
-    dbkey: Optional[str] = None
-    decompress: Optional[bool] = None
-    to_posix_lines: Optional[bool] = None
-    space_to_tab: Optional[bool] = None
-    deferred: Optional[bool] = None
-    name: Optional[str] = None
-    info: Optional[str] = None
-    tags: Optional[list[str]] = None
-    hashes: Optional[list[HashEntry]] = None
-    identifier: Optional[str] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="BaseFile")
+    class_: Literal["File"] = Field(alias="class", title="Class")
+    filetype: Annotated[Optional[str], Field(title="File Type")] = None
+    dbkey: Annotated[Optional[str], Field(title="Dbkey")] = None
+    decompress: Annotated[Optional[bool], Field(title="Decompress")] = None
+    to_posix_lines: Annotated[Optional[bool], Field(title="To POSIX Lines")] = None
+    space_to_tab: Annotated[Optional[bool], Field(title="Space To Tab")] = None
+    deferred: Annotated[Optional[bool], Field(title="Deferred")] = None
+    name: Annotated[Optional[str], Field(title="Name")] = None
+    info: Annotated[Optional[str], Field(title="Info")] = None
+    tags: Annotated[Optional[list[str]], Field(title="Tags")] = None
+    hashes: Annotated[Optional[list[HashEntry]], Field(title="Hashes")] = None
+    identifier: Annotated[Optional[str], Field(title="Identifier")] = None
 
 
 class LocationFile(BaseFile):
-    location: str
-    path: Optional[str] = None
-    contents: Optional[str] = None
-    composite_data: Optional[list[str]] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="LocationFile")
+    location: Annotated[str, Field(title="Location")]
+    path: Annotated[Optional[str], Field(title="Path")] = None
+    contents: Annotated[Optional[str], Field(title="Contents")] = None
+    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
 
 
 class PathFile(BaseFile):
-    path: str
-    location: Optional[str] = None
-    contents: Optional[str] = None
-    composite_data: Optional[list[str]] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="PathFile")
+    path: Annotated[str, Field(title="Path")]
+    location: Annotated[Optional[str], Field(title="Location")] = None
+    contents: Annotated[Optional[str], Field(title="Contents")] = None
+    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
 
 
 class ContentsFile(BaseFile):
     """CWL File literal — content inlined as a string."""
 
-    contents: str
-    path: Optional[str] = None
-    location: Optional[str] = None
-    composite_data: Optional[list[str]] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="ContentsFile")
+    contents: Annotated[str, Field(title="Contents")]
+    path: Annotated[Optional[str], Field(title="Path")] = None
+    location: Annotated[Optional[str], Field(title="Location")] = None
+    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
 
 
 class CompositeDataFile(BaseFile):
-    composite_data: list[str]
-    path: Optional[str] = None
-    location: Optional[str] = None
-    contents: Optional[str] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="CompositeDataFile")
+    composite_data: Annotated[list[str], Field(title="Composite Data")]
+    path: Annotated[Optional[str], Field(title="Path")] = None
+    location: Annotated[Optional[str], Field(title="Location")] = None
+    contents: Annotated[Optional[str], Field(title="Contents")] = None
 
 
 def _discriminate_file(v):
@@ -133,12 +138,13 @@ File = Annotated[
 
 
 class Collection(_StrictJobModel):
-    class_: Literal["Collection"] = Field(alias="class")
-    collection_type: CollectionType = None
-    name: Optional[str] = None
-    identifier: Optional[str] = None
-    elements: Optional[list["CollectionElement"]] = None
-    rows: Optional[dict[str, list]] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="Collection")
+    class_: Literal["Collection"] = Field(alias="class", title="Class")
+    collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
+    name: Annotated[Optional[str], Field(title="Name")] = None
+    identifier: Annotated[Optional[str], Field(title="Identifier")] = None
+    elements: Annotated[Optional[list["CollectionElement"]], Field(title="Elements")] = None
+    rows: Annotated[Optional[dict[str, list]], Field(title="Rows")] = None
 
 
 CollectionElement = Annotated[
@@ -155,11 +161,12 @@ class Directory(_StrictJobModel):
     does not use it.
     """
 
-    class_: Literal["Directory"] = Field(alias="class")
-    path: Optional[str] = None
-    location: Optional[str] = None
-    filetype: Optional[str] = None
-    name: Optional[str] = None
+    model_config = ConfigDict(extra="forbid", populate_by_name=True, title="Directory")
+    class_: Literal["Directory"] = Field(alias="class", title="Class")
+    path: Annotated[Optional[str], Field(title="Path")] = None
+    location: Annotated[Optional[str], Field(title="Location")] = None
+    filetype: Annotated[Optional[str], Field(title="File Type")] = None
+    name: Annotated[Optional[str], Field(title="Name")] = None
 
 
 # JobParamValue is non-recursive at the list axis: a job-param list may contain
@@ -179,4 +186,6 @@ JobParamValue = Union[
     list[Union[File, str, int, float, bool, None]],
 ]
 
-Job = RootModel[dict[str, JobParamValue]]
+
+class Job(RootModel[dict[str, JobParamValue]]):
+    model_config = ConfigDict(title="Job")

@@ -93,3 +93,81 @@ def test_json_schema_emits_discriminator_for_outputs():
     schema = Tests.model_json_schema()
     dumped = json.dumps(schema)
     assert "discriminator" in dumped or '"oneOf"' in dumped
+
+
+def test_doc_is_optional_on_test_job():
+    tests = Tests.model_validate([{"job": {}, "outputs": {}}])
+    assert tests.root[0].doc is None
+    schema = Tests.model_json_schema()
+    test_job = schema["$defs"]["TestJob"]
+    assert "doc" not in test_job.get("required", [])
+
+
+def test_test_job_top_level_properties_have_descriptions():
+    schema = Tests.model_json_schema()
+    props = schema["$defs"]["TestJob"]["properties"]
+    for name in ("doc", "job", "outputs", "expect_failure"):
+        assert props[name].get("description"), f"missing description on TestJob.{name}"
+
+
+def test_test_job_titles_are_human_readable_not_lowercase():
+    schema = Tests.model_json_schema()
+    props = schema["$defs"]["TestJob"]["properties"]
+    assert props["doc"]["title"] == "Doc"
+    assert props["outputs"]["title"] == "Outputs"
+    assert props["expect_failure"]["title"] == "Expect Failure"
+
+
+def test_assertion_model_titles_are_human_readable():
+    schema = Tests.model_json_schema()
+    defs = schema["$defs"]
+    assert defs["has_text_model"]["title"] == "Assert Has Text"
+    assert defs["has_text_model_nested"]["title"] == "Assert Has Text (Nested)"
+    # Every field in has_text_model has an explicit title.
+    for name, prop in defs["has_text_model"]["properties"].items():
+        assert prop.get("title"), f"has_text_model.{name} missing title"
+
+
+def test_test_data_output_assertions_field_titles():
+    schema = Tests.model_json_schema()
+    props = schema["$defs"]["TestDataOutputAssertions"]["properties"]
+    assert props["lines_diff"]["title"] == "Lines Diff"
+    assert props["class"]["title"] == "Class"
+    assert props["ftype"]["title"] == "File Type"
+
+
+def test_top_level_schema_has_title_description_and_schema():
+    schema = Tests.model_json_schema()
+    assert schema.get("title") == "GalaxyWorkflowTests"
+    assert schema.get("description")
+    assert schema.get("$schema") == "https://json-schema.org/draft/2020-12/schema"
+
+
+def test_root_model_wrappers_have_clean_defs_keys():
+    schema = Tests.model_json_schema()
+    defs = schema["$defs"]
+    assert "Job" in defs
+    assert "assertion_list" in defs
+    # None of the RootModel-auto-generated mangled names should appear.
+    mangled = [k for k in defs if k.startswith("RootModel_")]
+    assert not mangled, f"unexpected mangled RootModel defs: {mangled}"
+
+
+def test_test_data_output_assertions_properties_have_descriptions():
+    schema = Tests.model_json_schema()
+    props = schema["$defs"]["TestDataOutputAssertions"]["properties"]
+    for name in (
+        "asserts",
+        "metadata",
+        "file",
+        "ftype",
+        "sort",
+        "checksum",
+        "compare",
+        "lines_diff",
+        "decompress",
+        "delta",
+        "delta_frac",
+        "location",
+    ):
+        assert props[name].get("description"), f"missing description on TestDataOutputAssertions.{name}"

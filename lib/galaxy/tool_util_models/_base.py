@@ -11,11 +11,11 @@ from typing_extensions import Annotated
 
 
 class ToolSourceBaseModel(BaseModel):
-    model_config = ConfigDict(field_title_generator=lambda field_name, field_info: field_name.lower())
+    pass
 
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", field_title_generator=lambda field_name, field_info: field_name.lower())
+    model_config = ConfigDict(extra="forbid")
 
 
 def _check_collection_type(v: str) -> str:
