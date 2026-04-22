@@ -140,7 +140,7 @@ class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration,
 
         config = context.config
         auth = (config.login, config.password) if config.login or config.password else None
-        return WebdavFileSystem(config.base_url, auth=auth, **cache_options)
+        return WebdavFileSystem(config.base_url, auth=auth)
 
     def _to_filesystem_path(self, path: str, config: WebDavFileSourceConfiguration) -> str:
         if path in ("", "/"):
@@ -152,9 +152,6 @@ class WebDavFilesSource(FsspecFilesSource[WebDavFileSourceTemplateConfiguration,
             return "/"
         return filesystem_path if filesystem_path.startswith("/") else f"/{filesystem_path}"
 
-    def _get_cache_options(self, config: WebDavFileSourceConfiguration) -> dict[str, Any]:
-        # webdav4 does not accept fsspec listing-cache constructor kwargs and forwards unexpected values to its client implementation.
-        return {}
 
 
 __all__ = ("WebDavFilesSource",)
