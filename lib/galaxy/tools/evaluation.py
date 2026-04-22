@@ -20,6 +20,7 @@ from packaging.version import Version
 from galaxy import model
 from galaxy.authnz.util import provider_name_to_backend
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.datasets import DeferrableObjectsT
 from galaxy.job_execution.setup import ensure_configs_directory
@@ -303,10 +304,14 @@ class ToolEvaluator:
         undeferred_objects: dict[str, DeferrableObjectsT] = {}
         transient_directory = os.path.join(job_working_directory, "inputs")
         safe_makedirs(transient_directory)
+        user_context = ProvidesFileSourcesUserContext(
+            WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        )
         dataset_materializer = materializer_factory(
             False,  # unattached to a session.
             transient_directory=transient_directory,
             file_sources=self.app.file_sources,
+            user_context=user_context,
         )
         for key, value in deferred_objects.items():
             if isinstance(value, model.DatasetInstance):

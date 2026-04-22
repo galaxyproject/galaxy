@@ -70,6 +70,7 @@ from galaxy.managers.jobs import (
     JobManager as JobQueryManager,
     JobSearch,
 )
+from galaxy.managers.landing import LandingRequestManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
@@ -367,7 +368,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.config.tool_configs.append(self.config.migrated_tools_config)
 
     def _configure_toolbox(self):
-        self.citations_manager = CitationsManager(self)
+        self.citations_manager = self._register_singleton(CitationsManager, CitationsManager(self))
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         self.dynamic_tool_manager = DynamicToolManager(self)
@@ -647,6 +648,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.dataset_collection_manager = self._register_singleton(DatasetCollectionManager)
         self.workflow_manager = self._register_singleton(WorkflowsManager)
         self.workflow_contents_manager = self._register_singleton(WorkflowContentsManager)
+        self.landing_request_manager = self._register_singleton(LandingRequestManager)
         self.library_folder_manager = self._register_singleton(FolderManager)
         self.library_manager = self._register_singleton(LibraryManager)
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)

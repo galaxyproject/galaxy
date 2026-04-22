@@ -95,9 +95,11 @@ def _validate_column_definition(column_definition: SampleSheetColumnDefinition):
 
 
 def validate_row(
-    row: SampleSheetRow, column_definitions: Optional[SampleSheetColumnDefinitions], element_identifiers: list[str]
+    row: Optional[SampleSheetRow],
+    column_definitions: Optional[SampleSheetColumnDefinitions],
+    element_identifiers: list[str],
 ):
-    if column_definitions is None:
+    if not column_definitions:
         return
     if row is None:
         raise RequestParameterInvalidException(

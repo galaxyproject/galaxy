@@ -334,6 +334,10 @@ fi
 xunit_report_file=""
 structured_data_report_file=""
 structured_data_html=0
+# Detect blocking I/O in async handlers during tests via aiocop
+# (https://github.com/Feverup/aiocop).  Set to 0 to disable.
+GALAXY_TEST_AIOCOP=${GALAXY_TEST_AIOCOP:-1}
+export GALAXY_TEST_AIOCOP
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
 if [ "$SKIP_CLIENT_BUILD" = "1" ]; then
     skip_client_build="--skip-client-build"

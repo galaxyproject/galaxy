@@ -71,7 +71,7 @@ export function mapToPasteUrlUpload(item: PasteUrlItem, targetHistoryId: string)
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
         deferred: item.deferred,
-        url: item.url,
+        url: item.url.trim(),
     };
 }
 
