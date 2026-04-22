@@ -310,7 +310,7 @@ async function onCancel() {
             :invocation-create-time="invocation.create_time"
             :history-id="invocation.history_id">
             <template v-slot:middle-content>
-                <div class="progress-bars mx-1">
+                <div class="w-100 mx-1">
                     <ProgressBar
                         v-if="!stepCount"
                         note="Loading step state summary..."
@@ -508,22 +508,6 @@ async function onCancel() {
 .invocation-export-tab {
     .nav-link.disabled {
         background-color: #e9edf0;
-    }
-}
-</style>
-
-<style scoped lang="scss">
-.progress-bars {
-    // progress bar shrinks to fit divs on either side
-    flex-grow: 1;
-    flex-shrink: 1;
-    max-width: 50%;
-
-    .steps-progress,
-    .jobs-progress {
-        // truncate text in progress bars
-        white-space: nowrap;
-        overflow: hidden;
     }
 }
 </style>
