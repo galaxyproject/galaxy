@@ -788,13 +788,19 @@ _TUS_PREFIXES = (
 )
 
 
-def _rebind_tus_routes(app: FastAPI, gx_app) -> None:
+def _rebind_tus_routes(app: FastAPI, gx_app, original_lifespan_context) -> None:
     """Replace TUS routes so they point at the current launch's upload store.
 
     ``create_tus_router`` bakes ``files_dir`` / ``max_size`` into the route
     handlers at build time, so the cached app's TUS routes would otherwise
     keep writing to the first launch's ``tus_upload_store`` — a temp
     directory that's removed when that test class tears down.
+
+    Restores ``router.lifespan_context`` to the snapshot taken at first build
+    before re-calling ``include_tus``; FastAPI's ``include_router`` wraps
+    ``lifespan_context`` on every call, so without this the chain would grow
+    by two layers per launch and blow Python's recursion limit after a few
+    hundred test classes.
     """
     root_mount = _find_root_wsgi_mount(app)
     tus_routes = [r for r in app.router.routes if _is_tus_route(r)]
@@ -802,6 +808,7 @@ def _rebind_tus_routes(app: FastAPI, gx_app) -> None:
         app.router.routes.remove(r)
     if root_mount is not None:
         app.router.routes.remove(root_mount)
+    app.router.lifespan_context = original_lifespan_context
     include_tus(app, gx_app)
     if root_mount is not None:
         app.router.routes.append(root_mount)
@@ -832,7 +839,7 @@ def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
     add_galaxy_middleware(app, gx_app)
 
 
-def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app) -> None:
+def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app, original_lifespan_context) -> None:
     """Re-bind the per-launch pieces of a cached FastAPI app.
 
     Galaxy routes resolve the current ``gx_app`` via the module global
@@ -861,7 +868,7 @@ def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app) -> None:
     new_wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", new_wsgi_handler.executor.shutdown))
     root_mount.app = new_wsgi_handler  # type: ignore[assignment]
-    _rebind_tus_routes(app, gx_app)
+    _rebind_tus_routes(app, gx_app, original_lifespan_context)
     _rebind_galaxy_middleware(app, gx_app)
     app.state.route_name_index = build_route_name_index(app)
     app.openapi_schema = None
@@ -897,8 +904,9 @@ def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
     if existing is None:
         app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
         slot["app"] = app
+        slot["lifespan_context"] = app.router.lifespan_context
         return app
-    _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app)
+    _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app, slot["lifespan_context"])
     return existing
 
 
