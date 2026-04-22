@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faDownload, faInfoCircle, faRedo, faTable } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faInfoCircle, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRoute } from "vue-router/composables";
@@ -9,6 +9,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import RerunJobButton from "@/components/JobInformation/RerunJobButton.vue";
 
 const route = useRoute();
 
@@ -17,9 +18,6 @@ const props = defineProps<{
 }>();
 
 const downloadUrl = computed(() => `${getAppRoot()}api/dataset_collections/${props.dsc.id}/download`);
-const rerunUrl = computed(() =>
-    props.dsc.job_source_type == "Job" ? `/root?job_id=${props.dsc.job_source_id}` : null,
-);
 const showCollectionDetailsUrl = computed(() =>
     props.dsc.job_source_type == "Job" ? `/jobs/${props.dsc.job_source_id}/view` : null,
 );
@@ -57,17 +55,9 @@ const sheetUrl = computed(() => `/collection/${props.dsc.id}/sheet`);
                     <FontAwesomeIcon fixed-width :icon="faInfoCircle" />
                     <span>Show Details</span>
                 </GButton>
-                <GButton
-                    v-if="rerunUrl"
-                    title="Rerun job"
-                    size="small"
-                    color="blue"
-                    transparent
-                    :pressed="route.fullPath === rerunUrl"
-                    :to="rerunUrl">
-                    <FontAwesomeIcon fixed-width :icon="faRedo" />
-                    <span>Run Job Again</span>
-                </GButton>
+                <RerunJobButton
+                    v-if="props.dsc.job_source_type === 'Job' && props.dsc.job_source_id"
+                    :job-id="props.dsc.job_source_id" />
                 <GButton
                     v-if="hasSampleSheet && sheetUrl"
                     title="View Sample Sheet"
