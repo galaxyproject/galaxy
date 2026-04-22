@@ -2,12 +2,15 @@
 import { faDownload, faInfoCircle, faRedo, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute } from "vue-router/composables";
 
 import type { HDCASummary } from "@/api";
 import { getAppRoot } from "@/onload/loadConfig";
 
-const router = useRouter();
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+
+const route = useRoute();
 
 const props = defineProps<{
     dsc: HDCASummary; // typescript recognizes HDCADetailed IS_A HDCASummary
@@ -26,62 +29,68 @@ const hasSampleSheet = computed(() => {
     return props.dsc.collection_type && props.dsc.collection_type.startsWith("sample_sheet");
 });
 
-const sheetUrl = computed(() => {
-    return `${getAppRoot()}collection/${props.dsc.id}/sheet`;
-});
-
-function onDownload() {
-    window.location.href = downloadUrl.value;
-}
+const sheetUrl = computed(() => `/collection/${props.dsc.id}/sheet`);
 </script>
 <template>
     <section>
         <nav class="content-operations d-flex justify-content-between bg-secondary">
-            <b-button-group>
-                <b-button
+            <GButtonGroup class="collection-operations-btn-group">
+                <GButton
                     title="Download Collection"
                     :disabled="disableDownload"
-                    class="rounded-0 text-decoration-none"
-                    size="sm"
-                    variant="link"
-                    :href="downloadUrl"
-                    @click="onDownload">
-                    <FontAwesomeIcon class="mr-1" :icon="faDownload" />
+                    size="small"
+                    color="blue"
+                    transparent
+                    :href="downloadUrl">
+                    <FontAwesomeIcon fixed-width :icon="faDownload" />
                     <span>Download</span>
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="showCollectionDetailsUrl"
-                    class="collection-job-details-btn px-1"
+                    class="collection-job-details-btn"
                     title="Show Details"
-                    size="sm"
-                    variant="link"
-                    :href="showCollectionDetailsUrl"
-                    @click.prevent.stop="router.push(showCollectionDetailsUrl)">
-                    <FontAwesomeIcon class="mr-1" :icon="faInfoCircle" />
+                    size="small"
+                    color="blue"
+                    transparent
+                    :pressed="route.fullPath === showCollectionDetailsUrl"
+                    :to="showCollectionDetailsUrl">
+                    <FontAwesomeIcon fixed-width :icon="faInfoCircle" />
                     <span>Show Details</span>
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="rerunUrl"
                     title="Rerun job"
-                    class="rounded-0 text-decoration-none"
-                    size="sm"
-                    variant="link"
-                    :href="rerunUrl"
-                    @click.prevent.stop="router.push(rerunUrl)">
-                    <FontAwesomeIcon class="mr-1" :icon="faRedo" />
+                    size="small"
+                    color="blue"
+                    transparent
+                    :pressed="route.fullPath === rerunUrl"
+                    :to="rerunUrl">
+                    <FontAwesomeIcon fixed-width :icon="faRedo" />
                     <span>Run Job Again</span>
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="hasSampleSheet && sheetUrl"
-                    class="rounded-0 text-decoration-none"
-                    size="sm"
-                    variant="link"
-                    :href="sheetUrl"
-                    @click.prevent.stop="router.push(sheetUrl)">
-                    <FontAwesomeIcon class="mr-1" :icon="faTable" />
+                    title="View Sample Sheet"
+                    size="small"
+                    color="blue"
+                    transparent
+                    :pressed="route.fullPath === sheetUrl"
+                    :to="sheetUrl">
+                    <FontAwesomeIcon fixed-width :icon="faTable" />
                     <span>View Sheet</span>
-                </b-button>
-            </b-button-group>
+                </GButton>
+            </GButtonGroup>
         </nav>
     </section>
 </template>
+
+<style scoped lang="scss">
+.collection-operations-btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    :deep(.g-button) {
+        border-radius: 0;
+        white-space: nowrap;
+    }
+}
+</style>
