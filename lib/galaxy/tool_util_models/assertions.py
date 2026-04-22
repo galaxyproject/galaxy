@@ -348,7 +348,7 @@ class base_has_line_matching_model_relaxed(AssertionModel):
 class has_line_matching_model(base_has_line_matching_model):
     r"""Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
-    the assertion checks for exactly n occurences."""
+    the assertion checks for exactly n occurrences."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has Line Matching")
     that: Literal["has_line_matching"] = Field("has_line_matching", title="That")
@@ -364,7 +364,7 @@ class has_line_matching_model_nested(AssertionModel):
 class has_line_matching_model_relaxed(base_has_line_matching_model_relaxed):
     r"""Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
-    the assertion checks for exactly n occurences."""
+    the assertion checks for exactly n occurrences."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has Line Matching (Relaxed)")
     that: Literal["has_line_matching"] = Field("has_line_matching", title="That")
@@ -790,8 +790,8 @@ class base_has_text_matching_model_relaxed(AssertionModel):
 class has_text_matching_model(base_has_text_matching_model):
     r"""Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
-    If n is given the assertion checks for exacly n (nonoverlapping)
-    occurences."""
+    If n is given the assertion checks for exactly n (nonoverlapping)
+    occurrences."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has Text Matching")
     that: Literal["has_text_matching"] = Field("has_text_matching", title="That")
@@ -807,8 +807,8 @@ class has_text_matching_model_nested(AssertionModel):
 class has_text_matching_model_relaxed(base_has_text_matching_model_relaxed):
     r"""Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
-    If n is given the assertion checks for exacly n (nonoverlapping)
-    occurences."""
+    If n is given the assertion checks for exactly n (nonoverlapping)
+    occurrences."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has Text Matching (Relaxed)")
     that: Literal["has_text_matching"] = Field("has_text_matching", title="That")
@@ -1013,7 +1013,7 @@ class has_n_columns_model(base_has_n_columns_model):
 
     For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
     Number of columns can optionally also be specified with ``delta``. Alternatively the
-    range of expected occurences can be specified by ``min`` and/or ``max``.
+    range of expected occurrences can be specified by ``min`` and/or ``max``.
 
     Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
     can be specified (``comment``, default is empty string). The first non-comment
@@ -1036,7 +1036,7 @@ class has_n_columns_model_relaxed(base_has_n_columns_model_relaxed):
 
     For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
     Number of columns can optionally also be specified with ``delta``. Alternatively the
-    range of expected occurences can be specified by ``min`` and/or ``max``.
+    range of expected occurrences can be specified by ``min`` and/or ``max``.
 
     Optionally a column separator (``sep``, default is ``       ``) `and comment character(s)
     can be specified (``comment``, default is empty string). The first non-comment
@@ -1802,7 +1802,7 @@ class has_n_elements_with_path_model(base_has_n_elements_with_path_model):
     ```
 
     Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
-    can be used to specify the range of the expected number of occurences.
+    can be used to specify the range of the expected number of occurrences.
     With ``negate`` the result of the assertion can be inverted."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has N Elements With Path")
@@ -1827,7 +1827,7 @@ class has_n_elements_with_path_model_relaxed(base_has_n_elements_with_path_model
     ```
 
     Alternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes
-    can be used to specify the range of the expected number of occurences.
+    can be used to specify the range of the expected number of occurrences.
     With ``negate`` the result of the assertion can be inverted."""
 
     model_config = ConfigDict(extra="forbid", title="Assert Has N Elements With Path (Relaxed)")
@@ -2033,7 +2033,7 @@ class base_xml_element_model_relaxed(AssertionModel):
 class xml_element_model(base_xml_element_model):
     r"""Assert if the XML file contains element(s) or tag(s) with the specified
     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
-    or ``min`` and ``max`` are given also the number of occurences is checked.
+    or ``min`` and ``max`` are given also the number of occurrences is checked.
 
     ```xml
     <assert_contents>
@@ -2043,7 +2043,7 @@ class xml_element_model(base_xml_element_model):
     </assert_contents>
     ```
 
-    With ``negate="true"`` the outcome of the assertions wrt the precence and number
+    With ``negate="true"`` the outcome of the assertions wrt the presence and number
     of ``path`` can be negated. If there are any sub assertions then check them against
 
     - the content of the attribute ``attribute``
@@ -2058,7 +2058,7 @@ class xml_element_model(base_xml_element_model):
     ```
 
     Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
-    If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+    If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
 
     Note that all other XML assertions can be expressed by this assertion (Galaxy
     also implements the other assertions by calling this one)."""
@@ -2077,7 +2077,7 @@ class xml_element_model_nested(AssertionModel):
 class xml_element_model_relaxed(base_xml_element_model_relaxed):
     r"""Assert if the XML file contains element(s) or tag(s) with the specified
     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
-    or ``min`` and ``max`` are given also the number of occurences is checked.
+    or ``min`` and ``max`` are given also the number of occurrences is checked.
 
     ```xml
     <assert_contents>
@@ -2087,7 +2087,7 @@ class xml_element_model_relaxed(base_xml_element_model_relaxed):
     </assert_contents>
     ```
 
-    With ``negate="true"`` the outcome of the assertions wrt the precence and number
+    With ``negate="true"`` the outcome of the assertions wrt the presence and number
     of ``path`` can be negated. If there are any sub assertions then check them against
 
     - the content of the attribute ``attribute``
@@ -2102,7 +2102,7 @@ class xml_element_model_relaxed(base_xml_element_model_relaxed):
     ```
 
     Sub-assertions are not subject to the ``negate`` attribute of ``xml_element``.
-    If ``all`` is ``true`` then the sub assertions are checked for all occurences.
+    If ``all`` is ``true`` then the sub assertions are checked for all occurrences.
 
     Note that all other XML assertions can be expressed by this assertion (Galaxy
     also implements the other assertions by calling this one)."""

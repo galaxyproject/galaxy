@@ -51,7 +51,7 @@ def assert_has_n_columns(
 
     For instance, ``<has_n_columns n="3"/>``. The assertion tests only the first line.
     Number of columns can optionally also be specified with ``delta``. Alternatively the
-    range of expected occurences can be specified by ``min`` and/or ``max``.
+    range of expected occurrences can be specified by ``min`` and/or ``max``.
 
     Optionally a column separator (``sep``, default is ``\t``) `and comment character(s)
     can be specified (``comment``, default is empty string). The first non-comment
