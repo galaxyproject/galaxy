@@ -1,8 +1,6 @@
 """Dependency injection framework for Galaxy-type apps."""
 
 from typing import (
-    Any,
-    cast,
     Optional,
     TypeVar,
 )
@@ -28,13 +26,6 @@ class Container(LagomContainer):
             instance = self[dep_type]
         self[dep_type] = instance
         return self[dep_type]
-
-    def _register_optional_singleton(self, dep_type: type[T], instance: Optional[T] = None) -> Optional[T]:
-        """
-        Register a singleton that might be None (e.g. optional based on config)
-        """
-        self[dep_type] = cast(Any, instance)
-        return instance
 
     def _register_abstract_singleton(
         self, abstract_type: type[T], concrete_type: type[T], instance: Optional[T] = None

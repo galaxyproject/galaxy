@@ -423,7 +423,6 @@ def fetch_data(
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
-    authnz_manager: Optional[AuthnzManager] = None,
 ) -> Optional[str]:
     if setup_return is None:
         return None
@@ -431,16 +430,6 @@ def fetch_data(
     assert job
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
-
-    # Refresh OIDC tokens before fetching
-    if authnz_manager and job.user:
-        authnz_manager.refresh_expiring_oidc_tokens_for_job(sa_session, job.user)
-
-    # Recompute file_sources_dict so it reflects any freshly-refreshed tokens.
-    tool_job_working_directory, request_path, _ = setup_return
-    fresh_file_sources_dict = mini_job_wrapper.job_io.file_sources_dict
-    setup_return = (tool_job_working_directory, request_path, fresh_file_sources_dict)
-
     return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
 
 
