@@ -1,8 +1,5 @@
 import os
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import datetime
 from functools import partial
 from typing import (
     Optional,
@@ -10,6 +7,11 @@ from typing import (
     Union,
 )
 
+from sqlalchemy import (
+    case,
+    func,
+    select,
+)
 from sqlalchemy.orm import Session
 
 import galaxy.workflow.schedulers
@@ -36,6 +38,10 @@ from galaxy.util.monitors import Monitors
 from galaxy.util.xml_macros import load
 from galaxy.web_stack.handlers import ConfiguresHandlers
 from galaxy.web_stack.message import WorkflowSchedulingMessage
+from galaxy.workflow.modules import (
+    DependencyType,
+    SchedulingDependency,
+)
 
 if TYPE_CHECKING:
     from galaxy.structured_app import MinimalManagerApp
@@ -49,7 +55,6 @@ log = get_logger(__name__)
 
 DEFAULT_SCHEDULER_ID = "default"  # well actually this should be called DEFAULT_DEFAULT_SCHEDULER_ID...
 DEFAULT_SCHEDULER_PLUGIN_TYPE = "core"
-DEFAULT_SCHEDULER_BACKFILL_SECONDS = int(os.getenv("GALAXY_SCHEDULER_BACKFILL_SECONDS", 300))
 
 EXCEPTION_MESSAGE_SHUTDOWN = "Exception raised while attempting to shutdown workflow scheduler."
 EXCEPTION_MESSAGE_NO_SCHEDULERS = "Failed to defined workflow schedulers - no workflow schedulers defined."
@@ -317,12 +322,7 @@ class WorkflowRequestMonitor(Monitors):
         )
         self.invocation_grabber = None
         self.update_time_tracking_dict: dict[int, datetime] = {}
-        backfill_seconds = (
-            min(app.config.maximum_workflow_invocation_duration, DEFAULT_SCHEDULER_BACKFILL_SECONDS)
-            if app.config.maximum_workflow_invocation_duration > 0
-            else DEFAULT_SCHEDULER_BACKFILL_SECONDS
-        )
-        self.timedelta = timedelta(seconds=backfill_seconds)
+        self.dependency_tracking_dict: dict[int, set[SchedulingDependency]] = {}
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
         handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
@@ -338,27 +338,109 @@ class WorkflowRequestMonitor(Monitors):
             )
 
     def ready_to_schedule_more(self, invocation: model.WorkflowInvocation):
-        # Improve reactivity of scheduling using the history update_time as a heuristic.
-        # If there wasn't a change in the history we're unlikely to be able to make more progress.
+        # After process restart, in-memory dicts are empty — always schedule
+        # the first iteration so dependencies get (re-)captured.
         if invocation.id not in self.update_time_tracking_dict:
             return True
-        else:
-            last_schedule_time = self.update_time_tracking_dict[invocation.id]
-            last_history_update_time = invocation.history.update_time
-            do_schedule = last_history_update_time > last_schedule_time
-            if not do_schedule and (
-                invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time()
-            ):
-                do_schedule = invocation_step_update_time > last_schedule_time
-            if not do_schedule and (datetime.now() - last_schedule_time) > self.timedelta:
-                # If we haven't scheduled in a while, schedule anyway.
-                log.debug(
-                    "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
-                    invocation.id,
-                    (datetime.now() - last_schedule_time).total_seconds(),
+
+        # Always allow scheduling if maximum duration has been exceeded,
+        # so invoke() can fail the invocation with the appropriate state.
+        maximum_duration = getattr(self.app.config, "maximum_workflow_invocation_duration", -1)
+        if maximum_duration > 0 and invocation.seconds_since_created > maximum_duration:
+            return True
+
+        last_schedule_time = self.update_time_tracking_dict[invocation.id]
+
+        # Check tracked dependencies — most precise signal
+        dependencies = self.dependency_tracking_dict.get(invocation.id)
+        if dependencies and self._any_dependency_satisfied(dependencies, invocation):
+            return True
+
+        # Fallback: check history update_time (covers HDA/HDCA inserts from DB triggers,
+        # also catches PartialJobExecution which creates new HDAs without recording a dependency)
+        if invocation.history.update_time > last_schedule_time:
+            return True
+
+        # Fallback: check workflow_invocation_step.update_time (catches pause step
+        # actions set via API, and job completions via Job.set_final_state)
+        if invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time():
+            if invocation_step_update_time > last_schedule_time:
+                return True
+
+        return False
+
+    def _any_dependency_satisfied(
+        self, dependencies: set[SchedulingDependency], invocation: model.WorkflowInvocation
+    ) -> bool:
+        session = Session.object_session(invocation)
+        if session is None:
+            return True
+
+        # Group dependencies by type for batch queries
+        job_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.JOB}
+        hda_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDA}
+        hdca_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.HDCA}
+        step_ids = {d.id for d in dependencies if d.dependency_type == DependencyType.WORKFLOW_INVOCATION_STEP}
+
+        if job_ids:
+            terminal_count = session.execute(
+                select(func.count())
+                .select_from(model.Job)
+                .where(
+                    model.Job.id.in_(job_ids),
+                    model.Job.state.in_(model.Job.terminal_states),
                 )
-                do_schedule = True
-            return do_schedule
+            ).scalar()
+            if terminal_count:
+                return True
+
+        if hda_ids:
+            # HDA.state = HDA._state if set, else Dataset.state
+            ready_count = session.execute(
+                select(func.count())
+                .select_from(model.HistoryDatasetAssociation)
+                .join(model.Dataset)
+                .where(
+                    model.HistoryDatasetAssociation.id.in_(hda_ids),
+                    case(
+                        (
+                            model.HistoryDatasetAssociation._state.isnot(None),
+                            model.HistoryDatasetAssociation._state,
+                        ),
+                        else_=model.Dataset.state,
+                    ).notin_(model.Dataset.non_ready_states),
+                )
+            ).scalar()
+            if ready_count:
+                return True
+
+        if hdca_ids:
+            populated_count = session.execute(
+                select(func.count())
+                .select_from(model.HistoryDatasetCollectionAssociation)
+                .join(model.DatasetCollection)
+                .where(
+                    model.HistoryDatasetCollectionAssociation.id.in_(hdca_ids),
+                    model.DatasetCollection.populated_state == model.DatasetCollection.populated_states.OK,
+                )
+            ).scalar()
+            if populated_count:
+                return True
+
+        if step_ids:
+            # Check if any tracked step has had its action set (e.g. pause step reviewed)
+            action_count = session.execute(
+                select(func.count())
+                .select_from(model.WorkflowInvocationStep)
+                .where(
+                    model.WorkflowInvocationStep.id.in_(step_ids),
+                    model.WorkflowInvocationStep.action.isnot(None),
+                )
+            ).scalar()
+            if action_count:
+                return True
+
+        return False
 
     def __monitor(self):
         to_monitor = self.workflow_scheduling_manager.active_workflow_schedulers
@@ -445,10 +527,12 @@ class WorkflowRequestMonitor(Monitors):
                     workflow_invocation.mark_cancelled()
                     session.commit()
                     self.update_time_tracking_dict.pop(invocation_id, None)
+                    self.dependency_tracking_dict.pop(invocation_id, None)
                     return False
 
                 if not workflow_invocation or not workflow_invocation.active:
                     self.update_time_tracking_dict.pop(invocation_id, None)
+                    self.dependency_tracking_dict.pop(invocation_id, None)
                     return False
 
                 # This ensures we're only ever working on the 'first' active
@@ -460,10 +544,15 @@ class WorkflowRequestMonitor(Monitors):
                             return False
                 if self.ready_to_schedule_more(workflow_invocation):
                     self.update_time_tracking_dict[invocation_id] = datetime.now()
-                    workflow_scheduler.schedule(workflow_invocation)
+                    scheduling_deps = workflow_scheduler.schedule(workflow_invocation)
+                    if scheduling_deps:
+                        self.dependency_tracking_dict[invocation_id] = scheduling_deps
+                    else:
+                        self.dependency_tracking_dict.pop(invocation_id, None)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
                 self.update_time_tracking_dict.pop(invocation_id, None)
+                self.dependency_tracking_dict.pop(invocation_id, None)
                 # TODO: eventually fail this - or fail it right away?
                 log.exception("Exception raised while attempting to schedule workflow request.")
                 return False

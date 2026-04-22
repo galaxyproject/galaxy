@@ -8,6 +8,8 @@ import math
 import re
 from collections import defaultdict
 from collections.abc import Iterable
+from dataclasses import dataclass
+from enum import Enum
 from typing import (
     Any,
     cast,
@@ -178,7 +180,7 @@ def to_cwl(
         if step:
             if not value.dataset.in_ready_state():
                 why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-                raise DelayedWorkflowEvaluation(why=why)
+                raise DelayedWorkflowEvaluation(why=why, dependency=SchedulingDependency(DependencyType.HDA, value.id))
             if not value.is_ok:
                 raise FailWorkflowEvaluation(
                     why=InvocationFailureDatasetFailed(
@@ -907,6 +909,9 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
+        # Propagate scheduling dependencies from subworkflow to parent
+        if subworkflow_progress.scheduling_dependencies:
+            progress.scheduling_dependencies.update(subworkflow_progress.scheduling_dependencies)
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
             workflow_output_label = (
@@ -1937,7 +1942,10 @@ class PauseModule(WorkflowModule):
                     )
                 )
         delayed_why = "workflow paused at this step waiting for review"
-        raise DelayedWorkflowEvaluation(why=delayed_why)
+        dependency = None
+        if invocation_step:
+            dependency = SchedulingDependency(DependencyType.WORKFLOW_INVOCATION_STEP, invocation_step.id)
+        raise DelayedWorkflowEvaluation(why=delayed_why, dependency=dependency)
 
     def do_invocation_step_action(self, step, action):
         """Update or set the workflow invocation state action - generic
@@ -3113,9 +3121,23 @@ module_types = dict(
 module_factory = WorkflowModuleFactory(module_types)
 
 
+class DependencyType(str, Enum):
+    JOB = "job"
+    HDA = "hda"
+    HDCA = "hdca"
+    WORKFLOW_INVOCATION_STEP = "workflow_invocation_step"
+
+
+@dataclass(frozen=True)
+class SchedulingDependency:
+    dependency_type: DependencyType
+    id: int
+
+
 class DelayedWorkflowEvaluation(Exception):
-    def __init__(self, why=None):
+    def __init__(self, why=None, dependency: Optional[SchedulingDependency] = None):
         self.why = why
+        self.dependency = dependency
 
 
 class CancelWorkflowEvaluation(Exception):

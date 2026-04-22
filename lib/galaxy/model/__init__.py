@@ -2383,17 +2383,27 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_final_state(self, final_state):
         self.set_state(final_state)
-        # TODO: migrate to where-in subqueries?
+        sa_session = required_object_session(self)
+        update_time = now()
+        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
+        params = {"job_id": self.id, "update_time": update_time}
+        # Update workflow_invocation_step for direct job_id
         statement = text("""
             UPDATE workflow_invocation_step
             SET update_time = :update_time
             WHERE job_id = :job_id;
         """)
-        sa_session = required_object_session(self)
-        update_time = now()
-        self.update_hdca_update_time_for_job(update_time=update_time, sa_session=sa_session)
-        params = {"job_id": self.id, "update_time": update_time}
         sa_session.execute(statement, params)
+        # Also update via implicit_collection_jobs link
+        statement_icj = text("""
+            UPDATE workflow_invocation_step
+            SET update_time = :update_time
+            WHERE implicit_collection_jobs_id IN (
+                SELECT implicit_collection_jobs_id FROM implicit_collection_jobs_job_association
+                WHERE job_id = :job_id
+            );
+        """)
+        sa_session.execute(statement_icj, params)
 
     def get_destination_configuration(self, dest_params, config, key, default=None):
         """Get a destination parameter that can be defaulted back
