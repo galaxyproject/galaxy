@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { faSquare } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import { deleteJob, type JobBaseModel, NON_TERMINAL_STATES } from "@/api/jobs";
+import { isRegisteredUser } from "@/api";
+import { deleteJob, type JobBaseModel, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
 import { useToast } from "@/composables/toast";
 import { getHeaderClass, iconClasses } from "@/composables/useInvocationGraph";
+import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GButton from "../BaseComponents/GButton.vue";
 
 const props = defineProps<{
-    job: JobBaseModel;
+    job: JobBaseModel | ShowFullJobResponse;
 }>();
 
 const badgeClass = computed(() => {
@@ -25,9 +28,18 @@ const stateIcon = computed(() => iconClasses[props.job.state] || null);
 
 const Toast = useToast();
 
+const { currentUser } = storeToRefs(useUserStore());
+
 /** Whether the current user owns the job (can stop it) */
 const userOwnsJob = computed(() => {
-    return true; // TODO: For testing i have true, will have proper implementation later
+    if (!currentUser.value || !isRegisteredUser(currentUser.value)) {
+        return false;
+    }
+    if ("user_id" in props.job && props.job.user_id) {
+        return props.job.user_id === currentUser.value.id;
+    }
+    // `user_id` not available on `JobBaseModel` — caller context implies ownership
+    return true;
 });
 
 /** Whether to render this button
