@@ -87,7 +87,7 @@ junit-xml==1.9
 keyring==25.7.0 ; platform_machine != 'ppc64le' and platform_machine != 's390x'
 kiwisolver==1.5.0
 librt==0.9.0 ; platform_python_implementation != 'PyPy'
-lxml==6.0.4
+lxml==6.1.0
 markdown-it-py==3.0.0 ; python_full_version < '3.11'
 markdown-it-py==4.0.0 ; python_full_version >= '3.11'
 markdown-it-reporter==0.0.2
