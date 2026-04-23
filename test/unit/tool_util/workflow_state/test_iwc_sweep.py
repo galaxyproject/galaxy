@@ -58,9 +58,10 @@ def _discover_tests_files() -> List[str]:
     iwc_dir = os.environ.get(IWC_ENV, "")
     if not iwc_dir:
         return []
+    workflows_root = Path(iwc_dir) / "workflows"
     results: List[str] = []
     for suffix in _IWC_TESTS_SUFFIXES:
-        results.extend(str(p) for p in Path(iwc_dir).rglob(f"workflows/**/*{suffix}") if p.is_file())
+        results.extend(str(p) for p in workflows_root.rglob(f"*{suffix}") if p.is_file())
     return sorted(set(results))
 
 

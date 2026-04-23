@@ -213,6 +213,8 @@ def lint_single(
         workflow=workflow_name,
         lint_errors=len(lint_context.error_messages),
         lint_warnings=len(lint_context.warn_messages),
+        lint_error_messages=[str(m) for m in lint_context.error_messages],
+        lint_warning_messages=[str(m) for m in lint_context.warn_messages],
         results=results,
     )
 
@@ -289,6 +291,8 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         workflow=options.workflow_path,
         lint_errors=n_lint_errors,
         lint_warnings=n_lint_warnings,
+        lint_error_messages=[str(m) for m in lint_context.error_messages],
+        lint_warning_messages=[str(m) for m in lint_context.warn_messages],
         results=results,
     )
     tree_report = wrap_single_lint(options.workflow_path, n_lint_errors, n_lint_warnings, results)
