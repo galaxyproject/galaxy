@@ -356,8 +356,8 @@ class BaseGalaxyAgent(ABC):
 
         if ctx_type == "job":
             job_id = _s(ctx.get("jobId", "unknown"))
-            tool_id = ctx.get("toolId")
-            tool_str = f" (tool: {_s(tool_id)})" if tool_id else ""
+            job_tool_id = ctx.get("toolId")
+            tool_str = f" (tool: {_s(job_tool_id)})" if job_tool_id else ""
             return f"The user is viewing job {job_id}{tool_str}."
 
         return f"The user is viewing: {_s(ctx_type)}"
