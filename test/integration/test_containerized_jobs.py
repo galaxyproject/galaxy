@@ -156,6 +156,8 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.pwd.endswith("/working")
         assert job_env.home.startswith(self.jobs_directory)
         assert job_env.home.endswith("/home")
+        assert job_env.jobconf_env_var == "UNSET"
+        assert job_env.container_env_var == "CONTAINER_VAR_VALUE"
 
     def test_container_job_environment_legacy(self) -> None:
         """
@@ -173,6 +175,8 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.pwd.endswith("/working")
         assert not job_env.home.startswith(self.jobs_directory)
         assert not job_env.home.endswith("/home")
+        assert job_env.jobconf_env_var == "UNSET"
+        assert job_env.container_env_var == "CONTAINER_VAR_VALUE"
 
     def test_container_job_environment_explicit_shared_home(self) -> None:
         """
@@ -185,6 +189,8 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.pwd.endswith("/working")
         assert not job_env.home.startswith(self.jobs_directory)
         assert not job_env.home.endswith("/home"), job_env.home
+        assert job_env.jobconf_env_var == "UNSET"
+        assert job_env.container_env_var == "CONTAINER_VAR_VALUE"
 
     def test_container_job_environment_explicit_isolated_home(self) -> None:
         """
@@ -197,6 +203,8 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.pwd.endswith("/working")
         assert job_env.home.startswith(self.jobs_directory)
         assert job_env.home.endswith("/home"), job_env.home
+        assert job_env.jobconf_env_var == "UNSET"
+        assert job_env.container_env_var == "CONTAINER_VAR_VALUE"
 
     def test_build_mulled(self) -> None:
         """
