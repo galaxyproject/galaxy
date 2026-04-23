@@ -8,6 +8,7 @@ import { canMutateHistory } from "@/api";
 import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
 import { getWorkflowInfo } from "@/api/workflows";
 import { copyWorkflow } from "@/components/Workflow/workflows.services";
+import { useConfig } from "@/composables/config";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -27,6 +28,7 @@ const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
 const userStore = useUserStore();
 const router = useRouter();
+const { config } = useConfig();
 
 interface Props {
     workflowId: string;
@@ -237,7 +239,10 @@ defineExpose({
         <BAlert v-if="workflowError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ workflowError }}
-            <WorkflowMissingToolsRequest :missing-tool-ids="missingToolIds" :workflow-name="workflowName" />
+            <WorkflowMissingToolsRequest
+                v-if="config?.enable_tool_request_form"
+                :missing-tool-ids="missingToolIds"
+                :workflow-id="props.workflowId" />
         </BAlert>
         <span v-else>
             <BAlert v-if="loading" variant="info" show>
