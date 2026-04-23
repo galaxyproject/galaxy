@@ -194,8 +194,11 @@ function _convertValue(node, value) {
         return _convertDataValue(value, node.multiple);
     }
     if (node.type === "data_column") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         if (Array.isArray(value)) {
             return value.map((v) => (typeof v === "string" ? parseInt(v, 10) : v));
@@ -203,14 +206,20 @@ function _convertValue(node, value) {
         return typeof value === "string" ? parseInt(value, 10) : value;
     }
     if (node.type === "integer") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         return typeof value === "string" ? parseInt(value, 10) : value;
     }
     if (node.type === "float") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         return typeof value === "string" ? parseFloat(value) : value;
     }
