@@ -102,9 +102,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         self._wait_for_sse_event_after(baseline_ts)
         # Use xpath (works on both Selenium and Playwright backends); `text=` is a
         # Playwright engine prefix that Selenium's css-selector path rejects.
-        self.wait_for_xpath_visible(
-            f'//*[contains(text(), "{subject}")]', timeout=SSE_EVENT_TIMEOUT_SECONDS
-        )
+        self.wait_for_xpath_visible(f'//*[contains(text(), "{subject}")]', timeout=SSE_EVENT_TIMEOUT_SECONDS)
         self.screenshot("notification_sse_after")
 
     @selenium_test
