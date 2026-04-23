@@ -114,9 +114,7 @@ def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets()
                 "elements": [
                     {
                         "name": "outer",
-                        "elements": [
-                            {"name": "inner", "src": "url", "url": "https://auth.example.org/nested.txt"}
-                        ],
+                        "elements": [{"name": "inner", "src": "url", "url": "https://auth.example.org/nested.txt"}],
                     }
                 ],
             }

@@ -15,7 +15,9 @@ def iter_fetch_urls(value: Any):
             yield from iter_fetch_urls(child)
 
 
-def staged_fetch_token_expiration(user: User | None, request: dict[str, Any], file_sources, user_context) -> datetime | None:
+def staged_fetch_token_expiration(
+    user: User | None, request: dict[str, Any], file_sources, user_context
+) -> datetime | None:
     if user is None or not user.social_auth:
         return None
     uses_authorization_header = False
