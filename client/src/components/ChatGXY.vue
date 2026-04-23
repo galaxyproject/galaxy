@@ -389,18 +389,9 @@ function popOutToScratchbook() {
     Galaxy.frame.add({ title: "ChatGXY", url });
 }
 
-function dockToSide() {
+function dockTo(location: "right" | "bottom") {
     chatStore.setActiveChatId(currentChatId.value);
-    chatStore.setLocation("right");
-    chatStore.showChat();
-    if (route.path.startsWith("/chatgxy")) {
-        router.push("/");
-    }
-}
-
-function dockToBottomPanel() {
-    chatStore.setActiveChatId(currentChatId.value);
-    chatStore.setLocation("bottom");
+    chatStore.setLocation(location);
     chatStore.showChat();
     if (route.path.startsWith("/chatgxy")) {
         router.push("/");
@@ -453,10 +444,10 @@ watch(currentChatId, (newId) => {
                     @click="deleteCurrentChat">
                     <FontAwesomeIcon :icon="faTrash" fixed-width />
                 </button>
-                <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockToSide">
+                <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockTo('right')">
                     <FontAwesomeIcon :icon="faColumns" fixed-width />
                 </button>
-                <button class="btn btn-sm btn-outline-primary" title="Dock to bottom panel" @click="dockToBottomPanel">
+                <button class="btn btn-sm btn-outline-primary" title="Dock to bottom panel" @click="dockTo('bottom')">
                     <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
                 </button>
                 <button
