@@ -1,7 +1,7 @@
 from datetime import (
-    UTC,
     datetime,
     timedelta,
+    timezone,
 )
 
 from galaxy.files import (
@@ -59,7 +59,7 @@ def _file_sources():
 
 
 def test_staged_fetch_token_expiration_returns_none_without_authorization_header():
-    user = DummyUser([DummyToken(datetime.now(UTC) + timedelta(hours=1))])
+    user = DummyUser([DummyToken(datetime.now(timezone.utc) + timedelta(hours=1))])
     request = {
         "targets": [
             {
@@ -72,8 +72,8 @@ def test_staged_fetch_token_expiration_returns_none_without_authorization_header
 
 
 def test_staged_fetch_token_expiration_returns_earliest_expiration_for_authorized_sources():
-    earliest = datetime.now(UTC) + timedelta(minutes=10)
-    later = datetime.now(UTC) + timedelta(hours=2)
+    earliest = datetime.now(timezone.utc) + timedelta(minutes=10)
+    later = datetime.now(timezone.utc) + timedelta(hours=2)
     user = DummyUser([DummyToken(later), DummyToken(earliest)])
     request = {
         "targets": [
@@ -87,7 +87,7 @@ def test_staged_fetch_token_expiration_returns_earliest_expiration_for_authorize
 
 
 def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authorized_one_exists():
-    earliest = datetime.now(UTC) + timedelta(minutes=15)
+    earliest = datetime.now(timezone.utc) + timedelta(minutes=15)
     user = DummyUser([DummyToken(earliest)])
     request = {
         "targets": [
@@ -104,7 +104,7 @@ def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authoriz
 
 
 def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets():
-    earliest = datetime.now(UTC) + timedelta(minutes=20)
+    earliest = datetime.now(timezone.utc) + timedelta(minutes=20)
     user = DummyUser([DummyToken(earliest)])
     request = {
         "targets": [

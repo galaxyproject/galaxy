@@ -1,7 +1,7 @@
 from datetime import (
-    UTC,
     datetime,
     timedelta,
+    timezone,
 )
 from unittest.mock import Mock
 
@@ -48,7 +48,7 @@ class TestToolsService:
                 ]
             ),
         )
-        expires_at = datetime.now(UTC) + timedelta(hours=1)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
         token = UserAuthnzToken(
             provider="oidc",
             uid="oidc-user",

@@ -4,9 +4,9 @@ import tempfile
 from base64 import b64encode
 from contextlib import contextmanager
 from datetime import (
-    UTC,
     datetime,
     timedelta,
+    timezone,
 )
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -420,7 +420,7 @@ def test_hdca_failed_expansion():
 
 def test_fail_if_expired_raises_for_past_timestamp():
     with pytest.raises(Exception, match="Fetch job expired before start because staged OIDC credentials expired."):
-        _fail_if_expired((datetime.now(UTC) - timedelta(minutes=1)).isoformat())
+        _fail_if_expired((datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat())
 
 
 def test_fail_if_expired_allows_missing_timestamp():
@@ -428,7 +428,7 @@ def test_fail_if_expired_allows_missing_timestamp():
 
 
 def test_fail_if_expired_allows_future_timestamp():
-    expiry = (datetime.now(UTC) + timedelta(minutes=1)).isoformat()
+    expiry = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
     assert _fail_if_expired(expiry) is None
 
 
@@ -444,7 +444,7 @@ def test_do_fetch_short_circuits_before_processing_when_expired(monkeypatch):
                 request_path,
                 working_directory=execute_context.job_directory,
                 registry=mock.Mock(),
-                token_expires_at=(datetime.now(UTC) - timedelta(minutes=1)).isoformat(),
+                token_expires_at=(datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
             )
         request_to_galaxy_json.assert_not_called()
 
@@ -461,7 +461,7 @@ def test_do_fetch_processes_request_when_not_expired(monkeypatch):
             request_path,
             working_directory=execute_context.job_directory,
             registry=mock.Mock(),
-            token_expires_at=(datetime.now(UTC) + timedelta(minutes=1)).isoformat(),
+            token_expires_at=(datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
         )
         request_to_galaxy_json.assert_called_once()
         assert execute_context.galaxy_json == expected_json
