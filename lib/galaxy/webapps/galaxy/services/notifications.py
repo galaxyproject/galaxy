@@ -1,4 +1,8 @@
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from typing import (
     NoReturn,
     Optional,
@@ -6,14 +10,17 @@ from typing import (
 )
 
 from galaxy.celery.tasks import send_notification_to_recipients_async
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
     ObjectNotFound,
     RequestParameterInvalidException,
+    ServerNotConfiguredForRequest,
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.users import UserManager
 from galaxy.model import User
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -21,13 +28,18 @@ from galaxy.schema.notifications import (
     BroadcastNotificationListResponse,
     BroadcastNotificationResponse,
     NotificationBroadcastUpdateRequest,
+    NotificationCreateData,
     NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationCreateRequestBody,
+    NotificationRecipients,
     NotificationResponse,
     NotificationsBatchUpdateResponse,
     NotificationStatusSummary,
     NotificationUpdateRequest,
+    NotificationVariant,
+    PersonalNotificationCategory,
+    ToolRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
     UserNotificationPreferences,
@@ -40,29 +52,100 @@ from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
 )
 
+_USER_ALLOWED_CATEGORIES: frozenset[PersonalNotificationCategory] = frozenset(
+    {PersonalNotificationCategory.tool_request}
+)
+
 
 class NotificationService(ServiceBase):
-    def __init__(self, notification_manager: NotificationManager):
+    def __init__(
+        self,
+        notification_manager: NotificationManager,
+        user_manager: Optional[UserManager] = None,
+        config: Optional[GalaxyAppConfiguration] = None,
+    ):
         self.notification_manager = notification_manager
+        self.user_manager = user_manager
+        self.config = config
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
     ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        Before sending the notification, it checks if the requesting user has the necessary permissions to do so.
+        Admin users may send to arbitrary recipients with any category.
+        Authenticated non-admin users may only use categories in the server-side allow-list,
+        subject to per-category feature-flag checks; their recipients are overridden server-side.
         """
         self.notification_manager.ensure_notifications_enabled()
-        self._ensure_user_can_send_notifications(sender_context)
         galaxy_url = (
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
-        request = NotificationCreateRequest.model_construct(
-            notification=payload.notification,
-            recipients=payload.recipients,
+        if sender_context.user_is_admin:
+            request = NotificationCreateRequest.model_construct(
+                notification=payload.notification,
+                recipients=payload.recipients,
+                galaxy_url=galaxy_url,
+            )
+            return self.send_notification_internal(request)
+
+        request = self._build_user_sender_request(sender_context, payload, galaxy_url)
+        # User-submitted notifications must return the created notification id synchronously,
+        # so the client can link the requester directly to the new record.
+        return self.send_notification_internal(request, force_sync=True)
+
+    def _build_user_sender_request(
+        self,
+        sender_context: ProvidesUserContext,
+        payload: NotificationCreateRequestBody,
+        galaxy_url: Optional[str],
+    ) -> NotificationCreateRequest:
+        """Validate and rewrite a non-admin notification submission."""
+        user_manager = self.user_manager
+        config = self.config
+        if user_manager is None or config is None:
+            raise RuntimeError(
+                "NotificationService requires user_manager and config for non-admin notification submissions."
+            )
+
+        if sender_context.anonymous or sender_context.user is None:
+            raise AuthenticationRequired("You must be logged in to submit a notification.")
+
+        category = payload.notification.category
+        if category not in _USER_ALLOWED_CATEGORIES:
+            raise AdminRequiredException("Only administrators can send notifications of this category.")
+
+        if category == PersonalNotificationCategory.tool_request:
+            if not config.enable_tool_request_form:
+                raise AdminRequiredException("Tool request notifications are disabled on this Galaxy instance.")
+
+        admin_users = user_manager.admins()
+        if not admin_users:
+            raise ServerNotConfiguredForRequest("No admin users are configured on this Galaxy instance.")
+
+        sender_id = sender_context.user.id
+        recipient_ids = list({u.id for u in admin_users} | {sender_id})
+
+        content = payload.notification.content
+        if category == PersonalNotificationCategory.tool_request and isinstance(
+            content, ToolRequestNotificationContent
+        ):
+            content = content.model_copy(update={"requester_email": sender_context.user.email})
+
+        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        notification_data = NotificationCreateData.model_construct(
+            source=payload.notification.source or "tool_request_form",
+            category=payload.notification.category,
+            variant=payload.notification.variant or NotificationVariant.info,
+            content=content,
+            expiration_time=payload.notification.expiration_time or (now + timedelta(days=180)),
+        )
+
+        return NotificationCreateRequest.model_construct(
+            notification=notification_data,
+            recipients=NotificationRecipients(user_ids=recipient_ids),
             galaxy_url=galaxy_url,
         )
-        return self.send_notification_internal(request)
 
     def send_notification_internal(
         self, request: NotificationCreateRequest, force_sync: bool = False
@@ -208,12 +291,6 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         user = self.get_authenticated_user(user_context)
         return self.notification_manager.update_user_notification_preferences(user, request)
-
-    def _ensure_user_can_send_notifications(self, sender_context: ProvidesUserContext) -> None:
-        """Raises an exception if the user cannot send notifications."""
-        # TODO implement and check permissions for non-admin users?
-        if not sender_context.user_is_admin:
-            raise AdminRequiredException("Only administrators can create and send notifications.")
 
     def _ensure_user_can_broadcast_notifications(self, sender_context: ProvidesUserContext) -> None:
         """Raises an exception if the user cannot broadcast notifications."""

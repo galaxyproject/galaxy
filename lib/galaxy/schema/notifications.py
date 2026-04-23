@@ -12,6 +12,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -118,9 +119,13 @@ class NewSharedItemNotificationContent(Model):
 
 class ToolRequestNotificationContent(Model):
     category: Literal[PersonalNotificationCategory.tool_request] = PersonalNotificationCategory.tool_request
-    tool_name: str = Field(..., title="Tool name", description="The name of the requested tool.")
+    tool_names: list[str] = Field(
+        ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
+    )
     tool_url: Optional[str] = Field(
-        None, title="Tool URL", description="Homepage or repository URL for the requested tool."
+        None,
+        title="Tool URL",
+        description="Homepage or repository URL for the requested tool (single-tool requests only).",
     )
     description: str = Field(
         ..., title="Description", description="Short description of the tool and its scientific use case."
@@ -131,27 +136,23 @@ class ToolRequestNotificationContent(Model):
     requested_version: Optional[str] = Field(
         None, title="Requested version", description="The version of the tool being requested."
     )
-    conda_available: Optional[bool] = Field(
-        None, title="Conda available", description="Whether a Conda package for this tool is available."
+    requester_email: Optional[str] = Field(
+        None,
+        title="Requester email",
+        description="The email address of the requester for follow-up. This is derived server-side for user submissions.",
     )
-    test_data_available: Optional[bool] = Field(
-        None, title="Test data available", description="Whether test data for this tool is available."
+    workflow_id: Optional[str] = Field(
+        None, title="Workflow ID", description="Encoded ID of the workflow requiring these tools, if applicable."
     )
-    requester_name: Optional[str] = Field(
-        None, title="Requester name", description="The name of the person requesting the tool."
+    additional_remarks: Optional[str] = Field(
+        None, title="Additional remarks", description="Any additional information or context for the request."
     )
-    requester_email: str = Field(
-        ..., title="Requester email", description="The email address of the requester for follow-up."
-    )
-    requester_affiliation: Optional[str] = Field(
-        None, title="Requester affiliation", description="The affiliation/lab of the requester."
-    )
-    tool_ids: Optional[list[str]] = Field(
-        None, title="Tool IDs", description="Tool shed tool IDs for workflow install requests."
-    )
-    workflow_name: Optional[str] = Field(
-        None, title="Workflow name", description="Name of the workflow requiring these tools, if applicable."
-    )
+
+    @model_validator(mode="after")
+    def _tool_url_single_tool_only(self) -> "ToolRequestNotificationContent":
+        if self.tool_url and len(self.tool_names) != 1:
+            raise ValueError("tool_url may only be supplied when exactly one tool is requested")
+        return self
 
 
 NotificationContentField = Field(
