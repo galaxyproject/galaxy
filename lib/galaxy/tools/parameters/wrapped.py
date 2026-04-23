@@ -119,7 +119,7 @@ class WrappedParameters:
                 values = value
                 self.wrap_values(input.inputs, values, skip_missing_values=skip_missing_values)
             elif isinstance(input, DataToolParameter) and input.multiple:
-                dataset_instances = DatasetListWrapper.to_dataset_instances(value)
+                dataset_instances = DatasetListWrapper.to_dataset_instances(value, self.tool.profile)
                 input_values[input.name] = DatasetListWrapper(
                     None,
                     dataset_instances,
@@ -149,7 +149,7 @@ class WrappedParameters:
                 )
             else:
                 assert isinstance(input, ToolParameter)
-                input_values[input.name] = InputValueWrapper(input, value, incoming, tool.profile)
+                input_values[input.name] = InputValueWrapper(input, value, incoming)
 
 
 def make_dict_copy(from_dict: dict):
