@@ -282,6 +282,7 @@ class JobsService(ServiceBase):
             raw_tool_source=tool_source_model.source,
             tool_dir=tool.tool_dir,
             tool_source_class=tool_source_model.source_class,
+            tool_id=tool.id,
         )
         task_request = QueueJobs(
             user=trans.async_request_user,
