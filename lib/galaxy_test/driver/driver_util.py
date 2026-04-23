@@ -1,5 +1,6 @@
 """Scripts for drivers of Galaxy functional tests."""
 
+import functools
 import http.client
 import json
 import logging
@@ -20,6 +21,10 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+from a2wsgi import WSGIMiddleware
+from fastapi import FastAPI
+from starlette.routing import Mount
+
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import default_log_config
 from galaxy.model import mapping
@@ -39,8 +44,16 @@ from galaxy.util import (
     galaxy_directory,
 )
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.base.api import build_route_name_index
 from galaxy.webapps.galaxy import buildapp
-from galaxy.webapps.galaxy.fast_app import initialize_fast_app as init_galaxy_fast_app
+from galaxy.webapps.galaxy.fast_app import (
+    _build_merged_openapi,
+    add_galaxy_middleware,
+    GalaxyCORSMiddleware,
+    include_tus,
+    initialize_fast_app as init_galaxy_fast_app,
+    XFrameOptionsMiddleware,
+)
 from galaxy_test.base.api_util import (
     get_admin_api_key,
     get_user_api_key,
@@ -746,6 +759,157 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     )
 
 
+@functools.lru_cache(maxsize=1)
+def _test_fast_app_slot() -> dict:
+    """Per-process holder for the reusable FastAPI app used by tests.
+
+    Keyed on nothing — ``lru_cache(maxsize=1)`` guarantees a single dict
+    per process. The dict holds at most one ``"app"`` entry, the
+    already-built FastAPI instance we can rebind for the next embedded
+    launch (see ``caching_fast_app_factory`` below).
+    """
+    return {}
+
+
+def _find_root_wsgi_mount(app: FastAPI) -> Optional[Mount]:
+    """Locate the ``Mount("/", wsgi_handler)`` that ``initialize_fast_app``
+    installs as the final route on the FastAPI app.
+    """
+    for route in app.routes:
+        if isinstance(route, Mount) and route.path == "":
+            # Starlette normalises Mount("/", app=...) to path="".
+            return route
+    return None
+
+
+_TUS_PREFIXES = (
+    "/api/upload/resumable_upload",
+    "/api/job_files/resumable_upload",
+)
+
+
+def _rebind_tus_routes(app: FastAPI, gx_app, original_lifespan_context) -> None:
+    """Replace TUS routes so they point at the current launch's upload store.
+
+    ``create_tus_router`` bakes ``files_dir`` / ``max_size`` into the route
+    handlers at build time, so the cached app's TUS routes would otherwise
+    keep writing to the first launch's ``tus_upload_store`` — a temp
+    directory that's removed when that test class tears down.
+
+    Restores ``router.lifespan_context`` to the snapshot taken at first build
+    before re-calling ``include_tus``; FastAPI's ``include_router`` wraps
+    ``lifespan_context`` on every call, so without this the chain would grow
+    by two layers per launch and blow Python's recursion limit after a few
+    hundred test classes.
+    """
+    root_mount = _find_root_wsgi_mount(app)
+    tus_routes = [r for r in app.router.routes if _is_tus_route(r)]
+    for r in tus_routes:
+        app.router.routes.remove(r)
+    if root_mount is not None:
+        app.router.routes.remove(root_mount)
+    app.router.lifespan_context = original_lifespan_context
+    include_tus(app, gx_app)
+    if root_mount is not None:
+        app.router.routes.append(root_mount)
+
+
+def _is_tus_route(route) -> bool:
+    path = getattr(route, "path", None)
+    return bool(path and any(path.startswith(p) for p in _TUS_PREFIXES))
+
+
+def _rebind_galaxy_middleware(app: FastAPI, gx_app) -> None:
+    """Re-run ``add_galaxy_middleware`` against the current gx_app.
+
+    CORS / X-Frame-Options middleware capture ``gx_app.config`` at the
+    moment they're added to ``app.user_middleware``; without this the
+    cached app would keep enforcing the first test's
+    ``allowed_origin_hostnames`` / ``x_frame_options`` for every
+    subsequent test.
+    """
+    app.user_middleware = [
+        mw for mw in app.user_middleware if mw.cls not in (GalaxyCORSMiddleware, XFrameOptionsMiddleware)
+    ]
+    # Reset the middleware stack BEFORE re-adding middleware: Starlette's
+    # ``add_middleware`` guards against mutations after the stack has been
+    # built (first request), so we have to clear it first. The stack will
+    # be rebuilt lazily from ``user_middleware`` on the next request.
+    app.middleware_stack = None
+    add_galaxy_middleware(app, gx_app)
+
+
+def _rebind_fast_app_for_launch(app: FastAPI, gx_wsgi_webapp, gx_app, original_lifespan_context) -> None:
+    """Re-bind the per-launch pieces of a cached FastAPI app.
+
+    Galaxy routes resolve the current ``gx_app`` via the module global
+    ``galaxy.app.app`` (set by ``buildapp.app_pair`` on every launch), so
+    most of the app's routes are app-agnostic and can be shared across
+    repeated embedded-server launches within one Python process (i.e.
+    pytest). The pieces that must be refreshed:
+
+    - the WSGI middleware wrapping this launch's paste webapp and its
+      executor shutdown on ``gx_app.haltables``;
+    - the TUS routes, which bake this launch's ``tus_upload_store``
+      directory into their route handlers;
+    - Galaxy-specific middleware (CORS, X-Frame-Options), which capture
+      this launch's ``gx_app.config`` at add time;
+    - the ``GalaxyFileResponse`` sendfile-mode class attributes (which
+      ``add_galaxy_middleware`` wrote from the first build's ``gx_app``);
+    - the route-name index, since TUS routes were just replaced;
+    - the merged OpenAPI schema, rebuilt lazily against the current
+      ``gx_app`` if ``/openapi.json`` is requested (integration tests
+      don't hit it, so eagerly rebuilding it per rebind would just add
+      several seconds of pure schema work per test class).
+    """
+    root_mount = _find_root_wsgi_mount(app)
+    if root_mount is None:
+        raise RuntimeError("Cached FastAPI app is missing its root WSGI mount; cannot re-bind.")
+    new_wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
+    gx_app.haltables.append(("WSGI Middleware threadpool", new_wsgi_handler.executor.shutdown))
+    root_mount.app = new_wsgi_handler  # type: ignore[assignment]
+    _rebind_tus_routes(app, gx_app, original_lifespan_context)
+    _rebind_galaxy_middleware(app, gx_app)
+    app.state.route_name_index = build_route_name_index(app)
+    app.openapi_schema = None
+
+    def _lazy_openapi() -> dict:
+        if app.openapi_schema is None:
+            app.openapi_schema = _build_merged_openapi(app, gx_app)
+        return app.openapi_schema
+
+    app.openapi = _lazy_openapi  # type: ignore[method-assign]
+
+
+def caching_fast_app_factory(gx_wsgi_webapp, gx_app):
+    """Drop-in replacement for ``init_galaxy_fast_app`` that reuses the
+    FastAPI app across repeated embedded-server launches in the same
+    Python process.
+
+    Single injection point: this callable is passed to ``launch_server``
+    via its ``init_fast_app`` parameter. Production ``launch_server``
+    callers (outside the test driver) keep using the default
+    uncached ``init_galaxy_fast_app``.
+
+    Falls back to a fresh build when the topology differs from the
+    cached shell (non-default ``galaxy_url_prefix`` or MCP enabled),
+    because those paths produce a parent wrapper / lifespan-bound
+    app that is awkward to re-bind.
+    """
+    topology_differs = gx_app.config.galaxy_url_prefix != "/" or gx_app.config.enable_mcp_server
+    if topology_differs:
+        return init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
+    slot = _test_fast_app_slot()
+    existing = slot.get("app")
+    if existing is None:
+        app = init_galaxy_fast_app(gx_wsgi_webapp, gx_app)
+        slot["app"] = app
+        slot["lifespan_context"] = app.router.lifespan_context
+        return app
+    _rebind_fast_app_for_launch(existing, gx_wsgi_webapp, gx_app, slot["lifespan_context"])
+    return existing
+
+
 def launch_server(
     app_factory,
     webapp_factory,
@@ -943,6 +1107,7 @@ class GalaxyTestDriver(TestDriver):
                 webapp_factory=lambda *args, **kwd: buildapp.app_factory(*args, wsgi_preflight=False, **kwd),
                 galaxy_config=galaxy_config,
                 config_object=config_object,
+                init_fast_app=caching_fast_app_factory,
             )
             custom_init_fast_app = getattr(config_object, "init_fast_app", None)
             if custom_init_fast_app is not None:
