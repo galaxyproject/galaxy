@@ -18,34 +18,33 @@ sent:
 - notification_settings_url The URL to the admin's notification settings to manage their subscriptions
 - variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
 - content                   The tool_request payload
-  - tool_name               The name of the requested tool
-  - tool_url                Homepage or repository URL for the tool (optional)
+  - tool_names              List of tool names or tool-shed IDs being requested
+  - tool_url                Homepage or repository URL for the tool (optional, single-tool requests only)
   - description             Description of the tool and its use case
   - scientific_domain       Scientific domain (optional)
   - requested_version       Requested version (optional)
-  - conda_available         Whether a Conda package is available (optional)
-  - test_data_available     Whether test data is available (optional)
-  - requester_name          The username of the requester
   - requester_email         The email address of the requester
-  - requester_affiliation   The affiliation/lab of the requester (optional)
-  - workflow_name           Name of the workflow requiring these tools (optional)
-  - tool_ids                List of tool shed IDs for workflow install requests (optional)
+  - workflow_id             Encoded ID of the workflow requiring these tools (optional)
+  - additional_remarks      Any additional information provided by the requester (optional)
+- workflow_name             Resolved workflow name (if workflow_id can be resolved)
 - galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
 
 Template begins here>>>>>>
 Hello {{ name }},
 
-A user has submitted a request to install a new tool on {{ hostname }} on {{ date }}.
+A user has submitted a request to install {% if content['tool_names'] | length == 1 %}a new tool{% else %}new tools{% endif %} on {{ hostname }} on {{ date }}.
 
-Tool name:    {{ content['tool_name'] }}
-{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
+{% if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
+{% else %}Tools:
+{% for tool in content['tool_names'] %}  - {{ tool }}
+{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
 {% endif %}Description:  {{ content['description'] }}
 {% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
 {% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
-{% endif %}{% if content['conda_available'] is not none %}Conda pkg:    {{ "Yes" if content['conda_available'] else "No" }}
-{% endif %}{% if content['test_data_available'] is not none %}Test data:    {{ "Yes" if content['test_data_available'] else "No" }}
-{% endif %}{% if content['workflow_name'] %}Workflow:     {{ content['workflow_name'] }}
-{% endif %}Requested by: {% if content['requester_name'] %}{{ content['requester_name'] }} — {% endif %}{{ content['requester_email'] }}{% if content['requester_affiliation'] %} ({{ content['requester_affiliation'] }}){% endif %}
+{% endif %}{% if content['workflow_id'] %}Workflow:     {{ workflow_name if workflow_name else content['workflow_id'] }}
+{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% endif %}{% if content['requester_email'] %}Requested by: {{ content['requester_email'] }}
+{% endif %}
 
 {% if galaxy_url %}
 You can review the notification in Galaxy: {{ galaxy_url }}/user/notifications
