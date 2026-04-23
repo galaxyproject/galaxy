@@ -45,6 +45,17 @@ export function useSSE(onEvent: (event: MessageEvent) => void, eventTypes: reado
         onEvent(event);
     };
 
+    // Browser EventSource teardown during a full-page navigation
+    // (``window.location.href = …``) is not guaranteed to happen before the
+    // browser issues requests for the new page — we've seen Chrome keep the
+    // stream alive long enough that a login/register POST reload races the
+    // close, and the new page then loads with a stale auth view. Force a
+    // synchronous ``eventSource.close()`` during ``pagehide`` (fires for both
+    // reloads and tab-close, unlike ``beforeunload``) to close that window.
+    // The listener is registered only while a connection is live so composables
+    // that never ``connect()`` don't leave dangling listeners behind.
+    const onPageHide = () => disconnect();
+
     function connect() {
         disconnect();
         const url = withPrefix("/api/events/stream");
@@ -69,6 +80,10 @@ export function useSSE(onEvent: (event: MessageEvent) => void, eventTypes: reado
             connected.value = false;
             sseGlobals().__galaxy_sse_connected = false;
         };
+
+        if (typeof window !== "undefined") {
+            window.addEventListener("pagehide", onPageHide);
+        }
     }
 
     function disconnect() {
@@ -78,6 +93,9 @@ export function useSSE(onEvent: (event: MessageEvent) => void, eventTypes: reado
             }
             eventSource.close();
             eventSource = null;
+        }
+        if (typeof window !== "undefined") {
+            window.removeEventListener("pagehide", onPageHide);
         }
         connected.value = false;
         sseGlobals().__galaxy_sse_connected = false;
