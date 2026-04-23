@@ -43,6 +43,7 @@
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.9",
     "@galaxyproject/galaxy-api-client": "workspace:*",
+    "@galaxyproject/galaxy-ui": "workspace:*",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",

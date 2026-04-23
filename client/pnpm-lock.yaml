@@ -49,6 +49,9 @@ importers:
       '@galaxyproject/galaxy-api-client':
         specifier: workspace:*
         version: link:packages/api-client
+      '@galaxyproject/galaxy-ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@guolao/vue-monaco-editor':
         specifier: ^1.5.4
         version: 1.5.4(monaco-editor@0.52.2)(vue@2.7.16)
@@ -510,6 +513,12 @@ importers:
       vitest:
         specifier: ^4.0.14
         version: 4.0.14(@types/node@25.6.0)(@vitest/ui@4.0.14)(happy-dom@20.0.10)(jsdom@28.1.0)(msw@2.3.4(typescript@5.8.3))(sass@1.94.2)(yaml@2.6.1)
+
+  packages/ui:
+    dependencies:
+      vue:
+        specifier: 2.7.16
+        version: 2.7.16
 
 packages:
 
