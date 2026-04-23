@@ -17,12 +17,20 @@ from galaxy.tools.data_fetch_utils import staged_fetch_token_expiration
 
 class DummyToken:
     def __init__(self, expiration_time):
-        self.expiration_time = expiration_time
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        self.extra_data = {
+            "auth_time": now_ts,
+            "expires": int(expiration_time.timestamp()) - now_ts,
+        }
 
 
 class DummyUser:
     def __init__(self, social_auth):
         self.social_auth = social_auth
+
+
+def _truncate_to_seconds(value: datetime) -> datetime:
+    return value.replace(microsecond=0)
 
 
 def _user_context():
@@ -85,7 +93,9 @@ def test_staged_fetch_token_expiration_returns_earliest_expiration_for_authorize
             }
         ]
     }
-    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(
+        cast(User, user), request, _file_sources(), _user_context()
+    ) == _truncate_to_seconds(earliest)
 
 
 def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authorized_one_exists():
@@ -102,7 +112,9 @@ def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authoriz
             }
         ]
     }
-    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(
+        cast(User, user), request, _file_sources(), _user_context()
+    ) == _truncate_to_seconds(earliest)
 
 
 def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets():
@@ -122,4 +134,6 @@ def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets()
             }
         ]
     }
-    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(
+        cast(User, user), request, _file_sources(), _user_context()
+    ) == _truncate_to_seconds(earliest)

@@ -26,7 +26,7 @@ from galaxy.schema.fields import Security
 from galaxy.webapps.galaxy.services.tools import ToolsService
 
 
-class TestableToolsService(ToolsService):
+class _ToolsServiceUnderTest(ToolsService):
     def _create(self, trans, payload, **kwd):
         return payload
 
@@ -60,18 +60,22 @@ class TestToolsService:
                 ]
             ),
         )
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        auth_time = datetime.now(timezone.utc)
+        expires_at = auth_time + timedelta(hours=1)
         token = UserAuthnzToken(
             provider="oidc",
             uid="oidc-user",
             user=cast(User, self.trans.user),
-            extra_data={"access_token": "access-token"},
+            extra_data={
+                "access_token": "access-token",
+                "auth_time": int(auth_time.timestamp()),
+                "expires": int(timedelta(hours=1).total_seconds()),
+            },
         )
-        cast(Any, token).expiration_time = expires_at
         self.trans.sa_session.add(token)
         self.trans.sa_session.commit()
 
-        service = TestableToolsService(
+        service = _ToolsServiceUnderTest(
             config=self.app.config,
             toolbox_search=cast(Any, object()),
             security=self.app.security,
@@ -98,7 +102,7 @@ class TestToolsService:
         create_payload = service.create_fetch(cast(ProvidesHistoryContext, self.trans), payload)
 
         assert create_payload["tool_id"] == "__DATA_FETCH__"
-        assert create_payload["inputs"]["token_expires_at"] == expires_at.isoformat()
+        assert create_payload["inputs"]["token_expires_at"] == expires_at.replace(microsecond=0).isoformat()
         self.app.authnz_manager.refresh_expiring_oidc_tokens.assert_called_once_with(self.trans, self.trans.user)
 
     def test_create_fetch_does_not_refresh_when_fetch_has_no_authorization_header(self):
@@ -115,7 +119,7 @@ class TestToolsService:
             ),
         )
 
-        service = TestableToolsService(
+        service = _ToolsServiceUnderTest(
             config=self.app.config,
             toolbox_search=cast(Any, object()),
             security=self.app.security,

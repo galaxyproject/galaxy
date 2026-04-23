@@ -1,6 +1,10 @@
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from typing import Any
 
+from galaxy.authnz.psa_authnz import locate_token_expiration
 from galaxy.model import User
 
 
@@ -32,5 +36,12 @@ def staged_fetch_token_expiration(
         return None
     if not fetch_uses_authorization_header(request, file_sources, user_context):
         return None
-    expiration_times = [auth.expiration_time for auth in user.social_auth if auth.expiration_time is not None]
+    expiration_times = []
+    for auth in user.social_auth:
+        extra_data = auth.extra_data or {}
+        auth_time = extra_data.get("auth_time")
+        expires = locate_token_expiration(extra_data)
+        if auth_time is None or expires is None:
+            continue
+        expiration_times.append(datetime.fromtimestamp(int(auth_time) + int(expires), tz=timezone.utc))
     return min(expiration_times) if expiration_times else None
