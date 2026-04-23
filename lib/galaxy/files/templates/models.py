@@ -234,7 +234,19 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class WebdavFileSourceTemplateConfiguration(StrictModel):
+class WebdavConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_base_url(cls, data: Any) -> Any:
+        # Keep persisted user file sources created before the WebDAV
+        # url -> base_url rename loadable in the preferences UI.
+        if isinstance(data, dict) and "base_url" not in data and "url" in data:
+            data = dict(data)
+            data["base_url"] = data.pop("url")
+        return data
+
+
+class WebdavFileSourceTemplateConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: Union[str, TemplateExpansion]
     root: Union[str, TemplateExpansion]
@@ -244,34 +256,14 @@ class WebdavFileSourceTemplateConfiguration(StrictModel):
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def ensure_base_url(cls, data: Any) -> Any:
-        # Keep persisted user file source templates created before the WebDAV
-        # url -> base_url rename loadable in the preferences UI.
-        if isinstance(data, dict) and "base_url" not in data and "url" in data:
-            data = dict(data)
-            data["base_url"] = data.pop("url")
-        return data
 
-
-class WebdavFileSourceConfiguration(StrictModel):
+class WebdavFileSourceConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
     base_url: str
     root: str
     login: str
     password: str
     writable: bool = False
-
-    @model_validator(mode="before")
-    @classmethod
-    def ensure_base_url(cls, data: Any) -> Any:
-        # Keep persisted user file source configurations created before the WebDAV
-        # url -> base_url rename loadable in the preferences UI.
-        if isinstance(data, dict) and "base_url" not in data and "url" in data:
-            data = dict(data)
-            data["base_url"] = data.pop("url")
-        return data
 
 
 class eLabFTWFileSourceTemplateConfiguration(StrictModel):  # noqa
