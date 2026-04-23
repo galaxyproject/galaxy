@@ -15,10 +15,11 @@ import {
     prefix,
 } from "@/components/BaseComponents/componentVariants";
 import { useUid } from "@/composables/utils/uid";
-import { match } from "@/utils/utils";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GHeading from "@/components/BaseComponents/GHeading.vue";
+
+const HEADING_SIZE_BY_MODAL_SIZE = { small: "sm", medium: "md", large: "lg" } as const;
 
 const props = withDefaults(
     defineProps<{
@@ -165,13 +166,7 @@ function onClose() {
     }
 }
 
-const headingSize = computed(() =>
-    match(props.size ?? "medium", {
-        small: () => "sm" as const,
-        medium: () => "md" as const,
-        large: () => "lg" as const,
-    }),
-);
+const headingSize = computed(() => HEADING_SIZE_BY_MODAL_SIZE[props.size ?? "medium"]);
 
 const uid = useUid("g-modal");
 const currentId = computed(() => props.id ?? uid.value);

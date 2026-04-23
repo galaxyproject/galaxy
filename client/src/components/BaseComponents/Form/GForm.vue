@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-import { assertDefined } from "@/utils/assertions";
-
 const form = ref<HTMLFormElement>();
 
 function checkValidity() {
-    assertDefined(form.value);
+    if (!form.value) {
+        throw new TypeError("GForm: form element is not mounted");
+    }
     return form.value.checkValidity();
 }
 
