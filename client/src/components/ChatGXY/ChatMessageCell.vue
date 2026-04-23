@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faHistory, faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
-import { MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
+import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
 import type { ChatMessage } from "./chatTypes";
@@ -12,17 +12,24 @@ import ActionCard from "./ActionCard.vue";
 
 const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
-function escapeHtml(str: string): string {
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
+type Segment = { kind: "text"; value: string } | { kind: "mention"; entityType: EntityType; identifier: string };
 
-function renderEntityRefs(text: string): string {
-    return text.replace(MENTION_RE, (_match, type: string, identifier: string) => {
-        const safeType = escapeHtml(type);
-        const safeId = escapeHtml(identifier);
-        const icon = type === "dataset" ? "&#xf1c0;" : "&#xf1da;";
-        return `<span class="entity-ref" title="${safeType} ${safeId}"><span class="entity-ref-icon">${icon}</span>@${safeType}:${safeId}</span>`;
-    });
+function parseSegments(text: string): Segment[] {
+    const segments: Segment[] = [];
+    let lastIndex = 0;
+    for (const match of text.matchAll(MENTION_RE)) {
+        const [full, type, identifier] = match;
+        const start = match.index ?? 0;
+        if (start > lastIndex) {
+            segments.push({ kind: "text", value: text.slice(lastIndex, start) });
+        }
+        segments.push({ kind: "mention", entityType: type as EntityType, identifier: identifier! });
+        lastIndex = start + full.length;
+    }
+    if (lastIndex < text.length) {
+        segments.push({ kind: "text", value: text.slice(lastIndex) });
+    }
+    return segments;
 }
 
 const props = defineProps<{
@@ -51,8 +58,21 @@ const emit = defineEmits<{
 
         <!-- User query -->
         <template v-else-if="props.message.role === 'user'">
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="query-text" v-html="renderEntityRefs(props.message.content)" />
+            <div class="query-text">
+                <template v-for="(segment, i) in parseSegments(props.message.content)">
+                    <span v-if="segment.kind === 'text'" :key="`t-${i}`">{{ segment.value }}</span>
+                    <span
+                        v-else
+                        :key="`m-${i}`"
+                        class="entity-ref"
+                        :title="`${segment.entityType} ${segment.identifier}`">
+                        <FontAwesomeIcon
+                            :icon="segment.entityType === 'dataset' ? faDatabase : faHistory"
+                            class="entity-ref-icon"
+                            fixed-width />@{{ segment.entityType }}:{{ segment.identifier }}
+                    </span>
+                </template>
+            </div>
         </template>
 
         <!-- Assistant response -->
@@ -359,8 +379,7 @@ const emit = defineEmits<{
     }
 }
 
-// --- Entity references in user messages ---
-.query-text :deep(.entity-ref) {
+.entity-ref {
     display: inline;
     background: rgba($brand-primary, 0.1);
     color: $brand-primary;
@@ -372,9 +391,7 @@ const emit = defineEmits<{
     cursor: default;
 }
 
-.query-text :deep(.entity-ref-icon) {
-    font-family: "Font Awesome 5 Free", "Font Awesome 6 Free";
-    font-weight: 900;
+.entity-ref-icon {
     font-size: 0.75em;
     margin-right: 0.2rem;
 }
