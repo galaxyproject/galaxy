@@ -16,13 +16,17 @@ export const useChatStore = defineStore("chatStore", () => {
 
     function showChat(chatId?: string | null) {
         if (chatId !== undefined) {
-            activeChatId.value = chatId;
+            setActiveChatId(chatId);
         }
-        chatVisible.value = true;
+        if (!chatVisible.value) {
+            chatVisible.value = true;
+        }
     }
 
     function hideChat() {
-        chatVisible.value = false;
+        if (chatVisible.value) {
+            chatVisible.value = false;
+        }
     }
 
     function toggleChat() {
@@ -30,11 +34,15 @@ export const useChatStore = defineStore("chatStore", () => {
     }
 
     function setLocation(loc: ChatLocation) {
-        chatLocation.value = loc;
+        if (chatLocation.value !== loc) {
+            chatLocation.value = loc;
+        }
     }
 
     function setActiveChatId(id: string | null) {
-        activeChatId.value = id;
+        if (activeChatId.value !== id) {
+            activeChatId.value = id;
+        }
     }
 
     return {
