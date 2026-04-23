@@ -13,7 +13,6 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     asbool,
     etree,

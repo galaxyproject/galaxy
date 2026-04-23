@@ -23,7 +23,6 @@ from sqlalchemy.exc import IntegrityError
 
 from galaxy import (
     exceptions as galaxy_exceptions,
-    model,
 )
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import MalformedContents
@@ -36,7 +35,6 @@ from galaxy.model import (
     User,
     UserAuthnzToken,
 )
-from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     ready_name_for_url,
