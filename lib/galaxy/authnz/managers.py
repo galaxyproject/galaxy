@@ -411,7 +411,7 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def create_user(self, provider: str, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
+    def create_user(self, provider: str, token: str, trans: ProvidesAppContext, login_redirect_url: str):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if backend is None:
