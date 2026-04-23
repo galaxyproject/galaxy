@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
-import { submitToolRequest } from "@/api/toolRequestForm";
+import { submitUserNotification } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
@@ -21,9 +21,7 @@ const toolUrl = ref("");
 const description = ref("");
 const scientificDomain = ref("");
 const requestedVersion = ref("");
-const condaAvailable = ref<boolean | null>(null);
-const testDataAvailable = ref<boolean | null>(null);
-const requesterAffiliation = ref("");
+const additionalRemarks = ref("");
 
 const submitting = ref(false);
 const successMessage = ref("");
@@ -58,9 +56,7 @@ function resetForm() {
     description.value = "";
     scientificDomain.value = "";
     requestedVersion.value = "";
-    condaAvailable.value = null;
-    testDataAvailable.value = null;
-    requesterAffiliation.value = "";
+    additionalRemarks.value = "";
     errorMessage.value = "";
     urlError.value = "";
     successMessage.value = "";
@@ -86,15 +82,13 @@ async function submit() {
     successMessage.value = "";
 
     try {
-        await submitToolRequest({
-            tool_name: toolName.value.trim(),
+        await submitUserNotification({
+            tool_names: [toolName.value.trim()],
             tool_url: toolUrl.value.trim() || undefined,
             description: description.value.trim(),
             scientific_domain: scientificDomain.value.trim() || undefined,
             requested_version: requestedVersion.value.trim() || undefined,
-            conda_available: condaAvailable.value ?? undefined,
-            test_data_available: testDataAvailable.value ?? undefined,
-            requester_affiliation: requesterAffiliation.value.trim() || undefined,
+            additional_remarks: additionalRemarks.value.trim() || undefined,
         });
 
         submitting.value = false;
@@ -174,48 +168,13 @@ async function submit() {
                 title="Requested Version"
                 help="e.g. 1.2.0" />
 
-            <div class="d-flex gap-3 mb-3">
-                <FormElement
-                    id="tool-request-conda"
-                    v-model="condaAvailable"
-                    type="select"
-                    title="Conda package available?"
-                    class="flex-fill"
-                    :attributes="{
-                        data: [
-                            { label: 'Not specified', value: null },
-                            { label: 'Yes', value: true },
-                            { label: 'No', value: false },
-                        ],
-                    }" />
-
-                <FormElement
-                    id="tool-request-test-data"
-                    v-model="testDataAvailable"
-                    type="select"
-                    title="Test data available?"
-                    class="flex-fill"
-                    :attributes="{
-                        data: [
-                            { label: 'Not specified', value: null },
-                            { label: 'Yes', value: true },
-                            { label: 'No', value: false },
-                        ],
-                    }" />
-            </div>
-
-            <h6 v-localize class="font-weight-bold mb-2 mt-3">Requester Information</h6>
-
-            <p class="mb-2 text-muted small">
-                Your account name and email will be automatically included in the request.
-            </p>
-
             <FormElement
-                id="tool-request-requester-affiliation"
-                v-model="requesterAffiliation"
+                id="tool-request-additional-remarks"
+                v-model="additionalRemarks"
                 type="text"
-                title="Affiliation / Lab"
-                help="Your institution or lab" />
+                title="Additional Remarks"
+                help="Any other information that may help the admins"
+                :attributes="{ area: true }" />
         </div>
     </GModal>
 </template>

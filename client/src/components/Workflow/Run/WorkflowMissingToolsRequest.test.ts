@@ -13,12 +13,12 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 
 vi.mock("@/composables/config");
 
-const { mockSubmitToolRequest } = vi.hoisted(() => ({
-    mockSubmitToolRequest: vi.fn(),
+const { mockSubmitUserNotification } = vi.hoisted(() => ({
+    mockSubmitUserNotification: vi.fn(),
 }));
 
-vi.mock("@/api/toolRequestForm", () => ({
-    submitToolRequest: mockSubmitToolRequest,
+vi.mock("@/api/notifications", () => ({
+    submitUserNotification: mockSubmitUserNotification,
 }));
 
 const localVue = getLocalVue(true);
@@ -27,8 +27,6 @@ const MISSING_TOOL_IDS = [
     "toolshed.g2.bx.psu.edu/repos/devteam/bwa/bwa/0.7.17",
     "toolshed.g2.bx.psu.edu/repos/devteam/samtools/samtools/1.13",
 ];
-
-const STORAGE_KEY = `galaxy-tool-install-request:${[...MISSING_TOOL_IDS].sort().join(",")}`;
 
 const REGISTERED_USER = {
     id: "user1",
@@ -60,7 +58,7 @@ function mountComponent(props: Record<string, unknown> = {}): Wrapper<Vue> {
         pinia,
         propsData: {
             missingToolIds: MISSING_TOOL_IDS,
-            workflowName: "My Analysis Workflow",
+            workflowId: "workflow-encoded-id-abc",
             ...props,
         },
         attachTo: document.body,
@@ -68,20 +66,12 @@ function mountComponent(props: Record<string, unknown> = {}): Wrapper<Vue> {
 }
 
 describe("WorkflowMissingToolsRequest", () => {
-    function clearToolRequestStorage() {
-        Object.keys(localStorage)
-            .filter((k) => k.startsWith("galaxy-tool-install-request:"))
-            .forEach((k) => localStorage.removeItem(k));
-    }
-
     beforeEach(() => {
-        mockSubmitToolRequest.mockReset();
-        clearToolRequestStorage();
+        mockSubmitUserNotification.mockReset();
         setMockConfig({ enable_tool_request_form: true });
     });
 
     afterEach(() => {
-        clearToolRequestStorage();
         vi.restoreAllMocks();
     });
 
@@ -112,10 +102,9 @@ describe("WorkflowMissingToolsRequest", () => {
         await flushPromises();
         const modal = wrapper.findComponent(GModal);
         expect(modal.props("show")).toBe(true);
-        expect(wrapper.text()).toContain("My Analysis Workflow");
     });
 
-    it("closes modal and does not call submitToolRequest when cancelled", async () => {
+    it("closes modal and does not call submitUserNotification when cancelled", async () => {
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -128,12 +117,12 @@ describe("WorkflowMissingToolsRequest", () => {
         modal.vm.$emit("cancel");
         await flushPromises();
 
-        expect(mockSubmitToolRequest).not.toHaveBeenCalled();
+        expect(mockSubmitUserNotification).not.toHaveBeenCalled();
         expect(wrapper.findComponent(GModal).props("show")).toBe(false);
     });
 
-    it("calls submitToolRequest with correct payload on confirm", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
+    it("calls submitUserNotification with correct payload on confirm", async () => {
+        mockSubmitUserNotification.mockResolvedValueOnce("notification-id-xyz");
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -143,17 +132,15 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        expect(mockSubmitToolRequest).toHaveBeenCalledOnce();
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.tool_ids).toEqual(MISSING_TOOL_IDS);
-        expect(payload.workflow_name).toBe("My Analysis Workflow");
-        expect(typeof payload.tool_name).toBe("string");
+        expect(mockSubmitUserNotification).toHaveBeenCalledOnce();
+        const payload = mockSubmitUserNotification.mock.calls[0]?.[0] as Record<string, unknown>;
+        expect(payload.tool_names).toEqual(MISSING_TOOL_IDS);
+        expect(payload.workflow_id).toBe("workflow-encoded-id-abc");
         expect(typeof payload.description).toBe("string");
-        expect(payload.description as string).toContain("My Analysis Workflow");
     });
 
-    it("disables button and shows success message after successful request", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
+    it("shows success alert with link after successful request", async () => {
+        mockSubmitUserNotification.mockResolvedValueOnce("notification-id-xyz");
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -162,13 +149,13 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        // After success: request button no longer shown, success alert appears
         expect(wrapper.text()).not.toContain("Request Installation");
         expect(wrapper.find(".alert-success").exists()).toBe(true);
+        expect(wrapper.text()).toContain("view your request");
     });
 
-    it("saves to localStorage after successful request", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
+    it("success alert links to notification", async () => {
+        mockSubmitUserNotification.mockResolvedValueOnce("notification-id-xyz");
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -177,20 +164,13 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        expect(localStorage.getItem(STORAGE_KEY)).toBeTruthy();
-    });
-
-    it("shows already-requested state when localStorage has a prior entry", async () => {
-        localStorage.setItem(STORAGE_KEY, String(Date.now()));
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        expect(wrapper.text()).not.toContain("Request Installation");
-        expect(wrapper.find(".alert-success").exists()).toBe(true);
+        const link = wrapper.find(".alert-success a");
+        expect(link.exists()).toBe(true);
+        expect(link.attributes("href")).toContain("#notification-card-notification-id-xyz");
     });
 
     it("shows error alert when submission fails", async () => {
-        mockSubmitToolRequest.mockRejectedValueOnce(new Error("Server error"));
+        mockSubmitUserNotification.mockRejectedValueOnce(new Error("Server error"));
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -200,7 +180,6 @@ describe("WorkflowMissingToolsRequest", () => {
         await flushPromises();
 
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
-        // Button is still visible after a failed attempt
         expect(wrapper.text()).toContain("Request Installation");
     });
 
@@ -211,12 +190,7 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.text()).not.toContain("1 missing tools");
     });
 
-    // ── Visibility / access-control edge cases ─────────────────────────────
-
-    it("does not render when user is anonymous (no email field)", async () => {
-        // The store ID is "userStore" — createTestingPinia initialState uses key "user"
-        // which doesn't match, so we patch the store directly after mounting.
-        // AnonymousUser has no `email` field → isRegisteredUser() = false → isAnonymousUser() = true
+    it("does not render when user is anonymous", async () => {
         const wrapper = mountComponent();
         const userStore = useUserStore();
         userStore.$patch({ currentUser: { id: "anon1", isAnonymous: true } as any });
@@ -224,64 +198,22 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.find(".workflow-missing-tools-request").exists()).toBe(false);
     });
 
-    // ── No workflowName prop ────────────────────────────────────────────────
-
-    it("shows 'a workflow' fallback in modal body when workflowName is not provided", async () => {
-        const wrapper = mountComponent({ workflowName: undefined });
-        await flushPromises();
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        expect(wrapper.text()).not.toContain("required by workflow");
-        // Modal body renders tool count but no named workflow span
-        expect(wrapper.findComponent(GModal).text()).toContain("missing tool");
-    });
-
-    it("sends workflow_name as undefined when workflowName prop is omitted", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
-        const wrapper = mountComponent({ workflowName: undefined });
+    it("sends tool_names as array of IDs", async () => {
+        mockSubmitUserNotification.mockResolvedValueOnce("notif-id");
+        const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]], workflowId: "wf-id" });
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.workflow_name).toBeUndefined();
-        expect(payload.description as string).toContain("a workflow");
-        expect(payload.description as string).not.toContain('"undefined"');
-    });
-
-    // ── Payload shape validation ────────────────────────────────────────────
-
-    it("sets tool_name to the tool ID for a single missing tool", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
-        const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]], workflowName: "MyFlow" });
-        await flushPromises();
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.tool_name).toBe(MISSING_TOOL_IDS[0]);
-    });
-
-    it("uses plural 'tools are' and count-based tool_name for multiple tools", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
-        const wrapper = mountComponent();
-        await flushPromises();
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
-        expect(payload.description as string).toContain("tools are");
-        expect(payload.tool_name as string).toContain("2 tools");
+        const payload = mockSubmitUserNotification.mock.calls[0]?.[0] as Record<string, unknown>;
+        expect(payload.tool_names).toEqual([MISSING_TOOL_IDS[0]]);
+        expect(payload.workflow_id).toBe("wf-id");
     });
 
     it("description includes each tool ID", async () => {
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
+        mockSubmitUserNotification.mockResolvedValueOnce("notif-id");
         const wrapper = mountComponent();
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -289,43 +221,17 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        const payload = mockSubmitToolRequest.mock.calls[0]?.[0] as Record<string, unknown>;
+        const payload = mockSubmitUserNotification.mock.calls[0]?.[0] as Record<string, unknown>;
         for (const id of MISSING_TOOL_IDS) {
             expect(payload.description as string).toContain(id);
         }
     });
 
-    // ── localStorage / storage-key edge cases ──────────────────────────────
-
-    it("storage key is sorted regardless of prop order", async () => {
-        const reversed = [...MISSING_TOOL_IDS].reverse();
-        // Same tools in different order → same storage key → already-requested if key is set
-        localStorage.setItem(STORAGE_KEY, String(Date.now()));
-        const wrapper = mountComponent({ missingToolIds: reversed });
-        await flushPromises();
-        // Because the key is the same, the component sees the prior request
-        expect(wrapper.find(".alert-success").exists()).toBe(true);
-        expect(wrapper.text()).not.toContain("Request Installation");
-    });
-
-    it("different tool sets produce different storage keys and do not share state", async () => {
-        const otherToolId = "toolshed.g2.bx.psu.edu/repos/devteam/other/other/1.0";
-        const otherKey = `galaxy-tool-install-request:${otherToolId}`;
-        localStorage.setItem(otherKey, String(Date.now()));
-        const wrapper = mountComponent(); // uses MISSING_TOOL_IDS, not otherToolId
-        await flushPromises();
-        // Prior entry for a different tool set should not affect this component
-        expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(true);
-        // afterEach clearToolRequestStorage() will handle cleanup
-    });
-
-    // ── UI state during and after submission ────────────────────────────────
-
     it("button is disabled while the submission is in-flight", async () => {
         let resolveRequest!: () => void;
-        mockSubmitToolRequest.mockReturnValueOnce(
-            new Promise<void>((resolve) => {
-                resolveRequest = resolve;
+        mockSubmitUserNotification.mockReturnValueOnce(
+            new Promise<string>((resolve) => {
+                resolveRequest = () => resolve("notif-id");
             }),
         );
         const wrapper = mountComponent();
@@ -334,42 +240,16 @@ describe("WorkflowMissingToolsRequest", () => {
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
         await flushPromises();
         wrapper.findComponent(GModal).vm.$emit("ok");
-        // Don't await flushPromises yet — request is pending
         await wrapper.vm.$nextTick();
 
-        // GButton renders aria-disabled rather than the native disabled attribute
         expect(wrapper.find("[data-testid='request-install-btn']").attributes("aria-disabled")).toBe("true");
 
-        // Cleanup
         resolveRequest();
         await flushPromises();
     });
 
-    it("clears error message and retries successfully after a prior failure", async () => {
-        mockSubmitToolRequest.mockRejectedValueOnce(new Error("Network error"));
-        mockSubmitToolRequest.mockResolvedValueOnce(undefined);
-
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        // First attempt — fails
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-        expect(wrapper.find(".alert-danger").exists()).toBe(true);
-
-        // Second attempt via the still-open modal — succeeds
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-        expect(wrapper.find(".alert-danger").exists()).toBe(false);
-        expect(wrapper.find(".alert-success").exists()).toBe(true);
-        expect(localStorage.getItem(STORAGE_KEY)).toBeTruthy();
-        expect(mockSubmitToolRequest).toHaveBeenCalledTimes(2);
-    });
-
     it("dismissing the error alert clears the error and keeps the button visible", async () => {
-        mockSubmitToolRequest.mockRejectedValueOnce(new Error("Oops"));
+        mockSubmitUserNotification.mockRejectedValueOnce(new Error("Oops"));
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -380,15 +260,12 @@ describe("WorkflowMissingToolsRequest", () => {
 
         expect(wrapper.find(".alert-danger").exists()).toBe(true);
 
-        // Simulate BAlert 'dismissed' event
         wrapper.findComponent({ name: "BAlert" }).vm.$emit("dismissed");
         await flushPromises();
 
         expect(wrapper.find(".alert-danger").exists()).toBe(false);
         expect(wrapper.find("[data-testid='request-install-btn']").exists()).toBe(true);
     });
-
-    // ── Modal content ───────────────────────────────────────────────────────
 
     it("modal body shows singular 'tool' when there is exactly 1 missing tool", async () => {
         const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]] });
@@ -411,7 +288,6 @@ describe("WorkflowMissingToolsRequest", () => {
         await flushPromises();
         expect(wrapper.findComponent(GModal).props("show")).toBe(false);
 
-        // Reopen
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
         await flushPromises();
         expect(wrapper.findComponent(GModal).props("show")).toBe(true);

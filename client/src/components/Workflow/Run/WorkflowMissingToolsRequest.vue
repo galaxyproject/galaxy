@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { submitToolRequest } from "@/api/toolRequestForm";
+import { submitUserNotification } from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -12,7 +12,7 @@ import GModal from "@/components/BaseComponents/GModal.vue";
 
 const props = defineProps<{
     missingToolIds: string[];
-    workflowName?: string;
+    workflowId: string;
 }>();
 
 const { config, isConfigLoaded } = useConfig();
@@ -20,21 +20,8 @@ const userStore = useUserStore();
 
 const showConfirm = ref(false);
 const submitting = ref(false);
-const submitted = ref(false);
+const submittedNotificationId = ref<string | null>(null);
 const errorMessage = ref("");
-
-const storageKey = computed(() => {
-    const sorted = [...props.missingToolIds].sort().join(",");
-    return `galaxy-tool-install-request:${sorted}`;
-});
-
-const alreadyRequested = computed(() => {
-    try {
-        return !!localStorage.getItem(storageKey.value);
-    } catch {
-        return false;
-    }
-});
 
 const showButton = computed(
     () =>
@@ -50,31 +37,19 @@ async function requestInstallation() {
     submitting.value = true;
     errorMessage.value = "";
 
-    const toolListText = props.missingToolIds.join(", ");
-    const workflowLabel = props.workflowName ? `workflow "${props.workflowName}"` : "a workflow";
     const toolVerb = toolCount.value === 1 ? "tool is" : "tools are";
     const description =
-        `The following ${toolVerb} required by ${workflowLabel} but not installed on this instance: ` +
-        `${toolListText}. These tools are available in the Tool Shed and need to be installed.`;
+        `The following ${toolVerb} required by this workflow but not installed on this instance: ` +
+        `${props.missingToolIds.join(", ")}. These tools are available in the Tool Shed and need to be installed.`;
 
     try {
-        await submitToolRequest({
-            tool_name:
-                toolCount.value === 1
-                    ? props.missingToolIds[0]!
-                    : `${toolCount.value} tools required by ${workflowLabel}`,
+        const notificationId = await submitUserNotification({
+            tool_names: props.missingToolIds,
+            workflow_id: props.workflowId,
             description,
-            tool_ids: props.missingToolIds,
-            workflow_name: props.workflowName,
         });
 
-        try {
-            localStorage.setItem(storageKey.value, String(Date.now()));
-        } catch {
-            // localStorage unavailable, silently ignore
-        }
-
-        submitted.value = true;
+        submittedNotificationId.value = notificationId;
         showConfirm.value = false;
     } catch (e) {
         errorMessage.value = errorMessageAsString(e, "Failed to submit installation request. Please try again.");
@@ -90,8 +65,9 @@ async function requestInstallation() {
             {{ errorMessage }}
         </BAlert>
 
-        <BAlert v-if="submitted || alreadyRequested" variant="success" show>
-            Installation request sent — admins have been notified and will review it shortly.
+        <BAlert v-if="submittedNotificationId" variant="success" show>
+            Installation request sent &mdash;
+            <BLink :href="`/user/notifications#notification-card-${submittedNotificationId}`">view your request</BLink>.
         </BAlert>
 
         <GButton
@@ -118,9 +94,7 @@ async function requestInstallation() {
             <p>
                 Request the admins to install
                 <strong>{{ toolCount }} missing {{ toolCount === 1 ? "tool" : "tools" }}</strong>
-                <span v-if="workflowName">
-                    required by workflow <em>{{ workflowName }}</em></span
-                >?
+                required by this workflow?
             </p>
             <p class="text-muted small mb-0">
                 The admins will receive a notification and can install the tools from the Tool Shed.
