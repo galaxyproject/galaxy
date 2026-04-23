@@ -69,10 +69,14 @@ class HistoryUpdatePayload(TypedDict, total=False):
     """Wire contract for the ``history_update`` control-task kwargs.
 
     ``user_updates`` maps stringified user IDs to lists of (unencoded) history IDs.
-    Stringified because AMQP JSON serialization coerces dict keys to strings.
+    ``session_updates`` is the parallel route for anonymous-owned histories,
+    keyed by stringified ``galaxy_session.id`` (the dispatch key never leaves
+    the server — browsers never see it). Stringified because AMQP JSON
+    serialization coerces dict keys to strings.
     """
 
     user_updates: dict[str, list[int]]
+    session_updates: dict[str, list[int]]
     event_id: Optional[str]
 
 
@@ -423,7 +427,9 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
     """Push SSE history update events to connected users on this worker process.
 
     Encodes integer history IDs here (not in the monitor) so the manager layer
-    stays free of presentation/security concerns.
+    stays free of presentation/security concerns. Handles both user-keyed
+    routing (registered users) and galaxy_session-keyed routing (anonymous
+    histories, which have ``user_id IS NULL``).
     """
     payload = cast(HistoryUpdatePayload, kwargs)
     sse_manager = app[SSEConnectionManager]
@@ -435,6 +441,12 @@ def history_update(app: "MinimalManagerApp", **kwargs) -> None:
         data = json.dumps({"history_ids": encoded_ids})
         event = SSEEvent(event="history_update", data=data, id=event_id)
         sse_manager.push_to_user(user_id, event)
+    for session_id_str, history_ids in payload.get("session_updates", {}).items():
+        session_id = int(session_id_str)
+        encoded_ids = [encode(hid) for hid in history_ids]
+        data = json.dumps({"history_ids": encoded_ids})
+        event = SSEEvent(event="history_update", data=data, id=event_id)
+        sse_manager.push_to_session(session_id, event)
 
 
 def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:

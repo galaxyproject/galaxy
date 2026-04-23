@@ -31,6 +31,7 @@ from sqlalchemy.engine import Engine
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
+    GalaxySessionToHistoryAssociation,
     History,
     HistoryAudit,
 )
@@ -119,8 +120,11 @@ class HistoryAuditMonitor:
         self._exit = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._active = False
-        # Bounded LRU cache: history_id -> user_id, refreshed on miss.
-        self._history_owner_cache: OrderedDict[int, int] = OrderedDict()
+        # Bounded LRU cache: history_id -> (user_id, session_ids), refreshed on miss.
+        # For registered-owned histories: (user_id, ()); for anonymous histories:
+        # (None, (session_id, ...)) — a history can be associated with multiple
+        # sessions via GalaxySessionToHistoryAssociation.
+        self._history_owner_cache: OrderedDict[int, tuple[Optional[int], tuple[int, ...]]] = OrderedDict()
 
     def start(self) -> None:
         if self._active:
@@ -227,7 +231,7 @@ class HistoryAuditMonitor:
     # --- Common dispatch logic ---
 
     def _dispatch_history_updates(self, history_ids: set[int]) -> None:
-        """Map history_ids to user_ids and send Kombu control task.
+        """Map history_ids to user_ids / session_ids and send Kombu control task.
 
         Raw integer history IDs are sent across the control queue; encoding is
         deferred to the ``history_update`` task handler on the receiving side,
@@ -239,24 +243,58 @@ class HistoryAuditMonitor:
             self._refresh_owner_cache(unknown)
 
         user_updates: dict[str, list[int]] = defaultdict(list)
+        session_updates: dict[str, list[int]] = defaultdict(list)
         for history_id in history_ids:
-            user_id = self._history_owner_cache.get(history_id)
+            entry = self._history_owner_cache.get(history_id)
+            if entry is None:
+                continue
+            user_id, session_ids = entry
             if user_id is not None:
                 user_updates[str(user_id)].append(history_id)
+            else:
+                for session_id in session_ids:
+                    session_updates[str(session_id)].append(history_id)
 
-        if not user_updates:
+        if not user_updates and not session_updates:
             return
 
-        self._dispatcher.history_update(user_updates=dict(user_updates))
+        self._dispatcher.history_update(
+            user_updates=dict(user_updates),
+            session_updates=dict(session_updates) if session_updates else None,
+        )
 
     def _refresh_owner_cache(self, history_ids: set[int]) -> None:
-        """Look up user_id for given history_ids and update the bounded cache."""
+        """Look up ownership for given history_ids and update the bounded cache.
+
+        Registered-owned histories resolve with just ``History.user_id``. For
+        histories where ``user_id IS NULL`` we additionally fetch associated
+        ``galaxy_session.id`` values from ``GalaxySessionToHistoryAssociation``
+        so the anonymous SSE dispatch path can target the right browser.
+        """
         try:
-            stmt = sa_select(History.id, History.user_id).where(History.id.in_(history_ids))
             with self._model.new_session() as session:
+                stmt = sa_select(History.id, History.user_id).where(History.id.in_(history_ids))
+                anon_history_ids: set[int] = set()
                 for row in session.execute(stmt):
-                    self._history_owner_cache[row[0]] = row[1]
-                    self._history_owner_cache.move_to_end(row[0])
+                    hid, uid = row[0], row[1]
+                    self._history_owner_cache[hid] = (uid, ())
+                    self._history_owner_cache.move_to_end(hid)
+                    if uid is None:
+                        anon_history_ids.add(hid)
+
+                if anon_history_ids:
+                    assoc_stmt = sa_select(
+                        GalaxySessionToHistoryAssociation.history_id,
+                        GalaxySessionToHistoryAssociation.session_id,
+                    ).where(GalaxySessionToHistoryAssociation.history_id.in_(anon_history_ids))
+                    sessions_by_history: dict[int, list[int]] = defaultdict(list)
+                    for row in session.execute(assoc_stmt):
+                        hid, sid = row[0], row[1]
+                        if sid is not None:
+                            sessions_by_history[hid].append(sid)
+                    for hid, sids in sessions_by_history.items():
+                        self._history_owner_cache[hid] = (None, tuple(sids))
+
             while len(self._history_owner_cache) > OWNER_CACHE_MAX:
                 self._history_owner_cache.popitem(last=False)
         except Exception:

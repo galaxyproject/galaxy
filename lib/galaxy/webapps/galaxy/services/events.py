@@ -32,7 +32,13 @@ class EventsService(ServiceBase):
         last_event_id: Optional[str],
         is_disconnected: IsDisconnected,
     ) -> AsyncIterator[str]:
-        """Open an SSE events stream; anonymous users receive only broadcasts."""
+        """Open an SSE events stream.
+
+        Anonymous users still register under their ``galaxy_session.id`` so the
+        server can route per-session events (e.g. ``history_update`` for
+        anonymous-owned histories) even when ``user_id`` is ``None``.
+        """
         user_id = user_context.user.id if not user_context.anonymous else None
+        session_id = user_context.galaxy_session.id if user_context.galaxy_session else None
         catch_up = self.notifications.build_status_catchup(user_context, last_event_id)
-        return self.sse_manager.stream(is_disconnected, user_id, catch_up=catch_up)
+        return self.sse_manager.stream(is_disconnected, user_id, catch_up=catch_up, galaxy_session_id=session_id)

@@ -81,6 +81,7 @@ class SSEConnectionManager:
 
     def __init__(self, statsd_client: Optional[VanillaGalaxyStatsdClient] = None) -> None:
         self._connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
+        self._session_connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._broadcast_connections: set[asyncio.Queue] = set()
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._statsd_client = statsd_client
@@ -92,27 +93,39 @@ class SSEConnectionManager:
 
     # -- Called from ASYNC context (uvicorn event loop thread) --
 
-    def connect(self, user_id: Optional[int]) -> asyncio.Queue:
+    def connect(self, user_id: Optional[int], galaxy_session_id: Optional[int] = None) -> asyncio.Queue:
         """Register a new SSE connection. Returns a queue to await events from.
 
         Called from the SSE endpoint handler (async context). A ``ready`` event is
         enqueued immediately so that clients (and tests) can synchronize on the
         server-side subscription rather than the underlying socket open event.
+
+        ``galaxy_session_id`` is the dispatch key for events that target a
+        specific browser session (e.g. history updates for anonymous users,
+        whose ``user_id`` is ``None``).
         """
         self._ensure_loop()
         queue: asyncio.Queue = asyncio.Queue(maxsize=64)
         if user_id is not None:
             self._connections[user_id].add(queue)
+        if galaxy_session_id is not None:
+            self._session_connections[galaxy_session_id].add(queue)
         self._broadcast_connections.add(queue)
         queue.put_nowait(SSEEvent(event="ready", data=""))
         log.debug(
-            "SSE connection opened for user_id=%s (total=%d)",
+            "SSE connection opened for user_id=%s session_id=%s (total=%d)",
             user_id,
+            galaxy_session_id,
             len(self._broadcast_connections),
         )
         return queue
 
-    def disconnect(self, user_id: Optional[int], queue: asyncio.Queue) -> None:
+    def disconnect(
+        self,
+        user_id: Optional[int],
+        queue: asyncio.Queue,
+        galaxy_session_id: Optional[int] = None,
+    ) -> None:
         """Unregister an SSE connection.
 
         Called from the SSE endpoint's ``finally`` block (async context).
@@ -121,10 +134,15 @@ class SSEConnectionManager:
             self._connections[user_id].discard(queue)
             if not self._connections[user_id]:
                 del self._connections[user_id]
+        if galaxy_session_id is not None:
+            self._session_connections[galaxy_session_id].discard(queue)
+            if not self._session_connections[galaxy_session_id]:
+                del self._session_connections[galaxy_session_id]
         self._broadcast_connections.discard(queue)
         log.debug(
-            "SSE connection closed for user_id=%s (total=%d)",
+            "SSE connection closed for user_id=%s session_id=%s (total=%d)",
             user_id,
+            galaxy_session_id,
             len(self._broadcast_connections),
         )
 
@@ -133,6 +151,15 @@ class SSEConnectionManager:
     def push_to_user(self, user_id: int, event: SSEEvent) -> None:
         """Thread-safe. Push an event to all SSE connections for a specific user."""
         for queue in list(self._connections.get(user_id, [])):
+            self._safe_put(queue, event)
+
+    def push_to_session(self, galaxy_session_id: int, event: SSEEvent) -> None:
+        """Thread-safe. Push an event to all SSE connections for a specific galaxy_session.
+
+        Used to route per-browser events (e.g. history updates for anonymous
+        histories) when there is no registered ``user_id`` to key on.
+        """
+        for queue in list(self._session_connections.get(galaxy_session_id, [])):
             self._safe_put(queue, event)
 
     def push_broadcast(self, event: SSEEvent) -> None:
@@ -189,6 +216,7 @@ class SSEConnectionManager:
         user_id: Optional[int],
         catch_up: Optional[SSEEvent] = None,
         keepalive: float = 30.0,
+        galaxy_session_id: Optional[int] = None,
     ) -> AsyncIterator[str]:
         """Yield SSE-framed strings for one connected client.
 
@@ -198,7 +226,7 @@ class SSEConnectionManager:
         what the service passes in (typically ``request.is_disconnected`` from
         starlette) so the manager stays framework-agnostic.
         """
-        queue = self.connect(user_id)
+        queue = self.connect(user_id, galaxy_session_id)
         if catch_up is not None:
             await queue.put(catch_up)
         try:
@@ -211,4 +239,4 @@ class SSEConnectionManager:
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
         finally:
-            self.disconnect(user_id, queue)
+            self.disconnect(user_id, queue, galaxy_session_id)

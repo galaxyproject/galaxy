@@ -123,14 +123,21 @@ class SSEEventDispatcher:
             },
         )
 
-    def history_update(self, user_updates: dict[str, list[int]], event_id: Optional[str] = None) -> None:
-        self._send(
-            "history_update",
-            {
-                "user_updates": user_updates,
-                "event_id": event_id or make_event_id(),
-            },
-        )
+    def history_update(
+        self,
+        user_updates: dict[str, list[int]],
+        event_id: Optional[str] = None,
+        session_updates: Optional[dict[str, list[int]]] = None,
+    ) -> None:
+        kwargs: dict[str, Any] = {
+            "user_updates": user_updates,
+            "event_id": event_id or make_event_id(),
+        }
+        if session_updates:
+            # Only include when non-empty: anonymous histories are uncommon on
+            # most deployments, and an empty dict is wasted wire payload.
+            kwargs["session_updates"] = session_updates
+        self._send("history_update", kwargs)
 
     def entry_point_update(self, user_id: int, event_id: Optional[str] = None) -> None:
         """Fan out a wake-up ``entry_point_update`` event for one user.
