@@ -294,32 +294,6 @@ class PSAAuthnz(IdentityProvider):
             return True
         return False
 
-    def refresh_for_job(self, sa_session: galaxy_scoped_session, user_authnz_token: model.UserAuthnzToken) -> bool:
-        """
-        Refresh token for use in async job context (no web transaction available).
-        """
-        if (
-            not user_authnz_token
-            or not user_authnz_token.extra_data
-            or "refresh_token" not in user_authnz_token.extra_data
-        ):
-            return False
-        expires = self._try_to_locate_refresh_token_expiration(user_authnz_token.extra_data)
-        if not expires:
-            log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh for job context")
-            return False
-        # NOTE: this currently differs from refresh() - will try to refresh even if token is expired
-        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
-            on_the_fly_config(sa_session)
-            if self.config["provider"] == "azure":
-                self.refresh_azure(user_authnz_token)
-            else:
-                # Strategy can operate with request=None for the token refresh grant flow
-                strategy = Strategy(None, {}, Storage, self.config)
-                user_authnz_token.refresh_token(strategy)
-            return True
-        return False
-
     def _try_to_locate_refresh_token_expiration(self, extra_data):
         # Try to get expiration from top-level keys
         expires = extra_data.get("expires", None) or extra_data.get("expires_in", None)
