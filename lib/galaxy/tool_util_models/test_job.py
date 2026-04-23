@@ -11,6 +11,8 @@ left ``TestJob.job`` as ``Dict[str, Any]``.
 """
 
 from typing import (
+    Dict,
+    List,
     Optional,
     Union,
 )
@@ -65,8 +67,8 @@ class BaseFile(_StrictJobModel):
     deferred: Annotated[Optional[bool], Field(title="Deferred")] = None
     name: Annotated[Optional[str], Field(title="Name")] = None
     info: Annotated[Optional[str], Field(title="Info")] = None
-    tags: Annotated[Optional[list[str]], Field(title="Tags")] = None
-    hashes: Annotated[Optional[list[HashEntry]], Field(title="Hashes")] = None
+    tags: Annotated[Optional[List[str]], Field(title="Tags")] = None
+    hashes: Annotated[Optional[List[HashEntry]], Field(title="Hashes")] = None
     identifier: Annotated[Optional[str], Field(title="Identifier")] = None
 
 
@@ -75,7 +77,7 @@ class LocationFile(BaseFile):
     location: Annotated[str, Field(title="Location")]
     path: Annotated[Optional[str], Field(title="Path")] = None
     contents: Annotated[Optional[str], Field(title="Contents")] = None
-    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
+    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
 
 
 class PathFile(BaseFile):
@@ -83,7 +85,7 @@ class PathFile(BaseFile):
     path: Annotated[str, Field(title="Path")]
     location: Annotated[Optional[str], Field(title="Location")] = None
     contents: Annotated[Optional[str], Field(title="Contents")] = None
-    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
+    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
 
 
 class ContentsFile(BaseFile):
@@ -93,12 +95,12 @@ class ContentsFile(BaseFile):
     contents: Annotated[str, Field(title="Contents")]
     path: Annotated[Optional[str], Field(title="Path")] = None
     location: Annotated[Optional[str], Field(title="Location")] = None
-    composite_data: Annotated[Optional[list[str]], Field(title="Composite Data")] = None
+    composite_data: Annotated[Optional[List[str]], Field(title="Composite Data")] = None
 
 
 class CompositeDataFile(BaseFile):
     model_config = ConfigDict(extra="forbid", populate_by_name=True, title="CompositeDataFile")
-    composite_data: Annotated[list[str], Field(title="Composite Data")]
+    composite_data: Annotated[List[str], Field(title="Composite Data")]
     path: Annotated[Optional[str], Field(title="Path")] = None
     location: Annotated[Optional[str], Field(title="Location")] = None
     contents: Annotated[Optional[str], Field(title="Contents")] = None
@@ -143,8 +145,8 @@ class Collection(_StrictJobModel):
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
     name: Annotated[Optional[str], Field(title="Name")] = None
     identifier: Annotated[Optional[str], Field(title="Identifier")] = None
-    elements: Annotated[Optional[list["CollectionElement"]], Field(title="Elements")] = None
-    rows: Annotated[Optional[dict[str, list]], Field(title="Rows")] = None
+    elements: Annotated[Optional[List["CollectionElement"]], Field(title="Elements")] = None
+    rows: Annotated[Optional[Dict[str, list]], Field(title="Rows")] = None
 
 
 CollectionElement = Annotated[
@@ -183,9 +185,9 @@ JobParamValue = Union[
     float,
     bool,
     None,
-    list[Union[File, str, int, float, bool, None]],
+    List[Union[File, str, int, float, bool, None]],
 ]
 
 
-class Job(RootModel[dict[str, JobParamValue]]):
+class Job(RootModel[Dict[str, JobParamValue]]):
     model_config = ConfigDict(title="Job")
