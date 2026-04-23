@@ -100,7 +100,11 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # the UI still shows the notification, polling picked it up — a silent
         # regression this assertion catches.
         self._wait_for_sse_event_after(baseline_ts)
-        self.wait_for_selector_visible(f"text={subject}", timeout=SSE_EVENT_TIMEOUT_SECONDS)
+        # Use xpath (works on both Selenium and Playwright backends); `text=` is a
+        # Playwright engine prefix that Selenium's css-selector path rejects.
+        self.wait_for_xpath_visible(
+            f'//*[contains(text(), "{subject}")]', timeout=SSE_EVENT_TIMEOUT_SECONDS
+        )
         self.screenshot("notification_sse_after")
 
     @selenium_test
