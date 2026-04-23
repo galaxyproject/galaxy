@@ -132,6 +132,7 @@ class JobState(str, Enum):
     WAITING = "waiting"
     QUEUED = "queued"
     RUNNING = "running"
+    FINISHING = "finishing"
     OK = "ok"
     ERROR = "error"
     FAILED = "failed"

@@ -836,11 +836,14 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             client.kill()
 
     def recover(self, job: model.Job, job_wrapper: "MinimalJobWrapper") -> None:
-        """Recover jobs stuck in the queued/running state when Galaxy started."""
+        """Recover jobs stuck in the queued/running/finishing state when Galaxy started."""
         job_state = self._job_state(job, job_wrapper)
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
-        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
+        if state == model.Job.states.FINISHING:
+            log.debug(f"(Pulsar/{job.id}) is in FINISHING state, re-running finish_job for recovery")
+            self.mark_as_finished(job_state)
+        elif state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
             log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
             job_state.old_state = state if state != model.Job.states.STOPPED else model.Job.states.RUNNING
             job_state.running = state != model.Job.states.QUEUED
@@ -1102,6 +1105,8 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 galaxy_job_id = remote_job_id
             assert isinstance(self.app.job_manager.job_handler.job_queue, JobHandlerQueue)
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
+            if full_status["status"] in ("complete", "cancelled"):
+                job.handler = self.app.config.server_name
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:

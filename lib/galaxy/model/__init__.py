@@ -1749,6 +1749,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         states.WAITING,
         states.QUEUED,
         states.RUNNING,
+        states.FINISHING,
     ]
 
     # Please include an accessor (get/set pair) for any new columns/members.
