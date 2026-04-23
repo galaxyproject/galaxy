@@ -1,0 +1,13 @@
+<tool id="collection_mapped_over_empty_structured_like" name="collection_mapped_over_empty_structured_like" version="0.1.0">
+  <command><![CDATA[
+        cat '$input1' '${shape.forward}' '${shape.reverse}' > '${list_output.forward}';
+        cat '$input1' '${shape.reverse}' '${shape.forward}' > '${list_output.reverse}'
+  ]]></command>
+  <inputs>
+    <param name="input1" type="data" format="txt" label="Mapped-over data input" />
+    <param name="shape" type="data_collection" collection_type="paired" format="txt" label="Structure source" />
+  </inputs>
+  <outputs>
+    <collection name="list_output" structured_like="shape" type="paired" inherit_format="true" />
+  </outputs>
+</tool>

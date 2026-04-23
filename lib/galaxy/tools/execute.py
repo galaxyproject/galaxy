@@ -21,7 +21,10 @@ from boltons.iterutils import remap
 from packaging.version import Version
 
 from galaxy import model
-from galaxy.exceptions import ToolInputsNotOKException
+from galaxy.exceptions import (
+    ToolInputsNotOKException,
+    ToolInputsNotReadyException,
+)
 from galaxy.model import ToolRequest
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
@@ -41,6 +44,7 @@ from galaxy.tools.execution_helpers import (
     ToolExecutionCache,
 )
 from galaxy.tools.parameters.workflow_utils import is_runtime_value
+from galaxy.work.context import WorkRequestContext
 from ._types import (
     ToolRequestT,
     ToolStateJobInstancePopulatedT,
@@ -86,6 +90,71 @@ class MappingParameters(NamedTuple):
     def ensure_validated(self):
         assert self.validated_param_template is not None
         assert self.validated_param_combinations is not None
+
+    def example_params(self, trans: WorkRequestContext) -> ToolStateJobInstancePopulatedT:
+        """Representative per-job params for output-structure determination.
+
+        Normally returns ``param_combinations[0]``. When the request
+        produces zero jobs (e.g. mapping over an empty collection),
+        falls back to a resolved copy of ``param_template``: batch
+        wrappers and raw ``{"src", "id"}`` refs are replaced with
+        HDCA/DCE ORM objects. Raises :class:`ToolInputsNotReadyException`
+        if a referenced collection exists but is not populated yet, so
+        the scheduler retries instead of surfacing the cryptic
+        "Referenced input parameter is not a collection." error.
+        """
+        if self.param_combinations:
+            return self.param_combinations[0]
+        return _resolve_template(self.param_template, trans)
+
+
+def _resolve_template(template: ToolRequestT, trans: WorkRequestContext) -> ToolStateJobInstancePopulatedT:
+    return {key: _resolve_template_value(value, trans) for key, value in template.items()}
+
+
+def _resolve_template_value(value: Any, trans: WorkRequestContext) -> Any:
+    if isinstance(value, dict):
+        values = value.get("values")
+        if (
+            isinstance(values, list)
+            and values
+            and isinstance(values[0], dict)
+            and "src" in values[0]
+            and "id" in values[0]
+        ):
+            return _resolve_collection_ref(values[0], trans, raw_fallback=value)
+        if "src" in value and "id" in value:
+            return _resolve_collection_ref(value, trans, raw_fallback=value)
+        return {k: _resolve_template_value(v, trans) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_resolve_template_value(v, trans) for v in value]
+    return value
+
+
+def _resolve_collection_ref(
+    ref: dict[str, Any],
+    trans: WorkRequestContext,
+    raw_fallback: Any,
+) -> Union[model.HistoryDatasetCollectionAssociation, model.DatasetCollectionElement, Any]:
+    src = ref.get("src")
+    rid = ref.get("id")
+    if rid is None or src not in ("hdca", "dce"):
+        return raw_fallback
+    decoded = rid if isinstance(rid, int) else trans.security.decode_id(rid)
+    sa_session = trans.sa_session
+    if src == "hdca":
+        hdca = sa_session.get(model.HistoryDatasetCollectionAssociation, decoded)
+        if hdca is None:
+            return raw_fallback
+        if not hdca.collection.populated_optimized:
+            raise ToolInputsNotReadyException("An input collection is not populated.")
+        return hdca
+    dce = sa_session.get(model.DatasetCollectionElement, decoded)
+    if dce is None or dce.child_collection is None:
+        return raw_fallback
+    if not dce.child_collection.populated_optimized:
+        raise ToolInputsNotReadyException("An input collection is not populated.")
+    return dce
 
 
 def execute_async(
@@ -416,13 +485,7 @@ class ExecutionTracker:
 
     @property
     def example_params(self):
-        if self.mapping_params.param_combinations:
-            return self.mapping_params.param_combinations[0]
-        else:
-            # TODO: This isn't quite right - what we want is something like param_template wrapped,
-            # need a test case with an output filter applied to an empty list, still this is
-            # an improvement over not allowing mapping of empty lists.
-            return self.mapping_params.param_template
+        return self.mapping_params.example_params(self.trans)
 
     @property
     def job_count(self):
@@ -510,7 +573,7 @@ class ExecutionTracker:
 
         collection_type_description = (
             self.trans.app.dataset_collection_manager.collection_type_descriptions.for_collection_type(
-                input_collection.collection.collection_type
+                get_collection(input_collection).collection_type
             )
         )
         subcollection_mapping_type = None

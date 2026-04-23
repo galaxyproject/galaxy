@@ -256,6 +256,27 @@ def test_map_over_empty_collection(target_history: TargetHistory, required_tool:
     assert "on collection 1" in name
 
 
+@requires_tool_id("collection_mapped_over_empty_structured_like")
+def test_map_over_empty_with_structured_like_non_mapped_collection_input(
+    target_history: TargetHistory, required_tool: RequiredTool
+):
+    # Regression guard: an output declared ``structured_like=<non-mapped
+    # collection input>`` must precreate an implicit output even when the
+    # mapped-over input is empty (zero jobs). Before the fix,
+    # example_params fell back to param_template where the non-mapped
+    # collection's batch wrapper was never substituted, and precreate
+    # crashed with "Referenced input parameter is not a collection."
+    empty_hdca = target_history.with_list([])
+    shape_hdca = target_history.with_pair(["a", "b"])
+    inputs = {
+        "input1": {"batch": True, "values": [empty_hdca.src_dict]},
+        "shape": shape_hdca.src_dict,
+    }
+    execute = required_tool.execute().with_inputs(inputs)
+    execute.assert_has_n_jobs(0)
+    execute.assert_creates_implicit_collection(0)
+
+
 @dataclass
 class MultiRunInRepeatFixtures:
     repeat_datasets: list[SrcDict]
