@@ -149,15 +149,26 @@ describe("Notifications categories", () => {
             notification,
         });
 
-        // Title should include the tool name
-        expect(wrapper.text()).toContain(notification.content.tool_name);
+        // Title should include the first tool name
+        expect(wrapper.text()).toContain(notification.content.tool_names[0]);
 
         // Description area should show tool request details
         const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
         expect(descriptionArea.text()).toContain(notification.content.description);
         expect(descriptionArea.text()).toContain(notification.content.scientific_domain);
         expect(descriptionArea.text()).toContain(notification.content.requested_version);
-        expect(descriptionArea.text()).toContain(notification.content.requester_name);
-        expect(descriptionArea.text()).toContain(notification.content.requester_affiliation);
+        expect(descriptionArea.text()).toContain(notification.content.requester_email);
+    });
+
+    it("tool_request notification links workflow id and exposes anchor for deep-linking", async () => {
+        const notification = generateToolRequestNotification();
+        notification.content.workflow_id = "encoded-workflow-id-abc";
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        expect(wrapper.html()).toContain(`/workflows/run?id=${notification.content.workflow_id}`);
+        expect(wrapper.find(`#notification-card-${notification.id}`).exists()).toBe(true);
     });
 });
