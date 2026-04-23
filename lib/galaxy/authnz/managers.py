@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import builtins
 import logging
 from typing import (
@@ -31,7 +33,6 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
-from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from .psa_authnz import (
     BACKENDS_NAME,
     PSAAuthnz,
@@ -39,6 +40,7 @@ from .psa_authnz import (
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
 
