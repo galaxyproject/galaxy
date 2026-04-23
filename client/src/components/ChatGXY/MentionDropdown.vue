@@ -188,20 +188,13 @@ function updatePosition() {
 
 watch(
     () => [props.visible, props.mentionType, props.searchText],
-    () => {
+    ([visible]) => {
         selectedIndex.value = 0;
-        if (props.visible) {
-            updatePosition();
-        }
-    },
-);
-
-watch(
-    () => props.visible,
-    (visible) => {
         if (visible && props.anchorEl && dropdownEl.value) {
+            // autoUpdate fires its initial callback immediately, so we don't need a separate updatePosition() call
+            cleanupAutoUpdate?.();
             cleanupAutoUpdate = autoUpdate(props.anchorEl, dropdownEl.value, updatePosition);
-        } else if (cleanupAutoUpdate) {
+        } else if (!visible && cleanupAutoUpdate) {
             cleanupAutoUpdate();
             cleanupAutoUpdate = null;
         }
