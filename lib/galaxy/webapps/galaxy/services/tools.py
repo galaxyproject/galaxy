@@ -63,7 +63,10 @@ from galaxy.tool_util_models.parameters import (
 )
 from galaxy.tools import Tool
 from galaxy.tools._types import InputFormatT
-from galaxy.tools.data_fetch_utils import staged_fetch_token_expiration
+from galaxy.tools.data_fetch_utils import (
+    fetch_uses_authorization_header,
+    staged_fetch_token_expiration,
+)
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
@@ -297,11 +300,14 @@ class ToolsService(ServiceBase):
             clean_payload[key] = value
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
+        user_context = ProvidesFileSourcesUserContext(trans)
+        if fetch_uses_authorization_header(clean_payload, trans.app.file_sources, user_context) and trans.user:
+            trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, trans.user)
         expires_at = staged_fetch_token_expiration(
             trans.user,
             clean_payload,
             trans.app.file_sources,
-            ProvidesFileSourcesUserContext(trans),
+            user_context,
         )
         request = dumps(clean_payload)
         create_payload: ToolRunPayload = {
