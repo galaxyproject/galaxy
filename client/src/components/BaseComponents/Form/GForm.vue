@@ -1,22 +1,5 @@
-<script setup lang="ts">
-import { ref } from "vue";
+<script lang="ts">
+import { GForm } from "@galaxyproject/galaxy-ui";
 
-const form = ref<HTMLFormElement>();
-
-function checkValidity() {
-    if (!form.value) {
-        throw new TypeError("GForm: form element is not mounted");
-    }
-    return form.value.checkValidity();
-}
-
-defineExpose({
-    checkValidity,
-});
+export default GForm;
 </script>
-
-<template>
-    <form ref="form">
-        <slot></slot>
-    </form>
-</template>
