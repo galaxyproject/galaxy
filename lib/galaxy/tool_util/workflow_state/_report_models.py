@@ -361,6 +361,8 @@ class SingleLintReport(BaseModel):
     workflow: str
     lint_errors: int = 0
     lint_warnings: int = 0
+    lint_error_messages: List[str] = Field(default_factory=list)
+    lint_warning_messages: List[str] = Field(default_factory=list)
     results: List[ValidationStepResult] = []
     structure_errors: List[str] = Field(default_factory=list)
     encoding_errors: List[str] = Field(default_factory=list)
