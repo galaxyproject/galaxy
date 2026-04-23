@@ -64,7 +64,8 @@ const title = computed(() => {
     if (props.notification.category === "new_shared_item") {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
     } else if (props.notification.category === "tool_request") {
-        return `Tool Request: ${props.notification.content.tool_name}`;
+        const names = props.notification.content.tool_names;
+        return names.length === 1 ? `Tool Request: ${names[0]}` : `Tool Request: ${names.length} tools`;
     } else {
         return props.notification.content.subject;
     }
@@ -153,80 +154,104 @@ function markNotificationAsSeen() {
 </script>
 
 <template>
-    <GCard
-        v-if="props.notification"
-        :id="props.notification.id"
-        :title="title"
-        :primary-actions="primaryActions"
-        :title-size="'sm'"
-        :title-icon="titleIcon"
-        :selected="props.selected"
-        :selectable="props.selectable"
-        :update-time="props.notification.publication_time ?? props.notification.create_time"
-        :update-time-icon="faClock"
-        :update-time-title="`Sent ${props.notification.publication_time ? 'on' : 'at'}`"
-        :content-class="[props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : '']"
-        @select="emit('select', [props.notification])">
-        <template v-slot:description>
-            <template v-if="props.notification.category === 'new_shared_item'">
-                <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
-                >{{ " " }}<span>shared </span>
-                <BLink
-                    v-g-tooltip.bottom
-                    :title="`View ${props.notification.content.item_type} in new tab`"
-                    class="text-primary"
-                    :href="absPath(props.notification.content.slug)"
-                    target="_blank"
-                    @click="markNotificationAsSeen()">
-                    {{ props.notification.content.item_name }}
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
-                </BLink>
-                <em>{{ props.notification.content.item_type }}</em
-                >{{ " " }}<span> with you.</span>
+    <div v-if="props.notification" :id="`notification-card-${props.notification.id}`">
+        <GCard
+            :id="props.notification.id"
+            :title="title"
+            :primary-actions="primaryActions"
+            :title-size="'sm'"
+            :title-icon="titleIcon"
+            :selected="props.selected"
+            :selectable="props.selectable"
+            :update-time="props.notification.publication_time ?? props.notification.create_time"
+            :update-time-icon="faClock"
+            :update-time-title="`Sent ${props.notification.publication_time ? 'on' : 'at'}`"
+            :content-class="[
+                props.unreadBorder && !props.notification.seen_time ? 'border-dark unread-notification' : '',
+            ]"
+            @select="emit('select', [props.notification])">
+            <template v-slot:description>
+                <template v-if="props.notification.category === 'new_shared_item'">
+                    <span>The user</span>{{ " " }}<b>{{ props.notification.content.owner_name }}</b
+                    >{{ " " }}<span>shared </span>
+                    <BLink
+                        v-g-tooltip.bottom
+                        :title="`View ${props.notification.content.item_type} in new tab`"
+                        class="text-primary"
+                        :href="absPath(props.notification.content.slug)"
+                        target="_blank"
+                        @click="markNotificationAsSeen()">
+                        {{ props.notification.content.item_name }}
+                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width size="sm" />
+                    </BLink>
+                    <em>{{ props.notification.content.item_type }}</em
+                    >{{ " " }}<span> with you.</span>
+                </template>
+                <template v-else-if="props.notification.category === 'tool_request'">
+                    <dl class="mb-0">
+                        <template v-if="props.notification.content.tool_names.length > 1">
+                            <dt>Tools</dt>
+                            <dd>
+                                <ul class="mb-0 pl-3">
+                                    <li v-for="name in props.notification.content.tool_names" :key="name">
+                                        {{ name }}
+                                    </li>
+                                </ul>
+                            </dd>
+                        </template>
+                        <template v-else>
+                            <dt>Tool</dt>
+                            <dd>{{ props.notification.content.tool_names[0] }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.description">
+                            <dt>Description</dt>
+                            <dd>{{ props.notification.content.description }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.tool_url">
+                            <dt>URL</dt>
+                            <dd>
+                                <span class="text-break">{{ props.notification.content.tool_url }}</span>
+                            </dd>
+                        </template>
+                        <template v-if="props.notification.content.scientific_domain">
+                            <dt>Scientific domain</dt>
+                            <dd>{{ props.notification.content.scientific_domain }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.requested_version">
+                            <dt>Version</dt>
+                            <dd>{{ props.notification.content.requested_version }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.workflow_id">
+                            <dt>Workflow</dt>
+                            <dd>
+                                <RouterLink :to="`/workflows/run?id=${props.notification.content.workflow_id}`">
+                                    {{ props.notification.content.workflow_id }}
+                                </RouterLink>
+                            </dd>
+                        </template>
+                        <template v-if="props.notification.content.additional_remarks">
+                            <dt>Additional remarks</dt>
+                            <dd>{{ props.notification.content.additional_remarks }}</dd>
+                        </template>
+                        <template v-if="props.notification.content.requester_email">
+                            <dt>Requested by</dt>
+                            <dd>
+                                <BLink :href="`mailto:${props.notification.content.requester_email}`">
+                                    {{ props.notification.content.requester_email }}
+                                </BLink>
+                            </dd>
+                        </template>
+                    </dl>
+                </template>
+                <template v-else>
+                    <span
+                        class="notification-message"
+                        @click="handleMessageClick"
+                        v-html="renderMarkdown(props.notification.content.message)" />
+                </template>
             </template>
-            <template v-else-if="props.notification.category === 'tool_request'">
-                <dl class="mb-0">
-                    <template v-if="props.notification.content.description">
-                        <dt>Description</dt>
-                        <dd>{{ props.notification.content.description }}</dd>
-                    </template>
-                    <template v-if="props.notification.content.tool_url">
-                        <dt>URL</dt>
-                        <dd>
-                            <span class="text-break">{{ props.notification.content.tool_url }}</span>
-                        </dd>
-                    </template>
-                    <template v-if="props.notification.content.scientific_domain">
-                        <dt>Scientific domain</dt>
-                        <dd>{{ props.notification.content.scientific_domain }}</dd>
-                    </template>
-                    <template v-if="props.notification.content.requested_version">
-                        <dt>Version</dt>
-                        <dd>{{ props.notification.content.requested_version }}</dd>
-                    </template>
-                    <dt>Requested by</dt>
-                    <dd>
-                        <span v-if="props.notification.content.requester_name">
-                            {{ props.notification.content.requester_name }}
-                            <span v-if="props.notification.content.requester_affiliation">
-                                ({{ props.notification.content.requester_affiliation }})
-                            </span>
-                            &mdash;
-                        </span>
-                        <BLink :href="`mailto:${props.notification.content.requester_email}`">
-                            {{ props.notification.content.requester_email }}
-                        </BLink>
-                    </dd>
-                </dl>
-            </template>
-            <template v-else>
-                <span
-                    class="notification-message"
-                    @click="handleMessageClick"
-                    v-html="renderMarkdown(props.notification.content.message)" />
-            </template>
-        </template>
-    </GCard>
+        </GCard>
+    </div>
 </template>
 
 <style lang="scss">
