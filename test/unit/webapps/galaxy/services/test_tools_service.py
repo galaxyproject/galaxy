@@ -3,21 +3,31 @@ from datetime import (
     timedelta,
     timezone,
 )
-from unittest.mock import Mock
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
-    FileSourcePluginsConfig,
 )
+from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.model import (
     History,
+    User,
     UserAuthnzToken,
 )
 from galaxy.schema.fetch_data import FetchDataPayload
 from galaxy.schema.fields import Security
 from galaxy.webapps.galaxy.services.tools import ToolsService
+
+
+class TestableToolsService(ToolsService):
+    def _create(self, trans, payload, **kwd):
+        return payload
 
 
 class TestToolsService:
@@ -52,20 +62,19 @@ class TestToolsService:
         token = UserAuthnzToken(
             provider="oidc",
             uid="oidc-user",
-            user=self.trans.user,
+            user=cast(User, self.trans.user),
             extra_data={"access_token": "access-token"},
         )
-        token.expiration_time = expires_at
+        cast(Any, token).expiration_time = expires_at
         self.trans.sa_session.add(token)
         self.trans.sa_session.commit()
 
-        service = ToolsService(
+        service = TestableToolsService(
             config=self.app.config,
-            toolbox_search=Mock(),
+            toolbox_search=cast(Any, object()),
             security=self.app.security,
-            history_manager=Mock(),
+            history_manager=cast(Any, object()),
         )
-        service._create = Mock(side_effect=lambda trans, payload, **kwd: payload)
 
         payload = FetchDataPayload.model_validate(
             {
@@ -84,7 +93,7 @@ class TestToolsService:
                 ],
             }
         )
-        create_payload = service.create_fetch(self.trans, payload)
+        create_payload = service.create_fetch(cast(ProvidesHistoryContext, self.trans), payload)
 
         assert create_payload["tool_id"] == "__DATA_FETCH__"
         assert create_payload["inputs"]["token_expires_at"] == expires_at.isoformat()

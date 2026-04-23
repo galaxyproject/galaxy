@@ -424,12 +424,12 @@ def test_fail_if_expired_raises_for_past_timestamp():
 
 
 def test_fail_if_expired_allows_missing_timestamp():
-    assert _fail_if_expired(None) is None
+    _fail_if_expired(None)
 
 
 def test_fail_if_expired_allows_future_timestamp():
     expiry = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
-    assert _fail_if_expired(expiry) is None
+    _fail_if_expired(expiry)
 
 
 def test_do_fetch_short_circuits_before_processing_when_expired(monkeypatch):
@@ -454,7 +454,7 @@ def test_do_fetch_processes_request_when_not_expired(monkeypatch):
         request_path = os.path.join(execute_context.job_directory, "request.json")
         with open(request_path, "w") as f:
             json.dump({"targets": []}, f)
-        expected_json = {"__unnamed_outputs": []}
+        expected_json: dict[str, list[dict[str, str]]] = {"__unnamed_outputs": []}
         request_to_galaxy_json = mock.Mock(return_value=expected_json)
         monkeypatch.setattr(data_fetch, "_request_to_galaxy_json", request_to_galaxy_json)
         data_fetch.do_fetch(

@@ -3,13 +3,15 @@ from datetime import (
     timedelta,
     timezone,
 )
+from typing import cast
 
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConf,
     DictFileSourcesUserContext,
-    FileSourcePluginsConfig,
 )
+from galaxy.files.models import FileSourcePluginsConfig
+from galaxy.model import User
 from galaxy.tools.data_fetch_utils import staged_fetch_token_expiration
 
 
@@ -68,7 +70,7 @@ def test_staged_fetch_token_expiration_returns_none_without_authorization_header
             }
         ]
     }
-    assert staged_fetch_token_expiration(user, request, _file_sources(), _user_context()) is None
+    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) is None
 
 
 def test_staged_fetch_token_expiration_returns_earliest_expiration_for_authorized_sources():
@@ -83,7 +85,7 @@ def test_staged_fetch_token_expiration_returns_earliest_expiration_for_authorize
             }
         ]
     }
-    assert staged_fetch_token_expiration(user, request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
 
 
 def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authorized_one_exists():
@@ -100,7 +102,7 @@ def test_staged_fetch_token_expiration_ignores_non_authorized_urls_when_authoriz
             }
         ]
     }
-    assert staged_fetch_token_expiration(user, request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
 
 
 def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets():
@@ -120,4 +122,4 @@ def test_staged_fetch_token_expiration_finds_authorized_urls_in_nested_targets()
             }
         ]
     }
-    assert staged_fetch_token_expiration(user, request, _file_sources(), _user_context()) == earliest
+    assert staged_fetch_token_expiration(cast(User, user), request, _file_sources(), _user_context()) == earliest
