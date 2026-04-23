@@ -29,9 +29,7 @@ export interface ResolvedEntity {
     name: string;
     extension?: string;
     state?: string;
-    file_size?: number;
     hid?: number;
-    dataset_count?: number;
 }
 
 export const MENTION_PATTERN_SOURCE = "@(dataset|history):(\\S+)";
