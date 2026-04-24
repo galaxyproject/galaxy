@@ -621,7 +621,7 @@ def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
 
     # Kombu's SQLA transport URL is ``sqlalchemy+<dialect>://...``. Strip the
     # ``sqlalchemy+`` prefix to get an engine URL we can hand to SQLAlchemy.
-    sa_url = broker_url[len("sqlalchemy+"):] if broker_url.startswith("sqlalchemy+") else broker_url
+    sa_url = broker_url[len("sqlalchemy+") :] if broker_url.startswith("sqlalchemy+") else broker_url
     engine = create_engine(sa_url)
     try:
         with engine.begin() as conn:

@@ -62,9 +62,7 @@ def main() -> int:
         monitor = app[HistoryAuditMonitor]
         heartbeat.add_audit_monitor_change_callback(monitor.on_role_change)
     else:
-        log.warning(
-            "enable_sse_history_updates is False — galaxy-sse-monitor will idle with no producers"
-        )
+        log.warning("enable_sse_history_updates is False — galaxy-sse-monitor will idle with no producers")
 
     heartbeat.start()
 
