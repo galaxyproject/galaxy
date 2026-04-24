@@ -65,6 +65,7 @@ from galaxy.managers.file_source_instances import (
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import (
     JobManager as JobQueryManager,
@@ -1018,10 +1019,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # up. start/stop are driven by heartbeat role transitions rather than
         # postfork, so the monitor cleanly migrates when the leader dies.
         if self.config.enable_sse_history_updates:
-            from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
-
-            self._history_audit_monitor = self._register_singleton(HistoryAuditMonitor)
-            self.database_heartbeat.add_audit_monitor_change_callback(self._history_audit_monitor.on_role_change)
+            monitor = self._register_singleton(HistoryAuditMonitor)
+            self.database_heartbeat.add_audit_monitor_change_callback(monitor.on_role_change)
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
@@ -1058,9 +1057,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.shutdown()
 
     def _shutdown_history_audit_monitor(self):
-        monitor = getattr(self, "_history_audit_monitor", None)
-        if monitor:
-            monitor.shutdown()
+        if not self.config.enable_sse_history_updates:
+            return
+        self[HistoryAuditMonitor].shutdown()
 
     def _shutdown_scheduling_manager(self):
         self.workflow_scheduling_manager.shutdown()

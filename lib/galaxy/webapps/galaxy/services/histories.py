@@ -94,6 +94,7 @@ from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
     tool_request_to_model,
 )
+from galaxy.managers.notification import NotificationManager
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow.extract import summarize
@@ -129,6 +130,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
         notification_service: NotificationService,
+        notification_manager: NotificationManager,
     ):
         super().__init__(security)
         self.manager = manager
@@ -138,7 +140,9 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
         self.filters = filters
-        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_service)
+        self.shareable_service = ShareableHistoryService(
+            self.manager, self.serializer, notification_service, notification_manager
+        )
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(

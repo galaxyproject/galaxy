@@ -12,6 +12,7 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
     RefactorRequest,
     RefactorResponse,
@@ -57,11 +58,14 @@ class WorkflowsService(ServiceBase):
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
         notification_service: NotificationService,
+        notification_manager: NotificationManager,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
-        self.shareable_service = ShareableService(workflows_manager, serializer, notification_service)
+        self.shareable_service = ShareableService(
+            workflows_manager, serializer, notification_service, notification_manager
+        )
         self._tool_shed_registry = tool_shed_registry
 
     def index(

@@ -55,6 +55,11 @@ class _PgListenAdapter:
     live for the lifetime of the monitor and never be returned to the pool.
     """
 
+    # Typed once at the class level so both driver branches can assign without
+    # re-annotating the same attribute.
+    _conn: Any
+    driver: str
+
     def __init__(self, engine: Engine) -> None:
         # Strip the SA ``+driver`` suffix so the raw DBAPI libraries accept the URL.
         dsn = engine.url.set(drivername="postgresql").render_as_string(hide_password=False)
@@ -62,7 +67,7 @@ class _PgListenAdapter:
         if driver == "psycopg":
             import psycopg  # conditional: psycopg3 driver
 
-            self._conn: Any = psycopg.connect(dsn, autocommit=True)
+            self._conn = psycopg.connect(dsn, autocommit=True)
             self.driver = "psycopg3"
         else:
             import psycopg2  # conditional: psycopg2 driver

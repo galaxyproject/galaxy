@@ -64,7 +64,7 @@ class SSELineListener:
         api_key: str,
         headers: Optional[dict] = None,
         timeout: int = 30,
-    ):
+    ) -> None:
         self.url = url
         self.api_key = api_key
         self.headers = headers or {}

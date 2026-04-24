@@ -38,6 +38,7 @@ from galaxy.webapps.galaxy.services.base import (
     ensure_celery_tasks_enabled,
     ServiceBase,
 )
+from galaxy.managers.notification import NotificationManager
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
@@ -58,11 +59,14 @@ class PagesService(ServiceBase):
         serializer: PageSerializer,
         short_term_storage_allocator: ShortTermStorageAllocator,
         notification_service: NotificationService,
+        notification_manager: NotificationManager,
     ):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = ShareableService(self.manager, self.serializer, notification_service)
+        self.shareable_service = ShareableService(
+            self.manager, self.serializer, notification_service, notification_manager
+        )
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(

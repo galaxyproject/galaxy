@@ -22,7 +22,7 @@ from galaxy.webapps.galaxy.services.notifications import NotificationService
 
 
 class EventsService(ServiceBase):
-    def __init__(self, sse_manager: SSEConnectionManager, notifications: NotificationService):
+    def __init__(self, sse_manager: SSEConnectionManager, notifications: NotificationService) -> None:
         self.sse_manager = sse_manager
         self.notifications = notifications
 

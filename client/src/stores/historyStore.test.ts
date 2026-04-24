@@ -114,6 +114,10 @@ describe("historyStore — config-driven SSE vs polling", () => {
         });
 
         it("triggers refreshHistoryFromPush when an SSE event names the current history", async () => {
+            // This test asserts the store's *decision* to refresh, not the refresh
+            // itself — ``refreshHistoryFromPush`` is mocked so we can observe the
+            // dispatch. The real refresh is covered end-to-end in the Selenium
+            // SSE integration tests (see test/integration_selenium/test_history_sse.py).
             const store = useHistoryStore();
             await primeStore(() => store.startWatchingHistory());
             // Drive the store to a known current-history id so the handler has
@@ -181,8 +185,10 @@ describe("historyStore — config-driven SSE vs polling", () => {
             // not two.
             await vi.advanceTimersByTimeAsync(3000);
             await flushPromises();
+            // Exactly one additional poll after the 3000ms advance — anything
+            // else means a second independent polling loop was scheduled.
             const deltaAfterSecond = mockWatchHistory.mock.calls.length - pollsAfterFirst;
-            expect(deltaAfterSecond).toBeLessThanOrEqual(1);
+            expect(deltaAfterSecond).toBe(1);
         });
     });
 });
