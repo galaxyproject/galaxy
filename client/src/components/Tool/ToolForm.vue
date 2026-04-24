@@ -450,13 +450,23 @@ export default {
                 }
 
                 const nJobs = jobResponse.jobs ? jobResponse.jobs.length : 0;
-                if (nJobs > 0) {
+                const nErrors = jobResponse.errors?.length || 0;
+                if (nJobs > 0 && nErrors === 0) {
                     this.showForm = false;
                     this.saveLatestResponse({
                         jobDef,
                         jobResponse,
                         toolName: this.toolName,
                     });
+                } else if (nErrors > 0) {
+                    this.showError = true;
+                    this.showForm = true;
+                    this.errorTitle =
+                        nJobs > 0
+                            ? `Job submission for ${nErrors} out of ${nJobs + nErrors} jobs failed.`
+                            : "Job submission rejected.";
+                    this.errorContent = jobResponse.errors;
+                    return;
                 }
 
                 if (prevRoute === this.$route.fullPath) {
