@@ -240,15 +240,11 @@ class NotificationManager:
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
-        channels = type(channel_settings).model_fields
-        for channel in channels:
-            if channel not in self.channel_plugins:
-                continue  # Skip unsupported channels
+        for channel, plugin in self.channel_plugins.items():
             user_opted_out = getattr(channel_settings, channel, False) is False
             if user_opted_out and not self._is_urgent(notification):
                 continue  # Skip sending to opted-out users unless it's an urgent notification
             try:
-                plugin = self.channel_plugins[channel]
                 plugin.send(notification, user)
             except Exception as e:
                 log.error(
