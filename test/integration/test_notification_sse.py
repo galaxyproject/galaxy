@@ -66,7 +66,7 @@ class TestNotificationSSEIntegration(IntegrationTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def _stream_url(self) -> str:
-        return urljoin(self.url, "api/notifications/stream")
+        return urljoin(self.url, "api/events/stream")
 
     def test_sse_receives_notification_events(self):
         """When a notification is created, the SSE stream should receive it."""

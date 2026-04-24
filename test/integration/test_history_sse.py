@@ -44,7 +44,10 @@ class TestHistorySSEIntegration(IntegrationTestCase):
         listener.start()
         try:
             self.dataset_populator.new_dataset(history_id, wait=False)
-            history_events = listener.wait_for_event("history_update")
+            history_events = listener.wait_for_event_where(
+                "history_update",
+                lambda e: history_id in json.loads(e["data"]).get("history_ids", []),
+            )
             found = any(history_id in json.loads(e["data"]).get("history_ids", []) for e in history_events)
             assert found, f"Expected history_id '{history_id}' in history_update events, got: {history_events}"
         finally:
@@ -85,7 +88,10 @@ class TestHistorySSEIntegration(IntegrationTestCase):
 
             # User A uploads to their own history — this is what A's stream must observe.
             self.dataset_populator.new_dataset(user_a_history_id, wait=False)
-            history_events = listener.wait_for_event("history_update")
+            history_events = listener.wait_for_event_where(
+                "history_update",
+                lambda e: user_a_history_id in json.loads(e["data"]).get("history_ids", []),
+            )
         finally:
             listener.stop()
 

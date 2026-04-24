@@ -10,6 +10,7 @@ thread instead of silently swallowing them.
 import queue
 import threading
 from typing import (
+    Callable,
     Optional,
 )
 
@@ -96,6 +97,26 @@ class SSELineListener:
             return events if events else None
 
         return wait_on(_check, f"SSE {event_type} event", timeout=timeout)
+
+    def wait_for_event_where(
+        self,
+        event_type: str,
+        predicate: Callable[[dict], bool],
+        timeout: int = DEFAULT_WAIT_TIMEOUT,
+    ) -> list[dict]:
+        """Block until at least one ``event_type`` event matches ``predicate``.
+
+        Returns every ``event_type`` event observed so far, not just matches, so
+        callers can still inspect the surrounding stream (e.g. assert what else
+        did or didn't appear) after the wait resolves.
+        """
+
+        def _check():
+            self._raise_if_errored()
+            events = self.get_events(event_type)
+            return events if any(predicate(e) for e in events) else None
+
+        return wait_on(_check, f"SSE {event_type} matching predicate", timeout=timeout)
 
     def get_events(self, event_type: Optional[str] = None) -> list[dict]:
         """Return all collected events so far, optionally filtered by type."""
