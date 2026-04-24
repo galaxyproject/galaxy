@@ -28,6 +28,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     // --- SSE setup (listen only for notification event types) ---
     const NOTIFICATION_EVENT_TYPES = ["notification_update", "broadcast_update", "notification_status"] as const;
     const { connect: sseConnect, disconnect: sseDisconnect } = useSSE(handleSSEEvent, NOTIFICATION_EVENT_TYPES);
+    let stopPolling: (() => void) | null = null;
 
     function handleSSEEvent(event: MessageEvent) {
         try {
@@ -121,7 +122,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     // every time the tab regains focus — in SSE mode that would re-start
     // polling we explicitly don't want.
     let watchingInitialized = false;
-    let stopPolling: (() => void) | null = null;
     function ensureWatchingWithConfig() {
         if (watchingInitialized) {
             return;
@@ -133,7 +133,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
             if (configStore.config?.enable_notification_system) {
                 sseConnect();
             } else {
-                const { startWatchingResource: startPollingResource, stopWatchingResource } = useResourceWatcher(
+                const { startWatchingResource: startPolling, stopWatchingResource } = useResourceWatcher(
                     getNotificationStatus,
                     {
                         shortPollingInterval: ACTIVE_POLLING_INTERVAL,
@@ -141,7 +141,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                     },
                 );
                 stopPolling = stopWatchingResource;
-                startPollingResource();
+                startPolling();
             }
         };
 
@@ -206,9 +206,17 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         totalUnreadCount.value = notifications.value.filter((n) => !n.seen_time).length;
     }
 
+    // Closes the SSE stream and stops the polling watcher so nothing running
+    // in the background can outlive a full-page navigation (login/register).
+    // A late-arriving response from an anonymous-cookie request would otherwise
+    // overwrite the just-issued authenticated ``galaxysession`` cookie.
     function stopWatchingNotifications() {
         sseDisconnect();
-        stopPolling?.();
+        if (stopPolling) {
+            stopPolling();
+            stopPolling = null;
+        }
+        watchingInitialized = false;
     }
 
     return {

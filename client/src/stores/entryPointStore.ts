@@ -48,9 +48,10 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         disconnect: sseDisconnect,
         connected: sseConnected,
     } = useSSE(handleEntryPointSSEEvent, ["entry_point_update"]);
+    let stopPolling: (() => void) | null = null;
+    let stopConnectedWatcher: (() => void) | null = null;
 
     let watchingInitialized = false;
-    let stopWatchingEntryPointsResource: (() => void) | null = null;
 
     // Callers opt in via ``startWatchingEntryPoints()`` (App.vue gates this on
     // ``interactivetools_enable``). We then pick SSE or polling based on the
@@ -70,7 +71,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
                 // navigated away and missed events" window.
                 fetchEntryPoints().catch((err) => console.warn("Initial entry-point load failed", err));
                 sseConnect();
-                watch(sseConnected, (isConnected, wasConnected) => {
+                stopConnectedWatcher = watch(sseConnected, (isConnected, wasConnected) => {
                     if (isConnected && !wasConnected) {
                         fetchEntryPoints().catch((err) =>
                             console.error("Error refreshing entry points on SSE reconnect:", err),
@@ -82,7 +83,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
                     shortPollingInterval: ACTIVE_POLLING_INTERVAL,
                     enableBackgroundPolling: false,
                 });
-                stopWatchingEntryPointsResource = stopWatchingResource;
+                stopPolling = stopWatchingResource;
                 startWatchingResource();
             }
         };
@@ -136,11 +137,6 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         return { ...original, ...updated };
     }
 
-    function stopWatchingEntryPoints() {
-        sseDisconnect();
-        stopWatchingEntryPointsResource?.();
-    }
-
     function removeEntryPoint(toolId: string) {
         const index = entryPoints.value.findIndex((ep) => {
             return ep.id === toolId ? true : false;
@@ -148,6 +144,22 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         if (index >= 0) {
             entryPoints.value.splice(index, 1);
         }
+    }
+
+    // Closes the SSE stream and stops the polling watcher; paired with login
+    // /register flows so background traffic doesn't outlive the navigation
+    // and clobber the freshly authenticated session cookie.
+    function stopWatchingEntryPoints() {
+        sseDisconnect();
+        if (stopPolling) {
+            stopPolling();
+            stopPolling = null;
+        }
+        if (stopConnectedWatcher) {
+            stopConnectedWatcher();
+            stopConnectedWatcher = null;
+        }
+        watchingInitialized = false;
     }
 
     return {

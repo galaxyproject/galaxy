@@ -401,6 +401,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         handleHistorySSEEvent,
         SSE_HISTORY_EVENT_TYPES,
     );
+    let stopHistoryPolling: (() => void) | null = null;
+    let stopIsWatchingWatcher: (() => void) | null = null;
 
     function handleHistorySSEEvent(event: MessageEvent) {
         try {
@@ -433,7 +435,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
     // polling we explicitly don't want.
     const isWatchingHistory = ref(false);
     let watchingInitialized = false;
-    let stopWatchingHistoryResource: (() => void) | null = null;
     function startWatchingHistoryWithSSE() {
         if (watchingInitialized) {
             return;
@@ -459,8 +460,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                         longPollingInterval: INACTIVE_POLLING_INTERVAL,
                     },
                 );
-                stopWatchingHistoryResource = stopWatchingResource;
-                watch(isWatchingResource, (v) => (isWatchingHistory.value = v), { immediate: true });
+                stopHistoryPolling = stopWatchingResource;
+                stopIsWatchingWatcher = watch(isWatchingResource, (v) => (isWatchingHistory.value = v), {
+                    immediate: true,
+                });
                 startWatchingResource();
             }
         };
@@ -478,11 +481,6 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 },
             );
         }
-    }
-
-    function stopWatchingHistory() {
-        sseHistoryDisconnect();
-        stopWatchingHistoryResource?.();
     }
 
     async function loadHistoryById(historyId: string) {
@@ -580,6 +578,23 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const contentStats = { id: historyId, ...data } as HistoryContentsStats;
         setHistory(contentStats);
         return contentStats;
+    }
+
+    // Closes SSE and stops polling so the watcher can't emit a trailing
+    // anonymous-cookie request that would overwrite the authenticated
+    // ``galaxysession`` cookie set by the login/register response.
+    function stopWatchingHistory() {
+        sseHistoryDisconnect();
+        if (stopHistoryPolling) {
+            stopHistoryPolling();
+            stopHistoryPolling = null;
+        }
+        if (stopIsWatchingWatcher) {
+            stopIsWatchingWatcher();
+            stopIsWatchingWatcher = null;
+        }
+        isWatchingHistory.value = false;
+        watchingInitialized = false;
     }
 
     return {
