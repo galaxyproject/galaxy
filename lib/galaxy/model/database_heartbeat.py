@@ -17,6 +17,8 @@ from galaxy.model.orm.now import now
 log = logging.getLogger(__name__)
 
 WEBAPP = "webapp"  # WorkerProcess.app_type for web apps.
+SSE_MONITOR = "sse_monitor"  # WorkerProcess.app_type for the standalone SSE monitor process.
+SSE_MONITOR_SERVER_PREFIX = "sse_monitor."  # server_name prefix used by the standalone SSE monitor process.
 
 
 class DatabaseHeartbeat:
@@ -27,7 +29,9 @@ class DatabaseHeartbeat:
         self.hostname = socket.gethostname()
         self._engine = application_stack.app.model.engine
         self._is_config_watcher = False
+        self._is_history_audit_monitor = False
         self._observers = []
+        self._audit_monitor_observers = []
         self.exit = threading.Event()
         self.thread = None
         self.active = False
@@ -72,6 +76,9 @@ class DatabaseHeartbeat:
     def add_change_callback(self, callback):
         self._observers.append(callback)
 
+    def add_audit_monitor_change_callback(self, callback):
+        self._audit_monitor_observers.append(callback)
+
     @property
     def is_config_watcher(self):
         return self._is_config_watcher
@@ -83,6 +90,28 @@ class DatabaseHeartbeat:
         for callback in self._observers:
             callback(self._is_config_watcher)
 
+    @property
+    def is_history_audit_monitor(self):
+        return self._is_history_audit_monitor
+
+    @is_history_audit_monitor.setter
+    def is_history_audit_monitor(self, value):
+        self._is_history_audit_monitor = value
+        log.debug(
+            "%s %s history audit monitor",
+            self.server_name,
+            "is" if self._is_history_audit_monitor else "is not",
+        )
+        for callback in self._audit_monitor_observers:
+            callback(self._is_history_audit_monitor)
+
+    def _app_type(self):
+        if self.application_stack.app.is_webapp:
+            return WEBAPP
+        if self.server_name.startswith(SSE_MONITOR_SERVER_PREFIX):
+            return SSE_MONITOR
+        return None
+
     def update_watcher_designation(self):
         expression = self._worker_process_identifying_clause()
         stmt = select(WorkerProcess).with_for_update(of=WorkerProcess).where(expression)
@@ -90,19 +119,37 @@ class DatabaseHeartbeat:
             worker_process = session.scalars(stmt).first()
             if not worker_process:
                 worker_process = WorkerProcess(server_name=self.server_name, hostname=self.hostname)
-            if self.application_stack.app.is_webapp:
-                worker_process.app_type = WEBAPP
+            app_type = self._app_type()
+            if app_type is not None:
+                worker_process.app_type = app_type
             worker_process.update_time = now()
             worker_process.pid = self.pid
             session.add(worker_process)
+        active = list(self.get_active_processes(self.heartbeat_interval + 1))
         # We only want a single process watching the various config files on the file system.
         # We just pick the max server name for simplicity
-        webapp_servers = [
-            p.server_name for p in self.get_active_processes(self.heartbeat_interval + 1) if p.app_type == WEBAPP
-        ]
+        webapp_servers = [p.server_name for p in active if p.app_type == WEBAPP]
         is_config_watcher = bool(webapp_servers) and self.server_name == max(webapp_servers)
         if is_config_watcher != self.is_config_watcher:
             self.is_config_watcher = is_config_watcher
+        # The history-audit monitor is a single elected process too, but preference
+        # goes to a standalone sse_monitor daemon when one is running so the
+        # monitor's postgres LISTEN isn't blocked by webapp GIL pauses. If no
+        # dedicated process is registered we fall back to a webapp (same
+        # max-server_name tiebreaker as config_watcher).
+        audit_leader = self._elect_audit_leader(active, webapp_servers)
+        is_history_audit_monitor = audit_leader is not None and self.server_name == audit_leader
+        if is_history_audit_monitor != self.is_history_audit_monitor:
+            self.is_history_audit_monitor = is_history_audit_monitor
+
+    @staticmethod
+    def _elect_audit_leader(active, webapp_servers):
+        monitor_servers = [p.server_name for p in active if p.app_type == SSE_MONITOR]
+        if monitor_servers:
+            return min(monitor_servers)
+        if webapp_servers:
+            return max(webapp_servers)
+        return None
 
     def send_database_heartbeat(self):
         if self.active:

@@ -1011,12 +1011,17 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
-        # History audit monitor for SSE-based history updates
+        # History audit monitor for SSE-based history updates. The monitor only
+        # runs on the single process elected via DatabaseHeartbeat's
+        # is_history_audit_monitor role — a standalone ``galaxy-sse-monitor``
+        # daemon wins that election when present, otherwise one webapp picks it
+        # up. start/stop are driven by heartbeat role transitions rather than
+        # postfork, so the monitor cleanly migrates when the leader dies.
         if self.config.enable_sse_history_updates:
             from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 
             self._history_audit_monitor = self._register_singleton(HistoryAuditMonitor)
-            self.application_stack.register_postfork_function(self._history_audit_monitor.start)
+            self.database_heartbeat.add_audit_monitor_change_callback(self._history_audit_monitor.on_role_change)
 
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)

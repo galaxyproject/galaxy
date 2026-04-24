@@ -130,6 +130,7 @@ class HistoryAuditMonitor:
         if self._active:
             return
         self._active = True
+        self._exit.clear()  # allow restart after a previous shutdown
         target = self._listen_postgres if self._is_postgres else self._poll_audit_table
         self._thread = threading.Thread(
             target=target,
@@ -144,10 +145,21 @@ class HistoryAuditMonitor:
         )
 
     def shutdown(self) -> None:
+        if not self._active:
+            return
         self._active = False
         self._exit.set()
         if self._thread:
             self._thread.join(timeout=5)
+        self._thread = None
+        log.info("HistoryAuditMonitor stopped")
+
+    def on_role_change(self, is_leader: bool) -> None:
+        """Heartbeat callback: start/stop the monitor as this process's election state changes."""
+        if is_leader:
+            self.start()
+        else:
+            self.shutdown()
 
     # --- PostgreSQL LISTEN/NOTIFY mode ---
 
