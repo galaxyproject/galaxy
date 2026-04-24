@@ -240,7 +240,7 @@ class NotificationManager:
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
-        channels = channel_settings.model_fields_set
+        channels = type(channel_settings).model_fields
         for channel in channels:
             if channel not in self.channel_plugins:
                 continue  # Skip unsupported channels
