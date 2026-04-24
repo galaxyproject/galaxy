@@ -1,4 +1,3 @@
-from collections.abc import AsyncIterator
 from datetime import datetime
 from typing import (
     NoReturn,
@@ -15,7 +14,6 @@ from galaxy.exceptions import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.sse import (
-    IsDisconnected,
     make_event_id,
     parse_event_id,
     SSEConnectionManager,
@@ -49,22 +47,6 @@ class NotificationService(ServiceBase):
     def __init__(self, notification_manager: NotificationManager, sse_manager: SSEConnectionManager):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
-
-    def open_stream(
-        self,
-        user_context: ProvidesUserContext,
-        last_event_id: Optional[str],
-        is_disconnected: IsDisconnected,
-    ) -> AsyncIterator[str]:
-        """Open an SSE notification stream for ``user_context``.
-
-        Enforces the notifications-enabled guard, builds the optional catch-up,
-        and resolves the user id so the controller stays a thin wrapper.
-        """
-        self.notification_manager.ensure_notifications_enabled()
-        user_id = user_context.user.id if not user_context.anonymous else None
-        catch_up = self.build_status_catchup(user_context, last_event_id)
-        return self.sse_manager.stream(is_disconnected, user_id, catch_up=catch_up)
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
