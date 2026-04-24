@@ -3312,6 +3312,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_statsd_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default is true if statsd_host is set. Enable the statsd
+    middleware. If false and statsd_host is also set, only timing of
+    certain performance-critical backend tasks (e.g. the job handler
+    monitor loop time) data will be sent to statsd, but not web
+    request timing.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
