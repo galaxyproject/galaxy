@@ -1,10 +1,10 @@
-"""Unit tests for :mod:`galaxy.webapps.galaxy.metrics.queue_metrics`.
+"""Unit tests for :mod:`galaxy.managers.queue_metrics`.
 
-The DI container (``app``), the ``SSEConnectionManager``, and the kombu
-connection are small hand-built fakes — no broker or database is required.
-Assertions are on the recorded state of the statsd client (counters, timings)
-rather than on mock call-lists so a regression that stops emitting a gauge
-fails the test for the right reason.
+The ``SSEConnectionManager`` and the kombu connection are small hand-built
+fakes — no broker or database is required. Assertions are on the recorded
+state of the statsd client (counters, timings) rather than on mock call-lists
+so a regression that stops emitting a gauge fails the test for the right
+reason.
 
 The failure-isolation test drives real sub-emitters into their error paths by
 handing them genuinely broken collaborators (a connection whose ``clone()``
@@ -25,10 +25,11 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from galaxy.managers import queue_metrics
 from galaxy.managers.sse import SSEConnectionManager
-from galaxy.structured_app import StructuredApp
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
-from galaxy.webapps.galaxy.metrics import queue_metrics
+from galaxy.web_stack import ApplicationStack
 
 # ---------------------------------------------------------------------------
 # Fakes
@@ -54,25 +55,6 @@ class FakeStatsdClient:
 
     def timings_for(self, metric: str) -> list[tuple[float, dict[str, str]]]:
         return [(v, dict(t)) for m, v, t in self.timings if m == metric]
-
-
-class _ContainerApp:
-    """Tiny stand-in for ``StructuredApp`` + the Lagom container.
-
-    Supports ``app[ClassName]`` lookup for ``SSEConnectionManager`` and
-    arbitrary attribute access.
-    """
-
-    def __init__(self, **attrs):
-        self._container: dict[type, object] = {}
-        for k, v in attrs.items():
-            setattr(self, k, v)
-
-    def register(self, cls, instance):
-        self._container[cls] = instance
-
-    def __getitem__(self, cls):
-        return self._container[cls]
 
 
 def _fake_sse_manager(broadcast: int = 3, per_user: int = 5):
@@ -131,11 +113,11 @@ def test_emit_control_queue_depth_emits_per_queue(monkeypatch):
         lambda application_stack: fake_queues,
     )
 
-    app = _ContainerApp(
-        amqp_internal_connection_obj=_make_fake_connection(),
-        application_stack=MagicMock(),
+    queue_metrics.emit_control_queue_depth(
+        cast(VanillaGalaxyStatsdClient, statsd),
+        _make_fake_connection(),
+        cast(ApplicationStack, MagicMock()),
     )
-    queue_metrics.emit_control_queue_depth(cast(VanillaGalaxyStatsdClient, statsd), cast(StructuredApp, app))
 
     assert statsd.timings_for("galaxy.control_queue.depth") == [
         (3, {"queue_name": "control.main@h"}),
@@ -157,11 +139,11 @@ def test_emit_control_queue_depth_skips_failed_passive_declare(monkeypatch):
     )
     monkeypatch.setattr(queue_metrics, "all_control_queues_for_declare", lambda stack: [good_queue, bad_queue])
 
-    app = _ContainerApp(
-        amqp_internal_connection_obj=_make_fake_connection(),
-        application_stack=MagicMock(),
+    queue_metrics.emit_control_queue_depth(
+        cast(VanillaGalaxyStatsdClient, statsd),
+        _make_fake_connection(),
+        cast(ApplicationStack, MagicMock()),
     )
-    queue_metrics.emit_control_queue_depth(cast(VanillaGalaxyStatsdClient, statsd), cast(StructuredApp, app))
 
     assert statsd.timings_for("galaxy.control_queue.depth") == [
         (9, {"queue_name": "control.good@h"}),
@@ -170,8 +152,9 @@ def test_emit_control_queue_depth_skips_failed_passive_declare(monkeypatch):
 
 def test_emit_control_queue_depth_no_broker_connection_is_noop():
     statsd = FakeStatsdClient()
-    app = _ContainerApp(amqp_internal_connection_obj=None, application_stack=MagicMock())
-    queue_metrics.emit_control_queue_depth(cast(VanillaGalaxyStatsdClient, statsd), cast(StructuredApp, app))
+    queue_metrics.emit_control_queue_depth(
+        cast(VanillaGalaxyStatsdClient, statsd), None, cast(ApplicationStack, MagicMock())
+    )
     assert statsd.timings == []
 
 
@@ -182,12 +165,15 @@ def test_emit_control_queue_depth_no_broker_connection_is_noop():
 
 def test_emit_queue_metrics_is_silent_when_statsd_is_none():
     """No statsd client → every sub-call is skipped, no DB or broker access."""
-    app = _ContainerApp(
-        execution_timer_factory=SimpleNamespace(galaxy_statsd_client=None),
-    )
     # Would raise AttributeError if the short-circuit didn't fire before any
     # real collaborator was touched.
-    queue_metrics.emit_queue_metrics(cast(StructuredApp, app))
+    queue_metrics.emit_queue_metrics(
+        statsd_client=None,
+        connection=None,
+        application_stack=cast(ApplicationStack, MagicMock()),
+        model=cast(GalaxyModelMapping, MagicMock()),
+        sse_manager=None,
+    )
 
 
 def test_emit_queue_metrics_isolates_real_subemitter_failures(monkeypatch):
@@ -216,16 +202,14 @@ def test_emit_queue_metrics_isolates_real_subemitter_failures(monkeypatch):
         lambda stack: [_make_fake_queue("control.main@h", 0)],
     )
 
-    app = _ContainerApp(
-        execution_timer_factory=SimpleNamespace(galaxy_statsd_client=statsd),
-        amqp_internal_connection_obj=broken_connection,
-        application_stack=MagicMock(),
-        model=broken_model,
-    )
-    app.register(SSEConnectionManager, sse_manager)
-
     # Must not raise — the SSE gauge still lands.
-    queue_metrics.emit_queue_metrics(cast(StructuredApp, app))
+    queue_metrics.emit_queue_metrics(
+        statsd_client=cast(VanillaGalaxyStatsdClient, statsd),
+        connection=broken_connection,
+        application_stack=cast(ApplicationStack, MagicMock()),
+        model=cast(GalaxyModelMapping, broken_model),
+        sse_manager=sse_manager,
+    )
 
     # SSE gauge landed despite the other two failing.
     sse_timings = statsd.timings_for("galaxy.sse.connections.active")

@@ -41,6 +41,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    from galaxy.app import ExecutionTimerFactory
     from galaxy.config_watchers import ConfigWatchers
     from galaxy.jobs import JobConfiguration
     from galaxy.jobs.manager import JobManager
@@ -176,7 +177,7 @@ class StructuredApp(MinimalManagerApp):
     vault: Vault
     webhooks_registry: WebhooksRegistry
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
-    execution_timer_factory: Any  # 'galaxy.app.ExecutionTimerFactory'
+    execution_timer_factory: "ExecutionTimerFactory"
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_cache: "ToolCache"
     tool_shed_repository_cache: Optional[ToolShedRepositoryCache]

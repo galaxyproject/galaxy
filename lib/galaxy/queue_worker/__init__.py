@@ -13,6 +13,7 @@ import threading
 import time
 from inspect import ismodule
 from typing import (
+    Any,
     cast,
     Optional,
     TYPE_CHECKING,
@@ -92,7 +93,7 @@ def send_local_control_task(
     task: str,
     get_response: bool = False,
     kwargs: Optional[dict] = None,
-):
+) -> Any:
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -115,7 +116,7 @@ def send_control_task(
     kwargs: Optional[dict] = None,
     expiration: Optional[int] = None,
     declare_queues: Optional[list[Queue]] = None,
-):
+) -> Any:
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all

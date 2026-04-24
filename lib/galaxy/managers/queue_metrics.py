@@ -7,16 +7,25 @@ message-count via a passive declare. Also samples in-memory connection counts
 from ``SSEConnectionManager`` and the active-``WorkerProcess`` count from the
 database.
 
-All instrumentation no-ops when ``app.execution_timer_factory.galaxy_statsd_client``
-is ``None`` — i.e. statsd isn't configured.
+All instrumentation no-ops when ``statsd_client`` is ``None`` — i.e. statsd
+isn't configured.
+
+The sub-emitters take narrow, typed collaborators (a kombu connection, an
+application stack, a model mapping, the statsd client, an SSE manager) rather
+than the whole ``StructuredApp``. The Celery task in
+``galaxy.celery.tasks.emit_queue_metrics_task`` is the composition root that
+resolves those narrow deps from the app and passes them in.
 """
 
 import datetime
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from collections.abc import Callable
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
-from lagom.exceptions import UnresolvableType
 from sqlalchemy import (
     func,
     select,
@@ -24,14 +33,17 @@ from sqlalchemy import (
 
 from galaxy.managers.sse import SSEConnectionManager
 from galaxy.model import WorkerProcess
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.orm.now import now
 from galaxy.queues import (
     all_control_queues_for_declare,
     DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS,
 )
+from galaxy.web_stack import ApplicationStack
 
 if TYPE_CHECKING:
-    from galaxy.structured_app import StructuredApp
+    from kombu import Connection
+
     from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
 
 log = logging.getLogger(__name__)
@@ -56,7 +68,8 @@ def emit_sse_connection_gauges(
 
 def emit_control_queue_depth(
     statsd_client: "VanillaGalaxyStatsdClient",
-    app: "StructuredApp",
+    connection: "Optional[Connection]",
+    application_stack: ApplicationStack,
 ) -> None:
     """Emit ``galaxy.control_queue.depth`` per active webapp/handler queue.
 
@@ -66,10 +79,9 @@ def emit_control_queue_depth(
     on. Errors at the broker-connection layer propagate up so the caller can
     surface them.
     """
-    connection = app.amqp_internal_connection_obj
     if connection is None:
         return
-    queues = all_control_queues_for_declare(app.application_stack)
+    queues = all_control_queues_for_declare(application_stack)
     if not queues:
         return
     with connection.clone() as conn:
@@ -96,7 +108,7 @@ def emit_control_queue_depth(
 
 def emit_worker_process_gauge(
     statsd_client: "VanillaGalaxyStatsdClient",
-    app: "StructuredApp",
+    model: GalaxyModelMapping,
 ) -> None:
     """Emit ``galaxy.worker_process.active`` gauge grouped by ``app_type``."""
     cutoff = now() - datetime.timedelta(seconds=DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS)
@@ -106,7 +118,7 @@ def emit_worker_process_gauge(
         .group_by(WorkerProcess.app_type)
     )
     counts: dict[str, int] = defaultdict(int)
-    with app.model.new_session() as session:
+    with model.new_session() as session:
         for app_type, count in session.execute(stmt):
             counts[app_type or "unknown"] = int(count)
     for app_type, count in counts.items():
@@ -117,7 +129,7 @@ def emit_worker_process_gauge(
         )
 
 
-def _run(name: str, statsd_client: "VanillaGalaxyStatsdClient", fn) -> None:
+def _run(name: str, statsd_client: "VanillaGalaxyStatsdClient", fn: Callable[[], None]) -> None:
     """Run a sub-emitter, isolating its failures.
 
     A broken sub-emitter logs once at WARNING and increments
@@ -132,16 +144,21 @@ def _run(name: str, statsd_client: "VanillaGalaxyStatsdClient", fn) -> None:
         statsd_client.incr("galaxy.queue_metrics.error", tags={"emitter": name})
 
 
-def emit_queue_metrics(app: "StructuredApp") -> None:
+def emit_queue_metrics(
+    statsd_client: "Optional[VanillaGalaxyStatsdClient]",
+    connection: "Optional[Connection]",
+    application_stack: ApplicationStack,
+    model: GalaxyModelMapping,
+    sse_manager: Optional[SSEConnectionManager],
+) -> None:
     """Periodic entry-point — no-ops when statsd isn't configured."""
-    statsd_client = app.execution_timer_factory.galaxy_statsd_client
     if statsd_client is None:
         return
-    try:
-        sse_manager = app[SSEConnectionManager]
-    except UnresolvableType:
-        sse_manager = None
     if sse_manager is not None:
         _run("sse_connections", statsd_client, lambda: emit_sse_connection_gauges(statsd_client, sse_manager))
-    _run("control_queue_depth", statsd_client, lambda: emit_control_queue_depth(statsd_client, app))
-    _run("worker_process", statsd_client, lambda: emit_worker_process_gauge(statsd_client, app))
+    _run(
+        "control_queue_depth",
+        statsd_client,
+        lambda: emit_control_queue_depth(statsd_client, connection, application_stack),
+    )
+    _run("worker_process", statsd_client, lambda: emit_worker_process_gauge(statsd_client, model))

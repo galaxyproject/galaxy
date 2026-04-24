@@ -672,10 +672,29 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
 
 @galaxy_task(action="emit queue and SSE observability metrics")
 def emit_queue_metrics_task(app: StructuredApp):
-    """Sample control-queue depth, SSE connection count, and worker rows → statsd."""
-    from galaxy.webapps.galaxy.metrics.queue_metrics import emit_queue_metrics
+    """Sample control-queue depth, SSE connection count, and worker rows → statsd.
 
-    emit_queue_metrics(app)
+    Resolves the narrow collaborators ``emit_queue_metrics`` needs from the app
+    container and passes them in — keeps the emitter module free of
+    ``StructuredApp`` service-locator lookups.
+    """
+    from lagom.exceptions import UnresolvableType
+
+    from galaxy.managers.queue_metrics import emit_queue_metrics
+    from galaxy.managers.sse import SSEConnectionManager
+
+    try:
+        sse_manager: Optional[SSEConnectionManager] = app[SSEConnectionManager]
+    except UnresolvableType:
+        sse_manager = None
+
+    emit_queue_metrics(
+        statsd_client=app.execution_timer_factory.galaxy_statsd_client,
+        connection=app.amqp_internal_connection_obj,
+        application_stack=app.application_stack,
+        model=app.model,
+        sse_manager=sse_manager,
+    )
 
 
 @galaxy_task(action="clean up job working directories")
