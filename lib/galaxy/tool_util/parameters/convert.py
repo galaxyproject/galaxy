@@ -481,12 +481,16 @@ def _encode_callback_for(encode_id: EncodeFunctionT) -> Callback:
 
     def encode_callback(parameter: ToolParameterT, value: Any):
         if isinstance(parameter, DataParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
             if parameter.multiple and isinstance(value, list):
                 return list(map(encode_element, value))
             else:
                 assert isinstance(value, dict), str(value)
                 return encode_element(value)
         elif isinstance(parameter, DataCollectionParameterModel):
+            if value is None:
+                return VISITOR_NO_REPLACEMENT
             assert isinstance(value, dict), str(value)
             return encode_element(value)
         else:

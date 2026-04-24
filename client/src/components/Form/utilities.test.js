@@ -726,10 +726,10 @@ describe("form component utilities", () => {
             expect(buildNestedState(inputs, formData)).toEqual({ col: [1, 2, 5] });
         });
 
-        it("should preserve data_column null/empty/undefined values", () => {
+        it("should convert cleared data_column values to null but keep undefined as-is", () => {
             const inputs = [{ name: "col", type: "data_column" }];
             expect(buildNestedState(inputs, { col: null })).toEqual({ col: null });
-            expect(buildNestedState(inputs, { col: "" })).toEqual({ col: "" });
+            expect(buildNestedState(inputs, { col: "" })).toEqual({ col: null });
             expect(buildNestedState(inputs, { col: undefined })).toEqual({ col: undefined });
         });
 
@@ -744,10 +744,10 @@ describe("form component utilities", () => {
             expect(buildNestedState(inputs, { num: "42" })).toEqual({ num: 42 });
         });
 
-        it("should preserve integer null/empty/undefined values", () => {
+        it("should convert cleared integer values to null but keep undefined as-is", () => {
             const inputs = [{ name: "num", type: "integer" }];
             expect(buildNestedState(inputs, { num: null })).toEqual({ num: null });
-            expect(buildNestedState(inputs, { num: "" })).toEqual({ num: "" });
+            expect(buildNestedState(inputs, { num: "" })).toEqual({ num: null });
             expect(buildNestedState(inputs, { num: undefined })).toEqual({ num: undefined });
         });
 
@@ -761,10 +761,10 @@ describe("form component utilities", () => {
             expect(buildNestedState(inputs, { val: "3.14" })).toEqual({ val: 3.14 });
         });
 
-        it("should preserve float null/empty/undefined values", () => {
+        it("should convert cleared float values to null but keep undefined as-is", () => {
             const inputs = [{ name: "val", type: "float" }];
             expect(buildNestedState(inputs, { val: null })).toEqual({ val: null });
-            expect(buildNestedState(inputs, { val: "" })).toEqual({ val: "" });
+            expect(buildNestedState(inputs, { val: "" })).toEqual({ val: null });
             expect(buildNestedState(inputs, { val: undefined })).toEqual({ val: undefined });
         });
 
