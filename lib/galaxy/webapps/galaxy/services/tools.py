@@ -302,7 +302,7 @@ class ToolsService(ServiceBase):
         validate_and_normalize_targets(trans, clean_payload)
         user_context = ProvidesFileSourcesUserContext(trans)
         if fetch_uses_authorization_header(clean_payload, trans.app.file_sources, user_context) and trans.user:
-            if hasattr(trans.app, "authnz_manager"):
+            if hasattr(trans.app, "authnz_manager") and trans.app.authnz_manager:
                 trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, trans.user)
         expires_at = staged_fetch_token_expiration(
             trans.user,
