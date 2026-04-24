@@ -11,6 +11,7 @@ from galaxy.managers.markdown_util import (
     internal_galaxy_markdown_to_pdf,
     to_basic_markdown,
 )
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
@@ -38,7 +39,6 @@ from galaxy.webapps.galaxy.services.base import (
     ensure_celery_tasks_enabled,
     ServiceBase,
 )
-from galaxy.managers.notification import NotificationManager
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 

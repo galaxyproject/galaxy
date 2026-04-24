@@ -40,6 +40,7 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -94,7 +95,6 @@ from galaxy.webapps.galaxy.services.base import (
     ServiceBase,
     tool_request_to_model,
 )
-from galaxy.managers.notification import NotificationManager
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow.extract import summarize
