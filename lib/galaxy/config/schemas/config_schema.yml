@@ -222,6 +222,18 @@ mapping:
           Time (in seconds) between attempts to remove old rows from the history_audit database table.
           Set to 0 to disable pruning.
 
+      kombu_sqla_transport_cleanup_interval:
+        type: int
+        default: 900
+        required: false
+        desc: |
+          Time (in seconds) between attempts to delete fully-consumed rows from the Kombu SQLAlchemy
+          transport tables (``kombu_message``). Only relevant when ``amqp_internal_connection`` uses a
+          ``sqlalchemy+*`` scheme (the default with an on-disk control.sqlite); the SQLAlchemy transport
+          has no built-in TTL, so without this task the tables grow unbounded. The task no-ops on
+          non-SQLAlchemy brokers (RabbitMQ/Redis honor per-message expiration natively). Set to 0 to
+          disable the cleanup task.
+
       file_path:
         type: str
         default: objects
