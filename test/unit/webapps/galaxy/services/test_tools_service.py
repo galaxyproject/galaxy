@@ -37,7 +37,8 @@ class TestToolsService:
         self.app = self.trans.app
         Security.security = self.app.security
         self.app.config.check_upload_content = True
-        self.app.authnz_manager = Mock()
+        self.authnz_manager = Mock()
+        self.app.authnz_manager = self.authnz_manager
         self.trans.init_user_in_database()
         history = History(user=self.trans.user)
         self.trans.sa_session.add(history)
@@ -103,7 +104,9 @@ class TestToolsService:
 
         assert create_payload["tool_id"] == "__DATA_FETCH__"
         assert create_payload["inputs"]["token_expires_at"] == expires_at.replace(microsecond=0).isoformat()
-        self.app.authnz_manager.refresh_expiring_oidc_tokens.assert_called_once_with(self.trans, self.trans.user)
+        cast(Mock, self.authnz_manager.refresh_expiring_oidc_tokens).assert_called_once_with(
+            self.trans, self.trans.user
+        )
 
     def test_create_fetch_does_not_refresh_when_fetch_has_no_authorization_header(self):
         self.app.file_sources = ConfiguredFileSources(
@@ -146,4 +149,4 @@ class TestToolsService:
         create_payload = service.create_fetch(cast(ProvidesHistoryContext, self.trans), payload)
 
         assert "token_expires_at" not in create_payload["inputs"]
-        self.app.authnz_manager.refresh_expiring_oidc_tokens.assert_not_called()
+        cast(Mock, self.authnz_manager.refresh_expiring_oidc_tokens).assert_not_called()
