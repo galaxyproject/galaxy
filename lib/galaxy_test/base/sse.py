@@ -9,10 +9,8 @@ thread instead of silently swallowing them.
 
 import queue
 import threading
-from typing import (
-    Callable,
-    Optional,
-)
+from collections.abc import Callable
+from typing import Optional
 
 import requests
 
