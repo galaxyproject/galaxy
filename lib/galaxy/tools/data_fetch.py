@@ -612,7 +612,7 @@ def _arg_parser():
 
 
 def _fail_if_expired(token_expires_at: Optional[str]) -> None:
-    if token_expires_at is not None:
+    if token_expires_at:
         expiry = datetime.fromisoformat(token_expires_at)
         if datetime.now(timezone.utc) > expiry:
             raise Exception("Fetch job expired before start because staged OIDC credentials expired.")

@@ -427,6 +427,10 @@ def test_fail_if_expired_allows_missing_timestamp():
     _fail_if_expired(None)
 
 
+def test_fail_if_expired_allows_empty_timestamp():
+    _fail_if_expired("")
+
+
 def test_fail_if_expired_allows_future_timestamp():
     expiry = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
     _fail_if_expired(expiry)
