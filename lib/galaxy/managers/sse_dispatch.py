@@ -15,7 +15,6 @@ from collections.abc import Callable
 from typing import (
     Any,
     Optional,
-    Protocol,
 )
 
 from cachetools import TTLCache
@@ -29,17 +28,6 @@ from galaxy.queue_worker import (
 from galaxy.queues import all_control_queues_for_declare
 from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
 from galaxy.web_stack import ApplicationStack
-
-
-class ControlTaskLike(Protocol):
-    """Structural type for the dispatcher's control-task collaborator.
-
-    The dispatcher only calls ``send_task(**kwargs)``. Typed as a Protocol so
-    tests can pass lightweight fakes (``FakeControlTask``, ``NoopControlTask``)
-    without subclassing ``ControlTask``.
-    """
-
-    def send_task(self, **kwargs: Any) -> Any: ...
 
 log = logging.getLogger(__name__)
 
@@ -68,7 +56,10 @@ class SSEEventDispatcher:
         application_stack: ApplicationStack,
         statsd_client: Optional[VanillaGalaxyStatsdClient] = None,
         clock: Callable[[], float] = time.monotonic,
-        control_task_factory: Callable[[GalaxyQueueWorker], ControlTaskLike] = ControlTask,
+        # Factory return is typed ``Any`` so ``ControlTask`` itself and test-only
+        # duck-typed doubles (FakeControlTask/BoomControlTask/NoopControlTask)
+        # all satisfy the signature under mypy.
+        control_task_factory: Callable[[GalaxyQueueWorker], Any] = ControlTask,
         queues_provider: Optional[Callable[[], list[Queue]]] = None,
     ) -> None:
         self._queue_worker = queue_worker
