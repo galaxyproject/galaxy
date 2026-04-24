@@ -14,26 +14,23 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from galaxy.managers import sse_dispatch
 from galaxy.managers.sse_dispatch import SSEEventDispatcher
 
 
 @pytest.fixture
-def fake_declare(monkeypatch):
-    """Replace ``all_control_queues_for_declare`` with a call-counting fake.
+def fake_declare():
+    """Call-counting provider passed to ``SSEEventDispatcher`` via DI.
 
     Returns a non-empty list by default so the cache stores a value — empty
     results are intentionally not cached (see ``test_empty_result_not_cached``).
     """
     calls: dict[str, Any] = {"count": 0, "returns": [MagicMock(name="queue")]}
 
-    def _fake(application_stack, webapp_only=False):
+    def _provider():
         calls["count"] += 1
-        # Sanity: the dispatcher must always ask for webapp-only queues.
-        assert webapp_only is True
         return calls["returns"]
 
-    monkeypatch.setattr(sse_dispatch, "all_control_queues_for_declare", _fake)
+    calls["provider"] = _provider
     return calls
 
 
@@ -60,20 +57,27 @@ def clock() -> FakeClock:
 
 
 @pytest.fixture
-def dispatcher(monkeypatch, clock):
-    """Build a dispatcher with a stub queue_worker and stub application_stack.
-
-    ``ControlTask`` is swapped for a no-op so ``_send`` doesn't try to open a
-    real AMQP connection.
+def dispatcher(clock, fake_declare):
+    """Build a dispatcher with a stub queue_worker, a counting queues_provider,
+    and a no-op ``ControlTask`` factory — no monkey-patching required.
     """
     queue_worker = MagicMock(name="queue_worker")
     application_stack = MagicMock(name="application_stack")
 
-    fake_control_task = MagicMock()
-    fake_control_task.return_value.send_task = MagicMock()
-    monkeypatch.setattr(sse_dispatch, "ControlTask", fake_control_task)
+    class NoopControlTask:
+        def __init__(self, qw):
+            self.qw = qw
 
-    return SSEEventDispatcher(queue_worker=queue_worker, application_stack=application_stack, clock=clock)
+        def send_task(self, **kwargs):
+            pass
+
+    return SSEEventDispatcher(
+        queue_worker=queue_worker,
+        application_stack=application_stack,
+        clock=clock,
+        control_task_factory=NoopControlTask,
+        queues_provider=fake_declare["provider"],
+    )
 
 
 def test_declare_queues_cached_within_ttl(dispatcher, fake_declare):

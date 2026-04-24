@@ -56,24 +56,32 @@ class SSEEventDispatcher:
         application_stack: ApplicationStack,
         statsd_client: Optional[VanillaGalaxyStatsdClient] = None,
         clock: Callable[[], float] = time.monotonic,
+        control_task_factory: Callable[[GalaxyQueueWorker], ControlTask] = ControlTask,
+        queues_provider: Optional[Callable[[], list[Queue]]] = None,
     ) -> None:
         self._queue_worker = queue_worker
         self._application_stack = application_stack
         self._statsd_client = statsd_client
         self._clock = clock
+        self._control_task_factory = control_task_factory
+        # Default provider closes over application_stack so tests can pass a
+        # plain ``lambda: [...]`` without needing a stack.
+        self._queues_provider = queues_provider or (
+            lambda: all_control_queues_for_declare(application_stack, webapp_only=True)
+        )
         self._declare_queues_cache: TTLCache = TTLCache(maxsize=1, ttl=self._DECLARE_QUEUES_TTL_SECONDS, timer=clock)
         self._declare_queues_lock = threading.RLock()
 
     def _get_declare_queues(self) -> list[Queue]:
         # Empty results (startup before DatabaseHeartbeat registers this process,
-        # or a transient DB error swallowed by ``all_control_queues_for_declare``)
-        # must not be pinned for the full TTL — they'd silently drop every SSE
-        # event until the next expiry. Only cache non-empty results.
+        # or a transient DB error swallowed by the provider) must not be pinned
+        # for the full TTL — they'd silently drop every SSE event until the next
+        # expiry. Only cache non-empty results.
         with self._declare_queues_lock:
             try:
                 return self._declare_queues_cache["webapp"]
             except KeyError:
-                queues = all_control_queues_for_declare(self._application_stack, webapp_only=True)
+                queues = self._queues_provider()
                 if queues:
                     self._declare_queues_cache["webapp"] = queues
                 return queues
@@ -90,7 +98,7 @@ class SSEEventDispatcher:
         # Only fan out to webapp processes — job handlers and workflow schedulers
         # don't have browser SSE connections to push to.
         declare_queues = self._get_declare_queues()
-        control_task = ControlTask(self._queue_worker)
+        control_task = self._control_task_factory(self._queue_worker)
         start_time = time.perf_counter() if self._statsd_client is not None else 0.0
         try:
             control_task.send_task(

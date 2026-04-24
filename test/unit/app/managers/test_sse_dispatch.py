@@ -118,13 +118,26 @@ def _reset_fake_control_task_instances():
 
 
 @pytest.fixture
-def fake_control_task(monkeypatch) -> type[FakeControlTask]:
-    monkeypatch.setattr("galaxy.managers.sse_dispatch.ControlTask", FakeControlTask)
-    monkeypatch.setattr(
-        "galaxy.managers.sse_dispatch.all_control_queues_for_declare",
-        lambda *args, **kwargs: [],
-    )
+def fake_control_task() -> type[FakeControlTask]:
+    """Returns the fake class so tests can pass it as ``control_task_factory``."""
     return FakeControlTask
+
+
+def _dispatcher_with_fakes(
+    queue_worker,
+    application_stack,
+    statsd,
+    control_task_factory=FakeControlTask,
+    queues=None,
+) -> SSEEventDispatcher:
+    """Build a dispatcher wired to injected fakes — no monkeypatching required."""
+    return SSEEventDispatcher(
+        queue_worker=queue_worker,
+        application_stack=application_stack,
+        statsd_client=statsd,
+        control_task_factory=control_task_factory,
+        queues_provider=lambda: queues if queues is not None else [],
+    )
 
 
 def test_dispatcher_no_op_when_queue_worker_is_none_and_no_statsd(application_stack):
@@ -159,10 +172,11 @@ def test_dispatcher_enqueues_payload_and_records_metrics_on_send(
     application_stack, queue_worker, statsd, fake_control_task
 ):
     """Happy path: payload reaches the broker AND counter+timer are recorded."""
-    dispatcher = SSEEventDispatcher(
+    dispatcher = _dispatcher_with_fakes(
         queue_worker=queue_worker,
         application_stack=application_stack,
-        statsd_client=statsd,
+        statsd=statsd,
+        control_task_factory=fake_control_task,
     )
     dispatcher.notify_users([1, 2], "hello")
 
@@ -186,18 +200,13 @@ def test_dispatcher_enqueues_payload_and_records_metrics_on_send(
     assert dict(tags) == {"task": "notify_users"}
 
 
-def test_dispatcher_timer_still_fires_on_send_exception(monkeypatch, application_stack, queue_worker, statsd):
+def test_dispatcher_timer_still_fires_on_send_exception(application_stack, queue_worker, statsd):
     """Timer lives in ``finally`` — broker errors don't mask the latency metric."""
-    monkeypatch.setattr(
-        "galaxy.managers.sse_dispatch.all_control_queues_for_declare",
-        lambda *args, **kwargs: [],
-    )
-    monkeypatch.setattr("galaxy.managers.sse_dispatch.ControlTask", BoomControlTask)
-
-    dispatcher = SSEEventDispatcher(
+    dispatcher = _dispatcher_with_fakes(
         queue_worker=queue_worker,
         application_stack=application_stack,
-        statsd_client=statsd,
+        statsd=statsd,
+        control_task_factory=BoomControlTask,
     )
     with pytest.raises(RuntimeError):
         dispatcher.history_update({"7": [1]})
@@ -215,10 +224,11 @@ def test_dispatcher_no_statsd_means_no_instrumentation(application_stack, queue_
     The dispatch still happens — we assert via the ControlTask fake — but there
     is nothing to observe on the (absent) statsd side.
     """
-    dispatcher = SSEEventDispatcher(
+    dispatcher = _dispatcher_with_fakes(
         queue_worker=queue_worker,
         application_stack=application_stack,
-        statsd_client=None,
+        statsd=None,
+        control_task_factory=fake_control_task,
     )
     dispatcher.notify_broadcast("hi")
     assert len(fake_control_task.instances) == 1
