@@ -1,3 +1,20 @@
+"""Collection type descriptions and the compatibility algebra.
+
+Two operations on collection types:
+
+- ``accepts(candidate)``: asymmetric. ``requirement.accepts(candidate)`` is
+  True iff ``candidate`` can be substituted where ``requirement`` is expected.
+  Used at connection-time edge validation.
+- ``compatible(other)``: symmetric. True iff there is some type T such that
+  both admit T-valued instances. Used at sibling-matching sites where order
+  of arrival must not change the answer.
+
+The TypeScript equivalents live in
+``client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts``
+and must stay in sync. See ``types/collection_semantics.yml`` "Type
+Compatibility Algebra" for the lattice diagram and worked examples.
+"""
+
 import re
 from typing import (
     Optional,
@@ -112,6 +129,15 @@ class CollectionTypeDescription:
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
+        # sample_sheet asymmetry: a map-over into a sample_sheet input requires
+        # the mapped-over output to itself be a sample_sheet variant - plain
+        # list collections lack the column metadata. ``self`` is the output
+        # (the collection being mapped over); ``other`` is the input type we
+        # are trying to satisfy. Enforce before normalization.
+        # Duplicates the asymmetry encoded in ``accepts``; load-bearing for
+        # ``multiply`` / ``effective_collection_type`` map-over arithmetic.
+        if other_collection_type.startswith("sample_sheet") and not self.collection_type.startswith("sample_sheet"):
+            return False
         collection_type = _normalize_collection_type(self.collection_type)
         other_collection_type = _normalize_collection_type(other_collection_type)
         if collection_type == other_collection_type:
@@ -143,9 +169,25 @@ class CollectionTypeDescription:
             other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
         return other_collection_type.has_subcollections_of_type(self)
 
-    def can_match_type(self, other_collection_type) -> bool:
+    def accepts(self, other_collection_type) -> bool:
+        """Asymmetric subtype check: can a value of ``other`` be substituted
+        where ``self`` is expected?
+
+        Receiver convention: ``requirement.accepts(candidate)``. Used at
+        connection-time edge validation (input slot accepts output edge).
+        For sibling-matching (where neither side is a "requirement"), use
+        ``compatible`` instead.
+
+        See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
+        """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
+        # sample_sheet asymmetry: a sample_sheet requirement is only satisfied
+        # by a sample_sheet candidate. A plain list candidate lacks the column
+        # metadata a sample_sheet input expects. Check before normalization
+        # (which otherwise equates the two).
+        if self.collection_type.startswith("sample_sheet") and not other_collection_type.startswith("sample_sheet"):
+            return False
         collection_type = _normalize_collection_type(self.collection_type)
         other_collection_type = _normalize_collection_type(other_collection_type)
         if other_collection_type == collection_type:
@@ -161,8 +203,23 @@ class CollectionTypeDescription:
             if other_collection_type == as_paired_list:
                 return True
 
-        # can we push this to the type registry somehow?
         return False
+
+    def compatible(self, other_collection_type) -> bool:
+        """Symmetric sibling-matching check: do ``self`` and ``other`` share
+        an iterable shape such that they could be zipped under a common
+        map-over?
+
+        Implemented as ``self.accepts(other) or other.accepts(self)``. Used
+        at sibling-matching sites (Python ``Tree.compatible_shape`` at
+        runtime; TS ``mappingConstraints`` at connection time) where order
+        of arrival should not change the answer.
+
+        See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
+        """
+        if not hasattr(other_collection_type, "collection_type"):
+            other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
+        return self.accepts(other_collection_type) or other_collection_type.accepts(self)
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:

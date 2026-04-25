@@ -1041,7 +1041,7 @@
     tests:
         workflow_runtime:
             framework_test: "collection_semantics_cat_collection_1"
-        workflow_editor: "accepts sample_sheet -> list connection (canMatch)"
+        workflow_editor: "accepts sample_sheet -> list connection (accepts)"
 
 - doc: |
     Sub-collection mapping works the same as for ``list`` composites. A
@@ -1096,7 +1096,7 @@
     tests:
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_0"
-        workflow_editor: "accepts sample_sheet:paired -> list:paired connection (canMatch)"
+        workflow_editor: "accepts sample_sheet:paired -> list:paired connection (accepts)"
 
 - doc: |
     The ``paired_or_unpaired`` integration rules carry over from ``list`` to
@@ -1183,7 +1183,7 @@
     tests:
         workflow_runtime:
             framework_test: "collection_semantics_list_paired_or_unpaired_1"
-        workflow_editor: "accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (canMatch)"
+        workflow_editor: "accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (accepts)"
 
 - doc: |
     The type matching is asymmetric: a ``sample_sheet`` output can satisfy a ``list``
@@ -1248,3 +1248,89 @@
         workflow_runtime:
             framework_test: "collection_semantics_cat_sample_sheet_0"
         workflow_editor: "accepts sample_sheet -> sample_sheet connection"
+
+- doc: "## Type Compatibility Algebra"
+- doc: |
+    This section is for implementers. It describes the two operations that
+    answer "do these collection types fit together?" — used at workflow
+    editor connection time and at runtime when sibling inputs are zipped
+    under a common map-over.
+
+    ### The lattice
+
+    The base types form a small subtype lattice:
+
+    ```
+    list                paired_or_unpaired
+     |                    |
+    sample_sheet         paired
+    ```
+
+    Edges are subtype relations. A `sample_sheet` value carries column
+    metadata that a `list` does not, so it can be substituted where a
+    `list` is required (information is preserved); the reverse is not safe.
+    A `paired` value always has two elements; `paired_or_unpaired` admits
+    1 or 2, so a `paired` can be substituted where `paired_or_unpaired` is
+    required, but not the reverse.
+
+    Nesting composes. `list:paired_or_unpaired` is a supertype of both
+    `list:paired` and `list` (the latter via the "single-dataset wrapped
+    as unpaired" interpretation), so it has two incomparable subtypes.
+
+    ### Two operations
+
+    | Operation | Symmetry | Question | Used at |
+    |---|---|---|---|
+    | `accepts(candidate)` | Asymmetric | Can a value of `candidate` be substituted where `self` is expected? | Connection-time edge validation: input slot accepts output edge |
+    | `compatible(other)` | Symmetric | Is there some type T such that both `self` and `other` admit T-valued instances? | Sibling-matching: zipping sibling HDCAs / sibling map-over states under a common mapping |
+
+    Convention: `requirement.accepts(candidate)`. The receiver is the type
+    being matched against; the argument is the candidate.
+
+    `compatible(a, b)` is implemented as `a.accepts(b) or b.accepts(a)`.
+
+    ### Where each is used
+
+    - `accepts` is called at single-edge validation: connecting one output
+      to one input. The asymmetry of substitutability matters here.
+      Examples: `connection_types.can_match`, `query.HistoryQuery.direct_match`,
+      and the workflow-editor input attachment paths in `terminals.ts`.
+
+    - `compatible` is called when two collections must be zipped as siblings
+      under a common map-over. Neither side is a "requirement"; both are
+      concrete shapes. Order of arrival must not change the answer.
+      Examples: Python `Tree.compatible_shape` (matching.py, execute.py)
+      and the `mappingConstraints` checks in `terminals.ts`.
+
+    Routing a sibling-matching question through `accepts` instead of
+    `compatible` produces order-dependent behavior — which sibling input
+    arrived first changes whether the workflow validates. This was a real
+    bug in earlier revisions of both the Python and TypeScript code.
+
+    ### Worked examples
+
+    - `paired.accepts(paired_or_unpaired)` is `False`. A 1-element
+      paired_or_unpaired cannot be substituted where a strict pair is
+      required. Test: `test_paired_accepts_relation`.
+
+    - `paired.compatible(paired_or_unpaired)` is `True`. If both observed
+      sibling collections happen to align in cardinality, they zip;
+      cardinality checking happens later at the children level. Test:
+      `test_paired_and_paired_or_unpaired_match_symmetric`.
+
+    - `sample_sheet.accepts(list)` is `False`; `list.accepts(sample_sheet)`
+      is `True`. Tests:
+      `test_sample_sheet_accepts_relation`, workflow editor
+      `"rejects list -> sample_sheet connection (asymmetry)"`.
+
+    - `sample_sheet.compatible(list)` and `list.compatible(sample_sheet)`
+      are both `True`. Tests: `test_compatible`,
+      `test_tree_compatible_shape_sample_sheet_list_symmetric`.
+
+    ### Cross-language synchronization
+
+    The Python implementation lives in
+    `lib/galaxy/model/dataset_collections/type_description.py`. The
+    TypeScript implementation lives in
+    `client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts`.
+    Both must stay in sync; method names and conventions are identical.

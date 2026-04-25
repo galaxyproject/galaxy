@@ -139,8 +139,14 @@ class Tree(BaseTree):
     def is_leaf(self):
         return False
 
-    def can_match(self, other_structure):
-        if not self.collection_type_description.can_match_type(other_structure.collection_type_description):
+    def compatible_shape(self, other_structure):
+        """Symmetric sibling-matching check.
+
+        Both sides have already passed connection-time edge validation;
+        here we only compare shape. Uses ``compatible`` (not ``accepts``)
+        so order of arrival does not change the answer.
+        """
+        if not self.collection_type_description.compatible(other_structure.collection_type_description):
             return False
 
         if len(self.children) != len(other_structure.children):
@@ -151,7 +157,7 @@ class Tree(BaseTree):
             if my_child[1].is_leaf != other_child[1].is_leaf:
                 return False
 
-            if not my_child[1].is_leaf and not my_child[1].can_match(other_child[1]):
+            if not my_child[1].is_leaf and not my_child[1].compatible_shape(other_child[1]):
                 return False
 
         return True

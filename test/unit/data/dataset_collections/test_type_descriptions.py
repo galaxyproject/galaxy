@@ -41,37 +41,47 @@ def test_paired_or_unpaired_handling():
     assert nested_list_type_description.has_subcollections_of_type("paired_or_unpaired")
 
     mixed_list_type_description = factory.for_collection_type("list:paired_or_unpaired")
-    assert mixed_list_type_description.can_match_type("list:paired_or_unpaired")
-    assert mixed_list_type_description.can_match_type("list:paired")
-    assert mixed_list_type_description.can_match_type("list")
+    assert mixed_list_type_description.accepts("list:paired_or_unpaired")
+    assert mixed_list_type_description.accepts("list:paired")
+    assert mixed_list_type_description.accepts("list")
 
 
-def test_sample_sheet_acts_like_list():
-    """sample_sheet should behave like list for mapping/matching purposes."""
+def test_sample_sheet_accepts_relation():
+    """sample_sheet -> list matches; list -> sample_sheet does not.
+
+    A sample_sheet candidate carries list-like structure plus column metadata,
+    so it can satisfy a list-shaped requirement. A plain list candidate
+    cannot satisfy a sample_sheet-shaped requirement because the column
+    metadata is absent. ``accepts`` / ``has_subcollections_of_type`` follow
+    the convention ``requirement.accepts(candidate)`` /
+    ``output.has_subcollections_of_type(input)``.
+    """
     sample_sheet = c_t("sample_sheet")
     sample_sheet_paired = c_t("sample_sheet:paired")
     sample_sheet_paired_or_unpaired = c_t("sample_sheet:paired_or_unpaired")
     list_type = c_t("list")
     paired_type = c_t("paired")
 
-    # sample_sheet matches list
-    assert sample_sheet.can_match_type("list")
-    assert sample_sheet.can_match_type(list_type)
-    assert list_type.can_match_type("sample_sheet")
+    # list requirement is satisfied by a sample_sheet candidate
+    assert list_type.accepts("sample_sheet")
+    assert c_t("list:paired").accepts("sample_sheet:paired")
+    assert c_t("list:paired_or_unpaired").accepts("sample_sheet:paired_or_unpaired")
 
-    # sample_sheet:paired matches list:paired
-    assert sample_sheet_paired.can_match_type("list:paired")
-    assert c_t("list:paired").can_match_type("sample_sheet:paired")
+    # sample_sheet requirement is NOT satisfied by a plain list candidate
+    assert not sample_sheet.accepts("list")
+    assert not sample_sheet.accepts(list_type)
+    assert not sample_sheet_paired.accepts("list:paired")
+    assert not sample_sheet_paired_or_unpaired.accepts("list:paired_or_unpaired")
+    assert not sample_sheet_paired_or_unpaired.accepts("list:paired")
+    assert not sample_sheet_paired_or_unpaired.accepts("list")
 
-    # sample_sheet:paired_or_unpaired matches list:paired_or_unpaired
-    assert sample_sheet_paired_or_unpaired.can_match_type("list:paired_or_unpaired")
-    # and can match list:paired and list (like list:paired_or_unpaired does)
-    assert sample_sheet_paired_or_unpaired.can_match_type("list:paired")
-    assert sample_sheet_paired_or_unpaired.can_match_type("list")
-    assert sample_sheet_paired_or_unpaired.can_match_type("sample_sheet")
-    assert sample_sheet_paired_or_unpaired.can_match_type("sample_sheet:paired")
+    # sample_sheet <-> sample_sheet still works
+    assert sample_sheet.accepts("sample_sheet")
+    assert sample_sheet_paired.accepts("sample_sheet:paired")
+    assert sample_sheet_paired_or_unpaired.accepts("sample_sheet")
+    assert sample_sheet_paired_or_unpaired.accepts("sample_sheet:paired")
 
-    # sample_sheet:paired has subcollections of type paired
+    # sample_sheet:paired has subcollections of type paired (plain input, OK)
     assert sample_sheet_paired.has_subcollections_of_type("paired")
     assert sample_sheet_paired.has_subcollections_of_type(paired_type)
 
@@ -82,8 +92,45 @@ def test_sample_sheet_acts_like_list():
     assert not sample_sheet.has_subcollections_of_type("sample_sheet")
     assert not sample_sheet.has_subcollections_of_type("list")
 
+    # Map-over asymmetry: a plain list:* output cannot be mapped over a
+    # sample_sheet-variant input (lacks column metadata).
+    assert not c_t("list:list").has_subcollections_of_type("sample_sheet")
+    assert not c_t("list:list:paired").has_subcollections_of_type("sample_sheet:paired")
+    # but a sample_sheet:* output CAN map over a plain-list-variant input
+    assert c_t("sample_sheet:paired").has_subcollections_of_type("paired")
+
     # effective collection type works correctly
     assert sample_sheet_paired.effective_collection_type(paired_type) == "sample_sheet"
+
+
+def test_paired_accepts_relation():
+    """paired_or_unpaired requirement is satisfied by paired candidate; reverse is not."""
+    assert c_t("paired_or_unpaired").accepts("paired")
+    assert not c_t("paired").accepts("paired_or_unpaired")
+    # nested form
+    assert c_t("list:paired_or_unpaired").accepts("list:paired")
+    assert not c_t("list:paired").accepts("list:paired_or_unpaired")
+
+
+def test_compatible():
+    """``compatible`` is symmetric — order does not matter."""
+    # same type
+    assert c_t("list").compatible("list")
+    assert c_t("paired").compatible("paired")
+
+    # subtype pair (either order)
+    assert c_t("paired").compatible("paired_or_unpaired")
+    assert c_t("paired_or_unpaired").compatible("paired")
+    assert c_t("list").compatible("sample_sheet")
+    assert c_t("sample_sheet").compatible("list")
+    assert c_t("list:paired").compatible("sample_sheet:paired")
+    assert c_t("sample_sheet:paired").compatible("list:paired")
+
+    # disjoint types
+    assert not c_t("paired").compatible("list")
+    assert not c_t("list").compatible("paired")
+    assert not c_t("list:paired").compatible("list:list")
+    assert not c_t("list:list").compatible("list:paired")
 
 
 def test_effective_collection_type_paired_or_unpaired_over_paired():

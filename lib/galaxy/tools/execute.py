@@ -572,7 +572,7 @@ class ExecutionTracker:
                 _structure = structure.for_dataset_collection(
                     source_collection.collection, collection_type_description=collection_type_description
                 )
-                if structure.can_match(_structure):
+                if structure.compatible_shape(_structure):
                     structure = _structure
 
         return structure

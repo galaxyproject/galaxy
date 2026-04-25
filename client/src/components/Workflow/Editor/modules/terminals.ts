@@ -501,19 +501,21 @@ export class InputTerminal extends BaseInputTerminal {
                     );
                 }
             }
-            if (mapOver.isCollection && mapOver.canMatch(otherCollectionType)) {
+            if (mapOver.isCollection && mapOver.accepts(otherCollectionType)) {
                 return this._producesAcceptableDatatypeAndOptionalness(other);
             } else if (
                 this.multiple &&
-                new CollectionTypeDescription("list").append(this.mapOver).canMatch(otherCollectionType)
+                new CollectionTypeDescription("list").append(this.mapOver).accepts(otherCollectionType)
             ) {
                 // This handles the special case of a list input being connected to a multiple="true" data input.
                 // Nested lists would be correctly mapped over by the above condition.
                 return this._producesAcceptableDatatypeAndOptionalness(other);
             } else {
                 //  Need to check if this would break constraints...
+                // Sibling map-over states: use symmetric ``compatible`` so order
+                // of arrival of sibling inputs doesn't change the answer.
                 const mappingConstraints = this._mappingConstraints();
-                if (mappingConstraints.every(otherCollectionType.canMatch.bind(otherCollectionType))) {
+                if (mappingConstraints.every((constraint) => constraint.compatible(otherCollectionType))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     if (mapOver.isCollection) {
@@ -619,7 +621,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
     }
     _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
         const collectionTypes = this.collectionTypes;
-        const canMatch = collectionTypes.some((collectionType) => collectionType.canMatch(otherCollectionType));
+        const canMatch = collectionTypes.some((collectionType) => collectionType.accepts(otherCollectionType));
         if (!canMatch) {
             for (const collectionTypeIndex in collectionTypes) {
                 const collectionType = collectionTypes[collectionTypeIndex]!;
@@ -643,12 +645,16 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         if (otherCollectionType.isCollection) {
             const effectiveCollectionTypes = this._effectiveCollectionTypes();
             const mapOver = this.mapOver;
-            const canMatch = effectiveCollectionTypes.some((effectiveCollectionType, i) => {
-                if (!effectiveCollectionType.canMatch(otherCollectionType)) {
+            // Defense-in-depth: ``accepts`` carries the sample_sheet asymmetry
+            // guard, but only when the receiver type itself starts with
+            // "sample_sheet". A non-null ``localMapOver`` could in principle
+            // produce an effective type like "list:sample_sheet" that hides
+            // the guard from ``accepts``. Re-check against the raw declared
+            // input type to be safe — matches the structure HEAD had inline.
+            const accepted = effectiveCollectionTypes.some((effectiveCollectionType, i) => {
+                if (!effectiveCollectionType.accepts(otherCollectionType)) {
                     return false;
                 }
-                // sample_sheet asymmetry: sample_sheet input requires sample_sheet output,
-                // but sample_sheet output can satisfy list input.
                 const rawInputType = this.collectionTypes[i]?.collectionType;
                 if (
                     rawInputType?.startsWith("sample_sheet") &&
@@ -658,6 +664,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 }
                 return true;
             });
+            const canMatch = accepted;
             if (canMatch) {
                 // Only way a direct match...
                 return this._producesAcceptableDatatypeAndOptionalness(other);
@@ -675,26 +682,14 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                         "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry.",
                     );
                 }
-            } else if (
-                this.collectionTypes.some((collectionType) => {
-                    if (!otherCollectionType.canMapOver(collectionType)) {
-                        return false;
-                    }
-                    // sample_sheet asymmetry: same as canMatch guard above
-                    if (
-                        collectionType.collectionType?.startsWith("sample_sheet") &&
-                        !otherCollectionType.collectionType?.startsWith("sample_sheet")
-                    ) {
-                        return false;
-                    }
-                    return true;
-                })
-            ) {
+            } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
                 // we're not mapped over - but hey maybe we could be... lets check.
                 const effectiveMapOver = this._effectiveMapOver(otherCollectionType);
                 //  Need to check if this would break constraints...
+                // Sibling map-over states: use symmetric ``compatible`` so order
+                // of arrival of sibling inputs doesn't change the answer.
                 const mappingConstraints = this._mappingConstraints();
-                if (mappingConstraints.every((d) => effectiveMapOver.canMatch(d))) {
+                if (mappingConstraints.every((d) => d.compatible(effectiveMapOver))) {
                     return this._producesAcceptableDatatypeAndOptionalness(other);
                 } else {
                     return new ConnectionAcceptable(
@@ -857,10 +852,13 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                     const otherCollectionType = inputTerminal._otherCollectionType(outputTerminal);
                     // we need to find which of the possible input collection types is connected
                     if ("collectionTypes" in inputTerminal) {
-                        // collection_type_source must point at input collection terminal
+                        // collection_type_source must point at input collection terminal.
+                        // Direction here is requirement.accepts(candidate): the declared
+                        // input collection type is the requirement, the connected output
+                        // shape is the candidate.
                         const connectedCollectionType = inputTerminal.collectionTypes.find(
                             (collectionType) =>
-                                otherCollectionType.canMatch(collectionType) ||
+                                collectionType.accepts(otherCollectionType) ||
                                 otherCollectionType.canMapOver(collectionType),
                         );
                         if (connectedCollectionType) {
