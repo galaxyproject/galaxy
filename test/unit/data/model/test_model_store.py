@@ -789,6 +789,70 @@ def test_import_traceback_handling():
     assert exc.value.traceback == traceback_message
 
 
+def test_export_history_with_orphan_icjja(tmp_path):
+    """Orphan ImplicitCollectionJobsJobAssociation rows (job_id NULL) are
+    persisted by the import path when an ICJ references a job key not in
+    object_import_tracker.jobs_by_key. The next export crashes in
+    get_identifier(j_a.job=None); ignore_errors skips the orphan."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+
+    icj = model.ImplicitCollectionJobs()
+    linked = model.ImplicitCollectionJobsJobAssociation()
+    linked.order_index = 0
+    linked.implicit_collection_jobs = icj
+    linked.job = j
+    to_orphan = model.ImplicitCollectionJobsJobAssociation()
+    to_orphan.order_index = 1
+    to_orphan.implicit_collection_jobs = icj
+    to_orphan.job = j
+    app.add_and_commit(icj, linked, to_orphan)
+
+    # Mimic the post-import state: drop the FK so the row becomes an orphan.
+    to_orphan.job = None  # type: ignore[assignment]
+    app.commit()
+
+    with pytest.raises(AttributeError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    imported_icj = imported_job.implicit_collection_jobs_association.implicit_collection_jobs
+    assert len(imported_icj.jobs) == 1
+
+
+def test_export_history_with_null_param_id(tmp_path):
+    """Job params shaped {"src": "hda"|"hdca"|"dce", "id": null} are persisted
+    by the import path at model/store/__init__.py:1860-1888 when a referenced
+    HDA/HDCA/DCE can't be resolved. Strict export raises in
+    get_identifier_for_id; ignore_errors passes the null through.
+
+    Reproducing the on-disk state directly: the only producer is the import
+    path itself, so deleting the referenced HDA wouldn't null the persisted
+    param JSON."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="input1", value=json.dumps({"src": "hda", "id": None}))]
+    app.commit()
+
+    with pytest.raises(NotImplementedError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    assert json.loads(imported_job.raw_param_dict()["input1"]) == {"src": "hda", "id": None}
+
+
 def test_import_export_edit_datasets():
     """Test modifying existing HDA and dataset metadata with import."""
     app, h, temp_directory, import_history = _setup_simple_export({"for_edit": True})
