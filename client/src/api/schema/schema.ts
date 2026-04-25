@@ -12109,6 +12109,11 @@ export interface components {
          */
         ExportRecordData: {
             /**
+             * Ignore Errors
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             */
+            ignore_errors?: boolean | null;
+            /**
              * Include deleted
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
@@ -25910,6 +25915,11 @@ export interface components {
              */
             bco_override_xref?: components["schemas"]["XrefItem"][] | null;
             /**
+             * Ignore Errors
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             */
+            ignore_errors?: boolean | null;
+            /**
              * Include deleted
              * @description Include file contents for deleted datasets (if include_files is True).
              * @default false
@@ -25940,6 +25950,11 @@ export interface components {
         };
         /** WriteStoreToPayload */
         WriteStoreToPayload: {
+            /**
+             * Ignore Errors
+             * @description Last resort. If True, skip serialization errors caused by missing provenance (e.g. orphan implicit collection job associations, null job param refs from older histories that pre-date collections) instead of failing. Exported data may be incomplete or corrupt.
+             */
+            ignore_errors?: boolean | null;
             /**
              * Include deleted
              * @description Include file contents for deleted datasets (if include_files is True).

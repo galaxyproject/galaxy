@@ -1968,7 +1968,7 @@ class DirectoryModelExportStore(ModelExportStore):
         strip_metadata_files: bool = True,
         serialize_jobs: bool = True,
         user_context=None,
-        ignore_errors: bool = False,
+        ignore_errors: Optional[bool] = False,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -3048,7 +3048,7 @@ def get_export_store_factory(
     export_files=None,
     bco_export_options: Optional[BcoExportOptions] = None,
     user_context=None,
-    ignore_errors: bool = False,
+    ignore_errors: Optional[bool] = False,
 ) -> Callable[[StrPath], FileSourceModelExportStore]:
     export_store_class: type[FileSourceModelExportStore]
     export_store_class_kwds = {

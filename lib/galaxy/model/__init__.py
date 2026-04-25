@@ -461,7 +461,7 @@ class SerializationOptions:
         serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
         strip_metadata_files: Optional[bool] = None,
-        ignore_errors: bool = False,
+        ignore_errors: Optional[bool] = False,
     ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
