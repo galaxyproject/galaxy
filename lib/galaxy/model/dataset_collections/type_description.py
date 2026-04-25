@@ -2,16 +2,18 @@
 
 Three operations on collection types, each answering a distinct question:
 
-- ``accepts(candidate)``: asymmetric direct-edge check. True iff a value of
-  ``candidate`` can be substituted where ``self`` is expected. Used at
-  connection-time edge validation. Convention: ``requirement.accepts(candidate)``.
-- ``compatible(other)``: symmetric sibling-matching check. True iff
-  ``self`` and ``other`` share an iterable shape. Used where neither side
-  is a "requirement" and order of arrival must not change the answer.
+- ``accepts(other)``: asymmetric direct-edge check. True iff an output
+  collection of type ``other`` can be connected to an input slot whose
+  declared type is ``self``. Used at workflow-editor edge validation.
+  Convention: ``input_type.accepts(output_type)``.
+- ``compatible(other)``: symmetric sibling-matching check. True iff two
+  collection types match such that they could drive a common map-over
+  over sibling inputs of one tool. Used where neither side is the input
+  and order of arrival must not change the answer.
 - ``can_map_over(other)``: asymmetric nesting check. True iff ``self`` has
   proper subcollections of type ``other`` — i.e. ``self`` can be mapped
   over to feed a slot expecting ``other``. Convention:
-  ``output.can_map_over(input)``.
+  ``output_type.can_map_over(input_type)``.
 
 The TypeScript equivalents live in
 ``client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts``
@@ -137,10 +139,11 @@ class CollectionTypeDescription:
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
-        # sample_sheet asymmetry: an input requiring sample_sheet column
-        # metadata can only be fed by a sample_sheet output. ``self`` is the
-        # output being mapped over; ``other`` is the input requirement. Check
-        # before normalization (which equates sample_sheet and list).
+        # sample_sheet asymmetry: a sample_sheet input can only be fed by a
+        # sample_sheet output (a plain-list output lacks the column metadata
+        # the input expects). ``self`` is the output being mapped over;
+        # ``other`` is the input collection type. Check before normalization
+        # (which equates sample_sheet and list).
         # Duplicates the asymmetry encoded in ``accepts`` — load-bearing for
         # ``multiply`` / ``effective_collection_type`` map-over arithmetic.
         # Removing this guard is a separate refactor; see follow-up issue.
@@ -173,22 +176,21 @@ class CollectionTypeDescription:
         return False
 
     def accepts(self, other_collection_type) -> bool:
-        """Asymmetric subtype check: can a value of ``other`` be substituted
-        where ``self`` is expected?
+        """Asymmetric direct-edge check: does an input slot of type ``self``
+        accept an output of type ``other_collection_type``?
 
-        Receiver convention: ``requirement.accepts(candidate)``. Used at
-        connection-time edge validation (input slot accepts output edge).
-        For sibling-matching (where neither side is a "requirement"), use
-        ``compatible`` instead.
+        Convention: ``input_type.accepts(output_type)``. Used at
+        workflow-editor edge validation. For sibling-matching (where
+        neither side is the input slot), use ``compatible`` instead.
 
         See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
-        # sample_sheet asymmetry: a sample_sheet requirement is only satisfied
-        # by a sample_sheet candidate. A plain list candidate lacks the column
-        # metadata a sample_sheet input expects. Check before normalization
-        # (which otherwise equates the two).
+        # sample_sheet asymmetry: a sample_sheet input is only satisfied by a
+        # sample_sheet output — a plain-list output lacks the column metadata
+        # the sample_sheet input expects. Check before normalization (which
+        # otherwise equates the two).
         if self.collection_type.startswith("sample_sheet") and not other_collection_type.startswith("sample_sheet"):
             return False
         collection_type = _normalize_collection_type(self.collection_type)
@@ -209,14 +211,15 @@ class CollectionTypeDescription:
         return False
 
     def compatible(self, other_collection_type) -> bool:
-        """Symmetric sibling-matching check: do ``self`` and ``other`` share
-        an iterable shape such that they could be zipped under a common
-        map-over?
+        """Symmetric sibling-matching check: do ``self`` and ``other`` match
+        such that they could drive a common map-over over sibling inputs of
+        a single tool?
 
         Implemented as ``self.accepts(other) or other.accepts(self)``. Used
         at sibling-matching sites (Python ``Tree.compatible_shape`` at
-        runtime; TS ``mappingConstraints`` at connection time) where order
-        of arrival should not change the answer.
+        runtime; TS ``mappingConstraints`` at connection time) where
+        neither side is the input slot and order of arrival should not
+        change the answer.
 
         See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
         """

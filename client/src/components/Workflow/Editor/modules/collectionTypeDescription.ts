@@ -2,12 +2,13 @@
    compatibility algebra.
 
    Two operations on collection types:
-   - accepts(candidate): asymmetric. requirement.accepts(candidate) is true
-     iff candidate can be substituted where requirement is expected. Used at
-     connection-time edge validation.
-   - compatible(other): symmetric. True iff there is some type T such that
-     both admit T-valued instances. Used for sibling map-over states (where
-     neither side is a "requirement"), e.g. mappingConstraints in terminals.ts.
+   - accepts(other): asymmetric. input_type.accepts(output_type) is true
+     iff an output of type other can be connected to an input slot of
+     type this. Used at workflow-editor edge validation.
+   - compatible(other): symmetric. True iff this and other match such
+     that they could drive a common map-over over sibling inputs of one
+     tool. Used for sibling map-over state checks (neither side is the
+     input slot), e.g. mappingConstraints in terminals.ts.
 
    Mirrors the Python implementation in
    lib/galaxy/model/dataset_collections/type_description.py — keep in sync.
@@ -119,9 +120,10 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return new CollectionTypeDescription(`${this.collectionType}:${other.collectionType}`);
     }
     /**
-     * Asymmetric subtype check: can a value of ``other`` be substituted
-     * where ``this`` is expected? Convention: ``requirement.accepts(candidate)``.
-     * Used for connection-time edge validation.
+     * Asymmetric direct-edge check: does an input slot of type ``this``
+     * accept an output of type ``other``? Convention:
+     * ``input_type.accepts(output_type)``. Used at workflow-editor edge
+     * validation.
      */
     accepts(other: CollectionTypeDescriptor) {
         const otherCollectionType = other.collectionType;
@@ -131,9 +133,9 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         if (other === ANY_COLLECTION_TYPE_DESCRIPTION) {
             return true;
         }
-        // sample_sheet asymmetry: this (requirement) needs sample_sheet column
-        // metadata that a plain-list candidate cannot provide. Check raw
-        // types before normalization.
+        // sample_sheet asymmetry: a sample_sheet input needs column metadata
+        // that a plain-list output cannot provide. Check raw types before
+        // normalization (which otherwise equates the two).
         if (
             this.collectionType.startsWith("sample_sheet") &&
             otherCollectionType &&
@@ -159,9 +161,10 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         return normalizedOther == normalizedThis;
     }
     /**
-     * Symmetric sibling-matching check: do ``this`` and ``other`` share an
-     * iterable shape such that they could be zipped under a common map-over?
-     * Used for sibling map-over states (terminals.ts mappingConstraints).
+     * Symmetric sibling-matching check: do ``this`` and ``other`` match
+     * such that they could drive a common map-over over sibling inputs of
+     * a single tool? Used for sibling map-over state checks
+     * (terminals.ts mappingConstraints).
      */
     compatible(other: CollectionTypeDescriptor) {
         return this.accepts(other) || other.accepts(this);

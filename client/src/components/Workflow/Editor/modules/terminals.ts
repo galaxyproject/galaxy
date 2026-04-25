@@ -852,9 +852,9 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                     // we need to find which of the possible input collection types is connected
                     if ("collectionTypes" in inputTerminal) {
                         // collection_type_source must point at input collection terminal.
-                        // Direction here is requirement.accepts(candidate): the declared
-                        // input collection type is the requirement, the connected output
-                        // shape is the candidate.
+                        // Direction here is input_type.accepts(output_type): the
+                        // receiver is the declared input collection type; the
+                        // argument is the connected output's shape.
                         const connectedCollectionType = inputTerminal.collectionTypes.find(
                             (collectionType) =>
                                 collectionType.accepts(otherCollectionType) ||

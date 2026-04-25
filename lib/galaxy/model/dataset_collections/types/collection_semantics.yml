@@ -1253,7 +1253,7 @@
 - doc: |
     This section is for implementers. It describes the three operations that
     answer "do these collection types fit together?" — used at workflow
-    editor connection time and at runtime when sibling inputs are zipped
+    editor connection time and at runtime when sibling inputs are matched
     under a common map-over.
 
     ### The lattice
@@ -1281,15 +1281,15 @@
 
     | Operation | Symmetry | Question | Used at |
     |---|---|---|---|
-    | `accepts(candidate)` | Asymmetric | Can a value of `candidate` be substituted where `self` is expected? | Connection-time edge validation: input slot accepts output edge |
-    | `compatible(other)` | Symmetric | Is there some type T such that both `self` and `other` admit T-valued instances? | Sibling-matching: zipping sibling HDCAs / sibling map-over states under a common mapping |
+    | `accepts(other)` | Asymmetric | Does an input slot of type `self` accept an output of type `other`? | Workflow-editor edge validation |
+    | `compatible(other)` | Symmetric | Do `self` and `other` match such that they could drive a common map-over over sibling inputs of one tool? | Sibling-matching: matching sibling HDCAs / sibling map-over states under a common mapping |
     | `can_map_over(other)` | Asymmetric | Does `self` have proper subcollections of type `other` — i.e. can `self` be mapped over to feed an `other` slot? | Connection-time map-over decisions; runtime `effective_collection_type` arithmetic |
 
-    Conventions: `requirement.accepts(candidate)` for direct edges;
-    `output.can_map_over(input)` for map-over (`accepts` and `can_map_over`
-    differ in that `accepts` is the direct-edge case where ranks already
-    align, while `can_map_over` is the strict nesting case where the
-    output has *more* rank than the input). The receiver of `compatible`
+    Conventions: `input_type.accepts(output_type)` for direct edges;
+    `output_type.can_map_over(input_type)` for map-over. `accepts` and
+    `can_map_over` differ in that `accepts` is the direct-edge case
+    where ranks already align, while `can_map_over` is the strict nesting
+    case where the output has *more* rank than the input. `compatible`
     is symmetric and either side may go first.
 
     `compatible(a, b)` is implemented as `a.accepts(b) or b.accepts(a)`.
@@ -1297,15 +1297,17 @@
     ### Where each is used
 
     - `accepts` is called at single-edge validation: connecting one output
-      to one input. The asymmetry of substitutability matters here.
-      Examples: `connection_types.can_match`, `query.HistoryQuery.direct_match`,
-      and the workflow-editor input attachment paths in `terminals.ts`.
+      to one input. The asymmetry between input and output sides matters
+      here. Examples: `connection_types.can_match`,
+      `query.HistoryQuery.direct_match`, and the workflow-editor input
+      attachment paths in `terminals.ts`.
 
-    - `compatible` is called when two collections must be zipped as siblings
-      under a common map-over. Neither side is a "requirement"; both are
-      concrete shapes. Order of arrival must not change the answer.
-      Examples: Python `Tree.compatible_shape` (matching.py, execute.py)
-      and the `mappingConstraints` checks in `terminals.ts`.
+    - `compatible` is called when two collections must drive a common
+      map-over as siblings. Neither side is the input slot; both are
+      concrete shapes (observed HDCA shapes at runtime, sibling map-over
+      states at connection time). Order of arrival must not change the
+      answer. Examples: Python `Tree.compatible_shape` (matching.py,
+      execute.py) and the `mappingConstraints` checks in `terminals.ts`.
 
     - `can_map_over` is called when deciding whether an output of higher
       rank can drive a map-over into a lower-rank input — for instance, a
@@ -1322,12 +1324,13 @@
     ### Worked examples
 
     - `paired.accepts(paired_or_unpaired)` is `False`. A 1-element
-      paired_or_unpaired cannot be substituted where a strict pair is
-      required. Test: `test_paired_accepts_relation`.
+      paired_or_unpaired output cannot be connected to an input slot
+      that strictly requires a pair. Test: `test_paired_accepts_relation`.
 
     - `paired.compatible(paired_or_unpaired)` is `True`. If both observed
-      sibling collections happen to align in cardinality, they zip;
-      cardinality checking happens later at the children level. Test:
+      sibling collections happen to align in cardinality, they match for
+      sibling iteration; cardinality checking happens later at the
+      children level. Test:
       `test_paired_and_paired_or_unpaired_match_symmetric`.
 
     - `sample_sheet.accepts(list)` is `False`; `list.accepts(sample_sheet)`
