@@ -1,0 +1,27 @@
+class: GalaxyWorkflow
+inputs:
+  outer_in:
+    type: collection
+    collection_type: list:paired
+steps:
+  inner_wf:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_in:
+          type: collection
+          collection_type: list:paired
+      outputs:
+        processed:
+          outputSource: paired_consumer/out1
+      steps:
+        paired_consumer:
+          tool_id: collection_paired_test
+          in:
+            f1: inner_in
+    in:
+      inner_in: outer_in
+  outer_cat:
+    tool_id: gx_data
+    in:
+      parameter: inner_wf/processed

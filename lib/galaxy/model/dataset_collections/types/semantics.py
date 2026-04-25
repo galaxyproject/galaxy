@@ -50,12 +50,36 @@ class WorkflowRuntimeTest(BaseModel):
     framework_test: str | None = None
 
 
+class AlgebraCaseRef(BaseModel):
+    """Pointer into connection_type_cases.yml. Algebra cases describe the
+    pure type calculus (can_match / can_map_over / effective_map_over) used
+    by every surface that reasons about connection validity. They are NOT a
+    property of any one surface - they cover the shared library underneath
+    the editor, the workflow invocation system, and the format2 validator."""
+
+    op: Literal["can_match", "can_map_over", "compatible", "effective_map_over"]
+    output: str | None = None
+    input: str | None = None
+
+
+class WorkflowFormatValidationTest(BaseModel):
+    """Tracks format2-level validation coverage - specifically, whether the
+    format2 connection validator has an end-to-end fixture exercising this
+    example. Analogous to workflow_editor/workflow_runtime: scoped to one
+    execution surface. Algebra coverage is tracked separately under
+    ``tests.algebra`` because it cross-cuts every surface."""
+
+    fixture: str | None = None
+
+
 class ExampleTests(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     tool_runtime: ToolRuntimeTest | None = None
     workflow_runtime: WorkflowRuntimeTest | None = None
     workflow_editor: str | None = None
+    workflow_format_validation: WorkflowFormatValidationTest | None = None
+    algebra: list[AlgebraCaseRef] | None = None
 
 
 class DatasetsDeclaration(BaseModel):
@@ -368,7 +392,19 @@ def main(argv=None) -> None:
     generate_docs()
 
 
-def _load_examples() -> list["Example"]:
+def _workflow_state_test_dir() -> str:
+    return os.path.join(galaxy_directory(), "test", "unit", "tool_util", "workflow_state")
+
+
+def connection_workflows_dir() -> str:
+    return os.path.join(_workflow_state_test_dir(), "connection_workflows")
+
+
+def connection_type_cases_path() -> str:
+    return os.path.join(_workflow_state_test_dir(), "connection_type_cases.yml")
+
+
+def load_examples() -> list["Example"]:
     semantics_yaml = yaml.safe_load(
         resource_string("galaxy.model.dataset_collections.types", "collection_semantics.yml")
     )
@@ -376,12 +412,63 @@ def _load_examples() -> list["Example"]:
     return [e.example for e in root.root if isinstance(e, ExampleEntry)]
 
 
+# Back-compat alias (previous name had a leading underscore).
+_load_examples = load_examples
+
+
 def check() -> list[str]:
-    examples = _load_examples()
+    examples = load_examples()
     errors: list[str] = []
     errors.extend(validate_api_test_refs(examples))
     errors.extend(validate_tool_refs(examples))
     errors.extend(validate_workflow_editor_refs(examples))
+    errors.extend(validate_workflow_format_validation_refs(examples))
+    errors.extend(validate_algebra_refs(examples))
+    return errors
+
+
+def _load_type_case_keys() -> set[tuple[str, str | None, str | None]]:
+    """Return (op, output, input) tuples declared in connection_type_cases.yml.
+
+    Treat YAML ``null`` (i.e. Python ``None``, which is how unquoted ``NULL``
+    also deserializes) as the sentinel token for matching purposes."""
+    path = connection_type_cases_path()
+    if not os.path.exists(path):
+        return set()
+    with open(path) as f:
+        cases = yaml.safe_load(f) or []
+    return {(c["op"], c.get("output"), c.get("input")) for c in cases}
+
+
+def validate_workflow_format_validation_refs(examples: list["Example"]) -> list[str]:
+    errors: list[str] = []
+    fixtures_dir = connection_workflows_dir()
+    for ex in examples:
+        if not ex.tests or not ex.tests.workflow_format_validation:
+            continue
+        wfv = ex.tests.workflow_format_validation
+        if wfv.fixture:
+            path = os.path.join(fixtures_dir, f"{wfv.fixture}.gxwf.yml")
+            if not os.path.exists(path):
+                errors.append(f"[{ex.label}] workflow_format_validation fixture not found: {wfv.fixture}.gxwf.yml")
+    return errors
+
+
+def validate_algebra_refs(examples: list["Example"]) -> list[str]:
+    if not os.path.exists(connection_type_cases_path()):
+        return []
+    errors: list[str] = []
+    type_case_keys = _load_type_case_keys()
+    for ex in examples:
+        if not ex.tests or not ex.tests.algebra:
+            continue
+        for tc in ex.tests.algebra:
+            if (tc.op, tc.output, tc.input) not in type_case_keys:
+                errors.append(
+                    f"[{ex.label}] algebra entry not found in "
+                    f"connection_type_cases.yml: "
+                    f"op={tc.op} output={tc.output!r} input={tc.input!r}"
+                )
     return errors
 
 

@@ -4,9 +4,9 @@ Thin layer over galaxy.tool_util.collections that adds sentinel types
 (NULL_COLLECTION_TYPE, ANY_COLLECTION_TYPE) and free functions for
 connection validation (can_match, can_map_over, effective_map_over).
 
-The base class methods (can_match_type, has_subcollections_of_type,
-effective_collection_type) do the real work — this module handles
-sentinel dispatch and the dataset (non-collection) case.
+The base class methods (accepts, can_map_over, effective_collection_type)
+do the real work — this module handles sentinel dispatch and the dataset
+(non-collection) case.
 """
 
 from typing import (
@@ -72,7 +72,8 @@ def can_match(
 ) -> bool:
     """Can output directly satisfy input (no mapping)?
 
-    Convention: can_match(output, input) — matches TS inputType.canMatch(outputType).
+    Convention: can_match(output, input) — wraps the asymmetric edge check
+    input_type.accepts(output) with sentinel handling.
     """
     if output is NULL_COLLECTION_TYPE or input_type is NULL_COLLECTION_TYPE:
         return False
@@ -83,7 +84,7 @@ def can_match(
     assert isinstance(input_type, CollectionTypeDescription)
     assert isinstance(output, CollectionTypeDescription)
     for variant in _split_collection_type(input_type):
-        if variant.can_match_type(output):
+        if variant.accepts(output):
             return True
     return False
 
@@ -108,9 +109,34 @@ def can_map_over(
         return True
     assert isinstance(input_type, CollectionTypeDescription)
     for variant in _split_collection_type(input_type):
-        if output.has_subcollections_of_type(variant):
+        if output.can_map_over(variant):
             return True
     return False
+
+
+def compatible(
+    a: CollectionTypeOrSentinel,
+    b: CollectionTypeOrSentinel,
+) -> bool:
+    """Symmetric sibling-matching: do a and b match such that they could
+    drive a common map-over over sibling inputs?
+
+    Wraps the symmetric base method ``CollectionTypeDescription.compatible``
+    with sentinel handling. Order of arguments must not change the answer.
+
+    Used at sites resolving sibling map-over contributions where neither
+    side is the input slot — pre-rebase code used asymmetric can_match here
+    and produced order-dependent results.
+    """
+    if a is NULL_COLLECTION_TYPE and b is NULL_COLLECTION_TYPE:
+        return True
+    if a is NULL_COLLECTION_TYPE or b is NULL_COLLECTION_TYPE:
+        return False
+    if a is ANY_COLLECTION_TYPE or b is ANY_COLLECTION_TYPE:
+        return True
+    assert isinstance(a, CollectionTypeDescription)
+    assert isinstance(b, CollectionTypeDescription)
+    return a.compatible(b)
 
 
 def is_list_like(ctd: CollectionTypeDescription) -> bool:
@@ -142,7 +168,7 @@ def effective_map_over(
     assert isinstance(input_type, CollectionTypeDescription)
     # Find the matching variant for comma-separated types
     for variant in _split_collection_type(input_type):
-        if output.has_subcollections_of_type(variant):
+        if output.can_map_over(variant):
             effective = output.effective_collection_type(variant)
             return COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type(effective)
     return None

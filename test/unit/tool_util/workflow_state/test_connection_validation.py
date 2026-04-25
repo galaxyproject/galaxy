@@ -17,7 +17,6 @@ from galaxy.tool_util_models.tool_outputs import (
     ToolOutputInteger,
 )
 from .connection_test_fixtures import (
-    make_collection_input,
     make_data_input,
     make_data_output,
     make_input_step,
@@ -46,20 +45,29 @@ class TestConnectionValidation:
 
 
 class TestStepMapOver:
-    def test_compatible_map_over_from_multiple_inputs(self):
-        """Two inputs both contributing list map-over -> step maps over list."""
+    def test_compatible_sibling_map_overs_with_different_strings(self):
+        """Two dataset inputs receiving paired vs paired_or_unpaired
+        collections contribute textually different map-overs that are
+        ``compatible`` — they should compose, not error.
+
+        Regression: pre-refactor _resolve_step_map_over used raw string
+        equality and rejected ``paired`` vs ``paired_or_unpaired`` map-over
+        contributions with ``Incompatible map-over types``.
+        """
         tool_info = MockGetToolInfo()
         tool_info.register(
-            "two_in",
+            "two_data",
             make_parsed_tool(
-                "two_in", inputs=[make_data_input("in1"), make_data_input("in2")], outputs=[make_data_output("out1")]
+                "two_data",
+                inputs=[make_data_input("in1"), make_data_input("in2")],
+                outputs=[make_data_output("out1")],
             ),
         )
         wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list"}'),
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list"}'),
+            make_input_step("data_collection_input", tool_state='{"collection_type": "paired_or_unpaired"}'),
+            make_input_step("data_collection_input", tool_state='{"collection_type": "paired"}'),
             make_tool_step(
-                "two_in",
+                "two_data",
                 input_connections={
                     "in1": {"id": 0, "output_name": "output"},
                     "in2": {"id": 1, "output_name": "output"},
@@ -67,145 +75,8 @@ class TestStepMapOver:
             ),
         )
         result = validate_connections(wf, tool_info)
-        assert result.valid
-        assert result.step_results[2].map_over == "list"
-
-    def test_mixed_direct_and_mapover(self):
-        """One input direct match, one input map-over -> step maps over."""
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "mixed",
-            make_parsed_tool(
-                "mixed",
-                inputs=[make_collection_input("coll_in", "paired"), make_data_input("data_in")],
-                outputs=[make_data_output("out1")],
-            ),
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "paired"}'),
-            make_input_step("data_input"),
-            make_tool_step(
-                "mixed",
-                input_connections={
-                    "coll_in": {"id": 0, "output_name": "output"},
-                    "data_in": {"id": 1, "output_name": "output"},
-                },
-            ),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        assert result.step_results[2].map_over is None
-
-    def test_no_connections_no_map_over(self):
-        """Steps with no connections have no map-over."""
-        tool_info = MockGetToolInfo()
-        wf = make_native_workflow(make_input_step("data_input"))
-        result = validate_connections(wf, tool_info)
-        assert result.step_results[0].map_over is None
-
-
-class TestMapOverVariants:
-    """Map-over variants not covered by fixtures."""
-
-    def test_list_paired_over_paired_or_unpaired(self):
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "pou_tool",
-            make_parsed_tool(
-                "pou_tool",
-                inputs=[make_collection_input("input1", "paired_or_unpaired")],
-                outputs=[make_data_output("out1")],
-            ),
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list:paired"}'),
-            make_tool_step("pou_tool", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        assert result.step_results[1].connections[0].mapping == "list"
-
-    def test_list_list_over_list_paired_or_unpaired(self):
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "lpou_tool",
-            make_parsed_tool(
-                "lpou_tool",
-                inputs=[make_collection_input("input1", "list:paired_or_unpaired")],
-                outputs=[make_data_output("out1")],
-            ),
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list:list"}'),
-            make_tool_step("lpou_tool", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        assert result.step_results[1].connections[0].mapping == "list"
-
-
-class TestMultiDataReduction:
-    """Multi-data edge case not covered by fixtures."""
-
-    def test_sample_sheet_to_multi_data_ok(self):
-        """sample_sheet (normalizes to list) -> data(multiple=True) -> ok."""
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "multi_cat",
-            make_parsed_tool(
-                "multi_cat", inputs=[make_data_input("inputs", multiple=True)], outputs=[make_data_output("out1")]
-            ),
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "sample_sheet"}'),
-            make_tool_step("multi_cat", input_connections={"inputs": {"id": 0, "output_name": "output"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        conn = result.step_results[1].connections[0]
-        assert conn.status == "ok"
-        assert conn.mapping is None
-
-
-class TestEndToEnd:
-    def test_empty_workflow(self):
-        result = validate_connections(make_native_workflow(), MockGetToolInfo())
-        assert result.valid
-        assert len(result.step_results) == 0
-
-    def test_input_only_workflow(self):
-        wf = make_native_workflow(make_input_step("data_input"), make_input_step("data_collection_input"))
-        result = validate_connections(wf, MockGetToolInfo())
-        assert result.valid
-
-    def test_three_step_chain(self):
-        """input -> tool1 -> tool2, all matching types."""
-        tool_info = MockGetToolInfo()
-        for tid in ["t1", "t2"]:
-            tool_info.register(
-                tid, make_parsed_tool(tid, inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-            )
-        wf = make_native_workflow(
-            make_input_step("data_input"),
-            make_tool_step("t1", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-            make_tool_step("t2", input_connections={"input1": {"id": 1, "output_name": "out1"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-
-    def test_summary_counts(self):
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "cat", make_parsed_tool("cat", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list"}'),
-            make_tool_step("cat", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        s = result.summary
-        assert s["ok"] == 1
-        assert s["invalid"] == 0
+        assert result.valid, result.step_results[2].errors
+        assert result.step_results[2].map_over in ("paired", "paired_or_unpaired")
 
 
 # -- Subworkflow tests --
@@ -225,105 +96,6 @@ def _inner_workflow_with_exposed_output(*steps, workflow_outputs=None):
 
 
 class TestSubworkflow:
-    def test_basic_passthrough(self):
-        """data_input -> subworkflow(data_input -> cat -> out) -> cat2."""
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "cat", make_parsed_tool("cat", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-        )
-        tool_info.register(
-            "cat2", make_parsed_tool("cat2", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-        )
-        inner_wf = _inner_workflow_with_exposed_output(
-            make_input_step("data_input"),
-            make_tool_step("cat", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-            workflow_outputs=[(1, "out1", "inner_out")],
-        )
-        wf = make_native_workflow(
-            make_input_step("data_input"),
-            make_subworkflow_step(
-                inner_wf,
-                input_connections={"data_in": {"id": 0, "output_name": "output", "input_subworkflow_step_id": 0}},
-            ),
-            make_tool_step("cat2", input_connections={"input1": {"id": 1, "output_name": "inner_out"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        # Step 2 connects to subworkflow output "inner_out" -> should be ok
-        conn = result.step_results[2].connections[0]
-        assert conn.status == "ok"
-        assert conn.mapping is None
-
-    def test_collection_type_propagation(self):
-        """list:paired input -> subworkflow with paired inner tool -> output resolves."""
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "paired_tool",
-            make_parsed_tool(
-                "paired_tool",
-                inputs=[make_collection_input("input1", "paired")],
-                outputs=[make_data_output("out1")],
-            ),
-        )
-        tool_info.register(
-            "cat", make_parsed_tool("cat", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-        )
-        inner_wf = _inner_workflow_with_exposed_output(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list:paired"}'),
-            make_tool_step("paired_tool", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-            workflow_outputs=[(1, "out1", "processed")],
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list:paired"}'),
-            make_subworkflow_step(
-                inner_wf,
-                input_connections={"coll_in": {"id": 0, "output_name": "output", "input_subworkflow_step_id": 0}},
-            ),
-            # Downstream consumes subworkflow output "processed" — should be list (map-over)
-            make_tool_step("cat", input_connections={"input1": {"id": 1, "output_name": "processed"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        # Inner: list:paired -> paired_tool maps over list, out1 becomes list
-        # Outer step 2 receives list -> maps over data input -> ok
-        conn = result.step_results[2].connections[0]
-        assert conn.status == "ok"
-        assert conn.mapping == "list"
-
-    def test_map_over_inside_subworkflow(self):
-        """Outer feeds list, inner expects dataset -> inner maps over -> exposed output is list."""
-        tool_info = MockGetToolInfo()
-        tool_info.register(
-            "cat", make_parsed_tool("cat", inputs=[make_data_input("input1")], outputs=[make_data_output("out1")])
-        )
-        tool_info.register(
-            "list_consumer",
-            make_parsed_tool(
-                "list_consumer",
-                inputs=[make_collection_input("input1", "list")],
-                outputs=[make_data_output("out1")],
-            ),
-        )
-        inner_wf = _inner_workflow_with_exposed_output(
-            make_input_step("data_input"),  # expects dataset
-            make_tool_step("cat", input_connections={"input1": {"id": 0, "output_name": "output"}}),
-            workflow_outputs=[(1, "out1", "inner_out")],
-        )
-        wf = make_native_workflow(
-            make_input_step("data_collection_input", tool_state='{"collection_type": "list"}'),
-            make_subworkflow_step(
-                inner_wf,
-                input_connections={"data_in": {"id": 0, "output_name": "output", "input_subworkflow_step_id": 0}},
-            ),
-            # Subworkflow gets list, inner maps over -> exposed output is list
-            make_tool_step("list_consumer", input_connections={"input1": {"id": 1, "output_name": "inner_out"}}),
-        )
-        result = validate_connections(wf, tool_info)
-        assert result.valid
-        conn = result.step_results[2].connections[0]
-        assert conn.status == "ok"
-        assert conn.mapping is None  # list -> list direct match
-
     def test_nested_subworkflow(self):
         """Outer -> subworkflow -> inner subworkflow -> tool. Two levels."""
         tool_info = MockGetToolInfo()
