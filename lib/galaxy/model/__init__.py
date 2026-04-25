@@ -2952,7 +2952,7 @@ class ImplicitCollectionJobs(Base, Serializable):
         rval = dict_for(
             self,
             populated_state=self.populated_state,
-            jobs=[serialization_options.get_identifier(id_encoder, j_a.job) for j_a in self.jobs],
+            jobs=[serialization_options.get_identifier(id_encoder, j_a.job) for j_a in self.jobs if j_a.job is not None],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
