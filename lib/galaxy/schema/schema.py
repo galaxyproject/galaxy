@@ -1926,6 +1926,15 @@ class WriteStoreToPayload(StoreExportPayload):
         title="Target URI",
         description="Galaxy Files URI to write mode store content to.",
     )
+    ignore_errors: bool = Field(
+        default=False,
+        description=(
+            "Last resort. If True, skip serialization errors caused by missing "
+            "provenance (e.g. orphan implicit collection job associations, null "
+            "job param refs from older histories that pre-date collections) "
+            "instead of failing. Exported data may be incomplete or corrupt."
+        ),
+    )
 
 
 class ObjectExportResponseBase(Model):
