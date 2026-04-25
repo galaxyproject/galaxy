@@ -56,3 +56,22 @@ def test_io_dicts_excludes_implicit_output_collections():
     # With exclude_implicit_outputs=False (default), they should be included
     io = job.io_dicts(exclude_implicit_outputs=False)
     assert "paired_output" in io.out_collections
+
+
+def test_implicit_collection_jobs_serialize_skips_orphan_associations():
+    """ImplicitCollectionJobsJobAssociation.job_id is nullable; orphan rows
+    (e.g. produced by partial imports) must be skipped on export instead of
+    crashing in SerializationOptions.get_identifier on a None job."""
+    icj = model.ImplicitCollectionJobs()
+    job = model.Job()
+    job.id = 42
+
+    linked = model.ImplicitCollectionJobsJobAssociation()
+    linked.order_index = 0
+    linked.job = job
+    orphan = model.ImplicitCollectionJobsJobAssociation()
+    orphan.order_index = 1  # job left as None
+    icj.jobs = [linked, orphan]
+
+    rval = icj._serialize(id_encoder=None, serialization_options=model.SerializationOptions(for_edit=True))
+    assert rval["jobs"] == [42]
