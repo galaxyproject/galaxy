@@ -621,8 +621,8 @@ export class InputCollectionTerminal extends BaseInputTerminal {
     }
     _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
         const collectionTypes = this.collectionTypes;
-        const canMatch = collectionTypes.some((collectionType) => collectionType.accepts(otherCollectionType));
-        if (!canMatch) {
+        const directlyAccepted = collectionTypes.some((collectionType) => collectionType.accepts(otherCollectionType));
+        if (!directlyAccepted) {
             for (const collectionTypeIndex in collectionTypes) {
                 const collectionType = collectionTypes[collectionTypeIndex]!;
 
@@ -664,8 +664,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 }
                 return true;
             });
-            const canMatch = accepted;
-            if (canMatch) {
+            if (accepted) {
                 // Only way a direct match...
                 return this._producesAcceptableDatatypeAndOptionalness(other);
                 // Otherwise we need to mapOver

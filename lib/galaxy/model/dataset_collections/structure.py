@@ -269,7 +269,7 @@ def get_structure(
     elements below ``leaf_subcollection_type`` are treated as leaves.
     """
     if leaf_subcollection_type:
-        if not collection_type_description.has_subcollections_of_type(leaf_subcollection_type):
+        if not collection_type_description.can_map_over(leaf_subcollection_type):
             # The described collection IS the leaf subcollection (no deeper
             # structure to strip). Don't enumerate its elements; just record
             # the type so multiply() can combine it with the mapping structure.

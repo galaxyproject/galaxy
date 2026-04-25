@@ -1251,7 +1251,7 @@
 
 - doc: "## Type Compatibility Algebra"
 - doc: |
-    This section is for implementers. It describes the two operations that
+    This section is for implementers. It describes the three operations that
     answer "do these collection types fit together?" — used at workflow
     editor connection time and at runtime when sibling inputs are zipped
     under a common map-over.
@@ -1277,15 +1277,20 @@
     `list:paired` and `list` (the latter via the "single-dataset wrapped
     as unpaired" interpretation), so it has two incomparable subtypes.
 
-    ### Two operations
+    ### Three operations
 
     | Operation | Symmetry | Question | Used at |
     |---|---|---|---|
     | `accepts(candidate)` | Asymmetric | Can a value of `candidate` be substituted where `self` is expected? | Connection-time edge validation: input slot accepts output edge |
     | `compatible(other)` | Symmetric | Is there some type T such that both `self` and `other` admit T-valued instances? | Sibling-matching: zipping sibling HDCAs / sibling map-over states under a common mapping |
+    | `can_map_over(other)` | Asymmetric | Does `self` have proper subcollections of type `other` — i.e. can `self` be mapped over to feed an `other` slot? | Connection-time map-over decisions; runtime `effective_collection_type` arithmetic |
 
-    Convention: `requirement.accepts(candidate)`. The receiver is the type
-    being matched against; the argument is the candidate.
+    Conventions: `requirement.accepts(candidate)` for direct edges;
+    `output.can_map_over(input)` for map-over (`accepts` and `can_map_over`
+    differ in that `accepts` is the direct-edge case where ranks already
+    align, while `can_map_over` is the strict nesting case where the
+    output has *more* rank than the input). The receiver of `compatible`
+    is symmetric and either side may go first.
 
     `compatible(a, b)` is implemented as `a.accepts(b) or b.accepts(a)`.
 
@@ -1301,6 +1306,13 @@
       concrete shapes. Order of arrival must not change the answer.
       Examples: Python `Tree.compatible_shape` (matching.py, execute.py)
       and the `mappingConstraints` checks in `terminals.ts`.
+
+    - `can_map_over` is called when deciding whether an output of higher
+      rank can drive a map-over into a lower-rank input — for instance, a
+      `list:paired` output feeding a `paired` input by iterating the outer
+      list. The Python and TypeScript names match
+      (`can_map_over` / `canMapOver`) because it is the same operational
+      question in both layers.
 
     Routing a sibling-matching question through `accepts` instead of
     `compatible` produces order-dependent behavior — which sibling input

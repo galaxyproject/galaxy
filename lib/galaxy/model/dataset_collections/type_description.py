@@ -1,18 +1,23 @@
 """Collection type descriptions and the compatibility algebra.
 
-Two operations on collection types:
+Three operations on collection types, each answering a distinct question:
 
-- ``accepts(candidate)``: asymmetric. ``requirement.accepts(candidate)`` is
-  True iff ``candidate`` can be substituted where ``requirement`` is expected.
-  Used at connection-time edge validation.
-- ``compatible(other)``: symmetric. True iff there is some type T such that
-  both admit T-valued instances. Used at sibling-matching sites where order
-  of arrival must not change the answer.
+- ``accepts(candidate)``: asymmetric direct-edge check. True iff a value of
+  ``candidate`` can be substituted where ``self`` is expected. Used at
+  connection-time edge validation. Convention: ``requirement.accepts(candidate)``.
+- ``compatible(other)``: symmetric sibling-matching check. True iff
+  ``self`` and ``other`` share an iterable shape. Used where neither side
+  is a "requirement" and order of arrival must not change the answer.
+- ``can_map_over(other)``: asymmetric nesting check. True iff ``self`` has
+  proper subcollections of type ``other`` — i.e. ``self`` can be mapped
+  over to feed a slot expecting ``other``. Convention:
+  ``output.can_map_over(input)``.
 
 The TypeScript equivalents live in
 ``client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts``
-and must stay in sync. See ``types/collection_semantics.yml`` "Type
-Compatibility Algebra" for the lattice diagram and worked examples.
+and must stay in sync (``accepts`` / ``compatible`` / ``canMapOver``). See
+``types/collection_semantics.yml`` "Type Compatibility Algebra" for the
+lattice diagram and worked examples.
 """
 
 import re
@@ -82,7 +87,7 @@ class CollectionTypeDescription:
         if hasattr(subcollection_type, "collection_type"):
             subcollection_type = subcollection_type.collection_type
 
-        if not self.has_subcollections_of_type(subcollection_type):
+        if not self.can_map_over(subcollection_type):
             raise ValueError(f"Cannot compute effective subcollection type of {subcollection_type} over {self}")
 
         if subcollection_type == "single_datasets":
@@ -118,24 +123,27 @@ class CollectionTypeDescription:
 
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
-    def has_subcollections_of_type(self, other_collection_type) -> bool:
-        """Take in another type (either flat string or another
-        CollectionTypeDescription) and determine if this collection contains
-        subcollections matching that type.
+    def can_map_over(self, other_collection_type) -> bool:
+        """Asymmetric nesting check: can this collection be mapped over to
+        feed an input requiring ``other_collection_type``?
 
-        The way this is used in map/reduce it seems to make the most sense
-        for this to return True if these subtypes are proper (i.e. a type
-        is not considered to have subcollections of its own type).
+        Convention: ``output.can_map_over(input)``. True iff ``self`` has
+        proper subcollections matching ``other`` — a type is not considered
+        to map over itself (that's a direct edge, handled by ``accepts``).
+
+        Mirrors TypeScript ``CollectionTypeDescription.canMapOver``. Naming
+        kept parallel across languages because both encode the same
+        operational question at workflow-editor connection time.
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
-        # sample_sheet asymmetry: a map-over into a sample_sheet input requires
-        # the mapped-over output to itself be a sample_sheet variant - plain
-        # list collections lack the column metadata. ``self`` is the output
-        # (the collection being mapped over); ``other`` is the input type we
-        # are trying to satisfy. Enforce before normalization.
-        # Duplicates the asymmetry encoded in ``accepts``; load-bearing for
+        # sample_sheet asymmetry: an input requiring sample_sheet column
+        # metadata can only be fed by a sample_sheet output. ``self`` is the
+        # output being mapped over; ``other`` is the input requirement. Check
+        # before normalization (which equates sample_sheet and list).
+        # Duplicates the asymmetry encoded in ``accepts`` — load-bearing for
         # ``multiply`` / ``effective_collection_type`` map-over arithmetic.
+        # Removing this guard is a separate refactor; see follow-up issue.
         if other_collection_type.startswith("sample_sheet") and not self.collection_type.startswith("sample_sheet"):
             return False
         collection_type = _normalize_collection_type(self.collection_type)
@@ -163,11 +171,6 @@ class CollectionTypeDescription:
             # effectively any collection has unpaired subcollections
             return True
         return False
-
-    def is_subcollection_of_type(self, other_collection_type):
-        if not hasattr(other_collection_type, "collection_type"):
-            other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
-        return other_collection_type.has_subcollections_of_type(self)
 
     def accepts(self, other_collection_type) -> bool:
         """Asymmetric subtype check: can a value of ``other`` be substituted

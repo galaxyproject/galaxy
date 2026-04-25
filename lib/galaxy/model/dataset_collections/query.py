@@ -78,6 +78,8 @@ class HistoryQuery:
         hdca_collection_type = hdca.collection.collection_type
         for collection_type_description in collection_type_descriptions:
             # See note about the way this is sorted above.
-            if collection_type_description.is_subcollection_of_type(hdca_collection_type):
+            factory = collection_type_description.collection_type_description_factory
+            hdca_type = factory.for_collection_type(hdca_collection_type)
+            if hdca_type.can_map_over(collection_type_description):
                 return collection_type_description
         return False
