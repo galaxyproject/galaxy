@@ -37,7 +37,9 @@ from .connection_graph import (
 from .connection_types import (
     ANY_COLLECTION_TYPE,
     can_match,
+    collection_type_rank,
     CollectionTypeOrSentinel,
+    compatible,
     effective_map_over,
     is_list_like,
     NULL_COLLECTION_TYPE,
@@ -268,7 +270,7 @@ def _validate_single_connection(
                 # Simple list -> multi-data: full reduction, no map-over
                 # Deeper (list:list, list:paired, etc.) -> multi-data: outer levels map over
                 inner_list = COLLECTION_TYPE_DESCRIPTION_FACTORY.for_collection_type("list")
-                if source_type.has_subcollections_of_type(inner_list):
+                if source_type.can_map_over(inner_list):
                     remaining = source_type.effective_collection_type(inner_list)
                     return _ok(mapping=remaining)
                 return _ok()
@@ -302,8 +304,11 @@ def _resolve_step_map_over(
 ) -> Optional[CollectionTypeDescription]:
     """Resolve effective map-over from all connection contributions.
 
-    All non-None map-over types must be identical. If any disagree,
-    report an error (the step can't satisfy both map-over structures).
+    Pairs of non-None contributions are checked with the symmetric
+    ``compatible`` so order of arrival of sibling inputs doesn't change the
+    answer (matches TS ``mappingConstraints``). The resolved map-over is
+    the highest-rank compatible type — TS picks "most specific" the same
+    way.
     """
     non_none = [c for c in contributions if c is not None]
     if not non_none:
@@ -311,9 +316,11 @@ def _resolve_step_map_over(
 
     best = non_none[0]
     for ctd in non_none[1:]:
-        if ctd.collection_type != best.collection_type:
+        if not compatible(best, ctd):
             step_result.errors.append(f"Incompatible map-over types: {best.collection_type} vs {ctd.collection_type}")
-            return best  # return something, error recorded
+            return best
+        if collection_type_rank(ctd) > collection_type_rank(best):
+            best = ctd
 
     return best
 
