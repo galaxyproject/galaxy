@@ -1968,6 +1968,7 @@ class DirectoryModelExportStore(ModelExportStore):
         strip_metadata_files: bool = True,
         serialize_jobs: bool = True,
         user_context=None,
+        ignore_errors: bool = False,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -2004,6 +2005,7 @@ class DirectoryModelExportStore(ModelExportStore):
             serialize_dataset_objects=serialize_dataset_objects,
             strip_metadata_files=strip_metadata_files,
             serialize_files_handler=self,
+            ignore_errors=ignore_errors,
         )
         self.export_files = export_files
         self.included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]] = {}
@@ -3046,6 +3048,7 @@ def get_export_store_factory(
     export_files=None,
     bco_export_options: Optional[BcoExportOptions] = None,
     user_context=None,
+    ignore_errors: bool = False,
 ) -> Callable[[StrPath], FileSourceModelExportStore]:
     export_store_class: type[FileSourceModelExportStore]
     export_store_class_kwds = {
@@ -3053,6 +3056,7 @@ def get_export_store_factory(
         "export_files": export_files,
         "serialize_dataset_objects": False,
         "user_context": user_context,
+        "ignore_errors": ignore_errors,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
