@@ -1,0 +1,25 @@
+class: GalaxyWorkflow
+inputs:
+  outer_in:
+    type: collection
+    collection_type: list
+steps:
+  inner_wf:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_in: data
+      outputs:
+        inner_out:
+          outputSource: inner_cat/output
+      steps:
+        inner_cat:
+          tool_id: gx_data
+          in:
+            parameter: inner_in
+    in:
+      inner_in: outer_in
+  outer_consumer:
+    tool_id: collection_creates_list
+    in:
+      input1: inner_wf/inner_out
