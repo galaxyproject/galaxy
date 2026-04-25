@@ -494,12 +494,9 @@ class SerializationOptions:
             return obj.temp_id
 
     def get_identifier_for_id(self, id_encoder, obj_id):
-        if self.for_edit and obj_id:
+        if not obj_id or self.for_edit:
             return obj_id
-        elif obj_id:
-            return id_encoder.encode_id(obj_id, kind="model_export")
-        else:
-            raise NotImplementedError()
+        return id_encoder.encode_id(obj_id, kind="model_export")
 
     def serialize_files(self, dataset, as_dict):
         if self.serialize_files_handler is not None:
