@@ -1,8 +1,4 @@
-from typing import (
-    Callable,
-    cast,
-    TypeVar,
-)
+from typing import Callable
 
 import requests
 from requests import (  # noqa: F401
@@ -14,32 +10,29 @@ from typing_extensions import ParamSpec
 
 from .user_agent import get_default_headers
 
+
+class Session(requests.Session):
+    def __init__(self) -> None:
+        super().__init__()
+        self.headers.update(get_default_headers())
+
+
 Param = ParamSpec("Param")
-RetType = TypeVar("RetType")
 
 
-def default_user_agent_decorator(f: Callable[Param, RetType]) -> Callable[Param, RetType]:
-
-    def wrapper(*args: Param.args, **kwargs: Param.kwargs) -> RetType:
-        headers = cast(dict, kwargs.pop("headers", None) or {})
-        headers.update(get_default_headers())
-        is_session = f in (requests.session, requests.Session)
-        if not is_session:
-            kwargs["headers"] = headers
-        rval = f(*args, **kwargs)
-        if is_session:
-            rval.headers = headers  # type: ignore[attr-defined]
-        return rval
+def _request_decorator(f: Callable[Param, Response]) -> Callable[Param, Response]:
+    def wrapper(*args: Param.args, **kwargs: Param.kwargs) -> Response:
+        with Session() as s:
+            return getattr(s, f.__name__)(*args, **kwargs)
 
     return wrapper
 
 
-delete = default_user_agent_decorator(requests.delete)
-get = default_user_agent_decorator(requests.get)
-head = default_user_agent_decorator(requests.head)
-patch = default_user_agent_decorator(requests.patch)
-post = default_user_agent_decorator(requests.post)
-options = default_user_agent_decorator(requests.options)
-put = default_user_agent_decorator(requests.put)
-session = default_user_agent_decorator(requests.session)
-Session = default_user_agent_decorator(requests.Session)
+delete = _request_decorator(requests.delete)
+get = _request_decorator(requests.get)
+head = _request_decorator(requests.head)
+patch = _request_decorator(requests.patch)
+post = _request_decorator(requests.post)
+options = _request_decorator(requests.options)
+put = _request_decorator(requests.put)
+session = Session
