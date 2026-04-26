@@ -15,6 +15,8 @@ import {
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
+import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -86,13 +88,22 @@ async function submitLogin() {
         redirect = props.redirect ?? null;
     }
 
+    // Stop polling and abort in-flight axios/GalaxyApi before sending the
+    // login POST — otherwise a late anonymous-cookie response can overwrite
+    // the authenticated cookie we're about to receive.
+    discardActiveConnectionsBeforeAuthNavigation();
+
     try {
-        const response = await axios.post(withPrefix("/user/login"), {
-            login: login.value,
-            password: password.value,
-            redirect: redirect,
-            session_csrf_token: props.sessionCsrfToken,
-        });
+        const response = await axios.post(
+            withPrefix("/user/login"),
+            {
+                login: login.value,
+                password: password.value,
+                redirect: redirect,
+                session_csrf_token: props.sessionCsrfToken,
+            },
+            { headers: { [SKIP_PENDING_REQUESTS_HEADER]: "1" } },
+        );
 
         if (response.data.message && response.data.status) {
             alert(response.data.message);
