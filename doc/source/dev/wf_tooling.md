@@ -26,6 +26,10 @@ Galaxy's workflow CLI tooling spans three packages at different abstraction leve
 | `gxwf roundtrip-tree`        | galaxy-tool-util | Round-trip validate all workflows in a directory             |
 | `gxwf lint-tree`             | galaxy-tool-util | Lint all workflows in a directory                            |
 | `gxwf convert-tree`          | galaxy-tool-util | Batch convert workflows in a directory                       |
+| `gxwf tool-search`           | galaxy-tool-util | Search the Tool Shed for tools matching a query              |
+| `gxwf repo-search`           | galaxy-tool-util | Search the Tool Shed for repositories (popularity-boosted)   |
+| `gxwf tool-versions`         | galaxy-tool-util | List TRS-published versions of a Tool Shed tool              |
+| `gxwf tool-revisions`        | galaxy-tool-util | List changeset revisions that publish a Tool Shed tool       |
 | `gxwf viz`                   | galaxy-tool-util | Interactive Cytoscape graph (requires gxformat2)             |
 | `gxwf abstract-export`       | galaxy-tool-util | Abstract CWL export (requires gxformat2)                     |
 | `gxwf mermaid`               | galaxy-tool-util | Mermaid diagram (requires gxformat2)                         |
@@ -255,6 +259,31 @@ gxwf-to-format2 --compact my-workflow.ga            # strip positions
 ```
 
 Both commands share `--compact`, `--json`, and `-o` flags. The key difference: `gxwf convert` (schema-aware) produces proper `state` dicts by consulting tool definitions to decode double-encoded JSON strings. `gxwf-to-format2` copies the raw `tool_state` strings as-is since it has no tool schema.
+
+### Tool Shed Search
+
+Discover tools and repositories in a Tool Shed without leaving the CLI. All four subcommands accept `--toolshed-url` (defaults to the main Galaxy Tool Shed) and a `--json` flag for machine-readable output. Exit codes: `0` on hits, `2` when nothing matched, `3` on a Tool Shed transport failure.
+
+```bash
+gxwf tool-search fastqc                          # tools matching the query
+gxwf tool-search fastqc --owner devteam          # client-side owner filter
+gxwf tool-search fastqc --match-name             # drop hits whose name lacks any query token
+gxwf tool-search fastqc --enrich --cache-dir ~/.galaxy/tool_info_cache  # attach ParsedTool
+
+gxwf repo-search fastqc --owner devteam --category "sequence analysis"
+                                                  # server-side owner: / category: keywords
+
+gxwf tool-versions devteam/fastqc/fastqc          # TRS-published versions, oldest→newest
+gxwf tool-versions devteam~fastqc~fastqc --latest # only the newest
+
+gxwf tool-revisions devteam/fastqc/fastqc                     # changeset revisions
+gxwf tool-revisions devteam/fastqc/fastqc --tool-version 0.74+galaxy0
+gxwf tool-revisions devteam/fastqc/fastqc --latest --json     # newest, machine-readable
+```
+
+`tool-search` flattens hits into a snake-case `NormalizedToolHit` (with derived `trs_tool_id` and `full_tool_id`) and sorts by Whoosh BM25 score; the underlying TS package emits the same shape. `tool-revisions` orders matches via Tool Shed's `get_ordered_installable_revisions`. Tool versions are not monotonic — the same `version` string can legally appear in multiple changesets, so prefer `tool-revisions` when pinning workflows.
+
+The `ToolSearchService` class (`galaxy.tool_util.workflow_state.tool_search`) lets library callers fan a query across multiple Tool Sheds, dedupe `(owner, repo, tool_id)` first-source-wins, and optionally enrich each hit through `ToolShedGetToolInfo`.
 
 ### Visualization and Abstract Export
 
