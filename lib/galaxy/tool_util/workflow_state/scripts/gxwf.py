@@ -9,8 +9,12 @@ from . import (
     workflow_convert,
     workflow_lint_stateful,
     workflow_lint_stateful_tree,
+    workflow_repo_search,
     workflow_roundtrip_validate,
     workflow_roundtrip_validate_tree,
+    workflow_tool_revisions,
+    workflow_tool_search,
+    workflow_tool_versions,
     workflow_validate,
     workflow_validate_tests,
     workflow_validate_tests_tree,
@@ -32,6 +36,12 @@ _TREE = [
     workflow_lint_stateful_tree,
     workflow_roundtrip_validate_tree,
 ]
+_TOOLSHED = [
+    workflow_tool_search,
+    workflow_repo_search,
+    workflow_tool_versions,
+    workflow_tool_revisions,
+]
 
 
 def build_parser():
@@ -41,7 +51,7 @@ def build_parser():
     )
     sub = parser.add_subparsers(dest="subcommand", metavar="<command>")
     sub.required = True
-    for mod in _SINGLE_FILE + _TREE:
+    for mod in _SINGLE_FILE + _TREE + _TOOLSHED:
         mod.register(sub)
     workflow_convert.register(sub)
     workflow_convert.register_tree(sub)
