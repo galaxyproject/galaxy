@@ -55,9 +55,9 @@ def build_parser():
         mod.register(sub)
     workflow_convert.register(sub)
     workflow_convert.register_tree(sub)
-    register_passthrough(sub, "viz", "gxwf-viz", "Interactive Cytoscape graph (requires gxformat2)")
-    register_passthrough(sub, "abstract-export", "gxwf-abstract-export", "Abstract CWL export (requires gxformat2)")
-    register_passthrough(sub, "mermaid", "gxwf-mermaid", "Mermaid diagram (requires gxformat2)")
+    register_passthrough(sub, "viz", "gxformat2.cytoscape:main", "Interactive Cytoscape graph")
+    register_passthrough(sub, "abstract-export", "gxformat2.abstract:main", "Abstract CWL export")
+    register_passthrough(sub, "mermaid", "gxformat2.mermaid:main", "Mermaid diagram")
     return parser
 
 
