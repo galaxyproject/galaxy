@@ -26,6 +26,7 @@ steps:
 
     - title: "Choose Paste Links"
       component: upload_activity.method_card(method_id=paste-links)
+      prerequisites: ["ensure_upload_open"]
       intro: "Select the Paste Links method to upload data via URL."
       preclick: true
 
@@ -54,19 +55,23 @@ steps:
 
     - title: "Tools"
       component: _.left_panel
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
 
     - title: "Tool categories"
       component: tools.title
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "Tools are grouped into categories to make them easier to find."
 
     - title: "Tool search bar"
       component: tools.search
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "You can search for tools by keywords."
       textinsert: "filter"
 
     - title: "Select a tool"
       component: tool_panel.tool_link(tool_id=Filter1)
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "Select and load a tool for your analysis by clicking the underlined link."
       postclick: true
 
@@ -91,6 +96,7 @@ steps:
 
     - title: "History"
       component: history_panel
+      prerequisites: ["ensure_history_panel_open"]
       intro:
           "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
           A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
@@ -98,11 +104,13 @@ steps:
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
 
     - title: "View dataset"
       element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "View your dataset by clicking the eye button."
       postclick: true
 
@@ -117,10 +125,12 @@ steps:
 
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item .delete-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Delete your dataset by clicking the trash-button."
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
     - title: "Analyze data"
