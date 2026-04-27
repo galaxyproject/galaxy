@@ -3032,6 +3032,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
 
+        tool_dict["has_parameters"] = self.parameters is not None
+
         tool_dict["panel_section_id"], tool_dict["panel_section_name"] = self.get_panel_section()
 
         tool_class = self.__class__

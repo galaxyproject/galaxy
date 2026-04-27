@@ -435,7 +435,7 @@ export default {
             try {
                 const jobResponse = await submitToolJob({
                     jobDef,
-                    inputsTree: this.formConfig.inputs,
+                    formConfig: this.formConfig,
                     formData: this.formData,
                 });
                 jobResponse.produces_entry_points = this.formConfig.model_class === "InteractiveTool";

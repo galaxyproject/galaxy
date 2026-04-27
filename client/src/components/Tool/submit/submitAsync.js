@@ -3,8 +3,8 @@ import { buildNestedState } from "@/components/Form/utilities";
 import { pollUntil } from "@/composables/pollUntil";
 import { rethrowSimple } from "@/utils/simple-error";
 
-export async function submitToolJob({ jobDef, inputsTree, formData }) {
-    const nestedInputs = buildNestedState(inputsTree, formData);
+export async function submitToolJob({ jobDef, formConfig, formData }) {
+    const nestedInputs = buildNestedState(formConfig.inputs, formData);
     const request = { ...jobDef, inputs: nestedInputs };
     const { tool_request_id } = await submitJobRequest(request);
     const detail = await waitForToolRequest(tool_request_id);
