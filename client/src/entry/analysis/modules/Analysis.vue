@@ -61,7 +61,11 @@ onUnmounted(() => {
         </div>
         <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
             <template v-slot:closed-button="{ open }">
-                <GButton class="history-expand-button" size="small" @click="open">
+                <GButton
+                    class="history-expand-button"
+                    data-description="history panel expand button"
+                    size="small"
+                    @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
                     <transition name="slide">
                         <span>History</span>

@@ -14,6 +14,7 @@ import { ref } from "vue";
 
 import { getTourData, type TourRequirements, type TourStep } from "@/api/tours";
 import { Toast } from "@/composables/toast";
+import { useTourPrerequisites } from "@/composables/tourPrerequisites";
 import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -32,6 +33,8 @@ const emit = defineEmits(["end-tour"]);
 
 const tourStore = useTourStore();
 const { toolGeneratedTours } = storeToRefs(tourStore);
+
+const { tourPrerequisites } = useTourPrerequisites();
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -70,11 +73,30 @@ async function initialize() {
 
 initialize();
 
+/** Runs all prerequisites defined on a step */
+function runPrerequisites(step: TourStep) {
+    for (const prereq of step.prerequisites ?? []) {
+        if (tourPrerequisites[prereq]) {
+            tourPrerequisites[prereq]();
+        }
+    }
+}
+
 /** Performs any pre-step clicking and text insertion for the provided step. */
 async function onBefore(step: TourStep): Promise<void> {
     // Wait for element before continuing tour
     if (step.element) {
-        await waitForElement(step.element, ATTEMPTS);
+        try {
+            await waitForElement(step.element, ATTEMPTS);
+        } catch (error) {
+            // Element not found; run prerequisites if defined, then retry
+            if (step.prerequisites?.length) {
+                runPrerequisites(step);
+                await waitForElement(step.element, ATTEMPTS);
+            } else {
+                throw error;
+            }
+        }
     }
 
     let preclick = step.preclick;
@@ -94,7 +116,16 @@ async function onNext(step: TourStep): Promise<void> {
     if (postclick === true && step.element) {
         postclick = [step.element];
     }
-    doClick(postclick);
+    try {
+        doClick(postclick);
+    } catch (error) {
+        if (step.prerequisites?.length) {
+            runPrerequisites(step);
+            doClick(postclick);
+        } else {
+            throw error;
+        }
+    }
 }
 
 /** Returns the element for the given selector */

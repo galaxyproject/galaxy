@@ -1,6 +1,7 @@
 import { type components, GalaxyApi } from "@/api";
 import { rethrowSimple } from "@/utils/simple-error";
 
+export type Prerequisite = components["schemas"]["Prerequisite"];
 export type TourDetails = components["schemas"]["TourDetails"];
 export type TourSummary = components["schemas"]["Tour"];
 export type TourRequirements = components["schemas"]["TourDetails"]["requirements"];

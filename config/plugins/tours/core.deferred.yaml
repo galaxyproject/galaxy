@@ -18,31 +18,37 @@ steps:
 
     - title: "'Upload' Your Data"
       component: upload.create_button
+      prerequisites: ["ensure_upload_open"]
       intro: Copy and paste data directly into Galaxy or include URLs that lead to your data
       preclick: true
 
     - title: Specify Deferred Dataset...
       intro: ...by pasting deferred URL into the upload text area.
       component: upload.paste_content(n=0)
+      prerequisites: ["ensure_upload_open"]
       textinsert: |
         https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
 
     - title: Configure Upload.
       component: upload.settings_button(n=0)
+      prerequisites: ["ensure_upload_open"]
       intro: Now, we may further configure the upload content by clicking this settings button.
       postclick: true
 
     - title: Deferred Setting.
       component: upload.setting_deferred
+      prerequisites: ["ensure_upload_open"]
       intro: ...by specifying to defer datasets, only URLs will be stored in Galaxy and the dataset will only be fetched if and when needed by Galaxy to run tools or workflows.
       postclick: true
 
     - title: Close Settings
       element: .popper-close
+      prerequisites: ["ensure_upload_open"]
       postclick: true
 
     - title: Start Upload
       component: upload.start_button
+      prerequisites: ["ensure_upload_open"]
       intro: Click the start button to begin the process of 'uploading' your deferred dataset.
       postclick: true
 
@@ -53,27 +59,33 @@ steps:
 
     - title: History Panel
       element: '#current-history-panel'
+      prerequisites: ["ensure_history_panel_open"]
       intro: The deferred dataset will be placed in the history panel like any other history dataset.
 
     - title: The Deferred Dataset
       component: history_panel.item(hid=1)
+      prerequisites: ["ensure_history_panel_open"]
       intro: The deferred dataset is being created.
 
     - title: The Deferred Dataset is Ready
       component: history_panel.item(hid=1,state=deferred)
+      prerequisites: ["ensure_history_panel_open"]
       intro: The deferred dataset has been created - the styling of the history dataset indicates it is deferred.
 
     - title: State Indicator
       component: history_panel.item(hid=1,state=deferred).state_icon
+      prerequisites: ["ensure_history_panel_open"]
       intro: This cloud icon indicates the dataset is deferred. Click to expand the dataset.
       postclick: true
 
     - title: A Note About Datatype/Format
       component: history_panel.item(hid=1,state=deferred).datatype
+      prerequisites: ["ensure_history_panel_open"]
       intro: Unless manually set, normally this datatype is based on the contents of the dataset. For deferred datasets, the file name is used to make this inference. Be sure to specify a file type during upload if this is incorrect.
 
     - title: "View dataset"
       element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "To see details about your dataset click on the eye icon."
       postclick: true
 
@@ -88,11 +100,13 @@ steps:
 
     - title: Tool Search
       component: tool_panel.search
+      prerequisites: ["ensure_tool_panel_open"]
       intro: Let's search for the concatenate tool to run on our deferred dataset.
       textinsert: 'Concatenate'
 
     - title: Select a Tool
       component: tool_panel.tool_link(tool_id=cat1)
+      prerequisites: ["ensure_tool_panel_open"]
       intro: We will click the concatenate tool.
       postclick: true
 
@@ -107,8 +121,13 @@ steps:
 
     - title: Resulting Dataset
       component: history_panel.item(hid=2)
+      prerequisites: ["ensure_history_panel_open"]
       intro: The concatenation of the two datasets is running.
 
     - title: Resulting Dataset is Ready
       component: history_panel.item(hid=2,state=ok)
+      prerequisites: ["ensure_history_panel_open"]
       intro: The result is now available in Galaxy. The original input dataset isn't consuming quota or being stored by Galaxy, but this dataset is.
+
+    - title: "Deferred Data Tour Complete"
+      intro: "Thanks for taking this tour!"

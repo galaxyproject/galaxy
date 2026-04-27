@@ -413,7 +413,7 @@ tool_panel:
     tool_link: 'a[href$$="/?tool_id=${tool_id}&version=latest"]'
     outer_tool_link: '.toolTitle a[href$$="/?tool_id=${tool_id}&version=latest"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
-    search: '.search-query'
+    search: '[data-description="tool search input"] .search-query'
     toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
     views_button: '.tool-panel-dropdown'
