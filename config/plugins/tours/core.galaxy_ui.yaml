@@ -23,15 +23,18 @@ steps:
 
     - title: "Upload your data"
       component: upload.local_button
+      prerequisites: ["ensure_upload_open"]
       intro: "You can upload data from your computer."
 
     - title: "Upload your data"
       component: upload.create_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       preclick: true
 
     - title: "Insert URLs"
       component: upload.paste_content(n=0)
+      prerequisites: ["ensure_upload_open"]
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       textinsert: |
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
@@ -40,29 +43,35 @@ steps:
 
     - title: "Start the upload"
       component: upload.start_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
     - title: "Close upload/download manager"
       component: upload.close_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       postclick: true
 
     - title: "Tools"
       component: _.left_panel
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
 
     - title: "Tool categories"
       component: tools.title
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "Tools are grouped into categories to make them easier to find."
 
     - title: "Tool search bar"
       component: tools.search
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "You can search for tools by keywords."
       textinsert: 'filter'
 
     - title: "Select a tool"
       component: tool_panel.tool_link(tool_id=Filter1)
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "Select and load a tool for your analysis by clicking the underlined link."
       postclick: true
 
@@ -87,17 +96,20 @@ steps:
 
     - title: "History"
       component: history_panel
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
               A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
       postclick: true
 
     - title: "View dataset"
       element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "View your dataset by clicking the eye button."
       postclick: true
 
@@ -112,10 +124,12 @@ steps:
 
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item .delete-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Delete your dataset by clicking the trash-button."
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
     - title: "Analyze data"
