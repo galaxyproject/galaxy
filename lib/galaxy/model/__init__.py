@@ -461,6 +461,7 @@ class SerializationOptions:
         serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
         strip_metadata_files: Optional[bool] = None,
+        ignore_errors: Optional[bool] = False,
     ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
@@ -472,6 +473,10 @@ class SerializationOptions:
             # expect metadata tool to be rerun.
             strip_metadata_files = not for_edit
         self.strip_metadata_files = strip_metadata_files
+        # When True, serializers emit best-effort output for histories whose imports left
+        # unresolved references (orphan ImplicitCollectionJobsJobAssociation rows, null-id
+        # job param refs) instead of raising. Intended for background archival exports.
+        self.ignore_errors = ignore_errors
 
     def attach_identifier(self, id_encoder, obj, ret_val):
         if self.for_edit and obj.id:
@@ -494,12 +499,13 @@ class SerializationOptions:
             return obj.temp_id
 
     def get_identifier_for_id(self, id_encoder, obj_id):
-        if self.for_edit and obj_id:
-            return obj_id
-        elif obj_id:
-            return id_encoder.encode_id(obj_id, kind="model_export")
-        else:
+        if not obj_id:
+            if self.ignore_errors:
+                return obj_id
             raise NotImplementedError()
+        if self.for_edit:
+            return obj_id
+        return id_encoder.encode_id(obj_id, kind="model_export")
 
     def serialize_files(self, dataset, as_dict):
         if self.serialize_files_handler is not None:
@@ -2959,7 +2965,11 @@ class ImplicitCollectionJobs(Base, Serializable):
         rval = dict_for(
             self,
             populated_state=self.populated_state,
-            jobs=[serialization_options.get_identifier(id_encoder, j_a.job) for j_a in self.jobs],
+            jobs=[
+                serialization_options.get_identifier(id_encoder, j_a.job)
+                for j_a in self.jobs
+                if j_a.job is not None or not serialization_options.ignore_errors
+            ],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
