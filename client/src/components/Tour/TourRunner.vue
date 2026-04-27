@@ -86,17 +86,15 @@ function runPrerequisites(step: TourStep) {
 async function onBefore(step: TourStep): Promise<void> {
     // Wait for element before continuing tour
     if (step.element) {
-        try {
-            await waitForElement(step.element, ATTEMPTS);
-        } catch (error) {
-            // Element not found; run prerequisites if defined, then retry
-            if (step.prerequisites?.length) {
+        // If the element isn't immediately available, run prerequisites before the wait loop
+        if (step.prerequisites?.length) {
+            const el = getElement(step.element);
+            const rect = el?.getBoundingClientRect();
+            if (!el || !(rect && rect.width > 0 && rect.height > 0)) {
                 runPrerequisites(step);
-                await waitForElement(step.element, ATTEMPTS);
-            } else {
-                throw error;
             }
         }
+        await waitForElement(step.element, ATTEMPTS);
     }
 
     let preclick = step.preclick;
@@ -116,16 +114,14 @@ async function onNext(step: TourStep): Promise<void> {
     if (postclick === true && step.element) {
         postclick = [step.element];
     }
-    try {
-        doClick(postclick);
-    } catch (error) {
-        if (step.prerequisites?.length) {
+    // If any postclick target isn't immediately available, run prerequisites first
+    if (step.prerequisites?.length && Array.isArray(postclick)) {
+        const anyMissing = postclick.some((selector) => !getElement(selector));
+        if (anyMissing) {
             runPrerequisites(step);
-            doClick(postclick);
-        } else {
-            throw error;
         }
     }
+    doClick(postclick);
 }
 
 /** Returns the element for the given selector */
