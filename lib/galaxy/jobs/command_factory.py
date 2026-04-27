@@ -9,7 +9,10 @@ from os.path import (
     abspath,
     join,
 )
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -208,13 +211,12 @@ def __externalize_commands(
 
 def __handle_remote_command_line_building(commands_builder, job_wrapper: "MinimalJobWrapper", for_pulsar=False):
     if job_wrapper.remote_command_line:
-        sep = "" if for_pulsar else "&&"
         command = 'PYTHONPATH="$GALAXY_LIB:$PYTHONPATH" python "$GALAXY_LIB"/galaxy/tools/remote_tool_eval.py'
         if for_pulsar:
             # TODO: that's not how to do this, pulsar doesn't execute an externalized script by default.
             # This also breaks rewriting paths etc, so it doesn't really work if there are no shared paths
             command = f"{command} && bash ../tool_script.sh"
-        commands_builder.prepend_command(command, sep=sep)
+        commands_builder.prepend_command(command)
 
 
 def __handle_task_splitting(commands_builder, job_wrapper: "MinimalJobWrapper"):
@@ -302,60 +304,60 @@ def __copy_if_exists_command(work_dir_output):
 
 
 class CommandsBuilder:
-    def __init__(self, initial_command=""):
-        # Remove trailing semi-colon so we can start hacking up this command.
-        # TODO: Refactor to compose a list and join with ';', would be more clean.
-        self.raw_command = initial_command
+    def __init__(self, initial_command: str = ""):
         initial_command = util.unicodify(initial_command or "")
-        commands = initial_command.rstrip("; ")
-        self.commands = commands
+        self._commands: List[str] = [initial_command.rstrip(" ")]
 
         # Coping work dir outputs or setting metadata will mask return code of
         # tool command. If these are used capture the return code and ensure
         # the last thing that happens is an exit with return code.
         self.return_code_captured = False
 
-    def prepend_command(self, command, sep=";"):
+    @property
+    def commands(self) -> str:
+        return "; ".join(self._commands)
+
+    def prepend_command(self, command: str) -> None:
         if command:
-            self.commands = f"{command}{sep} {self.commands}"
-        return self
+            self._commands.insert(0, command)
 
-    def prepend_commands(self, commands):
-        return self.prepend_command("; ".join(c for c in commands if c))
+    def prepend_commands(self, commands: List[str]) -> None:
+        self._commands = commands + self._commands
 
-    def append_command(self, command, sep=";"):
+    def append_command(self, command: str) -> None:
         if command:
-            self.commands = f"{self.commands}{sep} {command}"
-        return self
+            self._commands.append(command)
 
-    def append_commands(self, commands):
-        self.append_command("; ".join(c for c in commands if c))
+    def append_commands(self, commands: List) -> None:
+        self._commands.extend(commands)
 
-    def capture_stdout_stderr(self, stdout_file, stderr_file, stream_stdout_stderr=False):
+    def capture_stdout_stderr(self, stdout_file: str, stderr_file: str, stream_stdout_stderr: bool = False) -> None:
         if not stream_stdout_stderr:
-            self.append_command(f"> '{stdout_file}' 2> '{stderr_file}'", sep="")
+            self._commands[-1] += f" > '{stdout_file}' 2> '{stderr_file}'"
             return
         trap_command = """trap 'rm -f "$__out" "$__err"' EXIT"""
-        if TRAP_KILL_CONTAINER in self.commands:
-            # We need to replace the container kill trap with one that removes the named pipes and kills the container
-            self.commands = self.commands.replace(TRAP_KILL_CONTAINER, "")
-            trap_command = """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
-        self.prepend_command(
+        for i, c in enumerate(self._commands):
+            if TRAP_KILL_CONTAINER in c:
+                # We need to replace the container kill trap with one that removes the named pipes and kills the container
+                self._commands[i] = c.replace(TRAP_KILL_CONTAINER, "")
+                trap_command = """trap 'rm -f "$__out" "$__err"; _on_exit' EXIT"""
+                break
+        self._commands[0] = (
             f"""__out="${{TMPDIR:-.}}/out.$$" __err="${{TMPDIR:-.}}/err.$$"
 mkfifo "$__out" "$__err"
 {trap_command}
 tee -a '{stdout_file}' < "$__out" &
-tee -a '{stderr_file}' < "$__err" >&2 &""",
-            sep="",
+tee -a '{stderr_file}' < "$__err" >&2 & """
+            + self._commands[0]
         )
-        self.append_command('> "$__out" 2> "$__err"', sep="")
+        self._commands[-1] += ' > "$__out" 2> "$__err"'
 
-    def capture_return_code(self, exit_code_path):
+    def capture_return_code(self, exit_code_path: str) -> None:
         self.append_command(CAPTURE_RETURN_CODE)
         self.append_command(f"echo $return_code > {exit_code_path}")
         self.return_code_captured = True
 
-    def build(self):
+    def build(self) -> str:
         if self.return_code_captured:
             self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
