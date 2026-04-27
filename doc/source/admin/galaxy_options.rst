@@ -5431,6 +5431,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_requests``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Submit tool jobs through the asynchronous tool requests API
+    (`/api/jobs`) when available. The client falls back to the legacy
+    `/api/tools` endpoint when this is disabled, when Celery is not
+    enabled, or when the tool does not provide a typed parameter
+    schema.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``celery_conf``
 ~~~~~~~~~~~~~~~
