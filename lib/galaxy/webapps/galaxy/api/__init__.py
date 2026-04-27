@@ -228,10 +228,15 @@ class UrlBuilder:
                 url = f"{url}?{urlencode(query_params)}"
             return url
         except NoMatchFound:
-            # Fallback to legacy url_for
+            # Fallback to legacy WSGI url_for for routes not registered with FastAPI
             if query_params:
                 path_params.update(query_params)
-            return web.url_for(name, **path_params)
+            url = web.url_for(name, **path_params)
+            if qualified and not url.startswith(("http://", "https://")):
+                # routes.url_for has no thread-local request_config in an ASGI
+                # request, so qualify the URL using the FastAPI request base_url.
+                url = str(self.request.base_url).rstrip("/") + url
+            return url
 
     def _url_path_for(self, name: str, **path_params) -> str:
         """O(1) route lookup using the app's pre-built name index.
