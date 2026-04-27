@@ -63,7 +63,7 @@ class HistoryQuery:
         collection_type_descriptions = self.collection_type_descriptions
         if collection_type_descriptions is not None:
             for collection_type_description in collection_type_descriptions:
-                matches = collection_type_description.can_match_type(hdca.collection.collection_type)
+                matches = collection_type_description.accepts(hdca.collection.collection_type)
                 if matches:
                     return True
             return False
@@ -78,6 +78,8 @@ class HistoryQuery:
         hdca_collection_type = hdca.collection.collection_type
         for collection_type_description in collection_type_descriptions:
             # See note about the way this is sorted above.
-            if collection_type_description.is_subcollection_of_type(hdca_collection_type):
+            factory = collection_type_description.collection_type_description_factory
+            hdca_type = factory.for_collection_type(hdca_collection_type)
+            if hdca_type.can_map_over(collection_type_description):
                 return collection_type_description
         return False

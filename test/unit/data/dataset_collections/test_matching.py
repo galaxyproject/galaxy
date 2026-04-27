@@ -42,17 +42,27 @@ def test_valid_collection_subcollection_matching():
     assert_can_match((nested_list, "paired"), flat_list)
 
 
-# can pass a paired input to a paired_or_unpaired input but not vice versa
-def test_paired_can_act_as_paired_or_unpaired():
+# Sibling matching is symmetric: paired and paired_or_unpaired can be
+# zipped under a common map-over regardless of arrival order. The
+# substitution-rejection sentiment (paired_or_unpaired cannot be
+# substituted *where paired is required*) is a connection-time concern
+# tested in test_type_descriptions.py::test_paired_accepts_relation.
+def test_paired_and_paired_or_unpaired_match_symmetric():
     paired = pair_instance()
     optional_paired = paired_or_unpaired_pair_instance()
     assert_can_match(optional_paired, paired)
+    assert_can_match(paired, optional_paired)
 
 
-def test_paired_or_unpaired_cannot_act_as_paired():
+def test_paired_or_unpaired_with_one_element_rejected_against_paired():
+    """Cardinality safety: 1-element paired_or_unpaired cannot zip with 2-element paired."""
     paired = pair_instance()
-    optional_paired = paired_or_unpaired_pair_instance()
-    assert_cannot_match(paired, optional_paired)
+    one_element_optional = collection_instance(
+        collection_type="paired_or_unpaired",
+        elements=[hda_element("unpaired")],
+    )
+    assert_cannot_match(paired, one_element_optional)
+    assert_cannot_match(one_element_optional, paired)
 
 
 def test_query_can_match_list_to_list():

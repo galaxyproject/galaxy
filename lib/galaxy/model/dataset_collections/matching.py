@@ -62,7 +62,7 @@ class MatchingCollections:
             self.collections[input_name] = hdca
             self.subcollection_types[input_name] = subcollection_type
         else:
-            if not self.linked_structure.can_match(structure):
+            if not self.linked_structure.compatible_shape(structure):
                 raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
             self.collections[input_name] = hdca
             self.subcollection_types[input_name] = subcollection_type
