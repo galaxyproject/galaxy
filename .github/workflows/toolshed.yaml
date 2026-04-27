@@ -57,7 +57,7 @@ jobs:
         run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: 'galaxy root/lib/tool_shed/webapp/frontend/package.json'
       - name: Build Frontend
