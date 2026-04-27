@@ -38,7 +38,6 @@ from sqlalchemy import (
     true,
 )
 from sqlalchemy.orm import (
-    aliased,
     joinedload,
     subqueryload,
 )
@@ -74,10 +73,10 @@ from galaxy.model import (
 )
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
-    append_user_filter,
     raw_text_column_filter,
-    tag_filter,
+    tag_exists_filter,
     text_column_filter,
+    user_exists_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.invocation import InvocationCancellationUserRequest
@@ -103,6 +102,7 @@ from galaxy.util.json import (
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.search import (
+    filter_terms,
     FilteredTerm,
     parse_filters_structured,
     RawTextTerm,
@@ -211,13 +211,16 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         stmt = stmt.where(StoredWorkflow.hidden == (true() if show_hidden else false()))
         if payload.search:
             search_query = payload.search
-            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            parsed_search = filter_terms(parse_filters_structured(search_query, INDEX_SEARCH_FILTERS))
 
-            def w_tag_filter(term_text: str, quoted: bool):
-                nonlocal stmt
-                alias = aliased(StoredWorkflowTagAssociation)
-                stmt = stmt.outerjoin(StoredWorkflow.tags.of_type(alias))
-                return tag_filter(alias, term_text, quoted)
+            def w_tag_exists(term_text: str, quoted: bool):
+                return tag_exists_filter(
+                    StoredWorkflowTagAssociation,
+                    StoredWorkflowTagAssociation.stored_workflow_id,
+                    StoredWorkflow.id,
+                    term_text,
+                    quoted,
+                )
 
             def name_filter(term):
                 return text_column_filter(StoredWorkflow.name, term)
@@ -227,12 +230,11 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                     key = term.filter
                     q = term.text
                     if key == "tag":
-                        tf = w_tag_filter(term.text, term.quoted)
-                        stmt = stmt.where(tf)
+                        stmt = stmt.where(w_tag_exists(term.text, term.quoted))
                     elif key == "name":
                         stmt = stmt.where(name_filter(term))
                     elif key == "user":
-                        stmt = append_user_filter(stmt, StoredWorkflow, term)
+                        stmt = stmt.where(user_exists_filter(StoredWorkflow.user_id, term.text))
                     elif key == "is":
                         if q == "published":
                             stmt = stmt.where(StoredWorkflow.published == true())
@@ -260,15 +262,12 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
                                 model.StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id,
                             ).where(model.StoredWorkflowMenuEntry.user_id == user.id)
                 elif isinstance(term, RawTextTerm):
-                    tf = w_tag_filter(term.text, False)
-                    alias = aliased(User)
-                    stmt = stmt.outerjoin(StoredWorkflow.user.of_type(alias))
                     stmt = stmt.where(
                         raw_text_column_filter(
                             [
                                 StoredWorkflow.name,
-                                tf,
-                                alias.username,
+                                w_tag_exists(term.text, False),
+                                user_exists_filter(StoredWorkflow.user_id, term.text),
                             ],
                             term,
                         )
