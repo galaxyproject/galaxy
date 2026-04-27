@@ -21,6 +21,7 @@ _:  # global stuff
     by_attribute: '${scope} [${name}="${value}"]'
     active_nav_item: '.nav-item-active'
     toolbox_panel: '#toolbox-panel'
+    activity_bar_header: '[data-description="activity bar header"]'
 
     confirm_button:
       type: xpath
@@ -163,6 +164,7 @@ confirm_dialog:
 dataset_view:
   selectors:
     _: .dataset-view
+    navigation: '[data-description="dataset view navigation"]'
     edit_tab: ".nav-item[title='Edit dataset attributes and metadata'] > a.nav-link"
     details_tab: ".nav-item[title='View detailed information about this dataset'] > a.nav-link"
     visualize_tab: ".nav-item[title='Explore available visualizations for this dataset'] > a.nav-link"

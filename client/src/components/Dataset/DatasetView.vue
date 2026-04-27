@@ -165,7 +165,11 @@ watch(
                 </div>
             </transition>
         </header>
-        <BNav v-if="!displayOnly" pills class="my-2 p-2 bg-light border-bottom">
+        <BNav
+            v-if="!displayOnly"
+            pills
+            class="my-2 p-2 bg-light border-bottom"
+            data-description="dataset view navigation">
             <BNavItem
                 v-if="showOk"
                 title="View a preview of the dataset contents"
