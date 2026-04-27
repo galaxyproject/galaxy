@@ -5916,8 +5916,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default value for use_temp_files for webdav plugins that don't
-    explicitly declare this.
+    Deprecated. This option is ignored by the fsspec-based WebDAV file
+    source.
 :Default: ``true``
 :Type: bool
 

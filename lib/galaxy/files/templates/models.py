@@ -8,6 +8,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -263,9 +264,21 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class WebdavFileSourceTemplateConfiguration(StrictModel):
+class WebdavConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_base_url(cls, data: Any) -> Any:
+        # Keep persisted user file sources created before the WebDAV
+        # url -> base_url rename loadable in the preferences UI.
+        if isinstance(data, dict) and "base_url" not in data and "url" in data:
+            data = dict(data)
+            data["base_url"] = data.pop("url")
+        return data
+
+
+class WebdavFileSourceTemplateConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
-    url: Union[str, TemplateExpansion]
+    base_url: Union[str, TemplateExpansion]
     root: Union[str, TemplateExpansion]
     login: Union[str, TemplateExpansion]
     password: Union[str, TemplateExpansion]
@@ -274,9 +287,9 @@ class WebdavFileSourceTemplateConfiguration(StrictModel):
     template_end: Optional[str] = None
 
 
-class WebdavFileSourceConfiguration(StrictModel):
+class WebdavFileSourceConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
-    url: str
+    base_url: str
     root: str
     login: str
     password: str

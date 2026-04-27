@@ -4,7 +4,7 @@
   description: |
     The WebDAV protocol is a simple way to access files over the internet. Here, you can connect to any WebDAV server.
   variables:
-    url:
+    base_url:
       label: Server Domain (e.g. https://myowncloud.org)
       type: string
       help: |
@@ -35,8 +35,9 @@
         to log in to the WebDAV server.
   configuration:
     type: webdav
-    url: '{{ variables.url }}'
+    base_url: '{{ variables.base_url }}'
     root: '{{ variables.root }}'
     login: '{{ variables.login }}'
     writable: '{{ variables.writable }}'
     password: '{{ secrets.password }}'
+    
