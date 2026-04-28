@@ -359,6 +359,10 @@
     <datatype extension="tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
+    <datatype extension="kraken2db.tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:Kraken2DatabaseArchive" display_in_upload="true">
+      <converter file="archive_to_directory.xml" target_datatype="kraken2db"/>
+    </datatype>
+    <datatype extension="kraken2db" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="directory" type="galaxy.datatypes.data:Directory"/>
     <datatype extension="bwa_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
     <datatype extension="bwa_mem2_index" display_in_upload="true" type="galaxy.datatypes.data:Directory" subclass="true"/>
@@ -1532,5 +1536,6 @@
     <sniffer type="galaxy.datatypes.text:StormSample"/>
     <sniffer type="galaxy.datatypes.text:StormCheck"/>
     <sniffer type="galaxy.datatypes.text:SourmashSignature"/>
+    <sniffer type="galaxy.datatypes.binary:Kraken2DatabaseArchive"/>
   </sniffers>
 </datatypes>

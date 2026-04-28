@@ -341,6 +341,46 @@ class Visium(CompressedArchive):
         return False
 
 
+class Kraken2DatabaseArchive(CompressedArchive):
+    """Kraken2 database is a tar.gz archive with a specific structure described at:
+    https://github.com/DerrickWood/kraken2/blob/master/docs/MANUAL.markdown#kraken-2-databases
+    """
+
+    file_ext = "kraken2db.tar.gz"
+    peek_text = "Compressed Kraken2 database"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = self.peek_text
+            dataset.blurb = f"{nice_size(dataset.get_size())}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Check data structure:
+        Contains hash.k2d file
+        Contains opts.k2d file
+        Contains taxo.k2d file
+        Contains seqid2taxid.k2d file
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, "r") as temptar:
+                    _tar_content = temptar.getnames()
+                    if (
+                        "hash.k2d" in _tar_content
+                        and "opts.k2d" in _tar_content
+                        and "taxo.k2d" in _tar_content
+                        and "seqid2taxid.k2d" in _tar_content
+                    ):
+                        return True
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+        return False
+
+
 class Bref3(Binary):
     """Bref3 format is a binary format for storing phased, non-missing genotypes for a list of samples."""
 
