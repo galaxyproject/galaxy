@@ -58,6 +58,11 @@ class TestProcessKey:
         }
         assert nested_dict == expected_dict
 
+    def test_process_key_all_digit_top_level(self):
+        nested_dict: dict[str, Any] = {}
+        process_key("42", "value", nested_dict)
+        assert nested_dict == {"42": "value"}
+
 
 class TestParameterParsing(BaseParameterTestCase):
     """Test the parsing of XML for most parameter types - in many
