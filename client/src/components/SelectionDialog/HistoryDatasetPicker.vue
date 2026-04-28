@@ -3,6 +3,7 @@ import { faHdd } from "@fortawesome/free-solid-svg-icons";
 import { computed, ref, set } from "vue";
 
 import { GalaxyApi, type HDASummary, type HistorySortByLiteral, type HistorySummary } from "@/api";
+import type { TableField } from "@/components/Common/GTable.types";
 import { HistoriesFilters } from "@/components/History/HistoriesFilters";
 import {
     type ItemsProvider,
@@ -69,7 +70,8 @@ const okButtonText = computed(() => {
         return `${props.actionButtonText} ${selected.value.length} dataset${selected.value.length > 1 ? "s" : ""}`;
     }
 });
-const fields = computed(() => {
+
+const fields = computed<TableField[]>(() => {
     if (datasetsVisible.value) {
         return [
             { key: "label", label: "Name", sortable: true },
@@ -81,15 +83,6 @@ const fields = computed(() => {
             { key: "size", label: "Datasets", sortable: false },
             { key: "update_time", label: "Last Updated" },
         ];
-    }
-});
-const selectAllIcon = computed(() => {
-    if (allSelected.value) {
-        return SELECTION_STATES.SELECTED;
-    } else if (selected.value.length > 0) {
-        return SELECTION_STATES.MIXED;
-    } else {
-        return SELECTION_STATES.UNSELECTED;
     }
 });
 
@@ -127,12 +120,13 @@ function formatRows() {
 
     for (const item of items.value) {
         if (item.isLeaf) {
-            const _rowVariant =
+            const selectionState =
                 selected.value.findIndex((i) => i.id === item.id) !== -1
                     ? SELECTION_STATES.SELECTED
                     : SELECTION_STATES.UNSELECTED;
 
-            set(item, "_rowVariant", _rowVariant);
+            set(item, "selectionState", selectionState);
+            set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
         }
     }
 
@@ -311,12 +305,12 @@ function onCancel() {
         :modal-show="modalShow"
         :file-mode="false"
         :multiple="true"
-        :select-all-variant="selectAllIcon"
+        :all-selected="allSelected"
+        :selectable="datasetsVisible"
         :items="items"
         :undo-show="datasetsVisible"
         :total-items="totalItems"
         :items-provider="itemsProvider"
-        :show-select-icon="datasetsVisible"
         :folder-icon="faHdd"
         :is-busy="loading"
         :search-title="searchTitle"

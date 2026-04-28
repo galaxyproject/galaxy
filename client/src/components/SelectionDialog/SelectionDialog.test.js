@@ -1,9 +1,9 @@
 import { createLocalVue, mount } from "@vue/test-utils";
-import { BTable } from "bootstrap-vue";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import DataDialogSearch from "./DataDialogSearch.vue";
 import SelectionDialog from "./SelectionDialog.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 const mockOptions = {
     callback: () => {},
@@ -24,10 +24,10 @@ describe("SelectionDialog.vue", () => {
 
     it("loads correctly in loading state, shows options when optionsShow becomes true", async () => {
         expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeTruthy();
-        expect(wrapper.findComponent(BTable).exists()).toBeFalsy();
+        expect(wrapper.findComponent(GTable).exists()).toBeFalsy();
         await wrapper.setProps({ optionsShow: true });
         expect(wrapper.find("[data-description='selection dialog spinner']").exists()).toBeFalsy();
-        expect(wrapper.findComponent(BTable).exists()).toBeTruthy();
+        expect(wrapper.findComponent(GTable).exists()).toBeTruthy();
     });
 
     it("loads header correctly", async () => {
@@ -39,5 +39,37 @@ describe("SelectionDialog.vue", () => {
         expect(wrapper.emitted().onCancel).toBeFalsy();
         wrapper.find("[data-description='selection dialog cancel']").trigger("click");
         expect(wrapper.emitted().onCancel).toBeTruthy();
+    });
+
+    it("syncs row selection state from incoming items", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            showSelectAll: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true, selectionState: "success" },
+                { id: "2", label: "file2", isLeaf: true, selectionState: "default" },
+            ],
+        });
+
+        const selectAllCheckbox = wrapper.find("input[id^='g-table-select-all-']").element;
+        expect(selectAllCheckbox.checked).toBe(false);
+        expect(selectAllCheckbox.indeterminate).toBe(true);
+    });
+
+    it("shows select-all as checked when all incoming items are selected", async () => {
+        await wrapper.setProps({
+            optionsShow: true,
+            selectable: true,
+            showSelectAll: true,
+            items: [
+                { id: "1", label: "file1", isLeaf: true, selectionState: "success" },
+                { id: "2", label: "file2", isLeaf: true, selectionState: "success" },
+            ],
+        });
+
+        const selectAllCheckbox = wrapper.find("input[id^='g-table-select-all-']").element;
+        expect(selectAllCheckbox.checked).toBe(true);
+        expect(selectAllCheckbox.indeterminate).toBe(false);
     });
 });

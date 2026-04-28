@@ -5,6 +5,7 @@ import { BBadge } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
+import type { TableField } from "@/components/Common/GTable.types";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
@@ -69,18 +70,22 @@ const model = new Model({ multiple: props.multiple, format: props.format });
 const urlTracker = useUrlTracker<string>({ root: getHistoryUrl() });
 
 /** Specifies data columns to be shown in the dialog's table */
-const fields = [
+const fields: TableField[] = [
     {
         key: "label",
+        label: "Name",
     },
     {
         key: "extension",
+        label: "Extension",
     },
     {
         key: "tags",
+        label: "Tags",
     },
     {
         key: "update_time",
+        label: "Update Time",
     },
 ];
 

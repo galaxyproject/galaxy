@@ -1833,7 +1833,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         )
 
     def libraries_dataset_import_from_history_select(self, to_select_items):
-        self.wait_for_visible(
+        self.wait_for_absent(
             self.navigation.libraries.folder.selectors.import_datasets_from_history_modal_list_is_ready
         )
         for to_select_item in to_select_items:

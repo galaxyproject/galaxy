@@ -13,12 +13,18 @@ import type {
     RowIcon,
     RowSelectEvent,
     TableAction,
+    TableClassValue,
     TableEmptyState,
     TableField,
 } from "./GTable.types";
 
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+
+type TableItemClassMeta = {
+    class?: TableClassValue;
+    cellClass?: Record<string, TableClassValue>;
+};
 
 interface Props {
     /**
@@ -592,15 +598,17 @@ function getAlignmentClass(align?: FieldAlignment) {
 }
 
 /**
- * Get cell variant class for Bootstrap color variants (e.g., "success", "danger", "info")
- * Supports the _cellVariants convention from b-table for backward compatibility
+ * Get row class from item metadata
  */
-function getCellVariantClass(item: T, field: TableField) {
-    const cellVariants = item._cellVariants as Record<string, string> | undefined;
-    if (!cellVariants || !cellVariants[field.key]) {
-        return undefined;
-    }
-    return `table-${cellVariants[field.key]}`;
+function getRowClass(item: T) {
+    return (item as TableItemClassMeta).class;
+}
+
+/**
+ * Get cell class from item metadata
+ */
+function getItemCellClass(item: T, fieldKey: string) {
+    return (item as TableItemClassMeta).cellClass?.[fieldKey];
 }
 
 /**
@@ -751,10 +759,13 @@ defineExpose({
                                 <tr
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
                                     :key="`tr` + getGlobalIndex(paginatedIndex)"
-                                    :class="{
-                                        'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
-                                        'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
-                                    }"
+                                    :class="[
+                                        {
+                                            'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
+                                            'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
+                                        },
+                                        getRowClass(item),
+                                    ]"
                                     @click="onRowClick(item, getGlobalIndex(paginatedIndex), $event)">
                                     <!-- Selection checkbox column -->
                                     <td v-if="selectable" class="g-table-select-column">
@@ -777,7 +788,7 @@ defineExpose({
                                             field.cellClass,
                                             field.class,
                                             getAlignmentClass(field.align),
-                                            getCellVariantClass(item, field),
+                                            getItemCellClass(item, field.key),
                                             { 'hide-on-small': field.hideOnSmall },
                                         ]">
                                         <template

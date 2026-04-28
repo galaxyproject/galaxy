@@ -1,3 +1,5 @@
+import type { TableClassValue } from "@/components/Common/GTable.types";
+
 export const SELECTION_STATES = {
     SELECTED: "success",
     UNSELECTED: "default",
@@ -6,20 +8,16 @@ export const SELECTION_STATES = {
 
 export type SelectionState = (typeof SELECTION_STATES)[keyof typeof SELECTION_STATES];
 
-export interface FieldEntry {
-    key: string;
-    label?: string;
-    sortable?: boolean;
-}
-
 export interface SelectionItem {
+    class?: TableClassValue;
+    cellClass?: Record<string, TableClassValue>;
     id: string;
     label: string;
     details: string;
     isLeaf: boolean;
     url: string;
     entry: Record<string, unknown>;
-    _rowVariant?: SelectionState;
+    selectionState?: SelectionState;
 }
 
 export interface ItemsProviderContext {

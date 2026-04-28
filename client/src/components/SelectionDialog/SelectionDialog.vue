@@ -1,30 +1,30 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BPagination, BSpinner, BTable } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination, BSpinner } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
+import type { RowClickEvent, TableField } from "@/components/Common/GTable.types";
+import { type ItemsProvider, SELECTION_STATES } from "@/components/SelectionDialog/selectionTypes";
 import type Filtering from "@/utils/filtering";
 
-import type { FieldEntry, SelectionItem } from "./selectionTypes";
+import type { SelectionItem } from "./selectionTypes";
 
 import GModal from "../BaseComponents/GModal.vue";
 import Heading from "../Common/Heading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import GTable from "@/components/Common/GTable.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
-const LABEL_FIELD: FieldEntry = { key: "label", sortable: true };
-const SELECT_ICON_FIELD: FieldEntry = { key: "__select_icon__", label: "", sortable: false };
+const LABEL_FIELD: TableField = { key: "label", label: "Name", sortable: true };
 
 interface Props {
     disableOk?: boolean;
     errorMessage?: string;
     fileMode?: boolean;
-    fields?: FieldEntry[];
+    fields?: TableField[];
     isBusy?: boolean;
     isEncoded?: boolean;
     items?: SelectionItem[];
@@ -37,8 +37,8 @@ interface Props {
     multiple?: boolean;
     optionsShow?: boolean;
     undoShow?: boolean;
-    selectAllVariant?: SelectionState;
-    showSelectIcon?: boolean;
+    selectable?: boolean;
+    allSelected?: boolean;
     title?: string;
     searchTitle?: string;
     okButtonText?: string;
@@ -63,8 +63,8 @@ const props = withDefaults(defineProps<Props>(), {
     multiple: false,
     optionsShow: false,
     undoShow: false,
-    selectAllVariant: SELECTION_STATES.UNSELECTED,
-    showSelectIcon: false,
+    selectable: false,
+    allSelected: undefined,
     title: "",
     searchTitle: undefined,
     okButtonText: "Select",
@@ -85,41 +85,85 @@ const filter = ref("");
 const currentPage = ref(1);
 const perPage = ref(25);
 const showAdvancedSearch = ref(false);
+const selectedItems = ref<number[]>([]);
+
+const providerRequestId = ref(0);
+const providerItems = ref<SelectionItem[]>([]);
+const sortBy = ref<string | undefined>(undefined);
+const sortDesc = ref<boolean | undefined>(undefined);
+
+const usingProvider = computed(() => Boolean(props.itemsProvider));
 
 const okButtonText = computed(() => {
     return props.okButtonText ? props.okButtonText : props.fileMode ? "Select" : "Select this folder";
 });
 
-const fieldDetails = computed(() => {
-    const fields = props.fields.slice().map((x) => {
-        x.sortable = x.sortable === undefined ? true : x.sortable;
-        return x;
-    });
+const fieldDetails = computed<TableField[]>(() => {
+    const fields: TableField[] = props.fields.slice().map((field) => ({
+        ...field,
+        sortable: field.sortable ?? true,
+    }));
     if (fields.length === 0) {
         fields.unshift(LABEL_FIELD);
-    }
-    if (props.showSelectIcon) {
-        fields.unshift(SELECT_ICON_FIELD);
     }
     return fields;
 });
 
-function selectionIcon(variant: string) {
-    switch (variant) {
-        case SELECTION_STATES.SELECTED:
-            return faCheckSquare;
-        case SELECTION_STATES.MIXED:
-            return faMinusSquare;
-        default:
-            return faSquare;
+/**
+ * Sync selectedItems based on item classes/selection state.
+ * Updates the selected items array whenever the items change.
+ */
+function syncSelectedItems() {
+    selectedItems.value = tableItems.value
+        .map((item, index) => {
+            const hasClass = (item as any)?.class === "table-success";
+            const isSelected = (item as any)?.selectionState === SELECTION_STATES.SELECTED;
+            return hasClass || isSelected ? index : -1;
+        })
+        .filter((index) => index !== -1);
+}
+
+const tableItems = computed(() => {
+    return usingProvider.value ? providerItems.value : props.items;
+});
+
+async function loadProviderItems() {
+    if (!props.itemsProvider || !props.optionsShow) {
+        return;
+    }
+
+    const requestId = ++providerRequestId.value;
+    const result = await props.itemsProvider({
+        apiUrl: props.providerUrl,
+        currentPage: currentPage.value,
+        perPage: perPage.value,
+        filter: filter.value || undefined,
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+    });
+
+    if (requestId === providerRequestId.value) {
+        providerItems.value = result ?? [];
     }
 }
 
-/** Resets pagination when a filter/search word is entered **/
-function filtered(items: SelectionItem[]) {
-    if (props.itemsProvider === undefined) {
-        resetPagination();
-    }
+function onSortChanged(newSortBy: string, newSortDesc: boolean) {
+    sortBy.value = newSortBy || undefined;
+    sortDesc.value = newSortDesc;
+}
+
+function onRowClick(event: RowClickEvent<SelectionItem>) {
+    emit("onClick", event.item);
+    syncSelectedItems();
+}
+
+function onOpen(item: SelectionItem) {
+    emit("onOpen", item);
+}
+
+function onSelectAll() {
+    emit("onSelectAll");
+    syncSelectedItems();
 }
 
 /** Format time stamp */
@@ -158,6 +202,30 @@ if (props.watchOnPageChanges) {
 }
 
 const dialog = ref<InstanceType<typeof GModal> | null>(null);
+
+watch(
+    [
+        () => props.itemsProvider,
+        currentPage,
+        perPage,
+        filter,
+        sortBy,
+        sortDesc,
+        () => props.providerUrl,
+        () => props.optionsShow,
+    ],
+    () => {
+        if (props.itemsProvider && props.optionsShow) {
+            void loadProviderItems();
+        }
+    },
+    { immediate: true },
+);
+
+watch(filter, () => {
+    resetPagination();
+});
+
 watch(
     () => dialog.value,
     (newValue) => {
@@ -166,6 +234,14 @@ watch(
         }
     },
     { immediate: true },
+);
+
+watch(
+    tableItems,
+    () => {
+        syncSelectedItems();
+    },
+    { immediate: true, deep: true },
 );
 
 defineExpose({
@@ -198,7 +274,11 @@ defineExpose({
                     :loading="props.isBusy"
                     :show-advanced.sync="showAdvancedSearch" />
 
-                <DataDialogSearch v-else v-model="filter" :title="props.searchTitle || props.title" />
+                <DataDialogSearch
+                    v-else
+                    :value="filter"
+                    :title="props.searchTitle || props.title"
+                    @input="filter = $event" />
             </div>
         </template>
         <slot name="helper" />
@@ -207,29 +287,25 @@ defineExpose({
         </BAlert>
         <div v-else>
             <div v-if="optionsShow" data-description="selection dialog options">
-                <BTable
-                    small
-                    hover
+                <GTable
                     class="selection-dialog-table"
-                    primary-key="id"
-                    :busy="isBusy"
+                    clickable-rows
+                    compact
+                    hover
                     :current-page="currentPage"
-                    :items="itemsProvider ?? items"
                     :fields="fieldDetails"
                     :filter="filter"
+                    :items="tableItems"
+                    :loading="isBusy"
+                    :local-filtering="!usingProvider"
+                    :local-sorting="!usingProvider"
                     :per-page="perPage"
-                    @filtered="filtered"
-                    @row-clicked="emit('onClick', $event)">
-                    <template v-slot:head(__select_icon__)="">
-                        <FontAwesomeIcon
-                            class="select-checkbox cursor-pointer"
-                            title="Check to select all datasets"
-                            :icon="selectionIcon(selectAllVariant)"
-                            @click="$emit('onSelectAll')" />
-                    </template>
-                    <template v-slot:cell(__select_icon__)="data">
-                        <FontAwesomeIcon :icon="selectionIcon(data.item._rowVariant)" />
-                    </template>
+                    :selectable="props.selectable"
+                    :selected-items="selectedItems"
+                    :show-select-all="props.selectable"
+                    @row-click="onRowClick"
+                    @select-all="onSelectAll"
+                    @sort-changed="onSortChanged">
                     <template v-slot:cell(label)="data">
                         <div style="cursor: pointer">
                             <pre
@@ -240,36 +316,46 @@ defineExpose({
                                     <i :class="leafIcon" />
                                     <span :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                                 </div>
-                                <div v-else @click.stop="emit('onOpen', data.item)">
+                                <div
+                                    v-else
+                                    role="button"
+                                    tabindex="0"
+                                    @click.stop="onOpen(data.item)"
+                                    @keydown.enter.stop="onOpen(data.item)"
+                                    @keydown.space.stop.prevent="onOpen(data.item)">
                                     <FontAwesomeIcon :icon="props.folderIcon" />
                                     <BLink :title="`label-${data.item.url}`">{{ data.value ? data.value : "-" }}</BLink>
                                 </div>
                             </span>
                         </div>
                     </template>
+
                     <template v-slot:cell(details)="data">
                         <span :title="`details-${data.item.url}`">{{ data.value ? data.value : "-" }}</span>
                     </template>
+
                     <template v-slot:cell(tags)="data">
                         <StatelessTags v-if="data.value?.length > 0" :value="data.value" :disabled="true" />
                         <span v-else>-</span>
                     </template>
+
                     <template v-slot:cell(time)="data">
                         {{ formatTime(data.value) }}
                     </template>
+
                     <template v-slot:cell(update_time)="data">
                         {{ formatTime(data.value) }}
                     </template>
-                </BTable>
-                <div v-if="isBusy" class="text-center">
+                </GTable>
+
+                <div v-if="isBusy" class="text-center" data-description="selection dialog busy spinners">
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                     <BSpinner small type="grow" />
                 </div>
                 <div v-else-if="totalItems === 0">
                     <div v-if="filter">
-                        No search results found for: <b>{{ filter }}</b
-                        >.
+                        No search results found for: <b> {{ filter }} </b>.
                     </div>
                     <div v-else>No entries.</div>
                 </div>

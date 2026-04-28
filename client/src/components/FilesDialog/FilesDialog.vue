@@ -11,6 +11,7 @@ import {
     type FilterFileSourcesOptions,
     type RemoteEntry,
 } from "@/api/remoteFiles";
+import type { TableField } from "@/components/Common/GTable.types";
 import { fileSourcePluginToItem, isSubPath } from "@/components/FilesDialog/utilities";
 import {
     type ItemsProvider,
@@ -83,18 +84,17 @@ const showTime = ref(true);
 const showDetails = ref(true);
 const isBusy = ref(false);
 const showFTPHelper = ref(false);
-const selectAllIcon = ref<SelectionState>(SELECTION_STATES.UNSELECTED);
 const urlTracker = useUrlTracker<SelectionItem & { parentPage?: number }>({ root: undefined });
 const totalItems = ref(0);
 
-const fields = computed(() => {
+const fields = computed<TableField[]>(() => {
     const fields = [];
-    fields.push({ key: "label" });
+    fields.push({ key: "label", label: "Name" });
     if (showDetails.value) {
-        fields.push({ key: "details" });
+        fields.push({ key: "details", label: "Details" });
     }
     if (showTime.value) {
-        fields.push({ key: "time" });
+        fields.push({ key: "time", label: "Time" });
     }
     return fields;
 });
@@ -212,20 +212,20 @@ function formatRows() {
 
     hasValue.value = selectionModel.value.count() > 0 || selectedDirectories.value.length > 0;
     for (const item of items.value) {
-        let _rowVariant = "active";
+        let selectionState: SelectionState = SELECTION_STATES.UNSELECTED;
         if (item.isLeaf || !fileMode.value) {
-            _rowVariant = selectionModel.value.exists(item.id) ? "success" : "default";
+            selectionState = selectionModel.value.exists(item.id)
+                ? SELECTION_STATES.SELECTED
+                : SELECTION_STATES.UNSELECTED;
         }
         // if directory
         else if (!item.isLeaf) {
-            _rowVariant = getIcon(isDirectorySelected(item.id), item.url);
+            selectionState = getIcon(isDirectorySelected(item.id), item.url);
         }
-        Vue.set(item, "_rowVariant", _rowVariant);
+        Vue.set(item, "selectionState", selectionState);
+        Vue.set(item, "class", selectionState === SELECTION_STATES.SELECTED ? "table-success" : undefined);
     }
     allSelected.value = checkIfAllSelected();
-    if (urlTracker.current.value?.url) {
-        selectAllIcon.value = getIcon(allSelected.value, urlTracker.current.value.url);
-    }
 }
 
 function isDirectorySelected(directoryId: string): boolean {
@@ -480,8 +480,8 @@ onMounted(() => {
         :modal-show="modalShow"
         :multiple="multiple"
         :options-show="optionsShow"
-        :select-all-variant="selectAllIcon"
-        :show-select-icon="undoShow && multiple"
+        :all-selected="allSelected"
+        :selectable="undoShow && multiple"
         :undo-show="undoShow"
         :watch-on-page-changes="false"
         @onCancel="() => (modalShow = false)"
