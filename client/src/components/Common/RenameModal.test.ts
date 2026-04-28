@@ -73,7 +73,7 @@ describe("RenameModal tested for renaming workflows", () => {
         expect(wrapper.emitted("close")).toBeTruthy();
 
         // Simulate parent closing and reopening the modal (destroys old instance)
-        wrapper.destroy();
+        wrapper.unmount();
         await mountRenameModal();
         expect((createWrapper(document.body).find(INPUT_SELECTOR).element as HTMLInputElement).value).toBe(
             WORKFLOW_NAME,
