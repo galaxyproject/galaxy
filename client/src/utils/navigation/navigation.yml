@@ -334,6 +334,11 @@ history_panel:
 
     annotation_done: '.details .history-annotation .annotation button'
 
+    filter_input: '#current-history-panel .content-operations-filters [data-description="filter text input"]'
+    filter_advanced_toggle: '#current-history-panel .content-operations-filters [data-description="toggle advanced search"]'
+    filter_reset: '#current-history-panel .content-operations-filters [data-description="reset query"]'
+    filter_advanced: '#current-history-panel .content-operations-filters [data-description="advanced filters"]'
+
     options_button: '[data-description="history options"]'
     options_button_icon: '[data-description="history options"] button'
     options_menu: '.history-options-button-menu'
