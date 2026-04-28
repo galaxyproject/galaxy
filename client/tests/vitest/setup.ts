@@ -99,6 +99,32 @@ Object.defineProperty(global, "BroadcastChannel", {
     value: MockBroadcastChannel,
 });
 
+// Mock Worker so components using web workers (e.g. useFilterObjectArray)
+// don't throw "Worker is not defined" under happy-dom.
+class MockWorker extends EventTarget {
+    onmessage: ((event: MessageEvent) => void) | null = null;
+    onerror: ((event: ErrorEvent) => void) | null = null;
+    onmessageerror: ((event: MessageEvent) => void) | null = null;
+
+    constructor(_url: string | URL, _options?: WorkerOptions) {
+        super();
+    }
+
+    postMessage(_message: unknown) {
+        // No-op for tests
+    }
+
+    terminate() {
+        // No-op for tests
+    }
+}
+
+Object.defineProperty(global, "Worker", {
+    writable: true,
+    configurable: true,
+    value: MockWorker,
+});
+
 // Fail tests that log console errors or warnings
 // Replaces jest-fail-on-console functionality
 const failOnConsole = (await import("vitest-fail-on-console")).default;
