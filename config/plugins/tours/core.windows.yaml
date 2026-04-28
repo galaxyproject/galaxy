@@ -19,6 +19,7 @@ steps:
       postclick: true
 
     - component: upload_activity.method_card(method_id=paste-content)
+      prerequisites: ["ensure_upload_open"]
       intro: "Select the Paste Content method to create a new dataset by pasting data directly."
       preclick: true
 
@@ -43,9 +44,11 @@ steps:
       postclick: true
 
     - element: "#current-history-panel"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your history. It contains the table being uploaded."
 
     - component: history_panel.item(hid=1,state=ok).display_button
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
       postclick: true
 
