@@ -423,7 +423,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     // Choose between SSE and polling based on the server config flag
-    // `enable_sse_history_updates`. SSE success at the socket level is not a
+    // `enable_sse_updates`. SSE success at the socket level is not a
     // reliable proxy: the `/api/events/stream` endpoint accepts connections
     // even when the HistoryAuditMonitor is disabled, so relying on the
     // EventSource `connected` state would silently stop polling without any
@@ -443,7 +443,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
         const configStore = useConfigStore();
         const decide = () => {
-            if (configStore.config?.enable_sse_history_updates) {
+            if (configStore.config?.enable_sse_updates) {
                 // SSE delivers incremental updates only; the store still needs
                 // a baseline fetch so the history panel isn't empty until the
                 // first change arrives.

@@ -36,10 +36,10 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
         config["enable_celery_tasks"] = False
         # App.vue only calls entryPointStore.startWatchingEntryPoints() when
         # interactivetools_enable is True, and the store only opens an SSE
-        # connection when enable_sse_entry_point_updates is True. Without both,
+        # connection when enable_sse_updates is True. Without both,
         # __galaxy_sse_connected never becomes true and the gate below times out.
         config["interactivetools_enable"] = True
-        config["enable_sse_entry_point_updates"] = True
+        config["enable_sse_updates"] = True
 
     def _wait_for_sse_connected(self) -> None:
         """Block until the frontend confirms the SSE pipeline is live."""

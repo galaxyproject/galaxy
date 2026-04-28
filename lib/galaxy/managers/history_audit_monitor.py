@@ -4,7 +4,7 @@ Detects history changes via PostgreSQL LISTEN/NOTIFY (instant) or by polling
 the history_audit table (SQLite fallback). Dispatches SSE events to connected
 users via Kombu control tasks.
 
-Only active when ``enable_sse_history_updates`` is True in the Galaxy config.
+Only active when ``enable_sse_updates`` is True in the Galaxy config.
 """
 
 import logging

@@ -4313,25 +4313,22 @@ mapping:
         desc: |
           Message to display on the export citations tool page
 
-      enable_sse_history_updates:
+      enable_sse_updates:
         type: bool
         default: false
         required: false
         desc: |
-          Enables real-time history update notifications via Server-Sent Events (SSE).
-          When enabled, a background monitor watches for history changes (via PostgreSQL
-          LISTEN/NOTIFY or audit table polling as a fallback for SQLite) and pushes update
-          signals to connected browsers, replacing aggressive 3-second polling.
-
-      enable_sse_entry_point_updates:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enables real-time interactive-tool entry-point update notifications via
-          Server-Sent Events. When enabled, the client subscribes to entry_point_update
-          SSE events and refetches the entry-point list on each event, replacing the
-          10-second polling loop. When disabled, polling remains the source of updates.
+          Enables real-time updates via Server-Sent Events (SSE), replacing the
+          history (3 s), entry-point (10 s) and notification (30 s) polling loops
+          with push events delivered over a single ``/api/events/stream``
+          connection per browser tab. A background monitor watches for history
+          changes (via PostgreSQL LISTEN/NOTIFY, or audit-table polling as a
+          fallback for SQLite); entry-point changes are dispatched directly from
+          the code paths that mutate them; in-app notifications and broadcasts
+          are pushed when ``enable_notification_system`` is also true.
+          When disabled, polling remains the source of updates for all three.
+          See the admin guide "Server-Sent Events for real-time updates" for the
+          full architecture, monitoring guidance and proxy configuration.
 
       history_audit_monitor_poll_interval:
         type: int
@@ -4340,7 +4337,7 @@ mapping:
         desc: |
           The interval in seconds between history audit table polls when using the polling
           fallback (SQLite or when PostgreSQL LISTEN/NOTIFY is unavailable). Only used when
-          enable_sse_history_updates is true. Lower values mean faster updates but more
+          enable_sse_updates is true. Lower values mean faster updates but more
           database queries. Recommended range: 1-5 seconds.
 
       enable_notification_system:
@@ -4353,6 +4350,10 @@ mapping:
           Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
 
           The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+
+          Delivery is push-based via Server-Sent Events when ``enable_sse_updates``
+          is also true, and falls back to 30-second polling against
+          ``/api/notifications/status`` otherwise.
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
 

@@ -19,7 +19,7 @@ class TestHistorySSEIntegration(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_celery_tasks"] = False
-        config["enable_sse_history_updates"] = True
+        config["enable_sse_updates"] = True
 
     def setUp(self):
         super().setUp()

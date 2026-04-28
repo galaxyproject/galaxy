@@ -66,7 +66,7 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         const configStore = useConfigStore();
 
         const decide = () => {
-            if (configStore.config?.enable_sse_entry_point_updates) {
+            if (configStore.config?.enable_sse_updates) {
                 // Baseline fetch + SSE. Reconnect-refetch closes the "user
                 // navigated away and missed events" window.
                 fetchEntryPoints().catch((err) => console.warn("Initial entry-point load failed", err));

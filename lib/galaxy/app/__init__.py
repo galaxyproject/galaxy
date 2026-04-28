@@ -1018,7 +1018,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # daemon wins that election when present, otherwise one webapp picks it
         # up. start/stop are driven by heartbeat role transitions rather than
         # postfork, so the monitor cleanly migrates when the leader dies.
-        if self.config.enable_sse_history_updates:
+        if self.config.enable_sse_updates:
             monitor = self._register_singleton(HistoryAuditMonitor)
             self.database_heartbeat.add_audit_monitor_change_callback(monitor.on_role_change)
 
@@ -1057,7 +1057,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.shutdown()
 
     def _shutdown_history_audit_monitor(self):
-        if not self.config.enable_sse_history_updates:
+        if not self.config.enable_sse_updates:
             return
         self[HistoryAuditMonitor].shutdown()
 

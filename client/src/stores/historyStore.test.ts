@@ -41,7 +41,7 @@ function registerDefaultHandlers({ enableSse }: { enableSse: boolean }) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json({ enable_sse_history_updates: enableSse } as any);
+            return response(200).json({ enable_sse_updates: enableSse } as any);
         }),
     );
 }
@@ -73,7 +73,7 @@ describe("historyStore — config-driven SSE vs polling", () => {
         vi.useRealTimers();
     });
 
-    describe("when enable_sse_history_updates is true (SSE scenario)", () => {
+    describe("when enable_sse_updates is true (SSE scenario)", () => {
         beforeEach(() => {
             registerDefaultHandlers({ enableSse: true });
         });
@@ -148,7 +148,7 @@ describe("historyStore — config-driven SSE vs polling", () => {
         });
     });
 
-    describe("when enable_sse_history_updates is false (polling scenario)", () => {
+    describe("when enable_sse_updates is false (polling scenario)", () => {
         beforeEach(() => {
             registerDefaultHandlers({ enableSse: false });
         });
