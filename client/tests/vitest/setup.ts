@@ -4,6 +4,7 @@ import "fake-indexeddb/auto";
 import "vitest-location-mock";
 
 import { configureCompat } from "@vue/compat";
+import { config } from "@vue/test-utils";
 import { vi } from "vitest";
 
 // Configure Vue 3 compat mode - suppress warnings for Vue 2 features used in tests
@@ -22,12 +23,20 @@ configureCompat({
     RENDER_FUNCTION: "suppress-warning",
 });
 
-// Mock g-tooltip directive so components don't trigger "Failed to resolve directive" warnings
-Vue.directive("g-tooltip", {
-    bind(el: HTMLElement, binding: { value?: string }) {
-        el.setAttribute("data-mock-directive", binding.value || el.title || "");
+// Mock g-tooltip directive globally so components don't trigger
+// "Failed to resolve directive" warnings during tests.
+config.global.directives = {
+    ...(config.global.directives ?? {}),
+    "g-tooltip": {
+        mounted(el: HTMLElement, binding: { value?: string }) {
+            el.setAttribute("data-mock-directive", binding.value || el.title || "");
+        },
+        // Vue 2 compat hook
+        bind(el: HTMLElement, binding: { value?: string }) {
+            el.setAttribute("data-mock-directive", binding.value || el.title || "");
+        },
     },
-});
+};
 
 // Mock hashedUserId and userLocalStorage by default
 vi.mock("@/composables/hashedUserId");
