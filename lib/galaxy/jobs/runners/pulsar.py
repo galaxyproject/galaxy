@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import subprocess
+from dataclasses import dataclass
 from time import sleep
 from typing import (
     Any,
@@ -222,6 +223,17 @@ PULSAR_PARAM_SPECS = dict(
 
 PARAMETER_SPECIFICATION_REQUIRED = object()
 PARAMETER_SPECIFICATION_IGNORED = object()
+
+
+@dataclass
+class PulsarFinishJobResult:
+    tool_stdout: Optional[str]
+    tool_stderr: Optional[str]
+    exit_code: Optional[int]
+    job_stdout: Optional[str]
+    job_stderr: Optional[str]
+    remote_metadata_directory: Optional[str]
+    job_metrics_directory: str
 
 
 class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
@@ -751,6 +763,15 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             self.fail_job(job_state, message=GENERIC_REMOTE_ERROR, exception=True)
             log.exception("failure finishing job %d", job_wrapper.job_id)
             return
+        result = PulsarFinishJobResult(
+            tool_stdout=tool_stdout,
+            tool_stderr=tool_stderr,
+            exit_code=exit_code,
+            job_stdout=job_stdout,
+            job_stderr=job_stderr,
+            remote_metadata_directory=remote_metadata_directory,
+            job_metrics_directory=os.path.join(job_wrapper.working_directory, "metadata"),
+        )
         if not PulsarJobRunner.__remote_metadata(client):
             # we need an actual exit code file in the job working directory to detect job errors in the metadata script
             with open(
@@ -758,21 +779,22 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             ) as exit_code_file:
                 exit_code_file.write(str(exit_code))
             self._handle_metadata_externally(job_wrapper, resolve_requirements=True)
-        job_metrics_directory = os.path.join(job_wrapper.working_directory, "metadata")
-        # Finish the job
+        self._finish_pulsar_job(job_wrapper, result)
+
+    def _finish_pulsar_job(self, job_wrapper, result: PulsarFinishJobResult):
         try:
             job_wrapper.finish(
-                tool_stdout,
-                tool_stderr,
-                exit_code,
-                job_stdout=job_stdout,
-                job_stderr=job_stderr,
-                remote_metadata_directory=remote_metadata_directory,
-                job_metrics_directory=job_metrics_directory,
+                result.tool_stdout,
+                result.tool_stderr,
+                result.exit_code,
+                job_stdout=result.job_stdout,
+                job_stderr=result.job_stderr,
+                remote_metadata_directory=result.remote_metadata_directory,
+                job_metrics_directory=result.job_metrics_directory,
             )
         except Exception:
             log.exception("Job wrapper finish method failed")
-            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=job_metrics_directory)
+            job_wrapper.fail("Unable to finish job", exception=True, job_metrics_directory=result.job_metrics_directory)
 
     def check_pid(self, pid):
         try:

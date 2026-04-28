@@ -253,8 +253,8 @@ class ChronosJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         return None
 
     @handle_exception_call
-    def finish_job(self, job_state: AsynchronousJobState) -> None:
-        super().finish_job(job_state)
+    def _finish_job(self, job_state: AsynchronousJobState) -> None:
+        super()._finish_job(job_state)
         self._chronos_client.delete(job_state.job_id)
 
     def parse_destination_params(self, params):

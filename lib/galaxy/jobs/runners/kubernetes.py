@@ -1141,9 +1141,8 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         # run super method
         super().fail_job(job_state, exception, message, full_status)
 
-    def finish_job(self, job_state: AsynchronousJobState) -> None:
-        self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
-        super().finish_job(job_state)
+    def _finish_job(self, job_state: AsynchronousJobState) -> None:
+        super()._finish_job(job_state)
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
         if len(jobs.response["items"]) > 1:
             log.warning(

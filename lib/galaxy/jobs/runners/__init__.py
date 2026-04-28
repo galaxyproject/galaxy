@@ -971,9 +971,17 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors, Generic[T]):
         return collect_output_success, stdout, stderr
 
     def finish_job(self, job_state: T) -> None:
+        """Handle external metadata (if needed), then call _finish_job."""
+        external_metadata = not asbool(job_state.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+        if external_metadata:
+            self._handle_metadata_externally(job_state.job_wrapper, resolve_requirements=True)
+        self._finish_job(job_state)
+
+    def _finish_job(self, job_state: T) -> None:
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the job's temporary files.
+        Subclasses override this for post-metadata work.
         """
         galaxy_id_tag = job_state.job_wrapper.get_id_tag()
         external_job_id = job_state.job_id

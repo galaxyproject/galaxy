@@ -200,20 +200,12 @@ class ShellJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 ajs.running = True
             ajs.old_state = state
             if state == model.Job.states.OK or job_state == model.Job.states.STOPPED:
-                external_metadata = not asbool(
-                    ajs.job_wrapper.job_destination.params.get("embed_metadata_in_job", DEFAULT_EMBED_METADATA_IN_JOB)
-                )
-                if external_metadata:
-                    self.work_queue.put((self.handle_metadata_externally, ajs))
                 log.debug(f"({id_tag}/{external_job_id}) job execution finished, running job wrapper finish method")
                 self.work_queue.put((self.finish_job, ajs))
             else:
                 new_watched.append(ajs)
         # Replace the watch list with the updated version
         self.watched = new_watched
-
-    def handle_metadata_externally(self, ajs):
-        self._handle_metadata_externally(ajs.job_wrapper, resolve_requirements=True)
 
     def __handle_job_failure_reasons(self, ajs, external_job_id):
         shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
