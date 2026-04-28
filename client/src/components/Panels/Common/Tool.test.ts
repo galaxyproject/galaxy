@@ -71,6 +71,6 @@ describe("Tool", () => {
         (favoriteButton.element as HTMLElement).focus();
         expect(document.activeElement).toBe(favoriteButton.element);
 
-        wrapper.destroy();
+        wrapper.unmount();
     });
 });

@@ -37,7 +37,7 @@ describe("useConfirmDialog", () => {
 
         const promise = confirm("Are you sure?");
 
-        wrapper.destroy(); // triggers onUnmounted → controller.abort()
+        wrapper.unmount(); // triggers onUnmounted → controller.abort()
 
         expect(await promise).toBe(false);
     });
