@@ -43,7 +43,6 @@
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.9",
     "@galaxyproject/galaxy-api-client": "workspace:*",
-    "@galaxyproject/galaxy-ui": "workspace:*",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",
@@ -161,6 +160,7 @@
     "type-check": "vue-tsc --noEmit"
   },
   "devDependencies": {
+    "@galaxyproject/galaxy-ui": "workspace:*",
     "@modyfi/vite-plugin-yaml": "^1.1.1",
     "@pinia/testing": "0.1.5",
     "@rollup/plugin-inject": "^5.0.5",

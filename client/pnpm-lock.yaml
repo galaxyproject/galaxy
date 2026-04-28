@@ -49,9 +49,6 @@ importers:
       '@galaxyproject/galaxy-api-client':
         specifier: workspace:*
         version: link:packages/api-client
-      '@galaxyproject/galaxy-ui':
-        specifier: workspace:*
-        version: link:packages/ui
       '@guolao/vue-monaco-editor':
         specifier: ^1.5.4
         version: 1.5.4(monaco-editor@0.52.2)(vue@2.7.16)
@@ -338,6 +335,9 @@ importers:
         specifier: ^2.6.1
         version: 2.6.1
     devDependencies:
+      '@galaxyproject/galaxy-ui':
+        specifier: workspace:*
+        version: link:packages/ui
       '@modyfi/vite-plugin-yaml':
         specifier: ^1.1.1
         version: 1.1.1(rollup@4.60.1)(vite@7.3.2(@types/node@25.6.0)(sass@1.94.2)(yaml@2.6.1))
