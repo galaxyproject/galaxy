@@ -6,7 +6,10 @@ from typing import (
     Any,
     Optional,
 )
-from unittest.mock import patch
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import pytest
 
@@ -394,6 +397,25 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         self._send_message_notification_to_users([user], notification=notification_data)
         user_notifications = self.notification_manager.get_user_notifications(user)
         assert len(user_notifications) == 1
+
+    def test_send_via_channels_uses_all_channel_fields(self):
+        user = self._create_test_user()
+        notification_data = NotificationCreateData(**self._default_test_notification_data())
+        notification = self.notification_manager._create_notification_model(notification_data)
+
+        push_plugin = MagicMock()
+        email_plugin = MagicMock()
+        self.notification_manager.channel_plugins = {
+            "push": push_plugin,
+            "email": email_plugin,
+        }
+
+        # `email` remains at its default value (True) and should still be considered.
+        channel_settings = NotificationChannelSettings(push=False)
+        self.notification_manager._send_via_channels(notification, user, channel_settings)
+
+        push_plugin.send.assert_not_called()
+        email_plugin.send.assert_called_once_with(notification, user)
 
 
 class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):

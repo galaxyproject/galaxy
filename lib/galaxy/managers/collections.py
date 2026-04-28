@@ -638,10 +638,7 @@ class DatasetCollectionManager:
 
         new_elements = {}
         for key, element in elements.items():
-            if isinstance(element, DatasetCollection):
-                continue
-
-            if element.get("src") != "new_collection":
+            if not isinstance(element, dict) or element.get("src") != "new_collection":
                 continue
 
             # element is a dict with src new_collection and

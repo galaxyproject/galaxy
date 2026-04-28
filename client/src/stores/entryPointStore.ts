@@ -23,10 +23,11 @@ interface EntryPoint {
 }
 
 export const useEntryPointStore = defineStore("entryPointStore", () => {
-    const { startWatchingResource: startWatchingEntryPoints } = useResourceWatcher(fetchEntryPoints, {
-        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-        enableBackgroundPolling: false, // No need to poll in the background
-    });
+    const { startWatchingResource: startWatchingEntryPoints, stopWatchingResource: stopWatchingEntryPoints } =
+        useResourceWatcher(fetchEntryPoints, {
+            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+            enableBackgroundPolling: false, // No need to poll in the background
+        });
 
     const entryPoints = ref<EntryPoint[]>([]);
 
@@ -92,5 +93,6 @@ export const useEntryPointStore = defineStore("entryPointStore", () => {
         updateEntryPoints,
         removeEntryPoint,
         startWatchingEntryPoints,
+        stopWatchingEntryPoints,
     };
 });

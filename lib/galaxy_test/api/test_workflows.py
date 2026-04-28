@@ -690,6 +690,17 @@ steps:
             assert workflow_id_2 not in index_ids
             assert workflow_id_3 not in index_ids
 
+    def test_index_search_many_terms(self):
+        # Regression: a whitespace-rich search string used to add one outer join
+        # on stored_workflow_tag_association and one on galaxy_user per term,
+        # producing an unusably expensive query for long searches.
+        name = f"Copy of Genomic Assembly and analysis - RDH shared by user {uuid4()}"
+        workflow_id = self.workflow_populator.simple_workflow(name)
+        self.workflow_populator.set_tags(workflow_id, [f"manyterms-{uuid4()}"])
+        search = "Copy of Genomic Assembly and analysis - RDH shared by user"
+        index_ids = self.workflow_populator.index_ids(search=search)
+        assert workflow_id in index_ids
+
     def test_search_casing(self):
         name1, name2 = (
             self.dataset_populator.get_random_name().upper(),

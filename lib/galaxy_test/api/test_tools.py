@@ -23,6 +23,7 @@ from galaxy.util import galaxy_root_path
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
+    assert_error_message_contains,
     assert_file_looks_like_xlsx,
     assert_has_keys,
     assert_status_code_is,
@@ -849,6 +850,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 history_id, hid=implicit_collections[0]["hid"]
             )
             assert zipped_hdca["collection_type"] == "list:paired"
+
+    @skip_without_tool("__MERGE_COLLECTION__")
+    def test_merge_collection_rejects_structurally_invalid_inputs(self):
+        with self.dataset_populator.test_history(require_new=False) as history_id:
+            list_paired_id = self.dataset_collection_populator.create_list_of_pairs_in_history(
+                history_id, wait=True
+            ).json()["outputs"][0]["id"]
+            plain_list_id = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["a", "b"], wait=True
+            ).json()["outputs"][0]["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            inputs = {
+                "inputs_0|input": {"src": "hdca", "id": list_paired_id},
+                "inputs_1|input": {"src": "hdca", "id": plain_list_id},
+            }
+            response = self._run("__MERGE_COLLECTION__", history_id, inputs, assert_ok=False)
+            assert_status_code_is(response, 400)
+            assert_error_message_contains(response, "must be a sub-collection")
 
     @skip_without_tool("__EXTRACT_DATASET__")
     @skip_without_tool("cat_data_and_sleep")

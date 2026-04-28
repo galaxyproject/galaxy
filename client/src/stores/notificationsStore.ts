@@ -13,10 +13,11 @@ const ACTIVE_POLLING_INTERVAL = 30000; // 30 seconds
 const INACTIVE_POLLING_INTERVAL = ACTIVE_POLLING_INTERVAL * 20; // 10 minutes
 
 export const useNotificationsStore = defineStore("notificationsStore", () => {
-    const { startWatchingResource: startWatchingNotifications } = useResourceWatcher(getNotificationStatus, {
-        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-        longPollingInterval: INACTIVE_POLLING_INTERVAL,
-    });
+    const { startWatchingResource: startWatchingNotifications, stopWatchingResource: stopWatchingNotifications } =
+        useResourceWatcher(getNotificationStatus, {
+            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+            longPollingInterval: INACTIVE_POLLING_INTERVAL,
+        });
     const broadcastsStore = useBroadcastsStore();
 
     const totalUnreadCount = ref<number>(0);
@@ -106,5 +107,6 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         updateNotification,
         updateBatchNotification,
         startWatchingNotifications,
+        stopWatchingNotifications,
     };
 });

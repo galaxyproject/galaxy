@@ -391,13 +391,14 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return watchHistorySuppliedApp(app);
     }
 
-    const { startWatchingResource: startWatchingHistory, isWatchingResource: isWatchingHistory } = useResourceWatcher(
-        watchHistory,
-        {
-            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-            longPollingInterval: INACTIVE_POLLING_INTERVAL,
-        },
-    );
+    const {
+        startWatchingResource: startWatchingHistory,
+        stopWatchingResource: stopWatchingHistory,
+        isWatchingResource: isWatchingHistory,
+    } = useResourceWatcher(watchHistory, {
+        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+        longPollingInterval: INACTIVE_POLLING_INTERVAL,
+    });
 
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
@@ -525,6 +526,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistories,
         handleTotalCountChange,
         startWatchingHistory,
+        stopWatchingHistory,
         isWatchingHistory,
         loadCurrentHistory,
         loadCurrentHistoryId,

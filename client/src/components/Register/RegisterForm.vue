@@ -14,8 +14,10 @@ import {
 } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 
+import { SKIP_PENDING_REQUESTS_HEADER } from "@/api/pendingRequests";
 import { getOIDCIdpsWithRegistration, type OIDCConfig } from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { Toast } from "@/composables/toast";
+import { discardActiveConnectionsBeforeAuthNavigation } from "@/composables/useAuthNavigation";
 import localize from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -72,15 +74,24 @@ const registerColumnDisplay = computed(() => Boolean(props.termsUrl));
 async function submit() {
     disableCreate.value = true;
 
+    // Stop polling and abort in-flight axios/GalaxyApi before sending the
+    // register POST — otherwise a late anonymous-cookie response can overwrite
+    // the authenticated cookie we're about to receive.
+    discardActiveConnectionsBeforeAuthNavigation();
+
     try {
-        const response = await axios.post(withPrefix("/user/create"), {
-            email: email.value,
-            username: username.value,
-            password: password.value,
-            confirm: confirm.value,
-            subscribe: subscribe.value,
-            session_csrf_token: props.sessionCsrfToken,
-        });
+        const response = await axios.post(
+            withPrefix("/user/create"),
+            {
+                email: email.value,
+                username: username.value,
+                password: password.value,
+                confirm: confirm.value,
+                subscribe: subscribe.value,
+                session_csrf_token: props.sessionCsrfToken,
+            },
+            { headers: { [SKIP_PENDING_REQUESTS_HEADER]: "1" } },
+        );
 
         if (response.data.message && response.data.status) {
             Toast.info(response.data.message);
