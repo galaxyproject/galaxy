@@ -113,9 +113,11 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     // Choose between SSE and polling based on the server config flag
-    // `enable_notification_system`. The `/api/events/stream` endpoint accepts
+    // `enable_sse_updates`. The `/api/events/stream` endpoint accepts
     // connections regardless of the flag, so we cannot rely on EventSource
-    // connectivity to decide — config is the source of truth.
+    // connectivity to decide — config is the source of truth. Callers gate
+    // on `enable_notification_system` before reaching here, so we only have
+    // to pick the transport.
     //
     // `useResourceWatcher` is instantiated lazily because it registers a
     // `visibilitychange` listener that calls `startWatchingResourceIfNeeded`
@@ -130,7 +132,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
 
         const configStore = useConfigStore();
         const decide = () => {
-            if (configStore.config?.enable_notification_system) {
+            if (configStore.config?.enable_sse_updates) {
                 sseConnect();
             } else {
                 const { startWatchingResource: startPolling, stopWatchingResource } = useResourceWatcher(
@@ -191,9 +193,9 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
         if (request.changes.deleted) {
             notifications.value = notifications.value.filter((n) => !request.notification_ids.includes(n.id));
         }
-        // If the notification system (and therefore SSE) is disabled, trigger
-        // a poll to refresh state after a local mutation.
-        if (!useConfigStore().config?.enable_notification_system) {
+        // When polling is the active transport, trigger a poll to refresh
+        // state after a local mutation. SSE delivers the update on its own.
+        if (!useConfigStore().config?.enable_sse_updates) {
             startWatchingNotifications();
         }
     }

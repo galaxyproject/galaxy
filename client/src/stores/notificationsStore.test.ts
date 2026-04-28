@@ -50,11 +50,14 @@ const { server, http } = useServerMock();
 
 const statusSpy = vi.fn();
 
-function registerDefaultHandlers({ enableNotificationSystem }: { enableNotificationSystem: boolean }) {
+function registerDefaultHandlers({ enableSseUpdates }: { enableSseUpdates: boolean }) {
     server.use(
         http.get("/api/configuration", ({ response }) => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return response(200).json({ enable_notification_system: enableNotificationSystem } as any);
+            return response(200).json({
+                enable_notification_system: true,
+                enable_sse_updates: enableSseUpdates,
+            } as any);
         }),
         http.get("/api/notifications", ({ response }) => {
             return response(200).json([SCENARIO_NOTIFICATION]);
@@ -99,9 +102,9 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
         vi.useRealTimers();
     });
 
-    describe("when enable_notification_system is true (SSE scenario)", () => {
+    describe("when enable_sse_updates is true (SSE scenario)", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableNotificationSystem: true });
+            registerDefaultHandlers({ enableSseUpdates: true });
         });
 
         it("connects SSE and does not poll the status endpoint", async () => {
@@ -161,9 +164,9 @@ describe("notificationsStore — config-driven SSE vs polling", () => {
         });
     });
 
-    describe("when enable_notification_system is false (polling scenario)", () => {
+    describe("when enable_sse_updates is false (polling scenario)", () => {
         beforeEach(() => {
-            registerDefaultHandlers({ enableNotificationSystem: false });
+            registerDefaultHandlers({ enableSseUpdates: false });
         });
 
         it("does not connect SSE and polls the status endpoint on the configured interval", async () => {
