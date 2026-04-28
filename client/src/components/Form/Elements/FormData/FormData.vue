@@ -1071,17 +1071,16 @@ const noOptionsWarningMessage = computed(() => {
                 :extensions="props.extensions"
                 :multiple="Boolean(currentVariant?.multiple)"
                 show-view-create-options
-                v-model:workflow-tab="workflowTab"
                 @create-collection-type="handleCollectionTypeChange"
                 @uploaded-data="handleUploadedDataOptions" />
         </div>
 
         <FormDataExtensions
             v-if="restrictsExtensions"
+            v-model:formats-visible="formatsVisible"
             class="mt-1"
             :extensions="props.extensions"
-            :formats-button-id="formatsButtonId"
-            :formats-visible.sync="formatsVisible" />
+            :formats-button-id="formatsButtonId" />
 
         <div :class="{ 'd-flex justify-content-between': props.workflowRun }">
             <div v-if="currentVariant && currentVariant.batch !== BATCH.DISABLED">
