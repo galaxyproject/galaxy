@@ -25,6 +25,7 @@ class TestNotificationSSESeleniumIntegration(SeleniumIntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
         config["enable_notification_system"] = True
+        config["enable_sse_updates"] = True
         config["enable_celery_tasks"] = False
 
     def _wait_for_sse_connected(self) -> None:
