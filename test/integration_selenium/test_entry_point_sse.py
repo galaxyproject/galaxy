@@ -12,6 +12,10 @@ the live app. That invocation is the exact dispatch site in production.
 
 from uuid import uuid4
 
+from galaxy.model import (
+    InteractiveToolEntryPoint,
+    Job,
+)
 from galaxy.util.wait import wait_on
 from galaxy_test.selenium.framework import (
     managed_history,
@@ -56,11 +60,6 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
         )
 
     def _create_it_job_with_entry_point(self, tool_port: int = 8888) -> tuple[int, int]:
-        from galaxy.model import (
-            InteractiveToolEntryPoint,
-            Job,
-        )
-
         # Use the browser's cookie-authenticated user, not the API interactor's
         # default: SSE connects under the Selenium-registered user, and the
         # dispatch's user_id must match or push_to_user finds no queues.
@@ -100,8 +99,6 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
         job_id, _ep_id = self._create_it_job_with_entry_point(tool_port=8888)
 
         # Stub the runner hook: call configure_entry_points on the live app.
-        from galaxy.model import Job
-
         sa_session = self._app.model.context
         job = sa_session.get(Job, job_id)
         assert job is not None

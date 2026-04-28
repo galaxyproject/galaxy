@@ -9,13 +9,17 @@ from typing import (
     Any,
     Optional,
 )
+from urllib.parse import urlparse
 
+from lagom.exceptions import UnresolvableType
 from sqlalchemy import (
     and_,
+    create_engine,
     delete,
     exists,
     false,
     select,
+    text,
     update,
 )
 
@@ -40,6 +44,8 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.queue_metrics import emit_queue_metrics
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
@@ -603,13 +609,6 @@ def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
     without bound on the default on-disk sqlite broker. On AMQP / Redis the
     broker has native TTL, so this task is a no-op.
     """
-    from urllib.parse import urlparse
-
-    from sqlalchemy import (
-        create_engine,
-        text,
-    )
-
     broker_url = config.amqp_internal_connection
     if not broker_url:
         log.debug("kombu cleanup: no broker URL configured, skipping")
@@ -678,11 +677,6 @@ def emit_queue_metrics_task(app: StructuredApp):
     container and passes them in — keeps the emitter module free of
     ``StructuredApp`` service-locator lookups.
     """
-    from lagom.exceptions import UnresolvableType
-
-    from galaxy.managers.queue_metrics import emit_queue_metrics
-    from galaxy.managers.sse import SSEConnectionManager
-
     try:
         sse_manager: Optional[SSEConnectionManager] = app[SSEConnectionManager]
     except UnresolvableType:
