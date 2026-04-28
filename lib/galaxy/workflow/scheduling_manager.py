@@ -17,6 +17,7 @@ from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import check_database_connection
+from galaxy.model.orm.now import now
 from galaxy.schema.invocation import (
     FailureReason,
     InvocationFailureDatasetFailed,
@@ -350,12 +351,12 @@ class WorkflowRequestMonitor(Monitors):
                 invocation_step_update_time := invocation.get_last_workflow_invocation_step_update_time()
             ):
                 do_schedule = invocation_step_update_time > last_schedule_time
-            if not do_schedule and (datetime.now() - last_schedule_time) > self.timedelta:
+            if not do_schedule and (now() - last_schedule_time) > self.timedelta:
                 # If we haven't scheduled in a while, schedule anyway.
                 log.debug(
                     "Scheduling workflow invocation [%s] after %s seconds without scheduling.",
                     invocation.id,
-                    (datetime.now() - last_schedule_time).total_seconds(),
+                    (now() - last_schedule_time).total_seconds(),
                 )
                 do_schedule = True
             return do_schedule
@@ -459,7 +460,7 @@ class WorkflowRequestMonitor(Monitors):
                         if i.active and i.id < workflow_invocation.id:
                             return False
                 if self.ready_to_schedule_more(workflow_invocation):
-                    self.update_time_tracking_dict[invocation_id] = datetime.now()
+                    self.update_time_tracking_dict[invocation_id] = now()
                     workflow_scheduler.schedule(workflow_invocation)
                     log.debug("Workflow invocation [%s] scheduled", invocation_id)
             except Exception:
