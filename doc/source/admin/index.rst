@@ -14,6 +14,7 @@ Galaxy Deployment & Administration
    nginx
    apache
    scaling
+   sse_updates
    cluster
    jobs
    job_metrics
