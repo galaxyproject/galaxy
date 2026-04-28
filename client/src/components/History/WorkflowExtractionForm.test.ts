@@ -3,7 +3,7 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { extractWorkflowFromHistory, submitWorkflowExtraction, type WorkflowExtractionSummary } from "@/api/histories";
+import { extractWorkflowByIds, extractWorkflowFromHistory, type WorkflowExtractionSummary } from "@/api/histories";
 import { Toast } from "@/composables/toast";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
@@ -18,7 +18,7 @@ import WorkflowExtractionForm from "./WorkflowExtractionForm.vue";
 
 vi.mock("@/api/histories", () => ({
     extractWorkflowFromHistory: vi.fn(),
-    submitWorkflowExtraction: vi.fn(),
+    extractWorkflowByIds: vi.fn(),
 }));
 
 vi.mock("@/composables/toast", () => {
@@ -226,18 +226,22 @@ describe("WorkflowExtractionForm", () => {
     describe("workflow submission", () => {
         beforeEach(() => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
-            vi.mocked(submitWorkflowExtraction).mockResolvedValue({ id: "new-workflow-id" });
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "new-workflow-id" });
         });
 
-        it("calls submitWorkflowExtraction with correct payload on button click", async () => {
+        it("calls extractWorkflowByIds with encoded-id payload on button click", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
-            expect(submitWorkflowExtraction).toHaveBeenCalledWith(
-                "history-1",
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
                 expect.objectContaining({
                     workflow_name: "Extracted WF",
+                    from_history_id: "history-1",
                     job_ids: ["job-tool-1"],
+                    hda_ids: ["ds-2"],
+                    hdca_ids: [],
+                    dataset_names: ["myfile.txt"],
+                    dataset_collection_names: [],
                 }),
             );
         });
@@ -250,7 +254,7 @@ describe("WorkflowExtractionForm", () => {
         });
 
         it("shows error alert when submission fails", async () => {
-            vi.mocked(submitWorkflowExtraction).mockRejectedValue(new Error("Submit failed"));
+            vi.mocked(extractWorkflowByIds).mockRejectedValue(new Error("Submit failed"));
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
@@ -261,7 +265,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             // no name set — button stays disabled
             await clickCreateButton(wrapper);
-            expect(submitWorkflowExtraction).not.toHaveBeenCalled();
+            expect(extractWorkflowByIds).not.toHaveBeenCalled();
         });
     });
 });

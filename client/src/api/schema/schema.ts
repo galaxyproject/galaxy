@@ -6306,6 +6306,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workflows/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract a workflow from selected jobs and history items by encoded IDs.
+         * @description ID-based workflow extraction.
+         *
+         *     Per-item permission checks make this history-optional and allow
+         *     cross-history extraction. ``from_history_id`` in the body is UI
+         *     context only.
+         */
+        post: operations["extract_by_ids_api_workflows_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workflows/menu": {
         parameters: {
             query?: never;
@@ -25518,6 +25542,44 @@ export interface components {
              * @description An array of one or more acceptable engines versions for the `workflow_engine`
              */
             workflow_engine_version?: string[] | null;
+        };
+        /** WorkflowExtractionByIdsPayload */
+        WorkflowExtractionByIdsPayload: {
+            /**
+             * Dataset Collection Names
+             * @description Names for the input dataset collections, parallel to hdca_ids.
+             */
+            dataset_collection_names?: string[];
+            /**
+             * Dataset Names
+             * @description Names for the input datasets, parallel to hda_ids.
+             */
+            dataset_names?: string[];
+            /**
+             * From History ID
+             * @description Optional history context (UI hint). Access decisions use per-item permission checks; not required for cross-history extraction.
+             */
+            from_history_id?: string | null;
+            /**
+             * HDA IDs
+             * @description Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.
+             */
+            hda_ids?: string[];
+            /**
+             * HDCA IDs
+             * @description Decoded IDs of HistoryDatasetCollectionAssociations to treat as workflow inputs.
+             */
+            hdca_ids?: string[];
+            /**
+             * Job IDs
+             * @description Decoded IDs of compatible tool jobs to include as workflow steps.
+             */
+            job_ids?: string[];
+            /**
+             * Workflow Name
+             * @description The name for the extracted workflow.
+             */
+            workflow_name: string;
         };
         /** WorkflowExtractionJob */
         WorkflowExtractionJob: {
@@ -50006,6 +50068,51 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     }[];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    extract_by_ids_api_workflows_extract_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkflowExtractionByIdsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionResult"];
                 };
             };
             /** @description Request Error */

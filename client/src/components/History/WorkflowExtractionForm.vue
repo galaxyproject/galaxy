@@ -6,10 +6,10 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import {
+    extractWorkflowByIds,
     extractWorkflowFromHistory,
-    submitWorkflowExtraction,
+    type WorkflowExtractionByIdsPayload,
     type WorkflowExtractionJob,
-    type WorkflowExtractionPayload,
 } from "@/api/histories";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -94,11 +94,11 @@ const selectedJobIds = computed<Array<string>>(() => {
 });
 
 /**
- * A parallel mapping for `checked` input step type `hid`s and their `newNames`
+ * A parallel mapping for `checked` input step type encoded ids and their `newNames`.
  */
 const selectedInputs = computed<
     {
-        hid: number;
+        id: string;
         newName: string;
         history_content_type: "dataset" | "dataset_collection";
     }[]
@@ -113,7 +113,7 @@ const selectedInputs = computed<
         )
         .flatMap((job) =>
             job.outputs?.map((output) => ({
-                hid: output.hid,
+                id: output.id,
                 newName: job.newName,
                 history_content_type: output.history_content_type,
             })),
@@ -139,12 +139,12 @@ function getInputName(job: WorkflowExtractionInput): string | undefined {
     }
 }
 
-function getSelectedInputs(type: "dataset" | "dataset_collection"): { hids: number[]; names: string[] } {
+function getSelectedInputs(type: "dataset" | "dataset_collection"): { ids: string[]; names: string[] } {
     const inputs = selectedInputs.value.filter(
         (input) => input.history_content_type === type && Boolean(input.newName),
     );
     return {
-        hids: inputs.map((input) => input.hid),
+        ids: inputs.map((input) => input.id),
         names: inputs.map((input) => input.newName),
     };
 }
@@ -218,16 +218,17 @@ async function submitWorkflow() {
         const selectedDatasets = getSelectedInputs("dataset");
         const selectedDatasetCollections = getSelectedInputs("dataset_collection");
 
-        const payload: WorkflowExtractionPayload = {
+        const payload: WorkflowExtractionByIdsPayload = {
             workflow_name: workflowName.value.trim(),
+            from_history_id: props.historyId,
             job_ids: selectedJobIds.value,
-            dataset_hids: selectedDatasets.hids,
-            dataset_collection_hids: selectedDatasetCollections.hids,
+            hda_ids: selectedDatasets.ids,
+            hdca_ids: selectedDatasetCollections.ids,
             dataset_names: selectedDatasets.names,
             dataset_collection_names: selectedDatasetCollections.names,
         };
 
-        const data = await submitWorkflowExtraction(props.historyId, payload);
+        const data = await extractWorkflowByIds(payload);
 
         Toast.success("Workflow created successfully", "Success");
 

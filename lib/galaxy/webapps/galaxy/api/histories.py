@@ -95,7 +95,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
-from galaxy.workflow.extract import extract_workflow
+from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -207,6 +207,7 @@ IndexExportsResponse = Annotated[
 @router.cbv
 class FastAPIHistories:
     service: HistoriesService = depends(HistoriesService)
+    workflows_service: WorkflowsService = depends(WorkflowsService)
 
     @router.get(
         "/api/histories",
@@ -889,16 +890,4 @@ class FastAPIHistories:
         Returns the ID of the newly created workflow.
         """
         history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-
-        stored_workflow = extract_workflow(
-            trans,
-            user=trans.user,
-            history=history,
-            job_ids=payload.job_ids,
-            dataset_ids=payload.dataset_hids,
-            dataset_collection_ids=payload.dataset_collection_hids,
-            workflow_name=payload.workflow_name,
-            dataset_names=payload.dataset_names,
-            dataset_collection_names=payload.dataset_collection_names,
-        )
-        return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+        return self.workflows_service.extract_from_history(trans, history, payload)

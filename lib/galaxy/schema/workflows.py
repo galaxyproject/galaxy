@@ -11,6 +11,7 @@ from pydantic import (
     AfterValidator,
     Field,
     field_validator,
+    model_validator,
     UUID4,
 )
 
@@ -429,6 +430,50 @@ class WorkflowExtractionPayload(Model):
         title="Dataset Collection Names",
         description="Names for the input dataset collections, parallel to dataset_collection_hids.",
     )
+
+
+class WorkflowExtractionByIdsPayload(Model):
+    workflow_name: str = Field(
+        ...,
+        title="Workflow Name",
+        description="The name for the extracted workflow.",
+    )
+    from_history_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="From History ID",
+        description="Optional history context (UI hint). Access decisions use per-item permission checks; not required for cross-history extraction.",
+    )
+    job_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="Job IDs",
+        description="Decoded IDs of compatible tool jobs to include as workflow steps.",
+    )
+    hda_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="HDA IDs",
+        description="Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.",
+    )
+    hdca_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="HDCA IDs",
+        description="Decoded IDs of HistoryDatasetCollectionAssociations to treat as workflow inputs.",
+    )
+    dataset_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Names",
+        description="Names for the input datasets, parallel to hda_ids.",
+    )
+    dataset_collection_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Collection Names",
+        description="Names for the input dataset collections, parallel to hdca_ids.",
+    )
+
+    @model_validator(mode="after")
+    def _at_least_one_input(self):
+        if not (self.hda_ids or self.hdca_ids or self.job_ids):
+            raise ValueError("At least one of hda_ids, hdca_ids, job_ids required")
+        return self
 
 
 class WorkflowExtractionResult(Model):
