@@ -58,8 +58,11 @@ async function _fetchHistoryAndChangedItems(app, { force }) {
     const collectionElementsStore = useCollectionElementsStore();
 
     const checkForUpdate = new Date();
-    // When forced, skip the `since` filter so the server always returns the history.
-    const history = await historyStore.loadCurrentHistory(force ? undefined : lastUpdateTime);
+    // Always pass the `since` cursor so the server can short-circuit cheaply
+    // when nothing has changed; SSE-driven `force` only bypasses the
+    // client-side update_time equality gate, not the server-side cursor —
+    // we don't want to refetch items the client already has.
+    const history = await historyStore.loadCurrentHistory(lastUpdateTime);
     const { lastCheckedTime } = storeToRefs(historyItemsStore);
     lastCheckedTime.value = checkForUpdate;
     if (!history || !history.id) {
