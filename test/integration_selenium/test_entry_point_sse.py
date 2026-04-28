@@ -64,7 +64,7 @@ class TestEntryPointSSESeleniumIntegration(SeleniumIntegrationTestCase):
         # default: SSE connects under the Selenium-registered user, and the
         # dispatch's user_id must match or push_to_user finds no queues.
         user_info = self.api_get("users/current")
-        user_id = self._app.security.decode_id(user_info["id"])
+        user_id = self._decode_id(user_info["id"])
         sa_session = self._app.model.context
         job = Job()
         job.user_id = user_id

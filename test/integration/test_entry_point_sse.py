@@ -50,18 +50,6 @@ class TestEntryPointSSEIntegration(IntegrationTestCase):
     def _events_stream_url(self) -> str:
         return urljoin(self.url, "api/events/stream")
 
-    def _user_id_for_api_key(self, api_key: str) -> int:
-        """Return the integer ``User.id`` for the user owning ``api_key``."""
-        # The ``/api/users/current`` endpoint returns the encoded id; decode
-        # via the app's security helper so we get the raw int the job row
-        # needs.
-        import requests
-
-        response = requests.get(urljoin(self.url, "api/users/current"), params={"key": api_key})
-        response.raise_for_status()
-        encoded_id = response.json()["id"]
-        return self._app.security.decode_id(encoded_id)
-
     def _create_it_job_with_entry_point(self, user_id: int, tool_port: int = 8888) -> tuple[int, int]:
         """Create a minimal Job + unconfigured InteractiveToolEntryPoint row pair.
 
