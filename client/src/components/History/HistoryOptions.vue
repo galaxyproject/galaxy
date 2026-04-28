@@ -29,7 +29,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { rethrowSimple } from "@/utils/simple-error";
 
-import GModal from "../BaseComponents/GModal.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 import CopyModal from "@/components/History/Modals/CopyModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -119,18 +119,18 @@ watch(
             :variant="props.minimal ? 'outline-info' : 'link'"
             toggle-class="text-decoration-none"
             menu-class="history-options-button-menu"
-            title="History options"
+            :title="localize('History Options')"
             right
             data-description="history options">
             <template v-slot:button-content>
                 <FontAwesomeIcon fixed-width :icon="faBars" />
-                <span class="sr-only">History Options</span>
+                <span v-localize class="sr-only">History Options</span>
             </template>
 
             <BDropdownText>
                 <LoadingSpan v-if="historiesLoading" message="Fetching histories from server" />
-                <span v-else-if="!props.minimal">You have {{ totalHistoryCount }} histories.</span>
-                <span v-else>Manage History</span>
+                <span v-else-if="!props.minimal" v-localize>You have {{ totalHistoryCount }} histories.</span>
+                <span v-else v-localize>Manage History</span>
             </BDropdownText>
 
             <BDropdownItem
@@ -145,9 +145,9 @@ watch(
 
             <BDropdownDivider v-if="!props.minimal" />
 
-            <BDropdownText v-if="!canEditHistory">
-                This history has been <span class="font-weight-bold">{{ historyState }}</span
-                >.
+            <BDropdownText v-if="!canEditHistory" v-localize>
+                This history has been
+                <span class="font-weight-bold"> {{ historyState }} </span>.
                 <span v-localize>Some actions might not be available.</span>
             </BDropdownText>
 
@@ -247,8 +247,8 @@ watch(
 
         <GModal
             :show.sync="showDeleteModal"
-            :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
-            :ok-text="isDeletedNotPurged ? 'Permanently Delete' : 'Delete'"
+            :title="localize(isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?')"
+            :ok-text="localize(isDeletedNotPurged ? 'Delete Permanently' : 'Delete')"
             ok-color="red"
             confirm
             size="small"
