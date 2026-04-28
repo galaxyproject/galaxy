@@ -123,7 +123,7 @@ def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = 
     assert pkg_name is not None
     url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
     if not session:
-        session = requests.session()
+        session = requests.Session()
     response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
     data = response.json()
     return data

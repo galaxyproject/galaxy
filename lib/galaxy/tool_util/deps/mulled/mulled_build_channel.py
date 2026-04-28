@@ -65,7 +65,7 @@ def _new_versions(quay, conda):
 
 def run_channel(args, build_last_n_versions: int = 1) -> None:
     """Build list of involucro commands (as shell snippet) to run."""
-    session = requests.session()
+    session = requests.Session()
     for pkg_name, pkg_tests in get_affected_packages(args):
         repo_data = _fetch_repo_data(args)
         c = conda_versions(pkg_name, repo_data)

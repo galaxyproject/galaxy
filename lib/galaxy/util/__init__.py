@@ -62,8 +62,6 @@ from boltons.iterutils import (
     default_enter,
     remap,
 )
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry  # type: ignore[import-untyped, unused-ignore]
 from typing_extensions import (
     Literal,
     Self,
@@ -1945,10 +1943,8 @@ def build_url(base_url, port=80, scheme="http", pathspec=None, params=None, dose
 def url_get(base_url, auth=None, pathspec=None, params=None, max_retries=5, backoff_factor=1):
     """Make contact with the uri provided and return any contents."""
     full_url = build_url(base_url, pathspec=pathspec, params=params)
-    s = requests.Session()
-    retries = Retry(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429])
-    s.mount(base_url, HTTPAdapter(max_retries=retries))
-    response = s.get(full_url, auth=auth)
+    with requests.RetrySession(total=max_retries, backoff_factor=backoff_factor, status_forcelist=[429]) as s:
+        response = s.get(full_url, auth=auth)
     response.raise_for_status()
     return response.text
 
