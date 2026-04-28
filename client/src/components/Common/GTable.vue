@@ -777,11 +777,12 @@ defineExpose({
                             </td>
                         </tr>
 
-                        <template v-for="(item, paginatedIndex) in paginatedLocalItems">
+                        <template
+                            v-for="(item, paginatedIndex) in paginatedLocalItems"
+                            :key="`tr` + getGlobalIndex(paginatedIndex)">
                             <template>
                                 <tr
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
-                                    :key="`tr` + getGlobalIndex(paginatedIndex)"
                                     :aria-rowindex="getGlobalIndex(paginatedIndex) + 1"
                                     :data-pk="props.primaryKey ? item[props.primaryKey] : undefined"
                                     :class="[
