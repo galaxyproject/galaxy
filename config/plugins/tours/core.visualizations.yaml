@@ -17,25 +17,31 @@ steps:
       postclick: true
 
     - component: upload.create_button
+      prerequisites: ["ensure_upload_open"]
       intro: "We will be using the paste feature to create a new dataset."
       postclick: true
 
     - component: upload.paste_content(n=0)
+      prerequisites: ["ensure_upload_open"]
       intro: "...and paste content into the text area field."
       textinsert: http://cdn.jsdelivr.net/gh/galaxyproject/galaxy-test-data/matrix_generator_for_pc_and_lda_output.tabular
 
     - component: upload.start_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
     - component: upload.close_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Hit the close button to close the upload dialog."
       postclick: true
 
     - component: history_panel
+      prerequisites: ["ensure_history_panel_open"]
       intro: "This is your history. It contains our matrix being uploaded."
 
     - element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Displaying the dataset will show the dataset preview as well as additional options."
       postclick: true
 
