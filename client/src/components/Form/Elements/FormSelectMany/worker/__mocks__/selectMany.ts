@@ -1,9 +1,9 @@
+import { vi } from "vitest";
 import { reactive, ref, watch } from "vue";
 
 import type { SelectOption, useSelectMany as UseSelectMany } from "../selectMany";
 import { main } from "../selectManyMain";
 
-// @ts-ignore - vi is a Vitest global
 vi.mock("@/components/Form/Elements/FormSelectMany/worker/selectMany", () => ({
     useSelectMany,
 }));
