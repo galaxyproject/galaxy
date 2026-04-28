@@ -406,10 +406,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 const result = await getHistoryByIdFromServer(historyId);
                 if (result.error) {
                     retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
-                    set(historyLoadErrors.value, historyId, result.error);
+                    historyLoadErrors.value[historyId] = result.error;
                 } else {
                     setHistory(result.data);
-                    del(historyLoadErrors.value, historyId);
+                    delete historyLoadErrors.value[historyId];
                     delete retryCounts[historyId];
                 }
             } finally {
