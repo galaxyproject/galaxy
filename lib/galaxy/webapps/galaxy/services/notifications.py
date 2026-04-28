@@ -48,6 +48,20 @@ class NotificationService(ServiceBase):
         self.notification_manager = notification_manager
         self.sse_manager = sse_manager
 
+    @property
+    def notifications_enabled(self) -> bool:
+        return self.notification_manager.notifications_enabled
+
+    def send_internal_notification(
+        self, request: NotificationCreateRequest, force_sync: bool = False
+    ) -> NotificationCreatedResponse:
+        """Send a system-emitted notification on behalf of internal callers (e.g. share flows).
+
+        Unlike :meth:`send_notification`, this skips admin/permission checks because the
+        caller has already resolved the recipient set and is not acting on user input.
+        """
+        return self.notification_manager.send_notification_internal(request, force_sync=force_sync)
+
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
     ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:

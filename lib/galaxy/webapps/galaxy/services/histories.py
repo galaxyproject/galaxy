@@ -40,7 +40,6 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -130,7 +129,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
         notification_service: NotificationService,
-        notification_manager: NotificationManager,
     ):
         super().__init__(security)
         self.manager = manager
@@ -140,9 +138,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
         self.filters = filters
-        self.shareable_service = ShareableHistoryService(
-            self.manager, self.serializer, notification_service, notification_manager
-        )
+        self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_service)
         self.short_term_storage_allocator = short_term_storage_allocator
 
     def index(

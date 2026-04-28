@@ -9,7 +9,6 @@ from typing import (
 from galaxy import exceptions
 from galaxy.managers.base import security_check
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.sharable import (
     slug_exists,
     SlugBuilder,
@@ -63,14 +62,11 @@ class VisualizationsService(ServiceBase):
         manager: VisualizationManager,
         serializer: VisualizationSerializer,
         notification_service: NotificationService,
-        notification_manager: NotificationManager,
     ):
         super().__init__(security)
         self.manager = manager
         self.serializer = serializer
-        self.shareable_service = ShareableService(
-            self.manager, self.serializer, notification_service, notification_manager
-        )
+        self.shareable_service = ShareableService(self.manager, self.serializer, notification_service)
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
 

@@ -5,7 +5,6 @@ from typing import (
 )
 
 from galaxy.managers import base
-from galaxy.managers.notification import NotificationManager
 from galaxy.managers.sharable import (
     SharableModelManager,
     SharableModelSerializer,
@@ -63,12 +62,10 @@ class ShareableService:
         manager: SharableModelManager,
         serializer: SharableModelSerializer,
         notification_service: NotificationService,
-        notification_manager: NotificationManager,
     ) -> None:
         self.manager = manager
         self.serializer = serializer
         self.notification_service = notification_service
-        self.notification_manager = notification_manager
 
     def set_slug(self, trans, id: DecodedDatabaseIdField, payload: SetSlugPayload):
         item = self._get_item_by_id(trans, id)
@@ -180,13 +177,13 @@ class ShareableService:
     def _send_notification_to_users(
         self, users_to_notify: set[User], item: SharableItem, status: ShareWithStatus, galaxy_url: Optional[str] = None
     ):
-        if self.notification_manager.notifications_enabled and not status.errors and users_to_notify:
+        if self.notification_service.notifications_enabled and not status.errors and users_to_notify:
             request = SharedItemNotificationFactory.build_notification_request(
                 item, users_to_notify, status, galaxy_url
             )
             # We can set force_sync=True here because we already have the set of users to notify
             # and there is no need to resolve them asynchronously as no groups or roles are involved.
-            self.notification_manager.send_notification_internal(request, force_sync=True)
+            self.notification_service.send_internal_notification(request, force_sync=True)
 
 
 class SharedItemNotificationFactory:
