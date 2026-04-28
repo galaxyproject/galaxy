@@ -54,7 +54,7 @@ class NotificationService(ServiceBase):
 
     def send_internal_notification(
         self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> NotificationCreatedResponse:
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
         """Send a system-emitted notification on behalf of internal callers (e.g. share flows).
 
         Unlike :meth:`send_notification`, this skips admin/permission checks because the
