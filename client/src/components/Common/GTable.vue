@@ -746,11 +746,12 @@ defineExpose({
                             </td>
                         </tr>
 
-                        <template v-for="(item, paginatedIndex) in paginatedLocalItems">
+                        <template
+                            v-for="(item, paginatedIndex) in paginatedLocalItems"
+                            :key="`tr` + getGlobalIndex(paginatedIndex)">
                             <template>
                                 <tr
                                     :id="getRowId(props.id, getGlobalIndex(paginatedIndex))"
-                                    :key="`tr` + getGlobalIndex(paginatedIndex)"
                                     :class="{
                                         'g-table-row-clickable': clickableRows || (selectable && !noSelectOnClick),
                                         'g-table-row-selected': isRowSelected(getGlobalIndex(paginatedIndex)),
