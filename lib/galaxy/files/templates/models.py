@@ -268,8 +268,9 @@ class WebdavConfigMixin:
     @model_validator(mode="before")
     @classmethod
     def ensure_base_url(cls, data: Any) -> Any:
-        # Keep persisted user file sources created before the WebDAV
-        # url -> base_url rename loadable in the preferences UI.
+        # Accept the version-0 WebDAV template's `url` field as an alias of
+        # `base_url` so that v0 templates and any persisted v0 rendered configs
+        # continue to validate after the rename.
         if isinstance(data, dict) and "base_url" not in data and "url" in data:
             data = dict(data)
             data["base_url"] = data.pop("url")
