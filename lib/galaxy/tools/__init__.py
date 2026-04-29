@@ -3820,6 +3820,14 @@ class DatabaseOperationTool(Tool):
                 element_object.visible = datasets_visible
                 history.stage_addition(element_object)
 
+    @staticmethod
+    def _read_text_file_lines(path: str, size_hint: int = 10000000) -> list[str]:
+        try:
+            with open(path) as fh:
+                return fh.readlines(size_hint)
+        except UnicodeDecodeError:
+            raise exceptions.MessageException("Please provide the file as valid UTF-8.")
+
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
 
@@ -4444,9 +4452,9 @@ class SortTool(DatabaseOperationTool):
                 old_elements_dict = {}
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
+                sort_lines = self._read_text_file_lines(hda.get_file_name())
                 try:
-                    with open(hda.get_file_name()) as fh:
-                        sorted_elements = [old_elements_dict[line.strip()] for line in fh]
+                    sorted_elements = [old_elements_dict[line.strip()] for line in sort_lines]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
@@ -4648,8 +4656,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_rows[new_label] = columns
 
         new_labels_path = new_labels_dataset_assoc.get_file_name()
-        with open(new_labels_path) as fh:
-            new_labels = fh.readlines(1024 * 1000000)
+        new_labels = self._read_text_file_lines(new_labels_path)
         if strict and len(hdca.collection.elements) != len(new_labels):
             raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
         if how_type in ["tabular", "tabular_extended"]:
@@ -4805,8 +4812,7 @@ class TagFromFileTool(DatabaseOperationTool):
             new_elements[dce.element_identifier] = copied_value
 
         new_tags_path = new_tags_dataset_assoc.get_file_name()
-        with open(new_tags_path) as fh:
-            new_tags = fh.readlines(1024 * 1000000)
+        new_tags = self._read_text_file_lines(new_tags_path)
         # We have a tabular file, where the first column is an existing element identifier,
         # and the remaining columns represent new tags.
         source_new_tags = (line.strip().split("\t") for line in new_tags)
@@ -4837,8 +4843,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         discarded_rows = {}
 
         filtered_path = filter_dataset_assoc.get_file_name()
-        with open(filtered_path) as fh:
-            filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
+        filtered_identifiers = [i.strip() for i in self._read_text_file_lines(filtered_path)]
 
         # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
         for dce in hdca.collection.elements:

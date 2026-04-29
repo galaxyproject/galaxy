@@ -5539,6 +5539,47 @@ test_data:
         assert "Invalid new collection identifier" in message["details"]
 
     @skip_without_tool("__RELABEL_FROM_FILE__")
+    def test_relabel_from_file_rejects_non_utf8_labels(self, history_id):
+        # Regression test: a non-UTF-8 labels file (for example UTF-16) should
+        # fail with a clear MessageException rather than crash on decode.
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    collection_type: list
+    type: collection
+  relabel_file:
+    type: data
+steps:
+  relabel:
+    tool_id: __RELABEL_FROM_FILE__
+    in:
+      input: input_collection
+      how|labels: relabel_file
+test_data:
+  input_collection:
+    collection_type: list
+    elements:
+      - identifier: A
+        content: "alpha"
+      - identifier: B
+        content: "beta"
+  relabel_file:
+    value: random-file
+    type: File
+        """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        assert invocation_details["state"] == "failed"
+        assert len(invocation_details["messages"]) == 1
+        message = invocation_details["messages"][0]
+        assert "UTF-8" in message["details"]
+
+    @skip_without_tool("__RELABEL_FROM_FILE__")
     @skip_without_tool("job_properties")
     @skip_without_tool("cat1")
     def test_relabel_from_file_with_paused_labels_does_not_crash(self, history_id):
