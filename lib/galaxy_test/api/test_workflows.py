@@ -5540,9 +5540,8 @@ test_data:
 
     @skip_without_tool("__RELABEL_FROM_FILE__")
     def test_relabel_from_file_rejects_non_utf8_labels(self, history_id):
-        # Regression test: a UTF-16 (Windows-saved) labels file used to crash
-        # produce_outputs with UnicodeDecodeError. It should now fail with a
-        # clear MessageException instructing the user to re-save as UTF-8.
+        # Regression test: a non-UTF-8 labels file (for example UTF-16) should
+        # fail with a clear MessageException rather than crash on decode.
         summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -5567,7 +5566,7 @@ test_data:
       - identifier: B
         content: "beta"
   relabel_file:
-    value: relabel_utf16.tabular
+    value: random-file
     type: File
         """,
             history_id=history_id,
