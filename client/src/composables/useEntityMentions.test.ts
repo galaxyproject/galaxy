@@ -1,6 +1,35 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { buildEntityContext, detectMentionTrigger, parseMentions, type ResolvedEntity } from "./useEntityMentions";
+import {
+    buildEntityContext,
+    detectMentionTrigger,
+    type ParsedMention,
+    parseMentions,
+    type ResolvedEntity,
+    resolveMentions,
+} from "./useEntityMentions";
+
+const mockHistoryStore = {
+    currentHistoryId: "history-1" as string | null,
+    currentHistory: { id: "history-1", name: "My Analysis" } as { id: string; name: string } | null,
+    getHistoryById: (_id: string) => null as { id: string; name: string } | null,
+};
+
+const mockHistoryItems: Array<Record<string, unknown>> = [];
+
+vi.mock("@/stores/historyStore", () => ({
+    useHistoryStore: () => mockHistoryStore,
+}));
+
+vi.mock("@/stores/historyItemsStore", () => ({
+    useHistoryItemsStore: () => ({
+        getHistoryItems: () => mockHistoryItems,
+    }),
+}));
+
+vi.mock("@/api", () => ({
+    isHDA: (item: { history_content_type?: string }) => item?.history_content_type === "dataset",
+}));
 
 describe("detectMentionTrigger", () => {
     it("returns null when no @ is present", () => {
@@ -176,5 +205,87 @@ describe("buildEntityContext", () => {
             datasets: [],
             histories: [history],
         });
+    });
+});
+
+describe("resolveMentions", () => {
+    const historyId = "history-1";
+
+    beforeEach(() => {
+        mockHistoryStore.currentHistoryId = historyId;
+        mockHistoryStore.currentHistory = { id: historyId, name: "My Analysis" };
+        mockHistoryStore.getHistoryById = (id: string) => (id === "h-9" ? { id: "h-9", name: "Other" } : null);
+        mockHistoryItems.length = 0;
+        mockHistoryItems.push(
+            {
+                id: "ds-42",
+                hid: 42,
+                name: "Mapped reads",
+                history_content_type: "dataset",
+                extension: "bam",
+                state: "ok",
+            },
+            {
+                id: "ds-7",
+                hid: 7,
+                name: "Trimmed FASTQ",
+                history_content_type: "dataset",
+                extension: "fastq",
+                state: "ok",
+            },
+        );
+    });
+
+    it("resolves a dataset mention by hid", () => {
+        const mentions: ParsedMention[] = [{ type: "dataset", identifier: "42", startIndex: 0, endIndex: 11 }];
+        const resolved = resolveMentions(mentions);
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]).toMatchObject({
+            type: "dataset",
+            id: "ds-42",
+            name: "Mapped reads",
+            extension: "bam",
+            state: "ok",
+            hid: 42,
+        });
+    });
+
+    it("resolves a dataset mention by name fragment when identifier is non-numeric", () => {
+        const mentions: ParsedMention[] = [{ type: "dataset", identifier: "trimmed", startIndex: 0, endIndex: 16 }];
+        const resolved = resolveMentions(mentions);
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]?.id).toBe("ds-7");
+    });
+
+    it("returns an unresolved entry when the dataset hid does not exist", () => {
+        const mentions: ParsedMention[] = [{ type: "dataset", identifier: "999", startIndex: 0, endIndex: 12 }];
+        const resolved = resolveMentions(mentions);
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]?.id).toBeNull();
+        expect(resolved[0]?.name).toBe("Dataset 999");
+    });
+
+    it("resolves @history:current to the current history", () => {
+        const mentions: ParsedMention[] = [{ type: "history", identifier: "current", startIndex: 0, endIndex: 16 }];
+        const resolved = resolveMentions(mentions);
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]).toMatchObject({
+            type: "history",
+            identifier: "current",
+            id: historyId,
+            name: "My Analysis",
+        });
+    });
+
+    it("resolves a non-current history by id", () => {
+        const mentions: ParsedMention[] = [{ type: "history", identifier: "h-9", startIndex: 0, endIndex: 12 }];
+        const resolved = resolveMentions(mentions);
+        expect(resolved).toHaveLength(1);
+        expect(resolved[0]?.id).toBe("h-9");
+    });
+
+    it("skips histories that the store cannot find", () => {
+        const mentions: ParsedMention[] = [{ type: "history", identifier: "missing", startIndex: 0, endIndex: 16 }];
+        expect(resolveMentions(mentions)).toEqual([]);
     });
 });
