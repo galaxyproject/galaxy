@@ -30,6 +30,12 @@ runners:
     load: galaxy.jobs.runners.cli:ShellJobRunner
   condor:
     load: galaxy.jobs.runners.condor:CondorJobRunner
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    # Optional connection overrides for a remote schedd/collector.
+    #htcondor_collector: "collector.example.org:9618"
+    #htcondor_schedd: "schedd@collector.example.org"
+    #htcondor_config: /etc/condor/condor_config
   slurm:
     load: galaxy.jobs.runners.slurm:SlurmJobRunner
   dynamic:
@@ -1044,6 +1050,17 @@ execution:
       # Galaxy's configured container resolution strategy and a default container can be
       # specified here with docker_default_container_id for instance.
       #universe: docker
+
+    htcondor:
+      runner: htcondor
+
+      # Identical to the condor runner configuration, but uses the htcondor2
+      # Python bindings. Requires the htcondor2 module to be installed in
+      # Galaxy's virtualenv.
+      # Optional per-destination HTCondor connection overrides (not passed to submit):
+      #htcondor_collector: "collector.example.org:9618"
+      #htcondor_schedd: "schedd@collector.example.org"
+      #htcondor_config: /etc/condor/condor_config
 
     # Job Re-submission
     # Jobs can be re-submitted for various reasons (to the same destination or others,
