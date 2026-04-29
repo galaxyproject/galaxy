@@ -4,6 +4,7 @@ reloading the toolbox, etc., across multiple processes.
 """
 
 import importlib
+import json
 import logging
 import math
 import socket
@@ -12,8 +13,11 @@ import threading
 import time
 from inspect import ismodule
 from typing import (
+    Any,
+    cast,
     Optional,
     TYPE_CHECKING,
+    TypedDict,
 )
 
 from kombu import (
@@ -27,6 +31,10 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.managers.sse import (
+    SSEConnectionManager,
+    SSEEvent,
+)
 from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
@@ -43,7 +51,49 @@ if TYPE_CHECKING:
     )
 
 
-def send_local_control_task(app: "StructuredApp", task: str, get_response: bool = False, kwargs: Optional[dict] = None):
+class NotifyUsersPayload(TypedDict, total=False):
+    """Wire contract for the ``notify_users`` control-task kwargs."""
+
+    user_ids: list[int]
+    payload: str
+    event_id: Optional[str]
+
+
+class NotifyBroadcastPayload(TypedDict, total=False):
+    """Wire contract for the ``notify_broadcast`` control-task kwargs."""
+
+    payload: str
+    event_id: Optional[str]
+
+
+class HistoryUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``history_update`` control-task kwargs.
+
+    ``user_updates`` maps stringified user IDs to lists of (unencoded) history IDs.
+    ``session_updates`` is the parallel route for anonymous-owned histories,
+    keyed by stringified ``galaxy_session.id`` (the dispatch key never leaves
+    the server — browsers never see it). Stringified because AMQP JSON
+    serialization coerces dict keys to strings.
+    """
+
+    user_updates: dict[str, list[int]]
+    session_updates: dict[str, list[int]]
+    event_id: Optional[str]
+
+
+class EntryPointUpdatePayload(TypedDict, total=False):
+    """Wire contract for the ``entry_point_update`` control-task kwargs."""
+
+    user_id: int
+    event_id: Optional[str]
+
+
+def send_local_control_task(
+    app: "StructuredApp",
+    task: str,
+    get_response: bool = False,
+    kwargs: Optional[dict] = None,
+) -> Any:
     """
     This sends a message to the process-local control worker, which is useful
     for one-time asynchronous tasks like recalculating user disk usage.
@@ -57,7 +107,16 @@ def send_local_control_task(app: "StructuredApp", task: str, get_response: bool 
     return control_task.send_task(payload, routing_key, local=True, get_response=get_response)
 
 
-def send_control_task(app, task, noop_self=False, get_response=False, routing_key="control.*", kwargs=None):
+def send_control_task(
+    app: "StructuredApp",
+    task: str,
+    noop_self: bool = False,
+    get_response: bool = False,
+    routing_key: str = "control.*",
+    kwargs: Optional[dict] = None,
+    expiration: Optional[int] = None,
+    declare_queues: Optional[list[Queue]] = None,
+) -> Any:
     """
     This sends a control task out to all processes, useful for things like
     reloading a data table, which needs to happen individually in all
@@ -65,6 +124,9 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     Set noop_self to True to not run task for current process.
     Set get_response to True to wait for and return the task results
     as a list.
+    Set expiration to a number of seconds for message TTL.
+    Pass ``declare_queues`` to override the default active-processes list —
+    e.g. the SSE dispatcher uses this to restrict fan-out to webapp processes.
     """
     if kwargs is None:
         kwargs = {}
@@ -73,7 +135,13 @@ def send_control_task(app, task, noop_self=False, get_response=False, routing_ke
     if noop_self:
         payload["noop"] = app.config.server_name
     control_task = ControlTask(app.queue_worker)
-    return control_task.send_task(payload=payload, routing_key=routing_key, get_response=get_response)
+    return control_task.send_task(
+        payload=payload,
+        routing_key=routing_key,
+        get_response=get_response,
+        expiration=expiration,
+        declare_queues=declare_queues,
+    )
 
 
 class ControlTask:
@@ -107,10 +175,19 @@ class ControlTask:
         if message.properties["correlation_id"] == self.correlation_id:
             self.response = message.payload["result"]
 
-    def send_task(self, payload, routing_key, local=False, get_response=False, timeout=10):
+    def send_task(
+        self,
+        payload: dict,
+        routing_key: str,
+        local: bool = False,
+        get_response: bool = False,
+        timeout: int = 10,
+        expiration: Optional[int] = None,
+        declare_queues: Optional[list[Queue]] = None,
+    ):
         if local:
             declare_queues = self.control_queues
-        else:
+        elif declare_queues is None:
             declare_queues = self.declare_queues
         reply_to = None
         callback_queue = []
@@ -129,14 +206,24 @@ class ControlTask:
                     correlation_id=self.correlation_id,
                     retry=True,
                     headers={"epoch": time.time()},
+                    expiration=expiration,
                 )
             if get_response:
-                with Consumer(self.connection, on_message=self.on_response, queues=callback_queue, no_ack=True):
+                with Consumer(
+                    self.connection,
+                    on_message=self.on_response,
+                    queues=callback_queue,
+                    no_ack=True,
+                ):
                     while self.response is self._response:
                         self.connection.drain_events(timeout=timeout)
                 return self.response
         except TimeoutError:
-            log.exception("Error waiting for task: '%s' sent with routing key '%s'", payload, routing_key)
+            log.exception(
+                "Error waiting for task: '%s' sent with routing key '%s'",
+                payload,
+                routing_key,
+            )
         except Exception:
             log.exception("Error queueing async task: '%s'. for %s", payload, routing_key)
 
@@ -189,7 +276,10 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
     tool_configs = app.config.tool_configs
 
     new_toolbox = ToolBox(
-        tool_configs, app.config.tool_path, app, save_integrated_tool_panel=save_integrated_tool_panel
+        tool_configs,
+        app.config.tool_path,
+        app,
+        save_integrated_tool_panel=save_integrated_tool_panel,
     )
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
@@ -309,6 +399,71 @@ def admin_job_lock(app, **kwargs):
     log.info(f"Administrative Job Lock is now set to {job_lock}. Jobs will {'not' if job_lock else 'now'} dispatch.")
 
 
+def notify_users(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push SSE events to connected users on this worker process."""
+    payload = cast(NotifyUsersPayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    event = SSEEvent(
+        event="notification_update",
+        data=payload.get("payload", "{}"),
+        id=payload.get("event_id"),
+    )
+    for user_id in payload.get("user_ids", []):
+        sse_manager.push_to_user(user_id, event)
+
+
+def notify_broadcast(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push SSE broadcast events to all connected clients on this worker process."""
+    payload = cast(NotifyBroadcastPayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    event = SSEEvent(
+        event="broadcast_update",
+        data=payload.get("payload", "{}"),
+        id=payload.get("event_id"),
+    )
+    sse_manager.push_broadcast(event)
+
+
+def history_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push SSE history update events to connected users on this worker process.
+
+    Encodes integer history IDs here (not in the monitor) so the manager layer
+    stays free of presentation/security concerns. Handles both user-keyed
+    routing (registered users) and galaxy_session-keyed routing (anonymous
+    histories, which have ``user_id IS NULL``).
+    """
+    payload = cast(HistoryUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    event_id = payload.get("event_id")
+    encode = app.security.encode_id
+    for user_id_str, history_ids in payload.get("user_updates", {}).items():
+        user_id = int(user_id_str)
+        encoded_ids = [encode(hid) for hid in history_ids]
+        data = json.dumps({"history_ids": encoded_ids})
+        event = SSEEvent(event="history_update", data=data, id=event_id)
+        sse_manager.push_to_user(user_id, event)
+    for session_id_str, history_ids in payload.get("session_updates", {}).items():
+        session_id = int(session_id_str)
+        encoded_ids = [encode(hid) for hid in history_ids]
+        data = json.dumps({"history_ids": encoded_ids})
+        event = SSEEvent(event="history_update", data=data, id=event_id)
+        sse_manager.push_to_session(session_id, event)
+
+
+def entry_point_update(app: "MinimalManagerApp", **kwargs) -> None:
+    """Push a wake-up SSE event to a single connected user.
+
+    The payload is empty by design: the client refetches ``/api/entry_points``
+    (the canonical source) on receipt, so there's nothing to narrow or merge.
+    Dropping the IDs from the payload also avoids per-event ``encode_id`` work
+    at 1000+ events/s.
+    """
+    payload = cast(EntryPointUpdatePayload, kwargs)
+    sse_manager = app[SSEConnectionManager]
+    event = SSEEvent(event="entry_point_update", data="{}", id=payload.get("event_id"))
+    sse_manager.push_to_user(int(payload["user_id"]), event)
+
+
 control_message_to_task = {
     "create_panel_section": create_panel_section,
     "reload_tool": reload_tool,
@@ -324,6 +479,10 @@ control_message_to_task = {
     "reconfigure_watcher": reconfigure_watcher,
     "reload_tour": reload_tour,
     "reload_core_config": reload_core_config,
+    "notify_users": notify_users,
+    "notify_broadcast": notify_broadcast,
+    "history_update": history_update,
+    "entry_point_update": entry_point_update,
 }
 
 
@@ -354,7 +513,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
         self.control_queues = []
         self.epoch = 0
 
-    def send_control_task(self, task, noop_self=False, get_response=False, routing_key="control.*", kwargs=None):
+    def send_control_task(
+        self,
+        task,
+        noop_self=False,
+        get_response=False,
+        routing_key="control.*",
+        kwargs=None,
+    ):
         return send_control_task(
             app=self.app,
             task=task,
@@ -369,14 +535,32 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     @property
     def declare_queues(self):
-        # dynamically produce queues, allows addressing all known processes at a given time
+        # Dynamically produce queues, allows addressing all known processes at a given time.
         return galaxy.queues.all_control_queues_for_declare(self.app.application_stack)
+
+    def bind_publisher(self):
+        """Set up the queues needed to PUBLISH control tasks (no consumer thread).
+
+        Safe to call from any process that needs to produce control messages — notably
+        Celery workers, which want to fan out SSE events to web workers but must not
+        start a consumer themselves.
+
+        Always (re)binds. A prefork call in ``GalaxyManagerApplication.__init__`` binds
+        using the parent's ``config.server_name``; under gunicorn with ``--preload``
+        the child's ``set_postfork_server_name`` mutates ``server_name`` to e.g.
+        ``main.1`` after fork. ``bind_and_start`` calls back into this so the
+        consumer's queues match what post-fork producers declare.
+        """
+        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
+        self.control_queues = [self.exchange_queue, self.direct_queue]
 
     def bind_and_start(self):
         # This is post-forking, so we got the correct sever name
-        log.info("Binding and starting galaxy control worker for %s", self.app.config.server_name)
-        self.exchange_queue, self.direct_queue = galaxy.queues.control_queues_from_config(self.app.config)
-        self.control_queues = [self.exchange_queue, self.direct_queue]
+        log.info(
+            "Binding and starting galaxy control worker for %s",
+            self.app.config.server_name,
+        )
+        self.bind_publisher()
         self.epoch = time.time()
         self.start()
 
@@ -388,8 +572,14 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
 
     def process_task(self, body, message):
         result = "NO_RESULT"
+        task_name = body.get("task")
+        statsd_client = self.app.execution_timer_factory.galaxy_statsd_client
+        if statsd_client is not None and task_name is not None:
+            statsd_client.incr("galaxy.control_queue.task.count", tags={"task": task_name})
         if body["task"] in self.task_mapping:
             if body.get("noop", None) != self.app.config.server_name:
+                outcome = "ok"
+                handler_start = time.perf_counter() if statsd_client is not None else 0.0
                 try:
                     f = self.task_mapping[body["task"]]
                     if message.headers.get("epoch", math.inf) > self.epoch:
@@ -410,7 +600,16 @@ class GalaxyQueueWorker(ConsumerProducerMixin, threading.Thread):
                         result = "NO_OP"
                 except Exception:
                     # this shouldn't ever throw an exception, but...
+                    outcome = "error"
                     log.exception("Error running control task type: %s", body["task"])
+                finally:
+                    if statsd_client is not None and task_name is not None:
+                        dt_ms = int((time.perf_counter() - handler_start) * 1000)
+                        statsd_client.timing(
+                            "galaxy.control_queue.task.latency_ms",
+                            dt_ms,
+                            tags={"task": task_name, "outcome": outcome},
+                        )
             else:
                 result = "NO_OP"
         else:

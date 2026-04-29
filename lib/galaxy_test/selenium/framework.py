@@ -3,6 +3,7 @@
 import datetime
 import errno
 import json
+import logging
 import os
 import traceback
 import unittest
@@ -75,6 +76,8 @@ try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
     GalaxyTestDriver = None  # type: ignore[assignment, misc, unused-ignore]
+
+logger = logging.getLogger(__name__)
 
 
 def _load_config_file() -> None:
@@ -433,10 +436,22 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
-            self._setup_interactor()
-            self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
-        self._try_setup_with_driver()
+        # Once the driver is allocated, any subsequent failure must still
+        # tear it down: pytest does not call tearDown when setUp raises, so
+        # without this the Playwright asyncio loop would stay registered as
+        # "running" on the main thread and cascade every subsequent test's
+        # setUp with "Sync API inside the asyncio loop".
+        try:
+            if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+                self._setup_interactor()
+                self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+            self._try_setup_with_driver()
+        except Exception:
+            try:
+                self.tear_down_driver()
+            except Exception:
+                logger.exception("Error tearing down driver after setup_selenium failure")
+            raise
 
     def _try_setup_with_driver(self):
         try:

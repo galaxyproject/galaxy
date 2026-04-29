@@ -16,8 +16,9 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
  * will use a fresh signal and is not affected.
  */
 export function discardActiveConnectionsBeforeAuthNavigation() {
-    // Stop polling watchers first so they can't kick off new fetches, then
-    // abort any requests still in flight via the shared AbortController.
+    // Order: close SSE streams first (synchronous TCP close), then stop the
+    // polling watchers so they can't kick off new fetches, then abort any
+    // requests still in flight via the shared AbortController.
     useHistoryStore().stopWatchingHistory();
     useEntryPointStore().stopWatchingEntryPoints();
     useNotificationsStore().stopWatchingNotifications();

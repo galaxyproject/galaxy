@@ -6,6 +6,7 @@ from collections.abc import (
 )
 from typing import (
     Any,
+    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -28,6 +29,7 @@ from sqlalchemy import (
 )
 
 from galaxy import exceptions
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.model import (
     InteractiveToolEntryPoint,
     Job,
@@ -147,7 +149,11 @@ class InteractiveToolManager:
     Manager for dealing with InteractiveTools
     """
 
-    def __init__(self, app: "MinimalManagerApp") -> None:
+    def __init__(
+        self,
+        app: "MinimalManagerApp",
+        dispatcher: Optional[SSEEventDispatcher] = None,
+    ) -> None:
         self.app = app
         self.security = app.security
         self.sa_session = app.model.context
@@ -157,6 +163,12 @@ class InteractiveToolManager:
             app.config.interactivetoolsproxy_map or app.config.interactivetools_map,
             self.encoder.encode_id,
         )
+        # Lagom can't auto-inject ``SSEEventDispatcher`` here because the
+        # ``app: "MinimalManagerApp"`` hint is only a forward reference
+        # (TYPE_CHECKING import), so ``get_type_hints`` on this signature
+        # fails. Resolve through the container explicitly — ``resolve_or_none``
+        # returns ``None`` for mocks/test apps that never registered one.
+        self.dispatcher = dispatcher if dispatcher is not None else app.resolve_or_none(SSEEventDispatcher)
 
     def create_entry_points(
         self, job: Job, tool: "Tool", entry_points=Union[Iterable[dict[str, Any]], None], flush: bool = True
@@ -198,6 +210,17 @@ class InteractiveToolManager:
                 configured.append(ep)
         if configured:
             self.sa_session.commit()
+            # Fan out an SSE push so the user's browser can refresh the entry
+            # point list immediately instead of waiting for the 10 s poll.
+            # Anonymous jobs fall back to polling — ``push_to_user`` keys on
+            # user_id, and anonymous clients sit in the broadcast-only set.
+            if self.dispatcher is not None and job.user_id is not None:
+                try:
+                    self.dispatcher.entry_point_update(user_id=job.user_id)
+                except Exception:
+                    # The DB commit is authoritative; the SSE event is best
+                    # effort. Never let a dispatch failure poison the caller.
+                    log.exception("Failed to dispatch entry_point_update SSE event for job %s", job.id)
         return dict(not_configured=not_configured, configured=configured)
 
     def save_entry_point(self, entry_point: InteractiveToolEntryPoint) -> None:

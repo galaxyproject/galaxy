@@ -112,6 +112,7 @@ See Also
 """
 
 import abc
+import logging
 from contextlib import contextmanager
 from typing import (
     Any,
@@ -156,6 +157,8 @@ from .has_driver_protocol import (
 from .playwright_element import PlaywrightElement
 from .wait_methods_mixin import WaitMethodsMixin
 from .web_element_protocol import WebElementProtocol
+
+logger = logging.getLogger(__name__)
 
 UNSPECIFIED_TIMEOUT = object()
 
@@ -1153,9 +1156,23 @@ class HasPlaywrightDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTyp
 
         This closes all windows/tabs and releases all system resources.
         The driver cannot be used after calling this method.
+
+        ``browser.close()`` can raise — in CI we've seen it time out or hit
+        target-detached errors — and if the exception escapes before
+        ``playwright.stop()`` runs, the per-instance asyncio loop is left
+        registered as "running" on the main thread. Every subsequent test's
+        ``sync_playwright().__enter__`` then refuses to start with "Playwright
+        Sync API inside the asyncio loop", cascading the whole shard into
+        errors. Always tear down the Playwright instance even if the browser
+        close failed.
         """
-        self.close()
-        self._playwright_resources.playwright.stop()
+        try:
+            self.close()
+        finally:
+            try:
+                self._playwright_resources.playwright.stop()
+            except Exception:
+                logger.exception("Error stopping Playwright instance during quit()")
 
 
 __all__ = (

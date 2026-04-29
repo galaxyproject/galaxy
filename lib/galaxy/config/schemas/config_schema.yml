@@ -222,6 +222,18 @@ mapping:
           Time (in seconds) between attempts to remove old rows from the history_audit database table.
           Set to 0 to disable pruning.
 
+      kombu_sqla_transport_cleanup_interval:
+        type: int
+        default: 900
+        required: false
+        desc: |
+          Time (in seconds) between attempts to delete fully-consumed rows from the Kombu SQLAlchemy
+          transport tables (``kombu_message``). Only relevant when ``amqp_internal_connection`` uses a
+          ``sqlalchemy+*`` scheme (the default with an on-disk control.sqlite); the SQLAlchemy transport
+          has no built-in TTL, so without this task the tables grow unbounded. The task no-ops on
+          non-SQLAlchemy brokers (RabbitMQ/Redis honor per-message expiration natively). Set to 0 to
+          disable the cleanup task.
+
       file_path:
         type: str
         default: objects
@@ -2512,6 +2524,14 @@ mapping:
           Mock out statsd client calls - only used by testing infrastructure really.
           Do not set this in production environments.
 
+      queue_metrics_interval:
+        type: int
+        default: 15
+        required: false
+        desc: |
+          How often (in seconds) the Celery beat task emits queue-depth, SSE-connection,
+          and WorkerProcess gauges. Only active when statsd_host is set. Set to 0 to disable.
+
       library_import_dir:
         type: str
         required: false
@@ -4293,6 +4313,33 @@ mapping:
         desc: |
           Message to display on the export citations tool page
 
+      enable_sse_updates:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables real-time updates via Server-Sent Events (SSE), replacing the
+          history (3 s), entry-point (10 s) and notification (30 s) polling loops
+          with push events delivered over a single ``/api/events/stream``
+          connection per browser tab. A background monitor watches for history
+          changes (via PostgreSQL LISTEN/NOTIFY, or audit-table polling as a
+          fallback for SQLite); entry-point changes are dispatched directly from
+          the code paths that mutate them; in-app notifications and broadcasts
+          are pushed when ``enable_notification_system`` is also true.
+          When disabled, polling remains the source of updates for all three.
+          See the admin guide "Server-Sent Events for real-time updates" for the
+          full architecture, monitoring guidance and proxy configuration.
+
+      history_audit_monitor_poll_interval:
+        type: int
+        default: 2
+        required: false
+        desc: |
+          The interval in seconds between history audit table polls when using the polling
+          fallback (SQLite or when PostgreSQL LISTEN/NOTIFY is unavailable). Only used when
+          enable_sse_updates is true. Lower values mean faster updates but more
+          database queries. Recommended range: 1-5 seconds.
+
       enable_notification_system:
         type: bool
         default: false
@@ -4303,6 +4350,10 @@ mapping:
           Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
 
           The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+
+          Delivery is push-based via Server-Sent Events when ``enable_sse_updates``
+          is also true, and falls back to 30-second polling against
+          ``/api/notifications/status`` otherwise.
 
           Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
 

@@ -5,7 +5,6 @@ from typing import (
     Union,
 )
 
-from galaxy.celery.tasks import send_notification_to_recipients_async
 from galaxy.exceptions import (
     AdminRequiredException,
     AuthenticationRequired,
@@ -14,6 +13,12 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.sse import (
+    make_event_id,
+    parse_event_id,
+    SSEConnectionManager,
+    SSEEvent,
+)
 from galaxy.model import User
 from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
@@ -35,15 +40,27 @@ from galaxy.schema.notifications import (
     UserNotificationUpdateRequest,
 )
 from galaxy.schema.schema import AsyncTaskResultSummary
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
 class NotificationService(ServiceBase):
-    def __init__(self, notification_manager: NotificationManager):
+    def __init__(self, notification_manager: NotificationManager, sse_manager: SSEConnectionManager):
         self.notification_manager = notification_manager
+        self.sse_manager = sse_manager
+
+    @property
+    def notifications_enabled(self) -> bool:
+        return self.notification_manager.notifications_enabled
+
+    def send_internal_notification(
+        self, request: NotificationCreateRequest, force_sync: bool = False
+    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
+        """Send a system-emitted notification on behalf of internal callers (e.g. share flows).
+
+        Unlike :meth:`send_notification`, this skips admin/permission checks because the
+        caller has already resolved the recipient set and is not acting on user input.
+        """
+        return self.notification_manager.send_notification_internal(request, force_sync=force_sync)
 
     def send_notification(
         self, sender_context: ProvidesUserContext, payload: NotificationCreateRequestBody
@@ -62,28 +79,7 @@ class NotificationService(ServiceBase):
             recipients=payload.recipients,
             galaxy_url=galaxy_url,
         )
-        return self.send_notification_internal(request)
-
-    def send_notification_internal(
-        self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
-        """Sends a notification to a list of recipients (users, groups or roles).
-
-        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
-        in a background task.
-
-        Note: This function is meant for internal use from other services that don't need to check sender permissions.
-        """
-        if self.notification_manager.can_send_notifications_async and not force_sync:
-            result = send_notification_to_recipients_async.delay(request)
-            summary = async_task_summary(result)
-            return summary
-
-        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(request)
-        return NotificationCreatedResponse(
-            total_notifications_sent=recipient_user_count,
-            notification=NotificationResponse.model_validate(notification),
-        )
+        return self.notification_manager.send_notification_internal(request)
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
@@ -97,6 +93,27 @@ class NotificationService(ServiceBase):
         notification = self.notification_manager.create_broadcast_notification(payload)
         return NotificationCreatedResponse(
             total_notifications_sent=1, notification=NotificationResponse.model_validate(notification)
+        )
+
+    def build_status_catchup(
+        self, user_context: ProvidesUserContext, last_event_id: Optional[str]
+    ) -> Optional[SSEEvent]:
+        """Build a ``notification_status`` SSE event covering everything since ``last_event_id``.
+
+        Returns ``None`` when catch-up isn't possible (no ``Last-Event-ID``,
+        unparseable timestamp, or notifications disabled) so callers can simply
+        pass the result to ``SSEConnectionManager.stream`` without extra guards.
+        """
+        if not last_event_id or not self.notification_manager.notifications_enabled:
+            return None
+        since = parse_event_id(last_event_id)
+        if since is None:
+            return None
+        catchup = self.get_notifications_status(user_context, since)
+        return SSEEvent(
+            event="notification_status",
+            data=catchup.model_dump_json(),
+            id=make_event_id(),
         )
 
     def get_notifications_status(self, user_context: ProvidesUserContext, since: datetime) -> NotificationStatusSummary:

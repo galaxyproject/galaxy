@@ -11,6 +11,7 @@ from pydantic import (
     Field,
 )
 
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import import_data_bundle
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tool_data import ToolDataManager
@@ -25,7 +26,6 @@ from galaxy.tool_util.data._schema import (
     ToolDataItem,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
-from galaxy.webapps.galaxy.services.base import async_task_summary
 from . import (
     depends,
     DependsOnTrans,

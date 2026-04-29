@@ -16,6 +16,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import queue_jobs
 from galaxy.managers import hdas
 from galaxy.managers.base import security_check
@@ -60,7 +61,6 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundleModel,
 )
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ServiceBase,
 )
 from .tools import validate_tool_for_running

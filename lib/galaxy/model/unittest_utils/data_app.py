@@ -9,6 +9,7 @@ galaxy-data.
 import os
 import shutil
 import tempfile
+from types import SimpleNamespace
 from typing import Optional
 
 from galaxy import (
@@ -105,6 +106,11 @@ class GalaxyDataTestApp:
         model.setup_global_object_store_for_models(self.object_store)
         self.security_agent = self.model.security_agent
         self.tag_handler = GalaxyTagHandler(self.model.session)
+        # statsd/observability plumbing — stubbed out so paths that read
+        # ``app.execution_timer_factory.galaxy_statsd_client`` (e.g. the
+        # queue-worker instrumentation) degrade to a no-op if ever exercised
+        # against this mock instead of raising ``AttributeError``.
+        self.execution_timer_factory = SimpleNamespace(galaxy_statsd_client=None)
         self.init_datatypes()
 
     def init_datatypes(self):

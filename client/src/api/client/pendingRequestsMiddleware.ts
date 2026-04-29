@@ -18,6 +18,8 @@ export const pendingRequestsMiddleware: Middleware = {
             return new Request(request, { headers });
         }
         const shared = getPendingAbortSignal();
+        // Combine with any signal the caller may have set so we don't silently
+        // drop their cancellation semantics.
         const signal = typeof AbortSignal.any === "function" ? AbortSignal.any([request.signal, shared]) : shared;
         return new Request(request, { signal });
     },

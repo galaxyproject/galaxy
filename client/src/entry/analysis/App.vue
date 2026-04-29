@@ -48,7 +48,7 @@
 </template>
 <script>
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
@@ -105,9 +105,29 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        const embedded = useRouteQueryBool("embed");
+        // Treat any iframe context as embedded: scratchbook pops dataset
+        // displays into ``WinBox`` iframes that hit the same routes without
+        // an ``embed`` query param, and each one would otherwise open its own
+        // SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
+        // connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
+        // indefinitely after two windows are open).
+        const inIframe = (() => {
+            if (typeof window === "undefined") {
+                return false;
+            }
+            try {
+                return window.top !== window.self;
+            } catch {
+                // Cross-origin access throws — that's definitely an iframe.
+                return true;
+            }
+        })();
+        const embeddedQuery = useRouteQueryBool("embed");
+        const embedded = computed(() => embeddedQuery.value || inIframe);
         const historyStore = useHistoryStore();
-        historyStore.startWatchingHistory();
+        if (!embedded.value) {
+            historyStore.startWatchingHistory();
+        }
 
         watch(
             () => embedded.value,

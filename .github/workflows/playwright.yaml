@@ -20,6 +20,10 @@ env:
   GALAXY_TEST_SELENIUM_HEADLESS: 1
   YARN_INSTALL_OPTS: --frozen-lockfile
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
+  # TEMP: shake down SSE/notification system across full UI surface — revert before merge
+  GALAXY_CONFIG_OVERRIDE_ENABLE_NOTIFICATION_SYSTEM: '1'
+  GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_HISTORY_UPDATES: '1'
+  GALAXY_CONFIG_OVERRIDE_ENABLE_SSE_ENTRY_POINT_UPDATES: '1'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

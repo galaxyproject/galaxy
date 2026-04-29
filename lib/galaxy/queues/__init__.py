@@ -4,29 +4,67 @@ All message queues used by Galaxy
 
 """
 
+import datetime
+import logging
 import socket
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from kombu import (
     Connection,
     Exchange,
     Queue,
 )
+from sqlalchemy import select
+
+from galaxy.model import WorkerProcess
+from galaxy.model.orm.now import now
+
+if TYPE_CHECKING:
+    from galaxy.web_stack import ApplicationStack
+
+log = logging.getLogger(__name__)
 
 ALL_CONTROL = "control.*"
 galaxy_exchange = Exchange("galaxy_core_exchange", type="topic")
 
+DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS = 120
+# Matches WorkerProcess.app_type set by DatabaseHeartbeat for webapp processes.
+WEBAPP_APP_TYPE = "webapp"
 
-def all_control_queues_for_declare(application_stack):
+
+def all_control_queues_for_declare(application_stack: "ApplicationStack", webapp_only: bool = False) -> list[Queue]:
     """
     For in-memory routing (used by sqlalchemy-based transports), we need to be able to
     build the entire routing table in producers.
+
+    Queries ``WorkerProcess`` directly rather than going through
+    ``DatabaseHeartbeat`` so this works from Celery workers too — they have a
+    ``model`` but no heartbeat thread. Without this, a notification created in
+    a Celery task publishes a ``notify_users`` control task with an empty
+    ``declare`` list, so on the sqlalchemy+sqlite kombu transport the message
+    never lands in a web worker's queue.
+
+    When ``webapp_only`` is True, only returns queues for processes that have
+    registered themselves with ``app_type='webapp'``. This is what the SSE
+    dispatcher wants: job handlers and workflow schedulers have no browser
+    connections, so routing SSE events to them is wasted work.
     """
-    # Get all active processes and construct queues for each process
-    process_names = (
-        f"{p.server_name}@{p.hostname}" for p in application_stack.app.database_heartbeat.get_active_processes()
-    )
-    return [Queue(f"control.{server_name}", galaxy_exchange, routing_key="control.*") for server_name in process_names]
+    app = application_stack.app
+    try:
+        stmt = select(WorkerProcess).where(
+            WorkerProcess.update_time > now() - datetime.timedelta(seconds=DEFAULT_ACTIVE_PROCESS_WINDOW_SECONDS)
+        )
+        if webapp_only:
+            stmt = stmt.where(WorkerProcess.app_type == WEBAPP_APP_TYPE)
+        with app.model.new_session() as session:
+            processes = session.scalars(stmt).all()
+    except Exception:
+        log.debug("Failed to look up active processes for control-queue declare", exc_info=True)
+        return []
+    return [Queue(f"control.{p.server_name}@{p.hostname}", galaxy_exchange, routing_key="control.*") for p in processes]
 
 
 def control_queues_from_config(config):

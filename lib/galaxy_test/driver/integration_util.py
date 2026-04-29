@@ -22,8 +22,10 @@ from unittest import (
     skip,
     SkipTest,
 )
+from urllib.parse import urljoin
 
 import pytest
+import requests
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
@@ -237,6 +239,16 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     def _skip_unless_postgres(self):
         if not self._app.config.database_connection.startswith("post"):
             raise SkipTest("Test only valid for postgres")
+
+    def _decode_id(self, encoded_id: str) -> int:
+        """Decode an encoded API id to its raw int via the live app's security helper."""
+        return self._app.security.decode_id(encoded_id)
+
+    def _user_id_for_api_key(self, api_key: str) -> int:
+        """Return the raw integer ``User.id`` for the user owning ``api_key``."""
+        response = requests.get(urljoin(self.url, "api/users/current"), params={"key": api_key})
+        response.raise_for_status()
+        return self._decode_id(response.json()["id"])
 
     def _run_tool_test(self, *args, **kwargs):
         return self._test_driver.run_tool_test(*args, **kwargs)

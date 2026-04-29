@@ -65,6 +65,7 @@ from galaxy.managers.file_source_instances import (
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.history_audit_monitor import HistoryAuditMonitor
 from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import (
     JobManager as JobQueryManager,
@@ -77,6 +78,8 @@ from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.sse import SSEConnectionManager
+from galaxy.managers.sse_dispatch import SSEEventDispatcher
 from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,
@@ -150,8 +153,12 @@ from galaxy.structured_app import (
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
-from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
-from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import (
+    InstalledRepositoryManager,
+)
+from galaxy.tool_shed.galaxy_install.update_repository_manager import (
+    UpdateRepositoryManager,
+)
 from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
@@ -250,7 +257,11 @@ class SentryClientMixin:
                         #  "cannot find 'file_name' while searching for 'species_chromosomes.file_name'"]
                         # If we don't do this issues are never properly grouped since by default the calling stack is inspected,
                         # and that is always unique in cheetah as it is dynamically generated.
-                        event["fingerprint"] = [str(exc_value), str(exc_value.tool_version), str(exc_value.__cause__)]
+                        event["fingerprint"] = [
+                            str(exc_value),
+                            str(exc_value.tool_version),
+                            str(exc_value.__cause__),
+                        ]
                         event.setdefault("tags", {}).update(
                             {
                                 "tool_is_latest": exc_value.is_latest,
@@ -307,7 +318,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         config_file = kwargs.get("global_conf", {}).get("__file__", None)
         if config_file:
             log.debug('Using "galaxy.ini" config file: %s', config_file)
-        self._configure_models(check_migrate_databases=self.config.check_migrate_databases, config_file=config_file)
+        self._configure_models(
+            check_migrate_databases=self.config.check_migrate_databases,
+            config_file=config_file,
+        )
         # Security helper
         self._configure_security()
         self._register_singleton(IdEncodingHelper, self.security)
@@ -411,7 +425,11 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = self._register_singleton(
             ToolBoxSearch,
-            ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
+            ToolBoxSearch(
+                self.toolbox,
+                index_dir=self.config.tool_search_index_dir,
+                index_help=index_help,
+            ),
         )
 
     @property
@@ -496,8 +514,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         templates = ConfiguredObjectStoreTemplates.from_app_config(self.config, vault_configured=vault_configured)
         self.object_store_templates = self._register_singleton(ConfiguredObjectStoreTemplates, templates)
         user_object_store_resolver = self._register_abstract_singleton(
-            UserObjectStoreResolver, UserObjectStoreResolverImpl  # type: ignore[type-abstract]
-        )  # Ignored because of https://github.com/python/mypy/issues/4717
+            UserObjectStoreResolver,  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+            UserObjectStoreResolverImpl,
+        )
         kwds["user_object_store_resolver"] = user_object_store_resolver
         self.object_store = build_object_store_from_config(self.config, **kwds)
 
@@ -600,7 +619,13 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     model: GalaxyModelMapping
 
-    def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
+    def __init__(
+        self,
+        configure_logging=True,
+        use_converters=True,
+        use_display_applications=True,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self._register_singleton(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self.execution_timer_factory = self._register_singleton(
@@ -617,7 +642,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # Initialize job metrics manager, needs to be in place before
         # config so per-destination modifications can be made.
         self.job_metrics = self._register_singleton(
-            JobMetrics, JobMetrics(self.config.job_metrics_config_file, self.config.job_metrics, app=self)
+            JobMetrics,
+            JobMetrics(self.config.job_metrics_config_file, self.config.job_metrics, app=self),
         )
         # Initialize the job management configuration
         self.job_config = self._register_singleton(jobs.JobConfiguration)
@@ -655,11 +681,30 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
 
+        # AMQP connection + a publisher-ready queue worker. Celery worker processes
+        # inherit this via GalaxyManagerApplication so they can fan out SSE events
+        # to web workers (no consumer thread is started here — see bind_publisher).
+        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
+        if self.amqp_internal_connection_obj is not None:
+            self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+            self.queue_worker.bind_publisher()
+
+        # SSE dispatcher must be registered before NotificationManager so Lagom
+        # can auto-inject the Optional[SSEEventDispatcher] constructor arg.
+        self._register_singleton(
+            SSEEventDispatcher,
+            SSEEventDispatcher(
+                queue_worker=getattr(self, "queue_worker", None),
+                application_stack=self.application_stack,
+                statsd_client=self.execution_timer_factory.galaxy_statsd_client,
+            ),
+        )
         self.notification_manager = self._register_singleton(NotificationManager)
         self.interactivetool_manager = InteractiveToolManager(self)
 
         self.task_manager = self._register_abstract_singleton(
-            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+            AsyncTasksManager,  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+            CeleryAsyncTasksManager,
         )
 
         # ConfiguredFileSources
@@ -671,10 +716,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self._register_singleton(FileSourcePluginLoader, file_source_plugin_loader)
         self.file_source_templates = self._register_singleton(ConfiguredFileSourceTemplates, templates)
         self._register_singleton(
-            UserDefinedFileSourcesConfig, UserDefinedFileSourcesConfig.from_app_config(self.config)
+            UserDefinedFileSourcesConfig,
+            UserDefinedFileSourcesConfig.from_app_config(self.config),
         )
         user_defined_file_sources = self._register_abstract_singleton(
-            UserDefinedFileSources, UserDefinedFileSourcesImpl  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+            UserDefinedFileSources,  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+            UserDefinedFileSourcesImpl,
         )
         configured_file_source_conf: ConfiguredFileSourcesConf = ConfiguredFileSourcesConf.from_app_config(self.config)
         file_sources = ConfiguredFileSources(
@@ -690,7 +737,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
-            self.security_agent.sa_session, permitted_actions=self.security_agent.permitted_actions
+            self.security_agent.sa_session,
+            permitted_actions=self.security_agent.permitted_actions,
         )
 
         # We need the datatype registry for running certain tasks that modify HDAs, and to build the registry we need
@@ -791,6 +839,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             ("queue worker", self._shutdown_queue_worker),
             ("file watcher", self._shutdown_watcher),
             ("database heartbeat", self._shutdown_database_heartbeat),
+            ("history audit monitor", self._shutdown_history_audit_monitor),
             ("workflow scheduler", self._shutdown_scheduling_manager),
             ("object store", self._shutdown_object_store),
             ("job manager", self._shutdown_job_manager),
@@ -805,21 +854,33 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
-        self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
-        # queue_worker *can* be initialized with a queue, but here we don't
-        # want to and we'll allow postfork to bind and start it.
-        self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
+        # amqp_internal_connection_obj and queue_worker are built in GalaxyManagerApplication
+        # (so Celery workers also get a publisher); here we only register the consumer path,
+        # which is started later via the application_stack postfork hook.
+        # SSE connection manager for real-time notification push.
+        # Consumed via ``depends(SSEConnectionManager)`` / ``app[SSEConnectionManager]``,
+        # so no module-level attribute is needed — keep the container wiring only.
+        self._register_singleton(
+            SSEConnectionManager,
+            SSEConnectionManager(
+                statsd_client=self.execution_timer_factory.galaxy_statsd_client,
+            ),
+        )
 
         # AI agent registry and service
         agent_registry = build_agent_registry(self.config)
         self._register_singleton(AgentRegistry, agent_registry)
-        self._register_singleton(AgentService, AgentService(self.config, JobQueryManager(self), agent_registry))
+        self._register_singleton(
+            AgentService,
+            AgentService(self.config, JobQueryManager(self), agent_registry),
+        )
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)
         )
         self.test_data_resolver = self._register_singleton(
-            TestDataResolver, TestDataResolver(file_dirs=self.config.tool_test_data_directories)
+            TestDataResolver,
+            TestDataResolver(file_dirs=self.config.tool_test_data_directories),
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
@@ -876,7 +937,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
             self.heartbeat = heartbeat.Heartbeat(
-                self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
+                self.config,
+                period=self.config.heartbeat_interval,
+                fname=self.config.heartbeat_log,
             )
             self.heartbeat.daemon = True
             self.application_stack.register_postfork_function(self.heartbeat.start)
@@ -886,7 +949,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             from galaxy.authnz import managers
 
             self.authnz_manager = managers.AuthnzManager(
-                self, self.config.oidc_config_file, self.config.oidc_backends_config_file
+                self,
+                self.config.oidc_config_file,
+                self.config.oidc_backends_config_file,
             )
 
             # If there is only a single external authentication provider in use
@@ -923,7 +988,12 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
                 self.workflow_completion_hook_registry,
             )
             self.application_stack.register_postfork_function(self.workflow_completion_monitor.start)
-            self.haltables.append(("WorkflowCompletionMonitor", self.workflow_completion_monitor.shutdown_monitor))
+            self.haltables.append(
+                (
+                    "WorkflowCompletionMonitor",
+                    self.workflow_completion_monitor.shutdown_monitor,
+                )
+            )
 
         # Start the job manager
         self.application_stack.register_postfork_function(self.job_manager.start)
@@ -942,12 +1012,23 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self.database_heartbeat.add_change_callback(self.watchers.change_state)
         self.application_stack.register_postfork_function(self.database_heartbeat.start)
 
+        # History audit monitor for SSE-based history updates. The monitor only
+        # runs on the single process elected via DatabaseHeartbeat's
+        # is_history_audit_monitor role — a standalone ``galaxy-sse-monitor``
+        # daemon wins that election when present, otherwise one webapp picks it
+        # up. start/stop are driven by heartbeat role transitions rather than
+        # postfork, so the monitor cleanly migrates when the leader dies.
+        if self.config.enable_sse_updates:
+            monitor = self._register_singleton(HistoryAuditMonitor)
+            self.database_heartbeat.add_audit_monitor_change_callback(monitor.on_role_change)
+
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
         self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
         # Reload toolbox to pick up changes to toolbox made after master was ready
         self.application_stack.register_postfork_function(
-            lambda: reload_toolbox(self, save_integrated_tool_panel=False), post_fork_only=True
+            lambda: reload_toolbox(self, save_integrated_tool_panel=False),
+            post_fork_only=True,
         )
         # Delay toolbox index until after startup
         self.application_stack.register_postfork_function(
@@ -974,6 +1055,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
 
     def _shutdown_database_heartbeat(self):
         self.database_heartbeat.shutdown()
+
+    def _shutdown_history_audit_monitor(self):
+        if not self.config.enable_sse_updates:
+            return
+        self[HistoryAuditMonitor].shutdown()
 
     def _shutdown_scheduling_manager(self):
         self.workflow_scheduling_manager.shutdown()

@@ -9,13 +9,17 @@ from typing import (
     Any,
     Optional,
 )
+from urllib.parse import urlparse
 
+from lagom.exceptions import UnresolvableType
 from sqlalchemy import (
     and_,
+    create_engine,
     delete,
     exists,
     false,
     select,
+    text,
     update,
 )
 
@@ -40,6 +44,8 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.queue_metrics import emit_queue_metrics
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
@@ -76,7 +82,10 @@ from galaxy.security.vault import (
     Vault,
 )
 from galaxy.short_term_storage import ShortTermStorageMonitor
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import (
+    MinimalManagerApp,
+    StructuredApp,
+)
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
@@ -591,6 +600,38 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
     model.HistoryAudit.prune(sa_session)
 
 
+@galaxy_task(action="cleaning up Kombu SQLAlchemy transport")
+def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
+    """Delete fully-consumed rows from the Kombu SQLAlchemy transport tables.
+
+    Kombu's SQLAlchemy transport marks consumed messages with ``visible=0`` but
+    never deletes them — without this task the control-queue tables grow
+    without bound on the default on-disk sqlite broker. On AMQP / Redis the
+    broker has native TTL, so this task is a no-op.
+    """
+    broker_url = config.amqp_internal_connection
+    if not broker_url:
+        log.debug("kombu cleanup: no broker URL configured, skipping")
+        return
+    scheme = urlparse(broker_url).scheme
+    if not scheme.startswith("sqlalchemy"):
+        log.debug("kombu cleanup: broker scheme %s is not sqlalchemy, skipping", scheme)
+        return
+
+    # Kombu's SQLA transport URL is ``sqlalchemy+<dialect>://...``. Strip the
+    # ``sqlalchemy+`` prefix to get an engine URL we can hand to SQLAlchemy.
+    sa_url = broker_url[len("sqlalchemy+") :] if broker_url.startswith("sqlalchemy+") else broker_url
+    engine = create_engine(sa_url)
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("DELETE FROM kombu_message WHERE visible = 0"))
+            log.info("kombu cleanup: deleted %s consumed messages", result.rowcount)
+    except Exception:
+        log.exception("kombu cleanup: failed to prune kombu_message")
+    finally:
+        engine.dispose()
+
+
 @galaxy_task(action="clean up short term storage")
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
@@ -626,6 +667,28 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""
     if count := notification_manager.dispatch_pending_notifications_via_channels():
         log.info(f"Successfully dispatched {count} notifications.")
+
+
+@galaxy_task(action="emit queue and SSE observability metrics")
+def emit_queue_metrics_task(app: StructuredApp):
+    """Sample control-queue depth, SSE connection count, and worker rows → statsd.
+
+    Resolves the narrow collaborators ``emit_queue_metrics`` needs from the app
+    container and passes them in — keeps the emitter module free of
+    ``StructuredApp`` service-locator lookups.
+    """
+    try:
+        sse_manager: Optional[SSEConnectionManager] = app[SSEConnectionManager]
+    except UnresolvableType:
+        sse_manager = None
+
+    emit_queue_metrics(
+        statsd_client=app.execution_timer_factory.galaxy_statsd_client,
+        connection=app.amqp_internal_connection_obj,
+        application_stack=app.application_stack,
+        model=app.model,
+        sse_manager=sse_manager,
+    )
 
 
 @galaxy_task(action="clean up job working directories")
