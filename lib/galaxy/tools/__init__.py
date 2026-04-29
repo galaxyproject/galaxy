@@ -4648,8 +4648,11 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_rows[new_label] = columns
 
         new_labels_path = new_labels_dataset_assoc.get_file_name()
-        with open(new_labels_path) as fh:
-            new_labels = fh.readlines(1024 * 1000000)
+        try:
+            with open(new_labels_path) as fh:
+                new_labels = fh.readlines(1024 * 1000000)
+        except UnicodeDecodeError:
+            raise exceptions.MessageException("Please re-save the file as UTF-8 and try again.")
         if strict and len(hdca.collection.elements) != len(new_labels):
             raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
         if how_type in ["tabular", "tabular_extended"]:
