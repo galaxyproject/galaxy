@@ -3085,13 +3085,6 @@ mapping:
         desc: |
           Enables and disables OpenID Connect (OIDC) support.
 
-      oidc_require_refresh:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Require a current OIDC session. Users will be redirected to OIDC login if refresh fails.
-
       oidc_config_file:
         type: str
         default: oidc_config.xml

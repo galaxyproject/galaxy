@@ -154,6 +154,7 @@ def test_parse_backend_config(mock_app):
         "client_secret": "abcd1234",
         "enable_idp_logout": "true",
         "require_create_confirmation": "false",
+        "require_session_refresh": "true",
         "accepted_audiences": "https://audience.example.com",
         "username_key": "custom_username",
     }
@@ -170,6 +171,7 @@ def test_parse_backend_config(mock_app):
     # Boolean values should be parsed into bools
     assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
     assert parsed["require_create_confirmation"] == asbool(config_values["require_create_confirmation"])
+    assert parsed["require_session_refresh"] == asbool(config_values["require_session_refresh"])
 
 
 def test_psa_authnz_config(mock_app):

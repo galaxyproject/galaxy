@@ -177,6 +177,8 @@ class AuthnzManager:
             rtv["label"] = config_xml.find("label").text
         if config_xml.find("require_create_confirmation") is not None:
             rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
+        if config_xml.find("require_session_refresh") is not None:
+            rtv["require_session_refresh"] = asbool(config_xml.find("require_session_refresh").text)
         if config_xml.find("prompt") is not None:
             rtv["prompt"] = config_xml.find("prompt").text
         if config_xml.find("api_url") is not None:
