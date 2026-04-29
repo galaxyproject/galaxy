@@ -17,7 +17,7 @@ const SELECTORS = {
 
 function initWrapper(value: DataUri) {
     const wrapper = mount(FormDataUri as object, {
-        propsData: {
+        props: {
             value,
         },
     });

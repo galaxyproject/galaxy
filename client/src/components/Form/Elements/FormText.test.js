@@ -9,8 +9,8 @@ const localVue = getLocalVue();
 describe("FormText", () => {
     const mountFormText = async (props) =>
         await mount(FormText, {
-            propsData: props,
-            localVue,
+            props: props,
+            global: localVue,
         });
 
     it("should render the appropriate input type", async () => {

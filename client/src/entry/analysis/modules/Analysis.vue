@@ -3,8 +3,8 @@ import { faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
 
+import { eventBus } from "@/utils/eventBus";
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
 
@@ -15,7 +15,6 @@ import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
-const router = useRouter();
 const showCenter = ref(false);
 const { showPanels } = usePanels();
 
@@ -42,11 +41,11 @@ function onLoad() {
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
     // always fires when a route is pushed instead of validating it first.
-    router.app.$on("router-push", hideCenter);
+    eventBus.on("router-push", hideCenter);
 });
 
 onUnmounted(() => {
-    router.app.$off("router-push", hideCenter);
+    eventBus.off("router-push", hideCenter);
 });
 </script>
 
@@ -59,7 +58,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" :reactive-width.sync="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />

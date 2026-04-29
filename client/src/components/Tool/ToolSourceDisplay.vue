@@ -36,7 +36,7 @@ export default {
     mounted() {
         this.initMonaco();
     },
-    beforeDestroy() {
+    beforeUnmount() {
         if (this.editor) {
             this.editor.dispose();
         }

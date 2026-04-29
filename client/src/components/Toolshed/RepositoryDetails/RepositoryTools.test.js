@@ -9,7 +9,7 @@ const localVue = getLocalVue();
 describe("RepositoryTools", () => {
     it("test tool version list in repository details", () => {
         const wrapper = mount(RepositoryTools, {
-            propsData: {
+            props: {
                 tools: [
                     {
                         guid: "guid",
@@ -18,7 +18,7 @@ describe("RepositoryTools", () => {
                     },
                 ],
             },
-            localVue,
+            global: localVue,
         });
         const $el = wrapper.findAll("td");
         const $first = $el.at(0);
@@ -29,7 +29,7 @@ describe("RepositoryTools", () => {
 
     it("test collapsing tool version list in repository details", async () => {
         const wrapper = mount(RepositoryTools, {
-            propsData: {
+            props: {
                 tools: [
                     {
                         guid: "guid_1",

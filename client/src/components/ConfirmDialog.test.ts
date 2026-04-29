@@ -16,7 +16,7 @@ describe("ConfirmDialog", () => {
 
     afterEach(() => {
         setConfirmDialogComponentRef(null);
-        wrapper.destroy();
+        wrapper.unmount();
         document.body.innerHTML = "";
     });
 

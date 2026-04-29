@@ -8,12 +8,12 @@ const localVue = getLocalVue();
 
 function getWrapper() {
     return mount(mountTarget, {
-        propsData: {
+        props: {
             fileSourcesConfigured: true,
             ftpUploadSite: null,
             historyId: "historyId",
         },
-        localVue,
+        global: localVue,
     });
 }
 

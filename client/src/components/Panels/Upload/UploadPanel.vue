@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BFormCheckbox } from "bootstrap-vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 

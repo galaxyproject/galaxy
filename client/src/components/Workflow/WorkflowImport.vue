@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute } from "vue-router";
 
 import { useWizard } from "@/components/Common/Wizard/useWizard";
 import type { TrsSelection } from "@/components/Workflow/Import/types";

@@ -4,7 +4,7 @@
 
 import axios, { type AxiosResponse } from "axios";
 import { defineStore } from "pinia";
-import Vue, { computed, type Ref, ref, shallowRef } from "vue";
+import { computed, type Ref, ref, shallowRef } from "vue";
 
 import {
     MY_PANEL_VIEW_DESCRIPTION,
@@ -304,7 +304,7 @@ export const useToolStore = defineStore("toolStore", () => {
                     toolHelpData.help = ""; // for cases where helpText == '\n'
                 }
 
-                Vue.set(helpDataCached.value, toolId, toolHelpData);
+                helpDataCached.value[toolId] = toolHelpData;
             } catch (error) {
                 console.error("Error fetching help:", error);
                 fetchedHelpIds.value.delete(toolId); // Allow retrying on next request
@@ -318,7 +318,7 @@ export const useToolStore = defineStore("toolStore", () => {
         try {
             currentPanelView.value = currentPanelView.value || defaultPanelView.value;
             await setPanel(currentPanelView.value);
-        } catch (e) {
+        } catch {
             await setPanel(defaultPanelView.value);
         }
     }
@@ -334,15 +334,15 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
-        Vue.set(toolSections.value, panelView, newPanel);
+        toolSections.value[panelView] = newPanel;
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
-        Vue.set(toolsById.value, toolId, toolData);
+        toolsById.value[toolId] = toolData;
     }
 
     function saveToolResults(whooshQuery: string, toolsData: Array<string>) {
-        Vue.set(toolResults.value, whooshQuery, toolsData);
+        toolResults.value[whooshQuery] = toolsData;
     }
 
     async function setPanel(panelView: string) {

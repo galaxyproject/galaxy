@@ -7,7 +7,9 @@
             <b-col>
                 <div v-if="options && value" :class="permission_type">
                     <Multiselect
+                        :id="id"
                         v-model="value"
+                        :name="id"
                         :options="fetched_options"
                         :clear-on-select="true"
                         :preserve-search="true"
@@ -17,7 +19,7 @@
                         :internal-search="false"
                         @input="valueChanged"
                         @search-change="searchChanged">
-                        <template slot="afterList">
+                        <template v-slot:afterList>
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
                                 <span class="spinner fa fa-spinner fa-spin fa-1x" />
                             </div>
@@ -35,7 +37,7 @@
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import Vue from "vue";
 import Multiselect from "vue-multiselect";
@@ -74,6 +76,7 @@ export default {
             required: true,
         },
     },
+    emits: ["input"],
     data() {
         return {
             permissions: undefined,

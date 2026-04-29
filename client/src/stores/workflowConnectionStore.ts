@@ -1,4 +1,4 @@
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { pushOrSet } from "@/utils/pushOrSet";
@@ -108,7 +108,7 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
             if (typeof terminal === "string") {
                 if (id === terminal) {
                     stepStore.removeConnection(connection);
-                    del(invalidConnections.value, id);
+                    delete invalidConnections.value[id];
                     return false;
                 } else {
                     return true;
@@ -116,7 +116,7 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
             } else if (terminal.connectorType === "input") {
                 if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
                     stepStore.removeConnection(connection);
-                    del(invalidConnections.value, id);
+                    delete invalidConnections.value[id];
                     return false;
                 } else {
                     return true;
@@ -124,7 +124,7 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
             } else {
                 if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
                     stepStore.removeConnection(connection);
-                    del(invalidConnections.value, id);
+                    delete invalidConnections.value[id];
                     return false;
                 } else {
                     return true;
@@ -138,11 +138,11 @@ export const useConnectionStore = defineScopedStore("workflowConnectionStore", (
     }
 
     function markInvalidConnection(connectionId: string, reason: string) {
-        set(invalidConnections.value, connectionId, reason);
+        invalidConnections.value[connectionId as ConnectionId] = reason;
     }
 
     function dropFromInvalidConnections(connectionId: string) {
-        del(invalidConnections.value, connectionId);
+        delete invalidConnections.value[connectionId as ConnectionId];
     }
 
     return {

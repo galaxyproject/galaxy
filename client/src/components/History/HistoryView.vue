@@ -32,8 +32,8 @@
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
+            v-model:selected-collections="selectedCollections"
             :history="history"
-            :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
         <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />

@@ -40,8 +40,8 @@
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard
+                    v-model:expanded="input.expanded"
                     :title="localize(input.title || input.name)"
-                    :expanded.sync="input.expanded"
                     :collapsible="true">
                     <template v-slot:body>
                         <div v-if="input.help" class="my-2" data-description="section help">
@@ -93,8 +93,6 @@
 </template>
 
 <script>
-import { set } from "vue";
-
 import { matchCase } from "@/components/Form/utilities";
 
 import FormInputMismatchBadge from "./Elements/FormInputMismatchBadge.vue";
@@ -178,6 +176,7 @@ export default {
             default: () => [],
         },
     },
+    emits: ["stop-flagging", "update:active-node-id"],
     methods: {
         getPrefix(name, index) {
             if (this.prefix) {
@@ -195,7 +194,7 @@ export default {
         repeatInsert(input) {
             const newInputs = structuredClone(input.inputs);
 
-            set(input, "cache", input.cache ?? []);
+            input.cache = input.cache ?? [];
             input.cache.push(newInputs);
 
             this.onChangeForm();

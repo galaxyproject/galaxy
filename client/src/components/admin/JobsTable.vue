@@ -71,12 +71,8 @@
                 </GLink>
             </template>
 
-            <template v-for="(index, name) in $slots" v-slot:[name]>
-                <slot :name="name" />
-            </template>
-
-            <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
-                <slot :name="name" v-bind="data"></slot>
+            <template v-for="(index, name) in $slots" :key="name" v-slot:[name]="data">
+                <slot v-bind="data" :name="name"></slot>
             </template>
         </GTable>
     </div>
@@ -101,6 +97,7 @@ export default {
         LoadingSpan,
         UtcDate,
     },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     props: {
         tableCaption: {
             type: String,
@@ -126,6 +123,7 @@ export default {
         },
         value: {},
     },
+    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     data() {
         return {
             innerValue: this.value,

@@ -1,5 +1,5 @@
 import { defineStore, storeToRefs } from "pinia";
-import { computed, readonly, ref, set } from "vue";
+import { computed, readonly, ref } from "vue";
 
 import { GalaxyApi, isRegisteredUser } from "@/api";
 import type {
@@ -194,7 +194,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
      * @returns {void}
      */
     function updateUserToolServiceGroup(group: ServiceCredentialGroupResponse): void {
-        set(userToolServiceCredentialsGroups.value, group.id, group);
+        userToolServiceCredentialsGroups.value[group.id] = group;
 
         for (const userToolKey in userToolsServices.value) {
             const userToolServices = userToolsServices.value[userToolKey];
@@ -202,7 +202,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
                 for (const userToolService of userToolServices) {
                     const currentUserToolServiceGroup = userToolService.groups.findIndex((g) => g.id === group.id);
                     if (currentUserToolServiceGroup !== -1) {
-                        set(userToolService.groups, currentUserToolServiceGroup, group);
+                        userToolService.groups[currentUserToolServiceGroup] = group;
                         break;
                     }
                 }
@@ -252,7 +252,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
                 const matchingToolServices = data.filter(
                     (d) => d.source_id === usc.source_id && d.source_version === usc.source_version,
                 );
-                set(userToolsServices.value, userToolKey, matchingToolServices);
+                userToolsServices.value[userToolKey] = matchingToolServices;
 
                 updateUserToolServiceGroups(matchingToolServices);
 
@@ -295,7 +295,7 @@ export const useUserToolsServiceCredentialsStore = defineStore("userToolsService
                 throw Error(`${error.err_msg} - Failed to fetch user credentials for tool ${userToolKey}.`);
             }
 
-            set(userToolsServices.value, userToolKey, data);
+            userToolsServices.value[userToolKey] = data;
 
             updateUserToolServiceGroups(data);
 

@@ -67,14 +67,14 @@ describe("JobStepJobs", () => {
 
     it("renders a jobs table which allows opening a job details modal", async () => {
         const wrapper = mount(JobStepJobs as object, {
-            propsData: {
+            props: {
                 jobs: TEST_JOBS_BY_STATES["ok"],
                 invocationId: "test-invocation-id",
                 currentPage: 1,
                 sortDesc: true,
                 perPage: 10,
             },
-            localVue,
+            global: localVue,
             pinia: createTestingPinia({ createSpy: vi.fn }),
             stubs: {
                 ContentItem: true,

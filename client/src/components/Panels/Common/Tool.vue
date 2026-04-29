@@ -43,6 +43,7 @@ function onClick(evt: MouseEvent) {
     <div class="toolTitle">
         <a v-if="props.tool.disabled" :data-tool-id="props.tool.id" class="title-link name text-muted tool-link">
             <span v-if="!props.hideName">{{ props.tool.name }}</span>
+            {{ " " }}
             <span class="description">{{ props.tool.description }}</span>
         </a>
         <a
@@ -62,6 +63,7 @@ function onClick(evt: MouseEvent) {
                 </span>
             </span>
             <span v-if="!props.hideName" class="name font-weight-bold">{{ props.tool.name }}</span>
+            {{ " " }}
             <span class="description">{{ props.tool.description }}</span>
         </a>
         <ToolFavoriteButton

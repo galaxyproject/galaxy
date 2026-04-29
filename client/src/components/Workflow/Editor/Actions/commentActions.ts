@@ -1,3 +1,5 @@
+import { toRaw } from "vue";
+
 import { LazyUndoRedoAction, UndoRedoAction } from "@/stores/undoRedoStore";
 import type {
     BaseWorkflowComment,
@@ -22,7 +24,7 @@ class CommentAction extends UndoRedoAction {
     constructor(store: WorkflowCommentStore, comment: BaseWorkflowComment) {
         super();
         this.store = store;
-        this.comment = structuredClone(comment) as WorkflowComment;
+        this.comment = structuredClone(toRaw(comment)) as WorkflowComment;
     }
 
     protected get commentName() {
@@ -103,8 +105,8 @@ class LazyMutateCommentAction<K extends keyof WorkflowComment> extends LazyUndoR
     ) {
         super();
         this.commentId = comment.id;
-        this.startData = structuredClone(comment[key]);
-        this.endData = structuredClone(data);
+        this.startData = structuredClone(toRaw(comment[key]));
+        this.endData = structuredClone(toRaw(data));
         this.applyDataCallback = applyDataCallback;
         this.type = comment.type;
         this.color = comment.color;
@@ -235,7 +237,7 @@ export class RemoveAllFreehandCommentsAction extends UndoRedoAction {
 
         this.store = store;
         const freehandComments = store.comments.filter((comment) => comment.type === "freehand");
-        this.comments = structuredClone(freehandComments);
+        this.comments = freehandComments.map((comment) => structuredClone(toRaw(comment)));
     }
 
     get name() {
@@ -247,6 +249,6 @@ export class RemoveAllFreehandCommentsAction extends UndoRedoAction {
     }
 
     undo() {
-        this.store.addComments(structuredClone(this.comments));
+        this.store.addComments(structuredClone(toRaw(this.comments)));
     }
 }

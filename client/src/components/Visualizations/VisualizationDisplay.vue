@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
-import { onBeforeRouteLeave } from "vue-router/composables";
+import { onBeforeRouteLeave } from "vue-router";
 
 import { GalaxyApi } from "@/api";
 
@@ -71,11 +71,9 @@ function setupChangeDetection() {
     }, 1000);
 }
 
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave(() => {
     if (hasUnsavedChanges.value && !window.confirm("Unsaved changes will be lost. Continue?")) {
-        next(false);
-    } else {
-        next();
+        return false;
     }
 });
 

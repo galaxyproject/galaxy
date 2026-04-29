@@ -10,6 +10,8 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { localize } from "@/utils/localization";
+
 import { dataAttributes } from "./modules/linting";
 import type { LintState } from "./modules/lintingTypes";
 

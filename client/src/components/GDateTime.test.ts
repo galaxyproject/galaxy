@@ -8,10 +8,10 @@ const localVue = getLocalVue(true);
 
 async function mountGDateTime(props: object) {
     const wrapper = mount(GDateTime as object, {
-        propsData: {
+        props: {
             ...props,
         },
-        localVue,
+        global: localVue,
     });
 
     return wrapper;

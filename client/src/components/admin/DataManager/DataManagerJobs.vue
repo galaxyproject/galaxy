@@ -16,7 +16,7 @@
                                 <BFormInput
                                     v-model="filter"
                                     placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                    @keyup.esc="filter = ''" />
 
                                 <BInputGroupAppend>
                                     <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
@@ -28,7 +28,7 @@
 
                 <BRow>
                     <BCol>
-                        <GButton :pressed.sync="showCommandLine" outline>
+                        <GButton v-model:pressed="showCommandLine" outline>
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
                         </GButton>
                     </BCol>
@@ -52,8 +52,8 @@
 
                         <GButton
                             v-if="!showCommandLine"
+                            v-model:pressed="row.detailsShowing"
                             outline
-                            :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
                         </GButton>

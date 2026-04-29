@@ -1,9 +1,11 @@
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+
 import type { STATES } from "./states";
 
 export type State = {
     status: string;
     text?: string;
-    icon?: string;
+    icon?: IconDefinition;
     spin?: boolean;
     nonDb?: boolean;
 };

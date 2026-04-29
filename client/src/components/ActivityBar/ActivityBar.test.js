@@ -20,7 +20,7 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({})),
 }));
 
@@ -62,7 +62,7 @@ describe("ActivityBar", () => {
             }),
         );
         wrapper = shallowMount(mountTarget, {
-            localVue,
+            global: localVue,
             pinia,
         });
     });

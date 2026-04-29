@@ -15,10 +15,7 @@
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
+                                <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>

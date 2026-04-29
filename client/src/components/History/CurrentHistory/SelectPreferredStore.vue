@@ -130,7 +130,7 @@ async function modalOk(event: BvModalEvent) {
 
         reset();
         emit("close");
-    } catch (_e) {
+    } catch {
         // pass
     }
 }

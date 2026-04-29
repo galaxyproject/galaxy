@@ -28,8 +28,8 @@ beforeEach(() => {
 
 function mountComponent(content = {}) {
     return mount(ConfigureVitessce, {
-        localVue,
-        propsData: {
+        global: localVue,
+        props: {
             name: "vitessce-view",
             content: JSON.stringify(content),
         },
@@ -43,8 +43,8 @@ function mountComponent(content = {}) {
 describe("ConfigureVitessce.vue", () => {
     it("renders error alert on invalid content", () => {
         const wrapper = mount(ConfigureVitessce, {
-            localVue,
-            propsData: {
+            global: localVue,
+            props: {
                 name: "vitessce-view",
                 content: "{invalid-json",
             },

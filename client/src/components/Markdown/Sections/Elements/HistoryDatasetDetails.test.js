@@ -34,7 +34,7 @@ function setUpDatatypesStore() {
 async function mountTarget(propsData = {}) {
     server.use(http.get("/api/datasets/{dataset_id}", ({ response }) => response(200).json(tabularMetaData)));
     const wrapper = mount(HistoryDatasetDetails, {
-        localVue,
+        global: localVue,
         propsData,
         pinia: setUpDatatypesStore(),
     });

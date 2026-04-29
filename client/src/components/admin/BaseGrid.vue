@@ -9,8 +9,7 @@
                     <th v-for="column in columns" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
                 <slot name="rows">
-                    <template v-for="row in rows">
-                        <!-- eslint-disable-next-line vue/require-v-for-key -->
+                    <template v-for="(row, index) in rows" :key="index">
                         <tr>
                             <td v-for="column in columns" :key="column.dataIndex">{{ row[column.dataIndex] }}</td>
                         </tr>

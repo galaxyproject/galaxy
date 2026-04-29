@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useDownloadTracker } from "@/composables/downloadTracker";
 import type { MonitoringRequest } from "@/composables/persistentProgressMonitor";

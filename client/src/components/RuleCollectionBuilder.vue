@@ -389,8 +389,8 @@
                                     :col-headers="colHeaders"
                                     @remove="removeMapping(index)"
                                     @edit="displayRuleType = 'mapping'"
-                                    @mouseover.native="map.columns.forEach((col) => highlightColumn(col))"
-                                    @mouseout.native="map.columns.forEach((col) => unhighlightColumn(col))" />
+                                    @mouseover="map.columns.forEach((col) => highlightColumn(col))"
+                                    @mouseout="map.columns.forEach((col) => unhighlightColumn(col))" />
                                 <div v-if="mapping.length == 0">
                                     One or more column definitions must be specified. These are required to specify how
                                     to build collections and datasets from rows and columns of the table.
@@ -1401,7 +1401,7 @@ export default {
             let asJson;
             try {
                 asJson = JSON.parse(this.ruleSource);
-            } catch (error) {
+            } catch {
                 this.ruleSourceError = "Problem parsing your rules.";
                 return;
             }

@@ -11,11 +11,11 @@ describe("FormRadio", () => {
 
     beforeEach(() => {
         wrapper = mount(MountTarget, {
-            propsData: {
+            props: {
                 value: false,
                 options: [],
             },
-            localVue,
+            global: localVue,
         });
     });
 

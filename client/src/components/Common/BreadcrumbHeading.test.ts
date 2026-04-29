@@ -23,9 +23,9 @@ async function mountComponent(items: BreadcrumbItem[] = [], routePath: string = 
     router.push(routePath);
 
     const wrapper = mount(BreadcrumbHeading as object, {
-        localVue,
+        global: localVue,
         router,
-        propsData: {
+        props: {
             items,
         },
         slots: {

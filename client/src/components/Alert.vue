@@ -1,5 +1,5 @@
 <template>
-    <b-alert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
+    <b-alert v-bind="$props" :variant="galaxyKwdToBootstrap" :show="showP">
         <!-- @slot Message to display in alert -->
         <slot> {{ message }} </slot>
     </b-alert>

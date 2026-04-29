@@ -11,12 +11,12 @@ describe("FormCard", () => {
 
     beforeEach(() => {
         wrapper = mount(FormCard, {
-            propsData: {
+            props: {
                 title: "title",
                 description: "description",
                 icon: "icon-class",
             },
-            localVue,
+            global: localVue,
         });
     });
 

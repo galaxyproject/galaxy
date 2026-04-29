@@ -1,5 +1,6 @@
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toRaw } from "vue";
 
 import { LazyUndoRedoAction, type UndoRedoAction, useUndoRedoStore } from "@/stores/undoRedoStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
@@ -328,11 +329,27 @@ function resetStores(id = workflowId) {
     };
 }
 
+function deepToRaw<T>(value: T): T {
+    const raw = toRaw(value);
+    if (raw && typeof raw === "object") {
+        if (Array.isArray(raw)) {
+            return raw.map((item) => deepToRaw(item)) as T;
+        } else {
+            const result: any = {};
+            for (const key in raw) {
+                result[key] = deepToRaw(raw[key]);
+            }
+            return result;
+        }
+    }
+    return raw;
+}
+
 function extractKeys<O extends object>(object: O, keys: (keyof O)[]): Partial<O> {
     const extracted: Partial<O> = {};
 
     keys.forEach((key) => {
-        extracted[key] = object[key];
+        extracted[key] = deepToRaw(object[key]) as O[typeof key];
     });
 
     return extracted;
@@ -344,7 +361,7 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
     const connectionStore = useConnectionStore(id);
     const commentStore = useWorkflowCommentStore(id);
 
-    const state = structuredClone({
+    const state = {
         stepStoreState: extractKeys(stepStore, ["steps", "stepExtraInputs", "stepInputMapOver", "stepMapOver"]),
         stateStoreState: extractKeys(stateStore, [
             "inputTerminals",
@@ -362,8 +379,8 @@ function getWorkflowSnapshot(workflow: Workflow, id = workflowId): object {
             "stepToConnections",
         ]),
         commentStoreState: extractKeys(commentStore, ["commentsRecord", "multiSelectedCommentIds"]),
-        workflowState: workflow,
-    });
+        workflowState: deepToRaw(workflow),
+    };
 
-    return state;
+    return structuredClone(state);
 }

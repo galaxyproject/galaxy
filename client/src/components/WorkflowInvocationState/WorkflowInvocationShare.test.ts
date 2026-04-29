@@ -135,7 +135,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
     );
 
     const wrapper = mount(WorkflowInvocationShare as object, {
-        propsData: {
+        props: {
             invocationId: "invocation-id",
             workflowId: bothShareable ? SHARED_WORKFLOW_ID : TEST_WORKFLOW.id,
             historyId: bothShareable ? `${TEST_HISTORY.id}-importable` : TEST_HISTORY.id,
@@ -144,7 +144,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
             FontAwesomeIcon: true,
             BModal: true,
         },
-        localVue,
+        global: localVue,
         pinia: createTestingPinia({ createSpy: vi.fn }),
     });
 

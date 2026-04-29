@@ -27,8 +27,12 @@ interface BaseDataToolParameterInput {
     product: boolean;
     values: { id: string; src: "dce" | "hda" | "hdca" | "ldda"; map_over_type: string }[];
 }
-interface DataToolParameterInput extends BaseDataToolParameterInput {}
-interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {}
+interface DataToolParameterInput extends BaseDataToolParameterInput {
+    type: "data";
+}
+interface DataCollectionToolParameterInput extends BaseDataToolParameterInput {
+    type: "data_collection";
+}
 export type DataInput = DataToolParameterInput | DataCollectionToolParameterInput | boolean | string | DataUri | null;
 
 interface WorkflowRunStepInfo {

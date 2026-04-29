@@ -3,7 +3,7 @@ import { faCheck, faClock, faHourglassHalf, faRedo } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCol, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { Toast } from "@/composables/toast";
@@ -105,8 +105,8 @@ loadBroadcastsList();
                         <GButtonGroup>
                             <GButton
                                 id="show-active-filter-button"
+                                v-model:pressed="showActive"
                                 size="small"
-                                :pressed.sync="showActive"
                                 title="Show active broadcasts"
                                 outline
                                 color="blue">
@@ -115,8 +115,8 @@ loadBroadcastsList();
                             </GButton>
                             <GButton
                                 id="show-scheduled-filter-button"
+                                v-model:pressed="showScheduled"
                                 size="small"
-                                :pressed.sync="showScheduled"
                                 title="Show scheduled broadcasts"
                                 outline
                                 color="blue">
@@ -125,8 +125,8 @@ loadBroadcastsList();
                             </GButton>
                             <GButton
                                 id="show-expired-filter-button"
+                                v-model:pressed="showExpired"
                                 size="small"
-                                :pressed.sync="showExpired"
                                 title="Show expired broadcasts"
                                 outline
                                 color="blue">

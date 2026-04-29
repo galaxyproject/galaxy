@@ -212,7 +212,7 @@ defineExpose({
                     :has-callback="hasCallback"
                     :history-id="currentHistoryId"
                     :list-db-keys="listDbKeys"
-                    v-on="$listeners" />
+                    v-bind="$attrs" />
             </GTab>
             <GTab v-if="showCollection" title="Collection" button-id="tab-title-link-collection" />
             <GTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
@@ -221,7 +221,7 @@ defineExpose({
                     :ftp-upload-site="currentUserId && ftpUploadSite"
                     :has-callback="hasCallback"
                     :history-id="currentHistoryId"
-                    v-on="$listeners" />
+                    v-bind="$attrs" />
             </GTab>
         </GTabs>
         <DefaultBox
@@ -241,7 +241,7 @@ defineExpose({
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
             @progress="progress"
-            v-on="$listeners" />
+            v-bind="$attrs" />
     </div>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />

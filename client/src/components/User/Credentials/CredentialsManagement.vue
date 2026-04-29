@@ -224,12 +224,12 @@ watch(
 
         <FilterMenu
             id="credentials-filter-menu"
+            v-model:filter-text="filterText"
+            v-model:show-advanced="showAdvanced"
             class="mb-2"
             name="Credentials Groups"
             :filter-class="credentialsFilterClass"
-            :filter-text.sync="filterText"
             :loading="isBusy"
-            :show-advanced.sync="showAdvanced"
             placeholder="Search credentials groups by name, tool, or service" />
 
         <BAlert v-if="isBusy" show>

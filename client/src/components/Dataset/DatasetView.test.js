@@ -94,11 +94,11 @@ async function mountDatasetView(tab = "preview", options = {}) {
     router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
             tab: tab,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         attachTo: document.createElement("div"),
@@ -158,10 +158,10 @@ async function mountLoadingDatasetView() {
     router.replace = vi.fn();
 
     const wrapper = mount(DatasetView, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
         router,
         stubs: {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import GCard from "@/components/Common/GCard.vue";
 

@@ -115,8 +115,8 @@ watch(
             </Heading>
             <DefaultBox
                 v-if="currentHistoryId && uploadReady && configOptions"
-                :effective-extensions="effectiveExtensions"
                 v-bind="configOptions"
+                :effective-extensions="effectiveExtensions"
                 :has-callback="false"
                 :history-id="currentHistoryId"
                 :list-db-keys="listDbKeys"

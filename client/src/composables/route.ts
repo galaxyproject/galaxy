@@ -1,6 +1,6 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 /** use a route query parameter as a boolean computed */
 export function useRouteQueryBool(

@@ -13,14 +13,14 @@ describe("FormElement", () => {
 
     beforeEach(() => {
         wrapper = mount(FormElement, {
-            propsData: {
+            props: {
                 id: "input",
                 value: "initial_value",
                 help: "help_text",
                 error: "error_text",
                 title: "title_text",
             },
-            localVue,
+            global: localVue,
         });
     });
 

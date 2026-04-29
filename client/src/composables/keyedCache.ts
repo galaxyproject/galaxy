@@ -1,5 +1,5 @@
 import { type MaybeRefOrGetter, toValue } from "@vueuse/core";
-import { computed, del, type Ref, ref, set, unref } from "vue";
+import { computed, type Ref, ref, unref } from "vue";
 
 import { LastQueue } from "@/utils/lastQueue";
 import { isRetryableApiError, MAX_RETRIES } from "@/utils/simple-error";
@@ -96,19 +96,19 @@ export function useKeyedCache<T>(
             try {
                 const fetchItem = unref(fetchItemHandler);
                 const item = await fetchQueue.enqueue(fetchItem, { id: itemId }, itemId);
-                set(storedItems.value, itemId, item);
-                del(loadingErrors.value, itemId);
+                storedItems.value[itemId] = item;
+                delete loadingErrors.value[itemId];
                 delete retryCounts[itemId];
                 return item;
             } catch (error) {
                 retryCounts[itemId] = (retryCounts[itemId] ?? 0) + 1;
-                set(loadingErrors.value, itemId, error as Error);
+                loadingErrors.value[itemId] = error as Error;
             } finally {
-                del(loadingRequests.value, itemId);
+                delete loadingRequests.value[itemId];
             }
         })();
 
-        set(loadingRequests.value, itemId, fetchPromise);
+        loadingRequests.value[itemId] = fetchPromise;
         return fetchPromise;
     }
 

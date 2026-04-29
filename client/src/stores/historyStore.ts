@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import {
     type AnyHistory,
@@ -136,17 +136,17 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     function setFilterText(historyId: string, filterText: string) {
-        set(storedFilterTexts.value, historyId, filterText);
+        storedFilterTexts.value[historyId] = filterText;
     }
 
     function setHistory(history: AnyHistory | HistoryContentsStats) {
         if (storedHistories.value[history.id] !== undefined) {
             // Merge the incoming history with existing one to keep additional information
             Object.entries(history).forEach(([key, value]) => {
-                set(storedHistories.value[history.id]!, key, value);
+                (storedHistories.value[history.id] as any)[key] = value;
             });
         } else {
-            set(storedHistories.value, history.id, history);
+            storedHistories.value[history.id] = history as AnyHistory;
         }
     }
 
@@ -258,7 +258,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
 
         const deletedHistory = data as AnyHistory;
         await setNextAvailableHistoryId([deletedHistory.id]);
-        del(storedHistories.value, deletedHistory.id);
+        delete storedHistories.value[deletedHistory.id];
         await handleTotalCountChange(1, true);
     }
 
@@ -275,7 +275,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         const historyIds = deletedHistories.map((history) => history.id);
         await setNextAvailableHistoryId(historyIds);
         deletedHistories.forEach((history) => {
-            del(storedHistories.value, history.id);
+            delete storedHistories.value[history.id];
         });
         await handleTotalCountChange(deletedHistories.length, true);
     }
@@ -407,10 +407,10 @@ export const useHistoryStore = defineStore("historyStore", () => {
                 const result = await getHistoryByIdFromServer(historyId);
                 if (result.error) {
                     retryCounts[historyId] = (retryCounts[historyId] ?? 0) + 1;
-                    set(historyLoadErrors.value, historyId, result.error);
+                    historyLoadErrors.value[historyId] = result.error;
                 } else {
                     setHistory(result.data);
-                    del(historyLoadErrors.value, historyId);
+                    delete historyLoadErrors.value[historyId];
                     delete retryCounts[historyId];
                 }
             } finally {

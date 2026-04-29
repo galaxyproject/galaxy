@@ -13,7 +13,7 @@ describe("VisualizationHeader.vue", () => {
 
     const mountComponent = (pluginOverride = {}) => {
         return mount(VisualizationHeader, {
-            propsData: {
+            props: {
                 plugin: { ...mockPlugin, ...pluginOverride },
             },
         });

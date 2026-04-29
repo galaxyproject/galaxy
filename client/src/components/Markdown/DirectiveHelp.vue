@@ -14,10 +14,10 @@ const entry = computed(() => directiveEntry(props.directive, props.mode));
 </script>
 
 <template>
-    <span>
+    <div>
         <dt>
             <tt>{{ directive }}</tt>
         </dt>
         <dd>{{ entry.help }}</dd>
-    </span>
+    </div>
 </template>

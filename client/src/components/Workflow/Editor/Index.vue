@@ -18,10 +18,10 @@
         <SaveChangesModal
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            :show-modal.sync="showSaveChangesModal"
+            v-model:show-modal="showSaveChangesModal"
             @on-proceed="onNavigate" />
         <GModal
-            :show.sync="showSaveAsModal"
+            v-model:show="showSaveAsModal"
             confirm
             size="small"
             data-description="save-as-modal"
@@ -89,8 +89,9 @@
                 <WorkflowAttributes
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
+                    v-model:readme-active="readmeActive"
                     :tags="tags"
-                    :highlight.sync="highlightAttribute"
+                    v-model:highlight="highlightAttribute"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"
@@ -101,7 +102,6 @@
                     :doi="doi"
                     :logo-url="logoUrl"
                     :help="help"
-                    :readme-active.sync="readmeActive"
                     @version="onVersion"
                     @tags="setTags"
                     @license="onLicense"

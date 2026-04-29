@@ -60,7 +60,7 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     });
 
     const wrapper = mount(BroadcastsOverlay as object, {
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             BroadcastContainer: true,
