@@ -1,0 +1,19 @@
+- id: mavedb
+  version: 0
+  name: MaveDB
+  description: |
+      [MaveDB](https://www.mavedb.org) provides Multiplexed Assays of Variant Effect datasets.
+      This file source exposes score set files through the public MaveDB API.
+  secrets:
+      api_key:
+          label: MaveDB API key
+          optional: true
+          help: |
+              Optional MaveDB API key. Public score set files do not require an API key.
+              A user API key can be generated in the MaveDB settings page for your account
+              and is needed to access private datasets.
+  configuration:
+      type: mavedb
+      base_url: https://api.mavedb.org/api/v1
+      api_key: "{{ secrets.api_key }}"
+      timeout: 30
