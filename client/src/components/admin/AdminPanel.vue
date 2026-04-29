@@ -55,6 +55,11 @@ const sections = computed(() => {
                     title: "Notifications and Broadcasts",
                     route: "/admin/notifications",
                 },
+                {
+                    id: "admin-link-visualizations",
+                    title: "Visualizations",
+                    route: "/admin/visualizations",
+                },
             ],
         },
         {
