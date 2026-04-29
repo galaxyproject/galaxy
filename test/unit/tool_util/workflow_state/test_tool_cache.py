@@ -194,6 +194,128 @@ class TestToolShedGetToolInfoCache:
             "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0"
         )
 
+    def test_clear_returns_count(self, tmp_path):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0", pt, source="api"
+        )
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/iuc/cutadapt/cutadapt/3.5", "3.5", pt, source="api"
+        )
+        assert tool_info.clear_cache() == 2
+        assert tool_info.clear_cache() == 0
+
+    def test_clear_prefix_returns_count(self, tmp_path):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0", pt, source="api"
+        )
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/iuc/cutadapt/cutadapt/3.5", "3.5", pt, source="api"
+        )
+        removed = tool_info.clear_cache("toolshed.g2.bx.psu.edu/repos/devteam")
+        assert removed == 1
+        assert len(tool_info.list_cached()) == 1
+
+    def test_stat_cached(self, tmp_path):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0", pt, source="api"
+        )
+        entries = tool_info.list_cached()
+        stat = tool_info.stat_cached(entries[0]["cache_key"])
+        assert stat is not None
+        assert stat["size_bytes"] > 0
+        assert "mtime" in stat
+        assert tool_info.stat_cached("nonexistent_key") is None
+
+    def test_load_cached_raw(self, tmp_path):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0", pt, source="api"
+        )
+        entries = tool_info.list_cached()
+        raw = tool_info.load_cached_raw(entries[0]["cache_key"])
+        assert raw is not None
+        assert raw["id"] == "fastqc"
+        assert tool_info.load_cached_raw("nonexistent") is None
+
+    def test_load_cached_raw_returns_corrupt_payload(self, tmp_path):
+        """load_cached_raw returns whatever JSON is on disk, even if it's not a valid ParsedTool."""
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        key = _cache_key("https://toolshed.g2.bx.psu.edu", "devteam~fastqc~fastqc", "0.74+galaxy0")
+        cache_path = os.path.join(str(tmp_path), f"{key}.json")
+        os.makedirs(str(tmp_path), exist_ok=True)
+        with open(cache_path, "w") as f:
+            json.dump({"not": "a parsed tool"}, f)
+        raw = tool_info.load_cached_raw(key)
+        assert raw == {"not": "a parsed tool"}
+        # And load_cached (validating) returns None for the same file
+        assert tool_info.load_cached(key) is None
+
+    def test_remove_cached(self, tmp_path):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_info.populate_from_parsed_tool(
+            "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0", "0.74+galaxy0", pt, source="api"
+        )
+        entries = tool_info.list_cached()
+        key = entries[0]["cache_key"]
+        assert tool_info.remove_cached(key) is True
+        assert tool_info.remove_cached(key) is False
+        assert len(tool_info.list_cached()) == 0
+
+    def test_refetch_idempotent_on_hit(self, tmp_path, monkeypatch):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+        tool_info.populate_from_parsed_tool(tool_id, "0.74+galaxy0", pt, source="api")
+
+        called = []
+
+        def _fail_fetch(*args, **kwargs):
+            called.append(args)
+            raise AssertionError("should not fetch on cache hit")
+
+        monkeypatch.setattr(tool_info, "_fetch_from_api", _fail_fetch)
+        result = tool_info.refetch(tool_id, "0.74+galaxy0")
+        assert result["fetched"] is False
+        assert result["already_cached"] is True
+        assert called == []
+
+    def test_refetch_force_evicts_and_fetches(self, tmp_path, monkeypatch):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+        tool_info.populate_from_parsed_tool(tool_id, "0.74+galaxy0", pt, source="api")
+
+        fetch_calls = []
+
+        def _stub_fetch(toolshed_url, trs_tool_id, tool_version):
+            fetch_calls.append((toolshed_url, trs_tool_id, tool_version))
+            return pt
+
+        monkeypatch.setattr(tool_info, "_fetch_from_api", _stub_fetch)
+        result = tool_info.refetch(tool_id, "0.74+galaxy0", force=True)
+        assert result["fetched"] is True
+        assert result["already_cached"] is True
+        assert len(fetch_calls) == 1
+
+    def test_refetch_cold(self, tmp_path, monkeypatch):
+        tool_info = ToolShedGetToolInfo(cache_dir=str(tmp_path))
+        pt = self._make_fake_parsed_tool()
+        tool_id = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0"
+
+        monkeypatch.setattr(tool_info, "_fetch_from_api", lambda *a, **k: pt)
+        result = tool_info.refetch(tool_id, "0.74+galaxy0")
+        assert result["fetched"] is True
+        assert result["already_cached"] is False
+        assert tool_info.has_cached(tool_id, "0.74+galaxy0")
+
     def test_backfill_index_on_load(self, tmp_path):
         """Cache files without index entries get backfilled on load."""
         ToolShedGetToolInfo(cache_dir=str(tmp_path))
