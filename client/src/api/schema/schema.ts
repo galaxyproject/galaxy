@@ -12599,6 +12599,7 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
+                | "mavedb"
                 | "omero"
                 | "ssh";
             /** Variables */
@@ -24386,6 +24387,7 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
+                | "mavedb"
                 | "omero"
                 | "ssh";
             /** Uri Root */
