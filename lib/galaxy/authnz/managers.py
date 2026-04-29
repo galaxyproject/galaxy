@@ -342,8 +342,11 @@ class AuthnzManager:
             return None
         for auth in user.social_auth or []:
             result = self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+            config = self.oidc_backends_config.get(auth.provider, None)
+            if config is None:
+                continue
             # Redirect to OIDC login if refresh fails and require_refresh is enabled
-            if trans.app.config.oidc_require_refresh and result["reauthentication_required"]:
+            if config.get("require_session_refresh") and result["reauthentication_required"]:
                 return auth.provider
         return None
 
