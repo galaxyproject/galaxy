@@ -2307,11 +2307,11 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         return self.components.masthead.window_manager.has_class("toggle")
 
     def window_manager_window_count(self) -> int:
-        """Return number of open scratchbook windows."""
+        """Return number of open window manager windows."""
         return len(self.find_elements_by_selector(".window-manager-window"))
 
     def window_manager_wait_for_window_count(self, expected_count: int):
-        """Wait until the expected number of scratchbook windows exist."""
+        """Wait until the expected number of window manager windows exist."""
 
         def check_count(driver=None):
             count = len(self.find_elements_by_selector(".window-manager-window"))
@@ -2320,15 +2320,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self._wait_on(check_count, f"window count to be {expected_count}")
 
     @contextlib.contextmanager
-    def scratchbook_frame(self, index=0):
-        """Context manager to switch into a scratchbook window iframe by index.
+    def window_manager_frame(self, index=0):
+        """Context manager to switch into a window manager iframe by index.
 
         Usage:
-            with self.scratchbook_frame(0):
+            with self.window_manager_frame(0):
                 self.wait_for_selector_visible(".dataset-view")
         """
         iframes = self.find_elements_by_selector(".window-manager-window iframe")
-        assert len(iframes) > index, f"Expected at least {index + 1} scratchbook iframes, found {len(iframes)}"
+        assert len(iframes) > index, f"Expected at least {index + 1} window manager iframes, found {len(iframes)}"
         try:
             self.switch_to_frame(iframes[index])
             yield
@@ -2336,22 +2336,22 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             self.switch_to_default_content()
 
     def window_manager_get_titles(self) -> list:
-        """Return list of window titles from all open scratchbook windows."""
+        """Return list of window titles from all open window manager windows."""
         elements = self.components.window_manager.title.all()
         return [el.text for el in elements]
 
     def window_manager_close_window(self, index=0):
-        """Close a specific scratchbook window by index."""
+        """Close a specific window manager window by index."""
         close_buttons = self.components.window_manager.close_button.all()
         assert len(close_buttons) > index, f"Expected at least {index + 1} close buttons, found {len(close_buttons)}"
         close_buttons[index].click()
 
     def window_manager_get_focused_title(self) -> str:
-        """Return the title text of the currently focused scratchbook window."""
+        """Return the title text of the currently focused window manager window."""
         return self.components.window_manager.focused_title.wait_for_text()
 
     def window_manager_click_focus_overlay(self, index=0):
-        """Click the focus overlay of a scratchbook window to switch focus.
+        """Click the focus overlay of a window manager window to switch focus.
 
         Uses fire_mousedown to match the event the overlay actually listens for.
         """
@@ -2360,13 +2360,13 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.fire_mousedown(overlays[index])
 
     def window_manager_get_iframe_src(self, index=0) -> str:
-        """Return the src attribute of a scratchbook window iframe by index."""
+        """Return the src attribute of a window manager iframe by index."""
         iframes = self.components.window_manager.iframe.all()
         assert len(iframes) > index, f"Expected at least {index + 1} iframes, found {len(iframes)}"
         return iframes[index].get_attribute("src") or ""
 
     def window_manager_focused_count(self) -> int:
-        """Return the number of focused scratchbook windows."""
+        """Return the number of focused window manager windows."""
         return len(self.components.window_manager.focused.all())
 
     # avoids problematic ID and classes on markup

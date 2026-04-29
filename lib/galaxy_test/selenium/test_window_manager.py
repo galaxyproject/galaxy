@@ -1,4 +1,4 @@
-"""E2E tests for Galaxy's scratchbook (floating window manager)."""
+"""E2E tests for Galaxy's window manager (floating windows)."""
 
 from .framework import (
     managed_history,
@@ -32,7 +32,7 @@ class TestWindowManager(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_open_dataset_in_window(self):
-        """Display a dataset with WM active — a scratchbook window should appear."""
+        """Display a dataset with WM active — a window manager window should appear."""
         self.perform_upload(self.get_filename("1.fasta"))
         self.history_panel_wait_for_hid_ok(1)
 
@@ -43,7 +43,7 @@ class TestWindowManager(SeleniumTestCase):
         item = self.history_panel_item_component(hid=1)
         item.display_button.wait_for_and_click()
 
-        # A scratchbook window should appear
+        # A window manager window should appear
         self.components.window_manager._.wait_for_visible()
         assert self.window_manager_window_count() == 1
         self.screenshot("window_manager_dataset_opened")
@@ -56,7 +56,7 @@ class TestWindowManager(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_window_content_loads(self):
-        """Content inside the scratchbook iframe should render the dataset view."""
+        """Content inside the window manager iframe should render the dataset view."""
         self.perform_upload(self.get_filename("1.fasta"))
         self.history_panel_wait_for_hid_ok(1)
 
@@ -66,14 +66,14 @@ class TestWindowManager(SeleniumTestCase):
         self.components.window_manager._.wait_for_visible()
 
         # Switch into the iframe and verify dataset view rendered
-        with self.scratchbook_frame(0):
+        with self.window_manager_frame(0):
             self.wait_for_selector_visible(".dataset-view")
             self.screenshot("window_manager_iframe_content")
 
     @selenium_test
     @managed_history
     def test_multiple_windows(self):
-        """Opening multiple datasets creates multiple scratchbook windows with correct focus."""
+        """Opening multiple datasets creates multiple window manager windows with correct focus."""
         for _i in range(3):
             self.perform_upload(self.get_filename("1.fasta"))
         self.history_panel_wait_for_hid_ok(3)
@@ -102,7 +102,7 @@ class TestWindowManager(SeleniumTestCase):
     @selenium_test
     @managed_history
     def test_close_window(self):
-        """Closing a scratchbook window removes it from DOM."""
+        """Closing a window manager window removes it from DOM."""
         self.perform_upload(self.get_filename("1.fasta"))
         self.perform_upload(self.get_filename("1.bed"))
         self.history_panel_wait_for_hid_ok(2)
