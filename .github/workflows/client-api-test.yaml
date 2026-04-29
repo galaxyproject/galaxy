@@ -2,12 +2,16 @@ name: Client API Testing
 on:
   push:
     paths:
-      - 'client-api/**'
+      - 'client/packages/api-client/**'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/pnpm-lock.yaml'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'
   pull_request:
     paths:
-      - 'client-api/**'
+      - 'client/packages/api-client/**'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/pnpm-lock.yaml'
       - 'client/src/api/**'
       - '.github/workflows/client-api-test.yaml'
 concurrency:
@@ -31,15 +35,12 @@ jobs:
         uses: pnpm/action-setup@v5
         with:
           package_json_file: client/package.json
-      - name: Install client dependencies
+      - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
         working-directory: client
-      - name: Install client-api dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: client-api
       - name: Build client-api
-        run: pnpm run build
-        working-directory: client-api
+        run: pnpm --filter @galaxyproject/galaxy-api-client run build
+        working-directory: client
       - name: Run client-api tests
-        run: pnpm test
-        working-directory: client-api
+        run: pnpm --filter @galaxyproject/galaxy-api-client test
+        working-directory: client
