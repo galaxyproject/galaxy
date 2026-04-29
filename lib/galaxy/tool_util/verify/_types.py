@@ -43,6 +43,7 @@ ValueStateRepresentationT = Literal["test_case_xml", "test_case_json"]
 class ToolTestDescriptionDict(TypedDict):
     tool_id: str
     tool_version: Optional[str]
+    profile: NotRequired[Optional[str]]
     name: str
     test_index: int
     inputs: ExpandedToolInputsJsonified
