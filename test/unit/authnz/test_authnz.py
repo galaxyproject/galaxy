@@ -361,6 +361,19 @@ def test_refresh_expiring_oidc_tokens_returns_none_on_optional_terminal_refresh_
     assert reauth_provider is None
 
 
+def test_refresh_expiring_oidc_tokens_uses_unified_provider_for_refresh_config(mock_app):
+    user = _make_user_with_social_auth(provider="google-openidconnect")
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app, provider_name="google", require_session_refresh="true")
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider == "google"
+
+
 def test_refresh_expiring_oidc_tokens_returns_none_on_unexpected_refresh_failure(mock_app):
     user = _make_user_with_social_auth()
     trans = _make_mock_trans_with_user(user)

@@ -335,19 +335,24 @@ class AuthnzManager:
         Refresh expiring OIDC tokens for all providers associated with a user.
 
         Returns:
-            str | None: The provider name if refresh fails and require_refresh is enabled, otherwise None
+            str | None: The provider name if refresh fails and require_session_refresh is enabled, otherwise None
         """
         user = trans.user or user
         if not isinstance(user, model.User):
             return None
         for auth in user.social_auth or []:
             result = self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
-            config = self.oidc_backends_config.get(auth.provider, None)
+            if auth.provider is None:
+                continue
+            provider = self._unify_provider_name(auth.provider)
+            if provider is None:
+                continue
+            config = self.oidc_backends_config.get(provider, None)
             if config is None:
                 continue
-            # Redirect to OIDC login if refresh fails and require_refresh is enabled
+            # Redirect to OIDC login if refresh fails and require_session_refresh is enabled
             if config.get("require_session_refresh") and result["reauthentication_required"]:
-                return auth.provider
+                return provider
         return None
 
     def authenticate(
