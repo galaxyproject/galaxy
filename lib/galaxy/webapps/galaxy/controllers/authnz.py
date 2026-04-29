@@ -13,7 +13,10 @@ from galaxy import (
     exceptions,
     web,
 )
-from galaxy.util import url_get
+from galaxy.util import (
+    asbool,
+    url_get,
+)
 from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
 
@@ -212,14 +215,14 @@ class OIDC(BaseUIController):
 
     @web.json
     @web.expose
-    def logout(self, trans, provider, **kwargs):
+    def logout(self, trans, provider, logout_all=False, **kwargs):
         post_user_logout_href = trans.app.config.post_user_logout_href
         if post_user_logout_href is not None:
             post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
-        trans.handle_user_logout()
+        trans.handle_user_logout(logout_all=asbool(logout_all))
         if success:
             return {"redirect_uri": redirect_uri}
         else:

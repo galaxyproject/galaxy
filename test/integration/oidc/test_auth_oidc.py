@@ -187,14 +187,27 @@ class AbstractTestCases:
         def _get_interactor(self, api_key=None, allow_anonymous=False) -> "ApiTestInteractor":
             return super()._get_interactor(api_key=None, allow_anonymous=True)
 
+        def _start_oidc_login(self, session=None):
+            session = session or requests.Session()
+            response = session.get(f"{self.url}authnz/{self.provider_name}/login")
+            provider_url = response.json()["redirect_uri"]
+            return session, provider_url
+
+        def _visit_keycloak_login_page(self, session=None):
+            session, provider_url = self._start_oidc_login(session=session)
+            response = session.get(provider_url, verify=False)
+            return session, response
+
+        def _clear_galaxy_session_cookies(self, session):
+            for cookie in list(session.cookies):
+                if cookie.name == "galaxysession":
+                    session.cookies.clear(domain=cookie.domain, path=cookie.path, name=cookie.name)
+
         def _login_via_keycloak(self, username, password, expected_codes=None, save_cookies=False, session=None):
 
             if expected_codes is None:
                 expected_codes = [200, 404]
-            session = session or requests.Session()
-            response = session.get(f"{self.url}authnz/{self.provider_name}/login")
-            provider_url = response.json()["redirect_uri"]
-            response = session.get(provider_url, verify=False)
+            session, response = self._visit_keycloak_login_page(session=session)
             matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
             assert matches
             auth_url = html.unescape(str(matches.group(1)))
@@ -412,6 +425,29 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 200)
         assert "email" not in response.json()
+
+    def test_oidc_logout_logs_out_of_idp(self):
+        session, _ = self._login_via_keycloak(
+            KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, session=requests.Session()
+        )
+
+        # Dropping only Galaxy's session should still allow silent re-auth via the existing Keycloak session.
+        self._clear_galaxy_session_cookies(session)
+        session, response = self._visit_keycloak_login_page(session=session)
+        assert self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text) is None
+
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
+        # Galaxy logout with enable_idp_logout should invalidate the Keycloak browser session too.
+        response = session.get(self._api_url("../authnz/logout"))
+        response = session.get(response.json()["redirect_uri"], verify=False)
+        self._clear_galaxy_session_cookies(session)
+
+        session, response = self._visit_keycloak_login_page(session=session)
+        matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
+        assert matches, "Expected Keycloak to prompt for credentials after IDP logout"
 
     def test_auth_by_access_token_logged_in_once(self):
         # login at least once
