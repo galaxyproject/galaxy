@@ -1,11 +1,8 @@
 /**
- * This file re-exports the types we want to use from the Galaxy API.
- * It serves as a compatibility layer to avoid importing directly from the
- * symlinked files, which would require all of Galaxy's dependencies.
+ * Re-exports of specific types from the Galaxy OpenAPI schema.
  */
 
-// Import types from the symlinked files
-import { type components, type GalaxyApiPaths } from "./api/schema";
+import { type components, type GalaxyApiPaths } from "./schema";
 
 // We only need the types, not the code that depends on Galaxy's implementation
 export type { components, GalaxyApiPaths };
