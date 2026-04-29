@@ -640,15 +640,15 @@ registration:
 
 window_manager:
   selectors:
-    _: '.winbox'
-    title: '.winbox .wb-title'
-    close_button: '.winbox .wb-close'
-    header: '.winbox .wb-header'
-    body: '.winbox .wb-body'
-    iframe: '.winbox iframe'
-    focused: '.winbox.focus'
-    focused_title: '.winbox.focus .wb-title'
-    focus_overlay: '.winbox .iframe-focus-overlay'
+    _: '.window-manager-window'
+    title: '.window-manager-window .window-manager-window-title'
+    close_button: '.window-manager-window .window-manager-window-close'
+    header: '.window-manager-window .window-manager-window-header'
+    body: '.window-manager-window .window-manager-window-body'
+    iframe: '.window-manager-window iframe'
+    focused: '.window-manager-window.focused'
+    focused_title: '.window-manager-window.focused .window-manager-window-title'
+    focus_overlay: '.window-manager-window .iframe-focus-overlay'
 
 tool_form:
   selectors:

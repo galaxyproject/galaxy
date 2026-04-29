@@ -1,8 +1,9 @@
 /// <reference types="vitest" />
-import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue2";
 import path from "path";
 import { fileURLToPath } from "url";
+import { defineConfig } from "vite";
+
 import { i18nPlugin } from "./tests/vitest/test-plugin";
 import { yamlPlugin } from "./tests/vitest/yaml-plugin";
 
@@ -14,7 +15,6 @@ const modulesToTransform = [
     "bootstrap-vue",
     "rxjs",
     "@hirez_io",
-    "winbox",
     "pretty-bytes",
     "@fortawesome",
     "ro-crate-zip-explorer",

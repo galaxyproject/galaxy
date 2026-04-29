@@ -322,9 +322,6 @@ importers:
       vuedraggable:
         specifier: ^2.24.3
         version: 2.24.3
-      winbox:
-        specifier: ^0.2.82
-        version: 0.2.82
       xml-beautifier:
         specifier: ^0.5.0
         version: 0.5.0
@@ -4522,9 +4519,6 @@ packages:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
     hasBin: true
-
-  winbox@0.2.82:
-    resolution: {integrity: sha512-fMHaLnnuhyw1mLvzmCTWMpRKDfXUK/Z08VdbyBqDaITFFAd3Fx2BGDCF6rzGSkWrQgo8fHTFpFICofyM36FTnA==}
 
   wrap-ansi@6.2.0:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
@@ -9000,8 +8994,6 @@ snapshots:
     dependencies:
       siginfo: 2.0.0
       stackback: 0.0.2
-
-  winbox@0.2.82: {}
 
   wrap-ansi@6.2.0:
     dependencies:
