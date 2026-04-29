@@ -6,6 +6,7 @@ Uses pydantic-ai output functions to either:
 - Hand off to error_analysis for job debugging
 - Hand off to custom_tool for explicit tool creation requests
 - Hand off to tool_recommendation for tool discovery
+- Hand off to gtn_training for tutorial and learning requests
 """
 
 import json
@@ -55,6 +56,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
         history_handoff = self._create_history_handoff()
         next_step_handoff = self._create_next_step_advisor_handoff()
         orchestrator_handoff = self._create_orchestrator_handoff()
+        gtn_handoff = self._create_gtn_training_handoff()
 
         return Agent(
             self._get_model(),
@@ -66,6 +68,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 history_handoff,
                 next_step_handoff,
                 orchestrator_handoff,
+                gtn_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
@@ -266,6 +269,27 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return hand_off_to_orchestrator
 
+    def _create_gtn_training_handoff(self):
+        async def hand_off_to_gtn_training(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+        ) -> str:
+            """Route to GTN training agent for tutorial searches and learning guidance.
+
+            Use this when the user:
+            - Asks how to perform a specific type of analysis (RNA-seq, variant calling, etc.)
+            - Wants to learn how to use Galaxy or specific tools
+            - Is looking for tutorials, training materials, or learning resources
+            - Asks about best practices for an analysis workflow
+            - Wants step-by-step guidance for a bioinformatics task
+
+            Args:
+                query: The user's question about training, tutorials, or how to do analysis
+            """
+            return await self._execute_handoff(ctx, AgentType.GTN_TRAINING, query)
+
+        return hand_off_to_gtn_training
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
@@ -371,6 +395,8 @@ For job failures or errors: Explain what might have gone wrong and suggest solut
 For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
 
 For history analysis requests: Explain that you can help summarize their analysis, generate methods sections, or describe what was done in a history.
+
+For training/tutorial requests: Search the Galaxy Training Network for relevant tutorials.
 
 For off-topic questions: Politely explain you can only help with Galaxy and scientific analysis.
 

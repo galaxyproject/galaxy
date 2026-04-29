@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -3027,6 +3027,17 @@ galaxy:
   # test/integration/static_agents.yml }
   #inference_services: null
 
+  # Path to the SQLite FTS5 database used by the GTN training agent.
+  # Resolves against ``data_dir`` so admins can place it in a
+  # mutable-data directory. The file is downloaded automatically on
+  # first use from ``gtn_database_url`` if it does not exist.
+  # The default value is: gtn/gtn_search.db
+  #gtn_database_path: null
+
+  # URL used to download the GTN search database when the local file at
+  # ``gtn_database_path`` is missing.
+  #gtn_database_url: https://depot.galaxyproject.org/chatgxy/gtn_search.db
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well
@@ -3237,4 +3248,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-
