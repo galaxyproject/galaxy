@@ -20153,6 +20153,12 @@ export interface components {
              */
             model_store_format: components["schemas"]["ModelStoreFormat"];
         };
+        /**
+         * Prerequisite
+         * @description Available prerequisite operations that can be tried when a step fails due to an element not being interactable.
+         * @enum {string}
+         */
+        Prerequisite: "ensure_history_panel_open" | "ensure_tool_panel_open" | "ensure_upload_open";
         /** QuotaDetails */
         QuotaDetails: {
             /**
@@ -20706,7 +20712,7 @@ export interface components {
             | "in_use_state";
         /**
          * Requirement
-         * @description Available types of job sources (model classes) that produce dataset collections.
+         * @description Requirements that must be met for a tour to be runnable. The client lets the user know if any of the requirements are not met.
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
@@ -23619,6 +23625,11 @@ export interface components {
              * @description Elements that receive a click() event before the step is shown
              */
             preclick?: boolean | string[] | null;
+            /**
+             * Prerequisites
+             * @description Prerequisite operations that can be tried when a step fails due to an element not being interactable
+             */
+            prerequisites?: components["schemas"]["Prerequisite"][] | null;
             /**
              * Text-insert
              * @description Text to insert if element is a text box (e.g. tool search or upload)

@@ -14,6 +14,7 @@ import { ref } from "vue";
 
 import { getTourData, type TourRequirements, type TourStep } from "@/api/tours";
 import { Toast } from "@/composables/toast";
+import { useTourPrerequisites } from "@/composables/tourPrerequisites";
 import { useTourStore } from "@/stores/tourStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -32,6 +33,8 @@ const emit = defineEmits(["end-tour"]);
 
 const tourStore = useTourStore();
 const { toolGeneratedTours } = storeToRefs(tourStore);
+
+const { tourPrerequisites } = useTourPrerequisites();
 
 const steps = ref<TourStep[]>([]);
 const requirements = ref<TourRequirements>([]);
@@ -70,10 +73,27 @@ async function initialize() {
 
 initialize();
 
+/** Runs all prerequisites defined on a step */
+function runPrerequisites(step: TourStep) {
+    for (const prereq of step.prerequisites ?? []) {
+        if (tourPrerequisites[prereq]) {
+            tourPrerequisites[prereq]();
+        }
+    }
+}
+
 /** Performs any pre-step clicking and text insertion for the provided step. */
 async function onBefore(step: TourStep): Promise<void> {
     // Wait for element before continuing tour
     if (step.element) {
+        // If the element isn't immediately available, run prerequisites before the wait loop
+        if (step.prerequisites?.length) {
+            const el = getElement(step.element);
+            const rect = el?.getBoundingClientRect();
+            if (!el || !(rect && rect.width > 0 && rect.height > 0)) {
+                runPrerequisites(step);
+            }
+        }
         await waitForElement(step.element, ATTEMPTS);
     }
 
@@ -93,6 +113,13 @@ async function onNext(step: TourStep): Promise<void> {
     let postclick = step.postclick;
     if (postclick === true && step.element) {
         postclick = [step.element];
+    }
+    // If any postclick target isn't immediately available, run prerequisites first
+    if (step.prerequisites?.length && Array.isArray(postclick)) {
+        const anyMissing = postclick.some((selector) => !getElement(selector));
+        if (anyMissing) {
+            runPrerequisites(step);
+        }
     }
     doClick(postclick);
 }

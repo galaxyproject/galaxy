@@ -3,6 +3,7 @@ import { RouterLink } from "vue-router";
 export interface ClickableProps {
     to?: string;
     href?: string;
+    inline?: boolean;
 }
 
 /**
@@ -11,7 +12,7 @@ export interface ClickableProps {
 export function useClickableElement(props: ClickableProps) {
     if (props.to) {
         return RouterLink;
-    } else if (props.href) {
+    } else if (props.href || props.inline) {
         return "a" as const;
     } else {
         return "button" as const;

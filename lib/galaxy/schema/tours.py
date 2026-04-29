@@ -13,11 +13,19 @@ from pydantic import (
 
 
 class Requirement(str, Enum):
-    """Available types of job sources (model classes) that produce dataset collections."""
+    """Requirements that must be met for a tour to be runnable. The client lets the user know if any of the requirements are not met."""
 
     LOGGED_IN = "logged_in"
     NEW_HISTORY = "new_history"
     ADMIN = "admin"
+
+
+class Prerequisite(str, Enum):
+    """Available prerequisite operations that can be tried when a step fails due to an element not being interactable."""
+
+    ENSURE_HISTORY_PANEL_OPEN = "ensure_history_panel_open"
+    ENSURE_TOOL_PANEL_OPEN = "ensure_tool_panel_open"
+    ENSURE_UPLOAD_OPEN = "ensure_upload_open"
 
 
 class TourCore(BaseModel):
@@ -47,6 +55,11 @@ class TourStep(BaseModel):
     )
     preclick: Optional[Union[bool, list[str]]] = Field(
         None, title="Pre-click", description="Elements that receive a click() event before the step is shown"
+    )
+    prerequisites: Optional[list[Prerequisite]] = Field(
+        None,
+        title="Prerequisites",
+        description="Prerequisite operations that can be tried when a step fails due to an element not being interactable",
     )
     postclick: Optional[Union[bool, list[str]]] = Field(
         None, title="Post-click", description="Elements that receive a click() event after the step is shown"

@@ -50,7 +50,13 @@ function userTitle(title: string) {
         <nav
             :class="{ 'd-flex justify-content-between mx-3 my-2': !props.minimal }"
             aria-label="current history management">
-            <GButton v-if="!props.minimal" size="small" transparent @click="emit('show', false)">
+            <GButton
+                v-if="!props.minimal"
+                size="small"
+                data-description="hide history panel"
+                title="Hide history panel"
+                transparent
+                @click="emit('show', false)">
                 <FontAwesomeIcon fixed-width :icon="faChevronRight" />
                 <span v-localize>History</span>
             </GButton>

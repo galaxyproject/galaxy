@@ -35,6 +35,7 @@ function closeSidebar(event: KeyboardEvent | MouseEvent) {
         <div
             class="rounded activity-bar-header-badge"
             :class="{ 'sidebar-opened': props.isSideBarOpen }"
+            data-description="activity bar header"
             :role="props.isSideBarOpen ? 'button' : undefined"
             :tabindex="props.isSideBarOpen ? 0 : undefined"
             :title="props.isSideBarOpen ? 'Close panel' : 'Activity Bar'"

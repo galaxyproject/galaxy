@@ -23,47 +23,56 @@ steps:
 
     - title: "Upload your data"
       component: upload.local_button
+      prerequisites: ["ensure_upload_open"]
       intro: "You can upload data from your computer."
 
     - title: "Upload your data"
       component: upload.create_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
       preclick: true
 
     - title: "Insert URLs"
       component: upload.paste_content(n=0)
+      prerequisites: ["ensure_upload_open"]
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       textinsert: |
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/augustus/test-data/human_augustus.fa
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/sailfish/test-data/reads_2.fastq
-        https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
+        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
 
     - title: "Start the upload"
       component: upload.start_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
     - title: "Close upload/download manager"
       component: upload.close_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       postclick: true
 
     - title: "Tools"
-      component: _.left_panel
+      component: _.toolbox_panel
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "This is your ToolBox. All tools available in your Galaxy instance you can find here."
 
     - title: "Tool categories"
       component: tools.title
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "Tools are grouped into categories to make them easier to find."
 
     - title: "Tool search bar"
-      component: tools.search
+      component: tool_panel.search
+      prerequisites: ["ensure_tool_panel_open"]
       intro: "You can search for tools by keywords."
       textinsert: 'filter'
 
     - title: "Select a tool"
       component: tool_panel.tool_link(tool_id=Filter1)
-      intro: "Select and load a tool for your analysis by clicking the underlined link."
+      prerequisites: ["ensure_tool_panel_open"]
+      intro: "Select and load a tool for your analysis by clicking on it."
       postclick: true
 
     - title: "Filter Tool"
@@ -81,59 +90,71 @@ steps:
 
     - title: "Run your tool"
       component: tools.execute
-      intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
+      intro: "Click on 'Execute' to run your tool and send it to the compute cluster.<br />
               Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
       postclick: true
 
     - title: "History"
       component: history_panel
-      intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br>
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "This is your Galaxy history! All analysis steps with results of the tools and their parameters will be recorded here and can be redone at any time.<br />
               A running tool is shown in yellow and if your calculation is done, it turns green. If your dataset is
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
-      intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "This is your dataset. You can get more information and options like different visualizations by clicking on it."
       postclick: true
 
     - title: "View dataset"
       element: "#current-history-panel div.content-item .display-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "View your dataset by clicking the eye button."
       postclick: true
 
+    - title: "Dataset view"
+      component: dataset_view.navigation
+      intro: "This is the dataset view. It is a centralized place to view, visualize, edit attributes and get more information about your dataset."
+
     - title: "Dataset information"
       component: dataset_view.details_tab
-      intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
+      intro: "Clicking on the <b>Details</b> tab provides you with more information regarding your dataset (e.g. filetype or size)."
       preclick: true
 
     - title: "Rename dataset"
       component: dataset_view.edit_tab
-      intro: "Rename your dataset by clicking the pencil button."
+      intro: "Rename your dataset and update its attributes by clicking on the <b>Edit</b> tab."
+      preclick: true
 
     - title: "Remove dataset"
       element: "#current-history-panel div.content-item .delete-btn"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Delete your dataset by clicking the trash-button."
 
     - title: "Re-run tool"
       element: "#current-history-panel div.content-item .rerun-btn"
-      intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "By clicking the reload button, you can re-run your tool (e.g. with different parameters or on another dataset if you wish)."
 
-    - title: "Analyze data"
-      component: masthead.home
-      element: "#analysis"
-      intro: "This is the current view. Start your <b>Analysis</b> from here."
+    - title: "Activity Bar"
+      component: _.activity_bar_header
+      intro: "This is the activity bar. It gives you access to different activities in Galaxy, like your <b>Histories</b>, <b>Workflows</b>, <b>Visualizations</b> and <i>More...</i>"
 
-    - title: "Workflow"
-      component: workflows.activity
-      intro: "Create, manage, import, export and share your <b>Workflows</b>."
+    - title: "Tools Activity"
+      component: tools.activity
+      intro: "This is the tools activity. It gives you access to your tool panel and the tool search (which we just used)."
 
-    - title: "Visualization"
-      component: visualization.activity
-      intro: "Galaxy offers a lot of visualizations to review your data!"
+    - title: "All Other Activities"
+      component: preferences.activity
+      intro: "Here you can find all other activities, several of which are already enabled and can be disabled as you like.<br />
+              Note that the activities can also be reordered when this panel is active by dragging them on the bar."
+      preclick: true
 
     - title: "Help"
       component: masthead.help
       intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
+      preclick: true
 
     - title: "Window Manager"
       component: masthead.window_manager

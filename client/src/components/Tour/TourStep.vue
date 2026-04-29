@@ -2,6 +2,7 @@
 import { faArrowRight, faCheck, faPlay, faSpinner, faSquare, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { createPopper } from "@popperjs/core";
+import { useWindowScroll } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
 import type { TourStep } from "@/api/tours";
@@ -36,6 +37,27 @@ const targetElementVisible = computed(() => {
     }
     return false;
 });
+
+const { y: scrollY } = useWindowScroll();
+
+// We use this to ensure the new element is scrolled into view when it appears (if not already in view)
+const targetElementNotInScrollView = computed(() => {
+    const el = targetElement.value;
+    if (el && scrollY.value !== undefined) {
+        const rect = el.getBoundingClientRect();
+        return rect.bottom > window.innerHeight || rect.top < 0;
+    }
+    return false;
+});
+watch(
+    () => targetElement.value,
+    (newVal) => {
+        if (targetElementNotInScrollView.value && newVal) {
+            newVal.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    },
+    { immediate: true },
+);
 
 const tourElement = ref<HTMLElement | null>(null);
 watch(

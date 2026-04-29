@@ -21,6 +21,7 @@ _:  # global stuff
     by_attribute: '${scope} [${name}="${value}"]'
     active_nav_item: '.nav-item-active'
     toolbox_panel: '#toolbox-panel'
+    activity_bar_header: '[data-description="activity bar header"]'
 
     confirm_button:
       type: xpath
@@ -163,6 +164,7 @@ confirm_dialog:
 dataset_view:
   selectors:
     _: .dataset-view
+    navigation: '[data-description="dataset view navigation"]'
     edit_tab: ".nav-item[title='Edit dataset attributes and metadata'] > a.nav-link"
     details_tab: ".nav-item[title='View detailed information about this dataset'] > a.nav-link"
     visualize_tab: ".nav-item[title='Explore available visualizations for this dataset'] > a.nav-link"
@@ -332,6 +334,11 @@ history_panel:
 
     annotation_done: '.details .history-annotation .annotation button'
 
+    filter_input: '#current-history-panel .content-operations-filters [data-description="filter text input"]'
+    filter_advanced_toggle: '#current-history-panel .content-operations-filters [data-description="toggle advanced search"]'
+    filter_reset: '#current-history-panel .content-operations-filters [data-description="reset query"]'
+    filter_advanced: '#current-history-panel .content-operations-filters [data-description="advanced filters"]'
+
     options_button: '[data-description="history options"]'
     options_button_icon: '[data-description="history options"] button'
     options_menu: '.history-options-button-menu'
@@ -413,7 +420,7 @@ tool_panel:
     tool_link: 'a[href$$="/?tool_id=${tool_id}&version=latest"]'
     outer_tool_link: '.toolTitle a[href$$="/?tool_id=${tool_id}&version=latest"]'
     data_source_tool_link: 'a[href$$="tool_runner/data_source_redirect?tool_id=${tool_id}"]'
-    search: '.search-query'
+    search: '[data-description="tool search input"] .search-query'
     toolbox: '[data-description="panel toolbox"]'
     workflow_names: '#internal-workflows .toolTitle'
     views_button: '.tool-panel-dropdown'

@@ -8,6 +8,11 @@ tags:
 steps:
     - content: "This short tour will guide you through <b>Galaxy's History</b> and datasets."
 
+    - title: "Your History in Galaxy"
+      element: "#current-history-panel"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "This is your <i>current</i> history! All analysis steps will be recorded here and can be redone at any time."
+
     - title: "Open the Upload Dialog"
       component: upload.start
       intro: |
@@ -17,11 +22,13 @@ steps:
 
     - title: "Upload your data"
       component: upload.create_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data."
       postclick: true
 
     - title: "Insert URLs"
       component: upload.paste_content(n=0)
+      prerequisites: ["ensure_upload_open"]
       intro: "URLs separated by a line break are automatically downloaded by Galaxy."
       textinsert: |
         https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
@@ -29,72 +36,127 @@ steps:
 
     - title: "Start the upload"
       component: upload.start_button
+      prerequisites: ["ensure_upload_open"]
       intro: "Upload the data into your Galaxy <b>History</b>."
       postclick: true
 
     - title: Close Upload
       component: upload.close_button
+      prerequisites: ["ensure_upload_open"]
       intro: Hit the close button to close the upload dialog.
       postclick: true
 
-    - title: "History"
+    - title: "Your History is Populated!"
       element: "#current-history-panel"
-      intro: "This is your history! All analysis steps will be recorded and can be redone at any time."
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "Your history is now populated with the two uploaded datasets.<br />
+              Any more tools you run on these will also be added to the history, so that you can keep track of your analysis steps and results."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
-      intro: "This is one of your uploaded datasets. You can get more informations and options like different visualizations by clicking on it."
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "This is one of your uploaded datasets. You can get more information and options like different visualizations by clicking on it."
       postclick: true
 
     - title: "Metadata"
       element: "#current-history-panel div.content-item span.datatype"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "Galaxy has assigned a datatype to your dataset during upload, which you can see here."
 
     - element: "#current-history-panel div.content-item .download-btn"
       title: "Download your dataset"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "You can download every dataset by using the floppy disk symbol."
 
     - element: "#current-history-panel div.content-item .display-btn"
       title: "Inspect your data"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "The eye symbol can be used to look at your data."
-      preclick: true
+      postclick: true
+
+    - title: "Dataset View"
+      intro: "This is the dataset view. It is a centralized place to view, visualize, edit attributes and get more information about your dataset."
 
     - component: dataset_view.details_tab
       title: "Even more information"
-      intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
+      intro: "Get an overview of all metadata associated with your dataset by clicking on the <b>Details</b> tab."
       preclick: true
 
     - component: dataset_view.edit_tab
       title: "Edit metadata"
-      intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
+      intro: "Edit metadata attributes of your dataset, like the associated filetype or the dataset name, by clicking on the <b>Edit</b> tab."
       preclick: true
 
     - element: "#current-history-panel div.content-item .delete-btn"
       title: "Remove datasets"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "You can remove a dataset from the history with the trash can symbol."
       postclick: true
 
-    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
+    - component: history_panel.filter_input
       title: "Filter your datasets"
+      prerequisites: ["ensure_history_panel_open"]
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
       textinsert: "deleted:true"
 
     - element: "#current-history-panel div.content-item .undelete-btn"
       title: "Undeleting a dataset"
+      prerequisites: ["ensure_history_panel_open"]
       intro: |
             Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
             Please note that datasets marked as deleted can be purged by your administrator at any time.
       postclick: true
 
-    - element: "#current-history-panel .content-operations-filters input[data-description='filter text input']"
-      title: "Search your History"
-      intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
-      textinsert: ""
+    - component: history_panel.filter_reset
+      title: "Clear the search"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "Use the reset button to clear any active filters and return to the full history view."
+      preclick: true
 
-    - element: "#current-history-panel [data-description='history options']"
-      title: "History Options"
-      intro: "In the History menu you will find a lot more useful History options."
+    - component: history_panel.filter_advanced_toggle
+      title: "Advanced Filters"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "By clicking on the advanced filters button, you can see and try all of the different filter options available for your history."
+      preclick: true
       postclick: true
+
+    - element: "#current-history-panel .content-operations .show-history-content-selectors-btn"
+      title: "Selection Operations"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "This will show checkboxes next to each dataset, which you can use to select multiple datasets and then perform operations on them, like deleting or building lists out of them."
+      postclick: true
+
+    - element: "#current-history-panel .content-operations .show-history-content-selectors-btn"
+      title: "Selection Operations"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "Note that you can also select datasets by Ctrl/Cmd + Click on the dataset itself, and range select datasets by Shift + Click."
+      postclick: true
+
+    - component: history_panel.options_button_icon
+      title: "History Options"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "In the History menu you will find a lot more useful History options."
+      preclick: true
+
+    - element: "#current-history-panel [data-description='create new history']"
+      title: "Create new history"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "You can have multiple histories in Galaxy. Click this button to create a new history. This is useful to keep different analyses separate from each other."
+
+    - element: "#current-history-panel [data-description='switch to another history']"
+      title: "Switch between histories"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "You can switch between your histories by clicking on this button and selecting the history you want to switch to."
+
+    - element: "#current-history-panel [data-description='hide history panel']"
+      title: "Hide the history panel"
+      prerequisites: ["ensure_history_panel_open"]
+      intro: "If you want more space for your analysis, you can hide the history panel by clicking this button. You can get it back by clicking the same button again on the top right"
+
+    - component: histories.activity
+      title: "History List"
+      intro: "This will take you to the history list page, where you can see all your histories and their contents at a glance."
+      preclick: true
 
     - title: "Enjoy your Galaxy Histories"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"
