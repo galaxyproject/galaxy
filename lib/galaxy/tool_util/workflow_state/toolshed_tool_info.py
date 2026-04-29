@@ -19,6 +19,7 @@ from datetime import (
     timezone,
 )
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
@@ -174,6 +175,10 @@ class ToolShedGetToolInfo:
     def index(self) -> CacheIndex:
         return self._index
 
+    def resolve_tool_coordinates(self, tool_id: str, tool_version: Optional[str]):
+        """Public accessor for resolved (toolshed_url, trs_tool_id, version, readable_id)."""
+        return self._resolve_tool_coordinates(tool_id, tool_version)
+
     def _resolve_tool_coordinates(self, tool_id: str, tool_version: Optional[str]):
         """Resolve tool_id to (toolshed_url, trs_tool_id, version, readable_id).
 
@@ -253,28 +258,93 @@ class ToolShedGetToolInfo:
         """Return provenance info for all cached tools."""
         return self._index.list_all()
 
-    def clear_cache(self, tool_id: Optional[str] = None):
-        """Clear cache. If tool_id given, clear matching entries; otherwise clear all."""
+    def clear_cache(self, tool_id: Optional[str] = None) -> int:
+        """Clear cache. If tool_id given, clear matching entries; otherwise clear all.
+
+        Returns the number of index entries removed.
+        """
         if tool_id is None:
-            # Clear all
-            for entry in self._index.list_all():
+            entries = self._index.list_all()
+            count = len(entries)
+            for entry in entries:
                 path = self._cache_path(entry["cache_key"])
                 if os.path.exists(path):
                     os.remove(path)
             self._index.clear()
             self._memory_cache.clear()
-        else:
-            # Clear entries matching tool_id prefix
-            to_remove = []
-            for entry in self._index.list_all():
-                if entry.get("tool_id", "").startswith(tool_id.rstrip("*")):
-                    to_remove.append(entry["cache_key"])
-            for key in to_remove:
-                path = self._cache_path(key)
-                if os.path.exists(path):
-                    os.remove(path)
-                self._index.remove(key)
-                self._memory_cache.pop(key, None)
+            return count
+        # Clear entries matching tool_id prefix
+        to_remove = []
+        for entry in self._index.list_all():
+            if entry.get("tool_id", "").startswith(tool_id.rstrip("*")):
+                to_remove.append(entry["cache_key"])
+        for key in to_remove:
+            path = self._cache_path(key)
+            if os.path.exists(path):
+                os.remove(path)
+            self._index.remove(key)
+            self._memory_cache.pop(key, None)
+        return len(to_remove)
+
+    def stat_cached(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """Return filesystem stats for a cached entry, or None if no file exists."""
+        path = self._cache_path(cache_key)
+        if not os.path.exists(path):
+            return None
+        st = os.stat(path)
+        return {
+            "size_bytes": st.st_size,
+            "mtime": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
+        }
+
+    def load_cached_raw(self, cache_key: str) -> Optional[Any]:
+        """Load raw JSON contents (not ParsedTool-validated) for a cache entry."""
+        path = self._cache_path(cache_key)
+        if not os.path.exists(path):
+            return None
+        try:
+            with open(path) as f:
+                return json.load(f)
+        except Exception:
+            return None
+
+    def remove_cached(self, cache_key: str) -> bool:
+        """Remove a single cached entry by key. Returns True if it existed."""
+        existed = self._index.has(cache_key) or os.path.exists(self._cache_path(cache_key))
+        path = self._cache_path(cache_key)
+        if os.path.exists(path):
+            os.remove(path)
+        self._index.remove(cache_key)
+        self._memory_cache.pop(cache_key, None)
+        return existed
+
+    def refetch(
+        self,
+        tool_id: str,
+        tool_version: Optional[str] = None,
+        force: bool = False,
+    ) -> Dict[str, Any]:
+        """Idempotent populate (force=False) or forced re-fetch (force=True).
+
+        Returns {"cache_key": str, "fetched": bool, "already_cached": bool}.
+        Raises KeyError when fetching fails.
+        """
+        toolshed_url, trs_tool_id, version, _readable = self._resolve_tool_coordinates(tool_id, tool_version)
+        already_cached = False
+        if version is not None:
+            already_cached = self.has_cached(tool_id, version)
+        if already_cached and not force:
+            key = _cache_key(toolshed_url, trs_tool_id, version)
+            return {"cache_key": key, "fetched": False, "already_cached": True}
+        if already_cached and force and version is not None:
+            key = _cache_key(toolshed_url, trs_tool_id, version)
+            self.remove_cached(key)
+        tool = self.get_tool_info(tool_id, tool_version)
+        if tool is None:
+            raise KeyError(f"Failed to fetch tool: {tool_id}")
+        resolved_version = tool.version or version or "unknown"
+        key = _cache_key(toolshed_url, trs_tool_id, resolved_version)
+        return {"cache_key": key, "fetched": True, "already_cached": already_cached}
 
     def fetch_from_api(self, toolshed_url: str, trs_tool_id: str, tool_version: str) -> ParsedTool:
         """Fetch ParsedTool from ToolShed API (no caching)."""
