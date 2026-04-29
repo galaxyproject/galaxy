@@ -167,11 +167,10 @@
 </template>
 
 <script>
-import axios from "axios";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { NON_TERMINAL_STATES } from "@/api/jobs";
+import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
 import { jobsProvider } from "@/components/providers/JobProvider";
 import { getAppRoot } from "@/onload/loadConfig";
 import Filtering, { contains } from "@/utils/filtering";
@@ -183,11 +182,6 @@ import JobLock from "./JobLock.vue";
 import JobsTable from "@/components/admin/JobsTable.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
-
-function cancelJob(jobId, message) {
-    const url = `${getAppRoot()}api/jobs/${jobId}`;
-    return axios.delete(url, { data: { message: message } });
-}
 
 export default {
     components: { FilterMenu, JobLock, JobsTable, Heading },
@@ -395,15 +389,14 @@ export default {
         getJobViewLink(jobId) {
             return `${getAppRoot()}jobs/${jobId}/view`;
         },
-        onStopJobs() {
-            axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
-                if (this.sendNotification) {
-                    this.sendNotificationToUsers();
-                }
-                this.update();
-                this.selectedStopJobIds = [];
-                this.stopMessage = "";
-            });
+        async onStopJobs() {
+            await Promise.all(this.selectedStopJobIds.map((jobId) => deleteJob(jobId, this.stopMessage)));
+            if (this.sendNotification) {
+                this.sendNotificationToUsers();
+            }
+            this.update();
+            this.selectedStopJobIds = [];
+            this.stopMessage = "";
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];

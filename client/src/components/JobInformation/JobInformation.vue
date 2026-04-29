@@ -11,7 +11,9 @@ import { getJobDuration } from "./utilities";
 
 import Heading from "../Common/Heading.vue";
 import DecodedId from "../DecodedId.vue";
+import JobState from "../JobStates/JobState.vue";
 import CodeRow from "./CodeRow.vue";
+import RerunJobButton from "./RerunJobButton.vue";
 import CopyToClipboard from "@/components/CopyToClipboard.vue";
 import HelpText from "@/components/Help/HelpText.vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -46,6 +48,13 @@ function jobStateIsRunning(jobState: string) {
 const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
 const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
 const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
+
+/** Whether the job can be rerun; actually decided based on if the tool `is_workflow_compatible`,
+ * but that would require an extra fetch. Just going by known non-rerunnable tool ids for now.
+ */
+const jobIsRerunnable = computed(
+    () => !!job.value?.tool_id && !job.value.tool_id.startsWith("upload") && job.value.tool_id !== "__DATA_FETCH__",
+);
 
 // Curious as to why we're trying to access tool_version and traceback like this, when they don't exist on
 // `ShowFullJobResponse`? Possibly historical reasons or maybe the `JobProvider` can return different types (doesn't seem like it)?
@@ -144,7 +153,15 @@ watch(
             :stderr_position="stderr_position"
             :stderr_length="stderr_length"
             @update:result="updateConsoleOutputs" />
-        <Heading id="job-information-heading" h1 separator inline size="md"> Job Information </Heading>
+        <div class="d-flex justify-content-between flex-gapx-1">
+            <Heading id="job-information-heading" class="flex-grow-1" h1 separator inline size="md">
+                Job Information
+                <JobState v-if="job" class="job-information-state-badge" :job="job" />
+            </Heading>
+            <div v-if="job && jobIsRerunnable">
+                <RerunJobButton :job-id="props.jobId" outline />
+            </div>
+        </div>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
@@ -261,9 +278,15 @@ watch(
         </table>
     </div>
 </template>
-<style scoped>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
 .tooltipJobInfo {
     text-decoration-line: underline;
     text-decoration-style: dashed;
+}
+
+.job-information-state-badge {
+    font-size: $h5-font-size;
 }
 </style>

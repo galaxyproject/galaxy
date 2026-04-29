@@ -156,6 +156,12 @@ $galaxy-state-bg: (
     "paused": $state-info-bg,
     "skipped": $state-default-bg,
     "uninitialized": $gray-200,
+    // Some `JobState`s:
+    "resubmitted": $state-default-bg,
+    "failed": $state-danger-bg,
+    "deleting": darken($state-default-bg, 30%),
+    "stop": $state-default-border,
+    "stopped": darken($state-default-bg, 30%),
 );
 
 // Replace all occurrences of $search in $string with $replace.

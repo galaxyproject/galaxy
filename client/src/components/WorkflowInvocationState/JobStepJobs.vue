@@ -162,16 +162,12 @@ watch(
         <GModal :show.sync="showModal" fixed-height size="medium" @close="viewedJob = null">
             <template v-slot:header>
                 <div v-if="viewedJob" class="w-100 d-flex justify-content-between align-items-center">
-                    <div class="d-flex flex-gapx-1 align-items-center">
-                        <Heading h2 size="sm" style="margin-bottom: 0">
-                            Job
-                            <code>
-                                {{ viewedJob.id }}
-                            </code>
-                        </Heading>
-
-                        <JobState :job="viewedJob" />
-                    </div>
+                    <Heading h2 size="sm">
+                        Job
+                        <code>
+                            {{ viewedJob.id }}
+                        </code>
+                    </Heading>
 
                     <div class="d-flex align-items-center">
                         <GButtonGroup>
