@@ -102,7 +102,8 @@ def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
+    response = requests.post(QUAY_REPOSITORY_API_ENDPOINT, json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
+    response.raise_for_status()
 
 
 def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = None) -> List[str]:
@@ -121,10 +122,11 @@ def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = No
 def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = None) -> Dict[str, Any]:
     assert namespace is not None
     assert pkg_name is not None
-    url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
+    url = f"{QUAY_REPOSITORY_API_ENDPOINT}/{namespace}/{pkg_name}"
     if not session:
         session = requests.Session()
     response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
+    response.raise_for_status()
     data = response.json()
     return data
 
@@ -139,6 +141,7 @@ def _get_namespace(namespace: str) -> List[str]:
         repos_response = requests.get(
             QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
         )
+        repos_response.raise_for_status()
         repos_response_json = repos_response.json()
         repos = repos_response_json["repositories"]
         repo_names += [r["name"] for r in repos]
