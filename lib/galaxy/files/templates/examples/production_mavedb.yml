@@ -3,7 +3,7 @@
   name: MaveDB
   description: |
       [MaveDB](https://www.mavedb.org) provides Multiplexed Assays of Variant Effect datasets.
-      This file source exposes read-only score set files through the public MaveDB API.
+      This file source exposes score set files through the public MaveDB API.
   secrets:
       api_key:
           label: MaveDB API key
