@@ -2335,9 +2335,6 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         finally:
             self.switch_to_default_content()
 
-    # backward compat alias
-    winbox_frame = scratchbook_frame
-
     def window_manager_get_titles(self) -> list:
         """Return list of window titles from all open scratchbook windows."""
         elements = self.components.window_manager.title.all()
