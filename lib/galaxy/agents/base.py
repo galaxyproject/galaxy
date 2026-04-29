@@ -389,23 +389,24 @@ class BaseGalaxyAgent(ABC):
     @staticmethod
     def _format_entity_context(entities: dict[str, Any]) -> str:
         """Format entity references from @mentions into readable text."""
+        _s = BaseGalaxyAgent._sanitize_context_value
         lines: list[str] = []
         for ds in entities.get("datasets", []):
-            parts = [f"Dataset #{ds.get('hid', '?')}"]
+            parts = [f"Dataset #{_s(ds.get('hid', '?'))}"]
             name = ds.get("name")
             if name:
-                parts.append(f'"{name}"')
+                parts.append(f'"{_s(name)}"')
             details = []
             if ds.get("extension"):
-                details.append(ds["extension"])
+                details.append(_s(ds["extension"]))
             if ds.get("state"):
-                details.append(ds["state"])
+                details.append(_s(ds["state"]))
             if details:
                 parts.append(f"({', '.join(details)})")
             lines.append(f"- {' '.join(parts)}")
         for hist in entities.get("histories", []):
             label = "Current history" if hist.get("identifier") == "current" else "History"
-            name = hist.get("name", "")
+            name = _s(hist.get("name", ""))
             lines.append(f'- {label}: "{name}"')
         if not lines:
             return ""
