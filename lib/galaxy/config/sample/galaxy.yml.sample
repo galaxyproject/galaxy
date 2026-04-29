@@ -2949,6 +2949,12 @@ galaxy:
   # https://docs.galaxyproject.org/en/master/admin/production.html#use-celery-for-asynchronous-tasks
   #enable_celery_tasks: false
 
+  # Submit tool jobs through the asynchronous tool requests API
+  # (`/api/jobs`) when available. The client falls back to the legacy
+  # `/api/tools` endpoint when this is disabled, when Celery is not
+  # enabled, or when the tool does not provide a typed parameter schema.
+  #enable_tool_requests: true
+
   # Configuration options passed to Celery.
   # To refer to a task by name, use the template `galaxy.foo` where
   # `foo` is the function name of the task defined in the

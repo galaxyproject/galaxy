@@ -113,7 +113,6 @@
 import { mapActions, mapState, storeToRefs } from "pinia";
 
 import { canMutateHistory } from "@/api";
-import { buildNestedState } from "@/components/Form/utilities";
 import { useUserToolCredentials } from "@/composables/userToolCredentials";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -124,13 +123,8 @@ import { useUserStore } from "@/stores/userStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
 import { parseBool } from "@/utils/parseBool";
 
-import {
-    buildJobResponse,
-    getToolFormData,
-    submitJobRequest,
-    updateToolFormData,
-    waitForToolRequest,
-} from "./services";
+import { getToolFormData, updateToolFormData } from "./services";
+import { submitToolJob } from "./submit";
 
 import GModal from "../BaseComponents/GModal.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
@@ -408,13 +402,11 @@ export default {
             this.showExecuting = true;
             this.addRecentTool(this.formConfig?.id);
 
-            const nestedInputs = buildNestedState(this.formConfig.inputs, this.formData);
             const jobDef = {
                 tool_id: this.formConfig.id,
                 tool_uuid: this.toolUuid,
                 tool_version: this.formConfig.version,
                 history_id: historyId,
-                inputs: nestedInputs,
                 use_cached_jobs: this.useCachedJobs || false,
                 send_email_notification: this.useEmail || false,
             };
@@ -441,10 +433,11 @@ export default {
             const prevRoute = this.$route.fullPath;
 
             try {
-                const submitResponse = await submitJobRequest(jobDef);
-                const toolRequestId = submitResponse.tool_request_id;
-                const toolRequestDetail = await waitForToolRequest(toolRequestId);
-                const jobResponse = await buildJobResponse(toolRequestDetail);
+                const jobResponse = await submitToolJob({
+                    jobDef,
+                    formConfig: this.formConfig,
+                    formData: this.formData,
+                });
                 jobResponse.produces_entry_points = this.formConfig.model_class === "InteractiveTool";
 
                 this.submissionRequestFailed = false;
@@ -457,13 +450,23 @@ export default {
                 }
 
                 const nJobs = jobResponse.jobs ? jobResponse.jobs.length : 0;
-                if (nJobs > 0) {
+                const nErrors = jobResponse.errors?.length || 0;
+                if (nJobs > 0 && nErrors === 0) {
                     this.showForm = false;
                     this.saveLatestResponse({
                         jobDef,
                         jobResponse,
                         toolName: this.toolName,
                     });
+                } else if (nErrors > 0) {
+                    this.showError = true;
+                    this.showForm = true;
+                    this.errorTitle =
+                        nJobs > 0
+                            ? `Job submission for ${nErrors} out of ${nJobs + nErrors} jobs failed.`
+                            : "Job submission rejected.";
+                    this.errorContent = jobResponse.errors;
+                    return;
                 }
 
                 if (prevRoute === this.$route.fullPath) {
