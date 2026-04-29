@@ -4453,10 +4453,9 @@ class SortTool(DatabaseOperationTool):
                 old_elements_dict = {}
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
+                sort_lines = self._read_text_file_lines(hda.get_file_name())
                 try:
-                    sorted_elements = [
-                        old_elements_dict[line.strip()] for line in self._read_text_file_lines(hda.get_file_name())
-                    ]
+                    sorted_elements = [old_elements_dict[line.strip()] for line in sort_lines]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
