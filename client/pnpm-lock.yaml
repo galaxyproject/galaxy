@@ -121,6 +121,9 @@ importers:
       dexie:
         specifier: ^3.2.5
         version: 3.2.5(karma@6.4.4)
+      diff:
+        specifier: ^8.0.3
+        version: 8.0.3
       dom-to-image:
         specifier: ^2.6.0
         version: 2.6.0
@@ -2210,6 +2213,10 @@ packages:
 
   di@0.0.1:
     resolution: {integrity: sha512-uJaamHkagcZtHPqCIHZxnFrXlunQXgBOsZSUOWwFw31QJCAbyTBoHMW75YOTur5ZNx8pIeAKgf6GWIgaqqiLhA==}
+
+  diff@8.0.3:
+    resolution: {integrity: sha512-qejHi7bcSD4hQAZE0tNAawRK1ZtafHDmMTMkrrIGgSLl7hTnQHmKCeB45xAcbfTqK2zowkM3j3bHt/4b/ARbYQ==}
+    engines: {node: '>=0.3.1'}
 
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
@@ -6384,6 +6391,8 @@ snapshots:
       - karma
 
   di@0.0.1: {}
+
+  diff@8.0.3: {}
 
   dir-glob@3.0.1:
     dependencies:

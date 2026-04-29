@@ -59,6 +59,8 @@ const iconMap: Record<ActionType, IconDefinition> = {
     [ActionType.REFINE_QUERY]: faPencilAlt,
     [ActionType.DOCUMENTATION]: faBook,
     [ActionType.VIEW_EXTERNAL]: faExternalLinkAlt,
+    [ActionType.APPLY_PAGE_EDIT]: faPencilAlt,
+    [ActionType.INSERT_PAGE_SECTION]: faPlay,
 };
 
 function getIcon(actionType: ActionType): IconDefinition {

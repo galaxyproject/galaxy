@@ -20,6 +20,8 @@ export enum ActionType {
     VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
     REFINE_QUERY = "refine_query",
+    APPLY_PAGE_EDIT = "apply_page_edit",
+    INSERT_PAGE_SECTION = "insert_page_section",
 }
 /* eslint-enable no-unused-vars */
 
@@ -38,6 +40,13 @@ export interface AgentResponse {
     suggestions: ActionSuggestion[];
     metadata: Record<string, any>;
     reasoning?: string;
+}
+
+export interface EditProposal {
+    mode: "full_replacement" | "section_patch";
+    content: string;
+    target_section_heading?: string;
+    new_section_content?: string;
 }
 
 export function useAgentActions() {
@@ -212,6 +221,8 @@ export function useAgentActions() {
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
+            [ActionType.APPLY_PAGE_EDIT]: "📝",
+            [ActionType.INSERT_PAGE_SECTION]: "➕",
         };
         return icons[actionType] || "❓";
     }

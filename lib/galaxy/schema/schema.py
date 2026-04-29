@@ -1703,6 +1703,9 @@ class PageIndexQueryPayload(Model):
     sort_by: PageSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
     sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
     user_id: Optional[DecodedDatabaseIdField] = None
+    history_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None, title="History ID", description="Filter pages by history."
+    )
 
 
 class CreateHistoryPayload(Model):
@@ -3871,10 +3874,10 @@ class PageSummaryBase(Model):
         description="The name of the page.",
         min_length=1,
     )
-    slug: str = Field(
-        ...,  # Required
+    slug: Optional[str] = Field(
+        default=None,
         title="Identifier",
-        description="The identifying slug for the page URL, must be unique.",
+        description="The identifying slug for the page URL, must be unique. Required for non-history pages.",
         pattern=r"^[a-z0-9-]+$",
     )
 
@@ -3913,6 +3916,11 @@ class ChatPayload(Model):
         default=None,
         title="Exchange ID",
         description="The ID of an existing chat exchange to continue.",
+    )
+    page_id: Optional[DecodedDatabaseIdField] = Field(
+        default=None,
+        title="Page ID",
+        description="Scope this chat exchange to a history-attached page.",
     )
     regenerate: Optional[bool] = Field(
         default=None,
@@ -3954,6 +3962,49 @@ class ChatResponse(BaseModel):
     )
 
 
+class ChatHistoryItemResponse(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Exchange ID",
+        description="The encoded ID of the chat exchange.",
+    )
+    query: str = Field(
+        ...,
+        title="Query",
+        description="The user's query that started or continued this exchange.",
+    )
+    response: str = Field(
+        ...,
+        title="Response",
+        description="The assistant's response to the query.",
+    )
+    agent_type: str = Field(
+        ...,
+        title="Agent Type",
+        description="The type of agent that handled this exchange.",
+    )
+    agent_response: Optional[AgentResponse] = Field(
+        default=None,
+        title="Agent Response",
+        description="Full structured agent response with metadata and suggestions.",
+    )
+    timestamp: Optional[str] = Field(
+        default=None,
+        title="Timestamp",
+        description="ISO-format timestamp of the first message in the exchange.",
+    )
+    feedback: Optional[int] = Field(
+        default=None,
+        title="Feedback",
+        description="User feedback on the exchange (1 = positive, 0 = negative).",
+    )
+    message_count: int = Field(
+        ...,
+        title="Message Count",
+        description="Total number of messages in this exchange.",
+    )
+
+
 class ChatExchangeBatchDeletePayload(Model):
     ids: list[DecodedDatabaseIdField] = Field(
         ...,
@@ -3981,6 +4032,11 @@ class GenerateTourResponse(Model):
 
 
 class CreatePagePayload(PageSummaryBase):
+    title: Optional[str] = Field(  # type: ignore[assignment]
+        default=None,
+        title="Title",
+        description="The name of the page. Auto-generated from history name if not provided for history-attached pages.",
+    )
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     annotation: Optional[str] = Field(
@@ -3993,14 +4049,39 @@ class CreatePagePayload(PageSummaryBase):
         title="Workflow invocation ID",
         description="Encoded ID used by workflow generated reports.",
     )
+    history_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="History ID",
+        description="Encoded ID of the history to attach this page to.",
+    )
     model_config = ConfigDict(use_enum_values=True, extra="allow")
 
 
 class UpdatePagePayload(PageSummaryBase):
+    title: Optional[str] = Field(  # type: ignore[assignment]
+        default=None,
+        title="Title",
+        description="The name of the page.",
+        min_length=1,
+    )
+    content: Optional[str] = Field(
+        default=None,
+        title="Content",
+        description="New content for the page (creates a new revision).",
+    )
+    content_format: Optional[PageContentFormat] = Field(
+        default=None,
+        title="Content format",
+    )
     annotation: Optional[str] = Field(
         default=None,
         title="Annotation",
         description="Annotation that will be attached to the page.",
+    )
+    edit_source: Optional[str] = Field(
+        default=None,
+        title="Edit source",
+        description="Source of edit: 'user' or 'agent'.",
     )
 
 
@@ -4124,6 +4205,16 @@ class PageSummary(PageSummaryBase, WithModelClass):
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     tags: TagCollection
+    source_invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Source Invocation ID",
+        description="The workflow invocation this page was created from, if any.",
+    )
+    history_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="History ID",
+        description="The history this page is attached to, if any.",
+    )
 
 
 GenerateVersionField = Field(
@@ -4155,6 +4246,11 @@ class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
     content_editor: Optional[str] = ContentEditorField
+    edit_source: Optional[str] = Field(
+        default=None,
+        title="Edit source",
+        description="Source of the latest revision: 'user', 'agent', or 'restore'.",
+    )
     generate_version: Optional[str] = GenerateVersionField
     generate_time: Optional[str] = GenerateTimeField
     model_config = ConfigDict(extra="allow")
@@ -4172,6 +4268,24 @@ class PageSummaryList(RootModel):
         default=[],
         title="List with summary information of Pages.",
     )
+
+
+class PageRevisionSummary(Model):
+    id: EncodedDatabaseIdField
+    page_id: EncodedDatabaseIdField
+    edit_source: Optional[str] = None
+    create_time: datetime
+    update_time: datetime
+
+
+class PageRevisionDetails(PageRevisionSummary):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    content_format: Optional[PageContentFormat] = None
+
+
+class PageRevisionList(RootModel):
+    root: list[PageRevisionSummary] = Field(default=[])
 
 
 class LandingRequestState(str, Enum):

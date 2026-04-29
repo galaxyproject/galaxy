@@ -225,6 +225,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/chat/page/{page_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Page Chat History
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        get: operations["get_page_chat_history_api_chat_page__page_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/chat/{job_id}/feedback": {
         parameters: {
             query?: never;
@@ -4273,6 +4293,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List all revisions of a page.
+         * @description List all revisions of a page, ordered by creation time.
+         */
+        get: operations["list_revisions_api_pages__id__revisions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pages/{id}/revisions/{revision_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a specific revision of a page.
+         * @description Return the details of a specific page revision.
+         */
+        get: operations["show_revision_api_pages__id__revisions__revision_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pages/{id}/revisions/{revision_id}/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revert page to a specific revision.
+         * @description Restore a page to the content of a specific revision.
+         */
+        post: operations["revert_revision_api_pages__id__revisions__revision_id__revert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pages/{id}/share_with_users": {
         parameters: {
             query?: never;
@@ -8226,6 +8306,50 @@ export interface components {
              */
             ids: string[];
         };
+        /** ChatHistoryItemResponse */
+        ChatHistoryItemResponse: {
+            /**
+             * Agent Response
+             * @description Full structured agent response with metadata and suggestions.
+             */
+            agent_response?: components["schemas"]["AgentResponse"] | null;
+            /**
+             * Agent Type
+             * @description The type of agent that handled this exchange.
+             */
+            agent_type: string;
+            /**
+             * Feedback
+             * @description User feedback on the exchange (1 = positive, 0 = negative).
+             */
+            feedback?: number | null;
+            /**
+             * Exchange ID
+             * @description The encoded ID of the chat exchange.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Message Count
+             * @description Total number of messages in this exchange.
+             */
+            message_count: number;
+            /**
+             * Query
+             * @description The user's query that started or continued this exchange.
+             */
+            query: string;
+            /**
+             * Response
+             * @description The assistant's response to the query.
+             */
+            response: string;
+            /**
+             * Timestamp
+             * @description ISO-format timestamp of the first message in the exchange.
+             */
+            timestamp?: string | null;
+        };
         /** ChatMessage */
         ChatMessage: {
             /** Content */
@@ -8257,6 +8381,11 @@ export interface components {
              * @description The ID of an existing chat exchange to continue.
              */
             exchange_id?: string | null;
+            /**
+             * Page ID
+             * @description Scope this chat exchange to a history-attached page.
+             */
+            page_id?: string | null;
             /**
              * Query
              * @description The query to be sent to the chatbot.
@@ -9390,20 +9519,25 @@ export interface components {
              */
             content_format: components["schemas"]["PageContentFormat"];
             /**
+             * History ID
+             * @description Encoded ID of the history to attach this page to.
+             */
+            history_id?: string | null;
+            /**
              * Workflow invocation ID
              * @description Encoded ID used by workflow generated reports.
              */
             invocation_id?: string | null;
             /**
              * Identifier
-             * @description The identifying slug for the page URL, must be unique.
+             * @description The identifying slug for the page URL, must be unique. Required for non-history pages.
              */
-            slug: string;
+            slug?: string | null;
             /**
              * Title
-             * @description The name of the page.
+             * @description The name of the page. Auto-generated from history name if not provided for history-attached pages.
              */
-            title: string;
+            title?: string | null;
         } & {
             [key: string]: unknown;
         };
@@ -19329,6 +19463,11 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Edit source
+             * @description Source of the latest revision: 'user', 'agent', or 'restore'.
+             */
+            edit_source?: string | null;
+            /**
              * Encoded email
              * @description The encoded email of the user.
              */
@@ -19343,6 +19482,11 @@ export interface components {
              * @description The version of Galaxy this object was generated with.
              */
             generate_version?: string | null;
+            /**
+             * History ID
+             * @description The history this page is attached to, if any.
+             */
+            history_id?: string | null;
             /**
              * ID
              * @description Encoded ID of the Page.
@@ -19378,9 +19522,14 @@ export interface components {
             revision_ids: string[];
             /**
              * Identifier
-             * @description The identifying slug for the page URL, must be unique.
+             * @description The identifying slug for the page URL, must be unique. Required for non-history pages.
              */
-            slug: string;
+            slug?: string | null;
+            /**
+             * Source Invocation ID
+             * @description The workflow invocation this page was created from, if any.
+             */
+            source_invocation_id?: string | null;
             /**
              * Tags
              * @description The collection of tags associated with an item.
@@ -19408,6 +19557,66 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** PageRevisionDetails */
+        PageRevisionDetails: {
+            /** Content */
+            content?: string | null;
+            content_format?: components["schemas"]["PageContentFormat"] | null;
+            /**
+             * Create Time
+             * Format: date-time
+             */
+            create_time: string;
+            /** Edit Source */
+            edit_source?: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Page Id
+             * @example 0123456789ABCDEF
+             */
+            page_id: string;
+            /** Title */
+            title?: string | null;
+            /**
+             * Update Time
+             * Format: date-time
+             */
+            update_time: string;
+        };
+        /**
+         * PageRevisionList
+         * @default []
+         */
+        PageRevisionList: components["schemas"]["PageRevisionSummary"][];
+        /** PageRevisionSummary */
+        PageRevisionSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             */
+            create_time: string;
+            /** Edit Source */
+            edit_source?: string | null;
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Page Id
+             * @example 0123456789ABCDEF
+             */
+            page_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             */
+            update_time: string;
+        };
         /** PageSummary */
         PageSummary: {
             /**
@@ -19431,6 +19640,11 @@ export interface components {
              * @description The encoded email of the user.
              */
             email_hash: string;
+            /**
+             * History ID
+             * @description The history this page is attached to, if any.
+             */
+            history_id?: string | null;
             /**
              * ID
              * @description Encoded ID of the Page.
@@ -19466,9 +19680,14 @@ export interface components {
             revision_ids: string[];
             /**
              * Identifier
-             * @description The identifying slug for the page URL, must be unique.
+             * @description The identifying slug for the page URL, must be unique. Required for non-history pages.
              */
-            slug: string;
+            slug?: string | null;
+            /**
+             * Source Invocation ID
+             * @description The workflow invocation this page was created from, if any.
+             */
+            source_invocation_id?: string | null;
             /**
              * Tags
              * @description The collection of tags associated with an item.
@@ -23957,15 +24176,27 @@ export interface components {
              */
             annotation?: string | null;
             /**
-             * Identifier
-             * @description The identifying slug for the page URL, must be unique.
+             * Content
+             * @description New content for the page (creates a new revision).
              */
-            slug: string;
+            content?: string | null;
+            /** Content format */
+            content_format?: components["schemas"]["PageContentFormat"] | null;
+            /**
+             * Edit source
+             * @description Source of edit: 'user' or 'agent'.
+             */
+            edit_source?: string | null;
+            /**
+             * Identifier
+             * @description The identifying slug for the page URL, must be unique. Required for non-history pages.
+             */
+            slug?: string | null;
             /**
              * Title
              * @description The name of the page.
              */
-            title: string;
+            title?: string | null;
         };
         /** UpdateQuotaParams */
         UpdateQuotaParams: {
@@ -30244,9 +30475,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    }[];
+                    "application/json": components["schemas"]["ChatHistoryItemResponse"][];
                 };
             };
             /** @description Request Error */
@@ -30290,6 +30519,52 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    get_page_chat_history_api_chat_page__page_id__history_get: {
+        parameters: {
+            query?: {
+                /** @description Maximum number of chats to return */
+                limit?: number;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChatHistoryItemResponse"][];
                 };
             };
             /** @description Request Error */
@@ -43071,6 +43346,9 @@ export interface operations {
                  *     `user`
                  *     : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
                  *
+                 *     `type`
+                 *     : Page type filter: 'standalone', 'history_attached', or 'all'.
+                 *
                  *     ## Free Text
                  *
                  *     Free text search terms will be searched against the following attributes of the
@@ -43085,6 +43363,7 @@ export interface operations {
                 /** @description Sort in descending order? */
                 sort_desc?: boolean;
                 user_id?: string | null;
+                history_id?: string | null;
             };
             header?: {
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -43515,6 +43794,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    list_revisions_api_pages__id__revisions_get: {
+        parameters: {
+            query?: {
+                /** @description Sort by creation time descending (newest first) when true. */
+                sort_desc?: boolean;
+            };
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageRevisionList"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_revision_api_pages__id__revisions__revision_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageRevisionDetails"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    revert_revision_api_pages__id__revisions__revision_id__revert_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+                revision_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageRevisionDetails"];
                 };
             };
             /** @description Request Error */

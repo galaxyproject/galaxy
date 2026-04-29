@@ -4,6 +4,7 @@ import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } fr
 import { computed, ref } from "vue";
 
 import { getFullAppUrl } from "@/app/utils";
+import { EMBED_LABELS } from "@/components/Page/constants";
 import { copy } from "@/utils/clipboard";
 
 import PageView from "@/components/Page/PageView.vue";
@@ -34,7 +35,9 @@ const embedStyle = computed(() => {
     return " ";
 });
 
-const embed = computed(() => `<iframe title="Galaxy Page Embed"${embedStyle.value}src="${embedUrl.value}"></iframe>`);
+const embed = computed(
+    () => `<iframe title="${EMBED_LABELS.iframeTitle}"${embedStyle.value}src="${embedUrl.value}"></iframe>`,
+);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
@@ -55,7 +58,7 @@ function onCopy() {
         <div class="settings">
             <h4>Settings</h4>
 
-            <BFormCheckbox v-model="settings.showHeading" switch> Show page title </BFormCheckbox>
+            <BFormCheckbox v-model="settings.showHeading" switch> {{ EMBED_LABELS.showTitle }} </BFormCheckbox>
 
             <BFormCheckbox v-model="settings.applyStyle" switch> Apply default styling </BFormCheckbox>
 

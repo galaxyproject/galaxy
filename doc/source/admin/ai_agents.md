@@ -200,6 +200,7 @@ Galaxy registers the following agent types:
 | `custom_tool`         | Generates custom Galaxy tools from natural language descriptions |
 | `orchestrator`        | Coordinates multi-step workflow tasks                            |
 | `tool_recommendation` | Recommends tools from the toolbox for a given task               |
+| `page_assistant`      | Assists with Galaxy page editing                                 |
 
 All registered agents are enabled when the AI system is active.
 

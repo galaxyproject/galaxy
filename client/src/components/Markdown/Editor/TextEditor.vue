@@ -9,7 +9,12 @@
             v-model="content"
             aria-label="markdown text editor"
             class="markdown-textarea w-100 p-4"
-            @input="onUpdate" />
+            :class="dropHighlight && `page-dragover-${dropHighlight}`"
+            @input="onUpdate"
+            @dragenter.prevent="onDragEnter"
+            @dragover.prevent="onDragOver"
+            @dragleave.prevent="onDragLeave"
+            @drop.prevent="onDrop" />
     </div>
 </template>
 
@@ -17,12 +22,16 @@
 import { debounce } from "lodash";
 import { nextTick, ref, watch } from "vue";
 
+import { isHistoryItem } from "@/api";
+import type { DirectiveMode } from "@/components/Markdown/directives";
+import { useEventStore } from "@/stores/eventStore";
+
 import MarkdownToolBox from "@/components/Markdown/MarkdownToolBox.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
 const props = defineProps<{
     markdownText: string;
-    mode: "report" | "page";
+    mode: DirectiveMode;
     steps?: Record<string, any>;
     title: string;
 }>();
@@ -68,6 +77,63 @@ function insertMarkdown(markdown: string) {
 const onUpdate = debounce((e: Event) => {
     emit("update", content.value || "");
 }, 300);
+
+// Drag-and-drop support (page mode only)
+const eventStore = useEventStore();
+const dropHighlight = ref<string | null>(null);
+const dragTarget = ref<EventTarget | null>(null);
+
+function getDroppableItem(): { id: string; contentType: string } | null {
+    if (props.mode !== "page") {
+        return null;
+    }
+    const items = eventStore.getDragItems();
+    if (!items || items.length === 0) {
+        return null;
+    }
+    const item = items[0];
+    if (!item || !isHistoryItem(item)) {
+        return null;
+    }
+    const id = item.id;
+    const contentType = item.history_content_type;
+    if (!id) {
+        return null;
+    }
+    return { id, contentType };
+}
+
+function onDragEnter(evt: DragEvent) {
+    const droppable = getDroppableItem();
+    if (droppable) {
+        dragTarget.value = evt.target;
+        dropHighlight.value = "success";
+    }
+}
+
+function onDragOver(_evt: DragEvent) {
+    // preventDefault handled by .prevent modifier to indicate valid drop target.
+}
+
+function onDragLeave(evt: DragEvent) {
+    if (dragTarget.value === evt.target) {
+        dropHighlight.value = null;
+    }
+}
+
+function onDrop(_evt: DragEvent) {
+    dropHighlight.value = null;
+    const droppable = getDroppableItem();
+    if (!droppable) {
+        return;
+    }
+    const { id, contentType } = droppable;
+    const directive =
+        contentType === "dataset_collection"
+            ? `history_dataset_collection_display(history_dataset_collection_id=${id})`
+            : `history_dataset_display(history_dataset_id=${id})`;
+    insertMarkdown(directive);
+}
 </script>
 
 <style scoped>
@@ -81,5 +147,11 @@ const onUpdate = debounce((e: Event) => {
         Monaco,
         "Andale Mono",
         monospace;
+}
+
+.markdown-textarea.page-dragover-success {
+    background: rgba(40, 167, 69, 0.08);
+    border: 2px dashed #28a745;
+    outline: none;
 }
 </style>

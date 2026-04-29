@@ -38,6 +38,19 @@ class BasePagesApiTestCase(ApiTestCase):
         self._assert_status_code_is(page_response, 200)
         return page_response.json()
 
+    def _create_history_attached_page(self, slug: str = "history-page", title: str = "History Page") -> dict[str, Any]:
+        history_id = self.dataset_populator.new_history()
+        page_request = dict(
+            slug=slug,
+            title=title,
+            content="*History page*\n\n",
+            content_format="markdown",
+            history_id=history_id,
+        )
+        page_response = self._post("pages", page_request, json=True)
+        self._assert_status_code_is(page_response, 200)
+        return page_response.json()
+
     def _test_page_payload(self, **kwds):
         return self.dataset_populator.new_page_payload(**kwds)
 
@@ -111,6 +124,56 @@ steps:
             assert "## Workflow Outputs" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" not in markdown_content
+
+    @skip_without_tool("cat")
+    def test_revert_report_with_galaxy_directives(self):
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            page_request = dict(
+                slug="revert-report-test",
+                title="Revert Report Test",
+                invocation_id=invocation_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page = page_response.json()
+            page_id = page["id"]
+            # Update with plain content to create a second revision
+            update_payload = dict(content="# V2 plain", content_format="markdown")
+            update_response = self._put(f"pages/{page_id}", update_payload, json=True)
+            self._assert_status_code_is(update_response, 200)
+            # Get revisions, revert to original (which has Galaxy directives)
+            revisions_resp = self._get(f"pages/{page_id}/revisions")
+            self._assert_status_code_is(revisions_resp, 200)
+            revisions = revisions_resp.json()
+            v1_revision_id = revisions[0]["id"]
+            revert_resp = self._post(f"pages/{page_id}/revisions/{v1_revision_id}/revert", json=True)
+            self._assert_status_code_is(revert_resp, 200)
+            result = revert_resp.json()
+            assert result["edit_source"] == "restore"
+            assert "## Workflow" in result["content"]
 
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
@@ -298,6 +361,34 @@ steps:
             dict(show_published=True, show_shared=True, search="is:shared_with_me")
         )
 
+    def test_index_type_standalone(self):
+        standalone = self._create_valid_page_with_slug("type-standalone-only")
+        history_attached = self._create_history_attached_page("type-standalone-ha")
+        index_ids = self._index_ids(dict(search="type:standalone"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] not in index_ids
+
+    def test_index_type_history_attached(self):
+        standalone = self._create_valid_page_with_slug("type-ha-only-sa")
+        history_attached = self._create_history_attached_page("type-ha-only")
+        index_ids = self._index_ids(dict(search="type:history_attached"))
+        assert standalone["id"] not in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_default_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-default-sa")
+        history_attached = self._create_history_attached_page("type-default-ha")
+        index_ids = self._index_ids()
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_all_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-all-sa")
+        history_attached = self._create_history_attached_page("type-all-ha")
+        index_ids = self._index_ids(dict(search="type:all"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
+
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
         assert not self._users_index_has_page_with_id(create_response_json)
@@ -449,6 +540,49 @@ steps:
         page_id = page_response.json()["id"]
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
+
+    @skip_without_tool("cat")
+    def test_page_source_invocation_fk(self):
+        test_data = "input_1:\n  value: 1.bed\n  type: File\n"
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            page_request = dict(
+                slug="invocation-report-fk-test",
+                title="Invocation Report FK Test",
+                invocation_id=invocation_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page_id = page_response.json()["id"]
+            show_response = self._get(f"pages/{page_id}")
+            self._assert_status_code_is(show_response, 200)
+            show_json = show_response.json()
+            assert show_json["source_invocation_id"] is not None
+
+    def test_page_source_fk_null_by_default(self):
+        response_json = self._create_valid_page_with_slug("no-source-fk-test")
+        page_id = response_json["id"]
+        show_response = self._get(f"pages/{page_id}")
+        self._assert_status_code_is(show_response, 200)
+        show_json = show_response.json()
+        assert show_json["source_invocation_id"] is None
 
     def _create_published_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         response = self.dataset_populator.new_page(slug=slug, **kwd)

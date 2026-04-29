@@ -3332,13 +3332,16 @@ class ChatExchange(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
+    page: Mapped[Optional["Page"]] = relationship()
 
-    def __init__(self, user, job_id=None, message=None, **kwargs):
+    def __init__(self, user, job_id=None, page_id=None, message=None, **kwargs):
         self.user = user
         self.job_id = job_id
+        self.page_id = page_id
         self.messages = []
         if message:
             self.add_message(message)
@@ -3606,6 +3609,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         viewonly=True,
     )
     tool_requests: Mapped[list["ToolRequest"]] = relationship(back_populates="history")
+    pages: Mapped[list["Page"]] = relationship(
+        foreign_keys="Page.history_id",
+        back_populates="history",
+    )
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -11536,6 +11543,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     importable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     slug: Mapped[Optional[str]] = mapped_column(TEXT)
     published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    source_invocation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("workflow_invocation.id"), index=True, nullable=True
+    )
+    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user: Mapped["User"] = relationship()
     revisions: Mapped[list["PageRevision"]] = relationship(
         cascade="all, delete-orphan",
@@ -11558,6 +11569,14 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         back_populates="page",
     )
     users_shared_with: Mapped[list["PageUserShareAssociation"]] = relationship(back_populates="page")
+    source_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
+        foreign_keys=[source_invocation_id],
+        uselist=False,
+    )
+    history: Mapped[Optional["History"]] = relationship(
+        foreign_keys=[history_id],
+        uselist=False,
+    )
 
     # Set up proxy so that
     #   Page.users_shared_with
@@ -11577,6 +11596,8 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         "author_deleted",
         "create_time",
         "update_time",
+        "source_invocation_id",
+        "history_id",
     ]
 
     def to_dict(self, view="element"):
@@ -11617,9 +11638,10 @@ class PageRevision(Base, Dictifiable, RepresentById):
     title: Mapped[Optional[str]] = mapped_column(TEXT)
     content: Mapped[Optional[str]] = mapped_column(TEXT)
     content_format: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
+    edit_source: Mapped[Optional[str]] = mapped_column(TrimmedString(16), default=None)
     page: Mapped["Page"] = relationship(primaryjoin=(lambda: Page.id == PageRevision.page_id))
     DEFAULT_CONTENT_FORMAT = "html"
-    dict_element_visible_keys = ["id", "page_id", "title", "content", "content_format"]
+    dict_element_visible_keys = ["id", "page_id", "title", "content", "content_format", "edit_source"]
 
     def __init__(self):
         self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT

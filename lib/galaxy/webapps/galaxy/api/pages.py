@@ -21,6 +21,8 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageDetails,
     PageIndexQueryPayload,
+    PageRevisionDetails,
+    PageRevisionList,
     PageSortByEnum,
     PageSummary,
     PageSummaryList,
@@ -81,11 +83,19 @@ OffsetQueryParam: int = Query(
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
 
+HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Filter pages by history ID.",
+)
+
+PageIdRevisionPathParam = DecodedDatabaseIdField
+
 query_tags = [
     IndexQueryTag("title", "The page's title."),
     IndexQueryTag("slug", "The page's slug.", "s"),
     IndexQueryTag("tag", "The page's tags.", "t"),
     IndexQueryTag("user", "The page's owner's username.", "u"),
+    IndexQueryTag("type", "Page type filter: 'standalone', 'history_attached', or 'all'."),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(
@@ -118,6 +128,7 @@ class FastAPIPages:
         sort_by: PageSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.model_construct(
@@ -131,6 +142,7 @@ class FastAPIPages:
             sort_by=sort_by,
             sort_desc=sort_desc,
             user_id=user_id,
+            history_id=history_id,
         )
         pages, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
@@ -336,3 +348,46 @@ class FastAPIPages:
     ) -> PageSummary:
         """Updates an existing Page."""
         return self.service.update(trans, id, payload)
+
+    @router.get(
+        "/api/pages/{id}/revisions",
+        summary="List all revisions of a page.",
+    )
+    def list_revisions(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        sort_desc: bool = Query(
+            default=False,
+            title="Sort Descending",
+            description="Sort by creation time descending (newest first) when true.",
+        ),
+    ) -> PageRevisionList:
+        """List all revisions of a page, ordered by creation time."""
+        return self.service.list_revisions(trans, id, sort_desc=sort_desc)
+
+    @router.get(
+        "/api/pages/{id}/revisions/{revision_id}",
+        summary="Get a specific revision of a page.",
+    )
+    def show_revision(
+        self,
+        id: PageIdPathParam,
+        revision_id: PageIdRevisionPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PageRevisionDetails:
+        """Return the details of a specific page revision."""
+        return self.service.show_revision(trans, id, revision_id)
+
+    @router.post(
+        "/api/pages/{id}/revisions/{revision_id}/revert",
+        summary="Revert page to a specific revision.",
+    )
+    def revert_revision(
+        self,
+        id: PageIdPathParam,
+        revision_id: PageIdRevisionPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PageRevisionDetails:
+        """Restore a page to the content of a specific revision."""
+        return self.service.revert_revision(trans, id, revision_id)

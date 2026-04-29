@@ -21,4 +21,5 @@ export interface ChatHistoryItem {
     agent_response?: AgentResponse;
     timestamp: string;
     feedback?: number | null;
+    message_count?: number;
 }

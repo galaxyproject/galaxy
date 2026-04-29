@@ -25,6 +25,9 @@ from galaxy.schema.schema import (
     PageContentFormat,
     PageDetails,
     PageIndexQueryPayload,
+    PageRevisionDetails,
+    PageRevisionList,
+    PageRevisionSummary,
     PageSummary,
     PageSummaryList,
     UpdatePagePayload,
@@ -129,6 +132,7 @@ class PagesService(ServiceBase):
         rval["annotation"] = get_item_annotation_str(trans.sa_session, trans.user, page)
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
+        rval["edit_source"] = page.latest_revision.edit_source
         self.manager.rewrite_content_for_export(trans, rval)
         return PageDetails(**rval)
 
@@ -172,3 +176,39 @@ class PagesService(ServiceBase):
         page = self.manager.update_page(trans, id, payload)
         rval = page.to_dict()
         return PageSummary(**rval)
+
+    def list_revisions(self, trans, id: DecodedDatabaseIdField, sort_desc: bool = False) -> PageRevisionList:
+        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
+        revisions = self.manager.list_revisions(trans, page, sort_desc=sort_desc)
+        return PageRevisionList(
+            root=[
+                PageRevisionSummary(
+                    id=rev.id,
+                    page_id=rev.page_id,
+                    edit_source=rev.edit_source,
+                    create_time=rev.create_time,
+                    update_time=rev.update_time,
+                )
+                for rev in revisions
+            ]
+        )
+
+    def show_revision(
+        self, trans, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
+    ) -> PageRevisionDetails:
+        page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
+        revision = self.manager.get_revision(trans, page, revision_id)
+        rval = revision.to_dict()
+        rval["page_id"] = revision.page_id
+        self.manager.rewrite_content_for_export(trans, rval)
+        return PageRevisionDetails(**rval)
+
+    def revert_revision(
+        self, trans, id: DecodedDatabaseIdField, revision_id: DecodedDatabaseIdField
+    ) -> PageRevisionDetails:
+        page = base.get_object(trans, id, "Page", check_ownership=True, check_accessible=True)
+        new_revision = self.manager.restore_revision(trans, page, revision_id)
+        rval = new_revision.to_dict()
+        rval["page_id"] = new_revision.page_id
+        self.manager.rewrite_content_for_export(trans, rval)
+        return PageRevisionDetails(**rval)

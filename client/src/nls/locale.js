@@ -8,7 +8,7 @@ export const root = {
     Histories: false,
     Workflows: false,
     Visualizations: false,
-    Pages: false,
+    Reports: false,
     Visualization: false,
     "New Track Browser": false,
     "Saved Visualizations": false,
@@ -31,7 +31,7 @@ export const root = {
     Logout: false,
     "Saved Histories": false,
     "Saved Datasets": false,
-    "Saved Pages": false,
+    "Saved Reports": false,
 
     //Tooltip
     "Account and saved data": false,

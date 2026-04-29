@@ -340,6 +340,7 @@ history_panel:
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_extract_workflow: '[data-description="extract workflow"]'
+    page_button: '[data-description="history page button"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
@@ -601,13 +602,16 @@ pages:
     activity: '#activity-pages'
     create: '#page-create:not([aria-disabled])'
     export: '.markdown-pdf-export'
+    markdown_wrapper: '.markdown-wrapper'
     slug_input: '#page-slug'
     submit: '#page-submit'
     title_input: '#page-title'
 
   editor:
     selectors:
-      save: '#save-button'
+      save:
+        type: data-description
+        selector: 'page save button'
       embed_dataset: '.toolTitle .title-link[data-tool-id="history_dataset_embedded"]'
       embed_workflow_display: '.toolTitle .title-link[data-tool-id="workflow_display"]'
       history_link: '.toolTitle .title-link[data-tool-id="history_link"]'
@@ -622,6 +626,125 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+
+  history:
+    selectors:
+      _:
+        type: data-description
+        selector: 'history page view'
+      list:
+        type: data-description
+        selector: 'history page list'
+      create_button:
+        type: data-description
+        selector: 'create page button'
+      empty_state:
+        type: data-description
+        selector: 'page empty state'
+      toolbar:
+        type: data-description
+        selector: 'page editor toolbar'
+      toolbar_title: '[data-description="page editor title"] > span'
+      manage_button:
+        type: data-description
+        selector: 'page manage button'
+      save_button:
+        type: data-description
+        selector: 'page save button'
+      unsaved_indicator:
+        type: data-description
+        selector: 'page unsaved indicator'
+      editor:
+        type: data-description
+        selector: 'page editor view'
+      markdown_editor: '.markdown-textarea'
+      item:
+        type: data-description
+        selector: 'page item'
+      item_title:
+        type: data-description
+        selector: 'page title'
+      rendered_view:
+        type: data-description
+        selector: 'page rendered view'
+      revisions_button:
+        type: data-description
+        selector: 'page revisions button'
+      revision_list:
+        type: data-description
+        selector: 'page revision list'
+      revision_item:
+        type: data-description
+        selector: 'revision item'
+      restore_revision_button:
+        type: data-description
+        selector: 'restore revision button'
+      revision_view:
+        type: data-description
+        selector: 'page revision view'
+      revision_back_button:
+        type: data-description
+        selector: 'revision back button'
+      revision_restore_button:
+        type: data-description
+        selector: 'revision restore button'
+      view_button:
+        type: data-description
+        selector: 'page view button'
+      display_toolbar:
+        type: data-description
+        selector: 'page display toolbar'
+      preview_button:
+        type: data-description
+        selector: 'page preview button'
+      edit_button:
+        type: data-description
+        selector: 'page edit button'
+      toolbar_title_input: '[data-description="page editor title"] input'
+      back_button:
+        type: data-description
+        selector: 'page back button'
+      permissions_button:
+        type: data-description
+        selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
+      chat_panel:
+        type: data-description
+        selector: 'page chat panel'
+      chat_input: '.page-chat-panel #chat-input'
+      chat_send_button: '.page-chat-panel .send-button'
+      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
+      chat_query_cell: '.page-chat-panel .entry-query .query-text'
+      chat_response_content: '.page-chat-panel .entry-response .response-content'
+      chat_new_conversation:
+        type: data-description
+        selector: 'new conversation button'
+      chat_history_button:
+        type: data-description
+        selector: 'chat history button'
+      chat_history_sidebar:
+        type: data-description
+        selector: 'page chat history list'
+      revision_compare_current_button:
+        type: data-description
+        selector: 'revision compare current button'
+      revision_compare_previous_button:
+        type: data-description
+        selector: 'revision compare previous button'
+      revision_preview_button_mode:
+        type: data-description
+        selector: 'revision preview button'
+      revision_diff_view:
+        type: data-description
+        selector: 'revision diff view'
+      revision_no_changes:
+        type: data-description
+        selector: 'revision no changes'
 
 login:
   selectors:
