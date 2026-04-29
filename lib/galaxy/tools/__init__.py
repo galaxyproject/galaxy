@@ -18,7 +18,6 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    List,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
@@ -3822,7 +3821,7 @@ class DatabaseOperationTool(Tool):
                 history.stage_addition(element_object)
 
     @staticmethod
-    def _read_text_file_lines(path: str, size_hint: int = 1024 * 1000000) -> List[str]:
+    def _read_text_file_lines(path: str, size_hint: int = 1024 * 1000000) -> list[str]:
         try:
             with open(path) as fh:
                 return fh.readlines(size_hint)
