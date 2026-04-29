@@ -5,8 +5,14 @@ from typing import (
 
 from fsspec import AbstractFileSystem
 
-from galaxy.exceptions import AuthenticationRequired, MessageException
-from galaxy.files.models import AnyRemoteEntry, FilesSourceRuntimeContext
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    MessageException,
+)
+from galaxy.files.models import (
+    AnyRemoteEntry,
+    FilesSourceRuntimeContext,
+)
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
 from galaxy.files.sources._fsspec import (
     CacheOptionsDictType,
@@ -20,7 +26,7 @@ try:
     from mavedb_fsspec import MaveDBFileSystem
     from mavedb_fsspec.client import DEFAULT_BASE_URL
 except ImportError:
-    MaveDBFileSystem = None  # type: ignore[misc, assignment]
+    MaveDBFileSystem = None
     DEFAULT_BASE_URL = "https://api.mavedb.org/api/v1"
 
 
@@ -78,7 +84,7 @@ class MaveDBFilesSource(FsspecFilesSource[MaveDBFileSourceTemplateConfiguration,
         try:
             cache_options = self._get_cache_options(context.config)
             fs = self._open_fs(context, cache_options)
-            entries, total_count = fs.list_score_sets(  # type: ignore[attr-defined]
+            entries, total_count = fs.list_score_sets(
                 collection=collection,
                 limit=limit,
                 offset=offset,
