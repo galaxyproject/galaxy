@@ -4,13 +4,14 @@ import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icon
 import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { computed, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 import draggable from "vuedraggable";
 
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
 import { useActivityStore } from "@/stores/activityStore";
 import type { Activity } from "@/stores/activityStoreTypes";
+import { useChatStore } from "@/stores/chatStore";
 import { useEventStore } from "@/stores/eventStore";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
@@ -78,7 +79,9 @@ const DRAG_DELAY = 50;
 const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
+const router = useRouter();
 const userStore = useUserStore();
+const chatStore = useChatStore();
 
 const eventStore = useEventStore();
 const activityStore = useActivityStore(props.activityBarId);
@@ -173,6 +176,9 @@ function isActiveSideBar(menuKey: string) {
  * Checks if an activity that has a panel should have the `is-active` prop
  */
 function panelActivityIsActive(activity: Activity) {
+    if (activity.id === "chatgxy" && !chatStore.isCenterMode && chatStore.chatVisible) {
+        return true;
+    }
     return isActiveSideBar(activity.id) || isActiveRoute(activity.to);
 }
 
@@ -230,6 +236,19 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
         return;
     }
     activityStore.toggleSideBar(toggle);
+}
+
+function onChatGxyClick() {
+    if (chatStore.isCenterMode) {
+        toggleSidebar("chatgxy");
+        if (route.path.startsWith("/chatgxy")) {
+            router.push("/");
+        } else {
+            router.push("/chatgxy");
+        }
+    } else {
+        chatStore.toggleChat();
+    }
 }
 
 function onActivityClicked(activity: Activity) {
@@ -301,6 +320,16 @@ defineExpose({
                                 :tooltip="activity.tooltip"
                                 :to="activity.to"
                                 @click="toggleSidebar(activity.id, activity.to)" />
+                            <ActivityItem
+                                v-else-if="activity.id === 'chatgxy'"
+                                :id="`${activity.id}`"
+                                :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
+                                :icon="activity.icon"
+                                :is-active="panelActivityIsActive(activity)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                @click="onChatGxyClick" />
                             <ActivityItem
                                 v-else-if="activity.panel"
                                 :id="`${activity.id}`"

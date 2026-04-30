@@ -1,13 +1,29 @@
 <script setup lang="ts">
-import { faExternalLinkAlt, faMagic, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import {
+    faAngleDoubleDown,
+    faColumns,
+    faExpand,
+    faExternalLinkAlt,
+    faFile,
+    faMagic,
+    faPlus,
+    faSitemap,
+    faTimes,
+    faTrash,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
 import { useMarkdown } from "@/composables/markdown";
+import { useActiveContext } from "@/composables/useActiveContext";
+import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
+import { useChatStore } from "@/stores/chatStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./ChatGXY/agentTypes";
@@ -22,12 +38,53 @@ const props = withDefaults(
     defineProps<{
         exchangeId?: string;
         compact?: boolean;
+        docked?: boolean;
+        panel?: boolean;
     }>(),
     {
         exchangeId: undefined,
         compact: false,
+        docked: false,
+        panel: false,
     },
 );
+
+const emit = defineEmits<{
+    (e: "close"): void;
+    (e: "undock"): void;
+}>();
+
+const route = useRoute();
+const router = useRouter();
+const chatStore = useChatStore();
+
+const { activeContext, contextLabel } = useActiveContext();
+const contextDismissed = ref(false);
+
+watch(activeContext, () => {
+    contextDismissed.value = false;
+});
+
+const effectiveContext = computed(() => {
+    if (contextDismissed.value || (!props.docked && !props.panel)) {
+        return null;
+    }
+    return activeContext.value;
+});
+
+const contextIcon = computed(() => {
+    switch (effectiveContext.value?.contextType) {
+        case "tool":
+            return faWrench;
+        case "dataset":
+            return faFile;
+        case "workflow_editor":
+        case "workflow_run":
+            return faSitemap;
+        default:
+            return faMagic;
+    }
+});
 
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
@@ -43,6 +100,8 @@ const { processingAction, handleAction } = useAgentActions();
 onMounted(async () => {
     if (props.exchangeId) {
         await loadChatById(props.exchangeId);
+    } else if (props.docked || props.panel) {
+        startNewChat();
     } else {
         await loadLatestChat();
     }
@@ -104,6 +163,10 @@ async function submitQuery() {
     busy.value = true;
 
     try {
+        const parsed = parseMentions(currentQuery);
+        const resolved = resolveMentions(parsed);
+        const entityContext = buildEntityContext(resolved);
+
         const { data, error } = await GalaxyApi().POST("/api/chat", {
             params: {
                 query: {
@@ -112,8 +175,9 @@ async function submitQuery() {
             },
             body: {
                 query: currentQuery,
-                context: null,
+                context: effectiveContext.value ? JSON.stringify(effectiveContext.value) : null,
                 exchange_id: currentChatId.value,
+                entity_context: entityContext,
             },
         });
 
@@ -288,6 +352,7 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
+    hasLoadedInitialChat.value = true;
     messages.value = [
         {
             id: generateId(),
@@ -302,6 +367,9 @@ function startNewChat() {
     ];
     currentChatId.value = null;
     query.value = "";
+    if (props.docked || props.panel) {
+        chatStore.setActiveChatId(null);
+    }
 }
 
 async function deleteCurrentChat() {
@@ -326,11 +394,47 @@ function popOutToScratchbook() {
     const url = `${path}?compact=true`;
     Galaxy.frame.add({ title: "ChatGXY", url });
 }
+
+function dockTo(location: "right" | "bottom") {
+    chatStore.setActiveChatId(currentChatId.value);
+    chatStore.setLocation(location);
+    chatStore.showChat();
+    if (route.path.startsWith("/chatgxy")) {
+        router.push("/");
+    }
+}
+
+watch(currentChatId, (newId) => {
+    if (props.docked || props.panel) {
+        chatStore.setActiveChatId(newId);
+    }
+});
 </script>
 
 <template>
-    <div class="chatgxy-container" :class="{ 'chatgxy-compact': compact }">
-        <div v-if="!compact" class="chatgxy-header">
+    <div
+        class="chatgxy-container"
+        :class="{ 'chatgxy-compact': compact, 'chatgxy-docked': docked, 'chatgxy-panel': panel }">
+        <!-- Docked side panel header -->
+        <div v-if="docked" class="chatgxy-header chatgxy-header-docked">
+            <span class="docked-title">
+                <FontAwesomeIcon :icon="faMagic" fixed-width />
+                ChatGXY
+            </span>
+            <div class="header-actions">
+                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
+                    <FontAwesomeIcon :icon="faPlus" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-primary" title="Open in center view" @click="emit('undock')">
+                    <FontAwesomeIcon :icon="faExpand" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" title="Close panel" @click="emit('close')">
+                    <FontAwesomeIcon :icon="faTimes" fixed-width />
+                </button>
+            </div>
+        </div>
+        <!-- Center view header -->
+        <div v-else-if="!compact && !panel" class="chatgxy-header">
             <Heading h2 :icon="faMagic" size="lg">
                 <span>ChatGXY</span>
             </Heading>
@@ -346,6 +450,12 @@ function popOutToScratchbook() {
                     @click="deleteCurrentChat">
                     <FontAwesomeIcon :icon="faTrash" fixed-width />
                 </button>
+                <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockTo('right')">
+                    <FontAwesomeIcon :icon="faColumns" fixed-width />
+                </button>
+                <button class="btn btn-sm btn-outline-primary" title="Dock to bottom panel" @click="dockTo('bottom')">
+                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
+                </button>
                 <button
                     class="btn btn-sm btn-outline-primary"
                     title="Open in floating window"
@@ -353,6 +463,16 @@ function popOutToScratchbook() {
                     <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                 </button>
             </div>
+        </div>
+
+        <div v-if="(docked || panel) && effectiveContext" class="context-indicator">
+            <span class="context-badge">
+                <FontAwesomeIcon :icon="contextIcon" fixed-width />
+                {{ contextLabel }}
+            </span>
+            <button class="context-dismiss" title="Dismiss context" @click="contextDismissed = true">
+                <FontAwesomeIcon :icon="faTimes" />
+            </button>
         </div>
 
         <div ref="chatContainer" class="chat-messages">
@@ -407,6 +527,55 @@ function popOutToScratchbook() {
 
     .chatgxy-footer {
         padding: 0.5rem 0.75rem;
+    }
+}
+
+.chatgxy-docked,
+.chatgxy-panel {
+    height: 100%;
+    border-radius: 0;
+}
+
+.chatgxy-header-docked {
+    padding: 0.5rem 0.75rem;
+
+    .docked-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+    }
+}
+
+.context-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.25rem 0.75rem;
+    background: rgba($brand-primary, 0.06);
+    border-bottom: 1px solid rgba($brand-primary, 0.12);
+    font-size: 0.8rem;
+    color: $brand-primary;
+
+    .context-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        font-weight: 500;
+    }
+
+    .context-dismiss {
+        background: none;
+        border: none;
+        color: inherit;
+        opacity: 0.6;
+        cursor: pointer;
+        padding: 0.125rem;
+
+        &:hover {
+            opacity: 1;
+        }
     }
 }
 

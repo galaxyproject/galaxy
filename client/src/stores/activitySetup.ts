@@ -72,10 +72,9 @@ export const defaultActivities = [
         optional: true,
         panel: true,
         title: "ChatGXY",
-        to: "/chatgxy",
+        to: null,
         tooltip: "Chat with Galaxy AI Assistant",
         visible: true,
-        windowTitle: "ChatGXY",
     },
     {
         anonymous: true,

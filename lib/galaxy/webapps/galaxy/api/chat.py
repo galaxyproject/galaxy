@@ -38,6 +38,7 @@ from galaxy.schema.schema import (
     ChatPayload,
     ChatResponse,
 )
+from galaxy.util.json import safe_loads
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -140,9 +141,14 @@ class ChatAPI:
         if payload and payload.query:
             # Old format: payload body with query and context string
             query_text = payload.query
-            # Context from payload is a string (e.g., "tool_error"), convert to dict for agent system
             context_str = payload.context if hasattr(payload, "context") else None
-            query_context = {"context_type": context_str} if context_str else {}
+            query_context: dict[str, Any] = {}
+            if context_str:
+                parsed = safe_loads(context_str)
+                if isinstance(parsed, dict):
+                    query_context = {"interface_context": parsed}
+                else:
+                    query_context = {"context_type": context_str}
             regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
         elif query:
             # New format: query parameters (context not supported in this path)
@@ -191,6 +197,10 @@ class ChatAPI:
                 else:
                     # New conversation - no history needed
                     full_context["conversation_history"] = []
+
+                # Inject entity context from @mentions if present
+                if payload and payload.entity_context:
+                    full_context["entities"] = payload.entity_context.model_dump(exclude_none=True)
 
                 # Get full agent response with metadata
                 agent_response = await self._get_agent_response_full(

@@ -3898,6 +3898,37 @@ class MaterializeDatasetInstanceRequest(MaterializeDatasetInstanceAPIRequest):
     history_id: DecodedDatabaseIdField
 
 
+class EntityReference(Model):
+    type: str = Field(
+        ...,
+        title="Entity Type",
+        description="The type of entity being referenced (e.g. 'dataset', 'history').",
+    )
+    identifier: str = Field(
+        ...,
+        title="Identifier",
+        description="The identifier as typed by the user (HID number or name).",
+    )
+    id: Optional[str] = Field(
+        default=None,
+        title="Entity ID",
+        description="The resolved encoded ID of the entity.",
+    )
+    name: str = Field(
+        default="",
+        title="Name",
+        description="The display name of the entity.",
+    )
+    extension: Optional[str] = Field(default=None, title="Extension")
+    state: Optional[str] = Field(default=None, title="State")
+    hid: Optional[int] = Field(default=None, title="HID")
+
+
+class ChatEntityContext(Model):
+    datasets: list[EntityReference] = Field(default_factory=list, title="Datasets")
+    histories: list[EntityReference] = Field(default_factory=list, title="Histories")
+
+
 class ChatPayload(Model):
     query: str = Field(
         ...,
@@ -3908,6 +3939,11 @@ class ChatPayload(Model):
         default="",
         title="Context",
         description="The context for the chatbot.",
+    )
+    entity_context: Optional[ChatEntityContext] = Field(
+        default=None,
+        title="Entity Context",
+        description="Structured entity references resolved from @mentions in the query.",
     )
     exchange_id: Optional[DecodedDatabaseIdField] = Field(
         default=None,

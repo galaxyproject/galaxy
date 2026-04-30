@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faClock, faColumns, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { getGalaxyInstance } from "@/app";
 import { useSidebarSelection } from "@/composables/useSidebarSelection";
+import { useChatStore } from "@/stores/chatStore";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
@@ -17,6 +17,7 @@ import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
+const chatStore = useChatStore();
 
 const chatHistory = ref<ChatHistoryItem[]>([]);
 const loading = ref(false);
@@ -55,23 +56,29 @@ function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent
     if (handleSelectionClick(item, index, event)) {
         return;
     }
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy?.frame?.active) {
-        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-        router.push(`/chatgxy/${item.id}?compact=true`, { title: "ChatGXY" });
-    } else {
+    if (chatStore.isCenterMode) {
         router.push(`/chatgxy/${item.id}`);
+    } else {
+        chatStore.setActiveChatId(item.id);
+        chatStore.showChat();
     }
 }
 
 function startNewChat() {
-    const Galaxy = getGalaxyInstance();
-    if (Galaxy?.frame?.active) {
-        // @ts-ignore - monkeypatched router, second arg is RouterPushOptions
-        router.push("/chatgxy?compact=true", { title: "ChatGXY" });
-    } else {
+    if (chatStore.isCenterMode) {
         router.push("/chatgxy");
+    } else {
+        chatStore.setActiveChatId(null);
+        chatStore.showChat();
     }
+}
+
+function openDockedChat() {
+    if (chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
+    const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
+    chatStore.showChat(latestId);
 }
 
 async function deleteSelected() {
@@ -98,6 +105,9 @@ async function deleteSelected() {
         <template v-slot:header-buttons>
             <button class="btn btn-sm btn-outline-primary" title="New Chat" @click="startNewChat">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
+            </button>
+            <button class="btn btn-sm btn-outline-primary" title="Open docked chat panel" @click="openDockedChat">
+                <FontAwesomeIcon :icon="faColumns" fixed-width />
             </button>
             <button
                 class="btn btn-sm"

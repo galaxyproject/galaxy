@@ -8218,6 +8218,13 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ChatEntityContext */
+        ChatEntityContext: {
+            /** Datasets */
+            datasets?: components["schemas"]["EntityReference"][];
+            /** Histories */
+            histories?: components["schemas"]["EntityReference"][];
+        };
         /** ChatExchangeBatchDeletePayload */
         ChatExchangeBatchDeletePayload: {
             /**
@@ -8252,6 +8259,11 @@ export interface components {
              * @default
              */
             context: string | null;
+            /**
+             * Entity Context
+             * @description Structured entity references resolved from @mentions in the query.
+             */
+            entity_context?: components["schemas"]["ChatEntityContext"] | null;
             /**
              * Exchange ID
              * @description The ID of an existing chat exchange to continue.
@@ -12015,6 +12027,36 @@ export interface components {
              * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
              */
             src: components["schemas"]["DataItemSourceType"];
+        };
+        /** EntityReference */
+        EntityReference: {
+            /** Extension */
+            extension?: string | null;
+            /** HID */
+            hid?: number | null;
+            /**
+             * Entity ID
+             * @description The resolved encoded ID of the entity.
+             */
+            id?: string | null;
+            /**
+             * Identifier
+             * @description The identifier as typed by the user (HID number or name).
+             */
+            identifier: string;
+            /**
+             * Name
+             * @description The display name of the entity.
+             * @default
+             */
+            name: string;
+            /** State */
+            state?: string | null;
+            /**
+             * Entity Type
+             * @description The type of entity being referenced (e.g. 'dataset', 'history').
+             */
+            type: string;
         };
         /** ExitCodeJobMessage */
         ExitCodeJobMessage: {
