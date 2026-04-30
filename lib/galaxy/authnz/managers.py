@@ -1,11 +1,18 @@
+from __future__ import annotations
+
 import builtins
 import logging
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    TypedDict,
+)
 
 import jwt as pyjwt
 from social_core.exceptions import (
     AuthAlreadyAssociated,
     AuthCanceled,
+    AuthForbidden,
     AuthTokenError,
 )
 
@@ -13,6 +20,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model import UserAuthnzToken
 from galaxy.util import (
     asbool,
     etree,
@@ -32,6 +40,7 @@ from .psa_authnz import (
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
+    from galaxy.webapps.base.webapp import GalaxyWebTransaction
 
 OIDC_BACKEND_SCHEMA = resource_path(__name__, "xsd/oidc_backends_config.xsd")
 
@@ -43,6 +52,11 @@ DEFAULT_OIDC_IDP_ICONS = {
     "elixir": "https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png",
     "okta": "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
 }
+
+
+class RefreshResult(TypedDict):
+    refreshed: bool
+    reauthentication_required: bool
 
 
 class AuthnzManager:
@@ -163,6 +177,8 @@ class AuthnzManager:
             rtv["label"] = config_xml.find("label").text
         if config_xml.find("require_create_confirmation") is not None:
             rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
+        if config_xml.find("require_session_refresh") is not None:
+            rtv["require_session_refresh"] = asbool(config_xml.find("require_session_refresh").text)
         if config_xml.find("prompt") is not None:
             rtv["prompt"] = config_xml.find("prompt").text
         if config_xml.find("api_url") is not None:
@@ -226,7 +242,7 @@ class AuthnzManager:
         # None, if no allowed idp list is set, and a list of EntityIDs if configured (in oidc_backend)
         return self.allowed_idps
 
-    def _unify_provider_name(self, provider):
+    def _unify_provider_name(self, provider: str) -> str | None:
         if provider.lower() in self.oidc_backends_config:
             return provider.lower()
         for k, v in BACKENDS_NAME.items():
@@ -234,9 +250,9 @@ class AuthnzManager:
                 return k.lower()
         return None
 
-    def _get_authnz_backend(self, provider: str, idphint=None):
+    def _get_authnz_backend(self, provider: str, idphint: str | None = None) -> tuple[bool, str, PSAAuthnz | None]:
         unified_provider_name = self._unify_provider_name(provider)
-        if unified_provider_name in self.oidc_backends_config:
+        if unified_provider_name is not None and unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
             identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
@@ -281,29 +297,69 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
-    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
+    def refresh_expiring_oidc_tokens_for_provider(
+        self, trans: GalaxyWebTransaction, auth: UserAuthnzToken
+    ) -> RefreshResult:
+        """
+        Refresh expiring OIDC tokens for a specific provider.
+
+        Returns:
+            RefreshResult: A dictionary containing a boolean indicating success, and a boolean
+            indicating if reauthentication is required
+        """
         try:
+            if auth.provider is None:
+                raise exceptions.AuthenticationFailed("Provider is not set")
             success, message, backend = self._get_authnz_backend(auth.provider)
+            if backend is None:
+                msg = f"Provider `{auth.provider}` not found"
+                log.error(msg)
+                return {"refreshed": False, "reauthentication_required": False}
             if success is False:
                 msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
                 log.error(msg)
-                return False
+                return {"refreshed": False, "reauthentication_required": False}
             refreshed = backend.refresh(trans, auth)
             if refreshed:
                 log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
-            return True
-        except Exception:
-            log.exception("An error occurred when refreshing user token")
-            return False
+            return {"refreshed": refreshed, "reauthentication_required": False}
+        except (AuthTokenError, AuthCanceled, AuthForbidden):
+            log.warning("Authentication session has expired or is invalid, reauth required.")
+            return {"refreshed": False, "reauthentication_required": True}
+        except Exception as e:
+            log.warning(f"An error occurred when refreshing user token: {e}")
+            return {"refreshed": False, "reauthentication_required": False}
 
-    def refresh_expiring_oidc_tokens(self, trans, user=None):
+    def refresh_expiring_oidc_tokens(
+        self, trans: GalaxyWebTransaction, user: Optional[model.User] = None
+    ) -> str | None:
+        """
+        Refresh expiring OIDC tokens for all providers associated with a user.
+
+        Returns:
+            str | None: The provider name if refresh fails and require_session_refresh is enabled, otherwise None
+        """
         user = trans.user or user
         if not isinstance(user, model.User):
-            return
+            return None
         for auth in user.social_auth or []:
-            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+            result = self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+            if auth.provider is None:
+                continue
+            provider = self._unify_provider_name(auth.provider)
+            if provider is None:
+                continue
+            config = self.oidc_backends_config.get(provider, None)
+            if config is None:
+                continue
+            # Redirect to OIDC login if refresh fails and require_session_refresh is enabled
+            if config.get("require_session_refresh") and result["reauthentication_required"]:
+                return provider
+        return None
 
-    def authenticate(self, provider, trans, idphint=None):
+    def authenticate(
+        self, provider: str, trans: GalaxyWebTransaction, idphint: str | None = None
+    ) -> tuple[bool, str, str | None]:
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
@@ -314,6 +370,8 @@ class AuthnzManager:
         """
         try:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            if backend is None:
+                return False, f"Provider `{provider}` not found", None
             if success is False:
                 return False, message, None
             # Check allowed IDPs for providers that support idphint (keycloak, cilogon)
@@ -365,9 +423,11 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def create_user(self, provider: str, token: str, trans: "ProvidesAppContext", login_redirect_url: str):
+    def create_user(self, provider: str, token: str, trans: ProvidesAppContext, login_redirect_url: str):
         try:
             success, message, backend = self._get_authnz_backend(provider)
+            if backend is None:
+                raise ValueError(f"Provider `{provider}` not found")
             if success is False:
                 return False, message, (None, None)
             return success, message, backend.create_user(token, trans, login_redirect_url)

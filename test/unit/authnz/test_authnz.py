@@ -1,12 +1,36 @@
 import tempfile
-from typing import Optional
-from unittest.mock import MagicMock
+from typing import (
+    Any,
+    cast,
+    Optional,
+)
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
+from urllib.parse import urlencode
 
 import pytest
+from social_core.backends.base import BaseAuth
+from social_core.exceptions import (
+    AuthCanceled,
+    AuthForbidden,
+    AuthTokenError,
+)
 from social_core.utils import setting_name
+from webob.exc import HTTPFound
 
+from galaxy import model
+from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.authnz.managers import AuthnzManager
 from galaxy.util import asbool
+from galaxy.web.framework import base as web_framework_base
+from galaxy.web.framework.base import Response
+from galaxy.webapps.base.webapp import WebApplication
+from ..webapps.test_webapp_base import (
+    CORSParsingMockConfig,
+    StubGalaxyWebTransaction,
+)
 
 
 @pytest.fixture
@@ -23,6 +47,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = """<?xml version="1.0"?>
         <redirect_uri>$galaxy_url/authnz/keycloak/callback</redirect_uri>
         <enable_idp_logout>{enable_idp_logout}</enable_idp_logout>
         <require_create_confirmation>{require_create_confirmation}</require_create_confirmation>
+        <require_session_refresh>{require_session_refresh}</require_session_refresh>
         <accepted_audiences>{accepted_audiences}</accepted_audiences>
         <username_key>{username_key}</username_key>
     </provider>
@@ -52,6 +77,7 @@ def create_backend_config(
     client_secret="client_secret",
     enable_idp_logout="true",
     require_create_confirmation="false",
+    require_session_refresh="false",
     accepted_audiences="https://audience.example.com",
     username_key="custom_username",
 ) -> tuple[str, str]:
@@ -62,12 +88,69 @@ def create_backend_config(
         client_secret=client_secret,
         enable_idp_logout=enable_idp_logout,
         require_create_confirmation=require_create_confirmation,
+        require_session_refresh=require_session_refresh,
         accepted_audiences=accepted_audiences,
         username_key=username_key,
     )
     file = tempfile.NamedTemporaryFile(mode="w", delete=False)
     file.write(contents)
     return contents, file.name
+
+
+class FakeRefreshBackend:
+    refresh_result: bool = False
+    refresh_exception: Exception | None = None
+
+    def __init__(self, provider, oidc_config, oidc_backend_config, app_config):
+        self.provider = provider
+        self.oidc_config = oidc_config
+        self.oidc_backend_config = oidc_backend_config
+        self.app_config = app_config
+
+    def refresh(self, trans, auth):
+        if self.refresh_exception is not None:
+            raise self.refresh_exception
+        return self.refresh_result
+
+
+FAKE_SOCIAL_AUTH_BACKEND = cast(BaseAuth, MagicMock())
+
+
+class AuthenticatedStubGalaxyWebTransaction(StubGalaxyWebTransaction):
+    auth_user: model.User | None = None
+
+    def _ensure_valid_session(self, session_cookie: str, create: bool = True) -> None:
+        self.user = self.auth_user
+        self.galaxy_session = None
+
+    def _authenticate_api(self, session_cookie: str) -> Optional[str]:
+        self.user = self.auth_user
+        self.galaxy_session = None
+        return None
+
+
+def _make_user_with_social_auth(provider: str = "oidc") -> model.User:
+    user = model.User(email="user@example.com", password="password")
+    auth = model.UserAuthnzToken(provider=provider, uid="user-1", extra_data={"refresh_token": "refresh"}, user=user)
+    user.social_auth.append(auth)
+    return user
+
+
+def _make_authnz_manager(
+    app: Any, provider_name: str = "oidc", require_session_refresh: str = "false"
+) -> AuthnzManager:
+    _, oidc_path = create_oidc_config()
+    _, backend_path = create_backend_config(
+        provider_name=provider_name, require_session_refresh=require_session_refresh
+    )
+    app.config.oidc = {}
+    return AuthnzManager(app=app, oidc_config_file=oidc_path, oidc_backends_config_file=backend_path)
+
+
+def _make_mock_trans_with_user(user: model.User) -> galaxy_mock.MockTrans:
+    app = galaxy_mock.MockApp()
+    trans = galaxy_mock.MockTrans(app=app, user=user)
+    return trans
 
 
 def test_parse_backend_config(mock_app):
@@ -77,6 +160,7 @@ def test_parse_backend_config(mock_app):
         "client_secret": "abcd1234",
         "enable_idp_logout": "true",
         "require_create_confirmation": "false",
+        "require_session_refresh": "true",
         "accepted_audiences": "https://audience.example.com",
         "username_key": "custom_username",
     }
@@ -93,6 +177,33 @@ def test_parse_backend_config(mock_app):
     # Boolean values should be parsed into bools
     assert parsed["enable_idp_logout"] == asbool(config_values["enable_idp_logout"])
     assert parsed["require_create_confirmation"] == asbool(config_values["require_create_confirmation"])
+    assert parsed["require_session_refresh"] == asbool(config_values["require_session_refresh"])
+
+
+def test_parse_backend_config_bool_defaults(mock_app):
+    # XML config without boolean fields
+    config = """<?xml version="1.0"?>
+    <OIDC>
+        <provider name="oidc">
+            <url>https://example.com</url>
+            <client_id>abcd1234</client_id>
+            <client_secret>abcdef99999</client_secret>
+            <redirect_uri>$galaxy_url/authnz/oidc/callback</redirect_uri>
+        </provider>
+    </OIDC>
+    """
+    config_file = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    config_file.write(config)
+    config_file.flush()
+    config_file.close()
+    oidc_contents, oidc_path = create_oidc_config()
+    manager = AuthnzManager(app=mock_app, oidc_config_file=oidc_path, oidc_backends_config_file=config_file.name)
+    assert isinstance(manager.oidc_backends_config["oidc"], dict)
+    parsed = manager.oidc_backends_config["oidc"]
+    # Boolean values should be False by default
+    assert parsed["enable_idp_logout"] is False
+    assert parsed.get("require_create_confirmation", False) is False
+    assert parsed.get("require_session_refresh", False) is False
 
 
 def test_psa_authnz_config(mock_app):
@@ -199,3 +310,147 @@ def test_missing_idphint_is_none(mock_app):
         app_config=mock_app.config,
     )
     assert psa.config.get("IDPHINT") is None, "IDPHINT must be None when <idphint> is absent from XML"
+
+
+def test_refresh_expiring_oidc_tokens_returns_none_after_successful_refresh(mock_app):
+    user = _make_user_with_social_auth()
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app)
+    FakeRefreshBackend.refresh_result = True
+    FakeRefreshBackend.refresh_exception = None
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider is None
+
+
+@pytest.mark.parametrize(
+    "refresh_exception",
+    [
+        AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND),
+        AuthCanceled(backend=FAKE_SOCIAL_AUTH_BACKEND),
+        AuthForbidden(backend=FAKE_SOCIAL_AUTH_BACKEND),
+    ],
+)
+def test_refresh_expiring_oidc_tokens_returns_provider_on_required_terminal_refresh_failure(
+    mock_app, refresh_exception
+):
+    user = _make_user_with_social_auth()
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app, require_session_refresh="true")
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = refresh_exception
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider == "oidc"
+
+
+def test_refresh_expiring_oidc_tokens_returns_none_on_optional_terminal_refresh_failure(mock_app):
+    user = _make_user_with_social_auth()
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app, require_session_refresh="false")
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider is None
+
+
+def test_refresh_expiring_oidc_tokens_uses_unified_provider_for_refresh_config(mock_app):
+    user = _make_user_with_social_auth(provider="google-openidconnect")
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app, provider_name="google", require_session_refresh="true")
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider == "google"
+
+
+def test_refresh_expiring_oidc_tokens_returns_none_on_unexpected_refresh_failure(mock_app):
+    user = _make_user_with_social_auth()
+    trans = _make_mock_trans_with_user(user)
+    manager = _make_authnz_manager(trans.app, require_session_refresh="true")
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = RuntimeError("unexpected refresh failure")
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        reauth_provider = manager.refresh_expiring_oidc_tokens(cast(Any, trans))
+
+    assert reauth_provider is None
+
+
+def test_redirects_to_oidc_login_on_terminal_refresh_failure() -> None:
+    app = cast(Any, galaxy_mock.MockApp())
+    app.config = CORSParsingMockConfig()
+    app.authnz_manager = _make_authnz_manager(app, require_session_refresh="true")
+    webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
+    environ = galaxy_mock.buildMockEnviron()
+    AuthenticatedStubGalaxyWebTransaction.auth_user = _make_user_with_social_auth()
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+    original_send_redirect = Response.send_redirect
+    redirect_urls: list[str] = []
+
+    def capture_send_redirect(self, url: str):
+        redirect_urls.append(url)
+        return original_send_redirect(self, url)
+
+    def build_test_url(path: str, **query_params):
+        return f"{path}?{urlencode(query_params)}"
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        with patch.object(web_framework_base.routes, "url_for", side_effect=build_test_url):
+            with patch.object(Response, "send_redirect", autospec=True, side_effect=capture_send_redirect):
+                with pytest.raises(HTTPFound):
+                    AuthenticatedStubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
+
+    assert redirect_urls
+    assert "/authnz/oidc/login" in redirect_urls[0]
+
+
+def test_returns_401_for_api_request_on_terminal_refresh_failure() -> None:
+    app = cast(Any, galaxy_mock.MockApp())
+    app.config = CORSParsingMockConfig()
+    app.authnz_manager = _make_authnz_manager(app, require_session_refresh="true")
+    webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
+    environ = galaxy_mock.buildMockEnviron(PATH_INFO="/api/users/current", is_api_request=True)
+    AuthenticatedStubGalaxyWebTransaction.auth_user = _make_user_with_social_auth()
+    FakeRefreshBackend.refresh_result = False
+    FakeRefreshBackend.refresh_exception = AuthTokenError(backend=FAKE_SOCIAL_AUTH_BACKEND)
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        trans = AuthenticatedStubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
+
+    assert trans.response.status == 401
+    assert trans.error_message == "Authentication session expired. Please log in again."
+    assert trans.user is None
+    assert trans.galaxy_session is None
+
+
+def test_allows_api_request_on_successful_oidc_refresh() -> None:
+    """
+    Test that API requests proceed when the refresh succeeds.
+    """
+    app = cast(Any, galaxy_mock.MockApp())
+    app.config = CORSParsingMockConfig()
+    app.authnz_manager = _make_authnz_manager(app, require_session_refresh="true")
+    webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
+    environ = galaxy_mock.buildMockEnviron(PATH_INFO="/api/users/current", is_api_request=True)
+    AuthenticatedStubGalaxyWebTransaction.auth_user = _make_user_with_social_auth()
+    FakeRefreshBackend.refresh_result = True
+    FakeRefreshBackend.refresh_exception = None
+
+    with patch.object(AuthnzManager, "_get_identity_provider_factory", return_value=FakeRefreshBackend):
+        trans = AuthenticatedStubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
+
+    assert trans.response.status == 200
+    assert trans.error_message is None
+    assert trans.galaxy_session is None

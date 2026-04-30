@@ -65,6 +65,15 @@
                                     </xs:documentation>
                                 </xs:annotation>
                             </xs:element>
+                            <xs:element name="require_session_refresh" minOccurs="0" type="xs:boolean">
+                                <xs:annotation>
+                                    <xs:documentation>
+                                        Require the user to refresh their session (via refresh token)
+                                        when the access token expires. Users will be required to reauthenticate
+                                        if refreshing fails.
+                                    </xs:documentation>
+                                </xs:annotation>
+                            </xs:element>
                             <xs:element name="ca_bundle" minOccurs="0" type="xs:string">
                                 <xs:annotation>
                                     <xs:documentation>

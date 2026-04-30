@@ -358,7 +358,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self._ensure_valid_session(session_cookie)
 
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
+            # Check for expiring tokens and refresh them. If configured (at the individual provider
+            # level), require a reauthentication on failed refresh.
+            reauth_provider = self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
+            if reauth_provider:
+                self.handle_user_reauthentication(reauth_provider)
+                return
 
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the
@@ -892,6 +897,21 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             self.__update_session_cookie(name="galaxysession")
         elif self.webapp.name == "tool_shed":
             self.__update_session_cookie(name="galaxycommunitysession")
+
+    def handle_user_reauthentication(self, reauth_provider: str) -> None:
+        """
+        Handle user being required to log in again after failed OIDC refresh
+        """
+        log.info("OIDC refresh failed terminally for provider `%s`, forcing re-login", reauth_provider)
+        if self.galaxy_session:
+            self.handle_user_logout()
+        if self.environ.get("is_api_request", False):
+            self.response.status = 401
+            self.error_message = "Authentication session expired. Please log in again."
+            self.user = None
+            self.galaxy_session = None
+        else:
+            self.response.send_redirect(url_for(f"/authnz/{reauth_provider}/login", redirect="true", next="/"))
 
     def get_galaxy_session(self):
         """
