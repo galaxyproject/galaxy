@@ -100,6 +100,8 @@ const { processingAction, handleAction } = useAgentActions();
 onMounted(async () => {
     if (props.exchangeId) {
         await loadChatById(props.exchangeId);
+    } else if (props.docked || props.panel) {
+        startNewChat();
     } else {
         await loadLatestChat();
     }
@@ -350,6 +352,7 @@ async function loadLatestChat() {
 }
 
 function startNewChat() {
+    hasLoadedInitialChat.value = true;
     messages.value = [
         {
             id: generateId(),
@@ -364,6 +367,9 @@ function startNewChat() {
     ];
     currentChatId.value = null;
     query.value = "";
+    if (props.docked || props.panel) {
+        chatStore.setActiveChatId(null);
+    }
 }
 
 async function deleteCurrentChat() {
@@ -399,7 +405,7 @@ function dockTo(location: "right" | "bottom") {
 }
 
 watch(currentChatId, (newId) => {
-    if ((props.docked || props.panel) && newId) {
+    if (props.docked || props.panel) {
         chatStore.setActiveChatId(newId);
     }
 });
