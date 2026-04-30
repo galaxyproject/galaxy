@@ -22,6 +22,17 @@ const emit = defineEmits<{
     (e: "play", value: boolean): void;
 }>();
 
+// For steps that stop autoplay, we want to stop `play` when this step is reached
+watch(
+    () => props.step,
+    (newStep) => {
+        if (newStep.stops_autoplay) {
+            emit("play", false);
+        }
+    },
+    { immediate: true },
+);
+
 const targetElement = computed(() => {
     if (props.step.element) {
         return document.querySelector(props.step.element);
@@ -125,7 +136,14 @@ function createStep() {
                         <FontAwesomeIcon :icon="faTimes" />
                         End Tour
                     </GButton>
-                    <GButton class="tour-play" size="small" color="blue" @click.prevent="emit('play', true)">
+                    <GButton
+                        class="tour-play"
+                        size="small"
+                        color="blue"
+                        tooltip
+                        :disabled="Boolean(step.stops_autoplay)"
+                        disabled-title="This step requires your action, cannot autoplay"
+                        @click.prevent="emit('play', true)">
                         <FontAwesomeIcon :icon="faPlay" />
                         Auto-Play Tour
                     </GButton>

@@ -162,10 +162,11 @@ class TourGenerator:
 
             step: TourStep = TourStep(
                 title=getattr(input, "label", name),
+                content="",
                 element=step_element,
                 placement="right",
-                content="",
             )
+
             if input.type == "text":
                 if name in test_inputs:
                     param = self._test.inputs[name]
@@ -177,6 +178,7 @@ class TourGenerator:
                     step.textinsert = param
                 else:
                     step.content = "Enter a value"
+                    step.stops_autoplay = True
             elif input.type == "integer" or input.type == "float":
                 if name in test_inputs:
                     num_param = self._test.inputs[name][0]
@@ -188,12 +190,18 @@ class TourGenerator:
                     step.textinsert = num_param
                 else:
                     step.content = "Enter a number"
+                    step.stops_autoplay = True
             elif input.type == "boolean":
                 if name in test_inputs:
                     choice = "Yes" if self._test.inputs[name][0] is True else "No"
                     step.content = f"Choose <b>{choice}</b>"
+                    #  For boolean input, the element is at: #form-element-{name} div#{name} input.custom-control-input
+                    step_element += f" div[id='{name}'] input[class='custom-control-input']"
+                    step.element = step_element
+                    step.preclick = True
                 else:
                     step.content = "Choose Yes/No"
+                    step.stops_autoplay = True
             elif input.type == "select":
                 params = []
                 if name in test_inputs:
@@ -206,6 +214,7 @@ class TourGenerator:
                     step.content = f"Select parameter(s): <b>{select_param}</b>"
                 else:
                     step.content = "Select a parameter"
+                step.stops_autoplay = True
             elif input.type == "data":
                 if name in test_inputs and performs_upload:
                     hid = self._hids[name]
@@ -213,6 +222,7 @@ class TourGenerator:
                     step.content = f"Select dataset: <b>{hid}: {dataset}</b>"
                 else:
                     step.content = "Select a dataset"
+                step.stops_autoplay = True
             elif input.type == "conditional":
                 assert isinstance(input, Conditional)
                 test_param = input.test_param
@@ -224,11 +234,10 @@ class TourGenerator:
                     step.title = test_param.label
 
                 step.element = f"[id='form-element-{param_id}']"
-                step.element = f"[id='form-element-{param_id}']"
                 params = []
                 if param_id in self._test.inputs.keys():
                     if test_param is not None and hasattr(test_param, "static_options"):
-                        for option in test_param.static_options:
+                        for option in getattr(test_param, "static_options", []):
                             for test_option in self._test.inputs[param_id]:
                                 if test_option == option[1]:
                                     params.append(option[0])
@@ -258,6 +267,7 @@ class TourGenerator:
                                     element=f"[id='form-element-{tour_id}']",
                                     placement="right",
                                     content=step_msg,
+                                    stops_autoplay=True,
                                 )
                             )
                 if params:
@@ -265,14 +275,17 @@ class TourGenerator:
                     step.content = f"Select parameter(s): <b>{cond_param}</b>"
                 else:
                     step.content = "Select a parameter"
+                step.stops_autoplay = True
             elif input.type == "data_column":
                 if name in test_inputs:
                     column_param = self._test.inputs[name][0]
                     step.content = f"Select <b>Column: {column_param}</b>"
                 else:
                     step.content = "Select a column"
+                step.stops_autoplay = True
             else:
                 step.content = "Select a parameter"
+                step.stops_autoplay = True
             steps.append(step)
             if cond_case_steps:
                 steps.extend(cond_case_steps)  # add conditional input steps
@@ -293,6 +306,8 @@ class TourGenerator:
             TourStep(
                 title="What's next?",
                 content=f"Your <b>{self._tool.name}</b> job is now running. Check the history panel on the right to monitor progress.",
+                element="#current-history-panel",
+                placement="left",
             )
         )
 

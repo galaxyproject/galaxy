@@ -25160,6 +25160,11 @@ export interface components {
              */
             prerequisites?: components["schemas"]["Prerequisite"][] | null;
             /**
+             * Stops autoplay
+             * @description If true, the step stops autoplaying the tour until the user clicks the next button. Typically set for steps that require a user action
+             */
+            stops_autoplay?: boolean | null;
+            /**
              * Text-insert
              * @description Text to insert if element is a text box (e.g. tool search or upload)
              */

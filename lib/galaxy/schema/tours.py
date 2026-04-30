@@ -41,29 +41,38 @@ class TourList(RootModel):
 
 
 class TourStep(BaseModel):
-    title: str | None = Field(None, title="Title", description="Title displayed in the header of the step container")
-    content: str | None = Field(None, title="Content", description="Text shown to the user")
+    title: str | None = Field(
+        default=None, title="Title", description="Title displayed in the header of the step container"
+    )
+    content: str | None = Field(default=None, title="Content", description="Text shown to the user")
     element: str | None = Field(
-        None, title="Element", description="CSS selector for the element to be described/clicked"
+        default=None, title="Element", description="CSS selector for the element to be described/clicked"
     )
     placement: str | None = Field(
-        None, title="Placement", description="Placement of the text box relative to the selected element"
+        default=None, title="Placement", description="Placement of the text box relative to the selected element"
     )
     preclick: bool | list[str] | None = Field(
-        None, title="Pre-click", description="Elements that receive a click() event before the step is shown"
+        default=None, title="Pre-click", description="Elements that receive a click() event before the step is shown"
     )
     prerequisites: list[Prerequisite] | None = Field(
-        None,
+        default=None,
         title="Prerequisites",
         description="Prerequisite operations that can be tried when a step fails due to an element not being interactable",
     )
     postclick: bool | list[str] | None = Field(
-        None, title="Post-click", description="Elements that receive a click() event after the step is shown"
+        default=None, title="Post-click", description="Elements that receive a click() event after the step is shown"
     )
     textinsert: str | None = Field(
-        None, title="Text-insert", description="Text to insert if element is a text box (e.g. tool search or upload)"
+        default=None,
+        title="Text-insert",
+        description="Text to insert if element is a text box (e.g. tool search or upload)",
     )
-    orphan: bool | None = Field(None, title="Orphan", description="If true, the step is an orphan step")
+    orphan: bool | None = Field(default=None, title="Orphan", description="If true, the step is an orphan step")
+    stops_autoplay: bool | None = Field(
+        default=None,
+        title="Stops autoplay",
+        description="If true, the step stops autoplaying the tour until the user clicks the next button. Typically set for steps that require a user action",
+    )
 
 
 class TourDetails(TourCore):
