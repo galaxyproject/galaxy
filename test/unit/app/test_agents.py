@@ -47,6 +47,7 @@ from galaxy.agents.orchestrator import (
     AgentPlan,
     WorkflowOrchestratorAgent,
 )
+from galaxy.agents.validators import validate_user_tool_source
 from galaxy.schema.agents import ConfidenceLevel
 from galaxy.tool_util_models import UserToolSource
 from galaxy.util.unittest_utils import pytestmark_live_llm
@@ -616,13 +617,11 @@ class TestCustomToolValidator:
     """Tests for the deterministic UserToolSource semantic validator."""
 
     def test_validator_accepts_valid_tool(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source()
         assert validate_user_tool_source(tool) is None
 
     def test_validator_rejects_missing_container(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(container="   ")
         errors = validate_user_tool_source(tool)
@@ -630,7 +629,6 @@ class TestCustomToolValidator:
         assert any("container" in e for e in errors)
 
     def test_validator_rejects_bad_tool_id(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(id="Bad-ID")
         errors = validate_user_tool_source(tool)
@@ -638,7 +636,6 @@ class TestCustomToolValidator:
         assert any("id" in e and "Bad-ID" in e for e in errors)
 
     def test_validator_rejects_undeclared_command_variable(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(
             shell_command="echo '$(inputs.undeclared)' > out.txt",
@@ -648,7 +645,6 @@ class TestCustomToolValidator:
         assert any("undeclared" in e for e in errors)
 
     def test_validator_rejects_no_citations(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(citations=_SENTINEL_REMOVE)
         errors = validate_user_tool_source(tool)
@@ -662,7 +658,6 @@ class TestCustomToolValidator:
         assert any("citation" in e for e in errors)
 
     def test_validator_accepts_doi_and_bibtex(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         bibtex = "@article{smith2020,\n  title = {A Tool},\n  author = {Smith, J.},\n  year = {2020}\n}"
         tool = _make_user_tool_source(
@@ -674,7 +669,6 @@ class TestCustomToolValidator:
         assert validate_user_tool_source(tool) is None
 
     def test_validator_rejects_malformed_container(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(container="not a valid !!! image string")
         errors = validate_user_tool_source(tool)
@@ -682,7 +676,6 @@ class TestCustomToolValidator:
         assert any("container" in e for e in errors)
 
     def test_validator_rejects_empty_required_fields(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         # name is the only field that pydantic strictly requires non-empty;
         # version and description default to None at the model level. The
@@ -696,7 +689,6 @@ class TestCustomToolValidator:
         assert "description" in joined
 
     def test_validator_returns_multiple_errors(self):
-        from galaxy.agents.validators import validate_user_tool_source
 
         tool = _make_user_tool_source(
             id="Bad-ID",
