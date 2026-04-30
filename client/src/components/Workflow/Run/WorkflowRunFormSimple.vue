@@ -161,17 +161,18 @@ const formInputs = computed(() => {
             if (props.requestState) {
                 if (props.isRerun) {
                     const requestStateKeys = Object.keys(props.requestState);
+                    const stateKey = String(rerunStateIndex);
 
                     let value;
-                    if (props.requestState[rerunStateIndex]) {
+                    if (stateKey in props.requestState) {
                         // request state has the step_label as key
-                        value = props.requestState[rerunStateIndex];
-                    } else if (requestStateKeys[i] !== undefined && requestStateKeys[i] === "") {
+                        value = props.requestState[stateKey];
+                    } else if (requestStateKeys[i] === "") {
                         // request state has "" as key on the `i` position
                         value = Object.values(props.requestState)[i];
                     }
 
-                    if (value) {
+                    if (value !== undefined) {
                         if (stepType === "data_input" || stepType === "data_collection_input") {
                             // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
                             //       does not provide an object with `values` property.
@@ -182,9 +183,8 @@ const formInputs = computed(() => {
                             stepAsInput.value = value;
                         }
                     }
-                } else if (props.requestState[stepLabel]) {
-                    const value = props.requestState[stepLabel];
-                    stepAsInput.value = value;
+                } else if (String(stepLabel) in props.requestState) {
+                    stepAsInput.value = props.requestState[String(stepLabel)];
                 }
             }
 

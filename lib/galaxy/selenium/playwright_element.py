@@ -110,6 +110,16 @@ class PlaywrightElement:
         """
         return self._element.is_enabled()
 
+    def is_selected(self) -> bool:
+        """
+        Check if a checkbox, radio button, or option is selected.
+
+        Playwright's is_checked() only handles checkbox/radio inputs and raises
+        for <option> elements, so fall back to evaluating the element's
+        ``checked``/``selected`` property to mirror Selenium's behavior.
+        """
+        return bool(self._element.evaluate("(el) => !!(el.checked || el.selected)"))
+
     def submit(self) -> None:
         """
         Submit a form element.
