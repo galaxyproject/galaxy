@@ -140,21 +140,28 @@ function handleSelect(item: MenuItem) {
     }
 }
 
-function handleKeydown(event: KeyboardEvent) {
+function handleKeydown(event: KeyboardEvent): boolean {
     if (!props.visible) {
-        return;
+        return false;
     }
 
     if (menuItems.value.length === 0) {
-        return;
+        if (event.key === "Escape") {
+            event.preventDefault();
+            emit("close");
+            return true;
+        }
+        return false;
     }
 
     if (event.key === "ArrowDown") {
         event.preventDefault();
         selectedIndex.value = (selectedIndex.value + 1) % menuItems.value.length;
+        return true;
     } else if (event.key === "ArrowUp") {
         event.preventDefault();
         selectedIndex.value = (selectedIndex.value - 1 + menuItems.value.length) % menuItems.value.length;
+        return true;
     } else if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
         event.stopPropagation();
@@ -162,10 +169,14 @@ function handleKeydown(event: KeyboardEvent) {
         if (item) {
             handleSelect(item);
         }
+        return true;
     } else if (event.key === "Escape") {
         event.preventDefault();
         emit("close");
+        return true;
     }
+
+    return false;
 }
 
 function updatePosition() {

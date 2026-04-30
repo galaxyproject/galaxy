@@ -45,8 +45,10 @@ const DROPDOWN_KEYS = new Set(["ArrowDown", "ArrowUp", "Tab", "Escape", "Enter"]
 function onKeydown(event: KeyboardEvent) {
     if (mentionTrigger.value && dropdownRef.value && DROPDOWN_KEYS.has(event.key)) {
         if (event.key !== "Enter" || !event.shiftKey) {
-            dropdownRef.value.handleKeydown(event);
-            return;
+            const handled = dropdownRef.value.handleKeydown(event);
+            if (handled) {
+                return;
+            }
         }
     }
 

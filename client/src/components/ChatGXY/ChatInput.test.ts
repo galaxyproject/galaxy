@@ -10,18 +10,21 @@ vi.mock("@/stores/historyItemsStore", () => ({
     useHistoryItemsStore: () => ({ getHistoryItems: () => [] }),
 }));
 
-function mountInput(props: Record<string, unknown> = {}) {
+function mountInput(
+    props: Record<string, unknown> = {},
+    stubs: Record<string, boolean> = {
+        FontAwesomeIcon: true,
+        LoadingSpan: true,
+        MentionDropdown: true,
+    },
+) {
     return mount(ChatInput as any, {
         propsData: {
             value: "",
             busy: false,
             ...props,
         },
-        stubs: {
-            FontAwesomeIcon: true,
-            LoadingSpan: true,
-            MentionDropdown: true,
-        },
+        stubs,
     });
 }
 
@@ -113,6 +116,36 @@ describe("ChatInput", () => {
             const wrapper = mountInput({ value: "hello" });
             await wrapper.find("textarea").trigger("keydown.enter", { shiftKey: true });
             expect(wrapper.emitted("submit")).toBeFalsy();
+        });
+
+        it("emits submit on Enter when the mention dropdown has no matches", async () => {
+            const value = "@dataset:nope";
+            const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
+            const textarea = wrapper.find("textarea");
+            const el = textarea.element as HTMLTextAreaElement;
+            el.selectionStart = value.length;
+            el.selectionEnd = value.length;
+
+            await textarea.trigger("input");
+            await textarea.trigger("keydown.enter");
+
+            expect(wrapper.emitted("submit")).toBeTruthy();
+        });
+
+        it("closes an empty mention dropdown on Escape", async () => {
+            const value = "@dataset:nope";
+            const wrapper = mountInput({ value }, { FontAwesomeIcon: true, LoadingSpan: true });
+            const textarea = wrapper.find("textarea");
+            const el = textarea.element as HTMLTextAreaElement;
+            el.selectionStart = value.length;
+            el.selectionEnd = value.length;
+
+            await textarea.trigger("input");
+            expect(wrapper.find(".mention-dropdown").attributes("style") ?? "").not.toContain("display: none");
+
+            await textarea.trigger("keydown", { key: "Escape" });
+
+            expect(wrapper.find(".mention-dropdown").attributes("style") ?? "").toContain("display: none");
         });
     });
 
