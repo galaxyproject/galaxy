@@ -397,6 +397,25 @@ def test_oidc_config_custom_auth_pipeline_and_extra(mock_oidc_config_file, mock_
     assert psa_authnz.config["SOCIAL_AUTH_PIPELINE"] == custom_auth_pipeline + tuple(custom_auth_pipeline_extra)
 
 
+def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        oidc=defaultdict(dict),
+        fixed_delegated_auth=False,
+    )
+    manager = AuthnzManager(
+        app=mock_app, oidc_config_file=mock_oidc_config_file, oidc_backends_config_file=mock_oidc_backend_config_file
+    )
+    return PSAAuthnz(
+        provider="oidc",
+        oidc_config=manager.oidc_config,
+        oidc_backend_config=manager.oidc_backends_config,
+        app_config=mock_app.config,
+    )
+
+
 def test_sync_user_profile_skips_when_account_interface_enabled():
     manager = MagicMock()
     session = MagicMock()

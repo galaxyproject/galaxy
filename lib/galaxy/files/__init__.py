@@ -327,7 +327,7 @@ class DictifiableFilesSourceContext(Protocol):
 
 
 class FileSourceDictifiable(Dictifiable, DictifiableFilesSourceContext):
-    dict_collection_visible_keys = ("email", "username", "ftp_dir", "preferences", "is_admin")
+    dict_collection_visible_keys = ("email", "username", "ftp_dir", "preferences", "is_admin", "oidc_access_tokens")
 
     def to_dict(self, view="collection", value_mapper: Optional[dict[str, Callable]] = None) -> dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
@@ -361,6 +361,9 @@ class FileSourcesUserContext(DictifiableFilesSourceContext, Protocol):
 
     @property
     def anonymous(self) -> bool: ...
+
+    @property
+    def oidc_access_tokens(self) -> Optional[dict[str, str]]: ...
 
 
 OptionalUserContext = Optional[FileSourcesUserContext]
@@ -431,6 +434,22 @@ class ProvidesFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiab
     def anonymous(self) -> bool:
         return self.trans.anonymous
 
+    @property
+    def oidc_access_tokens(self) -> Optional[dict[str, str]]:
+        """
+        Return all available access tokens for the current user.
+        """
+        user = self.trans.user
+        if not user:
+            return None
+        tokens = {}
+        for authnz_token in user.social_auth:
+            extra_data = authnz_token.extra_data or {}
+            access_token = extra_data.get("access_token")
+            if access_token:
+                tokens[authnz_token.provider] = access_token
+        return tokens
+
 
 class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     def __init__(self, **kwd):
@@ -479,3 +498,7 @@ class DictFileSourcesUserContext(FileSourcesUserContext, FileSourceDictifiable):
     @property
     def anonymous(self) -> bool:
         return not bool(self._kwd.get("username"))
+
+    @property
+    def oidc_access_tokens(self) -> Optional[dict[str, str]]:
+        return self._kwd.get("oidc_access_tokens")

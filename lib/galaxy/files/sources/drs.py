@@ -58,12 +58,13 @@ class DRSFilesSource(BaseFilesSource[DRSFileSourceTemplateConfiguration, DRSFile
     ):
         user_context = context.user_data.context if context.user_data.context else None
         config = context.config
+        headers = dict(config.http_headers)
         fetch_drs_to_file(
             source_path,
             native_path,
             user_context=user_context,
             fetch_url_allowlist=self._allowlist,
-            headers=config.http_headers,
+            headers=headers or None,
             force_http=config.force_http,
         )
 

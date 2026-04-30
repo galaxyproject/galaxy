@@ -5,6 +5,10 @@ import os
 import shutil
 import sys
 import tempfile
+from datetime import (
+    datetime,
+    timezone,
+)
 from io import StringIO
 from typing import (
     Any,
@@ -49,7 +53,12 @@ def main(argv=None):
     args = _arg_parser().parse_args(argv)
     registry = Registry()
     registry.load_datatypes(root_dir=args.galaxy_root, config=args.datatypes_registry)
-    do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
+    do_fetch(
+        args.request,
+        working_directory=args.working_directory or os.getcwd(),
+        registry=registry,
+        token_expires_at=args.token_expires_at,
+    )
 
 
 def do_fetch(
@@ -57,7 +66,9 @@ def do_fetch(
     working_directory: str,
     registry: Registry,
     file_sources_dict: Optional[dict] = None,
+    token_expires_at: Optional[str] = None,
 ):
+    _fail_if_expired(token_expires_at)
     assert os.path.exists(request_path)
     with open(request_path) as f:
         request = json.load(f)
@@ -595,8 +606,16 @@ def _arg_parser():
     parser.add_argument("--datatypes-registry")
     parser.add_argument("--request-version")
     parser.add_argument("--request")
+    parser.add_argument("--token-expires-at")
     parser.add_argument("--working-directory")
     return parser
+
+
+def _fail_if_expired(token_expires_at: Optional[str]) -> None:
+    if token_expires_at:
+        expiry = datetime.fromisoformat(token_expires_at)
+        if datetime.now(timezone.utc) > expiry:
+            raise Exception("Fetch job expired before start because staged OIDC credentials expired.")
 
 
 def get_file_sources(working_directory, file_sources_as_dict=None):

@@ -15,6 +15,7 @@ from galaxy.files.plugins import FileSourcePluginsConfig
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
+TEST_OIDC_ACCESS_TOKENS = {"oidc": "test-oidc-token"}
 
 
 def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: OptionalUserContext = None):
@@ -93,6 +94,7 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
         group_names=group_names or set(),
         is_admin=is_admin,
         file_sources=file_sources,
+        oidc_access_tokens=TEST_OIDC_ACCESS_TOKENS,
     )
     return user_context
 

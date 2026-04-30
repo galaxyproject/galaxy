@@ -3,13 +3,23 @@ import os
 import tempfile
 from base64 import b64encode
 from contextlib import contextmanager
+from datetime import (
+    datetime,
+    timedelta,
+    timezone,
+)
 from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Optional
+from unittest import mock
 
 import pytest
 
-from galaxy.tools.data_fetch import main
+from galaxy.tools import data_fetch
+from galaxy.tools.data_fetch import (
+    _fail_if_expired,
+    main,
+)
 
 B64_FOR_1_2_3 = b64encode(b"1 2 3").decode("utf-8")
 URI_FOR_1_2_3 = f"base64://{B64_FOR_1_2_3}"
@@ -406,6 +416,59 @@ def test_hdca_failed_expansion():
         assert len(elements) == 0
         assert "error_message" in output
         assert "Expected bagit.txt does not exist" in output["error_message"]
+
+
+def test_fail_if_expired_raises_for_past_timestamp():
+    with pytest.raises(Exception, match="Fetch job expired before start because staged OIDC credentials expired."):
+        _fail_if_expired((datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat())
+
+
+def test_fail_if_expired_allows_missing_timestamp():
+    _fail_if_expired(None)
+
+
+def test_fail_if_expired_allows_empty_timestamp():
+    _fail_if_expired("")
+
+
+def test_fail_if_expired_allows_future_timestamp():
+    expiry = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
+    _fail_if_expired(expiry)
+
+
+def test_do_fetch_short_circuits_before_processing_when_expired(monkeypatch):
+    with _execute_context() as execute_context:
+        request_path = os.path.join(execute_context.job_directory, "request.json")
+        with open(request_path, "w") as f:
+            json.dump({"targets": []}, f)
+        request_to_galaxy_json = mock.Mock()
+        monkeypatch.setattr(data_fetch, "_request_to_galaxy_json", request_to_galaxy_json)
+        with pytest.raises(Exception, match="Fetch job expired before start because staged OIDC credentials expired."):
+            data_fetch.do_fetch(
+                request_path,
+                working_directory=execute_context.job_directory,
+                registry=mock.Mock(),
+                token_expires_at=(datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat(),
+            )
+        request_to_galaxy_json.assert_not_called()
+
+
+def test_do_fetch_processes_request_when_not_expired(monkeypatch):
+    with _execute_context() as execute_context:
+        request_path = os.path.join(execute_context.job_directory, "request.json")
+        with open(request_path, "w") as f:
+            json.dump({"targets": []}, f)
+        expected_json: dict[str, list[dict[str, str]]] = {"__unnamed_outputs": []}
+        request_to_galaxy_json = mock.Mock(return_value=expected_json)
+        monkeypatch.setattr(data_fetch, "_request_to_galaxy_json", request_to_galaxy_json)
+        data_fetch.do_fetch(
+            request_path,
+            working_directory=execute_context.job_directory,
+            registry=mock.Mock(),
+            token_expires_at=(datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
+        )
+        request_to_galaxy_json.assert_called_once()
+        assert execute_context.galaxy_json == expected_json
 
 
 @contextmanager
