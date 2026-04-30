@@ -84,9 +84,9 @@ class TestStructuredLikeUnpopulatedRaisesNotReady(integration_util.IntegrationTe
             # same message meta.py raises for mapped-over unpopulated
             # HDCAs, not the cryptic "Referenced input parameter..."
             # that used to reach Sentry.
-            assert response.status_code == 400, (
-                f"Expected 400 for unpopulated input collection, got {response.status_code}: {response.text}"
-            )
+            assert (
+                response.status_code == 400
+            ), f"Expected 400 for unpopulated input collection, got {response.status_code}: {response.text}"
             assert "not populated" in response.text, f"Expected 'not populated' in error body, got: {response.text}"
             assert (
                 "Referenced input parameter is not a collection" not in response.text
