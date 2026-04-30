@@ -142,9 +142,9 @@ steps:
       component: _.activity_bar_header
       intro: "This is the activity bar. It gives you access to different activities in Galaxy, like your <b>Histories</b>, <b>Workflows</b>, <b>Visualizations</b> and <i>More...</i>"
 
-    - title: "Tools Activity"
-      component: tools.activity
-      intro: "This is the tools activity. It gives you access to your tool panel and the tool search (which we just used)."
+    - title: "Workflows Activity"
+      component: workflows.activity
+      intro: "This is the workflows activity. Workflows are a way to chain tools together into a pipeline. Clicking on this activity takes you to the workflows list where you can manage your workflows."
 
     - title: "All Other Activities"
       component: preferences.activity
