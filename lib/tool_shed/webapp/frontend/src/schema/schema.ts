@@ -1058,49 +1058,49 @@ export interface components {
         /** BaseUrlParameterModel */
         BaseUrlParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_baseurl
              * @constant
              */
             parameter_type: "gx_baseurl"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "baseurl"
@@ -1120,58 +1120,58 @@ export interface components {
         /** BooleanParameterModel */
         BooleanParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
-            /** falsevalue */
+            /** Falsevalue */
             falsevalue?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_boolean
              * @constant
              */
             parameter_type: "gx_boolean"
-            /** truevalue */
+            /** Truevalue */
             truevalue?: string | null
             /**
-             * type
+             * Type
              * @constant
              */
             type: "boolean"
             /**
-             * value
+             * Value
              * @default false
              */
             value: boolean | null
@@ -1245,117 +1245,117 @@ export interface components {
         }
         /** Citation */
         Citation: {
-            /** content */
+            /** Content */
             content: string
-            /** type */
+            /** Type */
             type: string
         }
         /** ColorParameterModel */
         ColorParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_color
              * @constant
              */
             parameter_type: "gx_color"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "color"
-            /** value */
+            /** Value */
             value?: string | null
         }
         /** ConditionalParameterModel */
         ConditionalParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_conditional
              * @constant
              */
             parameter_type: "gx_conditional"
-            /** test_parameter */
+            /** Test Parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "conditional"
-            /** whens */
+            /** Whens */
             whens: components["schemas"]["ConditionalWhen"][]
         }
         /** ConditionalWhen */
@@ -1435,12 +1435,12 @@ export interface components {
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_boolean
              * @constant
              */
@@ -1449,43 +1449,43 @@ export interface components {
         /** CwlDirectoryParameterModel */
         CwlDirectoryParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_directory
              * @constant
              */
@@ -1494,43 +1494,43 @@ export interface components {
         /** CwlFileParameterModel */
         CwlFileParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_file
              * @constant
              */
@@ -1539,12 +1539,12 @@ export interface components {
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_float
              * @constant
              */
@@ -1553,12 +1553,12 @@ export interface components {
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_integer
              * @constant
              */
@@ -1567,12 +1567,12 @@ export interface components {
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_null
              * @constant
              */
@@ -1581,12 +1581,12 @@ export interface components {
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_string
              * @constant
              */
@@ -1595,17 +1595,17 @@ export interface components {
         /** CwlUnionParameterModel */
         CwlUnionParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_union
              * @constant
              */
             parameter_type: "cwl_union"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -1620,62 +1620,62 @@ export interface components {
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null
             /**
-             * extensions
+             * Extensions
              * @default [
              *       "data"
              *     ]
              */
             extensions: string[]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_collection
              * @constant
              */
             parameter_type: "gx_data_collection"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_collection"
-            /** value */
+            /** Value */
             value: {
                 [key: string]: unknown
             } | null
@@ -1683,66 +1683,66 @@ export interface components {
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_column
              * @constant
              */
             parameter_type: "gx_data_column"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_column"
-            /** value */
+            /** Value */
             value?: number | number[] | null
         }
         /** DataParameterModel */
         DataParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * extensions
+             * Extensions
              * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
@@ -1753,54 +1753,54 @@ export interface components {
              */
             extensions: string[]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * multiple
+             * Multiple
              * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data
              * @constant
              */
             parameter_type: "gx_data"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data"
@@ -1851,54 +1851,54 @@ export interface components {
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_directory_uri
              * @constant
              */
             parameter_type: "gx_directory_uri"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "directory"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -1910,70 +1910,70 @@ export interface components {
         }
         /** DrillDownOptionsDict */
         DrillDownOptionsDict: {
-            /** name */
+            /** Name */
             name: string | null
-            /** options */
+            /** Options */
             options: components["schemas"]["DrillDownOptionsDict"][]
-            /** selected */
+            /** Selected */
             selected: boolean
-            /** value */
+            /** Value */
             value: string
         }
         /** DrillDownParameterModel */
         DrillDownParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * hierarchy
+             * Hierarchy
              * @enum {string}
              */
             hierarchy: "recurse" | "exact"
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
-            /** options */
+            /** Options */
             options?: components["schemas"]["DrillDownOptionsDict"][] | null
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_drill_down
              * @constant
              */
             parameter_type: "gx_drill_down"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "drill_down"
@@ -2034,150 +2034,150 @@ export interface components {
         }
         /** FilePatternDatasetCollectionDescription */
         FilePatternDatasetCollectionDescription: {
-            /** assign_primary_output */
+            /** Assign Primary Output */
             assign_primary_output: boolean
-            /** directory */
+            /** Directory */
             directory: string | null
             /**
-             * discover_via
+             * Discover Via
              * @constant
              */
             discover_via: "pattern"
-            /** format */
+            /** Format */
             format: string | null
-            /** match_relative_path */
+            /** Match Relative Path */
             match_relative_path: boolean
-            /** pattern */
+            /** Pattern */
             pattern: string
-            /** recurse */
+            /** Recurse */
             recurse: boolean
             /**
-             * sort_comp
+             * Sort Comp
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric"
             /**
-             * sort_key
+             * Sort Key
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey"
             /**
-             * sort_reverse
+             * Sort Reverse
              * @default false
              */
             sort_reverse: boolean
-            /** visible */
+            /** Visible */
             visible: boolean
         }
         /** FloatParameterModel */
         FloatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_float
              * @constant
              */
             parameter_type: "gx_float"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "float"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][]
-            /** value */
+            /** Value */
             value?: number | null
         }
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_genomebuild
              * @constant
              */
             parameter_type: "gx_genomebuild"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "genomebuild"
@@ -2185,61 +2185,61 @@ export interface components {
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** multiple */
+            /** Multiple */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_group_tag
              * @constant
              */
             parameter_type: "gx_group_tag"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "group_tag"
         }
         /** HelpContent */
         HelpContent: {
-            /** content */
+            /** Content */
             content: string
             /**
-             * format
+             * Format
              * @enum {string}
              */
             format: "restructuredtext" | "plain_text" | "markdown"
@@ -2247,54 +2247,54 @@ export interface components {
         /** HiddenParameterModel */
         HiddenParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_hidden
              * @constant
              */
             parameter_type: "gx_hidden"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "hidden"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -2303,7 +2303,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[]
-            /** value */
+            /** Value */
             value: string | null
         }
         /** ImageData */
@@ -2390,61 +2390,61 @@ export interface components {
         /** IntegerParameterModel */
         IntegerParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_integer
              * @constant
              */
             parameter_type: "gx_integer"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "integer"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][]
-            /** value */
+            /** Value */
             value?: number | null
         }
         /** InvalidTool */
@@ -2578,52 +2578,52 @@ export interface components {
         /** RepeatParameterModel */
         RepeatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
-            /** max */
+            /** Max */
             max?: number | null
-            /** min */
+            /** Min */
             min?: number | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_repeat
              * @constant
              */
             parameter_type: "gx_repeat"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -2654,7 +2654,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "repeat"
@@ -2996,49 +2996,49 @@ export interface components {
         /** RulesParameterModel */
         RulesParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_rules
              * @constant
              */
             parameter_type: "gx_rules"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "rules"
@@ -3046,48 +3046,48 @@ export interface components {
         /** SectionParameterModel */
         SectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_section
              * @constant
              */
             parameter_type: "gx_section"
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -3118,7 +3118,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[]
             /**
-             * type
+             * Type
              * @constant
              */
             type: "section"
@@ -3126,61 +3126,61 @@ export interface components {
         /** SelectParameterModel */
         SelectParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * multiple
+             * Multiple
              * @default false
              */
             multiple: boolean
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
-            /** options */
+            /** Options */
             options?: components["schemas"]["LabelValue"][] | null
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_select
              * @constant
              */
             parameter_type: "gx_select"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "select"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][]
@@ -3268,19 +3268,18 @@ export interface components {
         }
         /** ShedParsedTool */
         ShedParsedTool: {
-            /** citations */
+            /** Citations */
             citations: components["schemas"]["Citation"][]
-            /** description */
+            /** Description */
             description: string | null
-            /** edam_operations */
+            /** Edam Operations */
             edam_operations: string[]
-            /** edam_topics */
+            /** Edam Topics */
             edam_topics: string[]
-            /** help */
             help: components["schemas"]["HelpContent"] | null
-            /** id */
+            /** Id */
             id: string
-            /** inputs */
+            /** Inputs */
             inputs: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -3310,11 +3309,11 @@ export interface components {
                 | components["schemas"]["RepeatParameterModel"]
                 | components["schemas"]["SectionParameterModel"]
             )[]
-            /** license */
+            /** License */
             license: string | null
-            /** name */
+            /** Name */
             name: string
-            /** outputs */
+            /** Outputs */
             outputs: (
                 | components["schemas"]["ToolOutputDataset"]
                 | components["schemas"]["ToolOutputCollection"]
@@ -3323,76 +3322,75 @@ export interface components {
                 | components["schemas"]["ToolOutputFloat"]
                 | components["schemas"]["ToolOutputBoolean"]
             )[]
-            /** profile */
+            /** Profile */
             profile: string | null
-            /** repository_revision */
             repository_revision?: components["schemas"]["RepositoryRevisionMetadata"] | null
-            /** version */
+            /** Version */
             version: string | null
-            /** xrefs */
+            /** Xrefs */
             xrefs: components["schemas"]["XrefDict"][]
         }
         /** TextParameterModel */
         TextParameterModel: {
             /**
-             * area
+             * Area
              * @default false
              */
             area: boolean
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null
             /**
-             * default_options
+             * Default Options
              * @default []
              */
             default_options: components["schemas"]["LabelValue"][]
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_text
              * @constant
              */
             parameter_type: "gx_text"
             /**
-             * type
+             * Type
              * @constant
              */
             type: "text"
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -3401,7 +3399,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[]
-            /** default_value */
+            /** Value */
             value?: string | null
         }
         /** Tool */
@@ -3484,17 +3482,17 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown
@@ -3507,21 +3505,20 @@ export interface components {
         /** ToolOutputCollection */
         ToolOutputCollection: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: boolean
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: string
-            /** structure */
             structure: components["schemas"]["ToolOutputCollectionStructure"]
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -3531,25 +3528,25 @@ export interface components {
         }
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null
-            /** collection_type_from_rules */
+            /** Collection Type From Rules */
             collection_type_from_rules?: string | null
-            /** collection_type_source */
+            /** Collection Type Source */
             collection_type_source?: string | null
-            /** discover_datasets */
+            /** Discover Datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null
-            /** structured_like */
+            /** Structured Like */
             structured_like?: string | null
         }
         /** ToolOutputDataset */
         ToolOutputDataset: {
-            /** discover_datasets */
+            /** Discover Datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -3557,12 +3554,12 @@ export interface components {
                   )[]
                 | null
             /**
-             * format
+             * Format
              * @description The short name for the output datatype.
              */
             format: string
             /**
-             * format_source
+             * Format Source
              * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
              */
             format_source?: string | null
@@ -3572,27 +3569,27 @@ export interface components {
              */
             from_work_dir?: string | null
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: boolean
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * metadata_source
+             * Metadata Source
              * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
              */
             metadata_source?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: string
             /**
-             * precreate_directory
+             * Precreate Directory
              * @default false
              */
             precreate_directory: boolean | null
@@ -3605,17 +3602,17 @@ export interface components {
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown
@@ -3628,17 +3625,17 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown
@@ -3651,17 +3648,17 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown
@@ -3673,22 +3670,22 @@ export interface components {
         }
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
-            /** assign_primary_output */
+            /** Assign Primary Output */
             assign_primary_output: boolean
-            /** directory */
+            /** Directory */
             directory: string | null
             /**
-             * discover_via
+             * Discover Via
              * @constant
              */
             discover_via: "tool_provided_metadata"
-            /** format */
+            /** Format */
             format: string | null
-            /** match_relative_path */
+            /** Match Relative Path */
             match_relative_path: boolean
-            /** recurse */
+            /** Recurse */
             recurse: boolean
-            /** visible */
+            /** Visible */
             visible: boolean
         }
         /** ToolVersion */
@@ -3903,9 +3900,9 @@ export interface components {
         }
         /** XrefDict */
         XrefDict: {
-            /** type */
+            /** Type */
             type: string
-            /** value */
+            /** Value */
             value: string
         }
     }

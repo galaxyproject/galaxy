@@ -6,8 +6,8 @@
     NO_REPLACEMENT sentinel.
   job:
     required_input:
-      type: File
-      value: 1.fasta
+      class: File
+      path: 1.fasta
   outputs:
     out:
       class: File

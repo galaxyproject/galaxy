@@ -13,13 +13,14 @@ from typing import (
 )
 
 from pydantic import (
-    AfterValidator,
     AnyUrl,
     BaseModel,
     ConfigDict,
+    Discriminator,
     Field,
     model_validator,
     RootModel,
+    Tag,
 )
 from typing_extensions import (
     Annotated,
@@ -28,9 +29,14 @@ from typing_extensions import (
     TypedDict,
 )
 
-from ._base import ToolSourceBaseModel
+from ._base import (
+    CollectionType,
+    StrictModel,
+    ToolSourceBaseModel,
+)
 from .assertions import assertions
 from .parameters import ToolParameterT
+from .test_job import Job
 from .tool_outputs import (
     IncomingToolOutput,
     ToolOutput,
@@ -165,98 +171,249 @@ class ParsedTool(ToolSourceBaseModel):
     help: Optional[HelpContent]
 
 
-class StrictModel(BaseModel):
-
-    model_config = ConfigDict(extra="forbid", field_title_generator=lambda field_name, field_info: field_name.lower())
-
-
 class BaseTestOutputModel(StrictModel):
-    file: Optional[str] = None
-    path: Optional[str] = None
-    location: Optional[AnyUrl] = None
-    ftype: Optional[str] = None
-    sort: Optional[bool] = None
-    compare: Optional[OutputCompareType] = None
-    checksum: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
-    asserts: Optional[assertions] = None
-    delta: Optional[int] = None
-    delta_frac: Optional[float] = None
-    lines_diff: Optional[int] = None
-    decompress: Optional[bool] = None
+    model_config = ConfigDict(extra="forbid", title="BaseTestOutputModel")
+    file: Annotated[
+        Optional[str],
+        Field(
+            title="File",
+            description=(
+                "Name of the output file stored in the target `test-data` directory that will be used to "
+                "compare against the results of executing the tool via the functional test framework."
+            ),
+        ),
+    ] = None
+    path: Annotated[
+        Optional[str],
+        Field(title="Path", description="Filesystem path to a local output file used for comparison."),
+    ] = None
+    location: Annotated[
+        Optional[AnyUrl],
+        Field(
+            title="Location",
+            description=(
+                "URL that points to a remote output file that will be downloaded and used for output "
+                "comparison. Use only when the file cannot be included in the `test-data` folder. May be "
+                "combined with `file` (downloads when missing on disk) or used alone (filename inferred "
+                "from the URL). A `checksum` is also used to verify the download when provided."
+            ),
+        ),
+    ] = None
+    ftype: Annotated[
+        Optional[str],
+        Field(
+            title="File Type",
+            description=(
+                "If specified, this value is checked against the corresponding output's data type. "
+                "If these do not match, the test will fail."
+            ),
+        ),
+    ] = None
+    sort: Annotated[
+        Optional[bool],
+        Field(
+            title="Sort",
+            description=(
+                "Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines "
+                "of the history data set before comparison; for `diff` and `re_match` the local file is "
+                "also sorted. Useful for non-deterministic output."
+            ),
+        ),
+    ] = None
+    compare: Annotated[
+        Optional[OutputCompareType],
+        Field(
+            title="Compare",
+            description="Comparison mode used when matching the output against the reference file.",
+        ),
+    ] = None
+    checksum: Annotated[
+        Optional[str],
+        Field(
+            title="Checksum",
+            description=(
+                "The target output's checksum should match the value specified here, in the form "
+                "`hash_type$hash_value` (e.g. `sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041`). Useful "
+                "for large static files where uploading the whole file is inconvenient."
+            ),
+        ),
+    ] = None
+    metadata: Annotated[
+        Optional[Dict[str, Any]],
+        Field(
+            title="Metadata",
+            description="Mapping of metadata keys to expected values for this output.",
+        ),
+    ] = None
+    asserts: Annotated[
+        Optional[assertions],
+        Field(title="Asserts", description="Assertions about the content of the output."),
+    ] = None
+    delta: Annotated[
+        Optional[int],
+        Field(
+            title="Delta",
+            description=(
+                "If `compare` is set to `sim_size`, the maximum allowed absolute size difference (in "
+                "bytes) between the generated data set and the reference file in `test-data/`. Default "
+                "is 10000 bytes. Can be combined with `delta_frac`."
+            ),
+        ),
+    ] = None
+    delta_frac: Annotated[
+        Optional[float],
+        Field(
+            title="Delta Frac",
+            description=(
+                "If `compare` is set to `sim_size`, the maximum allowed relative size difference between "
+                "the generated data set and the reference file in `test-data/`. 0.1 means the generated "
+                "file can differ by at most 10%. Default is not to check for relative size difference. "
+                "Can be combined with `delta`."
+            ),
+        ),
+    ] = None
+    lines_diff: Annotated[
+        Optional[int],
+        Field(
+            title="Lines Diff",
+            description=(
+                "Applies when `compare` is set to `diff`, `re_match`, or `contains`. For `diff`, the "
+                "number of lines of difference to allow (a modified line counts as two: one added, one "
+                "removed)."
+            ),
+        ),
+    ] = None
+    decompress: Annotated[
+        Optional[bool],
+        Field(
+            title="Decompress",
+            description=(
+                "If true, decompress files before comparison. Applies to assertions expressed with "
+                "`assert_contents` or `compare` set to anything but `sim_size`. Useful for testing "
+                "compressed outputs that are non-deterministic despite having deterministic decompressed "
+                "contents. By default, only files compressed with bz2, gzip and zip are automatically "
+                "decompressed."
+            ),
+        ),
+    ] = None
 
 
 class TestDataOutputAssertions(BaseTestOutputModel):
-    class_: Optional[Literal["File"]] = Field("File", alias="class")
+    model_config = ConfigDict(extra="forbid", title="TestDataOutputAssertions")
+    class_: Optional[Literal["File"]] = Field("File", alias="class", title="Class")
 
 
 class TestCollectionCollectionElementAssertions(StrictModel):
-    elements: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
-    element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
+    model_config = ConfigDict(extra="forbid", title="TestCollectionCollectionElementAssertions")
+    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class", title="Class")
+    elements: Annotated[
+        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        Field(title="Elements"),
+    ] = None
+    element_tests: Annotated[
+        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        Field(title="Element Tests"),
+    ] = None
 
 
 class TestCollectionDatasetElementAssertions(BaseTestOutputModel):
-    pass
+    model_config = ConfigDict(extra="forbid", title="TestCollectionDatasetElementAssertions")
+    class_: Optional[Literal["File"]] = Field("File", alias="class", title="Class")
 
 
-TestCollectionElementAssertion = Union[
-    TestCollectionDatasetElementAssertions, TestCollectionCollectionElementAssertions
+def _discriminate_collection_element(v):
+    if isinstance(v, dict):
+        if v.get("class") == "Collection":
+            return "Collection"
+        return "File"
+    if isinstance(v, TestCollectionCollectionElementAssertions):
+        return "Collection"
+    if isinstance(v, TestCollectionDatasetElementAssertions):
+        return "File"
+    return None
+
+
+TestCollectionElementAssertion = Annotated[
+    Union[
+        Annotated[TestCollectionDatasetElementAssertions, Tag("File")],
+        Annotated[TestCollectionCollectionElementAssertions, Tag("Collection")],
+    ],
+    Discriminator(_discriminate_collection_element),
 ]
 TestCollectionCollectionElementAssertions.model_rebuild()
 
 
-def _check_collection_type(v: str) -> str:
-    if len(v) == 0:
-        raise ValueError("Invalid empty collection_type specified.")
-    collection_levels = v.split(":")
-    for collection_level in collection_levels:
-        if collection_level not in ["list", "paired", "paired_or_unpaired", "record", "sample_sheet"]:
-            raise ValueError(f"Invalid collection_type specified [{v}]")
-    return v
-
-
-CollectionType = Annotated[Optional[str], AfterValidator(_check_collection_type)]
-
-
 class CollectionAttributes(StrictModel):
-    collection_type: CollectionType = None
+    model_config = ConfigDict(extra="forbid", title="CollectionAttributes")
+    collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
 class TestCollectionOutputAssertions(StrictModel):
-    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class")
-    elements: Optional[Dict[str, TestCollectionElementAssertion]] = None
-    element_tests: Optional[Dict[str, "TestCollectionElementAssertion"]] = None
-    element_count: Optional[int] = None
-    attributes: Optional[CollectionAttributes] = None
-    collection_type: CollectionType = None
+    model_config = ConfigDict(extra="forbid", title="TestCollectionOutputAssertions")
+    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class", title="Class")
+    elements: Annotated[
+        Optional[Dict[str, TestCollectionElementAssertion]],
+        Field(title="Elements"),
+    ] = None
+    element_tests: Annotated[
+        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        Field(title="Element Tests"),
+    ] = None
+    element_count: Annotated[Optional[int], Field(title="Element Count")] = None
+    attributes: Annotated[Optional[CollectionAttributes], Field(title="Attributes")] = None
+    collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
 TestOutputLiteral = Union[bool, int, float, str]
 
-TestOutputAssertions = Union[TestCollectionOutputAssertions, TestDataOutputAssertions, TestOutputLiteral]
+
+def _discriminate_output(v):
+    if isinstance(v, dict):
+        if v.get("class") == "Collection":
+            return "Collection"
+        return "File"
+    if isinstance(v, TestCollectionOutputAssertions):
+        return "Collection"
+    if isinstance(v, TestDataOutputAssertions):
+        return "File"
+    if isinstance(v, (bool, int, float, str)):
+        return "scalar"
+    return None
+
+
+TestOutputAssertions = Annotated[
+    Union[
+        Annotated[TestCollectionOutputAssertions, Tag("Collection")],
+        Annotated[TestDataOutputAssertions, Tag("File")],
+        Annotated[TestOutputLiteral, Tag("scalar")],
+    ],
+    Discriminator(_discriminate_output),
+]
 
 
 TestInputValue = Union[bool, int, float, str, List[Any], Dict[str, Any]]
 
 
 class YamlTestCredentialValue(StrictModel):
-    name: Annotated[str, Field(description="Name of the credential variable or secret.")]
-    value: Annotated[str, Field(description="Value of the credential variable or secret.")]
+    model_config = ConfigDict(extra="forbid", title="YamlTestCredentialValue")
+    name: Annotated[str, Field(title="Name", description="Name of the credential variable or secret.")]
+    value: Annotated[str, Field(title="Value", description="Value of the credential variable or secret.")]
 
 
 class YamlTestCredential(StrictModel):
-    name: Annotated[str, Field(description="Name of the credentials group.")]
+    model_config = ConfigDict(extra="forbid", title="YamlTestCredential")
+    name: Annotated[str, Field(title="Name", description="Name of the credentials group.")]
     variables: Annotated[
         List[YamlTestCredentialValue],
-        Field(description="Variables exposed to the tool environment."),
+        Field(title="Variables", description="Variables exposed to the tool environment."),
     ] = []
     secrets: Annotated[
         List[YamlTestCredentialValue],
-        Field(description="Secrets exposed to the tool environment."),
+        Field(title="Secrets", description="Secrets exposed to the tool environment."),
     ] = []
     version: Annotated[
         Optional[str],
-        Field(description="Version of the credential definition."),
+        Field(title="Version", description="Version of the credential definition."),
     ] = None
 
 
@@ -307,17 +464,59 @@ class YamlToolTest(BaseModel):
 UserToolSource.model_rebuild()
 YamlToolSource.model_rebuild()
 
+# Loose alias retained for TestJobDict / TypedDict consumers where helpers
+# still tolerate Dict[str, Any]. The strict, validated shape is `Job` (see
+# galaxy.tool_util_models.test_job).
 JobDict = Dict[str, Any]
 
 
 class TestJob(StrictModel):
-    doc: Optional[str]
-    job: JobDict
-    outputs: Dict[str, TestOutputAssertions]
-    expect_failure: Optional[bool] = False
+    model_config = ConfigDict(extra="forbid", title="TestJob")
+    doc: Annotated[
+        Optional[str],
+        Field(title="Doc", description="Describes the purpose of the test."),
+    ] = None
+    job: Annotated[
+        Job,
+        Field(
+            title="Job",
+            description=(
+                "Defines the job to execute. Can be a path to a file or an inline dictionary describing "
+                "the job inputs."
+            ),
+        ),
+    ]
+    outputs: Annotated[
+        Dict[str, TestOutputAssertions],
+        Field(
+            title="Outputs",
+            description=(
+                "Defines assertions about outputs (datasets, collections or parameters). Each key "
+                "corresponds to a labeled output; values are dictionaries describing the expected output."
+            ),
+        ),
+    ]
+    expect_failure: Annotated[
+        Optional[bool],
+        Field(
+            title="Expect Failure",
+            description="If true, the workflow is expected to produce an error.",
+        ),
+    ] = False
 
 
-Tests = RootModel[List[TestJob]]
+class Tests(RootModel[List[TestJob]]):
+    model_config = ConfigDict(
+        title="GalaxyWorkflowTests",
+        json_schema_extra={
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "description": (
+                "Galaxy workflow tests file — a YAML list of test entries asserting the expected "
+                "inputs and outputs of a workflow run."
+            ),
+        },
+    )
+
 
 # TODO: typed dict versions of all thee above for verify code - make this Dict[str, Any] here more
 # specific.

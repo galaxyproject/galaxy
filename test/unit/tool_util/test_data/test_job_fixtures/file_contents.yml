@@ -1,0 +1,4 @@
+input:
+  class: File
+  contents: "inline file content\n"
+  filetype: txt

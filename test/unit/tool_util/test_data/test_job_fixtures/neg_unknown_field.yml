@@ -1,0 +1,4 @@
+input:
+  class: File
+  path: 1.fasta
+  flargh: 1

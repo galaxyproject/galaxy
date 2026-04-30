@@ -305,8 +305,7 @@ def galactic_job_json(
         file_path = value.get("location", None) or value.get("path", None)
         if file_path is None:
             return value
-        if not os.path.isabs(file_path):
-            file_path = os.path.join(test_data_directory, file_path)
+        file_path = abs_path_or_uri(file_path, test_data_directory, resolve_data=resolve_data)
 
         file_type = value.get("filetype", None) or value.get("format", None) or "directory"
 

@@ -1,0 +1,6 @@
+input:
+  class: File
+  filetype: imzml
+  composite_data:
+    - Example_Continuous.imzML
+    - Example_Continuous.ibd

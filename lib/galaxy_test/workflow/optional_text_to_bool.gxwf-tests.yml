@@ -4,8 +4,8 @@
     the conditional downstream step.
   job:
     required_input:
-      type: File
-      value: 1.fasta
+      class: File
+      path: 1.fasta
   outputs:
     out:
       asserts:
@@ -17,8 +17,8 @@
     downstream step runs.
   job:
     required_input:
-      type: File
-      value: 1.fasta
+      class: File
+      path: 1.fasta
     optional_text: some_value
   outputs:
     out:

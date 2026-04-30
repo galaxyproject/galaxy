@@ -15,12 +15,8 @@
           class: File
           contents: "line2"
           filetype: bed
-    when_a:
-      type: raw
-      value: true
-    when_b:
-      type: raw
-      value: true
+    when_a: true
+    when_b: true
   outputs:
     picked:
       class: Collection
@@ -51,12 +47,8 @@
           class: File
           contents: "line2"
           filetype: bed
-    when_a:
-      type: raw
-      value: false
-    when_b:
-      type: raw
-      value: true
+    when_a: false
+    when_b: true
   outputs:
     picked:
       class: Collection

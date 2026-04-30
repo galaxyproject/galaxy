@@ -85,7 +85,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired_or_unpaired
           elements:
             - identifier: forward
               class: File
@@ -99,6 +98,7 @@
       collection_type: list:paired_or_unpaired
       elements:
         el1:
+          class: Collection
           elements:
             forward:
               asserts:

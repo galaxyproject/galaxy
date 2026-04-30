@@ -1,9 +1,7 @@
-- doc: | 
+- doc: |
     Test that workflows can run with multiple versions of tools and the version specified matches the one run.
   job:
-    input:
-      value: 1
-      type: raw
+    input: 1
   outputs:
     output_1:
       class: File

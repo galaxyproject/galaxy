@@ -1,0 +1,4 @@
+input:
+  type: File
+  value: 1.fasta
+  file_type: fasta

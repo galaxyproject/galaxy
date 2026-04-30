@@ -46,8 +46,8 @@ def assert_has_text(
         lambda o, t: o.find(t) >= 0,
         lambda o, t: len(re.findall(re.escape(t), o)),
         "{expected} text '{text}' in output ('{output}')",
-        "{expected} {n}+-{delta} occurences of '{text}' in output ('{output}')",
-        "{expected} that the number of occurences of '{text}' in output is in [{min}:{max}] ('{output}')",
+        "{expected} {n}+-{delta} occurrences of '{text}' in output ('{output}')",
+        "{expected} that the number of occurrences of '{text}' in output is in [{min}:{max}] ('{output}')",
     )
 
 
@@ -123,8 +123,8 @@ def assert_has_text_matching(
 ) -> None:
     """Asserts the specified output contains text matching the
     regular expression specified by the argument expression.
-    If n is given the assertion checks for exacly n (nonoverlapping)
-    occurences.
+    If n is given the assertion checks for exactly n (nonoverlapping)
+    occurrences.
     """
     _assert_presence_number(
         output,
@@ -153,7 +153,7 @@ def assert_has_line_matching(
 ) -> None:
     """Asserts the specified output contains a line matching the
     regular expression specified by the argument expression. If n is given
-    the assertion checks for exactly n occurences."""
+    the assertion checks for exactly n occurrences."""
     _assert_presence_number(
         output,
         expression,

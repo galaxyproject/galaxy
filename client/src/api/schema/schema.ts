@@ -7692,49 +7692,49 @@ export interface components {
         /** BaseUrlParameterModel */
         BaseUrlParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_baseurl
              * @constant
              */
             parameter_type: "gx_baseurl";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "baseurl";
@@ -7935,58 +7935,58 @@ export interface components {
         /** BooleanParameterModel */
         BooleanParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
-            /** falsevalue */
+            /** Falsevalue */
             falsevalue?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_boolean
              * @constant
              */
             parameter_type: "gx_boolean";
-            /** truevalue */
+            /** Truevalue */
             truevalue?: string | null;
             /**
-             * type
+             * Type
              * @constant
              */
             type: "boolean";
             /**
-             * value
+             * Value
              * @default false
              */
             value: boolean | null;
@@ -8351,9 +8351,9 @@ export interface components {
         };
         /** Citation */
         Citation: {
-            /** content */
+            /** Content */
             content: string;
-            /** type */
+            /** Type */
             type: string;
         };
         /** CitationErrorResponse */
@@ -8393,7 +8393,7 @@ export interface components {
         };
         /** CollectionAttributes */
         CollectionAttributes: {
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null;
         };
         /** CollectionElementCollectionRequestUri */
@@ -8506,53 +8506,53 @@ export interface components {
         /** ColorParameterModel */
         ColorParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_color
              * @constant
              */
             parameter_type: "gx_color";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "color";
-            /** value */
+            /** Value */
             value?: string | null;
         };
         /** CompositeDataElement */
@@ -8761,57 +8761,57 @@ export interface components {
         /** ConditionalParameterModel */
         ConditionalParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_conditional
              * @constant
              */
             parameter_type: "gx_conditional";
-            /** test_parameter */
+            /** Test Parameter */
             test_parameter:
                 | components["schemas"]["BooleanParameterModel"]
                 | components["schemas"]["SelectParameterModel"];
             /**
-             * type
+             * Type
              * @constant
              */
             type: "conditional";
-            /** whens */
+            /** Whens */
             whens: components["schemas"]["ConditionalWhen"][];
         };
         /** ConditionalWhen */
@@ -8873,20 +8873,19 @@ export interface components {
         };
         /** Container */
         Container: {
-            /** container_id */
+            /** Container Id */
             container_id: string;
             /**
-             * type
+             * Type
              * @enum {string}
              */
             type: "docker" | "singularity";
         };
         /** ContainerRequirement */
         ContainerRequirement: {
-            /** container */
             container: components["schemas"]["Container"];
             /**
-             * type
+             * Type
              * @constant
              */
             type: "container";
@@ -10166,12 +10165,12 @@ export interface components {
         /** CwlBooleanParameterModel */
         CwlBooleanParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_boolean
              * @constant
              */
@@ -10180,43 +10179,43 @@ export interface components {
         /** CwlDirectoryParameterModel */
         CwlDirectoryParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_directory
              * @constant
              */
@@ -10225,43 +10224,43 @@ export interface components {
         /** CwlFileParameterModel */
         CwlFileParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_file
              * @constant
              */
@@ -10270,12 +10269,12 @@ export interface components {
         /** CwlFloatParameterModel */
         CwlFloatParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_float
              * @constant
              */
@@ -10284,12 +10283,12 @@ export interface components {
         /** CwlIntegerParameterModel */
         CwlIntegerParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_integer
              * @constant
              */
@@ -10298,12 +10297,12 @@ export interface components {
         /** CwlNullParameterModel */
         CwlNullParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_null
              * @constant
              */
@@ -10312,12 +10311,12 @@ export interface components {
         /** CwlStringParameterModel */
         CwlStringParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_string
              * @constant
              */
@@ -10326,17 +10325,17 @@ export interface components {
         /** CwlUnionParameterModel */
         CwlUnionParameterModel: {
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * parameter_type
+             * Parameter Type
              * @default cwl_union
              * @constant
              */
             parameter_type: "cwl_union";
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -10460,62 +10459,62 @@ export interface components {
         /** DataCollectionParameterModel */
         DataCollectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null;
             /**
-             * extensions
+             * Extensions
              * @default [
              *       "data"
              *     ]
              */
             extensions: string[];
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_collection
              * @constant
              */
             parameter_type: "gx_data_collection";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_collection";
-            /** value */
+            /** Value */
             value: {
                 [key: string]: unknown;
             } | null;
@@ -10523,55 +10522,55 @@ export interface components {
         /** DataColumnParameterModel */
         DataColumnParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** multiple */
+            /** Multiple */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data_column
              * @constant
              */
             parameter_type: "gx_data_column";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data_column";
-            /** value */
+            /** Value */
             value?: number | number[] | null;
         };
         /** DataElementsFromTarget */
@@ -10648,12 +10647,12 @@ export interface components {
         /** DataParameterModel */
         DataParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * extensions
+             * Extensions
              * @description Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.
              * @default [
              *       "data"
@@ -10664,54 +10663,54 @@ export interface components {
              */
             extensions: string[];
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** max */
+            /** Max */
             max?: number | null;
-            /** min */
+            /** Min */
             min?: number | null;
             /**
-             * multiple
+             * Multiple
              * @description Allow multiple values to be selected.
              * @default false
              */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_data
              * @constant
              */
             parameter_type: "gx_data";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "data";
@@ -11448,54 +11447,54 @@ export interface components {
         /** DirectoryUriParameterModel */
         DirectoryUriParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_directory_uri
              * @constant
              */
             parameter_type: "gx_directory_uri";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "directory";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -11556,70 +11555,70 @@ export interface components {
         };
         /** DrillDownOptionsDict */
         DrillDownOptionsDict: {
-            /** name */
+            /** Name */
             name: string | null;
-            /** options */
+            /** Options */
             options: components["schemas"]["DrillDownOptionsDict"][];
-            /** selected */
+            /** Selected */
             selected: boolean;
-            /** value */
+            /** Value */
             value: string;
         };
         /** DrillDownParameterModel */
         DrillDownParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * hierarchy
+             * Hierarchy
              * @enum {string}
              */
             hierarchy: "recurse" | "exact";
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** multiple */
+            /** Multiple */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
-            /** options */
+            /** Options */
             options?: components["schemas"]["DrillDownOptionsDict"][] | null;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_drill_down
              * @constant
              */
             parameter_type: "gx_drill_down";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "drill_down";
@@ -12486,39 +12485,39 @@ export interface components {
         };
         /** FilePatternDatasetCollectionDescription */
         FilePatternDatasetCollectionDescription: {
-            /** assign_primary_output */
+            /** Assign Primary Output */
             assign_primary_output: boolean;
-            /** directory */
+            /** Directory */
             directory: string | null;
             /**
-             * discover_via
+             * Discover Via
              * @constant
              */
             discover_via: "pattern";
-            /** format */
+            /** Format */
             format: string | null;
-            /** match_relative_path */
+            /** Match Relative Path */
             match_relative_path: boolean;
-            /** pattern */
+            /** Pattern */
             pattern: string;
-            /** recurse */
+            /** Recurse */
             recurse: boolean;
             /**
-             * sort_comp
+             * Sort Comp
              * @enum {string}
              */
             sort_comp: "lexical" | "numeric";
             /**
-             * sort_key
+             * Sort Key
              * @enum {string}
              */
             sort_key: "filename" | "name" | "designation" | "dbkey";
             /**
-             * sort_reverse
+             * Sort Reverse
              * @default false
              */
             sort_reverse: boolean;
-            /** visible */
+            /** Visible */
             visible: boolean;
         };
         /** FileRequestUri */
@@ -12743,62 +12742,62 @@ export interface components {
         /** FloatParameterModel */
         FloatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** max */
+            /** Max */
             max?: number | null;
-            /** min */
+            /** Min */
             min?: number | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_float
              * @constant
              */
             parameter_type: "gx_float";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "float";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** value */
+            /** Value */
             value?: number | null;
         };
         /** FolderLibraryFolderItem */
@@ -13006,51 +13005,51 @@ export interface components {
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** multiple */
+            /** Multiple */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_genomebuild
              * @constant
              */
             parameter_type: "gx_genomebuild";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "genomebuild";
@@ -13171,51 +13170,51 @@ export interface components {
         /** GroupTagParameterModel */
         GroupTagParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** multiple */
+            /** Multiple */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_group_tag
              * @constant
              */
             parameter_type: "gx_group_tag";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "group_tag";
@@ -14729,10 +14728,10 @@ export interface components {
         };
         /** HelpContent */
         HelpContent: {
-            /** content */
+            /** Content */
             content: string;
             /**
-             * format
+             * Format
              * @enum {string}
              */
             format: "restructuredtext" | "plain_text" | "markdown";
@@ -14994,54 +14993,54 @@ export interface components {
         /** HiddenParameterModel */
         HiddenParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_hidden
              * @constant
              */
             parameter_type: "gx_hidden";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "hidden";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -15050,7 +15049,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** value */
+            /** Value */
             value: string | null;
         };
         /**
@@ -15525,21 +15524,20 @@ export interface components {
         /** IncomingToolOutputCollection */
         IncomingToolOutputCollection: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden?: boolean | null;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
-            /** structure */
             structure: components["schemas"]["ToolOutputCollectionStructure"];
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -15549,7 +15547,7 @@ export interface components {
         };
         /** IncomingToolOutputDataset */
         IncomingToolOutputDataset: {
-            /** discover_datasets */
+            /** Discover Datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
@@ -15557,12 +15555,12 @@ export interface components {
                   )[]
                 | null;
             /**
-             * format
+             * Format
              * @description The short name for the output datatype.
              */
             format?: string | null;
             /**
-             * format_source
+             * Format Source
              * @description This sets the data type of the output dataset(s) to be the same format as that of the specified tool input.
              */
             format_source?: string | null;
@@ -15572,27 +15570,27 @@ export interface components {
              */
             from_work_dir?: string | null;
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden?: boolean | null;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * metadata_source
+             * Metadata Source
              * @description This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets.
              */
             metadata_source?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
             /**
-             * precreate_directory
+             * Precreate Directory
              * @default false
              */
             precreate_directory: boolean | null;
@@ -15877,61 +15875,61 @@ export interface components {
         /** IntegerParameterModel */
         IntegerParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** max */
+            /** Max */
             max?: number | null;
-            /** min */
+            /** Min */
             min?: number | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_integer
              * @constant
              */
             parameter_type: "gx_integer";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "integer";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["InRangeParameterValidatorModel"][];
-            /** value */
+            /** Value */
             value?: number | null;
         };
         /** InvocationCancellationHistoryDeletedResponse */
@@ -16921,10 +16919,10 @@ export interface components {
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
         /** JavascriptRequirement */
         JavascriptRequirement: {
-            /** expression_lib */
+            /** Expression Lib */
             expression_lib: string[] | null;
             /**
-             * type
+             * Type
              * @constant
              */
             type: "javascript";
@@ -20566,52 +20564,52 @@ export interface components {
         /** RepeatParameterModel */
         RepeatParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
-            /** max */
+            /** Max */
             max?: number | null;
-            /** min */
+            /** Min */
             min?: number | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_repeat
              * @constant
              */
             parameter_type: "gx_repeat";
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -20642,7 +20640,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[];
             /**
-             * type
+             * Type
              * @constant
              */
             type: "repeat";
@@ -20713,56 +20711,56 @@ export interface components {
         /** ResourceRequirement */
         ResourceRequirement: {
             /**
-             * cores_max
+             * Cores Max
              * @description Maximum reserved number of CPU cores.
              *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
              *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
              */
             cores_max?: number | null;
             /**
-             * cores_min
+             * Cores Min
              * @description Minimum reserved number of CPU cores.
              *     May be a fractional value to indicate to a scheduling algorithm that one core can be allocated to multiple jobs. For example, a value of 0.25 indicates that up to 4 jobs may run in parallel on 1 core. A value of 1.25 means that up to 3 jobs can run on a 4 core system (4/1.25 ≈ 3).
              *     The reported number of CPU cores reserved for the process is a non-zero integer calculated by rounding up the cores request to the next whole number.
              * @default 1
              */
             cores_min: number | null;
-            /** cuda_compute_capability */
+            /** Cuda Compute Capability */
             cuda_compute_capability?: number | null;
-            /** cuda_device_count_max */
+            /** Cuda Device Count Max */
             cuda_device_count_max?: number | null;
-            /** cuda_device_count_min */
+            /** Cuda Device Count Min */
             cuda_device_count_min?: number | null;
-            /** cuda_version_min */
+            /** Cuda Version Min */
             cuda_version_min?: number | null;
-            /** gpu_memory_min */
+            /** Gpu Memory Min */
             gpu_memory_min?: number | null;
             /**
-             * ram_max
+             * Ram Max
              * @description Maximum reserved RAM in mebibytes (2**20).
              *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
              */
             ram_max?: number | null;
             /**
-             * ram_min
+             * Ram Min
              * @description Minimum reserved RAM in mebibytes (2**20).
              *     May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer.
              * @default 256
              */
             ram_min: number | null;
-            /** shm_size */
+            /** Shm Size */
             shm_size?: number | null;
             /**
-             * timelimit
+             * Timelimit
              * @description Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded.
              */
             timelimit?: number | null;
-            /** tmpdir_max */
+            /** Tmpdir Max */
             tmpdir_max?: number | null;
-            /** tmpdir_min */
+            /** Tmpdir Min */
             tmpdir_min?: number | null;
             /**
-             * type
+             * Type
              * @constant
              */
             type: "resource";
@@ -20831,140 +20829,6 @@ export interface components {
              */
             url: string;
         };
-        /** RootModel[List[Union[Annotated[Union[has_line_model, has_line_matching_model, has_n_lines_model, has_text_model, has_text_matching_model, not_has_text_model, has_n_columns_model, attribute_is_model, attribute_matches_model, element_text_model, element_text_is_model, element_text_matches_model, has_element_with_path_model, has_n_elements_with_path_model, is_valid_xml_model, xml_element_model, has_json_property_with_text_model, has_json_property_with_value_model, has_h5_attribute_model, has_h5_keys_model, has_archive_member_model, has_size_model, has_image_center_of_mass_model, has_image_channels_model, has_image_depth_model, has_image_frames_model, has_image_height_model, has_image_mean_intensity_model, has_image_mean_object_size_model, has_image_n_labels_model, has_image_width_model], FieldInfo(annotation=NoneType, required=True, discriminator='that')], has_line_model_nested, has_line_matching_model_nested, has_n_lines_model_nested, has_text_model_nested, has_text_matching_model_nested, not_has_text_model_nested, has_n_columns_model_nested, attribute_is_model_nested, attribute_matches_model_nested, element_text_model_nested, element_text_is_model_nested, element_text_matches_model_nested, has_element_with_path_model_nested, has_n_elements_with_path_model_nested, is_valid_xml_model_nested, xml_element_model_nested, has_json_property_with_text_model_nested, has_json_property_with_value_model_nested, has_h5_attribute_model_nested, has_h5_keys_model_nested, has_archive_member_model_nested, has_size_model_nested, has_image_center_of_mass_model_nested, has_image_channels_model_nested, has_image_depth_model_nested, has_image_frames_model_nested, has_image_height_model_nested, has_image_mean_intensity_model_nested, has_image_mean_object_size_model_nested, has_image_n_labels_model_nested, has_image_width_model_nested]]] */
-        "RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input": (
-            | (
-                  | components["schemas"]["has_line_model"]
-                  | components["schemas"]["has_line_matching_model"]
-                  | components["schemas"]["has_n_lines_model"]
-                  | components["schemas"]["has_text_model"]
-                  | components["schemas"]["has_text_matching_model"]
-                  | components["schemas"]["not_has_text_model"]
-                  | components["schemas"]["has_n_columns_model"]
-                  | components["schemas"]["attribute_is_model"]
-                  | components["schemas"]["attribute_matches_model"]
-                  | components["schemas"]["element_text_model-Input"]
-                  | components["schemas"]["element_text_is_model"]
-                  | components["schemas"]["element_text_matches_model"]
-                  | components["schemas"]["has_element_with_path_model"]
-                  | components["schemas"]["has_n_elements_with_path_model"]
-                  | components["schemas"]["is_valid_xml_model"]
-                  | components["schemas"]["xml_element_model-Input"]
-                  | components["schemas"]["has_json_property_with_text_model"]
-                  | components["schemas"]["has_json_property_with_value_model"]
-                  | components["schemas"]["has_h5_attribute_model"]
-                  | components["schemas"]["has_h5_keys_model"]
-                  | components["schemas"]["has_archive_member_model-Input"]
-                  | components["schemas"]["has_size_model"]
-                  | components["schemas"]["has_image_center_of_mass_model"]
-                  | components["schemas"]["has_image_channels_model"]
-                  | components["schemas"]["has_image_depth_model"]
-                  | components["schemas"]["has_image_frames_model"]
-                  | components["schemas"]["has_image_height_model"]
-                  | components["schemas"]["has_image_mean_intensity_model"]
-                  | components["schemas"]["has_image_mean_object_size_model"]
-                  | components["schemas"]["has_image_n_labels_model"]
-                  | components["schemas"]["has_image_width_model"]
-              )
-            | components["schemas"]["has_line_model_nested"]
-            | components["schemas"]["has_line_matching_model_nested"]
-            | components["schemas"]["has_n_lines_model_nested"]
-            | components["schemas"]["has_text_model_nested"]
-            | components["schemas"]["has_text_matching_model_nested"]
-            | components["schemas"]["not_has_text_model_nested"]
-            | components["schemas"]["has_n_columns_model_nested"]
-            | components["schemas"]["attribute_is_model_nested"]
-            | components["schemas"]["attribute_matches_model_nested"]
-            | components["schemas"]["element_text_model_nested-Input"]
-            | components["schemas"]["element_text_is_model_nested"]
-            | components["schemas"]["element_text_matches_model_nested"]
-            | components["schemas"]["has_element_with_path_model_nested"]
-            | components["schemas"]["has_n_elements_with_path_model_nested"]
-            | components["schemas"]["is_valid_xml_model_nested"]
-            | components["schemas"]["xml_element_model_nested-Input"]
-            | components["schemas"]["has_json_property_with_text_model_nested"]
-            | components["schemas"]["has_json_property_with_value_model_nested"]
-            | components["schemas"]["has_h5_attribute_model_nested"]
-            | components["schemas"]["has_h5_keys_model_nested"]
-            | components["schemas"]["has_archive_member_model_nested-Input"]
-            | components["schemas"]["has_size_model_nested"]
-            | components["schemas"]["has_image_center_of_mass_model_nested"]
-            | components["schemas"]["has_image_channels_model_nested"]
-            | components["schemas"]["has_image_depth_model_nested"]
-            | components["schemas"]["has_image_frames_model_nested"]
-            | components["schemas"]["has_image_height_model_nested"]
-            | components["schemas"]["has_image_mean_intensity_model_nested"]
-            | components["schemas"]["has_image_mean_object_size_model_nested"]
-            | components["schemas"]["has_image_n_labels_model_nested"]
-            | components["schemas"]["has_image_width_model_nested"]
-        )[];
-        /** RootModel[List[Union[Annotated[Union[has_line_model, has_line_matching_model, has_n_lines_model, has_text_model, has_text_matching_model, not_has_text_model, has_n_columns_model, attribute_is_model, attribute_matches_model, element_text_model, element_text_is_model, element_text_matches_model, has_element_with_path_model, has_n_elements_with_path_model, is_valid_xml_model, xml_element_model, has_json_property_with_text_model, has_json_property_with_value_model, has_h5_attribute_model, has_h5_keys_model, has_archive_member_model, has_size_model, has_image_center_of_mass_model, has_image_channels_model, has_image_depth_model, has_image_frames_model, has_image_height_model, has_image_mean_intensity_model, has_image_mean_object_size_model, has_image_n_labels_model, has_image_width_model], FieldInfo(annotation=NoneType, required=True, discriminator='that')], has_line_model_nested, has_line_matching_model_nested, has_n_lines_model_nested, has_text_model_nested, has_text_matching_model_nested, not_has_text_model_nested, has_n_columns_model_nested, attribute_is_model_nested, attribute_matches_model_nested, element_text_model_nested, element_text_is_model_nested, element_text_matches_model_nested, has_element_with_path_model_nested, has_n_elements_with_path_model_nested, is_valid_xml_model_nested, xml_element_model_nested, has_json_property_with_text_model_nested, has_json_property_with_value_model_nested, has_h5_attribute_model_nested, has_h5_keys_model_nested, has_archive_member_model_nested, has_size_model_nested, has_image_center_of_mass_model_nested, has_image_channels_model_nested, has_image_depth_model_nested, has_image_frames_model_nested, has_image_height_model_nested, has_image_mean_intensity_model_nested, has_image_mean_object_size_model_nested, has_image_n_labels_model_nested, has_image_width_model_nested]]] */
-        "RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output": (
-            | (
-                  | components["schemas"]["has_line_model"]
-                  | components["schemas"]["has_line_matching_model"]
-                  | components["schemas"]["has_n_lines_model"]
-                  | components["schemas"]["has_text_model"]
-                  | components["schemas"]["has_text_matching_model"]
-                  | components["schemas"]["not_has_text_model"]
-                  | components["schemas"]["has_n_columns_model"]
-                  | components["schemas"]["attribute_is_model"]
-                  | components["schemas"]["attribute_matches_model"]
-                  | components["schemas"]["element_text_model-Output"]
-                  | components["schemas"]["element_text_is_model"]
-                  | components["schemas"]["element_text_matches_model"]
-                  | components["schemas"]["has_element_with_path_model"]
-                  | components["schemas"]["has_n_elements_with_path_model"]
-                  | components["schemas"]["is_valid_xml_model"]
-                  | components["schemas"]["xml_element_model-Output"]
-                  | components["schemas"]["has_json_property_with_text_model"]
-                  | components["schemas"]["has_json_property_with_value_model"]
-                  | components["schemas"]["has_h5_attribute_model"]
-                  | components["schemas"]["has_h5_keys_model"]
-                  | components["schemas"]["has_archive_member_model-Output"]
-                  | components["schemas"]["has_size_model"]
-                  | components["schemas"]["has_image_center_of_mass_model"]
-                  | components["schemas"]["has_image_channels_model"]
-                  | components["schemas"]["has_image_depth_model"]
-                  | components["schemas"]["has_image_frames_model"]
-                  | components["schemas"]["has_image_height_model"]
-                  | components["schemas"]["has_image_mean_intensity_model"]
-                  | components["schemas"]["has_image_mean_object_size_model"]
-                  | components["schemas"]["has_image_n_labels_model"]
-                  | components["schemas"]["has_image_width_model"]
-              )
-            | components["schemas"]["has_line_model_nested"]
-            | components["schemas"]["has_line_matching_model_nested"]
-            | components["schemas"]["has_n_lines_model_nested"]
-            | components["schemas"]["has_text_model_nested"]
-            | components["schemas"]["has_text_matching_model_nested"]
-            | components["schemas"]["not_has_text_model_nested"]
-            | components["schemas"]["has_n_columns_model_nested"]
-            | components["schemas"]["attribute_is_model_nested"]
-            | components["schemas"]["attribute_matches_model_nested"]
-            | components["schemas"]["element_text_model_nested-Output"]
-            | components["schemas"]["element_text_is_model_nested"]
-            | components["schemas"]["element_text_matches_model_nested"]
-            | components["schemas"]["has_element_with_path_model_nested"]
-            | components["schemas"]["has_n_elements_with_path_model_nested"]
-            | components["schemas"]["is_valid_xml_model_nested"]
-            | components["schemas"]["xml_element_model_nested-Output"]
-            | components["schemas"]["has_json_property_with_text_model_nested"]
-            | components["schemas"]["has_json_property_with_value_model_nested"]
-            | components["schemas"]["has_h5_attribute_model_nested"]
-            | components["schemas"]["has_h5_keys_model_nested"]
-            | components["schemas"]["has_archive_member_model_nested-Output"]
-            | components["schemas"]["has_size_model_nested"]
-            | components["schemas"]["has_image_center_of_mass_model_nested"]
-            | components["schemas"]["has_image_channels_model_nested"]
-            | components["schemas"]["has_image_depth_model_nested"]
-            | components["schemas"]["has_image_frames_model_nested"]
-            | components["schemas"]["has_image_height_model_nested"]
-            | components["schemas"]["has_image_mean_intensity_model_nested"]
-            | components["schemas"]["has_image_mean_object_size_model_nested"]
-            | components["schemas"]["has_image_n_labels_model_nested"]
-            | components["schemas"]["has_image_width_model_nested"]
-        )[];
         /** RootModel[dict[str, int]] */
         RootModel_dict_str__int__: {
             [key: string]: number;
@@ -20972,49 +20836,49 @@ export interface components {
         /** RulesParameterModel */
         RulesParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_rules
              * @constant
              */
             parameter_type: "gx_rules";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "rules";
@@ -21241,48 +21105,48 @@ export interface components {
         /** SectionParameterModel */
         SectionParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_section
              * @constant
              */
             parameter_type: "gx_section";
-            /** parameters */
+            /** Parameters */
             parameters: (
                 | components["schemas"]["CwlIntegerParameterModel"]
                 | components["schemas"]["CwlFloatParameterModel"]
@@ -21313,7 +21177,7 @@ export interface components {
                 | components["schemas"]["SectionParameterModel"]
             )[];
             /**
-             * type
+             * Type
              * @constant
              */
             type: "section";
@@ -21335,61 +21199,61 @@ export interface components {
         /** SelectParameterModel */
         SelectParameterModel: {
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * multiple
+             * Multiple
              * @default false
              */
             multiple: boolean;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
-            /** options */
+            /** Options */
             options?: components["schemas"]["LabelValue"][] | null;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_select
              * @constant
              */
             parameter_type: "gx_select";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "select";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: components["schemas"]["NoOptionsParameterValidatorModel"][];
@@ -22809,13 +22673,18 @@ export interface components {
         };
         /** TestCollectionCollectionElementAssertions */
         "TestCollectionCollectionElementAssertions-Input": {
-            /** element_tests */
+            /**
+             * Class
+             * @default Collection
+             */
+            class: "Collection" | null;
+            /** Element Tests */
             element_tests?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
-            /** elements */
+            /** Elements */
             elements?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
@@ -22824,13 +22693,18 @@ export interface components {
         };
         /** TestCollectionCollectionElementAssertions */
         "TestCollectionCollectionElementAssertions-Output": {
-            /** element_tests */
+            /**
+             * Class
+             * @default Collection
+             */
+            class: "Collection" | null;
+            /** Element Tests */
             element_tests?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
-            /** elements */
+            /** Elements */
             elements?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
@@ -22839,92 +22713,180 @@ export interface components {
         };
         /** TestCollectionDatasetElementAssertions */
         "TestCollectionDatasetElementAssertions-Input": {
-            /** asserts */
+            /**
+             * Asserts
+             * @description Assertions about the content of the output.
+             */
             asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_list-Input"]
                 | components["schemas"]["assertion_dict-Input"]
                 | null;
-            /** checksum */
+            /**
+             * Checksum
+             * @description The target output's checksum should match the value specified here, in the form `hash_type$hash_value` (e.g. `sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041`). Useful for large static files where uploading the whole file is inconvenient.
+             */
             checksum?: string | null;
-            /** compare */
+            /**
+             * Class
+             * @default File
+             */
+            class: "File" | null;
+            /**
+             * Compare
+             * @description Comparison mode used when matching the output against the reference file.
+             */
             compare?: components["schemas"]["OutputCompareType"] | null;
-            /** decompress */
+            /**
+             * Decompress
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             */
             decompress?: boolean | null;
-            /** delta */
+            /**
+             * Delta
+             * @description If `compare` is set to `sim_size`, the maximum allowed absolute size difference (in bytes) between the generated data set and the reference file in `test-data/`. Default is 10000 bytes. Can be combined with `delta_frac`.
+             */
             delta?: number | null;
-            /** delta_frac */
+            /**
+             * Delta Frac
+             * @description If `compare` is set to `sim_size`, the maximum allowed relative size difference between the generated data set and the reference file in `test-data/`. 0.1 means the generated file can differ by at most 10%. Default is not to check for relative size difference. Can be combined with `delta`.
+             */
             delta_frac?: number | null;
-            /** file */
+            /**
+             * File
+             * @description Name of the output file stored in the target `test-data` directory that will be used to compare against the results of executing the tool via the functional test framework.
+             */
             file?: string | null;
-            /** ftype */
+            /**
+             * File Type
+             * @description If specified, this value is checked against the corresponding output's data type. If these do not match, the test will fail.
+             */
             ftype?: string | null;
-            /** lines_diff */
+            /**
+             * Lines Diff
+             * @description Applies when `compare` is set to `diff`, `re_match`, or `contains`. For `diff`, the number of lines of difference to allow (a modified line counts as two: one added, one removed).
+             */
             lines_diff?: number | null;
-            /** location */
+            /**
+             * Location
+             * @description URL that points to a remote output file that will be downloaded and used for output comparison. Use only when the file cannot be included in the `test-data` folder. May be combined with `file` (downloads when missing on disk) or used alone (filename inferred from the URL). A `checksum` is also used to verify the download when provided.
+             */
             location?: string | null;
-            /** metadata */
+            /**
+             * Metadata
+             * @description Mapping of metadata keys to expected values for this output.
+             */
             metadata?: {
                 [key: string]: unknown;
             } | null;
-            /** path */
+            /**
+             * Path
+             * @description Filesystem path to a local output file used for comparison.
+             */
             path?: string | null;
-            /** sort */
+            /**
+             * Sort
+             * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
+             */
             sort?: boolean | null;
         };
         /** TestCollectionDatasetElementAssertions */
         "TestCollectionDatasetElementAssertions-Output": {
-            /** asserts */
+            /**
+             * Asserts
+             * @description Assertions about the content of the output.
+             */
             asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_list-Output"]
                 | components["schemas"]["assertion_dict-Output"]
                 | null;
-            /** checksum */
+            /**
+             * Checksum
+             * @description The target output's checksum should match the value specified here, in the form `hash_type$hash_value` (e.g. `sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041`). Useful for large static files where uploading the whole file is inconvenient.
+             */
             checksum?: string | null;
-            /** compare */
+            /**
+             * Class
+             * @default File
+             */
+            class: "File" | null;
+            /**
+             * Compare
+             * @description Comparison mode used when matching the output against the reference file.
+             */
             compare?: components["schemas"]["OutputCompareType"] | null;
-            /** decompress */
+            /**
+             * Decompress
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             */
             decompress?: boolean | null;
-            /** delta */
+            /**
+             * Delta
+             * @description If `compare` is set to `sim_size`, the maximum allowed absolute size difference (in bytes) between the generated data set and the reference file in `test-data/`. Default is 10000 bytes. Can be combined with `delta_frac`.
+             */
             delta?: number | null;
-            /** delta_frac */
+            /**
+             * Delta Frac
+             * @description If `compare` is set to `sim_size`, the maximum allowed relative size difference between the generated data set and the reference file in `test-data/`. 0.1 means the generated file can differ by at most 10%. Default is not to check for relative size difference. Can be combined with `delta`.
+             */
             delta_frac?: number | null;
-            /** file */
+            /**
+             * File
+             * @description Name of the output file stored in the target `test-data` directory that will be used to compare against the results of executing the tool via the functional test framework.
+             */
             file?: string | null;
-            /** ftype */
+            /**
+             * File Type
+             * @description If specified, this value is checked against the corresponding output's data type. If these do not match, the test will fail.
+             */
             ftype?: string | null;
-            /** lines_diff */
+            /**
+             * Lines Diff
+             * @description Applies when `compare` is set to `diff`, `re_match`, or `contains`. For `diff`, the number of lines of difference to allow (a modified line counts as two: one added, one removed).
+             */
             lines_diff?: number | null;
-            /** location */
+            /**
+             * Location
+             * @description URL that points to a remote output file that will be downloaded and used for output comparison. Use only when the file cannot be included in the `test-data` folder. May be combined with `file` (downloads when missing on disk) or used alone (filename inferred from the URL). A `checksum` is also used to verify the download when provided.
+             */
             location?: string | null;
-            /** metadata */
+            /**
+             * Metadata
+             * @description Mapping of metadata keys to expected values for this output.
+             */
             metadata?: {
                 [key: string]: unknown;
             } | null;
-            /** path */
+            /**
+             * Path
+             * @description Filesystem path to a local output file used for comparison.
+             */
             path?: string | null;
-            /** sort */
+            /**
+             * Sort
+             * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
+             */
             sort?: boolean | null;
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Input": {
-            /** attributes */
+            /** Attributes */
             attributes?: components["schemas"]["CollectionAttributes"] | null;
             /**
-             * class_
+             * Class
              * @default Collection
              */
             class: "Collection" | null;
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null;
-            /** element_count */
+            /** Element Count */
             element_count?: number | null;
-            /** element_tests */
+            /** Element Tests */
             element_tests?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Input"];
             } | null;
-            /** elements */
+            /** Elements */
             elements?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Input"]
@@ -22933,24 +22895,24 @@ export interface components {
         };
         /** TestCollectionOutputAssertions */
         "TestCollectionOutputAssertions-Output": {
-            /** attributes */
+            /** Attributes */
             attributes?: components["schemas"]["CollectionAttributes"] | null;
             /**
-             * class_
+             * Class
              * @default Collection
              */
             class: "Collection" | null;
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null;
-            /** element_count */
+            /** Element Count */
             element_count?: number | null;
-            /** element_tests */
+            /** Element Tests */
             element_tests?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
                     | components["schemas"]["TestCollectionCollectionElementAssertions-Output"];
             } | null;
-            /** elements */
+            /** Elements */
             elements?: {
                 [key: string]:
                     | components["schemas"]["TestCollectionDatasetElementAssertions-Output"]
@@ -22959,80 +22921,158 @@ export interface components {
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Input": {
-            /** asserts */
+            /**
+             * Asserts
+             * @description Assertions about the content of the output.
+             */
             asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_list-Input"]
                 | components["schemas"]["assertion_dict-Input"]
                 | null;
-            /** checksum */
+            /**
+             * Checksum
+             * @description The target output's checksum should match the value specified here, in the form `hash_type$hash_value` (e.g. `sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041`). Useful for large static files where uploading the whole file is inconvenient.
+             */
             checksum?: string | null;
             /**
-             * class_
+             * Class
              * @default File
              */
             class: "File" | null;
-            /** compare */
+            /**
+             * Compare
+             * @description Comparison mode used when matching the output against the reference file.
+             */
             compare?: components["schemas"]["OutputCompareType"] | null;
-            /** decompress */
+            /**
+             * Decompress
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             */
             decompress?: boolean | null;
-            /** delta */
+            /**
+             * Delta
+             * @description If `compare` is set to `sim_size`, the maximum allowed absolute size difference (in bytes) between the generated data set and the reference file in `test-data/`. Default is 10000 bytes. Can be combined with `delta_frac`.
+             */
             delta?: number | null;
-            /** delta_frac */
+            /**
+             * Delta Frac
+             * @description If `compare` is set to `sim_size`, the maximum allowed relative size difference between the generated data set and the reference file in `test-data/`. 0.1 means the generated file can differ by at most 10%. Default is not to check for relative size difference. Can be combined with `delta`.
+             */
             delta_frac?: number | null;
-            /** file */
+            /**
+             * File
+             * @description Name of the output file stored in the target `test-data` directory that will be used to compare against the results of executing the tool via the functional test framework.
+             */
             file?: string | null;
-            /** ftype */
+            /**
+             * File Type
+             * @description If specified, this value is checked against the corresponding output's data type. If these do not match, the test will fail.
+             */
             ftype?: string | null;
-            /** lines_diff */
+            /**
+             * Lines Diff
+             * @description Applies when `compare` is set to `diff`, `re_match`, or `contains`. For `diff`, the number of lines of difference to allow (a modified line counts as two: one added, one removed).
+             */
             lines_diff?: number | null;
-            /** location */
+            /**
+             * Location
+             * @description URL that points to a remote output file that will be downloaded and used for output comparison. Use only when the file cannot be included in the `test-data` folder. May be combined with `file` (downloads when missing on disk) or used alone (filename inferred from the URL). A `checksum` is also used to verify the download when provided.
+             */
             location?: string | null;
-            /** metadata */
+            /**
+             * Metadata
+             * @description Mapping of metadata keys to expected values for this output.
+             */
             metadata?: {
                 [key: string]: unknown;
             } | null;
-            /** path */
+            /**
+             * Path
+             * @description Filesystem path to a local output file used for comparison.
+             */
             path?: string | null;
-            /** sort */
+            /**
+             * Sort
+             * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
+             */
             sort?: boolean | null;
         };
         /** TestDataOutputAssertions */
         "TestDataOutputAssertions-Output": {
-            /** asserts */
+            /**
+             * Asserts
+             * @description Assertions about the content of the output.
+             */
             asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_list-Output"]
                 | components["schemas"]["assertion_dict-Output"]
                 | null;
-            /** checksum */
+            /**
+             * Checksum
+             * @description The target output's checksum should match the value specified here, in the form `hash_type$hash_value` (e.g. `sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041`). Useful for large static files where uploading the whole file is inconvenient.
+             */
             checksum?: string | null;
             /**
-             * class_
+             * Class
              * @default File
              */
             class: "File" | null;
-            /** compare */
+            /**
+             * Compare
+             * @description Comparison mode used when matching the output against the reference file.
+             */
             compare?: components["schemas"]["OutputCompareType"] | null;
-            /** decompress */
+            /**
+             * Decompress
+             * @description If true, decompress files before comparison. Applies to assertions expressed with `assert_contents` or `compare` set to anything but `sim_size`. Useful for testing compressed outputs that are non-deterministic despite having deterministic decompressed contents. By default, only files compressed with bz2, gzip and zip are automatically decompressed.
+             */
             decompress?: boolean | null;
-            /** delta */
+            /**
+             * Delta
+             * @description If `compare` is set to `sim_size`, the maximum allowed absolute size difference (in bytes) between the generated data set and the reference file in `test-data/`. Default is 10000 bytes. Can be combined with `delta_frac`.
+             */
             delta?: number | null;
-            /** delta_frac */
+            /**
+             * Delta Frac
+             * @description If `compare` is set to `sim_size`, the maximum allowed relative size difference between the generated data set and the reference file in `test-data/`. 0.1 means the generated file can differ by at most 10%. Default is not to check for relative size difference. Can be combined with `delta`.
+             */
             delta_frac?: number | null;
-            /** file */
+            /**
+             * File
+             * @description Name of the output file stored in the target `test-data` directory that will be used to compare against the results of executing the tool via the functional test framework.
+             */
             file?: string | null;
-            /** ftype */
+            /**
+             * File Type
+             * @description If specified, this value is checked against the corresponding output's data type. If these do not match, the test will fail.
+             */
             ftype?: string | null;
-            /** lines_diff */
+            /**
+             * Lines Diff
+             * @description Applies when `compare` is set to `diff`, `re_match`, or `contains`. For `diff`, the number of lines of difference to allow (a modified line counts as two: one added, one removed).
+             */
             lines_diff?: number | null;
-            /** location */
+            /**
+             * Location
+             * @description URL that points to a remote output file that will be downloaded and used for output comparison. Use only when the file cannot be included in the `test-data` folder. May be combined with `file` (downloads when missing on disk) or used alone (filename inferred from the URL). A `checksum` is also used to verify the download when provided.
+             */
             location?: string | null;
-            /** metadata */
+            /**
+             * Metadata
+             * @description Mapping of metadata keys to expected values for this output.
+             */
             metadata?: {
                 [key: string]: unknown;
             } | null;
-            /** path */
+            /**
+             * Path
+             * @description Filesystem path to a local output file used for comparison.
+             */
             path?: string | null;
-            /** sort */
+            /**
+             * Sort
+             * @description Applies only if `compare` is `diff`, `re_match` or `re_match_multiline`. Sorts the lines of the history data set before comparison; for `diff` and `re_match` the local file is also sorted. Useful for non-deterministic output.
+             */
             sort?: boolean | null;
         };
         /** TestUpdateInstancePayload */
@@ -23058,64 +23098,64 @@ export interface components {
         /** TextParameterModel */
         TextParameterModel: {
             /**
-             * area
+             * Area
              * @default false
              */
             area: boolean;
             /**
-             * argument
+             * Argument
              * @description If the parameter reflects just one command line argument of a certain tool, this tag should be set to that particular argument. It is rendered in parenthesis after the help section, and it will create the name attribute (if not given explicitly) from the argument attribute by stripping leading dashes and replacing all remaining dashes by underscores (e.g. if argument="--long-parameter" then name="long_parameter" is implicit).
              */
             argument?: string | null;
             /**
-             * default_options
+             * Default Options
              * @default []
              */
             default_options: components["schemas"]["LabelValue"][];
             /**
-             * help
+             * Help
              * @description Short bit of text, rendered on the tool form just below the associated field to provide information about the field.
              */
             help?: string | null;
             /**
-             * hidden
+             * Hidden
              * @default false
              */
             hidden: boolean;
             /**
-             * is_dynamic
+             * Is Dynamic
              * @default false
              */
             is_dynamic: boolean;
             /**
-             * label
+             * Label
              * @description Will be displayed on the tool page as the label of the parameter.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows or inside command templating.
              */
             name: string;
             /**
-             * optional
+             * Optional
              * @description If `false`, parameter must have a value.
              * @default false
              */
             optional: boolean;
             /**
-             * parameter_type
+             * Parameter Type
              * @default gx_text
              * @constant
              */
             parameter_type: "gx_text";
             /**
-             * type
+             * Type
              * @constant
              */
             type: "text";
             /**
-             * validators
+             * Validators
              * @default []
              */
             validators: (
@@ -23124,7 +23164,7 @@ export interface components {
                 | components["schemas"]["ExpressionParameterValidatorModel"]
                 | components["schemas"]["EmptyFieldParameterValidatorModel"]
             )[];
-            /** default_value */
+            /** Value */
             value?: string | null;
         };
         /** ToolDataDetails */
@@ -23244,17 +23284,17 @@ export interface components {
         /** ToolOutputBoolean */
         ToolOutputBoolean: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -23266,36 +23306,36 @@ export interface components {
         };
         /** ToolOutputCollectionStructure */
         ToolOutputCollectionStructure: {
-            /** collection_type */
+            /** Collection Type */
             collection_type?: string | null;
-            /** collection_type_from_rules */
+            /** Collection Type From Rules */
             collection_type_from_rules?: string | null;
-            /** collection_type_source */
+            /** Collection Type Source */
             collection_type_source?: string | null;
-            /** discover_datasets */
+            /** Discover Datasets */
             discover_datasets?:
                 | (
                       | components["schemas"]["FilePatternDatasetCollectionDescription"]
                       | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
                   )[]
                 | null;
-            /** structured_like */
+            /** Structured Like */
             structured_like?: string | null;
         };
         /** ToolOutputFloat */
         ToolOutputFloat: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -23308,17 +23348,17 @@ export interface components {
         /** ToolOutputInteger */
         ToolOutputInteger: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -23331,17 +23371,17 @@ export interface components {
         /** ToolOutputText */
         ToolOutputText: {
             /**
-             * hidden
+             * Hidden
              * @description If true, the output will not be shown in the history.
              */
             hidden: unknown;
             /**
-             * label
+             * Label
              * @description Output label. Will be used as dataset name in history.
              */
             label?: string | null;
             /**
-             * name
+             * Name
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name: unknown;
@@ -23353,22 +23393,22 @@ export interface components {
         };
         /** ToolProvidedMetadataDatasetCollection */
         ToolProvidedMetadataDatasetCollection: {
-            /** assign_primary_output */
+            /** Assign Primary Output */
             assign_primary_output: boolean;
-            /** directory */
+            /** Directory */
             directory: string | null;
             /**
-             * discover_via
+             * Discover Via
              * @constant
              */
             discover_via: "tool_provided_metadata";
-            /** format */
+            /** Format */
             format: string | null;
-            /** match_relative_path */
+            /** Match Relative Path */
             match_relative_path: boolean;
-            /** recurse */
+            /** Recurse */
             recurse: boolean;
-            /** visible */
+            /** Visible */
             visible: boolean;
         };
         /** ToolReportForDataset */
@@ -26433,40 +26473,40 @@ export interface components {
         };
         /** YamlTemplateConfigFile */
         YamlTemplateConfigFile: {
-            /** content */
+            /** Content */
             content: string;
             /**
-             * eval_engine
+             * Eval Engine
              * @default ecmascript
              * @constant
              */
             eval_engine: "ecmascript";
-            /** filename */
+            /** Filename */
             filename?: string | null;
-            /** name */
+            /** Name */
             name?: string | null;
         };
         /** YamlTestCredential */
         YamlTestCredential: {
             /**
-             * name
+             * Name
              * @description Name of the credentials group.
              */
             name: string;
             /**
-             * secrets
+             * Secrets
              * @description Secrets exposed to the tool environment.
              * @default []
              */
             secrets: components["schemas"]["YamlTestCredentialValue"][];
             /**
-             * variables
+             * Variables
              * @description Variables exposed to the tool environment.
              * @default []
              */
             variables: components["schemas"]["YamlTestCredentialValue"][];
             /**
-             * version
+             * Version
              * @description Version of the credential definition.
              */
             version?: string | null;
@@ -26474,12 +26514,12 @@ export interface components {
         /** YamlTestCredentialValue */
         YamlTestCredentialValue: {
             /**
-             * name
+             * Name
              * @description Name of the credential variable or secret.
              */
             name: string;
             /**
-             * value
+             * Value
              * @description Value of the credential variable or secret.
              */
             value: string;
@@ -26628,7 +26668,7 @@ export interface components {
              * @description Assertions to apply against the tool's standard error.
              */
             assert_stderr?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_list-Input"]
                 | components["schemas"]["assertion_dict-Input"]
                 | null;
             /**
@@ -26636,7 +26676,7 @@ export interface components {
              * @description Assertions to apply against the tool's standard output.
              */
             assert_stdout?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_list-Input"]
                 | components["schemas"]["assertion_dict-Input"]
                 | null;
             /**
@@ -26644,7 +26684,7 @@ export interface components {
              * @description Assertions to apply against the executed command line.
              */
             command?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
+                | components["schemas"]["assertion_list-Input"]
                 | components["schemas"]["assertion_dict-Input"]
                 | null;
             /**
@@ -26695,9 +26735,7 @@ export interface components {
                 [key: string]:
                     | components["schemas"]["TestCollectionOutputAssertions-Input"]
                     | components["schemas"]["TestDataOutputAssertions-Input"]
-                    | boolean
-                    | number
-                    | string;
+                    | (boolean | number | string);
             };
         };
         /**
@@ -26710,7 +26748,7 @@ export interface components {
              * @description Assertions to apply against the tool's standard error.
              */
             assert_stderr?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_list-Output"]
                 | components["schemas"]["assertion_dict-Output"]
                 | null;
             /**
@@ -26718,7 +26756,7 @@ export interface components {
              * @description Assertions to apply against the tool's standard output.
              */
             assert_stdout?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_list-Output"]
                 | components["schemas"]["assertion_dict-Output"]
                 | null;
             /**
@@ -26726,7 +26764,7 @@ export interface components {
              * @description Assertions to apply against the executed command line.
              */
             command?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
+                | components["schemas"]["assertion_list-Output"]
                 | components["schemas"]["assertion_dict-Output"]
                 | null;
             /**
@@ -26777,81 +26815,275 @@ export interface components {
                 [key: string]:
                     | components["schemas"]["TestCollectionOutputAssertions-Output"]
                     | components["schemas"]["TestDataOutputAssertions-Output"]
-                    | boolean
-                    | number
-                    | string;
+                    | (boolean | number | string);
             };
         };
         /** assertion_dict */
         "assertion_dict-Input": {
+            /** Assert Attribute Is */
             attribute_is?: components["schemas"]["base_attribute_is_model"] | null;
+            /** Assert Attribute Matches */
             attribute_matches?: components["schemas"]["base_attribute_matches_model"] | null;
+            /** Assert Element Text */
             element_text?: components["schemas"]["base_element_text_model-Input"] | null;
+            /** Assert Element Text Is */
             element_text_is?: components["schemas"]["base_element_text_is_model"] | null;
+            /** Assert Element Text Matches */
             element_text_matches?: components["schemas"]["base_element_text_matches_model"] | null;
+            /** Assert Has Archive Member */
             has_archive_member?: components["schemas"]["base_has_archive_member_model-Input"] | null;
+            /** Assert Has Element With Path */
             has_element_with_path?: components["schemas"]["base_has_element_with_path_model"] | null;
+            /** Assert Has H5 Attribute */
             has_h5_attribute?: components["schemas"]["base_has_h5_attribute_model"] | null;
+            /** Assert Has H5 Keys */
             has_h5_keys?: components["schemas"]["base_has_h5_keys_model"] | null;
+            /** Assert Has Image Center Of Mass */
             has_image_center_of_mass?: components["schemas"]["base_has_image_center_of_mass_model"] | null;
+            /** Assert Has Image Channels */
             has_image_channels?: components["schemas"]["base_has_image_channels_model"] | null;
+            /** Assert Has Image Depth */
             has_image_depth?: components["schemas"]["base_has_image_depth_model"] | null;
+            /** Assert Has Image Frames */
             has_image_frames?: components["schemas"]["base_has_image_frames_model"] | null;
+            /** Assert Has Image Height */
             has_image_height?: components["schemas"]["base_has_image_height_model"] | null;
+            /** Assert Has Image Mean Intensity */
             has_image_mean_intensity?: components["schemas"]["base_has_image_mean_intensity_model"] | null;
+            /** Assert Has Image Mean Object Size */
             has_image_mean_object_size?: components["schemas"]["base_has_image_mean_object_size_model"] | null;
+            /** Assert Has Image N Labels */
             has_image_n_labels?: components["schemas"]["base_has_image_n_labels_model"] | null;
+            /** Assert Has Image Width */
             has_image_width?: components["schemas"]["base_has_image_width_model"] | null;
+            /** Assert Has Json Property With Text */
             has_json_property_with_text?: components["schemas"]["base_has_json_property_with_text_model"] | null;
+            /** Assert Has Json Property With Value */
             has_json_property_with_value?: components["schemas"]["base_has_json_property_with_value_model"] | null;
+            /** Assert Has Line */
             has_line?: components["schemas"]["base_has_line_model"] | null;
+            /** Assert Has Line Matching */
             has_line_matching?: components["schemas"]["base_has_line_matching_model"] | null;
+            /** Assert Has N Columns */
             has_n_columns?: components["schemas"]["base_has_n_columns_model"] | null;
+            /** Assert Has N Elements With Path */
             has_n_elements_with_path?: components["schemas"]["base_has_n_elements_with_path_model"] | null;
+            /** Assert Has N Lines */
             has_n_lines?: components["schemas"]["base_has_n_lines_model"] | null;
+            /** Assert Has Size */
             has_size?: components["schemas"]["base_has_size_model"] | null;
+            /** Assert Has Text */
             has_text?: components["schemas"]["base_has_text_model"] | null;
+            /** Assert Has Text Matching */
             has_text_matching?: components["schemas"]["base_has_text_matching_model"] | null;
+            /** Assert Is Valid Xml */
             is_valid_xml?: components["schemas"]["base_is_valid_xml_model"] | null;
+            /** Assert Not Has Text */
             not_has_text?: components["schemas"]["base_not_has_text_model"] | null;
+            /** Assert Xml Element */
             xml_element?: components["schemas"]["base_xml_element_model-Input"] | null;
         };
         /** assertion_dict */
         "assertion_dict-Output": {
+            /** Assert Attribute Is */
             attribute_is?: components["schemas"]["base_attribute_is_model"] | null;
+            /** Assert Attribute Matches */
             attribute_matches?: components["schemas"]["base_attribute_matches_model"] | null;
+            /** Assert Element Text */
             element_text?: components["schemas"]["base_element_text_model-Output"] | null;
+            /** Assert Element Text Is */
             element_text_is?: components["schemas"]["base_element_text_is_model"] | null;
+            /** Assert Element Text Matches */
             element_text_matches?: components["schemas"]["base_element_text_matches_model"] | null;
+            /** Assert Has Archive Member */
             has_archive_member?: components["schemas"]["base_has_archive_member_model-Output"] | null;
+            /** Assert Has Element With Path */
             has_element_with_path?: components["schemas"]["base_has_element_with_path_model"] | null;
+            /** Assert Has H5 Attribute */
             has_h5_attribute?: components["schemas"]["base_has_h5_attribute_model"] | null;
+            /** Assert Has H5 Keys */
             has_h5_keys?: components["schemas"]["base_has_h5_keys_model"] | null;
+            /** Assert Has Image Center Of Mass */
             has_image_center_of_mass?: components["schemas"]["base_has_image_center_of_mass_model"] | null;
+            /** Assert Has Image Channels */
             has_image_channels?: components["schemas"]["base_has_image_channels_model"] | null;
+            /** Assert Has Image Depth */
             has_image_depth?: components["schemas"]["base_has_image_depth_model"] | null;
+            /** Assert Has Image Frames */
             has_image_frames?: components["schemas"]["base_has_image_frames_model"] | null;
+            /** Assert Has Image Height */
             has_image_height?: components["schemas"]["base_has_image_height_model"] | null;
+            /** Assert Has Image Mean Intensity */
             has_image_mean_intensity?: components["schemas"]["base_has_image_mean_intensity_model"] | null;
+            /** Assert Has Image Mean Object Size */
             has_image_mean_object_size?: components["schemas"]["base_has_image_mean_object_size_model"] | null;
+            /** Assert Has Image N Labels */
             has_image_n_labels?: components["schemas"]["base_has_image_n_labels_model"] | null;
+            /** Assert Has Image Width */
             has_image_width?: components["schemas"]["base_has_image_width_model"] | null;
+            /** Assert Has Json Property With Text */
             has_json_property_with_text?: components["schemas"]["base_has_json_property_with_text_model"] | null;
+            /** Assert Has Json Property With Value */
             has_json_property_with_value?: components["schemas"]["base_has_json_property_with_value_model"] | null;
+            /** Assert Has Line */
             has_line?: components["schemas"]["base_has_line_model"] | null;
+            /** Assert Has Line Matching */
             has_line_matching?: components["schemas"]["base_has_line_matching_model"] | null;
+            /** Assert Has N Columns */
             has_n_columns?: components["schemas"]["base_has_n_columns_model"] | null;
+            /** Assert Has N Elements With Path */
             has_n_elements_with_path?: components["schemas"]["base_has_n_elements_with_path_model"] | null;
+            /** Assert Has N Lines */
             has_n_lines?: components["schemas"]["base_has_n_lines_model"] | null;
+            /** Assert Has Size */
             has_size?: components["schemas"]["base_has_size_model"] | null;
+            /** Assert Has Text */
             has_text?: components["schemas"]["base_has_text_model"] | null;
+            /** Assert Has Text Matching */
             has_text_matching?: components["schemas"]["base_has_text_matching_model"] | null;
+            /** Assert Is Valid Xml */
             is_valid_xml?: components["schemas"]["base_is_valid_xml_model"] | null;
+            /** Assert Not Has Text */
             not_has_text?: components["schemas"]["base_not_has_text_model"] | null;
+            /** Assert Xml Element */
             xml_element?: components["schemas"]["base_xml_element_model-Output"] | null;
         };
+        /** assertion_list */
+        "assertion_list-Input": (
+            | (
+                  | components["schemas"]["has_line_model"]
+                  | components["schemas"]["has_line_matching_model"]
+                  | components["schemas"]["has_n_lines_model"]
+                  | components["schemas"]["has_text_model"]
+                  | components["schemas"]["has_text_matching_model"]
+                  | components["schemas"]["not_has_text_model"]
+                  | components["schemas"]["has_n_columns_model"]
+                  | components["schemas"]["attribute_is_model"]
+                  | components["schemas"]["attribute_matches_model"]
+                  | components["schemas"]["element_text_model-Input"]
+                  | components["schemas"]["element_text_is_model"]
+                  | components["schemas"]["element_text_matches_model"]
+                  | components["schemas"]["has_element_with_path_model"]
+                  | components["schemas"]["has_n_elements_with_path_model"]
+                  | components["schemas"]["is_valid_xml_model"]
+                  | components["schemas"]["xml_element_model-Input"]
+                  | components["schemas"]["has_json_property_with_text_model"]
+                  | components["schemas"]["has_json_property_with_value_model"]
+                  | components["schemas"]["has_h5_attribute_model"]
+                  | components["schemas"]["has_h5_keys_model"]
+                  | components["schemas"]["has_archive_member_model-Input"]
+                  | components["schemas"]["has_size_model"]
+                  | components["schemas"]["has_image_center_of_mass_model"]
+                  | components["schemas"]["has_image_channels_model"]
+                  | components["schemas"]["has_image_depth_model"]
+                  | components["schemas"]["has_image_frames_model"]
+                  | components["schemas"]["has_image_height_model"]
+                  | components["schemas"]["has_image_mean_intensity_model"]
+                  | components["schemas"]["has_image_mean_object_size_model"]
+                  | components["schemas"]["has_image_n_labels_model"]
+                  | components["schemas"]["has_image_width_model"]
+              )
+            | components["schemas"]["has_line_model_nested"]
+            | components["schemas"]["has_line_matching_model_nested"]
+            | components["schemas"]["has_n_lines_model_nested"]
+            | components["schemas"]["has_text_model_nested"]
+            | components["schemas"]["has_text_matching_model_nested"]
+            | components["schemas"]["not_has_text_model_nested"]
+            | components["schemas"]["has_n_columns_model_nested"]
+            | components["schemas"]["attribute_is_model_nested"]
+            | components["schemas"]["attribute_matches_model_nested"]
+            | components["schemas"]["element_text_model_nested-Input"]
+            | components["schemas"]["element_text_is_model_nested"]
+            | components["schemas"]["element_text_matches_model_nested"]
+            | components["schemas"]["has_element_with_path_model_nested"]
+            | components["schemas"]["has_n_elements_with_path_model_nested"]
+            | components["schemas"]["is_valid_xml_model_nested"]
+            | components["schemas"]["xml_element_model_nested-Input"]
+            | components["schemas"]["has_json_property_with_text_model_nested"]
+            | components["schemas"]["has_json_property_with_value_model_nested"]
+            | components["schemas"]["has_h5_attribute_model_nested"]
+            | components["schemas"]["has_h5_keys_model_nested"]
+            | components["schemas"]["has_archive_member_model_nested-Input"]
+            | components["schemas"]["has_size_model_nested"]
+            | components["schemas"]["has_image_center_of_mass_model_nested"]
+            | components["schemas"]["has_image_channels_model_nested"]
+            | components["schemas"]["has_image_depth_model_nested"]
+            | components["schemas"]["has_image_frames_model_nested"]
+            | components["schemas"]["has_image_height_model_nested"]
+            | components["schemas"]["has_image_mean_intensity_model_nested"]
+            | components["schemas"]["has_image_mean_object_size_model_nested"]
+            | components["schemas"]["has_image_n_labels_model_nested"]
+            | components["schemas"]["has_image_width_model_nested"]
+        )[];
+        /** assertion_list */
+        "assertion_list-Output": (
+            | (
+                  | components["schemas"]["has_line_model"]
+                  | components["schemas"]["has_line_matching_model"]
+                  | components["schemas"]["has_n_lines_model"]
+                  | components["schemas"]["has_text_model"]
+                  | components["schemas"]["has_text_matching_model"]
+                  | components["schemas"]["not_has_text_model"]
+                  | components["schemas"]["has_n_columns_model"]
+                  | components["schemas"]["attribute_is_model"]
+                  | components["schemas"]["attribute_matches_model"]
+                  | components["schemas"]["element_text_model-Output"]
+                  | components["schemas"]["element_text_is_model"]
+                  | components["schemas"]["element_text_matches_model"]
+                  | components["schemas"]["has_element_with_path_model"]
+                  | components["schemas"]["has_n_elements_with_path_model"]
+                  | components["schemas"]["is_valid_xml_model"]
+                  | components["schemas"]["xml_element_model-Output"]
+                  | components["schemas"]["has_json_property_with_text_model"]
+                  | components["schemas"]["has_json_property_with_value_model"]
+                  | components["schemas"]["has_h5_attribute_model"]
+                  | components["schemas"]["has_h5_keys_model"]
+                  | components["schemas"]["has_archive_member_model-Output"]
+                  | components["schemas"]["has_size_model"]
+                  | components["schemas"]["has_image_center_of_mass_model"]
+                  | components["schemas"]["has_image_channels_model"]
+                  | components["schemas"]["has_image_depth_model"]
+                  | components["schemas"]["has_image_frames_model"]
+                  | components["schemas"]["has_image_height_model"]
+                  | components["schemas"]["has_image_mean_intensity_model"]
+                  | components["schemas"]["has_image_mean_object_size_model"]
+                  | components["schemas"]["has_image_n_labels_model"]
+                  | components["schemas"]["has_image_width_model"]
+              )
+            | components["schemas"]["has_line_model_nested"]
+            | components["schemas"]["has_line_matching_model_nested"]
+            | components["schemas"]["has_n_lines_model_nested"]
+            | components["schemas"]["has_text_model_nested"]
+            | components["schemas"]["has_text_matching_model_nested"]
+            | components["schemas"]["not_has_text_model_nested"]
+            | components["schemas"]["has_n_columns_model_nested"]
+            | components["schemas"]["attribute_is_model_nested"]
+            | components["schemas"]["attribute_matches_model_nested"]
+            | components["schemas"]["element_text_model_nested-Output"]
+            | components["schemas"]["element_text_is_model_nested"]
+            | components["schemas"]["element_text_matches_model_nested"]
+            | components["schemas"]["has_element_with_path_model_nested"]
+            | components["schemas"]["has_n_elements_with_path_model_nested"]
+            | components["schemas"]["is_valid_xml_model_nested"]
+            | components["schemas"]["xml_element_model_nested-Output"]
+            | components["schemas"]["has_json_property_with_text_model_nested"]
+            | components["schemas"]["has_json_property_with_value_model_nested"]
+            | components["schemas"]["has_h5_attribute_model_nested"]
+            | components["schemas"]["has_h5_keys_model_nested"]
+            | components["schemas"]["has_archive_member_model_nested-Output"]
+            | components["schemas"]["has_size_model_nested"]
+            | components["schemas"]["has_image_center_of_mass_model_nested"]
+            | components["schemas"]["has_image_channels_model_nested"]
+            | components["schemas"]["has_image_depth_model_nested"]
+            | components["schemas"]["has_image_frames_model_nested"]
+            | components["schemas"]["has_image_height_model_nested"]
+            | components["schemas"]["has_image_mean_intensity_model_nested"]
+            | components["schemas"]["has_image_mean_object_size_model_nested"]
+            | components["schemas"]["has_image_n_labels_model_nested"]
+            | components["schemas"]["has_image_width_model_nested"]
+        )[];
         /**
-         * attribute_is_model
+         * Assert Attribute Is
          * @description Asserts the XML ``attribute`` for the element (or tag) with the specified
          *     XPath-like ``path`` is the specified ``text``.
          *
@@ -26894,14 +27126,15 @@ export interface components {
             that: "attribute_is";
         };
         /**
-         * attribute_is_model_nested
+         * Assert Attribute Is (Nested)
          * @description Nested version of this assertion model.
          */
         attribute_is_model_nested: {
+            /** Assert Attribute Is */
             attribute_is: components["schemas"]["base_attribute_is_model"];
         };
         /**
-         * attribute_matches_model
+         * Assert Attribute Matches
          * @description Asserts the XML ``attribute`` for the element (or tag) with the specified
          *     XPath-like ``path`` matches the regular expression specified by ``expression``.
          *
@@ -26944,10 +27177,11 @@ export interface components {
             that: "attribute_matches";
         };
         /**
-         * attribute_matches_model_nested
+         * Assert Attribute Matches (Nested)
          * @description Nested version of this assertion model.
          */
         attribute_matches_model_nested: {
+            /** Assert Attribute Matches */
             attribute_matches: components["schemas"]["base_attribute_matches_model"];
         };
         /**
@@ -27053,12 +27287,10 @@ export interface components {
          * @description base model for element_text describing attributes.
          */
         "base_element_text_model-Input": {
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Negate
              * @description A boolean that can be set to true to negate the outcome of the assertion.
@@ -27076,12 +27308,10 @@ export interface components {
          * @description base model for element_text describing attributes.
          */
         "base_element_text_model-Output": {
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Negate
              * @description A boolean that can be set to true to negate the outcome of the assertion.
@@ -27105,12 +27335,10 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -27155,12 +27383,10 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -27952,17 +28178,15 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Attribute
              * @description The XML attribute name to test against from the target XML element.
              */
             attribute?: string | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -28007,17 +28231,15 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Attribute
              * @description The XML attribute name to test against from the target XML element.
              */
             attribute?: string | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -28052,7 +28274,7 @@ export interface components {
             path: string;
         };
         /**
-         * element_text_is_model
+         * Assert Element Text Is
          * @description Asserts the text of the XML element with the specified XPath-like ``path`` is
          *     the specified ``text``.
          *
@@ -28090,14 +28312,15 @@ export interface components {
             that: "element_text_is";
         };
         /**
-         * element_text_is_model_nested
+         * Assert Element Text Is (Nested)
          * @description Nested version of this assertion model.
          */
         element_text_is_model_nested: {
+            /** Assert Element Text Is */
             element_text_is: components["schemas"]["base_element_text_is_model"];
         };
         /**
-         * element_text_matches_model
+         * Assert Element Text Matches
          * @description Asserts the text of the XML element with the specified XPath-like ``path``
          *     matches the regular expression defined by ``expression``.
          *
@@ -28135,14 +28358,15 @@ export interface components {
             that: "element_text_matches";
         };
         /**
-         * element_text_matches_model_nested
+         * Assert Element Text Matches (Nested)
          * @description Nested version of this assertion model.
          */
         element_text_matches_model_nested: {
+            /** Assert Element Text Matches */
             element_text_matches: components["schemas"]["base_element_text_matches_model"];
         };
         /**
-         * element_text_model
+         * Assert Element Text
          * @description This tag allows the developer to recurisively specify additional assertions as
          *     child elements about just the text contained in the element specified by the
          *     XPath-like ``path``, e.g.
@@ -28159,12 +28383,10 @@ export interface components {
          *     by ``negate``.
          */
         "element_text_model-Input": {
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Negate
              * @description A boolean that can be set to true to negate the outcome of the assertion.
@@ -28183,7 +28405,7 @@ export interface components {
             that: "element_text";
         };
         /**
-         * element_text_model
+         * Assert Element Text
          * @description This tag allows the developer to recurisively specify additional assertions as
          *     child elements about just the text contained in the element specified by the
          *     XPath-like ``path``, e.g.
@@ -28200,12 +28422,10 @@ export interface components {
          *     by ``negate``.
          */
         "element_text_model-Output": {
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Negate
              * @description A boolean that can be set to true to negate the outcome of the assertion.
@@ -28224,21 +28444,23 @@ export interface components {
             that: "element_text";
         };
         /**
-         * element_text_model_nested
+         * Assert Element Text (Nested)
          * @description Nested version of this assertion model.
          */
         "element_text_model_nested-Input": {
+            /** Assert Element Text */
             element_text: components["schemas"]["base_element_text_model-Input"];
         };
         /**
-         * element_text_model_nested
+         * Assert Element Text (Nested)
          * @description Nested version of this assertion model.
          */
         "element_text_model_nested-Output": {
+            /** Assert Element Text */
             element_text: components["schemas"]["base_element_text_model-Output"];
         };
         /**
-         * has_archive_member_model
+         * Assert Has Archive Member
          * @description This tag allows to check if ``path`` is contained in a compressed file.
          *
          *     The path is a regular expression that is matched against the full paths of the objects in
@@ -28291,12 +28513,10 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -28336,7 +28556,7 @@ export interface components {
             that: "has_archive_member";
         };
         /**
-         * has_archive_member_model
+         * Assert Has Archive Member
          * @description This tag allows to check if ``path`` is contained in a compressed file.
          *
          *     The path is a regular expression that is matched against the full paths of the objects in
@@ -28389,12 +28609,10 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -28434,21 +28652,23 @@ export interface components {
             that: "has_archive_member";
         };
         /**
-         * has_archive_member_model_nested
+         * Assert Has Archive Member (Nested)
          * @description Nested version of this assertion model.
          */
         "has_archive_member_model_nested-Input": {
+            /** Assert Has Archive Member */
             has_archive_member: components["schemas"]["base_has_archive_member_model-Input"];
         };
         /**
-         * has_archive_member_model_nested
+         * Assert Has Archive Member (Nested)
          * @description Nested version of this assertion model.
          */
         "has_archive_member_model_nested-Output": {
+            /** Assert Has Archive Member */
             has_archive_member: components["schemas"]["base_has_archive_member_model-Output"];
         };
         /**
-         * has_element_with_path_model
+         * Assert Has Element With Path
          * @description Asserts the XML output contains at least one element (or tag) with the specified
          *     XPath-like ``path``, e.g.
          *
@@ -28477,14 +28697,15 @@ export interface components {
             that: "has_element_with_path";
         };
         /**
-         * has_element_with_path_model_nested
+         * Assert Has Element With Path (Nested)
          * @description Nested version of this assertion model.
          */
         has_element_with_path_model_nested: {
+            /** Assert Has Element With Path */
             has_element_with_path: components["schemas"]["base_has_element_with_path_model"];
         };
         /**
-         * has_h5_attribute_model
+         * Assert Has H5 Attribute
          * @description Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.
          *
          *     ```xml
@@ -28509,14 +28730,15 @@ export interface components {
             value: string;
         };
         /**
-         * has_h5_attribute_model_nested
+         * Assert Has H5 Attribute (Nested)
          * @description Nested version of this assertion model.
          */
         has_h5_attribute_model_nested: {
+            /** Assert Has H5 Attribute */
             has_h5_attribute: components["schemas"]["base_has_h5_attribute_model"];
         };
         /**
-         * has_h5_keys_model
+         * Assert Has H5 Keys
          * @description Asserts the specified HDF5 output has the given keys.
          */
         has_h5_keys_model: {
@@ -28532,14 +28754,15 @@ export interface components {
             that: "has_h5_keys";
         };
         /**
-         * has_h5_keys_model_nested
+         * Assert Has H5 Keys (Nested)
          * @description Nested version of this assertion model.
          */
         has_h5_keys_model_nested: {
+            /** Assert Has H5 Keys */
             has_h5_keys: components["schemas"]["base_has_h5_keys_model"];
         };
         /**
-         * has_image_center_of_mass_model
+         * Assert Has Image Center Of Mass
          * @description Asserts the specified output is an image and has the specified center of mass.
          *
          *     Asserts the output is an image and has a specific center of mass,
@@ -28580,14 +28803,15 @@ export interface components {
             that: "has_image_center_of_mass";
         };
         /**
-         * has_image_center_of_mass_model_nested
+         * Assert Has Image Center Of Mass (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_center_of_mass_model_nested: {
+            /** Assert Has Image Center Of Mass */
             has_image_center_of_mass: components["schemas"]["base_has_image_center_of_mass_model"];
         };
         /**
-         * has_image_channels_model
+         * Assert Has Image Channels
          * @description Asserts the output is an image and has a specific number of channels.
          *
          *     The number of channels is plus/minus ``delta`` (e.g., ``<has_image_channels channels="3" />``).
@@ -28629,14 +28853,15 @@ export interface components {
             that: "has_image_channels";
         };
         /**
-         * has_image_channels_model_nested
+         * Assert Has Image Channels (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_channels_model_nested: {
+            /** Assert Has Image Channels */
             has_image_channels: components["schemas"]["base_has_image_channels_model"];
         };
         /**
-         * has_image_depth_model
+         * Assert Has Image Depth
          * @description Asserts the output is an image and has a specific depth (number of slices).
          *
          *     The depth is plus/minus ``delta`` (e.g., ``<has_image_depth depth="512" delta="2" />``).
@@ -28677,14 +28902,15 @@ export interface components {
             that: "has_image_depth";
         };
         /**
-         * has_image_depth_model_nested
+         * Assert Has Image Depth (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_depth_model_nested: {
+            /** Assert Has Image Depth */
             has_image_depth: components["schemas"]["base_has_image_depth_model"];
         };
         /**
-         * has_image_frames_model
+         * Assert Has Image Frames
          * @description Asserts the output is an image and has a specific number of frames (number of time steps).
          *
          *     The number of frames is plus/minus ``delta`` (e.g., ``<has_image_frames depth="512" delta="2" />``).
@@ -28725,14 +28951,15 @@ export interface components {
             that: "has_image_frames";
         };
         /**
-         * has_image_frames_model_nested
+         * Assert Has Image Frames (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_frames_model_nested: {
+            /** Assert Has Image Frames */
             has_image_frames: components["schemas"]["base_has_image_frames_model"];
         };
         /**
-         * has_image_height_model
+         * Assert Has Image Height
          * @description Asserts the output is an image and has a specific height (in pixels).
          *
          *     The height is plus/minus ``delta`` (e.g., ``<has_image_height height="512" delta="2" />``).
@@ -28773,14 +29000,15 @@ export interface components {
             that: "has_image_height";
         };
         /**
-         * has_image_height_model_nested
+         * Assert Has Image Height (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_height_model_nested: {
+            /** Assert Has Image Height */
             has_image_height: components["schemas"]["base_has_image_height_model"];
         };
         /**
-         * has_image_mean_intensity_model
+         * Assert Has Image Mean Intensity
          * @description Asserts the output is an image and has a specific mean intensity value.
          *
          *     The mean intensity value is plus/minus ``eps`` (e.g., ``<has_image_mean_intensity mean_intensity="0.83" />``).
@@ -28830,14 +29058,15 @@ export interface components {
             that: "has_image_mean_intensity";
         };
         /**
-         * has_image_mean_intensity_model_nested
+         * Assert Has Image Mean Intensity (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_mean_intensity_model_nested: {
+            /** Assert Has Image Mean Intensity */
             has_image_mean_intensity: components["schemas"]["base_has_image_mean_intensity_model"];
         };
         /**
-         * has_image_mean_object_size_model
+         * Assert Has Image Mean Object Size
          * @description Asserts the output is an image with labeled objects which have the specified mean size (number of pixels),
          *
          *     The mean size is plus/minus ``eps`` (e.g., ``<has_image_mean_object_size mean_object_size="111.87" exclude_labels="0" />``).
@@ -28898,14 +29127,15 @@ export interface components {
             that: "has_image_mean_object_size";
         };
         /**
-         * has_image_mean_object_size_model_nested
+         * Assert Has Image Mean Object Size (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_mean_object_size_model_nested: {
+            /** Assert Has Image Mean Object Size */
             has_image_mean_object_size: components["schemas"]["base_has_image_mean_object_size_model"];
         };
         /**
-         * has_image_n_labels_model
+         * Assert Has Image N Labels
          * @description Asserts the output is an image and has the specified labels.
          *
          *     Labels can be a number of labels or unique values (e.g.,
@@ -28973,14 +29203,15 @@ export interface components {
             that: "has_image_n_labels";
         };
         /**
-         * has_image_n_labels_model_nested
+         * Assert Has Image N Labels (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_n_labels_model_nested: {
+            /** Assert Has Image N Labels */
             has_image_n_labels: components["schemas"]["base_has_image_n_labels_model"];
         };
         /**
-         * has_image_width_model
+         * Assert Has Image Width
          * @description Asserts the output is an image and has a specific width (in pixels).
          *
          *     The width is plus/minus ``delta`` (e.g., ``<has_image_width width="512" delta="2" />``).
@@ -29021,14 +29252,15 @@ export interface components {
             width?: number | null;
         };
         /**
-         * has_image_width_model_nested
+         * Assert Has Image Width (Nested)
          * @description Nested version of this assertion model.
          */
         has_image_width_model_nested: {
+            /** Assert Has Image Width */
             has_image_width: components["schemas"]["base_has_image_width_model"];
         };
         /**
-         * has_json_property_with_text_model
+         * Assert Has Json Property With Text
          * @description Asserts the JSON document contains a property or key with the specified text (i.e. string) value.
          *
          *     ```xml
@@ -29053,14 +29285,15 @@ export interface components {
             that: "has_json_property_with_text";
         };
         /**
-         * has_json_property_with_text_model_nested
+         * Assert Has Json Property With Text (Nested)
          * @description Nested version of this assertion model.
          */
         has_json_property_with_text_model_nested: {
+            /** Assert Has Json Property With Text */
             has_json_property_with_text: components["schemas"]["base_has_json_property_with_text_model"];
         };
         /**
-         * has_json_property_with_value_model
+         * Assert Has Json Property With Value
          * @description Asserts the JSON document contains a property or key with the specified JSON value.
          *
          *     ```xml
@@ -29085,14 +29318,15 @@ export interface components {
             value: string;
         };
         /**
-         * has_json_property_with_value_model_nested
+         * Assert Has Json Property With Value (Nested)
          * @description Nested version of this assertion model.
          */
         has_json_property_with_value_model_nested: {
+            /** Assert Has Json Property With Value */
             has_json_property_with_value: components["schemas"]["base_has_json_property_with_value_model"];
         };
         /**
-         * has_line_matching_model
+         * Assert Has Line Matching
          * @description Asserts the specified output contains a line matching the
          *     regular expression specified by the argument expression. If n is given
          *     the assertion checks for exactly n occurrences.
@@ -29137,14 +29371,15 @@ export interface components {
             that: "has_line_matching";
         };
         /**
-         * has_line_matching_model_nested
+         * Assert Has Line Matching (Nested)
          * @description Nested version of this assertion model.
          */
         has_line_matching_model_nested: {
+            /** Assert Has Line Matching */
             has_line_matching: components["schemas"]["base_has_line_matching_model"];
         };
         /**
-         * has_line_model
+         * Assert Has Line
          * @description Asserts the specified output contains the line specified by the
          *     argument line. The exact number of occurrences can be optionally
          *     specified by the argument n
@@ -29189,14 +29424,15 @@ export interface components {
             that: "has_line";
         };
         /**
-         * has_line_model_nested
+         * Assert Has Line (Nested)
          * @description Nested version of this assertion model.
          */
         has_line_model_nested: {
+            /** Assert Has Line */
             has_line: components["schemas"]["base_has_line_model"];
         };
         /**
-         * has_n_columns_model
+         * Assert Has N Columns
          * @description Asserts tabular output  contains the specified
          *     number (``n``) of columns.
          *
@@ -29255,14 +29491,15 @@ export interface components {
             that: "has_n_columns";
         };
         /**
-         * has_n_columns_model_nested
+         * Assert Has N Columns (Nested)
          * @description Nested version of this assertion model.
          */
         has_n_columns_model_nested: {
+            /** Assert Has N Columns */
             has_n_columns: components["schemas"]["base_has_n_columns_model"];
         };
         /**
-         * has_n_elements_with_path_model
+         * Assert Has N Elements With Path
          * @description Asserts the XML output contains the specified number (``n``, optionally with ``delta``) of elements (or
          *     tags) with the specified XPath-like ``path``.
          *
@@ -29316,14 +29553,15 @@ export interface components {
             that: "has_n_elements_with_path";
         };
         /**
-         * has_n_elements_with_path_model_nested
+         * Assert Has N Elements With Path (Nested)
          * @description Nested version of this assertion model.
          */
         has_n_elements_with_path_model_nested: {
+            /** Assert Has N Elements With Path */
             has_n_elements_with_path: components["schemas"]["base_has_n_elements_with_path_model"];
         };
         /**
-         * has_n_lines_model
+         * Assert Has N Lines
          * @description Asserts the specified output contains ``n`` lines allowing
          *     for a difference in the number of lines (delta)
          *     or relative differebce in the number of lines
@@ -29363,14 +29601,15 @@ export interface components {
             that: "has_n_lines";
         };
         /**
-         * has_n_lines_model_nested
+         * Assert Has N Lines (Nested)
          * @description Nested version of this assertion model.
          */
         has_n_lines_model_nested: {
+            /** Assert Has N Lines */
             has_n_lines: components["schemas"]["base_has_n_lines_model"];
         };
         /**
-         * has_size_model
+         * Assert Has Size
          * @description Asserts the specified output has a size of the specified value
          *
          *     Attributes size and value or synonyms though value is considered deprecated.
@@ -29416,14 +29655,15 @@ export interface components {
             value?: string | number | null;
         };
         /**
-         * has_size_model_nested
+         * Assert Has Size (Nested)
          * @description Nested version of this assertion model.
          */
         has_size_model_nested: {
+            /** Assert Has Size */
             has_size: components["schemas"]["base_has_size_model"];
         };
         /**
-         * has_text_matching_model
+         * Assert Has Text Matching
          * @description Asserts the specified output contains text matching the
          *     regular expression specified by the argument expression.
          *     If n is given the assertion checks for exactly n (nonoverlapping)
@@ -29469,14 +29709,15 @@ export interface components {
             that: "has_text_matching";
         };
         /**
-         * has_text_matching_model_nested
+         * Assert Has Text Matching (Nested)
          * @description Nested version of this assertion model.
          */
         has_text_matching_model_nested: {
+            /** Assert Has Text Matching */
             has_text_matching: components["schemas"]["base_has_text_matching_model"];
         };
         /**
-         * has_text_model
+         * Assert Has Text
          * @description Asserts specified output contains the substring specified by
          *     the argument text. The exact number of occurrences can be
          *     optionally specified by the argument n
@@ -29521,14 +29762,15 @@ export interface components {
             that: "has_text";
         };
         /**
-         * has_text_model_nested
+         * Assert Has Text (Nested)
          * @description Nested version of this assertion model.
          */
         has_text_model_nested: {
+            /** Assert Has Text */
             has_text: components["schemas"]["base_has_text_model"];
         };
         /**
-         * is_valid_xml_model
+         * Assert Is Valid Xml
          * @description Asserts the output is a valid XML file (e.g. ``<is_valid_xml />``).
          */
         is_valid_xml_model: {
@@ -29539,14 +29781,15 @@ export interface components {
             that: "is_valid_xml";
         };
         /**
-         * is_valid_xml_model_nested
+         * Assert Is Valid Xml (Nested)
          * @description Nested version of this assertion model.
          */
         is_valid_xml_model_nested: {
+            /** Assert Is Valid Xml */
             is_valid_xml: components["schemas"]["base_is_valid_xml_model"];
         };
         /**
-         * not_has_text_model
+         * Assert Not Has Text
          * @description Asserts specified output does not contain the substring
          *     specified by the argument text
          */
@@ -29563,14 +29806,15 @@ export interface components {
             that: "not_has_text";
         };
         /**
-         * not_has_text_model_nested
+         * Assert Not Has Text (Nested)
          * @description Nested version of this assertion model.
          */
         not_has_text_model_nested: {
+            /** Assert Not Has Text */
             not_has_text: components["schemas"]["base_not_has_text_model"];
         };
         /**
-         * xml_element_model
+         * Assert Xml Element
          * @description Assert if the XML file contains element(s) or tag(s) with the specified
          *     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
          *     or ``min`` and ``max`` are given also the number of occurrences is checked.
@@ -29610,17 +29854,15 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Attribute
              * @description The XML attribute name to test against from the target XML element.
              */
             attribute?: string | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Input"]
-                | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Input"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -29660,7 +29902,7 @@ export interface components {
             that: "xml_element";
         };
         /**
-         * xml_element_model
+         * Assert Xml Element
          * @description Assert if the XML file contains element(s) or tag(s) with the specified
          *     [XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``
          *     or ``min`` and ``max`` are given also the number of occurrences is checked.
@@ -29700,17 +29942,15 @@ export interface components {
              * @default false
              */
             all: boolean | string;
-            asserts?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Asserts */
+            asserts?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Attribute
              * @description The XML attribute name to test against from the target XML element.
              */
             attribute?: string | null;
-            children?:
-                | components["schemas"]["RootModel_List_Union_Annotated_Union_has_line_model__has_line_matching_model__has_n_lines_model__has_text_model__has_text_matching_model__not_has_text_model__has_n_columns_model__attribute_is_model__attribute_matches_model__element_text_model__element_text_is_model__element_text_matches_model__has_element_with_path_model__has_n_elements_with_path_model__is_valid_xml_model__xml_element_model__has_json_property_with_text_model__has_json_property_with_value_model__has_h5_attribute_model__has_h5_keys_model__has_archive_member_model__has_size_model__has_image_center_of_mass_model__has_image_channels_model__has_image_depth_model__has_image_frames_model__has_image_height_model__has_image_mean_intensity_model__has_image_mean_object_size_model__has_image_n_labels_model__has_image_width_model___FieldInfo_annotation_NoneType__required_True__discriminator__that_____has_line_model_nested__has_line_matching_model_nested__has_n_lines_model_nested__has_text_model_nested__has_text_matching_model_nested__not_has_text_model_nested__has_n_columns_model_nested__attribute_is_model_nested__attribute_matches_model_nested__element_text_model_nested__element_text_is_model_nested__element_text_matches_model_nested__has_element_with_path_model_nested__has_n_elements_with_path_model_nested__is_valid_xml_model_nested__xml_element_model_nested__has_json_property_with_text_model_nested__has_json_property_with_value_model_nested__has_h5_attribute_model_nested__has_h5_keys_model_nested__has_archive_member_model_nested__has_size_model_nested__has_image_center_of_mass_model_nested__has_image_channels_model_nested__has_image_depth_model_nested__has_image_frames_model_nested__has_image_height_model_nested__has_image_mean_intensity_model_nested__has_image_mean_object_size_model_nested__has_image_n_labels_model_nested__has_image_width_model_nested___-Output"]
-                | null;
+            /** Children */
+            children?: components["schemas"]["assertion_list-Output"] | null;
             /**
              * Delta
              * @description Allowed difference with respect to n (default: 0), can be suffixed by ``(k|M|G|T|P|E)i?``
@@ -29750,17 +29990,19 @@ export interface components {
             that: "xml_element";
         };
         /**
-         * xml_element_model_nested
+         * Assert Xml Element (Nested)
          * @description Nested version of this assertion model.
          */
         "xml_element_model_nested-Input": {
+            /** Assert Xml Element */
             xml_element: components["schemas"]["base_xml_element_model-Input"];
         };
         /**
-         * xml_element_model_nested
+         * Assert Xml Element (Nested)
          * @description Nested version of this assertion model.
          */
         "xml_element_model_nested-Output": {
+            /** Assert Xml Element */
             xml_element: components["schemas"]["base_xml_element_model-Output"];
         };
     };
