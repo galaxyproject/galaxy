@@ -308,6 +308,7 @@ class TestAgentUnitMocked:
     @pytest.mark.asyncio
     async def test_router_handoff_uses_registry_callback(self):
         router = QueryRouterAgent(self.deps)
+        router._handoff_context = {"entities": {"datasets": [{"hid": 1, "name": "reads"}]}}
         mock_history_agent = AsyncMock()
         mock_history_agent.process.return_value = MagicMock(
             content="History summary",
@@ -323,6 +324,9 @@ class TestAgentUnitMocked:
         response = await handoff(ctx, "Summarize my history")
 
         self.deps.get_agent.assert_called_once_with("history", self.deps)
+        mock_history_agent.process.assert_awaited_once_with(
+            "Summarize my history", {"entities": {"datasets": [{"hid": 1, "name": "reads"}]}}
+        )
         assert "History summary" in response
 
     @pytest.mark.asyncio
@@ -605,6 +609,22 @@ class TestAgentUnitMocked:
         )
         non_empty_lines = [line for line in out.splitlines() if line]
         assert all(line.startswith("- ") for line in non_empty_lines[1:])
+
+    def test_router_query_context_includes_entity_references(self):
+        agent = QueryRouterAgent(self.deps)
+        out = agent._build_query_with_context(
+            "what does this mean?",
+            {
+                "entities": {
+                    "datasets": [{"hid": 42, "name": "Mapped reads", "extension": "bam", "state": "ok"}],
+                    "histories": [{"identifier": "current", "name": "RNA-seq analysis"}],
+                }
+            },
+        )
+        assert "Referenced entities:" in out
+        assert "Dataset #42" in out
+        assert "Mapped reads" in out
+        assert "Current query: what does this mean?" in out
 
 
 @pytestmark_live_llm

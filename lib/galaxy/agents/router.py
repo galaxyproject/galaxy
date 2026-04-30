@@ -38,6 +38,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
+    _handoff_context: Optional[dict[str, Any]] = None
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         model_name = self._get_agent_config("model", "")
@@ -108,7 +109,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
         log.info(f"Router handing off to {handoff_target}: '{input_text[:100]}...'")
         try:
             agent = ctx.deps.get_agent(agent_type, ctx.deps)
-            response = await agent.process(input_text)
+            handoff_context = self._handoff_context.copy() if self._handoff_context else {}
+            response = await agent.process(input_text, handoff_context)
             return self._serialize_handoff(response, handoff_target)
         except ValueError as e:
             log.warning(f"{handoff_target} handoff unavailable: {e}")
@@ -280,7 +282,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
             full_query = self._build_query_with_context(query, context)
             log.info(f"Router: Full query length={len(full_query)} (original={len(query)})")
 
-            result = await self._run_with_retry(full_query)
+            previous_handoff_context = self._handoff_context
+            self._handoff_context = context.copy() if context else {}
+            try:
+                result = await self._run_with_retry(full_query)
+            finally:
+                self._handoff_context = previous_handoff_context
             content = extract_result_content(result)
 
             try:
@@ -320,6 +327,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 description = self._format_interface_context(interface_ctx)
                 if description:
                     parts.append(f"[Active interface context: {description}]")
+
+            entities = context.get("entities")
+            if entities and isinstance(entities, dict):
+                entity_desc = self._format_entity_context(entities)
+                if entity_desc:
+                    parts.append(entity_desc)
 
             history = context.get("conversation_history")
             if history:
