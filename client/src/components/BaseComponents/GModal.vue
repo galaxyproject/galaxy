@@ -6,7 +6,7 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
 import { faXmark } from "font-awesome-6";
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 import {
     type ComponentColor,
@@ -109,7 +109,11 @@ onBeforeUnmount(() => {
 });
 
 function showModal() {
-    dialog.value?.showModal();
+    if (!dialog.value || dialog.value.open) {
+        return;
+    }
+
+    dialog.value.showModal();
 }
 
 let isOk = false;
@@ -119,19 +123,24 @@ function hideModal(ok = false) {
         emit("ok");
     } else {
         isOk = ok;
-        dialog.value?.close();
+        if (dialog.value?.open) {
+            dialog.value.close();
+        }
     }
 }
 
 watchImmediate(
     () => props.show,
-    () => {
-        if (props.show) {
+    async (show) => {
+        await nextTick();
+
+        if (show) {
             showModal();
         } else {
             hideModal();
         }
     },
+    { flush: "post" },
 );
 
 function onClickDialog(event: MouseEvent) {

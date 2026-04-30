@@ -1101,7 +1101,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     errors[step.id] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
-            raise exceptions.MessageException(f"Following tools missing: {', '.join(missing_tools)}")
+            raise exceptions.MessageException(
+                f"Following tools missing: {', '.join(missing_tools)}",
+                missing_tool_ids=missing_tools,
+            )
         workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
         step_order_indices = {}
         for step in workflow.steps:

@@ -12,6 +12,7 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -61,6 +62,7 @@ class PersonalNotificationCategory(str, Enum):
 
     message = "message"
     new_shared_item = "new_shared_item"
+    tool_request = "tool_request"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
@@ -115,6 +117,44 @@ class NewSharedItemNotificationContent(Model):
     slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
 
+class ToolRequestNotificationContent(Model):
+    category: Literal[PersonalNotificationCategory.tool_request] = PersonalNotificationCategory.tool_request
+    tool_names: list[str] = Field(
+        ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
+    )
+    tool_url: Optional[str] = Field(
+        None,
+        title="Tool URL",
+        description="Homepage or repository URL for the requested tool (single-tool requests only).",
+    )
+    description: str = Field(
+        ..., title="Description", description="Short description of the tool and its scientific use case."
+    )
+    scientific_domain: Optional[str] = Field(
+        None, title="Scientific domain", description="The scientific domain for the requested tool."
+    )
+    requested_version: Optional[str] = Field(
+        None, title="Requested version", description="The version of the tool being requested."
+    )
+    requester_email: Optional[str] = Field(
+        None,
+        title="Requester email",
+        description="The email address of the requester for follow-up. This is derived server-side for user submissions.",
+    )
+    workflow_id: Optional[str] = Field(
+        None, title="Workflow ID", description="Encoded ID of the workflow requiring these tools, if applicable."
+    )
+    additional_remarks: Optional[str] = Field(
+        None, title="Additional remarks", description="Any additional information or context for the request."
+    )
+
+    @model_validator(mode="after")
+    def _tool_url_single_tool_only(self) -> "ToolRequestNotificationContent":
+        if self.tool_url and len(self.tool_names) != 1:
+            raise ValueError("tool_url may only be supplied when exactly one tool is requested")
+        return self
+
+
 NotificationContentField = Field(
     default=...,
     discriminator="category",
@@ -126,6 +166,7 @@ AnyUserNotificationContent = Annotated[
     Union[
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+        ToolRequestNotificationContent,
     ],
     NotificationContentField,
 ]

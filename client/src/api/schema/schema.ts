@@ -18958,6 +18958,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -19046,6 +19047,7 @@ export interface components {
             content:
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -20048,7 +20050,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "tool_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -23500,6 +23502,54 @@ export interface components {
             state: components["schemas"]["ToolRequestState"];
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
+        /** ToolRequestNotificationContent */
+        ToolRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_request";
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description: string;
+            /**
+             * Requested version
+             * @description The version of the tool being requested.
+             */
+            requested_version?: string | null;
+            /**
+             * Requester email
+             * @description The email address of the requester for follow-up. This is derived server-side for user submissions.
+             */
+            requester_email?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool names
+             * @description Names or tool-shed IDs of the requested tools.
+             */
+            tool_names: string[];
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool (single-tool requests only).
+             */
+            tool_url?: string | null;
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /**
          * ToolRequestState
          * @enum {string}
@@ -24105,6 +24155,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -24508,6 +24565,13 @@ export interface components {
          *             "push": true
          *           },
          *           "enabled": true
+         *         },
+         *         "tool_request": {
+         *           "channels": {
+         *             "email": true,
+         *             "push": true
+         *           },
+         *           "enabled": true
          *         }
          *       }
          *     }
@@ -24537,7 +24601,8 @@ export interface components {
              */
             content:
                 | components["schemas"]["MessageNotificationContent"]
-                | components["schemas"]["NewSharedItemNotificationContent"];
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["ToolRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time

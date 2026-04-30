@@ -4,7 +4,20 @@
 import axios from "axios";
 
 import { getAppRoot } from "@/onload/loadConfig";
-import { rethrowSimple } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+
+/**
+ * Error thrown when a workflow cannot run because required tools are not installed.
+ * Carries the list of missing tool IDs so callers can offer an installation request.
+ */
+export class WorkflowMissingToolsError extends Error {
+    constructor(message, missingToolIds) {
+        super(message);
+        this.name = "WorkflowMissingToolsError";
+        /** @type {string[]} */
+        this.missingToolIds = missingToolIds || [];
+    }
+}
 
 /**
  * Download the workflow using the 'run' style (see workflow manager on backend
@@ -22,6 +35,11 @@ export async function getRunData(workflowId, version = null, instance = false) {
         const response = await axios.get(url);
         return response.data;
     } catch (e) {
+        const missingToolIds = e?.response?.data?.missing_tool_ids;
+        if (missingToolIds && missingToolIds.length > 0) {
+            const errMsg = errorMessageAsString(e, "Following tools are not installed.");
+            throw new WorkflowMissingToolsError(errMsg, missingToolIds);
+        }
         rethrowSimple(e);
     }
 }

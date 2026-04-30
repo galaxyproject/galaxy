@@ -4360,6 +4360,19 @@ mapping:
         desc: |
           Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
 
+      enable_tool_request_form:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the Tool Request Form in the toolbox, allowing users to request new tools to be installed on this Galaxy instance.
+
+          When enabled, a "Request a Tool" button will appear in the tool panel. Submitted requests are sent as
+          notifications to all admin users via Galaxy's notification system, which must also be enabled.
+
+          This requires ``enable_notification_system`` to be set to ``true``.
+
       file_source_temp_dir:
         type: str
         required: false

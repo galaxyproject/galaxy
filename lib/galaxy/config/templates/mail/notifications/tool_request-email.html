@@ -1,0 +1,152 @@
+Use this template to customize the HTML email your admins will receive
+when a user submits a tool installation request.
+Copy the file to {{ templates_dir }}/mail/notifications/tool_request-email.html and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the HTML with Jinja2
+syntax, like {{ variable_name }}. They will be rendered into the text before
+the email is sent:
+
+- name                      The admin's name
+- user_email                The admin's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the admin's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The tool_request payload
+  - tool_names              List of tool names or tool-shed IDs being requested
+  - tool_url                Homepage or repository URL for the tool (optional, single-tool requests only)
+  - description             Description of the tool and its use case
+  - scientific_domain       Scientific domain (optional)
+  - requested_version       Requested version (optional)
+  - requester_email         The email address of the requester
+  - workflow_id             Encoded ID of the workflow requiring these tools (optional)
+  - additional_remarks      Any additional information provided by the requester (optional)
+- workflow_name             Resolved workflow name (if workflow_id can be resolved)
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>[Galaxy] Tool installation request</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <p style="font-size: 12pt;">
+      Hello {{ name }},<br><br>
+
+      A user has submitted a request to install
+      {% if content['tool_names'] | length == 1 %}a new tool{% else %}new tools{% endif %}
+      on <b>{{ hostname }}</b> on <b>{{ date }}</b>.
+    </p>
+
+    <table style="font-size: 12pt; border-collapse: collapse; width: 100%;">
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">
+          Tool{{ " names" if content['tool_names'] | length > 1 else " name" }}
+        </td>
+        <td style="padding: 4px 8px;">
+          {% if content['tool_names'] | length == 1 %}
+          {{ content['tool_names'][0] }}
+          {% else %}
+          <ul style="margin: 0; padding-left: 1.2em;">
+            {% for name in content['tool_names'] %}<li>{{ name }}</li>{% endfor %}
+          </ul>
+          {% endif %}
+        </td>
+      </tr>
+      {% if content['tool_url'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">URL</td>
+        <td style="padding: 4px 8px;">{{ content['tool_url'] }}</td>
+      </tr>
+      {% endif %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Description</td>
+        <td style="padding: 4px 8px;">{{ content['description'] }}</td>
+      </tr>
+      {% if content['scientific_domain'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Scientific domain</td>
+        <td style="padding: 4px 8px;">{{ content['scientific_domain'] }}</td>
+      </tr>
+      {% endif %}
+      {% if content['requested_version'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested version</td>
+        <td style="padding: 4px 8px;">{{ content['requested_version'] }}</td>
+      </tr>
+      {% endif %}
+      {% if content['workflow_id'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Workflow</td>
+        <td style="padding: 4px 8px;">
+          {% if workflow_name and galaxy_url %}
+          <a href="{{ galaxy_url }}/workflows/run?id={{ content['workflow_id'] }}">{{ workflow_name }}</a>
+          {% elif workflow_name %}
+          {{ workflow_name }}
+          {% else %}
+          {{ content['workflow_id'] }}
+          {% endif %}
+        </td>
+      </tr>
+      {% endif %}
+      {% if content['additional_remarks'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap; vertical-align: top;">Additional remarks</td>
+        <td style="padding: 4px 8px;">{{ content['additional_remarks'] }}</td>
+      </tr>
+      {% endif %}
+      {% if content['requester_email'] %}
+      <tr>
+        <td style="padding: 4px 8px; font-weight: bold; white-space: nowrap;">Requested by</td>
+        <td style="padding: 4px 8px;">{{ content['requester_email'] }}</td>
+      </tr>
+      {% endif %}
+    </table>
+
+    <p style="font-size: 12pt;">
+      {% if galaxy_url %}
+      You can review the notification in Galaxy: <a href="{{ galaxy_url }}/user/notifications">View notifications</a>
+      {% endif %}
+    </p>
+
+    <p style="font-size: 12pt;">
+      Thank you for administering Galaxy!
+    </p>
+
+    <p style="font-size: 12pt;">
+      Regards,<br>
+      Your Galaxy Team at <a href="{{ galaxy_url }}">{{ hostname }}</a>
+    </p>
+
+    <p style="font-size: 10pt;">
+      You received this email because you are an administrator of this Galaxy instance.
+      {% if notification_settings_url %}
+      You can manage your notification settings <a href="{{ notification_settings_url }}">here</a>.
+      {% endif %}
+
+      <br>
+
+      {% if contact_email %}
+      This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>.
+      {% endif %}
+    </p>
+
+    <img
+      style="width: 130px; height: auto; margin: 15px 0;"
+      src="https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo_square.png"
+      alt="Galaxy project logo"
+    >
+
+    <br>
+
+  </body>
+</html>

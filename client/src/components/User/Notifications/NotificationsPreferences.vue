@@ -40,8 +40,9 @@ const pushNotificationsGranted = ref(pushNotificationsEnabled());
 const notificationsPreferences = ref<UserNotificationPreferences>({});
 const supportedChannels = ref<NotificationChannel[]>([]);
 
-const categories = computed<NotificationCategory[]>(
-    () => Object.keys(notificationsPreferences.value) as NotificationCategory[],
+// tool_request notifications are admin-targeted; users should not be able to opt out.
+const categories = computed<NotificationCategory[]>(() =>
+    (Object.keys(notificationsPreferences.value) as NotificationCategory[]).filter((c) => c !== "tool_request"),
 );
 const showPreferences = computed(() => {
     return !loading.value && config.value.enable_notification_system && notificationsPreferences.value;

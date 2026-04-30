@@ -6,7 +6,11 @@ import { setActivePinia } from "pinia";
 import { describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 
-import { generateMessageNotification, generateNewSharedItemNotification } from "@/components/Notifications/test-utils";
+import {
+    generateMessageNotification,
+    generateNewSharedItemNotification,
+    generateToolRequestNotification,
+} from "@/components/Notifications/test-utils";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
@@ -136,5 +140,35 @@ describe("Notifications categories", () => {
         await nextTick();
 
         expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
+    });
+
+    it("tool_request notification shows tool name in title and details in description", async () => {
+        const notification = generateToolRequestNotification();
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        // Title should include the first tool name
+        expect(wrapper.text()).toContain(notification.content.tool_names[0]);
+
+        // Description area should show tool request details
+        const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
+        expect(descriptionArea.text()).toContain(notification.content.description);
+        expect(descriptionArea.text()).toContain(notification.content.scientific_domain);
+        expect(descriptionArea.text()).toContain(notification.content.requested_version);
+        expect(descriptionArea.text()).toContain(notification.content.requester_email);
+    });
+
+    it("tool_request notification links workflow id and exposes anchor for deep-linking", async () => {
+        const notification = generateToolRequestNotification();
+        notification.content.workflow_id = "encoded-workflow-id-abc";
+
+        const wrapper = await mountComponent(NotificationCard, {
+            notification,
+        });
+
+        expect(wrapper.html()).toContain(`/workflows/run?id=${notification.content.workflow_id}`);
+        expect(wrapper.find(`#notification-card-${notification.id}`).exists()).toBe(true);
     });
 });

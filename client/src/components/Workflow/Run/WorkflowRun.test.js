@@ -27,6 +27,8 @@ vi.mock("./WorkflowRunSuccess", () => ({
     default: {},
 }));
 
+vi.mock("@/composables/config");
+
 describe("WorkflowRun.vue", () => {
     let wrapper;
     const run1WorkflowId = "ebab00128497f9d7";

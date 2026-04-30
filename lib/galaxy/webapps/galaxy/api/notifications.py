@@ -228,7 +228,6 @@ class FastAPINotifications:
     @router.post(
         "/api/notifications",
         summary="Sends a notification to a list of recipients (users, groups or roles).",
-        require_admin=True,
     )
     def send_notification(
         self,

@@ -7,9 +7,7 @@ Used by both the API and bootstrapped data.
 
 import logging
 import sys
-from typing import (
-    Any,
-)
+from typing import Any
 
 from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
@@ -236,6 +234,7 @@ class ConfigSerializer(base.ModelSerializer):
             "fixed_delegated_auth": _defaults_to(False),
             "help_forum_api_url": _use_config,
             "enable_help_forum_tool_panel_integration": _use_config,
+            "enable_tool_request_form": _use_config,
             "llm_api_configured": lambda item, key, **context: bool(
                 item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
             ),

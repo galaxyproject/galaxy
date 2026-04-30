@@ -1,3 +1,5 @@
+import "@/composables/__mocks__/filter";
+
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
@@ -6,10 +8,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
 import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
-import { setMockConfig } from "@/composables/__mocks__/config";
+import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
+import ToolRequestForm from "../Tool/ToolRequestForm.vue";
 import ToolBox from "./ToolBox.vue";
 
 vi.mock("@/composables/config");
@@ -326,5 +329,149 @@ describe("ToolBox search", () => {
         expect(emptyState.text()).toContain("You haven't favorited any tools yet.");
         const labels = wrapper.findAll(".tool-panel-label").wrappers.map((item) => item.text());
         expect(labels).toEqual(EXPECTED_LABELS);
+    });
+});
+
+/** Helper to mount a default (non-favorites) ToolBox with pre-loaded tool data.
+ * Pass `anonymous=true` to simulate an unauthenticated (anonymous) user.
+ * An anonymous user is any non-null object without an `email` property.
+ */
+async function mountDefaultToolBox(pinia: ReturnType<typeof createPinia>, anonymous = false) {
+    setActivePinia(pinia);
+
+    const toolStore = useToolStore();
+    toolStore.toolsById = toToolsById(toolsList);
+    toolStore.toolSections = { default: toolsListInPanel };
+    toolStore.defaultPanelView = "default";
+    toolStore.currentPanelView = "default";
+
+    const userStore = useUserStore();
+    // isAnonymous is a computed value driven by currentUser.
+    // null → isAnonymous=false (registered/logged-in); object without email → isAnonymous=true
+    userStore.currentUser = anonymous ? ({ id: "anon" } as any) : null;
+    userStore.currentPreferences = { favorites: { tools: [] } };
+
+    const wrapper = mount(ToolBox as object, {
+        pinia,
+        localVue,
+        router,
+        propsData: { useSearchWorker: false },
+    });
+    await flushPromises();
+    return wrapper;
+}
+
+describe("ToolBox — Request a Tool button", () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        setMockConfig({ toolbox_auto_sort: true, enable_tool_request_form: true });
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        resetMockConfig();
+        setMockConfig({ toolbox_auto_sort: true });
+    });
+
+    it("is hidden when search returns results", async () => {
+        const pinia = createPinia();
+        const wrapper = await mountDefaultToolBox(pinia);
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("Filter");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+    });
+
+    it("is visible when search returns no results", async () => {
+        const pinia = createPinia();
+        const wrapper = await mountDefaultToolBox(pinia);
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("xyznonexistenttool123");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(true);
+    });
+
+    it("is hidden when enable_tool_request_form config is false", async () => {
+        setMockConfig({ toolbox_auto_sort: true, enable_tool_request_form: false });
+        const pinia = createPinia();
+        const wrapper = await mountDefaultToolBox(pinia);
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("xyznonexistenttool123");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+    });
+
+    it("is hidden for anonymous users even when search returns no results", async () => {
+        const pinia = createPinia();
+        const wrapper = await mountDefaultToolBox(pinia, /* anonymous= */ true);
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("xyznonexistenttool123");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+    });
+
+    it("is hidden in workflow mode even when search returns no results", async () => {
+        const pinia = createPinia();
+        setActivePinia(pinia);
+
+        const toolStore = useToolStore();
+        toolStore.toolsById = toToolsById(toolsList);
+        toolStore.toolSections = { default: toolsListInPanel };
+        toolStore.defaultPanelView = "default";
+        toolStore.currentPanelView = "default";
+
+        const userStore = useUserStore();
+        userStore.currentUser = null;
+        userStore.currentPreferences = { favorites: { tools: [] } };
+
+        const wrapper = mount(ToolBox as object, {
+            pinia,
+            localVue,
+            router,
+            propsData: { workflow: true, useSearchWorker: false },
+        });
+        await flushPromises();
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("xyznonexistenttool123");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        expect(wrapper.find(".alert-warning").exists()).toBe(true);
+        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+    });
+
+    it("opens the tool request form modal when clicked", async () => {
+        const pinia = createPinia();
+        const wrapper = await mountDefaultToolBox(pinia);
+
+        const input = wrapper.find("input.search-query");
+        await input.setValue("xyznonexistenttool123");
+        vi.advanceTimersByTime(250);
+        await flushPromises();
+
+        const button = wrapper.find('[data-description="request tool button"]');
+        expect(button.exists()).toBe(true);
+
+        await button.trigger("click");
+        await flushPromises();
+
+        const requestForm = wrapper.findComponent(ToolRequestForm);
+        expect(requestForm.props("show")).toBe(true);
     });
 });

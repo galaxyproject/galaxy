@@ -3175,6 +3175,16 @@ galaxy:
   # This requires the help_forum_api_url to be set.
   #enable_help_forum_tool_panel_integration: false
 
+  # Enable the Tool Request Form in the toolbox, allowing users to
+  # request new tools to be installed on this Galaxy instance.
+  # When enabled, a "Request a Tool" button will appear in the tool
+  # panel. Submitted requests are sent as notifications to all admin
+  # users via Galaxy's notification system, which must also be
+  # enabled.
+  # This requires ``enable_notification_system`` to be set to
+  # ``true``.
+  #enable_tool_request_form: false
+
   # Directory to store temporary files for file sources. This defaults
   # to new_file_path if not set.
   #file_source_temp_dir: null

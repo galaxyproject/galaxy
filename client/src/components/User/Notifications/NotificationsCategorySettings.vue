@@ -13,6 +13,8 @@ const categoryDescriptionMap: Record<NotificationCategory, string> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    tool_request:
+        "You will receive these notifications when a user submits a request for a new tool to be installed on the Galaxy instance.",
 };
 
 interface NotificationsCategorySettingsProps {

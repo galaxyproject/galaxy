@@ -23,7 +23,10 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.engine import CursorResult
-from sqlalchemy.orm import InstrumentedAttribute
+from sqlalchemy.orm import (
+    InstrumentedAttribute,
+    object_session,
+)
 from sqlalchemy.sql import Select
 from typing_extensions import Protocol
 
@@ -40,12 +43,14 @@ from galaxy.managers.markdown_util import to_html
 from galaxy.model import (
     GroupRoleAssociation,
     Notification,
+    StoredWorkflow,
     User,
     UserGroupAssociation,
     UserNotificationAssociation,
     UserRoleAssociation,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fields import decode_id
 from galaxy.schema.notifications import (
     AnyNotificationContent,
     BroadcastNotificationCreateRequest,
@@ -60,6 +65,7 @@ from galaxy.schema.notifications import (
     NotificationRecipients,
     NotificationVariant,
     PersonalNotificationCategory,
+    ToolRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -210,10 +216,11 @@ class NotificationManager:
 
     def _dispatch_notification_to_users(self, notification: Notification):
         users = self._get_associated_users(notification)
+        category = cast(PersonalNotificationCategory, notification.category)
         for user in users:
             try:
                 if self._is_user_subscribed_to_notification(user, notification):
-                    settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
+                    settings = self._get_user_category_settings(user, category)
                     self._send_via_channels(notification, user, settings.channels)
             except Exception as e:
                 log.error(f"Error sending notification to user {user.id}. Reason: {util.unicodify(e)}")
@@ -236,7 +243,8 @@ class NotificationManager:
         if self._is_urgent(notification):
             # Urgent notifications are always sent
             return True
-        category_settings = self._get_user_category_settings(user, notification.category)  # type: ignore[arg-type]
+        category = cast(PersonalNotificationCategory, notification.category)
+        category_settings = self._get_user_category_settings(user, category)
         return self._is_subscribed_to_category(category_settings)
 
     def _send_via_channels(self, notification: Notification, user: User, channel_settings: NotificationChannelSettings):
@@ -650,6 +658,7 @@ class NotificationContext(BaseModel):
     variant: str
     notification_settings_url: str
     content: AnyNotificationContent
+    workflow_name: Optional[str] = None
     galaxy_url: Optional[str] = None
 
 
@@ -740,12 +749,47 @@ class NewSharedItemEmailNotificationTemplateBuilder(EmailNotificationTemplateBui
         return f"[Galaxy] New {content.item_type} shared with you: {content.item_name}"
 
 
+class ToolRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+
+    def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
+        content = ToolRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
+        return content
+
+    def build_context(self, template_format: TemplateFormats) -> NotificationContext:
+        context = EmailNotificationTemplateBuilder.build_context(self, template_format)
+        content = cast(ToolRequestNotificationContent, context.content)
+        workflow_name = self._resolve_workflow_name(content.workflow_id)
+        return context.model_copy(update={"workflow_name": workflow_name})
+
+    def _resolve_workflow_name(self, workflow_id: Optional[str]) -> Optional[str]:
+        if not workflow_id:
+            return None
+        try:
+            workflow_db_id = decode_id(workflow_id)
+        except Exception:
+            return None
+
+        session = object_session(self.notification)
+        if session is None:
+            return None
+
+        stored_workflow = session.get(StoredWorkflow, workflow_db_id)
+        return stored_workflow.name if stored_workflow else None
+
+    def get_subject(self) -> str:
+        content = cast(ToolRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        if len(content.tool_names) == 1:
+            return f"[Galaxy] Tool installation request: {content.tool_names[0]}"
+        return f"[Galaxy] Tool installation request ({len(content.tool_names)} tools)"
+
+
 class EmailNotificationChannelPlugin(NotificationChannelPlugin):
 
     # Register the supported email templates here
     email_templates_by_category: dict[PersonalNotificationCategory, type[EmailNotificationTemplateBuilder]] = {
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_request: ToolRequestEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):

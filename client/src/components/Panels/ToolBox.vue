@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useConfig } from "@/composables/config";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useToolRouting } from "@/composables/route";
 import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/toolPanelFavorites";
@@ -28,6 +30,7 @@ import {
 } from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
+import ToolRequestForm from "../Tool/ToolRequestForm.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 
@@ -36,8 +39,14 @@ const LOGIN_ROUTE = "/login/start";
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 const TOOLS_LIST_ROUTE = "/tools/list";
 
+const { config, isConfigLoaded } = useConfig();
 const { openGlobalUploadModal } = useGlobalUploadModal();
 const { routeToTool } = useToolRouting();
+
+const showToolRequestForm = ref(false);
+const showRequestToolButton = computed(
+    () => !props.workflow && isConfigLoaded.value && config.value?.enable_tool_request_form && !isAnonymous.value,
+);
 
 const emit = defineEmits<{
     (e: "update:show-favorites", value: boolean): void;
@@ -415,6 +424,10 @@ function onToggle() {
     showSections.value = !showSections.value;
 }
 
+function openToolRequestForm() {
+    showToolRequestForm.value = true;
+}
+
 /** Stores the localStorage state of collapsed labels for the favorites and recents sections in the `My Tools` panel. */
 const collapsedLabels = computed(() => {
     if (props.favoritesDefault) {
@@ -464,6 +477,16 @@ function onLabelToggle(labelId: string) {
                 </div>
                 <div v-else-if="queryFinished && !hasResults" class="pb-2">
                     <BBadge class="alert-warning w-100">No results found</BBadge>
+                    <div v-if="showRequestToolButton" class="mt-2">
+                        <GButton
+                            size="small"
+                            class="w-100"
+                            data-description="request tool button"
+                            @click="openToolRequestForm">
+                            <FontAwesomeIcon :icon="faWrench" class="mr-1" />
+                            {{ localize("Request a Tool") }}
+                        </GButton>
+                    </div>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
                     <BBadge class="alert-danger w-100">
@@ -476,6 +499,9 @@ function onLabelToggle(labelId: string) {
                 </div>
             </section>
         </div>
+
+        <ToolRequestForm v-if="showToolRequestForm" :show.sync="showToolRequestForm" />
+
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div v-if="localPanel" class="toolMenu">

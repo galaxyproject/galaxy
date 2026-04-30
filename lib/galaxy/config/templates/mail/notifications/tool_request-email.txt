@@ -1,0 +1,69 @@
+Use this template to customize the text email your admins will receive
+when a user submits a tool installation request.
+Copy the file to {{ templates_dir }}/mail/notifications/tool_request-email.txt and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the text like
+{{ variable_name }}. They will be rendered into the text before the email is
+sent:
+
+- name                      The admin's name
+- user_email                The admin's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the admin's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The tool_request payload
+  - tool_names              List of tool names or tool-shed IDs being requested
+  - tool_url                Homepage or repository URL for the tool (optional, single-tool requests only)
+  - description             Description of the tool and its use case
+  - scientific_domain       Scientific domain (optional)
+  - requested_version       Requested version (optional)
+  - requester_email         The email address of the requester
+  - workflow_id             Encoded ID of the workflow requiring these tools (optional)
+  - additional_remarks      Any additional information provided by the requester (optional)
+- workflow_name             Resolved workflow name (if workflow_id can be resolved)
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here>>>>>>
+Hello {{ name }},
+
+A user has submitted a request to install {% if content['tool_names'] | length == 1 %}a new tool{% else %}new tools{% endif %} on {{ hostname }} on {{ date }}.
+
+{% if content['tool_names'] | length == 1 %}Tool name:    {{ content['tool_names'][0] }}
+{% else %}Tools:
+{% for tool in content['tool_names'] %}  - {{ tool }}
+{% endfor %}{% endif %}{% if content['tool_url'] %}URL:          {{ content['tool_url'] }}
+{% endif %}Description:  {{ content['description'] }}
+{% if content['scientific_domain'] %}Domain:       {{ content['scientific_domain'] }}
+{% endif %}{% if content['requested_version'] %}Version:      {{ content['requested_version'] }}
+{% endif %}{% if content['workflow_id'] %}Workflow:     {{ workflow_name if workflow_name else content['workflow_id'] }}
+{% endif %}{% if content['additional_remarks'] %}Remarks:      {{ content['additional_remarks'] }}
+{% endif %}{% if content['requester_email'] %}Requested by: {{ content['requester_email'] }}
+{% endif %}
+
+{% if galaxy_url %}
+You can review the notification in Galaxy: {{ galaxy_url }}/user/notifications
+{% endif %}
+
+Thank you for administering Galaxy!
+
+Regards,
+Your Galaxy Team at {{ hostname }}
+
+---
+
+You received this email because you are an administrator of this Galaxy instance.
+{% if notification_settings_url %}
+To manage your notification settings, please visit {{ notification_settings_url }}.
+{% endif %}
+
+{% if contact_email %}
+This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
+{% endif %}
+
+
