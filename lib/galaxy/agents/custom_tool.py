@@ -28,6 +28,7 @@ from .base import (
     extract_structured_output,
     GalaxyAgentDependencies,
 )
+from .validators import validate_user_tool_source
 
 log = logging.getLogger(__name__)
 
@@ -100,6 +101,33 @@ class CustomToolAgent(BaseGalaxyAgent):
 
             tool_dict = tool.model_dump(by_alias=True, exclude_none=True)
             tool_yaml = yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
+
+            validation_errors = validate_user_tool_source(tool)
+            if validation_errors:
+                log.warning(
+                    "CustomToolAgent produced a UserToolSource that failed semantic validation: %s",
+                    validation_errors,
+                )
+                bullet_list = "\n".join(f"- {issue}" for issue in validation_errors)
+                content = (
+                    "The model produced a tool definition, but it has semantic problems "
+                    "that need to be fixed before it can be saved:\n\n"
+                    f"{bullet_list}\n\n"
+                    "The generated YAML is included in metadata for diagnosis."
+                )
+                return self._build_response(
+                    content=content,
+                    confidence=ConfidenceLevel.LOW,
+                    method="validation_error",
+                    result=result,
+                    query=query,
+                    error="validation_failed",
+                    agent_data={
+                        "validation_errors": validation_errors,
+                        "tool_yaml": tool_yaml,
+                        "tool_id": tool.id,
+                    },
+                )
 
             response_content = f"""I've created a custom Galaxy tool:
 

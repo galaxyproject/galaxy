@@ -123,7 +123,7 @@ class TestAgentUnitMocked:
             mock_tool = UserToolSource(
                 **{
                     "class": "GalaxyUserTool",
-                    "id": "test-tool",
+                    "id": "test_tool",
                     "name": "Test Tool",
                     "version": "1.0.0",
                     "description": "A test tool",
@@ -131,6 +131,7 @@ class TestAgentUnitMocked:
                     "shell_command": "echo test",
                     "inputs": [],
                     "outputs": [],
+                    "citations": [{"type": "doi", "content": "10.1000/xyz123"}],
                 }
             )
 
@@ -141,7 +142,7 @@ class TestAgentUnitMocked:
             response = await agent.process("Create a test tool")
 
             assert response.confidence.value in ["high", "medium"]
-            assert response.metadata["tool_id"] == "test-tool"
+            assert response.metadata["tool_id"] == "test_tool"
             assert response.metadata["method"] == "structured"
 
     @pytest.mark.asyncio
@@ -577,6 +578,202 @@ class TestAgentUnitLiveLLM:
         assert response.metadata["method"] == "simple_template"
         assert "tool_id" in response.metadata
         assert "tool_yaml" in response.metadata
+
+
+def _make_user_tool_source(**overrides) -> UserToolSource:
+    """Build a canonical-valid UserToolSource for validator tests, with overrides."""
+    payload: dict = {
+        "class": "GalaxyUserTool",
+        "id": "echo_tool",
+        "name": "Echo",
+        "version": "0.1.0",
+        "description": "Echo input text to a file",
+        "container": "quay.io/biocontainers/python:3.13",
+        "shell_command": "echo '$(inputs.message)' > out.txt",
+        "inputs": [
+            {"name": "message", "type": "text", "value": "hi"},
+        ],
+        "outputs": [
+            {"name": "out", "type": "data", "format": "txt", "from_work_dir": "out.txt"},
+        ],
+        "citations": [
+            {"type": "doi", "content": "10.1093/bioinformatics/btx123"},
+        ],
+    }
+    # Pop top-level overrides like 'citations=None' to remove the key entirely.
+    for key, value in overrides.items():
+        if value is _SENTINEL_REMOVE:
+            payload.pop(key, None)
+        else:
+            payload[key] = value
+    return UserToolSource(**payload)
+
+
+_SENTINEL_REMOVE = object()
+
+
+class TestCustomToolValidator:
+    """Tests for the deterministic UserToolSource semantic validator."""
+
+    def test_validator_accepts_valid_tool(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source()
+        assert validate_user_tool_source(tool) is None
+
+    def test_validator_rejects_missing_container(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(container="   ")
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("container" in e for e in errors)
+
+    def test_validator_rejects_bad_tool_id(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(id="Bad-ID")
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("id" in e and "Bad-ID" in e for e in errors)
+
+    def test_validator_rejects_undeclared_command_variable(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(
+            shell_command="echo '$(inputs.undeclared)' > out.txt",
+        )
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("undeclared" in e for e in errors)
+
+    def test_validator_rejects_no_citations(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(citations=_SENTINEL_REMOVE)
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("citation" in e for e in errors)
+
+        # An explicitly-empty list should also fail.
+        tool = _make_user_tool_source(citations=[])
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("citation" in e for e in errors)
+
+    def test_validator_accepts_doi_and_bibtex(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        bibtex = "@article{smith2020,\n  title = {A Tool},\n  author = {Smith, J.},\n  year = {2020}\n}"
+        tool = _make_user_tool_source(
+            citations=[
+                {"type": "doi", "content": "10.1093/bioinformatics/btab456"},
+                {"type": "bibtex", "content": bibtex},
+            ]
+        )
+        assert validate_user_tool_source(tool) is None
+
+    def test_validator_rejects_malformed_container(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(container="not a valid !!! image string")
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert any("container" in e for e in errors)
+
+    def test_validator_rejects_empty_required_fields(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        # name is the only field that pydantic strictly requires non-empty;
+        # version and description default to None at the model level. The
+        # validator must still flag empty/whitespace strings.
+        tool = _make_user_tool_source(name="   ", version="", description="   ")
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        joined = "\n".join(errors)
+        assert "name" in joined
+        assert "version" in joined
+        assert "description" in joined
+
+    def test_validator_returns_multiple_errors(self):
+        from galaxy.agents.validators import validate_user_tool_source
+
+        tool = _make_user_tool_source(
+            id="Bad-ID",
+            container="",
+            citations=[],
+            shell_command="echo '$(inputs.nope)' > out.txt",
+        )
+        errors = validate_user_tool_source(tool)
+        assert errors is not None
+        assert len(errors) >= 4
+        joined = "\n".join(errors)
+        assert "Bad-ID" in joined
+        assert "container" in joined
+        assert "citation" in joined
+        assert "nope" in joined
+
+
+class TestCustomToolAgentValidation:
+    """Integration: CustomToolAgent surfaces validator failures as low-confidence."""
+
+    def setup_method(self):
+        self.mock_config = mock.Mock()
+        self.mock_config.ai_api_key = "test-key"
+        self.mock_config.ai_model = "gpt-4o"
+        self.mock_config.ai_api_base_url = "http://localhost:4000/v1/"
+
+        self.mock_user = mock.Mock()
+        self.mock_user.id = 1
+        self.mock_user.username = "test_user"
+
+        self.mock_trans = mock.Mock()
+        self.mock_trans.app.config = self.mock_config
+        self.mock_trans.user = self.mock_user
+
+        self.deps = GalaxyAgentDependencies(
+            trans=self.mock_trans,
+            user=self.mock_user,
+            config=self.mock_config,
+            get_agent=agent_registry.get_agent,
+            job_manager=None,
+        )
+
+    @pytest.mark.asyncio
+    async def test_custom_tool_agent_surfaces_validation_errors(self):
+        agent = CustomToolAgent(self.deps)
+
+        broken_tool = UserToolSource(
+            **{
+                "class": "GalaxyUserTool",
+                "id": "Broken-Tool",  # bad id format
+                "name": "Broken",
+                "version": "0.1.0",
+                "description": "broken",
+                "container": "ubuntu:latest",
+                "shell_command": "echo '$(inputs.missing)'",
+                "inputs": [],
+                "outputs": [],
+                # no citations on purpose
+            }
+        )
+
+        with mock.patch.object(agent.agent, "run") as mock_run:
+            mock_result = mock.Mock()
+            mock_result.output = broken_tool
+            mock_run.return_value = mock_result
+
+            response = await agent.process("Create a tool")
+
+        assert response.confidence == ConfidenceLevel.LOW
+        assert response.metadata.get("error") == "validation_failed"
+        assert response.metadata.get("method") == "validation_error"
+        validation_errors = response.metadata.get("validation_errors")
+        assert isinstance(validation_errors, list) and validation_errors
+        # The original tool yaml should still be in metadata for diagnosis.
+        assert response.metadata.get("tool_yaml")
+        # User-facing content names at least one of the issues.
+        assert "missing" in response.content or "Broken-Tool" in response.content
 
 
 @pytestmark_live_llm
