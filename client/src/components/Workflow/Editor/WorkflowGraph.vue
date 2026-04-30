@@ -4,16 +4,16 @@ import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useD3Zoom } from "@/composables/d3Zoom";
+import { useViewportBoundingBox } from "@/composables/viewportBoundingBox";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import type { Vector } from "@/utils/geometry";
 
-import { useD3Zoom } from "./composables/d3Zoom";
 import { useFocusedNodes } from "./composables/useFocusedNodes";
-import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
 import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
-import type { Vector } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
@@ -23,11 +23,11 @@ import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
 import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
 import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
+import ZoomControl from "@/components/Graph/ZoomControl.vue";
 import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "stepClicked"]);
 const props = defineProps({
@@ -59,7 +59,7 @@ const {
     setZoom,
     moveTo,
     setTransform: d3SetTransform,
-} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, props.initialPosition);
+} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, props.initialPosition);
 
 watch(
     () => transform.value,

@@ -48,6 +48,7 @@ from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
 )
+from galaxy.schema.history_graph import HistoryGraphResponse
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -356,6 +357,56 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, history_id)
+
+    @router.get(
+        "/api/histories/{history_id}/graph",
+        summary="Returns a history-scoped structural graph.",
+    )
+    def graph(
+        self,
+        history_id: HistoryIDPathParam,
+        limit: int = Query(
+            default=500,
+            description="Maximum number of nodes. Applied at history scope.",
+            ge=1,
+            le=2000,
+        ),
+        include_deleted: bool = Query(
+            default=False,
+            description="Include deleted datasets and collections.",
+        ),
+        seed: Optional[str] = Query(
+            default=None,
+            description="Optional: focus on subgraph reachable from this node (e.g. d<encoded_id>).",
+            pattern=r"^[dcr].+$",
+        ),
+        direction: Literal["backward", "forward", "both"] = Query(
+            default="both",
+            description="Direction for seed-based subgraph extraction.",
+        ),
+        depth: int = Query(
+            default=20,
+            description="Max depth for seed-based subgraph extraction.",
+            ge=1,
+            le=20,
+        ),
+        seed_scope: Optional[str] = Query(
+            default=None,
+            description="Center the selection window on this item. Format: d{encoded_id} or c{encoded_id}.",
+            pattern=r"^[dc].+$",
+        ),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> HistoryGraphResponse:
+        return self.service.graph(
+            trans,
+            history_id,
+            limit=limit,
+            include_deleted=include_deleted,
+            seed=seed,
+            direction=direction,
+            depth=depth,
+            seed_scope=seed_scope,
+        )
 
     @router.post(
         "/api/histories/{history_id}/prepare_store_download",

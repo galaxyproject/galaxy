@@ -2,6 +2,7 @@
 import {
     faArchive,
     faBars,
+    faBezierCurve,
     faBurn,
     faClone,
     faColumns,
@@ -229,6 +230,11 @@ watch(
                 :to="`/histories/${history.id}/invocations`">
                 <FontAwesomeIcon fixed-width :icon="faList" />
                 <span v-localize>Show Invocations</span>
+            </BDropdownItem>
+
+            <BDropdownItem :title="localize('View History Graph')" :to="`/histories/${history.id}/graph`">
+                <FontAwesomeIcon fixed-width :icon="faBezierCurve" />
+                <span v-localize>Show History Graph</span>
             </BDropdownItem>
 
             <BDropdownDivider />

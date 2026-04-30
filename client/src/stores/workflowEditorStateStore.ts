@@ -1,9 +1,9 @@
 import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed, reactive, ref, set, type UnwrapRef } from "vue";
 
-import type { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import reportDefault from "@/components/Workflow/Editor/reportDefault";
+import type { Rectangle } from "@/utils/geometry";
 
 import { defineScopedStore } from "./scopedStore";
 

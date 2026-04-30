@@ -25,11 +25,18 @@ const expectedOptions = [
     "Archive History",
     "Extract Workflow",
     "Show Invocations",
+    "Show History Graph",
     "Share & Manage Access",
 ];
 
 // options enabled for logged-out users
-const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool References", "Export History to File"];
+const anonymousOptions = [
+    "Resume Paused Jobs",
+    "Delete History",
+    "Export Tool References",
+    "Export History to File",
+    "Show History Graph",
+];
 
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));

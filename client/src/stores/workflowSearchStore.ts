@@ -1,6 +1,5 @@
 import { ref } from "vue";
 
-import { type Rectangle, Transform } from "@/components/Workflow/Editor/modules/geometry";
 import { defineScopedStore } from "@/stores/scopedStore";
 import { useUndoRedoStore } from "@/stores/undoRedoStore";
 import {
@@ -17,6 +16,7 @@ import {
     useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
+import { type Rectangle, Transform } from "@/utils/geometry";
 
 export type SearchData =
     | {
