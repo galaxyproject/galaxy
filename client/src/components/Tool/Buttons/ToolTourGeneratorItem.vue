@@ -5,7 +5,7 @@ import { BDropdownItem } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
-import { ERROR_STATES } from "@/api/jobs";
+import { TERMINAL_DATASET_STATES } from "@/api/datasets";
 import { generateTour, type GenerateTourResponse } from "@/api/tours";
 import { Toast } from "@/composables/toast";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
@@ -71,7 +71,7 @@ const allStatesOk = computed(() => {
 
 /** Checks if any of the states are invalid. */
 const anyStateInvalid = computed(() => {
-    return states.value.some((state) => state && ERROR_STATES.includes(state));
+    return states.value.some((state) => state !== "ok" && TERMINAL_DATASET_STATES.includes(state));
 });
 
 const waitedForItemsOk = computed<boolean>(() => localTourData.value !== null && allStatesOk.value);
