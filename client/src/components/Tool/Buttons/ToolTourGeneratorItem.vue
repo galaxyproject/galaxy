@@ -6,7 +6,7 @@ import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
 import { ERROR_STATES } from "@/api/jobs";
-import { generateTour, type TourDetails } from "@/api/tours";
+import { generateTour, type GenerateTourResponse } from "@/api/tours";
 import { Toast } from "@/composables/toast";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -28,7 +28,7 @@ const { currentHistoryId } = storeToRefs(useHistoryStore());
 const historyItemsStore = useHistoryItemsStore();
 
 const generatingTour = ref(false);
-const localTourData = ref<{ tour: TourDetails; hids: number[] } | null>(null);
+const localTourData = ref<GenerateTourResponse | null>(null);
 
 const generatedTourId = computed(() => `tool-generated-${props.toolId}-${props.toolVersion}`);
 
@@ -40,9 +40,8 @@ async function clickGenerateTour() {
     generatingTour.value = true;
 
     try {
-        const { tour, uploaded_hids, use_datasets } = await generateTour(props.toolId, props.toolVersion);
-        localTourData.value = { tour, hids: use_datasets ? uploaded_hids : [] };
-        if (!uploaded_hids.length) {
+        localTourData.value = await generateTour(props.toolId, props.toolVersion);
+        if (!localTourData.value.uses_input_data) {
             generatingTour.value = false;
         } else {
             Toast.info("This tour waits for history datasets to be ready.", "Please wait");
@@ -57,12 +56,12 @@ const states = computed(() => {
     if (!currentHistoryId.value || localTourData.value === null) {
         return [];
     }
-    const stateDict = historyItemsStore.getStatesForHids(currentHistoryId.value, localTourData.value.hids);
+    const stateDict = historyItemsStore.getStatesForHids(currentHistoryId.value, localTourData.value.uploaded_hids);
     return Object.values(stateDict);
 });
 
 const allStatesOk = computed(() => {
-    if (localTourData.value?.hids.length && states.value.length === 0) {
+    if (localTourData.value?.uses_input_data && localTourData.value.uploaded_hids.length && states.value.length === 0) {
         // If there are HIDs but no states, it means the history has not loaded these items yet
         return false;
     }

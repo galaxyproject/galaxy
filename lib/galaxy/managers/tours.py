@@ -1,6 +1,7 @@
 import os
 from typing import (
     Any,
+    cast,
 )
 
 from webob.compat import cgi_FieldStorage
@@ -9,13 +10,22 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
+from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+)
 from galaxy.schema.schema import GenerateTourResponse
 from galaxy.schema.tours import (
     TourDetails,
     TourStep,
 )
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.parser.interface import (
+    TestCollectionDef,
+    ToolSourceTestInput,
+)
 from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tools import Tool
 from galaxy.tools.parameters.grouping import Conditional
@@ -53,11 +63,14 @@ class ToursManager:
 class TourGenerator:
     def __init__(self, trans: ProvidesHistoryContext, tool_id: str, tool_version: str, performs_upload=True) -> None:
         self._trans = trans
+        self._collection_manager: DatasetCollectionManager = self._trans.app.dataset_collection_manager
         self._tool: Tool = self._get_and_ensure_tool(tool_id, tool_version)
-        self._use_datasets = True
+        self._uses_input_data = True
         self._data_inputs: dict[str, Any] = {}
+        self._data_collection_inputs: dict[str, Any] = {}
         self._tour: TourDetails | None = None
         self._hids: dict[str, Any] = {}
+        self._uploaded_hids: list[int] = []
         self._test: ToolTestDescription
         self._upload_test_data(performs_upload=performs_upload)
         self._generate_tour(performs_upload=performs_upload)
@@ -78,11 +91,14 @@ class TourGenerator:
             raise RequestParameterInvalidException("Tests are not defined.")
         self._test = self._tool.tests[0]
 
-        if any(v.type in ("repeat", "data_collection") for v in self._tool.inputs.values()):
+        if any(v.type == "repeat" for v in self._tool.inputs.values()):
             raise RequestParameterInvalidException("Not supported input types.")
 
         # All inputs with the type 'data'
         self._data_inputs = {x.name: x for x in self._tool.input_params if x.type == "data"}
+        # All inputs with the type 'data_collection'
+        self._data_collection_inputs = {x.name: x for x in self._tool.input_params if x.type == "data_collection"}
+
         # Datasets from the <test></test> section
         test_datasets = {
             input_name: self._test.inputs[input_name][0]
@@ -96,51 +112,103 @@ class TourGenerator:
                 if input_name in self._data_inputs.keys():
                     test_datasets.update({input_name: self._test.inputs[name][0]})
 
-        # Some tests don't have data inputs at all,
-        # so we can generate a tour without them
-        if not test_datasets.keys() or not performs_upload:
-            self._use_datasets = False
+        # Some tests don't have data inputs at all, so we can generate a tour without them
+        has_collection_inputs = bool(
+            self._data_collection_inputs and any(name in self._test.inputs for name in self._data_collection_inputs)
+        )
+        if (not test_datasets and not has_collection_inputs) or not performs_upload:
+            self._uses_input_data = False
             return
 
         # Upload all test datasets
         for input_name, input in self._data_inputs.items():
             if input_name in test_datasets.keys():
-                filename = test_datasets[input_name]
-                input_path = self._tool.test_data_path(filename)
-                if not input_path:
-                    raise ObjectNotFound(f'Test dataset "{input_name}" doesn\'t exist.')
-                upload_tool: Tool = self._get_and_ensure_tool("upload1", None)
-                filename = os.path.basename(input_path)
-                with open(input_path, "rb") as f:
-                    content = f.read()
-                    headers = {
-                        "content-disposition": 'form-data; name="{}"; filename="{}"'.format(
-                            "files_0|file_data", filename
-                        ),
-                    }
-                    input_file = cgi_FieldStorage(headers=headers)
-                    input_file.file = input_file.make_file()
-                    input_file.file.write(content)
+                # Use "auto" for generic 'data' extensions, otherwise use the specific extension
+                file_type = input.extensions[0] if input.extensions[0] != "data" else "auto"
+                hda = self._upload_single_dataset(test_datasets[input_name], file_type)
+                self._hids[input_name] = hda.hid
+                if hda.hid:
+                    self._uploaded_hids.append(hda.hid)
 
-                    # Use "auto" for generic 'data' extensions, otherwise use the specific extension
-                    file_type = input.extensions[0] if input.extensions[0] != "data" else "auto"
+        # Create test collections for data_collection inputs
+        self._create_test_collections()
 
-                    inputs = {
-                        "dbkey": "?",  # is it always a question mark?
-                        "file_type": file_type,
-                        "files_0|type": "upload_dataset",
-                        "files_0|space_to_tab": None,
-                        "files_0|to_posix_lines": "Yes",
-                        "files_0|file_data": input_file,
-                    }
-                    params = Params(inputs, sanitize=False)
-                    incoming = params.__dict__
-                    output = upload_tool.handle_input(self._trans, incoming, history=None)
-                    job_errors = output.get("job_errors", [])
-                    if job_errors:
-                        raise RequestParameterInvalidException("Cannot upload a dataset.")
-                    else:
-                        self._hids.update({input_name: output["out_data"][0][1].hid})
+    def _upload_single_dataset(self, filename: str, file_type: str = "auto") -> HistoryDatasetAssociation:
+        """Upload a single file by name and return the resulting HDA."""
+        input_path = self._tool.test_data_path(filename)
+        if not input_path:
+            raise ObjectNotFound(f'Test dataset "{filename}" doesn\'t exist.')
+        upload_tool: Tool = self._get_and_ensure_tool("upload1", None)
+        basename = os.path.basename(input_path)
+        with open(input_path, "rb") as f:
+            content = f.read()
+        headers = {
+            "content-disposition": 'form-data; name="{}"; filename="{}"'.format("files_0|file_data", basename),
+        }
+        input_file = cgi_FieldStorage(headers=headers)
+        input_file.file = input_file.make_file()
+        input_file.file.write(content)
+        inputs = {
+            "dbkey": "?",
+            "file_type": file_type,
+            "files_0|type": "upload_dataset",
+            "files_0|space_to_tab": None,
+            "files_0|to_posix_lines": "Yes",
+            "files_0|file_data": input_file,
+        }
+        params = Params(inputs, sanitize=False)
+        output = upload_tool.handle_input(self._trans, params.__dict__, history=None)
+        if output.get("job_errors"):
+            raise RequestParameterInvalidException(f'Cannot upload dataset "{filename}".')
+        out_data = cast(list[tuple[str, HistoryDatasetAssociation]], output["out_data"])
+        return out_data[0][1]
+
+    def _build_collection_elements(self, elements_def: list) -> dict:
+        """Recursively build an elements dict for DatasetCollectionManager from a test collection definition."""
+
+        elements = {}
+        for element in elements_def:
+            identifier: str = element["element_identifier"]
+            element_def: TestCollectionDef | ToolSourceTestInput = element["element_definition"]
+            if isinstance(element_def, TestCollectionDef):
+                # Nested collection — recurse and wrap in a DatasetCollection
+                sub_elements = self._build_collection_elements(element_def.elements)
+                elements[identifier] = self._collection_manager.create_dataset_collection(
+                    trans=self._trans,
+                    collection_type=element_def.collection_type,
+                    elements=sub_elements,
+                    hide_source_items=True,
+                )
+            else:
+                # Leaf dataset — upload the file
+                hda = self._upload_single_dataset(str(element_def["value"] or element_def["name"]))
+                elements[identifier] = hda
+        return elements
+
+    def _create_test_collections(self):
+        """Create HDCA collections in the current history for each data_collection input defined in the test."""
+
+        for input_name in self._data_collection_inputs:
+            if input_name not in self._test.inputs:
+                continue
+            coll_def = self._test.inputs[input_name]
+            if not isinstance(coll_def, TestCollectionDef):
+                continue
+            elements = self._build_collection_elements(coll_def.elements)
+            hdca = cast(
+                HistoryDatasetCollectionAssociation,
+                self._collection_manager.create(
+                    trans=self._trans,
+                    parent=self._trans.history,
+                    name=input_name,
+                    collection_type=coll_def.collection_type,
+                    elements=elements,
+                    hide_source_items=True,
+                ),
+            )
+            self._hids[input_name] = hdca.hid
+            if hdca.hid:
+                self._uploaded_hids.append(hdca.hid)
 
     def _generate_tour(self, performs_upload=True):
         """Generate a tour."""
@@ -222,6 +290,13 @@ class TourGenerator:
                     step.content = f"Select dataset: <b>{hid}: {dataset}</b>"
                 else:
                     step.content = "Select a dataset"
+                step.stops_autoplay = True
+            elif input.type == "data_collection":
+                if name in self._hids and performs_upload:
+                    hid = self._hids[name]
+                    step.content = f"Select collection: <b>{hid}: {name}</b>"
+                else:
+                    step.content = "Select a collection"
                 step.stops_autoplay = True
             elif input.type == "conditional":
                 assert isinstance(input, Conditional)
@@ -331,7 +406,7 @@ class TourGenerator:
         the generated tour.
         """
         return GenerateTourResponse(
-            use_datasets=self._use_datasets,
-            uploaded_hids=list(self._hids.values()),
+            uses_input_data=self._uses_input_data,
+            uploaded_hids=self._uploaded_hids,
             tour=self._tour,
         )

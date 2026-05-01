@@ -4079,10 +4079,10 @@ class ChatExchangeBatchDeletePayload(Model):
 
 
 class GenerateTourResponse(Model):
-    use_datasets: bool = Field(
+    uses_input_data: bool = Field(
         ...,
-        title="Use Datasets",
-        description="Indicates whether the tour should use (and wait for) datasets.",
+        title="Uses Input Data",
+        description="Indicates whether the tour should use (and wait for) dataset/collection inputs to be uploaded.",
     )
     uploaded_hids: list[int] = Field(
         ...,

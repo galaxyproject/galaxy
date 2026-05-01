@@ -13673,10 +13673,10 @@ export interface components {
              */
             uploaded_hids: number[];
             /**
-             * Use Datasets
-             * @description Indicates whether the tour should use (and wait for) datasets.
+             * Uses Input Data
+             * @description Indicates whether the tour should use (and wait for) dataset/collection inputs to be uploaded.
              */
-            use_datasets: boolean;
+            uses_input_data: boolean;
         };
         /** GenomeBuildParameterModel */
         GenomeBuildParameterModel: {
