@@ -489,6 +489,8 @@ class SerializationOptions:
             ret_val["encoded_id"] = obj.temp_id
 
     def get_identifier(self, id_encoder, obj):
+        if obj is None:
+            return None
         if self.for_edit and obj.id:
             return obj.id
         elif obj.id:
