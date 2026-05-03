@@ -37,7 +37,7 @@ class ContainerRequirement(ToolSourceBaseModel):
 class PackageRequirement(Requirement):
     type: Literal["package"]
     name: str
-    version: Optional[str]
+    version: Optional[str] = None
 
 
 class SetEnvironmentRequirement(Requirement):
@@ -55,26 +55,29 @@ ram_max_description = "Maximum reserved RAM in mebibytes (2**20)."
 ram_description = """May be a fractional value. If so, the actual RAM request is rounded up to the next whole number. The reported amount of RAM reserved for the process is a non-zero integer."""
 
 
+ResourceRequirementValue = Union[int, float, str, None]
+
+
 class ResourceRequirement(ToolSourceBaseModel):
     type: Literal["resource"]
     cores_min: Annotated[
-        Union[int, float, None], Field(description=f"{cores_min_description}\n{cores_description}")
+        ResourceRequirementValue, Field(description=f"{cores_min_description}\n{cores_description}")
     ] = 1
     cores_max: Annotated[
-        Union[int, float, None], Field(description=f"{cores_max_description}\n{cores_description}")
+        ResourceRequirementValue, Field(description=f"{cores_max_description}\n{cores_description}")
     ] = None
-    ram_min: Annotated[Union[int, float, None], Field(description=f"{ram_min_description}\n{ram_description}")] = 256
-    ram_max: Annotated[Union[int, float, None], Field(description=f"{ram_max_description}\n{ram_description}")] = None
-    tmpdir_min: Optional[Union[int, float]] = None
-    tmpdir_max: Optional[Union[int, float]] = None
-    cuda_version_min: Optional[Union[int, float]] = None
-    cuda_compute_capability: Optional[Union[int, float]] = None
-    gpu_memory_min: Optional[Union[int, float]] = None
-    cuda_device_count_min: Optional[Union[int, float]] = None
-    cuda_device_count_max: Optional[Union[int, float]] = None
-    shm_size: Optional[Union[int, float]] = None
+    ram_min: Annotated[ResourceRequirementValue, Field(description=f"{ram_min_description}\n{ram_description}")] = 256
+    ram_max: Annotated[ResourceRequirementValue, Field(description=f"{ram_max_description}\n{ram_description}")] = None
+    tmpdir_min: ResourceRequirementValue = None
+    tmpdir_max: ResourceRequirementValue = None
+    cuda_version_min: ResourceRequirementValue = None
+    cuda_compute_capability: ResourceRequirementValue = None
+    gpu_memory_min: ResourceRequirementValue = None
+    cuda_device_count_min: ResourceRequirementValue = None
+    cuda_device_count_max: ResourceRequirementValue = None
+    shm_size: ResourceRequirementValue = None
     timelimit: Annotated[
-        Union[int, float, None],
+        ResourceRequirementValue,
         Field(description="Maximum time in seconds the tool is allowed to run. Job will be terminated if exceeded."),
     ] = None
 
@@ -150,6 +153,29 @@ class Citation(ToolSourceBaseModel):
 class HelpContent(ToolSourceBaseModel):
     format: Literal["restructuredtext", "plain_text", "markdown"]
     content: str
+
+
+StdioExitCodeRangeValue = Union[int, float, Literal["-inf", "inf"]]
+
+
+class StdioExitCode(ToolSourceBaseModel):
+    range_start: StdioExitCodeRangeValue
+    range_end: StdioExitCodeRangeValue
+    error_level: Union[int, float]
+    desc: Optional[str] = None
+
+
+class StdioRegex(ToolSourceBaseModel):
+    match: str
+    stdout_match: bool
+    stderr_match: bool
+    error_level: Union[int, float]
+    desc: Optional[str] = None
+
+
+class Stdio(ToolSourceBaseModel):
+    exit_codes: List[StdioExitCode] = Field(default_factory=list)
+    regexes: List[StdioRegex] = Field(default_factory=list)
 
 
 class OutputCompareType(str, Enum):

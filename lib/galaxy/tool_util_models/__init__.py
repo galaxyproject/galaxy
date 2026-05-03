@@ -43,11 +43,15 @@ from .tool_outputs import (
 )
 from .tool_source import (
     Citation,
+    Container,
     ContainerRequirement,
     HelpContent,
     JavascriptRequirement,
     OutputCompareType,
+    PackageRequirement,
     ResourceRequirement,
+    SetEnvironmentRequirement,
+    Stdio,
     XrefDict,
     YamlTemplateConfigFile,
 )
@@ -160,6 +164,11 @@ class ParsedTool(ToolSourceBaseModel):
     version: Optional[str]
     name: str
     description: Optional[str]
+    requirements: List[
+        Union[PackageRequirement, SetEnvironmentRequirement, ResourceRequirement, JavascriptRequirement]
+    ] = Field(default_factory=list)
+    containers: List[Container] = Field(default_factory=list)
+    stdio: Stdio = Field(default_factory=Stdio)
     inputs: List[ToolParameterT]
     outputs: List[ToolOutput]
     citations: List[Citation]
