@@ -18,8 +18,10 @@ export const legacyAliases = {
     jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
     storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
 
-    // Vue
-    vue: path.join(__dirname, "node_modules/vue/dist/vue.esm.js"),
+    // Vue — point at @vue/compat for the Vue 2 → 3 migration. The compat
+    // build is Vue 3 with Vue 2 behavior emulation; replacing this path
+    // with the plain Vue 3 build will break SFCs still using Vue 2 syntax.
+    vue: path.join(__dirname, "node_modules/@vue/compat/dist/vue.esm-bundler.js"),
 
     // Build config
     config: path.join(scriptsBase, "config", process.env.NODE_ENV || "development") + ".js",
