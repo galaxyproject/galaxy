@@ -5,7 +5,6 @@ import os
 import string
 import time
 from collections import namedtuple
-from collections.abc import Iterator
 from errno import ENOENT
 from typing import (
     Any,
@@ -30,7 +29,6 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.util import (
-    Element,
     etree,
     ExecutionTimer,
     listify,
@@ -39,7 +37,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.path import StrPath
 from .filters import FilterFactory
 from .integrated_panel import ManagesIntegratedToolPanelMixin
 from .lineages import LineageMap
@@ -88,6 +85,8 @@ if TYPE_CHECKING:
 
     # both web transactions and FastAPI/agents request contexts render tool panels
     PanelViewTrans: TypeAlias = "GalaxyWebTransaction | SessionRequestContext"
+    from galaxy.util import Element
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -170,47 +169,6 @@ class ToolLoadError(Exception):
 
 class ToolLoadConfigurationConflict(Exception):
     pass
-
-
-def walk_tool_directories(directory: StrPath, recursive: bool) -> Iterator[tuple[str, list[str]]]:
-    """Yield ``(directory, files)`` for ``directory`` and, when ``recursive``,
-    each subdirectory - skipping hidden/private (``.``/``_`` prefixed) entries.
-
-    ``files`` are candidate tool file paths in sorted order; filtering them
-    (e.g. via ``looks_like_a_tool``) is the caller's responsibility.
-    """
-    files = []
-    subdirs = []
-    for name in sorted(os.listdir(directory)):
-        if name.startswith((".", "_")):
-            # Very unlikely that we want to load tools from a hidden or private folder
-            continue
-        child = os.path.join(str(directory), name)
-        if os.path.isdir(child):
-            subdirs.append(child)
-        else:
-            files.append(child)
-    yield str(directory), files
-    if recursive:
-        for subdir in subdirs:
-            yield from walk_tool_directories(subdir, recursive)
-
-
-def resolve_tool_path(tool_path: str | None, config_filename: str, default_tool_path: "StrPath | None" = None) -> str:
-    """Resolve a tool conf's ``tool_path`` attribute to the directory its tool
-    files are relative to.
-
-    Expands the ``${tool_conf_dir}`` template; falls back to
-    ``default_tool_path`` (the toolbox's ``tool_root_dir``, i.e.
-    ``config.tool_path``) when the conf doesn't set one.
-    """
-    if not tool_path:
-        # Default to backward compatible config setting.
-        return str(default_tool_path) if default_tool_path else ""
-    # Allow use of ${tool_conf_dir} in toolbox config files.
-    tool_conf_dir = os.path.dirname(config_filename)
-    tool_path_vars = {"tool_conf_dir": tool_conf_dir}
-    return string.Template(tool_path).safe_substitute(tool_path_vars)
 
 
 class AbstractToolBox(ManagesIntegratedToolPanelMixin):
@@ -333,7 +291,11 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self.__default_panel_view
 
-    def create_tool(self, config_file: StrPath, **kwds: Any) -> "Tool":
+    def default_panel_view(self, trans):
+        """Public accessor for the default tool panel view name."""
+        return self._default_panel_view(trans)
+
+    def create_tool(self, config_file: "StrPath", **kwds) -> "Tool":
         raise NotImplementedError()
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
@@ -427,7 +389,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             config_elems = []
         tool_conf_type = "shed tool" if parsing_shed_tool_conf else "tool"
         log.debug("Tool path for %s configuration %s is %s", tool_conf_type, config_filename, tool_path)
-        tool_path = resolve_tool_path(tool_path, config_filename, self._tool_root_dir)
+        tool_path = self.__resolve_tool_path(tool_path, config_filename)
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self._integrated_tool_panel_config_has_contents
         for item in tool_conf_source.parse_items():
@@ -601,6 +563,17 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
     def get_section_for_tool(self, tool) -> tuple[str, str] | tuple[None, None]:
         tool_id = tool.id
         return self._tool_panel.get_section_for_tool_id(tool_id)
+
+    def __resolve_tool_path(self, tool_path, config_filename):
+        if not tool_path:
+            # Default to backward compatible config setting.
+            tool_path = self._tool_root_dir
+        else:
+            # Allow use of __tool_conf_dir__ in toolbox config files.
+            tool_conf_dir = os.path.dirname(config_filename)
+            tool_path_vars = {"tool_conf_dir": tool_conf_dir}
+            tool_path = string.Template(tool_path).safe_substitute(tool_path_vars)
+        return tool_path
 
     def add_tool_to_tool_panel_view(self, tool, view_panel_component):
         self.__add_tool_to_tool_panel(tool, view_panel_component)
@@ -1036,7 +1009,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             log.exception("Error reading tool from path: %s", path)
 
     def get_tool_repository_from_xml_item(
-        self, elem: Element, path: str
+        self, elem: "Element", path: str
     ) -> Union[ToolConfRepository, "ToolShedRepository"]:
         tool_shed_el = elem.find("tool_shed")
         assert tool_shed_el is not None
@@ -1195,14 +1168,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
     def __watch_directory(
         self,
-        directory: StrPath,
-        elems: ToolPanelElements,
-        integrated_elems: ToolPanelElements,
+        directory: "StrPath",
+        elems,
+        integrated_elems,
         load_panel_dict: bool,
         recursive: bool,
         force_watch: bool = False,
     ) -> None:
-        def quick_load(tool_file: StrPath, async_load: bool = True) -> str | None:
+        def quick_load(tool_file: "StrPath", async_load: bool = True) -> str | None:
             if not self._looks_like_a_tool(str(tool_file)):
                 return None
             try:
@@ -1227,24 +1200,30 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 log.exception("Failed to load potential tool %s.", tool_file)
             return None
 
+        tool_loaded = False
         if not os.path.isdir(directory):
             log.error("Failed to read tool directory %s.", directory)
             return
-        for dirpath, files in walk_tool_directories(directory, recursive):
-            tool_loaded = False
-            for child_path in files:
-                if self._looks_like_a_tool(child_path):
-                    tool_loaded = bool(quick_load(child_path, async_load=False)) or tool_loaded
-            if (tool_loaded or (force_watch and dirpath == str(directory))) and self._tool_watcher:
-                self._tool_watcher.watch_directory(dirpath, quick_load)
+        for name in os.listdir(directory):
+            if name.startswith((".", "_")):
+                # Very unlikely that we want to load tools from a hidden or private folder
+                continue
+            child_path = os.path.join(directory, name)
+            if os.path.isdir(child_path) and recursive:
+                self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
+            elif self._looks_like_a_tool(child_path):
+                tool_id = quick_load(child_path, async_load=False)
+                tool_loaded = bool(tool_id)
+        if (tool_loaded or force_watch) and self._tool_watcher:
+            self._tool_watcher.watch_directory(directory, quick_load)
 
     def load_tool(
         self,
-        config_file: StrPath,
-        guid: str | None = None,
-        tool_shed_repository: "ToolConfRepository | ToolShedRepository | None" = None,
+        config_file: "StrPath",
+        guid=None,
+        tool_shed_repository=None,
         use_cached: bool = False,
-        **kwds: Any,
+        **kwds,
     ) -> "Tool":
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
@@ -1279,12 +1258,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             if self._tool_config_watcher:
                 [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
 
-    def add_tool_to_cache(self, tool: "Tool", config_file: StrPath) -> None:
+    def add_tool_to_cache(self, tool: "Tool", config_file: "StrPath") -> None:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         if tool_cache:
             tool_cache.cache_tool(config_file, tool)
 
-    def load_tool_from_cache(self, config_file: StrPath, recover_tool: bool = False) -> Union["Tool", None]:
+    def load_tool_from_cache(self, config_file: "StrPath", recover_tool: bool = False) -> Union["Tool", None]:
         tool_cache: ToolCache | None = getattr(self.app, "tool_cache", None)
         tool = None
         if tool_cache:

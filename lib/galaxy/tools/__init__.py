@@ -76,6 +76,7 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.id_util import extract_tool_id_from_file
 from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tool_util.loader import (
     imported_macro_paths,
@@ -524,6 +525,8 @@ class ToolBox(AbstractToolBox):
         self, config_filenames: list[str], tool_root_dir, app, save_integrated_tool_panel: bool = True
     ) -> None:
         self._reload_count = 0
+        self._tools_loaded_from_store = 0
+        self._tools_parsed_from_file = 0
         self.tool_location_fetcher = ToolLocationFetcher()
         # This is here to deal with the old default value, which doesn't make
         # sense in an "installed Galaxy" world.
@@ -551,6 +554,35 @@ class ToolBox(AbstractToolBox):
             self.dependency_manager = old_toolbox.dependency_manager
         else:
             self._init_dependency_manager()
+
+        # Log tool loading summary
+        self._log_tool_loading_summary()
+
+    def _log_tool_loading_summary(self):
+        """Log a summary of how tools were loaded (from store vs parsed from file)."""
+        total_tools = len(self._tools_by_id)
+        store_count = self._tools_loaded_from_store
+        file_count = self._tools_parsed_from_file
+
+        if store_count > 0 or file_count > 0:
+            store = getattr(self.app, "tool_source_store", None)
+            backend = "unknown"
+            if store:
+                try:
+                    stats = store.get_stats()
+                    backend = stats.get("backend", "unknown")
+                except Exception:
+                    pass
+
+            if store_count > 0 and file_count == 0:
+                log.info(f"Loaded {total_tools} tools from tool source store ({backend}), 0 parsed from files")
+            elif store_count == 0:
+                log.info(f"Loaded {total_tools} tools by parsing from files (no store configured or empty)")
+            else:
+                log.info(
+                    f"Loaded {total_tools} tools: {store_count} from store ({backend}), "
+                    f"{file_count} parsed from files"
+                )
 
     def tool_tag_manager(self):
         if hasattr(self.app.config, "get_bool") and self.app.config.get_bool("enable_tool_tags", False):
@@ -620,20 +652,90 @@ class ToolBox(AbstractToolBox):
         return self._tools_by_id
 
     def create_tool(self, config_file: StrPath, **kwds) -> "Tool":
-        tool_source = self.get_expanded_tool_source(config_file)
+        # Pass guid to enable direct store lookup for shed tools
+        guid = kwds.get("guid")
+        tool_source = self.get_expanded_tool_source(config_file, tool_id=guid)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file: StrPath) -> ToolSource:
+    def get_expanded_tool_source(self, config_file: StrPath, tool_id: Optional[str] = None) -> ToolSource:
+        # Try to load from tool source store first (pre-parsed, macro-expanded)
+        tool_source = self._get_tool_source_from_store(config_file, tool_id=tool_id)
+        if tool_source is not None:
+            self._tools_loaded_from_store += 1
+            return tool_source
+
+        # Fall back to parsing from file
         try:
-            return get_tool_source(
+            tool_source = get_tool_source(
                 config_file,
                 enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False),
                 tool_location_fetcher=self.tool_location_fetcher,
             )
+            self._tools_parsed_from_file += 1
+            return tool_source
         except Exception as e:
             # capture and log parsing errors
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
+
+    def _get_tool_source_from_store(self, config_file: StrPath, tool_id: Optional[str] = None) -> Optional[ToolSource]:
+        """
+        Try to load tool source from the pre-parsed store.
+
+        Args:
+            config_file: Path to the tool XML file.
+            tool_id: Optional tool ID (guid for shed tools) to look up directly.
+
+        Returns:
+            ToolSource if found in store, None otherwise.
+        """
+        store = getattr(self.app, "tool_source_store", None)
+        if store is None:
+            return None
+
+        stored = None
+
+        # If we have a tool_id, try direct lookup first (fastest)
+        if tool_id:
+            sources = store.get_by_tool_id(tool_id)
+            if sources:
+                # Get most recent version
+                stored = sources[0]
+
+        # If no tool_id or not found, try to match by tool_dir
+        if stored is None:
+            # Quick extraction of tool_id from raw XML without full macro expansion
+            try:
+                extracted_id = extract_tool_id_from_file(str(config_file), max_read=2000)
+                if extracted_id:
+                    sources = store.get_by_tool_id(extracted_id)
+                    if sources:
+                        # Check if any source matches this file's directory
+                        config_dir = str(Path(config_file).parent)
+                        for source in sources:
+                            if source.tool_dir == config_dir:
+                                stored = source
+                                break
+                        if stored is None:
+                            # Just use the first one if dir doesn't match
+                            stored = sources[0]
+            except Exception:
+                pass
+
+        if stored is None:
+            return None
+
+        # Create tool source from stored content
+        try:
+            tool_source = get_tool_source(
+                raw_tool_source=stored.raw_source,
+                tool_source_class=stored.tool_source_class,
+            )
+            log.debug(f"Loaded tool source from store: {stored.tool_id} ({config_file})")
+            return tool_source
+        except Exception as e:
+            log.warning(f"Error loading tool source from store for {config_file}: {e}")
+            return None
 
     def _create_tool_from_source(self, tool_source: ToolSource, **kwds):
         return create_tool_from_source(self.app, tool_source, **kwds)

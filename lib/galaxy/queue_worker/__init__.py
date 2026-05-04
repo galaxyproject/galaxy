@@ -288,12 +288,26 @@ def _get_new_toolbox(app: "UniverseApplication", save_integrated_tool_panel: boo
     """
     tool_configs = app.config.tool_configs
 
-    new_toolbox = ToolBox(
-        tool_configs,
-        app.config.tool_path,
-        app,
-        save_integrated_tool_panel=save_integrated_tool_panel,
-    )
+    new_toolbox: ToolBox
+    if getattr(app.config, "use_lazy_toolbox", False) and getattr(app, "tool_source_store", None) is not None:
+        # Lazy import: avoids circular import between galaxy.queue_worker and galaxy.tools.
+        from galaxy.tools.lazy_toolbox import LazyToolBox
+
+        new_toolbox = LazyToolBox(
+            config_filenames=tool_configs,
+            tool_root_dir=app.config.tool_path,
+            app=app,
+            tool_source_store=app.tool_source_store,
+            cache_size=getattr(app.config, "lazy_toolbox_cache_size", 500),
+            save_integrated_tool_panel=save_integrated_tool_panel,
+        )
+    else:
+        new_toolbox = ToolBox(
+            tool_configs,
+            app.config.tool_path,
+            app,
+            save_integrated_tool_panel=save_integrated_tool_panel,
+        )
     new_toolbox.data_manager_tools = app.toolbox.data_manager_tools
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
@@ -376,6 +390,29 @@ def reload_tour(app, **kwargs):
     path = kwargs.get("path")
     app.tour_registry.reload_tour(path)
     log.debug("Tour reloaded")
+
+
+def reload_tool_source_cache(app, **kwargs):
+    """
+    Reload the tool source cache/index.
+
+    This is typically triggered by an external process (like populate_store.py --watch)
+    when tool files change on disk.
+    """
+    from galaxy.tools.lazy_toolbox import LazyToolBox
+
+    log.debug("Executing tool source cache reload on '%s'", app.config.server_name)
+
+    # Invalidate the lazy toolbox cache if the active toolbox is a LazyToolBox.
+    toolbox = app.toolbox
+    if isinstance(toolbox, LazyToolBox):
+        toolbox.invalidate_index_cache()
+        log.info("Tool source index cache invalidated")
+
+    # Invalidate the tool source store cache if it exists
+    if app.tool_source_store is not None:
+        app.tool_source_store.invalidate_index_cache()
+        log.info("Tool source store cache invalidated")
 
 
 def __job_rule_module_names(app: "MinimalManagerApp"):
@@ -554,6 +591,7 @@ control_message_to_task = {
     "entry_point_update": entry_point_update,
     "subscribe_history_viewer": subscribe_history_viewer,
     "unsubscribe_history_viewer": unsubscribe_history_viewer,
+    "reload_tool_source_cache": reload_tool_source_cache,
 }
 
 
