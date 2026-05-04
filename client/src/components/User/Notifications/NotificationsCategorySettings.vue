@@ -6,7 +6,7 @@ import { snakeCaseToTitleCase } from "@/utils/strings";
 
 import NotificationsChannelSettings from "./NotificationsChannelSettings.vue";
 
-const categoryDescriptionMap: Record<NotificationCategory, string> = {
+const categoryDescriptionMap: Partial<Record<NotificationCategory, string>> = {
     message: `
         You will receive these notifications only when your Galaxy administrators send you a message.
         Please note that for certain critical or urgent messages, you will receive notifications even if you have disabled this channel.
@@ -15,8 +15,6 @@ const categoryDescriptionMap: Record<NotificationCategory, string> = {
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
     storage_operation:
         "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
-    tool_request:
-        "You will receive these notifications when a user submits a request for a new tool to be installed on the Galaxy instance.",
 };
 
 interface NotificationsCategorySettingsProps {
