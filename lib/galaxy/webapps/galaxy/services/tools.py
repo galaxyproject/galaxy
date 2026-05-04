@@ -7,6 +7,8 @@ from typing import (
     Any,
     cast,
     get_args,
+    Optional,
+    TYPE_CHECKING,
 )
 from uuid import UUID
 
@@ -64,6 +66,9 @@ from galaxy.tools.search import ToolBoxSearch
 from galaxy.util.path import safe_contains
 from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
+
+if TYPE_CHECKING:
+    from galaxy.tools.lazy_toolbox import LazyToolBox
 
 log = logging.getLogger(__name__)
 
@@ -553,3 +558,118 @@ class ToolsService(ServiceBase):
                 if os.path.exists(file_path):
                     return file_path
         return None
+
+    # === Batch Endpoint Methods (use lazy toolbox index when available) ===
+
+    def _get_lazy_toolbox(self, trans: ProvidesUserContext) -> Optional["LazyToolBox"]:
+        """Return the active toolbox if it's a LazyToolBox, else None."""
+        from galaxy.tools.lazy_toolbox import LazyToolBox
+
+        toolbox = trans.app.toolbox
+        return toolbox if isinstance(toolbox, LazyToolBox) else None
+
+    def get_tests_summary(self, trans: ProvidesUserContext) -> dict[str, dict[str, dict[str, Any]]]:
+        """
+        Get tests summary for all tools.
+
+        Uses the lazy toolbox index when available for O(1) access,
+        otherwise falls back to iterating over the traditional toolbox.
+
+        Returns:
+            Dictionary of {tool_id: {version: {tool_name, count}}}.
+        """
+        lazy_toolbox = self._get_lazy_toolbox(trans)
+        if lazy_toolbox and lazy_toolbox.tool_index:
+            return lazy_toolbox.tool_index.get_tests_summary()
+
+        # Fallback to traditional toolbox iteration
+        test_counts_by_tool: dict[str, dict] = {}
+        for _id, tool in trans.app.toolbox.tools():
+            if not tool.is_datatype_converter:
+                tests = tool.tests
+                if tests:
+                    if tool.id not in test_counts_by_tool:
+                        test_counts_by_tool[tool.id] = {}
+                    available_versions = test_counts_by_tool[tool.id]
+                    available_versions[tool.version] = {
+                        "tool_name": tool.name,
+                        "count": len(tests),
+                    }
+        return test_counts_by_tool
+
+    def get_all_requirements(self, trans: ProvidesUserContext) -> list[dict[str, Any]]:
+        """
+        Get all unique requirements from all tools.
+
+        Uses the lazy toolbox index when available for O(1) access.
+
+        Returns:
+            List of unique requirement dictionaries.
+        """
+        lazy_toolbox = self._get_lazy_toolbox(trans)
+        if lazy_toolbox and lazy_toolbox.tool_index:
+            return lazy_toolbox.tool_index.get_all_requirements()
+
+        # Fallback to traditional toolbox
+        return trans.app.toolbox.all_requirements
+
+    def get_panel_views(self, trans: ProvidesUserContext) -> dict[str, Any]:
+        """
+        Get panel views information.
+
+        Uses the lazy toolbox index when available.
+
+        Returns:
+            Dictionary with default_panel_view and views.
+        """
+        toolbox = trans.app.toolbox
+        lazy_toolbox = self._get_lazy_toolbox(trans)
+        if lazy_toolbox and lazy_toolbox.tool_index:
+            return {
+                "default_panel_view": toolbox.default_panel_view(trans),
+                "views": lazy_toolbox.tool_index.get_panel_views(),
+            }
+
+        # Fallback to traditional toolbox
+        return {
+            "default_panel_view": toolbox.default_panel_view(trans),
+            "views": toolbox.panel_view_dicts(),
+        }
+
+    def list_tools(
+        self,
+        trans: ProvidesUserContext,
+        in_panel: bool,
+        tool_help: bool,
+        view: Optional[str],
+    ) -> list[dict[str, Any]]:
+        """
+        List tools, preferring the lazy toolbox index when available for flat listings.
+
+        For panel listings or when the index is unavailable, falls back to the
+        traditional toolbox.
+        """
+        if not in_panel:
+            lazy_toolbox = self._get_lazy_toolbox(trans)
+            if lazy_toolbox and lazy_toolbox.tool_index:
+                entries = lazy_toolbox.tool_index.list_all()
+                return [entry.to_api_dict() for entry in entries]
+        return trans.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
+
+    def search_tools(
+        self,
+        trans: ProvidesUserContext,
+        query: str,
+        view: Optional[str] = None,
+        limit: int = 50,
+    ) -> list[str]:
+        """
+        Search tools, preferring the lazy toolbox index when available.
+
+        Returns a list of matching tool IDs.
+        """
+        lazy_toolbox = self._get_lazy_toolbox(trans)
+        if lazy_toolbox and lazy_toolbox.tool_index:
+            results = lazy_toolbox.tool_index.search(query, limit)
+            return [entry.id for entry in results]
+        return list(self._search(query, view) or [])

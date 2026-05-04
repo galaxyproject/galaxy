@@ -548,6 +548,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         :param q: if present search on the given query will be performed
         :param tool_id: if present the given tool_id will be searched for
                         all installed versions
+
+        Note: When lazy toolbox is enabled, search and flat listing use a
+        pre-computed index for O(1) access instead of iterating over all tools.
         """
 
         # Read params.
@@ -565,20 +568,19 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                     hits = favorites["tools"]
                 else:
                     hits = None
-            else:
-                hits = self.service._search(q, view)
-            results = []
-            if hits:
-                for hit in hits:
-                    try:
-                        tool = self.service._get_tool(trans, hit, user=trans.user)
-                        if tool:
-                            results.append(tool.id)
-                    except exceptions.AuthenticationFailed:
-                        pass
-                    except exceptions.ObjectNotFound:
-                        pass
-            return results
+                results = []
+                if hits:
+                    for hit in hits:
+                        try:
+                            tool = self.service._get_tool(trans, hit, user=trans.user)
+                            if tool:
+                                results.append(tool.id)
+                        except exceptions.AuthenticationFailed:
+                            pass
+                        except exceptions.ObjectNotFound:
+                            pass
+                return results
+            return self.service.search_tools(trans, q, view=view)
 
         # Find whether to detect.
         if tool_id:
@@ -587,7 +589,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
+            return self.service.list_tools(trans, in_panel=in_panel, tool_help=tool_help, view=view)
         except exceptions.MessageException:
             raise
         except Exception:
@@ -600,12 +602,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/tool_panels
         returns a dictionary of available tool panel views and default view
-        """
 
-        rval = {}
-        rval["default_panel_view"] = self.app.toolbox._default_panel_view(trans)
-        rval["views"] = self.app.toolbox.panel_view_dicts()
-        return rval
+        Note: When lazy toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access.
+        """
+        return self.service.get_panel_views(trans)
 
     @expose_api_anonymous_and_sessionless
     def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
@@ -716,20 +717,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         the tests.
 
         Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
+
+        Note: When lazy toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access instead of iterating over all tools.
         """
-        test_counts_by_tool: dict[str, dict] = {}
-        for _id, tool in self.app.toolbox.tools():
-            if not tool.is_datatype_converter:
-                tests = tool.tests
-                if tests:
-                    if tool.id not in test_counts_by_tool:
-                        test_counts_by_tool[tool.id] = {}
-                    available_versions = test_counts_by_tool[tool.id]
-                    available_versions[tool.version] = {
-                        "tool_name": tool.name,
-                        "count": len(tests),
-                    }
-        return test_counts_by_tool
+        return self.service.get_tests_summary(trans)
 
     @expose_api_anonymous_and_sessionless
     def test_data(self, trans: GalaxyWebTransaction, id, **kwd) -> list[ToolTestDescriptionDict]:
@@ -779,9 +771,11 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         GET /api/tools/all_requirements
         Return list of unique requirements for all tools.
-        """
 
-        return trans.app.toolbox.all_requirements
+        Note: When lazy toolbox is enabled, this endpoint uses a pre-computed index
+        for O(1) access instead of iterating over all tools.
+        """
+        return self.service.get_all_requirements(trans)
 
     @web.require_admin
     @expose_api
