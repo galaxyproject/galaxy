@@ -4,6 +4,7 @@ import { ref } from "vue";
 
 import { submitUserNotification } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
+import { isValidNetworkUrl } from "@/utils/url";
 
 import GModal from "@/components/BaseComponents/GModal.vue";
 import FormElement from "@/components/Form/FormElement.vue";
@@ -30,22 +31,14 @@ const urlError = ref("");
 
 const formValid = () => !!(toolName.value.trim() && description.value.trim());
 
-function validateUrl(): boolean {
+function validateToolUrl(): boolean {
     const url = toolUrl.value.trim();
-    if (!url) {
-        urlError.value = "";
-        return true;
-    }
-    try {
-        const parsed = new URL(url);
-        if (parsed.protocol !== "https:") {
-            urlError.value = "Only https:// URLs are allowed.";
-            return false;
-        }
-    } catch {
-        urlError.value = "Please enter a valid URL (e.g. https://example.com).";
+
+    if (url && (!url.startsWith("https://") || !isValidNetworkUrl(url))) {
+        urlError.value = "Only https:// URLs are allowed.";
         return false;
     }
+
     urlError.value = "";
     return true;
 }
@@ -73,7 +66,7 @@ async function submit() {
         return;
     }
 
-    if (!validateUrl()) {
+    if (!validateToolUrl()) {
         return;
     }
 
