@@ -15,6 +15,12 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
+    inputs:
+      use_lazy_toolbox:
+        description: "Run with use_lazy_toolbox=true (LazyToolBox)"
+        type: boolean
+        default: true
 env:
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
   GALAXY_TEST_DBURI: 'postgresql+psycopg://postgres:postgres@localhost:5432/galaxy?client_encoding=utf8'
@@ -48,6 +54,10 @@ jobs:
         run: |
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+      - if: github.event_name == 'workflow_dispatch' && inputs.use_lazy_toolbox
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_TOOL_SOURCE_STORE=database" >> $GITHUB_ENV
       - uses: actions/checkout@v7.0.0
         with:
           path: 'galaxy root'

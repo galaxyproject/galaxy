@@ -15,6 +15,12 @@ on:
   schedule:
     # Run at midnight UTC every Tuesday
     - cron: '0 0 * * 2'
+  workflow_dispatch:
+    inputs:
+      use_lazy_toolbox:
+        description: "Run with use_lazy_toolbox=true (LazyToolBox)"
+        type: boolean
+        default: true
 env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
@@ -88,6 +94,10 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_METADATA_STRATEGY=extended" >> $GITHUB_ENV
           # Skip outputs_to_working_directory: true in integration tests, doesn't work with pulsar
           # echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
+      - if: github.event_name == 'workflow_dispatch' && inputs.use_lazy_toolbox
+        run: |
+          echo "GALAXY_CONFIG_OVERRIDE_USE_LAZY_TOOLBOX=true" >> $GITHUB_ENV
+          echo "GALAXY_CONFIG_OVERRIDE_TOOL_SOURCE_STORE=database" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
