@@ -16,6 +16,8 @@ setupSelectableMock();
 
 const localVue = getLocalVue(true);
 
+const CONFIRM_BUTTON_SELECTOR = ".g-button.g-blue" as const;
+
 const TEST_HISTORY_ID = "myTestHistoryId";
 
 const TEST_HISTORY = {
@@ -54,18 +56,6 @@ async function mountComponent(preferredObjectStoreId: string | null = null) {
             showModal: true,
         },
         localVue,
-        stubs: {
-            BModal: {
-                template: `
-                    <div>
-                        <slot></slot>
-                        <div class="modal-footer">
-                            <button class="btn btn-primary" @click="$emit('ok')">OK</button>
-                        </div>
-                    </div>
-                `,
-            },
-        },
     });
 
     await flushPromises();
@@ -93,7 +83,7 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const okButton = wrapper.find(".btn-primary");
+        const okButton = wrapper.find(".g-button.g-blue");
         await okButton.trigger("click");
 
         await flushPromises();
@@ -118,7 +108,7 @@ describe("SelectPreferredStore.vue", () => {
         const errorEl = wrapper.find(".object-store-selection-error");
         expect(errorEl.exists()).toBeFalsy();
 
-        const okButton = wrapper.find(".btn-primary");
+        const okButton = wrapper.find(".g-button.g-blue");
         await okButton.trigger("click");
 
         await flushPromises();

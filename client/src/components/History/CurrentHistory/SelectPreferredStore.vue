@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BModal, type BvModalEvent } from "bootstrap-vue";
 import { computed, type PropType, ref } from "vue";
 
 import { getPermissions, isHistoryPrivate, makePrivate, type PermissionsResponse } from "@/components/History/services";
@@ -9,6 +8,7 @@ import { useStorageLocationConfiguration } from "@/composables/storageLocation";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GModal from "@/components/BaseComponents/GModal.vue";
 import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
 
 const props = defineProps({
@@ -122,14 +122,10 @@ function selectionChanged(preferredObjectStoreId: string | null, isPrivate: bool
     currentSelectedStorePrivate.value = isPrivate;
 }
 
-async function modalOk(event: BvModalEvent) {
-    event?.preventDefault();
-
+async function modalOk() {
     try {
         await handleSubmit(currentSelectedStoreId.value, currentSelectedStorePrivate.value);
-
         reset();
-        emit("close");
     } catch (_e) {
         // pass
     }
@@ -143,24 +139,17 @@ function reset() {
 </script>
 
 <template>
-    <BModal
+    <GModal
         id="modal-select-history-storage-location"
-        :visible="props.showModal"
-        centered
-        scrollable
-        size="lg"
+        :show="props.showModal"
+        size="small"
         :title="storageLocationTitle"
-        title-class="h-sm"
-        title-tag="h3"
-        ok-title="Change Storage Location"
-        cancel-variant="outline-primary"
-        dialog-class="modal-select-history-storage-location"
+        ok-text="Change Storage Location"
+        class="modal-select-history-storage-location"
         :ok-disabled="currentSelectedStoreId === props.preferredObjectStoreId"
-        :no-close-on-backdrop="currentSelectedStoreId !== props.preferredObjectStoreId"
-        :no-close-on-esc="currentSelectedStoreId !== props.preferredObjectStoreId"
+        confirm
         @cancel="reset"
-        @change="emit('close')"
-        @close="reset"
+        @close="emit('close')"
         @ok="modalOk">
         <SelectObjectStore
             :show-sub-setting="props.showSubSetting"
@@ -170,5 +159,5 @@ function reset() {
             :default-option-title="defaultOptionTitle"
             :default-option-description="defaultOptionDescription"
             @onSubmit="selectionChanged" />
-    </BModal>
+    </GModal>
 </template>
