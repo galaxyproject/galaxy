@@ -1,5 +1,9 @@
 """Integration tests for the tool-request-form feature (routed via POST /api/notifications)."""
 
+import json
+import os
+from typing import ClassVar
+
 from galaxy_test.base.api_util import ADMIN_TEST_USER
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
@@ -208,6 +212,48 @@ class TestToolRequestFormIntegration(ToolRequestFormIntegrationBase):
         content = workflow_tool_notifications[0]["content"]
         assert content["workflow_id"] == "encoded-workflow-id-abc"
         assert len(content["tool_names"]) == 2
+
+
+class TestToolRequestFormEmailDeliveryIntegration(ToolRequestFormIntegrationBase):
+    email_directory: ClassVar[str]
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        cls.email_directory = cls._test_driver.mkdtemp()
+        config["enable_celery_tasks"] = True
+        config["email_from"] = "galaxy-no-reply@example.com"
+        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
+
+    def test_submission_sends_admin_email_when_force_sync_is_required(self):
+        """Tool requests should still deliver email notifications when the API forces synchronous processing."""
+        user = self._setup_user("tool_request_email_delivery@galaxy.test")
+        with self._different_user(user["email"]):
+            update_request = {
+                "preferences": {
+                    "tool_request": {
+                        "enabled": True,
+                        "channels": {"push": True, "email": False},
+                    }
+                }
+            }
+            update_response = self._put("notifications/preferences", data=update_request, json=True)
+            self._assert_status_code_is_ok(update_response)
+
+            response = self._post("notifications", data=TOOL_REQUEST_NOTIFICATION_BODY, json=True)
+            self._assert_status_code_is(response, 200)
+
+        with open(os.path.join(self.email_directory, "email.json")) as f:
+            email = json.loads(f.read())
+
+        assert email["from"] == "galaxy-no-reply@example.com"
+        assert email["to"] == ADMIN_TEST_USER
+        assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
+        assert user["email"] in email["body"]
+        assert "Quality control tool for high-throughput sequencing data." in email["body"]
+        assert email["html"] is not None
+        assert "Would be great for the genomics team." in email["html"]
+        assert "/user/notifications" in email["html"]
 
 
 class TestToolRequestFormDisabledIntegration(IntegrationTestCase):

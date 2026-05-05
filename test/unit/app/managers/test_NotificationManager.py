@@ -25,6 +25,7 @@ from galaxy.model import (
     Role,
     User,
 )
+from galaxy.schema.fields import Security
 from galaxy.schema.notifications import (
     BroadcastNotificationContent,
     BroadcastNotificationCreateRequest,
@@ -32,6 +33,7 @@ from galaxy.schema.notifications import (
     NotificationCategorySettings,
     NotificationChannelSettings,
     NotificationCreateData,
+    NotificationCreatedResponse,
     NotificationCreateRequest,
     NotificationRecipients,
     NotificationVariant,
@@ -44,6 +46,7 @@ from galaxy.schema.storage_operations import (
     StorageOperationExecutionResult,
     StorageOperationRunState,
 )
+from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import now
 from .base import BaseTestCase
 
@@ -506,6 +509,24 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
             self.notification_manager.dispatch_pending_notifications_via_channels()
             mock_send_mail.assert_called_once()
             assert len(emails_sent) == 1
+
+    def test_force_sync_dispatches_email_channel_when_async_is_enabled(self):
+        user = self._create_test_user()
+        Security.security = IdEncodingHelper(id_secret="testing")
+
+        request = NotificationCreateRequest(
+            recipients=NotificationRecipients.model_construct(user_ids=[user.id]),
+            notification=NotificationCreateData(**self._default_test_notification_data()),
+            galaxy_url="https://test.galaxy.url",
+        )
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            response = self.notification_manager.send_notification_internal(request, force_sync=True)
+
+        assert isinstance(response, NotificationCreatedResponse)
+        assert response.total_notifications_sent == 1
+        mock_send_mail.assert_called_once()
+        assert "email" in self.notification_manager.get_supported_channels()
 
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):

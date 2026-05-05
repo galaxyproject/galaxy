@@ -7,8 +7,6 @@ from typing import (
     NoReturn,
 )
 
-from galaxy.celery.helpers import async_task_summary
-from galaxy.celery.tasks import send_notification_to_recipients_async
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     AdminRequiredException,
@@ -175,16 +173,7 @@ class NotificationService(ServiceBase):
 
         Note: This function is meant for internal use from other services that don't need to check sender permissions.
         """
-        if self.notification_manager.can_send_notifications_async and not force_sync:
-            result = send_notification_to_recipients_async.delay(request)
-            summary = async_task_summary(result)
-            return summary
-
-        notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(request)
-        return NotificationCreatedResponse(
-            total_notifications_sent=recipient_user_count,
-            notification=NotificationResponse.model_validate(notification),
-        )
+        return self.notification_manager.send_notification_internal(request, force_sync=force_sync)
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
