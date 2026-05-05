@@ -251,8 +251,9 @@ class NotificationManager:
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
-        in a background task.
+        If `force_sync` is set to `True`, recipient association creation and any
+        configured channel delivery will be processed synchronously instead of in a
+        background task.
 
         Note: This function is meant for internal use from other callers that don't need to check sender permissions.
         """
@@ -265,10 +266,21 @@ class NotificationManager:
             return async_task_summary(result)
 
         notification, recipient_user_count = self.send_notification_to_recipients(request)
+        if notification is None:
+            raise RuntimeError("Expected notification to be created before delivery.")
+        if self.can_send_notifications_async and force_sync:
+            self._dispatch_notification_via_channels(notification)
         return NotificationCreatedResponse(
             total_notifications_sent=recipient_user_count,
             notification=NotificationResponse.model_validate(notification),
         )
+
+    def _dispatch_notification_via_channels(self, notification: Notification) -> None:
+        # Mark dispatched before delivery — same trade-off as dispatch_pending_notifications_via_channels:
+        # a transient SMTP failure leaves the row marked and won't be retried by the beat task.
+        notification.dispatched = True
+        self.sa_session.commit()
+        self._dispatch_notification_to_users(notification)
 
     def _create_associations(self, notification: Notification, users: list[User]) -> int:
         success_count = 0
@@ -780,9 +792,9 @@ class NotificationContext(BaseModel):
     user_email: str
     date: str
     hostname: str
-    contact_email: str
+    contact_email: Optional[str] = None
     variant: str
-    notification_settings_url: str
+    notification_settings_url: Optional[str] = None
     content: AnyNotificationContent
     workflow_name: str | None = None
     galaxy_url: str | None = None
