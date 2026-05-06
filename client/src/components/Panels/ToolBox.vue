@@ -31,7 +31,7 @@ import {
 } from "./utilities";
 
 import GButton from "../BaseComponents/GButton.vue";
-import ToolRequestForm from "../Tool/ToolRequestForm.vue";
+import ToolInstallationRequestForm from "../Tool/ToolInstallationRequestForm.vue";
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 import MyToolsLanding from "./MyToolsLanding.vue";
@@ -43,9 +43,13 @@ const { config, isConfigLoaded } = useConfig();
 const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
-const showToolRequestForm = ref(false);
+const showToolInstallationRequestForm = ref(false);
 const showRequestToolButton = computed(
-    () => !props.workflow && isConfigLoaded.value && config.value?.enable_tool_request_form && !isAnonymous.value,
+    () =>
+        !props.workflow &&
+        isConfigLoaded.value &&
+        config.value?.enable_tool_installation_request_form &&
+        !isAnonymous.value,
 );
 
 const emit = defineEmits<{
@@ -385,8 +389,8 @@ function onToggle() {
     showSections.value = !showSections.value;
 }
 
-function openToolRequestForm() {
-    showToolRequestForm.value = true;
+function openToolInstallationRequestForm() {
+    showToolInstallationRequestForm.value = true;
 }
 
 /**
@@ -442,10 +446,10 @@ function onLabelToggle(labelId: string) {
                         <GButton
                             size="small"
                             class="w-100"
-                            data-description="request tool button"
-                            @click="openToolRequestForm">
+                            data-description="request tool installation button"
+                            @click="openToolInstallationRequestForm">
                             <FontAwesomeIcon :icon="faWrench" class="mr-1" />
-                            {{ localize("Request a Tool") }}
+                            {{ localize("Request Tool Installation") }}
                         </GButton>
                     </div>
                 </div>
@@ -461,7 +465,9 @@ function onLabelToggle(labelId: string) {
             </section>
         </div>
 
-        <ToolRequestForm v-if="showToolRequestForm" :show.sync="showToolRequestForm" />
+        <ToolInstallationRequestForm
+            v-if="showToolInstallationRequestForm"
+            :show.sync="showToolInstallationRequestForm" />
 
         <div class="unified-panel-body">
             <div class="toolMenuContainer">

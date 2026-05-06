@@ -12,7 +12,7 @@ import { resetMockConfig, setMockConfig } from "@/composables/__mocks__/config";
 import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import { useUserStore } from "@/stores/userStore";
 
-import ToolRequestForm from "../Tool/ToolRequestForm.vue";
+import ToolInstallationRequestForm from "../Tool/ToolInstallationRequestForm.vue";
 import ToolBox from "./ToolBox.vue";
 
 vi.mock("@/composables/config");
@@ -526,10 +526,10 @@ async function mountDefaultToolBox(pinia: ReturnType<typeof createPinia>, anonym
     return wrapper;
 }
 
-describe("ToolBox — Request a Tool button", () => {
+describe("ToolBox — Request Tool Installation button", () => {
     beforeEach(() => {
         vi.useFakeTimers();
-        setMockConfig({ toolbox_auto_sort: true, enable_tool_request_form: true });
+        setMockConfig({ toolbox_auto_sort: true, enable_tool_installation_request_form: true });
     });
 
     afterEach(() => {
@@ -547,7 +547,7 @@ describe("ToolBox — Request a Tool button", () => {
         vi.advanceTimersByTime(250);
         await flushPromises();
 
-        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="request tool installation button"]').exists()).toBe(false);
     });
 
     it("is visible when search returns no results", async () => {
@@ -560,11 +560,11 @@ describe("ToolBox — Request a Tool button", () => {
         await flushPromises();
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
-        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(true);
+        expect(wrapper.find('[data-description="request tool installation button"]').exists()).toBe(true);
     });
 
-    it("is hidden when enable_tool_request_form config is false", async () => {
-        setMockConfig({ toolbox_auto_sort: true, enable_tool_request_form: false });
+    it("is hidden when enable_tool_installation_request_form config is false", async () => {
+        setMockConfig({ toolbox_auto_sort: true, enable_tool_installation_request_form: false });
         const pinia = createPinia();
         const wrapper = await mountDefaultToolBox(pinia);
 
@@ -574,7 +574,7 @@ describe("ToolBox — Request a Tool button", () => {
         await flushPromises();
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
-        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="request tool installation button"]').exists()).toBe(false);
     });
 
     it("is hidden for anonymous users even when search returns no results", async () => {
@@ -587,7 +587,7 @@ describe("ToolBox — Request a Tool button", () => {
         await flushPromises();
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
-        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="request tool installation button"]').exists()).toBe(false);
     });
 
     it("is hidden in workflow mode even when search returns no results", async () => {
@@ -618,10 +618,10 @@ describe("ToolBox — Request a Tool button", () => {
         await flushPromises();
 
         expect(wrapper.find(".alert-warning").exists()).toBe(true);
-        expect(wrapper.find('[data-description="request tool button"]').exists()).toBe(false);
+        expect(wrapper.find('[data-description="request tool installation button"]').exists()).toBe(false);
     });
 
-    it("opens the tool request form modal when clicked", async () => {
+    it("opens the tool installation request form modal when clicked", async () => {
         const pinia = createPinia();
         const wrapper = await mountDefaultToolBox(pinia);
 
@@ -630,13 +630,13 @@ describe("ToolBox — Request a Tool button", () => {
         vi.advanceTimersByTime(250);
         await flushPromises();
 
-        const button = wrapper.find('[data-description="request tool button"]');
+        const button = wrapper.find('[data-description="request tool installation button"]');
         expect(button.exists()).toBe(true);
 
         await button.trigger("click");
         await flushPromises();
 
-        const requestForm = wrapper.findComponent(ToolRequestForm);
+        const requestForm = wrapper.findComponent(ToolInstallationRequestForm);
         expect(requestForm.props("show")).toBe(true);
     });
 });

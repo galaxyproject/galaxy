@@ -1,6 +1,6 @@
 Use this template to customize the text email your admins will receive
 when a user submits a tool installation request.
-Copy the file to {{ templates_dir }}/mail/notifications/tool_request-email.txt and modify as required.
+Copy the file to {{ templates_dir }}/mail/notifications/tool_installation_request-email.txt and modify as required.
 
 If you are adding URLs, remember that only absolute URLs (with
 a domain name) make sense in email! They can be served from any stable
@@ -17,9 +17,9 @@ sent:
 - contact_email             Your galaxy's contact email
 - notification_settings_url The URL to the admin's notification settings to manage their subscriptions
 - variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
-- content                   The tool_request payload
+- content                   The tool_installation_request payload
   - tool_names              List of tool names or tool-shed IDs being requested
-  - tool_url                Homepage or repository URL for the tool (optional, single-tool requests only)
+  - tool_url                Homepage or repository URL for the tool (optional, single-tool installation requests only)
   - description             Description of the tool and its use case
   - scientific_domain       Scientific domain (optional)
   - requested_version       Requested version (optional)
@@ -65,5 +65,3 @@ To manage your notification settings, please visit {{ notification_settings_url 
 {% if contact_email %}
 This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
 {% endif %}
-
-

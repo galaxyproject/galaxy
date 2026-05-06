@@ -34,8 +34,8 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
     notification: MessageNotificationCreateData;
 }
 
-export interface ToolRequestNotificationContent {
-    category: "tool_request";
+export interface ToolInstallationRequestNotificationContent {
+    category: "tool_installation_request";
     tool_names: string[];
     tool_url?: string;
     description: string;
@@ -46,16 +46,16 @@ export interface ToolRequestNotificationContent {
     additional_remarks?: string;
 }
 
-export interface ToolRequestNotification extends BaseUserNotification {
-    category: "tool_request";
-    content: ToolRequestNotificationContent;
+export interface ToolInstallationRequestNotification extends BaseUserNotification {
+    category: "tool_installation_request";
+    content: ToolInstallationRequestNotificationContent;
 }
 
 export type UserNotification =
     | MessageNotification
     | SharedItemNotification
     | StorageOperationNotification
-    | ToolRequestNotification;
+    | ToolInstallationRequestNotification;
 
 export type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
 
@@ -66,7 +66,7 @@ export type NotificationVariants = components["schemas"]["NotificationVariant"];
 export type NewSharedItemNotificationContentItemType =
     components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
 
-export interface ToolRequestSubmitContent {
+export interface ToolInstallationRequestSubmitContent {
     tool_names: string[];
     tool_url?: string;
     description: string;
@@ -76,19 +76,19 @@ export interface ToolRequestSubmitContent {
     additional_remarks?: string;
 }
 
-/** Submit a tool-installation request as the authenticated user.
+/** Submit a tool installation request as the authenticated user.
  *  Returns the encoded notification ID so the caller can link to it.
  */
-export async function submitUserNotification(content: ToolRequestSubmitContent): Promise<string> {
+export async function submitToolInstallationRequest(content: ToolInstallationRequestSubmitContent): Promise<string> {
     const { data, error } = await GalaxyApi().POST("/api/notifications", {
         body: {
             recipients: { user_ids: [], group_ids: [], role_ids: [] },
             notification: {
-                source: "tool_request_form",
-                category: "tool_request",
+                source: "tool_installation_request_form",
+                category: "tool_installation_request",
                 variant: "info",
                 content: {
-                    category: "tool_request",
+                    category: "tool_installation_request",
                     ...content,
                 },
             },
