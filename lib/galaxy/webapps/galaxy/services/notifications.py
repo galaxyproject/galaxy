@@ -133,7 +133,9 @@ class NotificationService(ServiceBase):
 
         if category == PersonalNotificationCategory.tool_installation_request:
             if not config.enable_tool_installation_request_form:
-                raise AdminRequiredException("Tool installation request notifications are disabled on this Galaxy instance.")
+                raise AdminRequiredException(
+                    "Tool installation request notifications are disabled on this Galaxy instance."
+                )
 
         admin_users = user_manager.admins()
         if not admin_users:
