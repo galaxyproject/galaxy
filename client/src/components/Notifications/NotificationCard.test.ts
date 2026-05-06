@@ -9,7 +9,7 @@ import { nextTick } from "vue";
 import {
     generateMessageNotification,
     generateNewSharedItemNotification,
-    generateToolRequestNotification,
+    generateToolInstallationRequestNotification,
 } from "@/components/Notifications/test-utils";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
@@ -142,8 +142,8 @@ describe("Notifications categories", () => {
         expect(spyOnUpdateNotification).toHaveBeenCalledTimes(1);
     });
 
-    it("tool_request notification shows tool name in title and details in description", async () => {
-        const notification = generateToolRequestNotification();
+    it("tool_installation_request notification shows tool name in title and details in description", async () => {
+        const notification = generateToolInstallationRequestNotification();
 
         const wrapper = await mountComponent(NotificationCard, {
             notification,
@@ -152,7 +152,7 @@ describe("Notifications categories", () => {
         // Title should include the first tool name
         expect(wrapper.text()).toContain(notification.content.tool_names[0]);
 
-        // Description area should show tool request details
+        // Description area should show tool installation request details
         const descriptionArea = wrapper.find(`#g-card-description-${notification.id}`);
         expect(descriptionArea.text()).toContain(notification.content.description);
         expect(descriptionArea.text()).toContain(notification.content.scientific_domain);
@@ -160,8 +160,8 @@ describe("Notifications categories", () => {
         expect(descriptionArea.text()).toContain(notification.content.requester_email);
     });
 
-    it("tool_request notification links workflow id and exposes anchor for deep-linking", async () => {
-        const notification = generateToolRequestNotification();
+    it("tool_installation_request notification links workflow id and exposes anchor for deep-linking", async () => {
+        const notification = generateToolInstallationRequestNotification();
         notification.content.workflow_id = "encoded-workflow-id-abc";
 
         const wrapper = await mountComponent(NotificationCard, {

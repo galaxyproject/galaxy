@@ -2,7 +2,7 @@
 import { BAlert, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { submitUserNotification } from "@/api/notifications";
+import { submitToolInstallationRequest } from "@/api/notifications";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -26,7 +26,7 @@ const errorMessage = ref("");
 const showButton = computed(
     () =>
         isConfigLoaded.value &&
-        config.value?.enable_tool_request_form &&
+        config.value?.enable_tool_installation_request_form &&
         !userStore.isAnonymous &&
         props.missingToolIds.length > 0,
 );
@@ -43,7 +43,7 @@ async function requestInstallation() {
         `${props.missingToolIds.join(", ")}. These tools are available in the Tool Shed and need to be installed.`;
 
     try {
-        const notificationId = await submitUserNotification({
+        const notificationId = await submitToolInstallationRequest({
             tool_names: props.missingToolIds,
             workflow_id: props.workflowId,
             description,
