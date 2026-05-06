@@ -24724,7 +24724,7 @@ export interface components {
             tool_names: string[];
             /**
              * Tool URL
-             * @description Homepage or repository URL for the requested tool (single-tool requests only).
+             * @description Homepage or repository URL for the requested tool (single-tool installation requests only).
              */
             tool_url?: string | null;
             /**

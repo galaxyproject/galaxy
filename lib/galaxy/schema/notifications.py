@@ -140,7 +140,9 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
 
 
 class ToolInstallationRequestNotificationContent(Model):
-    category: Literal[PersonalNotificationCategory.tool_installation_request] = PersonalNotificationCategory.tool_installation_request
+    category: Literal[PersonalNotificationCategory.tool_installation_request] = (
+        PersonalNotificationCategory.tool_installation_request
+    )
     tool_names: list[str] = Field(
         ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
     )
