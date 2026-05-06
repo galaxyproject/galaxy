@@ -65,9 +65,11 @@ const title = computed(() => {
         return `${sharedItemType.value} shared with you by ${props.notification.content.owner_name}`;
     } else if (props.notification.category === "storage_operation") {
         return props.notification.content.subject;
-    } else if (props.notification.category === "tool_request") {
+    } else if (props.notification.category === "tool_installation_request") {
         const names = props.notification.content.tool_names;
-        return names.length === 1 ? `Tool Request: ${names[0]}` : `Tool Request: ${names.length} tools`;
+        return names.length === 1
+            ? `Tool Installation Request: ${names[0]}`
+            : `Tool Installation Request: ${names.length} tools`;
     } else {
         return props.notification.content.subject;
     }
@@ -77,7 +79,7 @@ const titleIcon = computed<TitleIcon>(() => {
     const iconMap: Record<string, IconDefinition> = {
         new_shared_item: faRetweet,
         storage_operation: faHourglassHalf,
-        tool_request: faWrench,
+        tool_installation_request: faWrench,
     };
     return {
         icon: iconMap[props.notification.category] ?? faInbox,
@@ -190,7 +192,7 @@ function markNotificationAsSeen() {
                     <em>{{ props.notification.content.item_type }}</em
                     >{{ " " }}<span> with you.</span>
                 </template>
-                <template v-else-if="props.notification.category === 'tool_request'">
+                <template v-else-if="props.notification.category === 'tool_installation_request'">
                     <dl class="mb-0">
                         <template v-if="props.notification.content.tool_names.length > 1">
                             <dt>Tools</dt>

@@ -3,7 +3,7 @@ import type {
     NewSharedItemNotificationContentItemType,
     NotificationVariants,
     SharedItemNotification,
-    ToolRequestNotification,
+    ToolInstallationRequestNotification,
     UserNotification,
 } from "@/api/notifications";
 
@@ -65,18 +65,18 @@ export function generateNewSharedItemNotification(): SharedItemNotification {
     };
 }
 
-export function generateToolRequestNotification(): ToolRequestNotification {
+export function generateToolInstallationRequestNotification(): ToolInstallationRequestNotification {
     return {
         id: "notification-" + Math.floor(Math.random() * 1000000),
-        source: "tool_request_form",
-        category: "tool_request",
+        source: "tool_installation_request_form",
+        category: "tool_installation_request",
         variant: generateRandomVariant(),
         create_time: new Date(Date.now() + 1).toISOString(),
         update_time: new Date(Date.now() + 2).toISOString(),
         publication_time: new Date(Date.now() + 3).toISOString(),
         expiration_time: new Date(Date.now() + 86400000).toISOString(),
         content: {
-            category: "tool_request",
+            category: "tool_installation_request",
             tool_names: [generateRandomString()],
             tool_url: "https://github.com/example/tool",
             description: "A useful scientific analysis tool",

@@ -240,7 +240,7 @@ defineExpose({
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ workflowError }}
             <WorkflowMissingToolsRequest
-                v-if="config?.enable_tool_request_form"
+                v-if="config?.enable_tool_installation_request_form"
                 :missing-tool-ids="missingToolIds"
                 :workflow-id="props.workflowId" />
         </BAlert>

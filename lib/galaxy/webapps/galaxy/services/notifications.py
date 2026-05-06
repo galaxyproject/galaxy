@@ -42,7 +42,7 @@ from galaxy.schema.notifications import (
     NotificationUpdateRequest,
     NotificationVariant,
     PersonalNotificationCategory,
-    ToolRequestNotificationContent,
+    ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationListResponse,
     UserNotificationPreferences,
@@ -53,7 +53,7 @@ from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 _USER_ALLOWED_CATEGORIES: frozenset[PersonalNotificationCategory] = frozenset(
-    {PersonalNotificationCategory.tool_request}
+    {PersonalNotificationCategory.tool_installation_request}
 )
 
 
@@ -131,9 +131,9 @@ class NotificationService(ServiceBase):
         if category not in _USER_ALLOWED_CATEGORIES:
             raise AdminRequiredException("Only administrators can send notifications of this category.")
 
-        if category == PersonalNotificationCategory.tool_request:
-            if not config.enable_tool_request_form:
-                raise AdminRequiredException("Tool request notifications are disabled on this Galaxy instance.")
+        if category == PersonalNotificationCategory.tool_installation_request:
+            if not config.enable_tool_installation_request_form:
+                raise AdminRequiredException("Tool installation request notifications are disabled on this Galaxy instance.")
 
         admin_users = user_manager.admins()
         if not admin_users:
@@ -143,14 +143,14 @@ class NotificationService(ServiceBase):
         recipient_ids = list({u.id for u in admin_users} | {sender_id})
 
         content = payload.notification.content
-        if category == PersonalNotificationCategory.tool_request and isinstance(
-            content, ToolRequestNotificationContent
+        if category == PersonalNotificationCategory.tool_installation_request and isinstance(
+            content, ToolInstallationRequestNotificationContent
         ):
             content = content.model_copy(update={"requester_email": sender_context.user.email})
 
         now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         notification_data = NotificationCreateData.model_construct(
-            source=payload.notification.source or "tool_request_form",
+            source=payload.notification.source or "tool_installation_request_form",
             category=payload.notification.category,
             variant=payload.notification.variant or NotificationVariant.info,
             content=content,

@@ -63,7 +63,7 @@ class PersonalNotificationCategory(str, Enum):
     message = "message"
     new_shared_item = "new_shared_item"
     storage_operation = "storage_operation"
-    tool_request = "tool_request"
+    tool_installation_request = "tool_installation_request"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
@@ -139,15 +139,15 @@ class StorageOperationNotificationContent(MessageNotificationContentBase):
     skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
 
 
-class ToolRequestNotificationContent(Model):
-    category: Literal[PersonalNotificationCategory.tool_request] = PersonalNotificationCategory.tool_request
+class ToolInstallationRequestNotificationContent(Model):
+    category: Literal[PersonalNotificationCategory.tool_installation_request] = PersonalNotificationCategory.tool_installation_request
     tool_names: list[str] = Field(
         ..., min_length=1, title="Tool names", description="Names or tool-shed IDs of the requested tools."
     )
     tool_url: Optional[str] = Field(
         None,
         title="Tool URL",
-        description="Homepage or repository URL for the requested tool (single-tool requests only).",
+        description="Homepage or repository URL for the requested tool (single-tool installation requests only).",
     )
     description: str = Field(
         ..., title="Description", description="Short description of the tool and its scientific use case."
@@ -171,7 +171,7 @@ class ToolRequestNotificationContent(Model):
     )
 
     @model_validator(mode="after")
-    def _tool_url_single_tool_only(self) -> "ToolRequestNotificationContent":
+    def _tool_url_single_tool_only(self) -> "ToolInstallationRequestNotificationContent":
         if self.tool_url and len(self.tool_names) != 1:
             raise ValueError("tool_url may only be supplied when exactly one tool is requested")
         return self
@@ -185,7 +185,7 @@ NotificationContentField = Field(
 )
 
 AnyUserNotificationContent = Annotated[
-    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent | ToolRequestNotificationContent,
+    MessageNotificationContent | NewSharedItemNotificationContent | StorageOperationNotificationContent | ToolInstallationRequestNotificationContent,
     NotificationContentField,
 ]
 
