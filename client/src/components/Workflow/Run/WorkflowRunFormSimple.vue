@@ -402,7 +402,7 @@ function onSearchChange({ name, src, query, limit }: { name: string; src: string
     fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query }, "replace");
 }
 
-function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
+function onStorageUpdate(objectStoreId: string | null, intermediate: boolean) {
     if (intermediate) {
         preferredIntermediateObjectStoreId.value = objectStoreId;
     } else {
@@ -688,8 +688,8 @@ onBeforeMount(() => {
                         <div class="settings-row">
                             <WorkflowStorageConfiguration
                                 :split-object-store="splitObjectStore"
-                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
-                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId"
+                                :invocation-preferred-intermediate-object-store-id="preferredIntermediateObjectStoreId"
                                 @updated="onStorageUpdate" />
                         </div>
                     </template>
