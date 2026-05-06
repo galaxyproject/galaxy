@@ -19778,7 +19778,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolRequestNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"] (Rename "Tool Request" → "Tool Installation Request" across all layers)
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -19868,7 +19868,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolRequestNotificationContent"]
+                | components["schemas"]["ToolInstallationRequestNotificationContent"] (Rename "Tool Request" → "Tool Installation Request" across all layers)
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -21096,7 +21096,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_request";
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request"; (Rename "Tool Request" → "Tool Installation Request" across all layers)
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -24716,6 +24716,54 @@ export interface components {
              */
             values: string;
         };
+        /** ToolInstallationRequestNotificationContent */
+        ToolInstallationRequestNotificationContent: {
+            /**
+             * Additional remarks
+             * @description Any additional information or context for the request.
+             */
+            additional_remarks?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            category: "tool_installation_request";
+            /**
+             * Description
+             * @description Short description of the tool and its scientific use case.
+             */
+            description: string;
+            /**
+             * Requested version
+             * @description The version of the tool being requested.
+             */
+            requested_version?: string | null;
+            /**
+             * Requester email
+             * @description The email address of the requester for follow-up. This is derived server-side for user submissions.
+             */
+            requester_email?: string | null;
+            /**
+             * Scientific domain
+             * @description The scientific domain for the requested tool.
+             */
+            scientific_domain?: string | null;
+            /**
+             * Tool names
+             * @description Names or tool-shed IDs of the requested tools.
+             */
+            tool_names: string[];
+            /**
+             * Tool URL
+             * @description Homepage or repository URL for the requested tool (single-tool requests only).
+             */
+            tool_url?: string | null;
+            /**
+             * Workflow ID
+             * @description Encoded ID of the workflow requiring these tools, if applicable.
+             */
+            workflow_id?: string | null;
+        };
         /** ToolLandingRequest */
         ToolLandingRequest: {
             /** Origin */
@@ -25041,54 +25089,6 @@ export interface components {
             };
             state?: components["schemas"]["ToolRequestState"] | null;
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
-        };
-        /** ToolRequestNotificationContent */
-        ToolRequestNotificationContent: {
-            /**
-             * Additional remarks
-             * @description Any additional information or context for the request.
-             */
-            additional_remarks?: string | null;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            category: "tool_request";
-            /**
-             * Description
-             * @description Short description of the tool and its scientific use case.
-             */
-            description: string;
-            /**
-             * Requested version
-             * @description The version of the tool being requested.
-             */
-            requested_version?: string | null;
-            /**
-             * Requester email
-             * @description The email address of the requester for follow-up. This is derived server-side for user submissions.
-             */
-            requester_email?: string | null;
-            /**
-             * Scientific domain
-             * @description The scientific domain for the requested tool.
-             */
-            scientific_domain?: string | null;
-            /**
-             * Tool names
-             * @description Names or tool-shed IDs of the requested tools.
-             */
-            tool_names: string[];
-            /**
-             * Tool URL
-             * @description Homepage or repository URL for the requested tool (single-tool requests only).
-             */
-            tool_url?: string | null;
-            /**
-             * Workflow ID
-             * @description Encoded ID of the workflow requiring these tools, if applicable.
-             */
-            workflow_id?: string | null;
         };
         /**
          * ToolRequestState
@@ -25754,7 +25754,8 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
-         *         "tool_request": {
+         *         "tool_installation_request": {
+         *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
          *             "push": true
@@ -26178,7 +26179,8 @@ export interface components {
          *           },
          *           "enabled": true
          *         },
-         *         "tool_request": {
+         *         "tool_installation_request": {
+         *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
          *             "push": true
@@ -26216,6 +26218,7 @@ export interface components {
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
                 | components["schemas"]["ToolRequestNotificationContent"];
+                | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
              * Format: date-time

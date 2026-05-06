@@ -72,7 +72,7 @@ from galaxy.schema.notifications import (
     NotificationVariant,
     PersonalNotificationCategory,
     StorageOperationNotificationContent,
-    ToolRequestNotificationContent,
+    ToolInstallationRequestNotificationContent,
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
@@ -901,15 +901,15 @@ class StorageOperationEmailNotificationTemplateBuilder(EmailNotificationTemplate
         return f"[Galaxy] {content.subject}"
 
 
-class ToolRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
+class ToolInstallationRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuilder):
 
     def get_content(self, template_format: TemplateFormats) -> AnyNotificationContent:
-        content = ToolRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
+        content = ToolInstallationRequestNotificationContent.model_construct(**self.notification.content)  # type: ignore[arg-type]
         return content
 
     def build_context(self, template_format: TemplateFormats) -> NotificationContext:
         context = EmailNotificationTemplateBuilder.build_context(self, template_format)
-        content = cast(ToolRequestNotificationContent, context.content)
+        content = cast(ToolInstallationRequestNotificationContent, context.content)
         workflow_name = self._resolve_workflow_name(content.workflow_id)
         return context.model_copy(update={"workflow_name": workflow_name})
 
@@ -929,7 +929,7 @@ class ToolRequestEmailNotificationTemplateBuilder(EmailNotificationTemplateBuild
         return stored_workflow.name if stored_workflow else None
 
     def get_subject(self) -> str:
-        content = cast(ToolRequestNotificationContent, self.get_content(TemplateFormats.TXT))
+        content = cast(ToolInstallationRequestNotificationContent, self.get_content(TemplateFormats.TXT))
         if len(content.tool_names) == 1:
             return f"[Galaxy] Tool installation request: {content.tool_names[0]}"
         return f"[Galaxy] Tool installation request ({len(content.tool_names)} tools)"
@@ -941,7 +941,7 @@ class EmailNotificationChannelPlugin(NotificationChannelPlugin):
         PersonalNotificationCategory.message: MessageEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.new_shared_item: NewSharedItemEmailNotificationTemplateBuilder,
         PersonalNotificationCategory.storage_operation: StorageOperationEmailNotificationTemplateBuilder,
-        PersonalNotificationCategory.tool_request: ToolRequestEmailNotificationTemplateBuilder,
+        PersonalNotificationCategory.tool_installation_request: ToolInstallationRequestEmailNotificationTemplateBuilder,
     }
 
     def send(self, notification: Notification, user: User):

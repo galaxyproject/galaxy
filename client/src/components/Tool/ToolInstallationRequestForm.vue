@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
-import { submitUserNotification } from "@/api/notifications";
+import { submitToolInstallationRequest } from "@/api/notifications";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { isValidNetworkUrl } from "@/utils/url";
 
@@ -75,7 +75,7 @@ async function submit() {
     successMessage.value = "";
 
     try {
-        await submitUserNotification({
+        await submitToolInstallationRequest({
             tool_names: [toolName.value.trim()],
             tool_url: toolUrl.value.trim() || undefined,
             description: description.value.trim(),
@@ -87,10 +87,10 @@ async function submit() {
         submitting.value = false;
         resetForm();
         successMessage.value =
-            "Your tool request has been submitted! The instance admins have been notified and will review your request.";
+            "Your tool installation request has been submitted! The instance admins have been notified and will review your request.";
     } catch (e) {
         submitting.value = false;
-        errorMessage.value = errorMessageAsString(e, "Failed to submit tool request. Please try again.");
+        errorMessage.value = errorMessageAsString(e, "Failed to submit tool installation request. Please try again.");
     }
 }
 </script>
@@ -98,7 +98,7 @@ async function submit() {
 <template>
     <GModal
         :show="props.show"
-        title="Request a Tool"
+        title="Request Tool Installation"
         size="medium"
         confirm
         ok-text="Submit Request"
@@ -117,14 +117,14 @@ async function submit() {
 
         <div v-if="!successMessage">
             <p class="mb-3 text-muted">
-                Request a tool to be installed on this Galaxy instance. Your request will be sent to the admins for
-                review.
+                Request a tool to be installed on this Galaxy instance. Your installation request will be sent to the
+                admins for review.
             </p>
 
             <h6 v-localize class="font-weight-bold mb-2">Tool Information</h6>
 
             <FormElement
-                id="tool-request-name"
+                id="tool-installation-request-name"
                 v-model="toolName"
                 type="text"
                 title="Tool Name"
@@ -132,7 +132,7 @@ async function submit() {
                 :attributes="{ optional: false }" />
 
             <FormElement
-                id="tool-request-url"
+                id="tool-installation-request-url"
                 v-model="toolUrl"
                 type="text"
                 title="Homepage / Repository URL"
@@ -140,7 +140,7 @@ async function submit() {
                 :error="urlError || undefined" />
 
             <FormElement
-                id="tool-request-description"
+                id="tool-installation-request-description"
                 v-model="description"
                 type="text"
                 title="Description"
@@ -148,21 +148,21 @@ async function submit() {
                 :attributes="{ area: true, optional: false }" />
 
             <FormElement
-                id="tool-request-domain"
+                id="tool-installation-request-domain"
                 v-model="scientificDomain"
                 type="text"
                 title="Scientific Domain"
                 help="e.g. Genomics, Proteomics, AI/ML" />
 
             <FormElement
-                id="tool-request-version"
+                id="tool-installation-request-version"
                 v-model="requestedVersion"
                 type="text"
                 title="Requested Version"
                 help="e.g. 1.2.0" />
 
             <FormElement
-                id="tool-request-additional-remarks"
+                id="tool-installation-request-additional-remarks"
                 v-model="additionalRemarks"
                 type="text"
                 title="Additional Remarks"
