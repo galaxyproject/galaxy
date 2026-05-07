@@ -822,9 +822,7 @@ def _bump_repository_update_time_on_metadata_change(mapper, connection, target):
     if target.repository_id is None:
         return
     connection.execute(
-        Repository.__table__.update()
-        .where(Repository.__table__.c.id == target.repository_id)
-        .values(update_time=now())
+        Repository.__table__.update().where(Repository.__table__.c.id == target.repository_id).values(update_time=now())
     )
 
 

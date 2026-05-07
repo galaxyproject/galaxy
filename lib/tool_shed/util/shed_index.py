@@ -116,16 +116,12 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    log.info(
-        "Indexed repos: %s, tools: %s, removed stale: %s", repos_indexed, tools_indexed, len(stale_ids)
-    )
+    log.info("Indexed repos: %s, tools: %s, removed stale: %s", repos_indexed, tools_indexed, len(stale_ids))
     log.info("Toolbox index finished %s", execution_timer)
     return repos_indexed, tools_indexed
 
 
-def get_repos(
-    sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, indexed_full_last_updated=None, **kwargs
-):
+def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, indexed_full_last_updated=None, **kwargs):
     """
     Load repos from DB and included tools from .xml configs.
 

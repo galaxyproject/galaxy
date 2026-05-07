@@ -7,8 +7,8 @@ import pytest
 from whoosh import index
 
 import tool_shed.webapp.model.mapping as ts_mapping
-from tool_shed.webapp.model import RepositoryMetadata
 from tool_shed.util.shed_index import build_index
+from tool_shed.webapp.model import RepositoryMetadata
 
 COMMUNITY_FILES_DIR = os.path.join(os.path.dirname(__file__), "data", "toolshed_community_files")
 
