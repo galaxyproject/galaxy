@@ -96,10 +96,22 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
 
             repos_indexed += 1
 
+    # Garbage-collect docs for repos that have since been deleted, deprecated,
+    # or had their type changed away from indexable. Without this they linger
+    # in the index forever (the read path filters by DB state on hit, but the
+    # rows still consume index space and confuse search ordering).
+    live_ids = {unicodify(rid) for rid in get_live_repository_ids(sa_session)}
+    stale_ids = set(indexed_full_last_updated) - live_ids
+    for stale_id in stale_ids:
+        repo_index_writer.delete_by_term("id", stale_id)
+        tool_index_writer.delete_by_term("repo_id", stale_id)
+
     tool_index_writer.commit()
     repo_index_writer.commit()
 
-    log.info("Indexed repos: %s, tools: %s", repos_indexed, tools_indexed)
+    log.info(
+        "Indexed repos: %s, tools: %s, removed stale: %s", repos_indexed, tools_indexed, len(stale_ids)
+    )
     log.info("Toolbox index finished %s", execution_timer)
     return repos_indexed, tools_indexed
 
@@ -209,12 +221,20 @@ def load_one_dir(path):
     return tools_in_dir
 
 
-def get_repositories_for_indexing(session):
-    # Do not index deleted, deprecated, or "tool_dependency_definition" type repositories.
+def _live_repository_filters(stmt):
+    """Restrict a Repository query to rows we actually want indexed."""
     Repository = model.Repository
-    stmt = (
-        select(Repository)
-        .options(
+    return (
+        stmt.where(Repository.deleted == false())
+        .where(Repository.deprecated == false())
+        .where(Repository.type != "tool_dependency_definition")
+    )
+
+
+def get_repositories_for_indexing(session):
+    Repository = model.Repository
+    stmt = _live_repository_filters(
+        select(Repository).options(
             # Eager-load the relationships every repo dereferences below, so the
             # cron does two SELECTs (Repository + categories) instead of N+1
             # round-trips per repo (categories collection, each Category, owner
@@ -222,9 +242,10 @@ def get_repositories_for_indexing(session):
             joinedload(Repository.user),
             selectinload(Repository.categories).joinedload(model.RepositoryCategoryAssociation.category),
         )
-        .where(Repository.deleted == false())
-        .where(Repository.deprecated == false())
-        .where(Repository.type != "tool_dependency_definition")
-        .order_by(Repository.update_time.desc())
-    )
+    ).order_by(Repository.update_time.desc())
     return session.scalars(stmt).unique()
+
+
+def get_live_repository_ids(session):
+    """Return the set of repository ids that should currently appear in the index."""
+    return set(session.scalars(_live_repository_filters(select(model.Repository.id))))
