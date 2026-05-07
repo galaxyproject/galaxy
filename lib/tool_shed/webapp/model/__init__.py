@@ -23,6 +23,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     desc,
+    event,
     ForeignKey,
     Integer,
     not_,
@@ -812,6 +813,25 @@ mapper_registry.map_imperatively(
         repository=relationship(Repository, back_populates="metadata_revisions"),
     ),
 )
+
+
+# Repository.update_time uses onupdate=now, which fires only when the Repository
+# row itself is UPDATEd. New revisions only write to repository_metadata, so
+# without these listeners Repository.update_time silently misrepresents the last
+# activity on the repo -- the Tool Shed search indexer sorts on it, and the
+# frontend "last updated" column reads it. Bump the parent on any metadata
+# insert / update / delete so the timestamp tracks real activity.
+@event.listens_for(RepositoryMetadata, "after_insert")
+@event.listens_for(RepositoryMetadata, "after_update")
+@event.listens_for(RepositoryMetadata, "after_delete")
+def _bump_repository_update_time_on_metadata_change(mapper, connection, target):
+    if target.repository_id is None:
+        return
+    connection.execute(
+        Repository.__table__.update()
+        .where(Repository.__table__.c.id == target.repository_id)
+        .values(update_time=now())
+    )
 
 
 # Utility methods
