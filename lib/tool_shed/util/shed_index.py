@@ -63,12 +63,10 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
             indexed_document = searcher.document(id=repo_id)
             if indexed_document:
                 if indexed_document["full_last_updated"] == repo.get("full_last_updated"):
-                    # Already indexed and unchanged; skip just this repo. We
-                    # cannot break here: SQL orders by Repository.update_time,
-                    # but full_last_updated tracks last_updated_time (latest
-                    # downloadable revision's create_time), which can advance
-                    # without Repository.update_time moving in lockstep.
-                    continue
+                    # Repos are sorted by Repository.update_time DESC and
+                    # full_last_updated is derived from the same field, so once
+                    # we hit an unchanged repo every later one is unchanged too.
+                    break
                 else:
                     # Got an update, delete the previous document
                     repo_index_writer.delete_by_term("id", repo_id)
@@ -121,11 +119,10 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
             user = sa_session.get(model.User, repo.user_id)
             repo_owner_username = user.username.lower()
 
-        laste_updated_time = repo.last_updated_time
-        # If committed must have last_updated_time
-        assert laste_updated_time is not None
-        last_updated = pretty_print_time_interval(laste_updated_time)
-        full_last_updated = laste_updated_time.strftime("%Y-%m-%d %I:%M %p")
+        update_time = repo.update_time
+        assert update_time is not None
+        last_updated = pretty_print_time_interval(update_time)
+        full_last_updated = update_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
         try:
