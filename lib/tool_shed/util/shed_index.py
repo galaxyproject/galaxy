@@ -63,8 +63,10 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
             indexed_document = searcher.document(id=repo_id)
             if indexed_document:
                 if indexed_document["full_last_updated"] == repo.get("full_last_updated"):
-                    # We're done, since we sorted repos by update time
-                    break
+                    # Something is wrong here Repository.update_time is not "full_last_updated". 
+                    # Repository.update_time is not updated I think when a new revision is pushed.
+                    # But we are iterating over the Repository.update_time repos and break to early.
+                    continue
                 else:
                     # Got an update, delete the previous document
                     repo_index_writer.delete_by_term("id", repo_id)
@@ -127,7 +129,9 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
         try:
             entry = hgwcm.get_entry(os.path.join(hgweb_repo_prefix, repo.user.username, repo.name))
         except Exception:
-            return None
+            # A single repo with a missing/broken hgweb config entry should not kill indexing for other repositories
+            log.exception("Skipping repository %s: could not resolve hgweb entry", repo.id)
+            continue
         repo_path = os.path.join(hgweb_config_dir, entry)
         hg_repo = hg.repository(ui.ui(), repo_path.encode("utf-8"))
         lineage = []
