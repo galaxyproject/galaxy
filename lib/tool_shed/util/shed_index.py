@@ -66,7 +66,14 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
             unicodify(stored["id"]): stored.get("full_last_updated") for stored in searcher.all_stored_fields()
         }
 
-        for repo in get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
+        for repo in get_repos(
+            sa_session,
+            file_path,
+            hgweb_config_dir,
+            hgweb_repo_prefix,
+            indexed_full_last_updated=indexed_full_last_updated,
+            **kwargs,
+        ):
             if repo is None:
                 continue
             tools_list = repo.pop("tools_list")
@@ -116,13 +123,33 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
     return repos_indexed, tools_indexed
 
 
-def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
+def get_repos(
+    sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, indexed_full_last_updated=None, **kwargs
+):
     """
     Load repos from DB and included tools from .xml configs.
+
+    :param indexed_full_last_updated: Optional mapping of stringified repo id ->
+        full_last_updated string already stored in the search index. Repos whose
+        computed full_last_updated matches the stored value are skipped *before*
+        any expensive per-repo work (mercurial open, changelog walk, file walk,
+        tool XML parsing).
     """
+    if indexed_full_last_updated is None:
+        indexed_full_last_updated = {}
     hgwcm = hgweb_config_manager
     hgwcm.hgweb_config_dir = hgweb_config_dir
     for repo in get_repositories_for_indexing(sa_session):
+        update_time = repo.update_time
+        assert update_time is not None
+        full_last_updated = update_time.strftime("%Y-%m-%d %I:%M %p")
+
+        # Cheap freshness check first: skip unchanged repos before doing any of
+        # the expensive per-repo work below (mercurial repository open,
+        # changelog walk, filesystem walk, tool XML parsing).
+        if indexed_full_last_updated.get(unicodify(repo.id)) == full_last_updated:
+            continue
+
         # categories / owner are eager-loaded by get_repositories_for_indexing.
         categories = ",".join(rca.category.name.lower() for rca in repo.categories)
         repo_id = repo.id
@@ -136,10 +163,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
 
         repo_owner_username = repo.user.username.lower() if repo.user is not None else ""
 
-        update_time = repo.update_time
-        assert update_time is not None
         last_updated = pretty_print_time_interval(update_time)
-        full_last_updated = update_time.strftime("%Y-%m-%d %I:%M %p")
 
         # Load all changesets of the repo for lineage.
         try:
