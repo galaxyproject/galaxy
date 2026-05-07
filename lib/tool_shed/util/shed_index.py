@@ -55,14 +55,21 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
 
     execution_timer = ExecutionTimer()
     with repo_index.searcher() as searcher:
+        # Snapshot the index's stored full_last_updated for every existing doc
+        # in one pass so the per-repo freshness check below is a dict lookup
+        # instead of an O(N) whoosh searcher.document(id=...) call.
+        indexed_full_last_updated = {
+            unicodify(stored["id"]): stored.get("full_last_updated") for stored in searcher.all_stored_fields()
+        }
+
         for repo in get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwargs):
             if repo is None:
                 continue
             tools_list = repo.pop("tools_list")
             repo_id = repo["id"]
-            indexed_document = searcher.document(id=repo_id)
-            if indexed_document:
-                if indexed_document["full_last_updated"] == repo.get("full_last_updated"):
+            indexed_full = indexed_full_last_updated.get(repo_id)
+            if indexed_full is not None:
+                if indexed_full == repo.get("full_last_updated"):
                     # Repos are sorted by Repository.update_time DESC and
                     # full_last_updated is derived from the same field, so once
                     # we hit an unchanged repo every later one is unchanged too.
