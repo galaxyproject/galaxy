@@ -9,6 +9,10 @@ from sqlalchemy import (
     false,
     select,
 )
+from sqlalchemy.orm import (
+    joinedload,
+    selectinload,
+)
 from whoosh.writing import AsyncWriter
 
 import tool_shed.webapp.model.mapping as ts_mapping
@@ -107,11 +111,8 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
     hgwcm = hgweb_config_manager
     hgwcm.hgweb_config_dir = hgweb_config_dir
     for repo in get_repositories_for_indexing(sa_session):
-        category_names = []
-        for rca in get_repo_cat_associations(sa_session, repo.id):
-            category = sa_session.get(model.Category, rca.category.id)
-            category_names.append(category.name.lower())
-        categories = (",").join(category_names)
+        # categories / owner are eager-loaded by get_repositories_for_indexing.
+        categories = ",".join(rca.category.name.lower() for rca in repo.categories)
         repo_id = repo.id
         name = repo.name
         description = repo.description
@@ -121,10 +122,7 @@ def get_repos(sa_session, file_path, hgweb_config_dir, hgweb_repo_prefix, **kwar
 
         times_downloaded = repo.times_downloaded or 0
 
-        repo_owner_username = ""
-        if repo.user_id is not None:
-            user = sa_session.get(model.User, repo.user_id)
-            repo_owner_username = user.username.lower()
+        repo_owner_username = repo.user.username.lower() if repo.user is not None else ""
 
         update_time = repo.update_time
         assert update_time is not None
@@ -216,16 +214,17 @@ def get_repositories_for_indexing(session):
     Repository = model.Repository
     stmt = (
         select(Repository)
+        .options(
+            # Eager-load the relationships every repo dereferences below, so the
+            # cron does two SELECTs (Repository + categories) instead of N+1
+            # round-trips per repo (categories collection, each Category, owner
+            # User).
+            joinedload(Repository.user),
+            selectinload(Repository.categories).joinedload(model.RepositoryCategoryAssociation.category),
+        )
         .where(Repository.deleted == false())
         .where(Repository.deprecated == false())
         .where(Repository.type != "tool_dependency_definition")
         .order_by(Repository.update_time.desc())
     )
-    return session.scalars(stmt)
-
-
-def get_repo_cat_associations(session, repository_id):
-    stmt = select(model.RepositoryCategoryAssociation).where(
-        model.RepositoryCategoryAssociation.repository_id == repository_id
-    )
-    return session.scalars(stmt)
+    return session.scalars(stmt).unique()
