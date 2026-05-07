@@ -63,7 +63,7 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, hgweb_repo_prefix
             indexed_document = searcher.document(id=repo_id)
             if indexed_document:
                 if indexed_document["full_last_updated"] == repo.get("full_last_updated"):
-                    # Something is wrong here Repository.update_time is not "full_last_updated". 
+                    # Something is wrong here Repository.update_time is not "full_last_updated".
                     # Repository.update_time is not updated I think when a new revision is pushed.
                     # But we are iterating over the Repository.update_time repos and break to early.
                     continue
