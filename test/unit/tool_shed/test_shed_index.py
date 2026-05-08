@@ -103,6 +103,7 @@ def test_push_triggers_reindex(shed_fixture, whoosh_index_dir):
     model_mapping = ts_mapping.init(shed_fixture["dburi"], engine_options={}, create_tables=False)
     session = model_mapping.session
     metadata_row = session.get(RepositoryMetadata, 1)
+    assert metadata_row is not None
     metadata_row.changeset_revision = "fa1afe1" * 5
     session.add(metadata_row)
     session.commit()
