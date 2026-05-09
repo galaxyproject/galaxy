@@ -36,7 +36,7 @@ const FAKE_USER = getFakeRegisteredUser({
 });
 
 async function mountWorkflowList() {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const wrapper = mount(WorkflowList as object, {

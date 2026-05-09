@@ -108,7 +108,7 @@ describe("FilterMenu", () => {
             stubs: {
                 icon: { template: "<div></div>" },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         });
     }
 

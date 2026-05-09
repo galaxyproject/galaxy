@@ -64,7 +64,7 @@ describe("JobInformation/JobInformation.vue", () => {
             props: propsData,
             global: {
                 ...localVue,
-                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn })],
+                plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
             },
         });
         await flushPromises();

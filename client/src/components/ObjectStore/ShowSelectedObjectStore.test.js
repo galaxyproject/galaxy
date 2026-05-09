@@ -50,7 +50,7 @@ function mountWithPreferredStoreId(preferredObjectStoreId) {
         props: { preferredObjectStoreId, forWhat: "Data goes into..." },
         global: {
             ...localVue,
-            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn })],
+            plugins: [...(localVue.plugins ?? []), createTestingPinia({ createSpy: vi.fn, stubActions: false })],
         },
     });
     return wrapper;

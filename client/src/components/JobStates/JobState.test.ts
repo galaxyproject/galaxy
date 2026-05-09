@@ -45,7 +45,7 @@ const SELECTORS = {
 };
 
 function mountJobState(job: JobBaseModel | ShowFullJobResponse, user: RegisteredUser | null = FAKE_USER) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     const userStore = useUserStore();
     userStore.currentUser = user;
     return mount(JobState as object, {

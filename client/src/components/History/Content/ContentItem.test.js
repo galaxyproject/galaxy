@@ -77,7 +77,7 @@ describe("ContentItem", () => {
                     getters: {},
                 },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             router,
         });
     });

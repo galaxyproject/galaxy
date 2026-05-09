@@ -22,7 +22,7 @@ const PUBLISHED_WARNING_SELECTOR = "#broadcast-published-warning";
 const localVue = getLocalVue(true);
 
 async function mountBroadcastForm(props?: object) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     const mockRouter = {

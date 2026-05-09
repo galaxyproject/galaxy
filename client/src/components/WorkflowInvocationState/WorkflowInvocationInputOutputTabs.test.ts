@@ -106,7 +106,7 @@ async function mountWorkflowInvocationInputOutputTabs(
             ContentItem: true,
             ParameterStep: true,
         },
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
     });
     await flushPromises();
     return wrapper;
