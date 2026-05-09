@@ -126,43 +126,54 @@ Object.defineProperty(global, "Worker", {
 });
 
 // Fail tests that log console errors or warnings
-// Replaces jest-fail-on-console functionality
+// Replaces jest-fail-on-console functionality.
+//
+// vitest-fail-on-console treats shouldFailOnError/shouldFailOnWarn as booleans
+// (defaults: true). The predicate that decides whether to silence a particular
+// message is silenceMessage(message, methodName) -- returning true suppresses
+// it completely (no fail, no noisy print).
 const failOnConsole = (await import("vitest-fail-on-console")).default;
 failOnConsole({
-    shouldFailOnError: (message: string) => {
-        // Don't fail on axios mock errors (expected during some tests)
-        if (message.includes('No "default" export is defined on the "axios" mock')) {
-            return false;
+    shouldFailOnError: true,
+    shouldFailOnWarn: true,
+    silenceMessage: (message: string, methodName: string) => {
+        if (methodName === "warn") {
+            // Vue compat mode warnings (resolveComponent / resolveDirective /
+            // withDirectives / Property "X" was accessed during render /
+            // Missing ref owner / injection not found / onScopeDispose /
+            // $scopedSlots / COMPONENT_FUNCTIONAL deprecation / Invalid vnode
+            // type / Unhandled error during execution of watcher callback)
+            if (message.includes("[Vue warn]")) {
+                return true;
+            }
+            // Vue Router compat warnings (e.g. "No match found for location")
+            if (message.includes("[Vue Router warn]")) {
+                return true;
+            }
+            // Pinia duplicate registration during test setup
+            if (message.includes("App already provides property with key")) {
+                return true;
+            }
+            // Bootstrap-Vue duplicate-registration noise
+            if (message.includes("has already been registered")) {
+                return true;
+            }
+            // Deprecation warnings during migration
+            if (message.includes("DEPRECATION") || message.includes("deprecated")) {
+                return true;
+            }
         }
-        // Don't fail on network errors in tests (mocking issue, not real error)
-        if (message.includes("ECONNREFUSED") || message.includes("socket hang up")) {
-            return false;
+        if (methodName === "error") {
+            // axios mock not installed during some tests (expected)
+            if (message.includes('No "default" export is defined on the "axios" mock')) {
+                return true;
+            }
+            // Network errors from unmocked endpoints (mocking issue, not a real error)
+            if (message.includes("ECONNREFUSED") || message.includes("socket hang up")) {
+                return true;
+            }
         }
-        return true;
-    },
-    shouldFailOnWarn: (message: string) => {
-        // Don't fail on Vue compat mode warnings during migration
-        if (message.includes("[Vue warn]")) {
-            return false;
-        }
-        // Don't fail on Vue runtime warnings (component resolution, etc.)
-        if (message.includes("resolveComponent") || message.includes("resolveDirective")) {
-            return false;
-        }
-        // Don't fail on Pinia duplicate registration (harmless during test setup)
-        if (message.includes("App already provides property with key")) {
-            return false;
-        }
-        // Don't fail on Bootstrap-Vue registration warnings
-        if (message.includes("has already been registered")) {
-            return false;
-        }
-        // Don't fail on deprecation warnings during migration
-        if (message.includes("DEPRECATION") || message.includes("deprecated")) {
-            return false;
-        }
-        // Fail on other warnings
-        return true;
+        return false;
     },
 });
 
