@@ -54,11 +54,15 @@ const routerPushMock = vi.fn();
 // The component reads the router via `useRouter()` (mocked here) while child
 // components (e.g. GButton's `<RouterLink>`) need a real router on the mount
 // option to render — keep both wired up.
-vi.mock("vue-router", () => ({
-    useRouter: () => ({
-        push: routerPushMock,
-    }),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: () => ({
+            push: routerPushMock,
+        }),
+    };
+});
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
@@ -98,9 +102,10 @@ describe("ToolsList", () => {
 
     it("performs an advanced search with a router push", async () => {
         const wrapper = mount(ToolsList as object, {
-            global: localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
         });
 
         // By default, no search text, fetch tools is still called but without a query
@@ -131,9 +136,10 @@ describe("ToolsList", () => {
 
     it("detects filters in the route and searches the backend", async () => {
         mount(ToolsList as object, {
-            global: localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
             props: FILTER_SETTINGS,
         });
 
