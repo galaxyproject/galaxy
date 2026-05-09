@@ -14,7 +14,8 @@ const TOTAL_ITEMS = 50;
 const BUFFER_SIZE = 5;
 const TEST_ITEM_DIV = "div[data-description='test item']";
 const LOAD_MORE_BUTTON = "[data-description='load more items button']";
-const TEST_ITEM_SLOT = '<div data-description="test item" slot-scope="{ item, index }">Test {{ item.name }}</div>';
+const TEST_ITEM_SLOT = ({ item }: { item: TestItem; index: number }) =>
+    `<div data-description="test item">Test ${item.name}</div>`;
 const ITEM_NAME = "test item";
 const ITEM_NAME_PLURAL = "test items";
 
@@ -101,12 +102,15 @@ describe("ScrollList with local loader and data", () => {
                 name: "test item",
                 namePlural: "test items",
             },
-            global: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
@@ -197,12 +201,15 @@ describe("ScrollList with prop items and no local state", () => {
                 name: ITEM_NAME,
                 namePlural: ITEM_NAME_PLURAL,
             },
-            global: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
@@ -240,12 +247,15 @@ describe("ScrollList with prop items and a local state loader", () => {
                 namePlural: ITEM_NAME_PLURAL,
                 adjustForTotalCountChanges: false, // Default; we will adjust this to test this later
             },
-            global: getLocalVue(),
-            scopedSlots: {
+            slots: {
                 item: TEST_ITEM_SLOT,
             },
-            stubs: {
-                FontAwesomeIcon: true,
+            global: {
+                ...getLocalVue(),
+                stubs: {
+                    ...(getLocalVue().stubs ?? {}),
+                    FontAwesomeIcon: true,
+                },
             },
         });
     });
