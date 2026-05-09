@@ -120,20 +120,10 @@ export function getLocalVue(instrumentLocalization = false) {
             BInputGroupPrepend: true,
             "b-input-group-text": true,
             BInputGroupText: true,
-            "b-form-radio": true,
-            BFormRadio: true,
-            "b-form-radio-group": true,
-            BFormRadioGroup: true,
-            "b-form-file": true,
-            BFormFile: true,
-            "b-form-tags": true,
-            BFormTags: true,
-            "b-form-tag": true,
-            BFormTag: true,
-            "b-form-datepicker": true,
-            BFormDatepicker: true,
-            "b-form-timepicker": true,
-            BFormTimepicker: true,
+            // BFormRadio*, BFormFile, BFormDate/TimePicker, BFormTags are NOT
+            // stubbed here so tests can interact with the real form-control
+            // inputs they render (via the bootstrap-vue compat shim, which now
+            // works after the h-fallback / data-flatten patches).
             "b-icon": true,
             BIcon: true,
             "b-iconstack": true,
