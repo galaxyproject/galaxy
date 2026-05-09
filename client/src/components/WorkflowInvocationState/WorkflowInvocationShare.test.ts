@@ -141,7 +141,7 @@ async function mountWorkflowInvocationShare(ownsWorkflow = true, bothShareable =
             FontAwesomeIcon: true,
         },
         global: localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
     });
 
     const userStore = useUserStore();

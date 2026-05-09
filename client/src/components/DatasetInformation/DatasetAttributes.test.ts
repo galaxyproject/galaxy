@@ -15,7 +15,7 @@ const localVue = getLocalVue();
 const { server, http } = useServerMock();
 
 async function mountDatasetAttributes(conversion_disable = false) {
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     setActivePinia(pinia);
 
     server.use(

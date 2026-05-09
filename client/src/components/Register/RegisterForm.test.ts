@@ -37,7 +37,7 @@ describe("RegisterForm", () => {
             }),
         );
 
-        const pinia = createTestingPinia({ createSpy: vi.fn });
+        const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
         wrapper = mount(MountTarget as object, {
             props: {

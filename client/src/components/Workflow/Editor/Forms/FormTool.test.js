@@ -60,7 +60,7 @@ describe("FormTool", () => {
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             provide: { workflowId: "mock-workflow" },
         });
     }

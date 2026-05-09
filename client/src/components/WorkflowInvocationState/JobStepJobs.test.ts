@@ -80,7 +80,7 @@ describe("JobStepJobs", () => {
                 perPage: 10,
             },
             global: localVue,
-            pinia: createTestingPinia({ createSpy: vi.fn }),
+            pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
             stubs: {
                 ContentItem: true,
                 FontAwesomeIcon: true,

@@ -87,7 +87,7 @@ async function mountWorkflowAnnotation(version: "run_form" | "invocation", ownsW
             showDetails: version === "run_form",
         },
         global: localVue,
-        pinia: createTestingPinia({ createSpy: vi.fn }),
+        pinia: createTestingPinia({ createSpy: vi.fn, stubActions: false }),
         stubs: {
             FontAwesomeIcon: true,
         },

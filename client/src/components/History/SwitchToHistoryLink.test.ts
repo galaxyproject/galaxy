@@ -81,7 +81,7 @@ function initializeMocks() {
 function mountSwitchToHistoryLinkForHistory(history: HistorySummaryExtended, hasFilters = false) {
     initializeMocks();
 
-    const pinia = createTestingPinia({ createSpy: vi.fn });
+    const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
 
     server.use(
         http.get("/api/histories/{history_id}", ({ response }) => {
