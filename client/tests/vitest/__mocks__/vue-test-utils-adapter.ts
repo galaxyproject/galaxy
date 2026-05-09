@@ -49,6 +49,19 @@ function adaptMountOptions(options: Record<string, any> = {}): Record<string, an
         delete normalized.localVue;
     }
 
+    // VTU v1 used `propsData`; v2 expects `props`. Translate so legacy tests work.
+    if (normalized.propsData && !normalized.props) {
+        normalized.props = normalized.propsData;
+        delete normalized.propsData;
+    }
+
+    // VTU v1 had top-level stubs; v2 expects them inside global.
+    if (normalized.stubs) {
+        normalized.global = normalized.global ?? {};
+        normalized.global.stubs = { ...(normalized.global.stubs ?? {}), ...normalized.stubs };
+        delete normalized.stubs;
+    }
+
     // Add collected plugins to global.plugins, avoiding duplicates
     if (pluginsToAdd.length > 0) {
         normalized.global = normalized.global ?? {};
