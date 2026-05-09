@@ -1,5 +1,6 @@
 import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount, type Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import jobInformationResponse from "@/components/JobInformation/testData/jobInformationResponse.json";
@@ -70,18 +71,29 @@ describe("ToolSuccessMessage", () => {
     });
 
     it("has a link to each job when multiple jobs are present", async () => {
-        await wrapper.setProps({
-            jobResponse: {
-                ...TEST_JOB_RESPONSE,
-                jobs: [
-                    jobInformationResponse,
-                    {
-                        ...jobInformationResponse,
-                        id: "test_id_2",
-                    },
-                ],
+        // Remount with two-job props instead of setProps -- VTU v2 + Vue 3 doesn't
+        // reliably re-render when a top-level prop object is replaced wholesale.
+        wrapper = mount(ToolSuccessMessage as object, {
+            global: localVue,
+            router,
+            props: {
+                jobResponse: {
+                    ...TEST_JOB_RESPONSE,
+                    jobs: [
+                        jobInformationResponse,
+                        {
+                            ...jobInformationResponse,
+                            id: "test_id_2",
+                        },
+                    ],
+                },
+                toolName: TEST_TOOL_NAME,
+            },
+            stubs: {
+                FontAwesomeIcon: true,
             },
         });
+        await flushPromises();
         expect(wrapper.findAll(SELECTORS.JOB_LINK).length).toBe(2);
     });
 });
