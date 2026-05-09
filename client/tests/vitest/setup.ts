@@ -181,6 +181,10 @@ failOnConsole({
             if (message.includes("ECONNREFUSED") || message.includes("socket hang up")) {
                 return true;
             }
+            // FontAwesome icon-not-found noise from tests using made-up icon names
+            if (message.includes("Could not find one or more icon")) {
+                return true;
+            }
         }
         return false;
     },
