@@ -211,6 +211,18 @@ describe("DatasetView", () => {
                     },
                 });
             }),
+            http.untyped.get("/api/datatypes/types_and_mapping", () => {
+                // Return an empty mapping; tests don't depend on real datatype info,
+                // they just need the endpoint to not 404 so console.error stays quiet.
+                return new Response(
+                    JSON.stringify({
+                        datatypes: [],
+                        datatypes_mapping: { ext_to_class_name: {}, class_to_classes: {} },
+                    }),
+                    { headers: { "Content-Type": "application/json" } },
+                );
+            }),
+            http.get("/api/datatypes/{datatype}", ({ response }) => response(200).json({})),
         );
     });
 
@@ -243,7 +255,7 @@ describe("DatasetView", () => {
         it("shows loading message when dataset is loading", async () => {
             const wrapper = await mountLoadingDatasetView();
             expect(wrapper.find(".loading-message").exists()).toBe(true);
-            expect(wrapper.find(".loading-message").text()).toBe("Loading...");
+            expect(wrapper.find(".loading-message").text()).toBe("Loading dataset details...");
             expect(wrapper.find(".dataset-view").exists()).toBe(true);
         });
 
