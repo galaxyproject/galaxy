@@ -18,7 +18,7 @@ describe("ColorSelector", () => {
         const allSelected = wrapper.findAll(".selected");
         expect(allSelected.length).toBe(1);
 
-        let selected = allSelected.wrappers[0];
+        let selected = allSelected[0];
         expect(selected.element.getAttribute("title")).toBe("No Color");
 
         const colorNames = Object.keys(colors);

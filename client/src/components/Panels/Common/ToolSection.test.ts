@@ -136,7 +136,7 @@ describe("ToolSection element ordering", () => {
     ] as Tool[];
 
     function getRenderedToolIds(wrapper: Wrapper<Vue>) {
-        return wrapper.findAll("[data-tool-id]").wrappers.map((w) => w.attributes("data-tool-id"));
+        return wrapper.findAll("[data-tool-id]").map((w) => w.attributes("data-tool-id"));
     }
 
     test("renders tools alphabetically by default", async () => {

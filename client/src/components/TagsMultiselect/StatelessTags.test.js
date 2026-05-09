@@ -95,7 +95,7 @@ describe("StatelessTags", () => {
 
         expect(visibleOptions.length).toBe(autocompleteTags.length);
 
-        visibleOptions.wrappers.forEach((option, i) => {
+        visibleOptions.forEach((option, i) => {
             expect(normalize(option.text())).toContain(autocompleteTags[i]);
         });
     });
@@ -146,7 +146,7 @@ describe("StatelessTags", () => {
             maxVisibleTags: 4,
         });
 
-        const tags = wrapper.findAll(".tag").wrappers.filter((w) => !w.element.closest(".g-tooltip"));
+        const tags = wrapper.findAll(".tag").filter((w) => !w.element.closest(".g-tooltip"));
         expect(tags.length).toBe(4);
 
         const showMoreLink = wrapper.find(".toggle-link");

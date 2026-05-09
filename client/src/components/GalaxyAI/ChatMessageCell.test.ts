@@ -79,7 +79,7 @@ describe("ChatMessageCell", () => {
         it("shows agent label in metadata", () => {
             const wrapper = mountCell(makeAssistantMessage({ agentType: "error_analysis" }));
             const tags = wrapper.findAll(".meta-tag");
-            const labels = tags.wrappers.map((w) => w.text());
+            const labels = tags.map((w) => w.text());
             expect(labels.some((l) => l.includes("Error Analysis"))).toBe(true);
         });
     });
@@ -200,7 +200,7 @@ describe("ChatMessageCell", () => {
             });
             const wrapper = mountCell(message);
             const tags = wrapper.findAll(".meta-tag");
-            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            const text = tags.map((w) => w.text()).join(" ");
             expect(text).toContain("gpt-4");
         });
 
@@ -216,7 +216,7 @@ describe("ChatMessageCell", () => {
             });
             const wrapper = mountCell(message);
             const tags = wrapper.findAll(".meta-tag");
-            const text = tags.wrappers.map((w) => w.text()).join(" ");
+            const text = tags.map((w) => w.text()).join(" ");
             expect(text).toContain("150 tok");
         });
     });
