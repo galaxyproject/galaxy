@@ -4,7 +4,7 @@ import "@/composables/__mocks__/filter";
 import { createTestingPinia } from "@pinia/testing";
 import { dispatchEvent, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { useServerMock } from "@/api/client/__mocks__";
 import { testDatatypesMapper, typesAndMappingResponse } from "@/components/Datatypes/test_fixtures";
