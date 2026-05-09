@@ -345,9 +345,9 @@ function updateFilterText(newFilterText: string) {
 
                 <GModal
                     v-if="props.hasHelp"
+                    v-model:show="showHelp"
                     fixed-height
                     size="small"
-                    :show.sync="showHelp"
                     :title="`${capitalizeFirstLetter(props.name)} Advanced Search Help`">
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>

@@ -13,10 +13,7 @@
                     <BCol md="6">
                         <BFormGroup description="Search for strings or regular expressions">
                             <BInputGroup>
-                                <BFormInput
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc="filter = ''" />
+                                <BFormInput v-model="filter" placeholder="Type to Search" @keyup.esc="filter = ''" />
 
                                 <BInputGroupAppend>
                                     <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>

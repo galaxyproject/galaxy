@@ -35,7 +35,7 @@
             </div>
         </div>
         <GModal
-            :show.sync="showHelpModal"
+            v-model:show="showHelpModal"
             size="medium"
             fixed-height
             :title="mode === 'page' ? 'Markdown Help for Pages' : 'Markdown Help for Invocation Reports'">

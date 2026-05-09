@@ -16,9 +16,9 @@
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
         <SaveChangesModal
+            v-model:show-modal="showSaveChangesModal"
             :append-version="saveChangesAppendVersion"
             :nav-url="navUrl"
-            v-model:show-modal="showSaveChangesModal"
             @on-proceed="onNavigate" />
         <GModal
             v-model:show="showSaveAsModal"
@@ -90,8 +90,8 @@
                     v-else-if="isActiveSideBar('workflow-editor-attributes')"
                     :id="id"
                     v-model:readme-active="readmeActive"
-                    :tags="tags"
                     v-model:highlight="highlightAttribute"
+                    :tags="tags"
                     :parameters="parameters"
                     :annotation="annotation"
                     :name="name"

@@ -38,7 +38,7 @@ function onCancel() {
 
 <template>
     <span>
-        <GModal :show.sync="modalShow" :title="title" confirm ok-text="Continue" @ok="onOk" @close="onCancel">
+        <GModal v-model:show="modalShow" :title="title" confirm ok-text="Continue" @ok="onOk" @close="onCancel">
             <LabelSelector
                 v-model="selectedValue"
                 class="ml-2"

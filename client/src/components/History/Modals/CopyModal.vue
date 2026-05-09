@@ -102,7 +102,7 @@ async function copy() {
 
 <template>
     <GModal
-        :show.sync="localShowModal"
+        v-model:show="localShowModal"
         size="small"
         :title="title"
         confirm

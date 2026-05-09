@@ -53,7 +53,12 @@ const computedStateMessages = computed<RenderedStateMessage[]>(() => {
 </script>
 
 <template>
-    <GModal :show.sync="show" :title="title" size="medium" fixed-height data-description="workflow state upgrade modal">
+    <GModal
+        v-model:show="show"
+        :title="title"
+        size="medium"
+        fixed-height
+        data-description="workflow state upgrade modal">
         <div v-if="show" data-description="workflow state upgrade modal content">
             {{ message }}
             <ul class="workflow-state-upgrade-step-summaries">

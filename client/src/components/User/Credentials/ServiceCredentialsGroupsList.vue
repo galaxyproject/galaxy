@@ -330,7 +330,7 @@ function getPrimaryActions(group: ServiceCredentialsGroupDetails): CardAction[] 
         </GCard>
 
         <GModal
-            :show.sync="showModal"
+            v-model:show="showModal"
             confirm
             :title="`Edit Credentials Group - ${editData?.groupData.groupPayload.name}`"
             :ok-text="saveButtonText"

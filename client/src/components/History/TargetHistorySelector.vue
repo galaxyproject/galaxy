@@ -75,8 +75,8 @@ function handleHistorySelected(history: { id: string }) {
 
         <SelectorModal
             v-if="canChangeHistory"
+            v-model:show-modal="showModal"
             :histories="histories"
-            :show-modal.sync="showModal"
             :title="modalTitle"
             @selectHistory="handleHistorySelected" />
     </div>

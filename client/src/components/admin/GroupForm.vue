@@ -195,11 +195,11 @@ loadGroupData();
                             track-by="id"
                             placeholder="Search users by email..."
                             @search-change="onUserSearch">
-                            <template slot="noResult">
+                            <template v-slot:noResult>
                                 <div v-if="userSearch.length < 3">Enter at least 3 characters to search</div>
                                 <div v-else>No users found</div>
                             </template>
-                            <template slot="noOptions">
+                            <template v-slot:noOptions>
                                 <div>Enter at least 3 characters to search</div>
                             </template>
                         </Multiselect>
@@ -218,11 +218,11 @@ loadGroupData();
                             track-by="id"
                             placeholder="Search roles by name..."
                             @search-change="onRoleSearch">
-                            <template slot="noResult">
+                            <template v-slot:noResult>
                                 <div v-if="roleSearch.length < 3">Enter at least 3 characters to search</div>
                                 <div v-else>No roles found</div>
                             </template>
-                            <template slot="noOptions">
+                            <template v-slot:noOptions>
                                 <div>Enter at least 3 characters to search</div>
                             </template>
                         </Multiselect>

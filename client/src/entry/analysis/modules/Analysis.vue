@@ -4,9 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
-import { eventBus } from "@/utils/eventBus";
 import { usePanels } from "@/composables/usePanels";
 import { useUserStore } from "@/stores/userStore";
+import { eventBus } from "@/utils/eventBus";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -58,7 +58,7 @@ onUnmounted(() => {
                 <router-view :key="$route.fullPath" class="h-100" />
             </div>
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" v-model:reactive-width="historyPanelWidth" side="right">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />

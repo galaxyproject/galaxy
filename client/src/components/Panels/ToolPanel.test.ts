@@ -27,7 +27,7 @@ interface ToolPanelView {
 }
 
 const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
+const _router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
 const TEST_PANELS_URI = "/api/tool_panels";

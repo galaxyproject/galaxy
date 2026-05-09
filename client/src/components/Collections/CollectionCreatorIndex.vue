@@ -208,7 +208,7 @@ defineExpose({ redrawCreator });
     <component
         :is="props.notModal ? 'div' : GModal"
         id="collection-creator-modal"
-        :show.sync="localShowToggle"
+        v-model:show="localShowToggle"
         size="medium"
         @close="resetCreator">
         <template v-slot:header>

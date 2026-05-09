@@ -87,14 +87,14 @@ export function useRemoteFileBrowser(options: UseRemoteFileBrowserOptions = {}) 
 
     const allSelectableSelected = computed(() => {
         // Reference selectionCount to ensure reactivity on selection changes
-        selectionCount.value;
+        void selectionCount.value;
         const items = selectableItemsOnCurrentPage.value;
         return items.length > 0 && items.every((item) => isSelected(item));
     });
 
     const someSelectableSelected = computed(() => {
         // Reference selectionCount to ensure reactivity on selection changes
-        selectionCount.value;
+        void selectionCount.value;
         const items = selectableItemsOnCurrentPage.value;
         const selectedCount = items.filter((item) => isSelected(item)).length;
         return selectedCount > 0 && selectedCount < items.length;

@@ -10,6 +10,7 @@ import { faCheck, faChevronUp, faPlus, faTags, faTimes } from "@fortawesome/free
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { onClickOutside, useElementBounding, whenever } from "@vueuse/core";
 import { computed, nextTick, ref, watch } from "vue";
+
 import { useUid } from "@/composables/utils/uid";
 import { normalizeTag } from "@/stores/userTagsStore";
 

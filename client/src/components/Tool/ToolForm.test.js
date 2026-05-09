@@ -17,7 +17,7 @@ import ToolForm from "./ToolForm.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const router = injectTestRouter(localVue);
+const _router = injectTestRouter(localVue);
 const pinia = createPinia();
 
 describe("ToolForm", () => {

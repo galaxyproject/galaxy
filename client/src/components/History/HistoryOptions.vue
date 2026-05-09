@@ -252,7 +252,7 @@ watch(
         <CopyModal v-model:show-modal="showCopyModal" :history="history" />
 
         <GModal
-            :show.sync="showDeleteModal"
+            v-model:show="showDeleteModal"
             :title="isDeletedNotPurged ? 'Permanently Delete History?' : 'Delete History?'"
             :ok-text="isDeletedNotPurged ? 'Permanently Delete' : 'Delete'"
             ok-color="red"

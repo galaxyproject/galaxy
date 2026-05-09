@@ -321,7 +321,7 @@ onMounted(async () => {
                     @click="signOut" />
             </div>
 
-            <GModal :show.sync="showDataPrivateModal" title="Datasets are now private" size="small">
+            <GModal v-model:show="showDataPrivateModal" title="Datasets are now private" size="small">
                 <BAlert variant="info" show>
                     All of your histories and datasets have been made private. If you'd like to make all
                     <strong>future</strong>

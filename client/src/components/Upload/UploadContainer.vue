@@ -240,8 +240,8 @@ defineExpose({
             :list-db-keys="listDbKeys"
             :multiple="regularTabActive ? multiple : undefined"
             :is-collection="collectionTabActive"
-            @progress="progress"
-            v-bind="$attrs" />
+            v-bind="$attrs"
+            @progress="progress" />
     </div>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />
