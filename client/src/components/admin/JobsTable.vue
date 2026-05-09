@@ -98,7 +98,6 @@ export default {
         LoadingSpan,
         UtcDate,
     },
-    emits: ["user-clicked", "tool-clicked", "runner-clicked", "handler-clicked", "input"],
     props: {
         tableCaption: {
             type: String,
