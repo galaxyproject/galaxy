@@ -5,10 +5,10 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
-import { eventBus } from "@/utils/eventBus";
 import { usePanels } from "@/composables/usePanels";
 import { useChatStore } from "@/stores/chatStore";
 import { useUserStore } from "@/stores/userStore";
+import { eventBus } from "@/utils/eventBus";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
@@ -100,7 +100,7 @@ onUnmounted(() => {
             </div>
             <ChatPanel v-if="isBottomPanelOpen" />
         </div>
-        <FlexPanel v-if="showPanels" ref="historyPanel" side="right" v-model:reactive-width="historyPanelWidth">
+        <FlexPanel v-if="showPanels" ref="historyPanel" v-model:reactive-width="historyPanelWidth" side="right">
             <template v-slot:closed-button="{ open }">
                 <GButton class="history-expand-button" size="small" @click="open">
                     <FontAwesomeIcon fixed-width :icon="faChevronLeft" />
