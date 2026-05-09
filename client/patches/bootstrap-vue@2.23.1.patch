@@ -1,5 +1,5 @@
 diff --git a/esm/vue.js b/esm/vue.js
-index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..a6660d15707697b8ad7640f299f66d9842ee8170 100644
+index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..5c72e6746a86413868fcff2fc0e7a1523126101d 100644
 --- a/esm/vue.js
 +++ b/esm/vue.js
 @@ -47,6 +47,11 @@ if (isVue3) {
@@ -14,3 +14,67 @@ index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..a6660d15707697b8ad7640f299f66d98
          var patchedH = function patchedH(tag, dataObjOrChildren, rawSlots) {
            var slots = rawSlots === undefined ? [] : [Array.isArray(rawSlots) ? rawSlots.filter(Boolean) : rawSlots];
            var isTag = typeof tag === 'string' && !KNOWN_COMPONENTS.includes(tag);
+@@ -58,21 +63,54 @@ if (isVue3) {
+
+           var attrs = dataObjOrChildren.attrs,
+               props = dataObjOrChildren.props,
+-              restData = _objectWithoutProperties(dataObjOrChildren, ["attrs", "props"]);
+-
+-          var normalizedData = _objectSpread(_objectSpread({}, restData), {}, {
+-            attrs: attrs,
+-            props: isTag ? {} : props
+-          });
++              domProps = dataObjOrChildren.domProps,
++              on = dataObjOrChildren.on,
++              restData = _objectWithoutProperties(dataObjOrChildren, ["attrs", "props", "domProps", "on"]);
++
++          // Vue 3's h() takes a flat data object: { class, style, onClick, ... }.
++          // Bootstrap-Vue still emits Vue 2-style nested { attrs, props, on, domProps }.
++          // Flatten so class / data-* / event handlers actually reach the DOM.
++          var flatData = _objectSpread({}, restData);
++          if (attrs) {
++            for (var attrKey in attrs) {
++              if (Object.prototype.hasOwnProperty.call(attrs, attrKey) && !(attrKey in flatData)) {
++                flatData[attrKey] = attrs[attrKey];
++              }
++            }
++          }
++          if (!isTag && props) {
++            for (var propKey in props) {
++              if (Object.prototype.hasOwnProperty.call(props, propKey) && !(propKey in flatData)) {
++                flatData[propKey] = props[propKey];
++              }
++            }
++          }
++          if (domProps) {
++            for (var dpKey in domProps) {
++              if (Object.prototype.hasOwnProperty.call(domProps, dpKey) && !(dpKey in flatData)) {
++                flatData[dpKey] = domProps[dpKey];
++              }
++            }
++          }
++          if (on) {
++            for (var evt in on) {
++              if (Object.prototype.hasOwnProperty.call(on, evt)) {
++                var handlerKey = 'on' + evt.charAt(0).toUpperCase() + evt.slice(1);
++                if (!(handlerKey in flatData)) {
++                  flatData[handlerKey] = on[evt];
++                }
++              }
++            }
++          }
+
+-          if (tag === 'router-link' && !normalizedData.slots && !normalizedData.scopedSlots) {
++          if (tag === 'router-link' && !flatData.slots && !flatData.scopedSlots) {
+             // terrible workaround to fix router-link rendering with compat vue-router
+-            normalizedData.scopedSlots = {
++            flatData.scopedSlots = {
+               $hasNormal: function $hasNormal() {}
+             };
+           }
+
+-          return h.apply(void 0, [tag, normalizedData].concat(slots));
++          return h.apply(void 0, [tag, flatData].concat(slots));
+         };
+
+         if (definition.functional) {
