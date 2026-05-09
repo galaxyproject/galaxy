@@ -1,0 +1,415 @@
+diff --git a/dist/vue.cjs.js b/dist/vue.cjs.js
+index f316dd82738ba3560a1934dbc86bafbe01cd94b1..08c1f0af017b1c8d7bbc0f4a36423aa816fa488b 100644
+--- a/dist/vue.cjs.js
++++ b/dist/vue.cjs.js
+@@ -3421,7 +3421,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -5688,7 +5688,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -5977,10 +5977,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6078,7 +6078,7 @@ function createSlots(slots, dynamicSlots) {
+ }
+
+ function renderSlot(slots, name, props = {}, fallback, noSlotted) {
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     if (name !== "default") props.name = name;
+     return openBlock(), createBlock(
+       Fragment,
+@@ -7075,8 +7075,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -9368,7 +9368,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -10275,7 +10275,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   {
+     const {
+       emitsOptions,
+@@ -12038,7 +12038,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         {
+           startMeasure(instance, `compile`);
+diff --git a/dist/vue.cjs.prod.js b/dist/vue.cjs.prod.js
+index 9d4c0e9c3137d76163a9339a7e0b4b7097095269..c12842bc348137404ca995676a39d920432ab704 100644
+--- a/dist/vue.cjs.prod.js
++++ b/dist/vue.cjs.prod.js
+@@ -2531,7 +2531,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -4516,7 +4516,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -4796,10 +4796,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -4894,7 +4894,7 @@ function createSlots(slots, dynamicSlots) {
+ }
+
+ function renderSlot(slots, name, props = {}, fallback, noSlotted) {
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     if (name !== "default") props.name = name;
+     return openBlock(), createBlock(
+       Fragment,
+@@ -5661,8 +5661,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend$1({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -7501,7 +7501,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -8348,7 +8348,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   let args = rawArgs;
+   const isCompatModelListener = compatModelEventPrefix + event in props;
+   const isModelListener = isCompatModelListener || event.startsWith("update:");
+@@ -9858,7 +9858,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         const { isCustomElement, compilerOptions } = instance.appContext.config;
+         const { delimiters, compilerOptions: componentCompilerOptions } = Component;
+diff --git a/dist/vue.esm-browser.js b/dist/vue.esm-browser.js
+index 7a42d18274ff900cbbb808690e1ee3f517c1cb50..072d984bb39afbec4fef0e1da689c4eff4b330ff 100644
+--- a/dist/vue.esm-browser.js
++++ b/dist/vue.esm-browser.js
+@@ -3368,7 +3368,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -5638,7 +5638,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -5927,10 +5927,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6028,7 +6028,7 @@ function createSlots(slots, dynamicSlots) {
+ }
+
+ function renderSlot(slots, name, props = {}, fallback, noSlotted) {
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     if (name !== "default") props.name = name;
+     return openBlock(), createBlock(
+       Fragment,
+@@ -7025,8 +7025,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -9318,7 +9318,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -10225,7 +10225,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   {
+     const {
+       emitsOptions,
+@@ -11988,7 +11988,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+       if (template) {
+         {
+           startMeasure(instance, `compile`);
+diff --git a/dist/vue.esm-bundler.js b/dist/vue.esm-bundler.js
+index 11954186629b51a7716ac889ee081ab93bf0dcb0..b0e5a4e84cae5ccc7465d3bef7099e54c9d9c91c 100644
+--- a/dist/vue.esm-bundler.js
++++ b/dist/vue.esm-bundler.js
+@@ -3386,7 +3386,7 @@ function compatModelEmit(instance, event, args) {
+   if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+     return;
+   }
+-  const props = instance.vnode.props;
++  const props = instance?.vnode?.props;
+   const modelHandler = props && props[compatModelEventPrefix + event];
+   if (modelHandler) {
+     callWithErrorHandling(
+@@ -5668,7 +5668,7 @@ function walk$1(vnode, children) {
+ function getCompatListeners(instance) {
+   assertCompatEnabled("INSTANCE_LISTENERS", instance);
+   const listeners = {};
+-  const rawProps = instance.vnode.props;
++  const rawProps = instance?.vnode?.props;
+   if (!rawProps) {
+     return listeners;
+   }
+@@ -5957,10 +5957,10 @@ function convertLegacyFunctionalComponent(comp) {
+     const instance = getCurrentInstance();
+     const legacyCtx = {
+       props,
+-      children: instance.vnode.children || [],
+-      data: instance.vnode.props || {},
++      children: instance?.vnode?.children || [],
++      data: instance?.vnode?.props || {},
+       scopedSlots: ctx.slots,
+-      parent: instance.parent && instance.parent.proxy,
++      parent: instance?.parent && instance.parent.proxy,
+       slots() {
+         return new Proxy(ctx.slots, legacySlotProxyHandlers);
+       },
+@@ -6058,7 +6058,7 @@ function createSlots(slots, dynamicSlots) {
+ }
+
+ function renderSlot(slots, name, props = {}, fallback, noSlotted) {
+-  if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++  if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+     if (name !== "default") props.name = name;
+     return openBlock(), createBlock(
+       Fragment,
+@@ -7057,8 +7057,8 @@ function resolveMergedOptions(instance) {
+   } else if (!globalMixins.length && !mixins && !extendsOptions) {
+     if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+       resolved = extend({}, base);
+-      resolved.parent = instance.parent && instance.parent.proxy;
+-      resolved.propsData = instance.vnode.props;
++      resolved.parent = instance?.parent && instance.parent.proxy;
++      resolved.propsData = instance?.vnode?.props;
+     } else {
+       resolved = base;
+     }
+@@ -9390,7 +9390,7 @@ function baseCreateRenderer(options, createHydrationFns) {
+   };
+   const updateComponentPreRender = (instance, nextVNode, optimized) => {
+     nextVNode.component = instance;
+-    const prevProps = instance.vnode.props;
++    const prevProps = instance?.vnode?.props;
+     instance.vnode = nextVNode;
+     instance.next = null;
+     updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -10297,7 +10297,7 @@ const getModelModifiers = (props, modelName) => {
+
+ function emit(instance, event, ...rawArgs) {
+   if (instance.isUnmounted) return;
+-  const props = instance.vnode.props || EMPTY_OBJ;
++  const props = instance?.vnode?.props || EMPTY_OBJ;
+   if (!!(process.env.NODE_ENV !== "production")) {
+     const {
+       emitsOptions,
+@@ -12062,7 +12062,7 @@ function finishComponentSetup(instance, isSSR, skipOptions) {
+   }
+   if (!instance.render) {
+     if (!isSSR && compile$1 && !Component.render) {
+-      const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || __VUE_OPTIONS_API__ && resolveMergedOptions(instance).template;
++      const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || __VUE_OPTIONS_API__ && resolveMergedOptions(instance).template;
+       if (template) {
+         if (!!(process.env.NODE_ENV !== "production")) {
+           startMeasure(instance, `compile`);
+diff --git a/dist/vue.global.js b/dist/vue.global.js
+index e1689430e22abcf31368e7bf7f6cd37cd411363b..3dbee963ad49ada289f25017de6f5dd17de6eb7e 100644
+--- a/dist/vue.global.js
++++ b/dist/vue.global.js
+@@ -3371,7 +3371,7 @@ Details: https://v3-migration.vuejs.org/breaking-changes/migration-build.html`
+     if (!isCompatEnabled$1("COMPONENT_V_MODEL", instance)) {
+       return;
+     }
+-    const props = instance.vnode.props;
++    const props = instance?.vnode?.props;
+     const modelHandler = props && props[compatModelEventPrefix + event];
+     if (modelHandler) {
+       callWithErrorHandling(
+@@ -5635,7 +5635,7 @@ Server rendered element contains fewer child nodes than client vdom.`
+   function getCompatListeners(instance) {
+     assertCompatEnabled("INSTANCE_LISTENERS", instance);
+     const listeners = {};
+-    const rawProps = instance.vnode.props;
++    const rawProps = instance?.vnode?.props;
+     if (!rawProps) {
+       return listeners;
+     }
+@@ -5924,10 +5924,10 @@ If this is a native custom element, make sure to exclude it from component resol
+       const instance = getCurrentInstance();
+       const legacyCtx = {
+         props,
+-        children: instance.vnode.children || [],
+-        data: instance.vnode.props || {},
++        children: instance?.vnode?.children || [],
++        data: instance?.vnode?.props || {},
+         scopedSlots: ctx.slots,
+-        parent: instance.parent && instance.parent.proxy,
++        parent: instance?.parent && instance.parent.proxy,
+         slots() {
+           return new Proxy(ctx.slots, legacySlotProxyHandlers);
+         },
+@@ -6025,7 +6025,7 @@ If this is a native custom element, make sure to exclude it from component resol
+   }
+
+   function renderSlot(slots, name, props = {}, fallback, noSlotted) {
+-    if (currentRenderingInstance.ce || currentRenderingInstance.parent && isAsyncWrapper(currentRenderingInstance.parent) && currentRenderingInstance.parent.ce) {
++    if (currentRenderingInstance?.ce || currentRenderingInstance?.parent && isAsyncWrapper(currentRenderingInstance?.parent) && currentRenderingInstance?.parent.ce) {
+       if (name !== "default") props.name = name;
+       return openBlock(), createBlock(
+         Fragment,
+@@ -7019,8 +7019,8 @@ If this is a native custom element, make sure to exclude it from component resol
+     } else if (!globalMixins.length && !mixins && !extendsOptions) {
+       if (isCompatEnabled$1("PRIVATE_APIS", instance)) {
+         resolved = extend({}, base);
+-        resolved.parent = instance.parent && instance.parent.proxy;
+-        resolved.propsData = instance.vnode.props;
++        resolved.parent = instance?.parent && instance.parent.proxy;
++        resolved.propsData = instance?.vnode?.props;
+       } else {
+         resolved = base;
+       }
+@@ -9312,7 +9312,7 @@ If you want to remount the same app, move your app creation logic into a factory
+     };
+     const updateComponentPreRender = (instance, nextVNode, optimized) => {
+       nextVNode.component = instance;
+-      const prevProps = instance.vnode.props;
++      const prevProps = instance?.vnode?.props;
+       instance.vnode = nextVNode;
+       instance.next = null;
+       updateProps(instance, nextVNode.props, prevProps, optimized);
+@@ -10191,7 +10191,7 @@ If you want to remount the same app, move your app creation logic into a factory
+
+   function emit(instance, event, ...rawArgs) {
+     if (instance.isUnmounted) return;
+-    const props = instance.vnode.props || EMPTY_OBJ;
++    const props = instance?.vnode?.props || EMPTY_OBJ;
+     {
+       const {
+         emitsOptions,
+@@ -11940,7 +11940,7 @@ Component that was made reactive: `,
+     }
+     if (!instance.render) {
+       if (!isSSR && compile$1 && !Component.render) {
+-        const template = instance.vnode.props && instance.vnode.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
++        const template = instance?.vnode?.props && instance?.vnode?.props["inline-template"] || Component.template || resolveMergedOptions(instance).template;
+         if (template) {
+           {
+             startMeasure(instance, `compile`);

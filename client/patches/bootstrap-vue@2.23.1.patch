@@ -1,0 +1,16 @@
+diff --git a/esm/vue.js b/esm/vue.js
+index 682cc87f6fd7e797ec88c2c5e70907f5bc691775..a6660d15707697b8ad7640f299f66d9842ee8170 100644
+--- a/esm/vue.js
++++ b/esm/vue.js
+@@ -47,6 +47,11 @@ if (isVue3) {
+       definition.__alreadyPatched = true;
+
+       definition.render = function (h) {
++        // In Vue 3, render functions are invoked without `h` as a callable -- fall
++        // back to Vue.h so patchedH below can still create vnodes.
++        if (typeof h !== 'function') {
++          h = Vue.h;
++        }
+         var patchedH = function patchedH(tag, dataObjOrChildren, rawSlots) {
+           var slots = rawSlots === undefined ? [] : [Array.isArray(rawSlots) ? rawSlots.filter(Boolean) : rawSlots];
+           var isTag = typeof tag === 'string' && !KNOWN_COMPONENTS.includes(tag);
