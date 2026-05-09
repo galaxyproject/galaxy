@@ -1,4 +1,5 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it } from "vitest";
 import { defineComponent } from "vue";
 
@@ -8,7 +9,7 @@ import { type ConfirmDialogOptions, setConfirmDialogComponentRef, useConfirmDial
 
 type ConfirmDialogInstance = InstanceType<typeof ConfirmDialogComponent>;
 
-const localVue = createLocalVue();
+const localVue = getLocalVue();
 
 describe("useConfirmDialog", () => {
     afterEach(() => {
@@ -33,7 +34,7 @@ describe("useConfirmDialog", () => {
             template: "<div />",
         });
 
-        const wrapper = mount(CallerComponent as object, { localVue });
+        const wrapper = mount(CallerComponent as object, { global: localVue });
 
         const promise = confirm("Are you sure?");
 
