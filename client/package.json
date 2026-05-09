@@ -37,7 +37,11 @@
     },
     "onlyBuiltDependencies": [
       "vue-demi"
-    ]
+    ],
+    "patchedDependencies": {
+      "@vue/compat@3.5.18": "patches/@vue__compat@3.5.18.patch",
+      "bootstrap-vue@2.23.1": "patches/bootstrap-vue@2.23.1.patch"
+    }
   },
   "dependencies": {
     "@citation-js/core": "^0.7.1",
