@@ -17,7 +17,7 @@ import ToolForm from "./ToolForm.vue";
 const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
-const _router = injectTestRouter(localVue);
+const router = injectTestRouter(localVue);
 const pinia = createPinia();
 
 describe("ToolForm", () => {
@@ -72,12 +72,15 @@ describe("ToolForm", () => {
                 id: "tool_id",
                 version: "version",
             },
-            global: localVue,
-            stubs: {
-                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
-                FormDisplay: true,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+                stubs: {
+                    ...(localVue.stubs ?? {}),
+                    UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
+                    FormDisplay: true,
+                },
             },
-            pinia,
         });
         userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });

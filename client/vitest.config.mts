@@ -119,6 +119,9 @@ export default defineConfig({
             "bootstrap-vue": path.resolve(__dirname, "node_modules/bootstrap-vue/esm/index.js"),
             // Mock portal-vue for Vue 3 compatibility (used by bootstrap-vue)
             "portal-vue": path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js"),
+            // vue-virtual-scroll-list calls Vue.component at module load (Vue 2 only).
+            // Replace with a passthrough that just renders the data-component for each source.
+            "vue-virtual-scroll-list": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-virtual-scroll-list.js"),
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),

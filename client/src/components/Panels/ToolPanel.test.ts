@@ -27,7 +27,7 @@ interface ToolPanelView {
 }
 
 const localVue = getLocalVue();
-const _router = injectTestRouter(localVue);
+const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
 const TEST_PANELS_URI = "/api/tool_panels";
@@ -126,8 +126,10 @@ describe("ToolPanel", () => {
                 editorWorkflows: null,
                 useSearchWorker: false,
             },
-            global: localVue,
-            pinia,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
         });
 
         await flushPromises();
