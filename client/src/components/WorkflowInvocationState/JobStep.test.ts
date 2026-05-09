@@ -64,7 +64,7 @@ describe("Job Step", () => {
             expect(tableRows.length).toBe(expectedCount);
 
             // each row has the expected state (as the last cell in the row)
-            tableRows.wrappers.forEach((tr) => {
+            tableRows.forEach((tr) => {
                 const cells = tr.findAll("td");
                 expect(cells.at(cells.length - 1).text()).toBe(jobState);
             });

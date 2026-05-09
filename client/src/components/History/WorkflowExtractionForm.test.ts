@@ -247,7 +247,7 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "My Workflow");
             // uncheck all cards via select events
-            wrapper.findAllComponents(WorkflowExtractionCard).wrappers.forEach((card) => {
+            wrapper.findAllComponents(WorkflowExtractionCard).forEach((card) => {
                 card.vm.$emit("select");
             });
             await wrapper.vm.$nextTick();

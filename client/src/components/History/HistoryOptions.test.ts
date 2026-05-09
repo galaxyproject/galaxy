@@ -101,7 +101,7 @@ describe("History Navigation", () => {
         );
 
         const optionElements = wrapper.findAllComponents(GDropdownItem);
-        const optionTexts = optionElements.wrappers.map((el) => el.text());
+        const optionTexts = optionElements.map((el) => el.text());
 
         expect(optionTexts).toStrictEqual(expectedOptions);
     });
@@ -112,10 +112,10 @@ describe("History Navigation", () => {
         });
 
         const allItems = wrapper.findAllComponents(GDropdownItem);
-        const enabledOptionTexts = allItems.wrappers.filter((el) => !el.props("disabled")).map((el) => el.text());
+        const enabledOptionTexts = allItems.filter((el) => !el.props("disabled")).map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);
 
-        const disabledOptionTexts = allItems.wrappers.filter((el) => el.props("disabled")).map((el) => el.text());
+        const disabledOptionTexts = allItems.filter((el) => el.props("disabled")).map((el) => el.text());
         expect(disabledOptionTexts).toStrictEqual(anonymousDisabledOptions);
     });
 

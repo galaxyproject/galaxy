@@ -58,7 +58,7 @@ describe("SavedRulesSelector", () => {
         });
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length > 0).toBeTruthy();
-        sessions.wrappers[0].trigger("click");
+        sessions[0].trigger("click");
         emitted = wrapper.emitted();
         expect(emitted["update-rules"]).toBeTruthy();
     });
@@ -113,7 +113,7 @@ describe("SavedRulesSelector", () => {
         const sessions = wrapper.findAll("div.dropdown-menu > a.saved-rule-item");
         expect(sessions.length == 2).toBeTruthy();
         //clicking the top result of the dropdown, with sorting should be most recent created rules
-        sessions.wrappers[0].trigger("click");
+        sessions[0].trigger("click");
         emitted = wrapper.emitted();
         expect(emitted["update-rules"]).toBeTruthy();
         expect(emitted["update-rules"].length).toBe(1);
