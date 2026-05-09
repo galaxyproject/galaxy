@@ -29,9 +29,13 @@ vi.mock("@/composables/toast", () => {
     };
 });
 
-vi.mock("vue-router", () => ({
-    useRouter: () => ({ push: vi.fn() }),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: () => ({ push: vi.fn() }),
+    };
+});
 
 vi.mock("@/stores/historyStore", () => ({
     useHistoryStore: () => ({
