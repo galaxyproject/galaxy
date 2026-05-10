@@ -2,7 +2,7 @@
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BAlert, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -406,8 +406,8 @@ watch(operationMessage, () => {
                             class="text-nowrap px-2"
                             :data-description="`grid header ${fieldIndex}`">
                             <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                                <BButton
-                                    variant="link"
+                                <GButton
+                                    transparent
                                     class="text-nowrap font-weight-bold p-0"
                                     :data-description="`grid sort key ${fieldEntry.key}`"
                                     @click="onSort(fieldEntry.key)">
@@ -419,7 +419,7 @@ watch(operationMessage, () => {
                                             data-description="grid sort desc" />
                                         <FontAwesomeIcon v-else :icon="faCaretUp" data-description="grid sort asc" />
                                     </span>
-                                </BButton>
+                                </GButton>
                             </span>
                             <span v-else-if="fieldTitle(fieldEntry)">{{ fieldTitle(fieldEntry) }}</span>
                         </th>
