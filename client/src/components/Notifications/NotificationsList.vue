@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
 import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -78,15 +79,16 @@ function togglePreferences() {
                 Notifications
             </Heading>
 
-            <BButton
+            <GButton
                 class="mb-2"
-                size="sm"
-                variant="outline-primary"
+                size="small"
+                color="blue"
+                outline
                 :pressed="preferencesOpen"
                 @click="togglePreferences">
                 <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
-            </BButton>
+            </GButton>
         </div>
 
         <GCollapse v-slot="{ contentActive }" v-model="preferencesOpen">
@@ -119,15 +121,15 @@ function togglePreferences() {
                     </div>
 
                     <div v-if="haveSelected">
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
+                        <GButton size="small" color="blue" outline @click="updateNotifications({ seen: true })">
                             <FontAwesomeIcon :icon="faCheck" />
                             Mark as read
-                        </BButton>
+                        </GButton>
 
-                        <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
+                        <GButton size="small" color="blue" outline @click="updateNotifications({ deleted: true })">
                             <FontAwesomeIcon :icon="faTrash" />
                             Delete
-                        </BButton>
+                        </GButton>
                     </div>
                 </div>
 
@@ -135,25 +137,27 @@ function togglePreferences() {
                     <span class="mx-2"> Filters: </span>
 
                     <BButtonGroup>
-                        <BButton
+                        <GButton
                             id="show-unread-filter"
-                            size="sm"
+                            size="small"
                             :pressed="showUnread"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="showUnread = !showUnread">
                             <FontAwesomeIcon :icon="faCheck" />
                             Unread
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             id="show-shared-filter"
-                            size="sm"
+                            size="small"
                             :pressed="showShared"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="showShared = !showShared">
                             <FontAwesomeIcon :icon="faRetweet" />
                             Shared
-                        </BButton>
+                        </GButton>
                     </BButtonGroup>
                 </div>
             </div>

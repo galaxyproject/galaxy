@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormInput } from "bootstrap-vue";
+import { BAlert, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -9,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 import type { TableField } from "@/components/Common/GTable.types";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -136,15 +137,15 @@ onMounted(() => {
             </template>
 
             <template v-slot:cell(actions)="{ item }">
-                <BButton
+                <GButton
                     :id="createId('stop', item.id)"
                     v-g-tooltip.hover
-                    variant="link"
+                    icon-only
                     class="p-0"
                     title="Stop this interactive tool"
                     @click.stop="stopInteractiveTool(item.id, item.name)">
                     <FontAwesomeIcon :icon="faStop" />
-                </BButton>
+                </GButton>
             </template>
 
             <template v-slot:cell(name)="{ item, index }">

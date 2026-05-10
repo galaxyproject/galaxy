@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 interface Props {
     title: string;
@@ -36,16 +38,16 @@ const hasGoToAll = computed(() => props.goToAllTitle && props.href);
             </nav>
 
             <slot name="header" class="activity-panel-header-description" />
-            <BButton
+            <GButton
                 v-if="hasGoToAll"
                 class="activity-panel-footer"
-                variant="primary"
+                color="blue"
                 :data-description="goToAllDataDescription"
                 :to="props.href"
-                size="sm"
+                size="small"
                 @click="emit('goToAll')">
                 {{ props.goToAllTitle }}
-            </BButton>
+            </GButton>
         </div>
 
         <div class="activity-panel-body">
