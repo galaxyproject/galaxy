@@ -11,6 +11,7 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import HistoryCounter from "./HistoryCounter.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const sseState = vi.hoisted(() => ({
     onEvent: null as ((event: MessageEvent) => void) | null,
@@ -119,7 +120,9 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toBe("Refresh history");
-            expect(button.attributes("variant")).toBe("link");
+            // ``link`` variant maps to ``transparent`` on GButton via variantToColor().
+            expect(button.attributes("transparent")).toBe("true");
+            expect(button.attributes("color")).toBeUndefined();
         });
 
         it("does not flag the initial-connect window as a connection loss", async () => {
@@ -132,7 +135,8 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toBe("Refresh history");
-            expect(button.attributes("variant")).toBe("link");
+            expect(button.attributes("transparent")).toBe("true");
+            expect(button.attributes("color")).toBeUndefined();
         });
 
         it("turns red when the SSE connection is lost after a successful open", async () => {
@@ -149,7 +153,8 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toBe("Live updates disconnected. Click to refresh.");
-            expect(button.attributes("variant")).toBe("danger");
+            // ``danger`` variant maps to color=red via variantToColor().
+            expect(button.attributes("color")).toBe("red");
         });
     });
 
@@ -164,7 +169,8 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toMatch(/^Last refreshed .+ ago$/);
-            expect(button.attributes("variant")).toBe("link");
+            expect(button.attributes("transparent")).toBe("true");
+            expect(button.attributes("color")).toBeUndefined();
         });
 
         it("turns red after 2 minutes of staleness", async () => {
@@ -175,7 +181,7 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toMatch(/Consider reloading the page\.$/);
-            expect(button.attributes("variant")).toBe("danger");
+            expect(button.attributes("color")).toBe("red");
         });
 
         it("turns red when the resource watcher reports it is no longer watching", async () => {
@@ -183,7 +189,7 @@ describe("HistoryCounter — refresh button", () => {
             await flushPromises();
 
             const button = refreshButton(wrapper);
-            expect(button.attributes("variant")).toBe("danger");
+            expect(button.attributes("color")).toBe("red");
         });
     });
 
@@ -194,7 +200,10 @@ describe("HistoryCounter — refresh button", () => {
 
         const wrapper = mountCounter();
         await flushPromises();
-        await refreshButton(wrapper).trigger("click");
+        // The shallow-mounted ``<g-button-stub>`` doesn't bind ``@click`` the
+        // way the real GButton does, so emit the GButton's ``click`` event
+        // directly via the component instance.
+        await refreshButton(wrapper).findComponent(GButton).vm.$emit("click");
 
         expect(wrapper.emitted("reloadContents")).toBeTruthy();
         expect(wrapper.emitted("reloadContents")?.length).toBe(1);

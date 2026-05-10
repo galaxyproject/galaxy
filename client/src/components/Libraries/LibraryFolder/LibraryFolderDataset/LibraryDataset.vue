@@ -46,10 +46,7 @@
                 v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
-                :to="{
-                    name: 'LibraryFolderDatasetPermissions',
-                    params: { folder_id: folder_id, dataset_id: dataset_id },
-                }"
+                :to="`/libraries/folders/${folder_id}/dataset/${dataset_id}/permissions`"
                 data-test-id="permissions-btn">
                 <FontAwesomeIcon :icon="faUsers" />
                 Permissions
