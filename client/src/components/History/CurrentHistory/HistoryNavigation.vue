@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faChevronRight, faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
@@ -56,25 +56,25 @@ function userTitle(title: string) {
             </GButton>
 
             <BButtonGroup>
-                <BButton
+                <GButton
                     v-if="!props.minimal"
                     v-g-tooltip.top.hover
                     class="create-hist-btn"
                     data-description="create new history"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
                     @click="historyStore.createNewHistory">
                     <FontAwesomeIcon fixed-width :icon="faPlus" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!props.minimal"
                     v-g-tooltip.top.hover
                     data-description="switch to another history"
-                    size="sm"
-                    variant="link"
+                    size="small"
+                    transparent
                     :disabled="isAnonymous || changingCurrentHistory"
                     :title="userTitle('Switch to history')"
                     @click="showSwitchModal = !showSwitchModal">
@@ -82,7 +82,7 @@ function userTitle(title: string) {
                         fixed-width
                         :icon="changingCurrentHistory ? faSpinner : faExchangeAlt"
                         :spin="changingCurrentHistory" />
-                </BButton>
+                </GButton>
 
                 <HistoryOptions :history="history" :minimal="props.minimal" />
             </BButtonGroup>

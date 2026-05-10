@@ -21,7 +21,7 @@
 
 import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BAlert, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -612,17 +612,18 @@ onMounted(async () => {
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         Filter:
-                        <BButton
+                        <GButton
                             id="show-deleted"
                             v-g-tooltip.hover
-                            size="sm"
+                            size="small"
                             :title="deleteButtonTitle"
                             :pressed="showDeleted"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
                             Show deleted
-                        </BButton>
+                        </GButton>
                     </div>
                 </template>
             </ListHeader>
@@ -687,80 +688,80 @@ onMounted(async () => {
 
         <div class="d-flex mt-1 align-items-center">
             <div v-if="myView && selectedHistories.length" class="d-flex flex-gapx-1 w-100 position-absolute">
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="history-list-footer-bulk-delete-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting histories' : 'Delete selected histories'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="() => onBulkDeleteOrPurge()">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                         Delete ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Deleting" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else
                     id="history-list-footer-bulk-restore-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Restoring histories' : 'Restore selected histories'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkRestore">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
                         Restore ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Restoring" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showBulkPurge"
                     id="history-list-footer-bulk-purge-button"
                     v-g-tooltip.hover
                     :title="bulkPurgeLoading ? 'Purging histories' : 'Purge selected histories'"
                     :disabled="bulkPurgeLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="() => onBulkDeleteOrPurge(true)">
                     <span v-if="!bulkPurgeLoading">
                         <FontAwesomeIcon :icon="faBurn" fixed-width />
                         Purge ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Purging" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="history-list-footer-bulk-add-tags-button"
                     v-g-tooltip.hover
                     :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected histories'"
                     :disabled="bulkTagsLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onToggleBulkTags">
                     <span v-if="!bulkTagsLoading">
                         <FontAwesomeIcon :icon="faTags" fixed-width />
                         Add tags ({{ selectedHistories.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="showBulkMultiview"
                     id="history-list-footer-bulk-open-multiview-button"
                     v-g-tooltip.hover
                     title="Open selected histories in multiview"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkOpenInMultiview">
                     <FontAwesomeIcon :icon="faColumns" fixed-width />
                     Open in Multiview ({{ selectedHistories.length }})
-                </BButton>
+                </GButton>
             </div>
 
             <BPagination
