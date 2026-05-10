@@ -25,47 +25,47 @@
             @keyup.enter="makeActive">
             <b-button-group class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <BButton
+                <GButton
                     v-if="credentials.length > 0"
                     v-g-tooltip.hover
                     class="node-credentials py-0 inline-icon-button"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="tool has credentials"
                     title="Tool requires credentials">
                     <FontAwesomeIcon :icon="faKey" />
-                </BButton>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
                     v-g-tooltip.hover
                     class="node-clone py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="clone node"
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="!readonly"
                     v-g-tooltip.hover
                     class="node-destroy py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="destroy node"
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled && !readonly"
                     :id="popoverId"
                     class="node-recommendations py-0"
-                    variant="primary"
-                    size="sm"
+                    color="blue"
+                    size="small"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
+                </GButton>
                 <b-popover
                     v-if="isEnabled && !readonly"
                     :target="popoverId"
@@ -188,6 +188,7 @@ import { isWorkflowInput } from "../constants";
 import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BAlert, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -20,6 +20,7 @@ import { useWorkflowCardActions } from "./useWorkflowCardActions";
 import type WorkflowCard from "./WorkflowCard.vue";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -444,29 +445,31 @@ onMounted(() => {
                 <template v-slot:extra-filter>
                     <div v-if="activeList === 'my'">
                         <span v-localize>Filter:</span>
-                        <BButton
+                        <GButton
                             id="show-deleted"
                             v-g-tooltip.hover
-                            size="sm"
+                            size="small"
                             :title="deleteButtonTitle"
                             :pressed="showDeleted"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" fixed-width />
                             <span v-localize>Show deleted</span>
-                        </BButton>
+                        </GButton>
 
-                        <BButton
+                        <GButton
                             id="show-bookmarked"
                             v-g-tooltip.hover
-                            size="sm"
+                            size="small"
                             :title="bookmarkButtonTitle"
                             :pressed="showBookmarked"
-                            variant="outline-primary"
+                            color="blue"
+                            outline
                             @click="onToggleBookmarked">
                             <FontAwesomeIcon :icon="faStar" fixed-width />
                             <span v-localize>Show bookmarked</span>
-                        </BButton>
+                        </GButton>
                     </div>
                 </template>
             </ListHeader>
@@ -528,52 +531,52 @@ onMounted(() => {
             <div
                 v-if="!published && !sharedWithMe && selectedWorkflowIds.length"
                 class="workflow-list-footer-bulk-actions">
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-delete-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Deleting workflows' : 'Delete selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkDelete">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrash" fixed-width />
                         Delete ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Deleting" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else
                     id="workflow-list-footer-bulk-restore-button"
                     v-g-tooltip.hover
                     :title="bulkDeleteOrRestoreLoading ? 'Restoring workflows' : 'Restore selected workflows'"
                     :disabled="bulkDeleteOrRestoreLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onBulkRestore">
                     <span v-if="!bulkDeleteOrRestoreLoading">
                         <FontAwesomeIcon :icon="faTrashRestore" fixed-width />
                         Restore ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Restoring" />
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!showDeleted"
                     id="workflow-list-footer-bulk-add-tags-button"
                     v-g-tooltip.hover
                     :title="bulkTagsLoading ? 'Adding tags' : 'Add tags to selected workflows'"
                     :disabled="bulkTagsLoading"
-                    size="sm"
-                    variant="primary"
+                    size="small"
+                    color="blue"
                     @click="onToggleBulkTags">
                     <span v-if="!bulkTagsLoading">
                         <FontAwesomeIcon :icon="faTags" fixed-width />
                         Add tags ({{ selectedWorkflowIds.length }})
                     </span>
                     <LoadingSpan v-else message="Adding tags" />
-                </BButton>
+                </GButton>
             </div>
 
             <BPagination

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { faEdit, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BCard, BFormTextarea } from "bootstrap-vue";
+import { BButtonGroup, BCard, BFormTextarea } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
@@ -55,24 +56,25 @@ watch(
                 <span v-localize>Workflow Readme</span>
             </Heading>
             <BButtonGroup>
-                <BButton size="sm" variant="outline-primary" :disabled="readmeEdit" @click="readmeEdit = true">
+                <GButton size="small" color="blue" outline :disabled="readmeEdit" @click="readmeEdit = true">
                     <FontAwesomeIcon :icon="faEdit" />
                     <span v-localize>Edit</span>
-                </BButton>
-                <BButton size="sm" variant="outline-primary" :disabled="!readmeEdit" @click="readmeEdit = false">
+                </GButton>
+                <GButton size="small" color="blue" outline :disabled="!readmeEdit" @click="readmeEdit = false">
                     <FontAwesomeIcon :icon="faEye" />
                     <span v-localize>Preview</span>
-                </BButton>
+                </GButton>
             </BButtonGroup>
-            <BButton
+            <GButton
                 v-g-tooltip.hover
-                size="sm"
-                variant="outline-danger"
+                size="small"
+                color="red"
+                outline
                 title="Return to Workflow"
                 @click="emit('exit')">
                 <FontAwesomeIcon :icon="faTimes" />
                 <span v-localize>Exit</span>
-            </BButton>
+            </GButton>
         </div>
         <div class="mt-2 d-flex flex-column">
             <BFormTextarea

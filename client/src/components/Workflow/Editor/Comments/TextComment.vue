@@ -3,7 +3,7 @@ import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButtonGroup } from "bootstrap-vue";
 import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
@@ -16,6 +16,7 @@ import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 const props = defineProps<{
@@ -215,47 +216,42 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
         </div>
 
         <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
+            <GButton
                 class="button font-weight-bold prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 :title="props.comment.data.bold ? 'Reset bold' : 'Make bold'"
                 :pressed="props.comment.data.bold"
                 @click="toggleBold">
                 B
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="button font-italic prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 :title="props.comment.data.italic ? 'Reset italic' : 'Make italic'"
                 :pressed="props.comment.data.italic"
                 @click="toggleItalic">
                 I
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
-            </BButton>
-            <BButton
-                class="button prevent-zoom"
-                variant="primary"
-                :title="decreaseFontSizeTitle"
-                @click="decreaseFontSize">
+            </GButton>
+            <GButton class="button prevent-zoom" color="blue" :title="decreaseFontSizeTitle" @click="decreaseFontSize">
                 <FontAwesomeIcon :icon="textSmaller" class="prevent-zoom" />
-            </BButton>
-            <BButton
-                class="button prevent-zoom"
-                variant="primary"
-                :title="increaseFontSizeTitle"
-                @click="increaseFontSize">
+            </GButton>
+            <GButton class="button prevent-zoom" color="blue" :title="increaseFontSizeTitle" @click="increaseFontSize">
                 <FontAwesomeIcon :icon="textLarger" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
                 <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
-            </BButton>
+            </GButton>
         </BButtonGroup>
 
         <ColorSelector

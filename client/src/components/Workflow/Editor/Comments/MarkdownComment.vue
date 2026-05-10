@@ -3,7 +3,7 @@ import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
 import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButtonGroup } from "bootstrap-vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -16,6 +16,7 @@ import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
 import ColorSelector from "./ColorSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 const props = defineProps<{
@@ -166,17 +167,18 @@ const position = computed(() => ({ x: props.comment.position[0], y: props.commen
         </div>
 
         <BButtonGroup v-if="!props.readonly" class="style-buttons">
-            <BButton
+            <GButton
                 class="button prevent-zoom"
-                variant="outline-primary"
+                color="blue"
+                outline
                 title="Color"
                 :pressed="showColorSelector"
                 @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon :icon="faPalette" class="prevent-zoom" />
-            </BButton>
-            <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
+            </GButton>
+            <GButton class="button prevent-zoom" transparent title="Delete comment" @click="() => emit('remove')">
                 <FontAwesomeIcon :icon="faTrashAlt" class="prevent-zoom" />
-            </BButton>
+            </GButton>
         </BButtonGroup>
 
         <ColorSelector

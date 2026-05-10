@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
+import { BButtonGroup, BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
 import { computed } from "vue";
@@ -11,6 +11,7 @@ import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
@@ -69,24 +70,22 @@ function updateStored(v: boolean) {
             <Heading h2 inline size="sm"> {{ title }} </Heading>
 
             <BButtonGroup>
-                <BButton
+                <GButton
                     v-if="!maximized"
                     class="heading-button"
-                    variant="link"
-                    size="md"
+                    transparent
                     title="maximize"
                     @click="inspectorStore.setMaximized(props.step, true)">
                     <ArrowLeftFromLine absolute-stroke-width :size="17" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-else
                     class="heading-button"
-                    variant="link"
-                    size="md"
+                    transparent
                     title="minimize"
                     @click="inspectorStore.setMaximized(props.step, false)">
                     <ArrowRightToLine absolute-stroke-width :size="17" />
-                </BButton>
+                </GButton>
 
                 <BDropdown class="dropdown" toggle-class="heading-button" variant="link" size="md" no-caret>
                     <template v-slot:button-content>
@@ -104,9 +103,9 @@ function updateStored(v: boolean) {
                     </BDropdownItemButton>
                 </BDropdown>
 
-                <BButton class="heading-button" variant="link" size="md" title="close" @click="close">
+                <GButton class="heading-button" transparent title="close" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
-                </BButton>
+                </GButton>
             </BButtonGroup>
         </div>
 
