@@ -155,6 +155,7 @@ function createNew(event: Event) {
             <GButton
                 v-g-tooltip.hover.top
                 size="small"
+                transparent
                 icon-only
                 class="create-button"
                 title="Create new workflow"

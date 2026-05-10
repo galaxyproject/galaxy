@@ -140,6 +140,7 @@ onMounted(() => {
                 <GButton
                     :id="createId('stop', item.id)"
                     v-g-tooltip.hover
+                    transparent
                     icon-only
                     class="p-0"
                     title="Stop this interactive tool"

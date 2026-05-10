@@ -48,6 +48,7 @@ async function onMarkAllAsRead() {
                     v-g-tooltip.bottom.hover
                     data-description="mark all as read"
                     size="small"
+                    transparent
                     icon-only
                     :title="localize('Mark all as read')"
                     @click="onMarkAllAsRead">

@@ -101,6 +101,7 @@ function userTitle(title: string) {
                     v-g-tooltip.bottom.hover
                     data-description="create new history for multiview"
                     size="small"
+                    transparent
                     icon-only
                     :title="userTitle('Create new history and show in multiview')"
                     :disabled="isAnonymous"

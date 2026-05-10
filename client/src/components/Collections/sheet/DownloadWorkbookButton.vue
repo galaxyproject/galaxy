@@ -14,7 +14,7 @@ const emit = defineEmits(["click"]);
 </script>
 
 <template>
-    <GButton :title="title" role="button" icon-only size="small" class="ml-0" @click="emit('click')">
+    <GButton :title="title" role="button" transparent icon-only size="small" class="ml-0" @click="emit('click')">
         <FontAwesomeIcon :icon="faFileExcel" />
     </GButton>
 </template>
