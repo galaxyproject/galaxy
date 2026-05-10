@@ -2,7 +2,7 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
@@ -16,6 +16,8 @@ import { capitalizeFirstLetter } from "@/utils/strings";
 
 import { buildersForCollectionTypes, unconstrainedCollectionTypeBuilders } from "./collections";
 import type { VariantInterface } from "./variants";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
 
 const props = defineProps<{
     variant?: VariantInterface[];
@@ -93,7 +95,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             v-if="props.showFieldOptions && props.variant && props.variant.length > 1"
             buttons
             class="align-self-start">
-            <BButton
+            <GButton
                 v-for="(v, index) in props.variant"
                 :key="index"
                 v-g-tooltip.hover.bottom
@@ -106,17 +108,17 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                     <FontAwesomeIcon :icon="faFolder" class="fa-stack-1x" style="transform: translate(0.2em, -0.2em)" />
                 </span>
                 <FontAwesomeIcon v-else :icon="v.icon" />
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 v-if="props.canBrowse && !props.workflowRun"
                 v-g-tooltip.hover.bottom
                 :title="localize('Browse or Upload Datasets')"
                 @click="emit('on-browse')">
                 <FontAwesomeIcon v-if="props.loading" :icon="faSpinner" spin />
                 <span v-else class="font-weight-bold">...</span>
-            </BButton>
+            </GButton>
         </BButtonGroup>
-        <BButton
+        <GButton
             v-if="props.showViewCreateOptions && props.isPopulated"
             v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
@@ -125,7 +127,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             @click="clickedTab('view')">
             <FontAwesomeIcon :icon="faEye" />
             <span v-if="!props.compact" v-localize>View</span>
-        </BButton>
+        </GButton>
         <!-- three options here - source is a collection that has multiple builders exposed, source is a collection
              that has a single builder exposed, or source is dataset(s). -->
         <template v-if="props.showViewCreateOptions && sourceIsCollection && !hasSingleAvailableCollectionBuilderType">
@@ -144,17 +146,17 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                     {{ capitalizeFirstLetter(COLLECTION_TYPE_TO_LABEL[colType] || "collection") }}
                 </BDropdownItem>
             </BDropdown>
-            <BButton
+            <GButton
                 v-if="props.workflowTab === 'create'"
                 v-g-tooltip.bottom.hover
                 title="Hide Collection Creator"
-                variant="link"
+                transparent
                 @click="emit('update:workflow-tab', '')">
                 <FontAwesomeIcon :icon="faTimes" />
                 <span class="sr-only">Close Collection Creator</span>
-            </BButton>
+            </GButton>
         </template>
-        <BButton
+        <GButton
             v-else-if="props.showViewCreateOptions && sourceIsCollection"
             v-g-tooltip.bottom.hover
             class="d-flex flex-gapx-1 align-items-center"
@@ -164,9 +166,9 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             @click="clickedTab('create')">
             <FontAwesomeIcon :icon="faPlus" />
             <span v-localize>Create</span>
-        </BButton>
+        </GButton>
         <template v-else-if="props.showViewCreateOptions && !sourceIsCollection">
-            <BButton
+            <GButton
                 v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
                 data-description="upload"
@@ -174,7 +176,7 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
                 @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 <span v-localize>Upload</span>
-            </BButton>
+            </GButton>
         </template>
     </BButtonGroup>
 </template>

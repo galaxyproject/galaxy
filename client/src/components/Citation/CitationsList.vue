@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCopy, faDownload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BNav, BNavItem } from "bootstrap-vue";
+import { BCard, BNav, BNavItem } from "bootstrap-vue";
 import { computed, onMounted, onUpdated, ref, toRef } from "vue";
 
 import { getCitations } from "@/components/Citation/services";
@@ -13,6 +13,7 @@ import type { Citation } from ".";
 import { Cite } from "./cite";
 
 import GAlert from "@/components/BaseComponents/GAlert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import CitationItem from "@/components/Citation/CitationItem.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -152,35 +153,38 @@ function citationsToBibtexAsText() {
                             BibTeX
                         </BNavItem>
                     </BNav>
-                    <BButton
+                    <GButton
                         v-if="outputFormat === outputFormats.CITATION"
                         v-g-tooltip.hover
                         title="Copy all references as APA"
-                        variant="link"
-                        size="sm"
+                        transparent
+                        icon-only
+                        size="small"
                         class="copy-citation-btn"
                         @click="copyAPA">
                         <FontAwesomeIcon :icon="faCopy" />
-                    </BButton>
+                    </GButton>
                     <div v-if="outputFormat === outputFormats.BIBTEX" class="bibtex-actions">
-                        <BButton
+                        <GButton
                             v-g-tooltip.hover
                             title="Copy all references as BibTeX"
-                            variant="link"
-                            size="sm"
+                            transparent
+                            icon-only
+                            size="small"
                             class="copy-bibtex-btn"
                             @click="copyBibtex">
                             <FontAwesomeIcon :icon="faCopy" />
-                        </BButton>
-                        <BButton
+                        </GButton>
+                        <GButton
                             v-g-tooltip.hover
                             title="Download references as .bib file"
-                            variant="link"
-                            size="sm"
+                            transparent
+                            icon-only
+                            size="small"
                             class="download-bibtex-btn"
                             @click="downloadBibtex">
                             <FontAwesomeIcon :icon="faDownload" />
-                        </BButton>
+                        </GButton>
                     </div>
                 </template>
 
@@ -204,7 +208,7 @@ function citationsToBibtexAsText() {
                 </div>
             </BCard>
             <div v-else-if="citations.length">
-                <BButton variant="primary" @click="citationsOpen = !citationsOpen">References</BButton>
+                <GButton color="blue" @click="citationsOpen = !citationsOpen">References</GButton>
 
                 <GCollapse
                     v-model="citationsOpen"
