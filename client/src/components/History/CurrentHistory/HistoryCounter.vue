@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
-import { BButton, BButtonGroup } from "bootstrap-vue";
+import { BButtonGroup } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
@@ -18,6 +18,7 @@ import { computed, onMounted, ref, toRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { type HistorySummaryExtended, userOwnsHistory } from "@/api";
+import { variantToColor } from "@/components/BaseComponents/variantToColor";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
 import { PAGE_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
@@ -219,56 +220,56 @@ onMounted(() => {
 
         <BButtonGroup v-if="currentUser">
             <BButtonGroup>
-                <BButton
+                <GButton
                     v-g-tooltip.hover
                     :title="localize('Show active')"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    size="small"
                     class="rounded-0 text-decoration-none"
                     data-description="show active items button"
                     @click="setFilter('')">
                     <FontAwesomeIcon :icon="faMapMarker" />
                     <span>{{ numItemsActive }}</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="numItemsDeleted"
                     v-g-tooltip.hover
                     :title="localize('Include deleted')"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    size="small"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('deleted') !== false"
                     data-description="include deleted items button"
                     @click="setFilter('deleted')">
                     <FontAwesomeIcon :icon="faTrash" />
                     <span>{{ numItemsDeleted }}</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="numItemsHidden"
                     v-g-tooltip.hover
                     :title="localize('Include hidden')"
-                    variant="link"
-                    size="sm"
+                    transparent
+                    size="small"
                     class="rounded-0 text-decoration-none"
                     :pressed="getCurrentFilterVal('visible') !== true"
                     data-description="include hidden items button"
                     @click="setFilter('visible')">
                     <FontAwesomeIcon :icon="faEyeSlash" />
                     <span>{{ numItemsHidden }}</span>
-                </BButton>
+                </GButton>
 
-                <BButton
+                <GButton
                     v-if="!hideReload"
                     v-g-tooltip.hover
                     :title="reloadButtonTitle"
-                    :variant="reloadButtonVariant"
-                    size="sm"
+                    v-bind="variantToColor(reloadButtonVariant)"
+                    size="small"
                     class="rounded-0 text-decoration-none history-refresh-button"
                     @click="reloadContents()">
                     <FontAwesomeIcon :icon="faSync" :spin="reloadButtonLoading" />
-                </BButton>
+                </GButton>
             </BButtonGroup>
         </BButtonGroup>
     </div>
