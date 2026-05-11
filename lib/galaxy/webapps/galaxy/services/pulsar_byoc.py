@@ -1,0 +1,141 @@
+"""Thin service layer between Galaxy's BYOC API controller and the manager.
+
+Owns the API-shaped glue:
+
+* Model -> Pydantic-schema mapping (``_to_summary``).
+* The one-liner command string formatting that the controller previously
+  did inline using ``trans.app.config`` reads.
+* Domain-exception → ``HTTPException`` translation, so the controller stays
+  free of try/except chains and the manager stays free of FastAPI types.
+
+Matches the pattern used by ``galaxy.webapps.galaxy.services.credentials``
+and other recently-introduced services.
+"""
+
+from __future__ import annotations
+
+
+from fastapi import (
+    HTTPException,
+    status,
+)
+
+from galaxy import exceptions
+from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.pulsar_byoc import (
+    BootstrapTokenExpired,
+    BootstrapTokenInvalid,
+    PulsarByocError,
+    PulsarByocManager,
+    RegistrationRateLimited,
+    RelayVerificationFailed,
+    ResourceHasRunningJobs,
+)
+from galaxy.model import (
+    PulsarByocResource,
+    User,
+)
+from galaxy.schema.pulsar_byoc import (
+    BootstrapPayload,
+    PulsarByocResourceSummary,
+    RegistrationTicket,
+)
+
+
+def _to_summary(resource: PulsarByocResource) -> PulsarByocResourceSummary:
+    return PulsarByocResourceSummary(
+        id=resource.id,
+        manager_name=resource.manager_name,
+        relay_url=resource.relay_url,
+        relay_topic_prefix=resource.relay_topic_prefix,
+        status=resource.status,
+        create_time=resource.create_time,
+        update_time=resource.update_time,
+        last_seen_time=resource.last_seen_time,
+    )
+
+
+def _require_authenticated(trans: ProvidesUserContext) -> User:
+    if trans.user is None:
+        raise exceptions.AuthenticationRequired("Pulsar BYOC API requires an authenticated user.")
+    return trans.user
+
+
+class PulsarByocService:
+    """Bridges :class:`PulsarByocManager` to the FastAPI controller."""
+
+    byoc_manager: PulsarByocManager
+
+    def __init__(self, byoc_manager: PulsarByocManager) -> None:
+        self.byoc_manager = byoc_manager
+
+    # ---- registration ----------------------------------------------------
+
+    def start_registration(self, trans: ProvidesUserContext) -> RegistrationTicket:
+        user = _require_authenticated(trans)
+        try:
+            row = self.byoc_manager.start_registration(user)
+        except RegistrationRateLimited as exc:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
+
+        galaxy_url = trans.app.config.galaxy_infrastructure_url or ""
+        relay_url = trans.app.config.pulsar_byoc_relay_url or ""
+        one_liner = (
+            f"pulsar-config register-with-galaxy --galaxy {galaxy_url} --token {row.token} --relay {relay_url}"
+        )
+        return RegistrationTicket(
+            bootstrap_token=row.token,
+            expires_at=row.expiration_time,
+            relay_url=relay_url,
+            one_liner=one_liner,
+        )
+
+    def complete_registration(self, trans: ProvidesUserContext, payload: BootstrapPayload) -> PulsarByocResourceSummary:
+        try:
+            resource = self.byoc_manager.complete_registration(
+                bootstrap_token=payload.bootstrap_token,
+                refresh_token=payload.refresh_token,
+                relay_url=payload.relay_url,
+                manager_name=payload.manager_name,
+                relay_topic_prefix=payload.relay_topic_prefix,
+            )
+        except BootstrapTokenInvalid as exc:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+        except BootstrapTokenExpired as exc:
+            raise HTTPException(status_code=status.HTTP_410_GONE, detail=str(exc)) from exc
+        except RelayVerificationFailed as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        except PulsarByocError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return _to_summary(resource)
+
+    # ---- queries ---------------------------------------------------------
+
+    def list_for(self, trans: ProvidesUserContext) -> list[PulsarByocResourceSummary]:
+        user = _require_authenticated(trans)
+        return [_to_summary(r) for r in self.byoc_manager.list_for(user)]
+
+    def show(self, trans: ProvidesUserContext, resource_id: int) -> PulsarByocResourceSummary:
+        user = _require_authenticated(trans)
+        resource = self.byoc_manager.get_for_user(user, resource_id)
+        if resource is None:
+            # Don't leak existence to a cross-user probe.
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return _to_summary(resource)
+
+    # ---- lifecycle -------------------------------------------------------
+
+    def delete(self, trans: ProvidesUserContext, resource_id: int) -> None:
+        user = _require_authenticated(trans)
+        resource = self.byoc_manager.delete(user, resource_id)
+        if resource is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    def purge(self, trans: ProvidesUserContext, resource_id: int) -> None:
+        user = _require_authenticated(trans)
+        try:
+            resource = self.byoc_manager.purge(user, resource_id)
+        except ResourceHasRunningJobs as exc:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        if resource is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
