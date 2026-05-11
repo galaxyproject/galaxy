@@ -1,0 +1,46 @@
+# TPV configuration for user-self-registered Pulsar compute resources (BYOC).
+#
+# Include this file from your operator-managed TPV config file list so that
+# Galaxy jobs submitted by users with an active BYOC resource are routed to
+# their own Pulsar via the single multi-tenant ``pulsar_byoc`` runner.
+#
+# The destination's ``params`` are filled in at job dispatch time by a rule
+# that consults ``app.byoc_manager.get_active_for(user)`` — a method exposed
+# on the Galaxy app when ``enable_pulsar_byoc: true``. No per-user file
+# regeneration is required.
+#
+# Two stanzas:
+#   1. The destination ``pulsar_byoc``: inherits ``_pulsar`` (or whatever your
+#      base Pulsar destination is named), uses the multi-tenant runner, and
+#      requires the ``pulsar_byoc`` scheduling tag.
+#   2. A default tools rule that adds the ``pulsar_byoc`` tag to any job
+#      submitted by a user with an active BYOC resource, making the job
+#      eligible for the destination.
+#
+# Adjust ``inherits`` to point at your existing Pulsar destination, and
+# tighten the tools rule if you only want BYOC eligibility for a subset of
+# tools.
+
+destinations:
+  pulsar_byoc:
+    inherits: _pulsar
+    runner: pulsar_byoc
+    scheduling:
+      require:
+        - pulsar_byoc
+    rules:
+      - id: inject_byoc_params
+        if: app.byoc_manager.get_active_for(user) is not None
+        params:
+          pulsar_byoc_resource_id: "{app.byoc_manager.get_active_for(user).id}"
+          relay_url: "{app.byoc_manager.get_active_for(user).relay_url}"
+          manager: "{app.byoc_manager.get_active_for(user).manager_name}"
+
+tools:
+  default:
+    rules:
+      - id: byoc_eligibility
+        if: app.byoc_manager.get_active_for(user) is not None
+        scheduling:
+          require:
+            - pulsar_byoc
