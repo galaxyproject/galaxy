@@ -3532,6 +3532,26 @@ mapping:
       job_config:
         !include job_config_schema.yml
 
+      enable_pulsar_byoc:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable user self-registration of Pulsar compute resources ("Bring Your Own
+          Compute"). When true, the /api/pulsar_byoc endpoints are exposed and the
+          multi-tenant ``pulsar_byoc`` job runner consults the per-user resource set
+          stored on ``app.byoc_manager``. Requires a configured Pulsar relay and a
+          vault to store the per-resource relay refresh tokens.
+
+      pulsar_byoc_relay_url:
+        type: str
+        required: false
+        desc: |
+          URL of the operator-managed pulsar-relay against which BYOC Pulsar
+          daemons authenticate via device-flow OIDC. Surfaced in the
+          ``POST /api/pulsar_byoc/registration`` response and embedded in the
+          one-liner the user pastes into ``pulsar-config register-with-galaxy``.
+
       dependency_resolvers:
         type: seq
         sequence:
