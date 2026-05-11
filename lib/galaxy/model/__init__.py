@@ -13017,6 +13017,44 @@ class Credential(Base):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
+class PulsarByocResource(Base, RepresentById):
+    """A user-registered Pulsar compute resource ("Bring Your Own Compute").
+
+    The relay refresh token associated with each row lives in the Galaxy vault at
+    ``pulsar_byoc/<id>/relay_refresh_token``; it is never stored on the row itself.
+    """
+
+    __tablename__ = "pulsar_byoc_resource"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    manager_name: Mapped[str] = mapped_column(String(96), unique=True)
+    relay_url: Mapped[str] = mapped_column(TEXT)
+    relay_topic_prefix: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+    last_seen_time: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+
+class PulsarByocBootstrapToken(Base):
+    """Single-use short-TTL token authorising a ``POST /api/pulsar_byoc/bootstrap``
+    callback. The token row is deleted on successful redemption.
+
+    Galaxy convention: surrogate ``id`` integer PK + a unique secret column.
+    The opaque ``token`` string is what the user posts back; we look it up
+    via the unique index rather than treating it as the row identity.
+    """
+
+    __tablename__ = "pulsar_byoc_bootstrap_token"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    expiration_time: Mapped[datetime]
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
