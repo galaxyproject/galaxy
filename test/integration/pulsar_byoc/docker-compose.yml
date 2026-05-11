@@ -1,0 +1,37 @@
+# Compose harness for Galaxy BYOC (Bring Your Own Compute) integration tests.
+#
+# This brings up the *external* dependencies — an OIDC IdP — that the
+# integration suite under ``test/integration/pulsar_byoc/`` needs. The
+# pulsar-relay and any user-facing Pulsar daemon are run as Python
+# subprocesses by the test fixture so they exercise the local source tree
+# rather than a pre-built image.
+#
+# Spin up with::
+#
+#   docker compose -f test/integration/pulsar_byoc/docker-compose.yml up -d
+#
+# but the typical use is via the pytest fixture in ``conftest.py``, which
+# allocates a free host port, sets ``KEYCLOAK_HOST_PORT``, and waits for
+# Keycloak to be ready.
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    command:
+      - start-dev
+      - --http-port=8080
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: adminpassword
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+    ports:
+      - "${KEYCLOAK_HOST_PORT:-8089}:8080"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - "exec 3<>/dev/tcp/127.0.0.1/8080 && echo -e 'GET /realms/master HTTP/1.0\\r\\n\\r\\n' >&3 && head -1 <&3 | grep -q '200\\|302'"
+      interval: 5s
+      timeout: 3s
+      retries: 30
