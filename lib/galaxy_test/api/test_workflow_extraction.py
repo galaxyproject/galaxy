@@ -1,4 +1,6 @@
 import functools
+import time
+import unittest
 from collections import (
     Counter,
     namedtuple,
@@ -7,16 +9,72 @@ from json import (
     dumps,
     loads,
 )
+from typing import (
+    Any,
+    TYPE_CHECKING,
+)
 
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
+    DatasetPopulator,
     skip_without_tool,
     summarize_instance_history_on_error,
 )
 from galaxy_test.base.workflow_assertions import WorkflowStructureAssertions
 from .test_workflows import BaseWorkflowsApiTestCase
 
+if TYPE_CHECKING:
+    from requests import Response
 
-class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
+
+class _ExtractionHelpersMixin:
+    """Shared helpers for HID-based and ID-based workflow extraction tests."""
+
+    dataset_populator: DatasetPopulator
+    dataset_collection_populator: DatasetCollectionPopulator
+
+    if TYPE_CHECKING:
+
+        def _post(self, *args: Any, **kwds: Any) -> "Response": ...
+
+        def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None: ...
+
+    def _run_tool_get_collection_and_job_id(self, history_id, tool_id, inputs):
+        run = self.dataset_populator.run_tool(tool_id=tool_id, inputs=inputs, history_id=history_id)
+        implicit_hdca = run["implicit_collections"][0]
+        job_id = run["jobs"][0]["id"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return implicit_hdca, job_id
+
+    def _run_random_lines_mapped_over_pair(self, history_id):
+        hdca = self.dataset_collection_populator.create_pair_in_history(
+            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+        ).json()["outputs"][0]
+        inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}, "num_lines": 2}
+        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs1)
+        inputs2 = {"input": {"batch": True, "values": [{"src": "hdca", "id": implicit_hdca1["id"]}]}, "num_lines": 1}
+        _, job_id2 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs2)
+        return hdca, job_id1, job_id2
+
+    def _copy_hda_to_history(self, history_id, hda):
+        response = self._post(
+            f"histories/{history_id}/contents/datasets",
+            dict(source="hda", content=hda["id"]),
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _copy_content_to_history(self, history_id, content):
+        if content["history_content_type"] == "dataset":
+            return self._copy_hda_to_history(history_id, content)
+        payload = dict(source="hdca", content=content["id"])
+        response = self._post(f"histories/{history_id}/contents/dataset_collections", payload, json=True)
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+
+class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_from_history(self, history_id):
@@ -48,13 +106,10 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
         offset = 0
         old_contents = self._history_contents(old_history_id)
         for old_dataset in old_contents:
-            self.__copy_content_to_history(history_id, old_dataset)
+            self._copy_content_to_history(history_id, old_dataset)
         new_contents = self._history_contents(history_id)
         input_hids = [c["hid"] for c in new_contents[(offset + 0) : (offset + 2)]]
         cat1_job_id = self.__job_id(history_id, new_contents[(offset + 2)]["id"])
-
-        def reimport_jobs_ids(new_history_id):
-            return [j["id"] for j in self.dataset_populator.history_jobs(new_history_id) if j["tool_id"] == "cat1"]
 
         downloaded_workflow = self._extract_and_download_workflow(
             history_id,
@@ -72,17 +127,14 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
         offset = 0
         old_contents = self._history_contents(old_history_id)
         for old_dataset in old_contents:
-            self.__copy_content_to_history(history_id, old_dataset)
+            self._copy_content_to_history(history_id, old_dataset)
         new_contents = self._history_contents(history_id)
         input_hids = [c["hid"] for c in new_contents[(offset + 0) : (offset + 2)]]
-
-        def reimport_jobs_ids(new_history_id):
-            return [j["id"] for j in self.dataset_populator.history_jobs(new_history_id) if j["tool_id"] == "cat1"]
 
         downloaded_workflow = self._extract_and_download_workflow(
             history_id,
             reimport_as="test_extract_with_copied_inputs",
-            reimport_jobs_ids=reimport_jobs_ids,
+            reimport_jobs_ids=lambda nh: self._jobs_by_tool(nh, "cat1"),
             dataset_ids=input_hids,
         )
         self.assert_cat1_workflow_structure(downloaded_workflow)
@@ -90,7 +142,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
     def test_extract_mapping_workflow_from_history(self, history_id):
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
+        hdca, job_id1, job_id2 = self._run_random_lines_mapped_over_pair(history_id)
         downloaded_workflow = self._extract_and_download_workflow(
             history_id,
             reimport_as="extract_from_history_with_mapping",
@@ -100,7 +152,7 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
         self.assert_randomlines_mapping_workflow_structure(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history(self, history_id):
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
+        hdca, job_id1, job_id2 = self._run_random_lines_mapped_over_pair(history_id)
 
         new_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
         # API test is somewhat contrived since there is no good way
@@ -114,8 +166,6 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
         self.assert_randomlines_mapping_workflow_structure(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history_reimported(self, history_id):
-        import unittest
-
         raise unittest.SkipTest(
             "Mapping connection for copied collections not yet implemented in history import/export"
         )
@@ -125,14 +175,11 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase, WorkflowStructureAsser
 
         old_contents = self._history_contents(old_history_id)
         for old_content in old_contents:
-            self.__copy_content_to_history(history_id, old_content)
+            self._copy_content_to_history(history_id, old_content)
 
         def reimport_jobs_ids(new_history_id):
-            rval = [
-                j["id"] for j in self.dataset_populator.history_jobs(new_history_id) if j["tool_id"] == "random_lines1"
-            ]
+            rval = self._jobs_by_tool(new_history_id, "random_lines1")
             assert len(rval) == 2
-            print(rval)
             return rval
 
         # API test is somewhat contrived since there is no good way
@@ -454,17 +501,6 @@ test_data:
         #     assert False, "Found multiple jobs for tool %s" % tool_id
         return tool_jobs[-1]
 
-    def __run_random_lines_mapped_over_pair(self, history_id):
-        hdca = self.dataset_collection_populator.create_pair_in_history(
-            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
-        ).json()["outputs"][0]
-        hdca_id = hdca["id"]
-        inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}, "num_lines": 2}
-        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs1)
-        inputs2 = {"input": {"batch": True, "values": [{"src": "hdca", "id": implicit_hdca1["id"]}]}, "num_lines": 1}
-        _, job_id2 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs2)
-        return hdca, job_id1, job_id2
-
     def __run_random_lines_mapped_over_singleton(self, history_id):
         hdca = self.dataset_collection_populator.create_list_in_history(history_id, contents=["1 2 3\n4 5 6"]).json()
         hdca_id = hdca["id"]
@@ -477,16 +513,8 @@ test_data:
     def _history_contents(self, history_id: str):
         return self._get(f"histories/{history_id}/contents").json()
 
-    def __copy_content_to_history(self, history_id, content):
-        if content["history_content_type"] == "dataset":
-            payload = dict(source="hda", content=content["id"])
-            response = self._post(f"histories/{history_id}/contents/datasets", payload, json=True)
-
-        else:
-            payload = dict(source="hdca", content=content["id"])
-            response = self._post(f"histories/{history_id}/contents/dataset_collections", payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()
+    def _jobs_by_tool(self, history_id, tool_id):
+        return [j["id"] for j in self.dataset_populator.history_jobs(history_id) if j["tool_id"] == tool_id]
 
     def __setup_and_run_cat1_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow(name="test_for_extract")
@@ -520,8 +548,6 @@ test_data:
             )
             # wait a little more for those jobs, todo fix to wait for history imported false or
             # for a specific number of jobs...
-            import time
-
             time.sleep(1)
 
             if "reimport_jobs_ids" in extract_payload:
@@ -589,19 +615,8 @@ test_data:
         cat1_job_id = jobs_response.json()[0]["id"]
         return cat1_job_id
 
-    def _run_tool_get_collection_and_job_id(self, history_id: str, tool_id, inputs):
-        run_output1 = self.dataset_populator.run_tool(
-            tool_id=tool_id,
-            inputs=inputs,
-            history_id=history_id,
-        )
-        implicit_hdca = run_output1["implicit_collections"][0]
-        job_id = run_output1["jobs"][0]["id"]
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return implicit_hdca, job_id
 
-
-class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
+class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions):
     """Tests for POST /api/workflows/extract (ID-based extraction).
 
     Sibling of :class:`TestWorkflowExtractionApi` — same scenarios, but the
@@ -619,46 +634,57 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         self._assert_status_code_is(download, 200)
         return download.json()
 
-    @skip_without_tool("cat1")
-    @summarize_instance_history_on_error
-    def test_extract_with_hda_ids(self, history_id):
-        new_dataset1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
-        new_dataset2 = self.dataset_populator.new_dataset(history_id, content="4 5 6\n")
+    def _extract_workflow_id_by_ids(self, **payload):
+        if "workflow_name" not in payload:
+            payload["workflow_name"] = "extract roundtrip"
+        response = self._post("workflows/extract", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+        return response.json()["id"]
+
+    def _seed_two_inputs_and_run_cat1(self, history_id, c1, c2, **run_kwargs):
+        d1 = self.dataset_populator.new_dataset(history_id, content=c1)
+        d2 = self.dataset_populator.new_dataset(history_id, content=c2)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         run = self.dataset_populator.run_tool(
             tool_id="cat1",
             inputs={
-                "input1": {"src": "hda", "id": new_dataset1["id"]},
-                "queries_0|input2": {"src": "hda", "id": new_dataset2["id"]},
+                "input1": {"src": "hda", "id": d1["id"]},
+                "queries_0|input2": {"src": "hda", "id": d2["id"]},
             },
             history_id=history_id,
+            **run_kwargs,
         )
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        cat1_job_id = run["jobs"][0]["id"]
+        return d1, d2, run["jobs"][0]["id"]
+
+    def _assert_single_input_single_tool(self, workflow, expected_tool_id=None):
+        steps = workflow["steps"]
+        assert len(steps) == 2, steps
+        input_steps = [s for s in steps.values() if s["type"] == "data_input"]
+        tool_steps = [s for s in steps.values() if s["type"] == "tool"]
+        assert len(input_steps) == 1 and len(tool_steps) == 1
+        if expected_tool_id is not None:
+            assert tool_steps[0]["tool_id"] == expected_tool_id
+        connection = tool_steps[0]["input_connections"]["input1"]
+        # .ga format may yield a single dict or a list of one dict.
+        connection = connection[0] if isinstance(connection, list) else connection
+        assert connection["id"] == input_steps[0]["id"]
+
+    def _assert_extract_rejected(self, payload, allowed_codes):
+        response = self._post("workflows/extract", data=payload, json=True)
+        assert response.status_code in allowed_codes, response.text
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_with_hda_ids(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="1 2 3\n", c2="4 5 6\n")
         downloaded = self._extract_and_download_workflow_by_ids(
             from_history_id=history_id,
-            hda_ids=[new_dataset1["id"], new_dataset2["id"]],
+            hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
         )
         assert downloaded["name"] == "test import from history (by id)"
         self.assert_cat1_workflow_structure(downloaded)
-
-    def _run_tool_get_collection_and_job_id(self, history_id, tool_id, inputs):
-        run_output = self.dataset_populator.run_tool(tool_id=tool_id, inputs=inputs, history_id=history_id)
-        implicit_hdca = run_output["implicit_collections"][0]
-        job_id = run_output["jobs"][0]["id"]
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return implicit_hdca, job_id
-
-    def _run_random_lines_mapped_over_pair(self, history_id):
-        hdca = self.dataset_collection_populator.create_pair_in_history(
-            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
-        ).json()["outputs"][0]
-        inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}, "num_lines": 2}
-        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs1)
-        inputs2 = {"input": {"batch": True, "values": [{"src": "hdca", "id": implicit_hdca1["id"]}]}, "num_lines": 1}
-        _, job_id2 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs2)
-        return hdca, job_id1, job_id2
 
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
@@ -671,38 +697,15 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         )
         self.assert_randomlines_mapping_workflow_structure(downloaded)
 
-    def _copy_hda_to_history(self, history_id, hda):
-        response = self._post(
-            f"histories/{history_id}/contents/datasets",
-            dict(source="hda", content=hda["id"]),
-            json=True,
-        )
-        self._assert_status_code_is(response, 200)
-        return response.json()
-
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_with_copied_inputs_post_copy_ids(self, history_id):
         """User passes post-copy HDA ids (in extraction history) plus the
         original (pre-copy) job id."""
         original_history_id = self.dataset_populator.new_history()
-        d1 = self.dataset_populator.new_dataset(original_history_id, content="1 2 3\n")
-        d2 = self.dataset_populator.new_dataset(original_history_id, content="4 5 6\n")
-        self.dataset_populator.wait_for_history(original_history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=original_history_id,
-        )
-        self.dataset_populator.wait_for_history(original_history_id, assert_ok=True)
-        cat1_job_id = run["jobs"][0]["id"]
-
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(original_history_id, c1="1 2 3\n", c2="4 5 6\n")
         d1_copy = self._copy_hda_to_history(history_id, d1)
         d2_copy = self._copy_hda_to_history(history_id, d2)
-
         downloaded = self._extract_and_download_workflow_by_ids(
             from_history_id=history_id,
             hda_ids=[d1_copy["id"], d2_copy["id"]],
@@ -717,20 +720,7 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         original job id; copies exist in `history_id` but are not referenced.
         Cross-history extraction — `from_history_id` not required."""
         original_history_id = self.dataset_populator.new_history()
-        d1 = self.dataset_populator.new_dataset(original_history_id, content="1 2 3\n")
-        d2 = self.dataset_populator.new_dataset(original_history_id, content="4 5 6\n")
-        self.dataset_populator.wait_for_history(original_history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=original_history_id,
-        )
-        self.dataset_populator.wait_for_history(original_history_id, assert_ok=True)
-        cat1_job_id = run["jobs"][0]["id"]
-
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(original_history_id, c1="1 2 3\n", c2="4 5 6\n")
         downloaded = self._extract_and_download_workflow_by_ids(
             hda_ids=[d1["id"], d2["id"]],
             job_ids=[cat1_job_id],
@@ -739,13 +729,8 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
 
     @summarize_instance_history_on_error
     def test_empty_payload_rejected(self, history_id):
-        response = self._post(
-            "workflows/extract",
-            data={"workflow_name": "no inputs"},
-            json=True,
-        )
         # pydantic validator rejects empty input list -> 4xx (400 or 422).
-        assert response.status_code in (400, 422), response.text
+        self._assert_extract_rejected({"workflow_name": "no inputs"}, (400, 422))
 
     @summarize_instance_history_on_error
     def test_inaccessible_dataset_rejected(self, history_id):
@@ -755,47 +740,27 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
             other_dataset = self.dataset_populator.new_dataset(other_history_id, content="secret\n")
             self.dataset_populator.wait_for_history(other_history_id, assert_ok=True)
             self.dataset_populator.make_private(other_history_id, other_dataset["id"])
-        response = self._post(
-            "workflows/extract",
-            data={
-                "workflow_name": "should fail",
-                "hda_ids": [other_dataset["id"]],
-            },
-            json=True,
+        self._assert_extract_rejected(
+            {"workflow_name": "should fail", "hda_ids": [other_dataset["id"]]},
+            (400, 403),
         )
-        assert response.status_code in (400, 403), response.text
 
     @summarize_instance_history_on_error
     def test_nonexistent_hda_id_rejected(self, history_id):
-        response = self._post(
-            "workflows/extract",
-            data={"workflow_name": "bad hda", "hda_ids": ["f" * 16]},
-            json=True,
-        )
-        assert response.status_code in (400, 404), response.text
+        self._assert_extract_rejected({"workflow_name": "bad hda", "hda_ids": ["f" * 16]}, (400, 404))
 
     @summarize_instance_history_on_error
     def test_nonexistent_hdca_id_rejected(self, history_id):
-        response = self._post(
-            "workflows/extract",
-            data={"workflow_name": "bad hdca", "hdca_ids": ["f" * 16]},
-            json=True,
-        )
-        assert response.status_code in (400, 404), response.text
+        self._assert_extract_rejected({"workflow_name": "bad hdca", "hdca_ids": ["f" * 16]}, (400, 404))
 
     @summarize_instance_history_on_error
     def test_duplicate_hda_ids_rejected(self, history_id):
         new_dataset = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        response = self._post(
-            "workflows/extract",
-            data={
-                "workflow_name": "dup hdas",
-                "hda_ids": [new_dataset["id"], new_dataset["id"]],
-            },
-            json=True,
+        self._assert_extract_rejected(
+            {"workflow_name": "dup hdas", "hda_ids": [new_dataset["id"], new_dataset["id"]]},
+            (400, 422),
         )
-        assert response.status_code in (400, 422), response.text
 
     @summarize_instance_history_on_error
     def test_inaccessible_collection_rejected(self, history_id):
@@ -811,15 +776,10 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
             )
             for element in details["elements"]:
                 self.dataset_populator.make_private(other_history_id, element["object"]["id"])
-        response = self._post(
-            "workflows/extract",
-            data={
-                "workflow_name": "should fail",
-                "hdca_ids": [other_hdca["id"]],
-            },
-            json=True,
+        self._assert_extract_rejected(
+            {"workflow_name": "should fail", "hdca_ids": [other_hdca["id"]]},
+            (400, 403),
         )
-        assert response.status_code in (400, 403), response.text
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -846,15 +806,7 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
             hda_ids=[forward_hda_id],
             job_ids=[cat1_job_id],
         )
-        steps = downloaded["steps"]
-        assert len(steps) == 2, steps
-        input_steps = [s for s in steps.values() if s["type"] == "data_input"]
-        tool_steps = [s for s in steps.values() if s["type"] == "tool"]
-        assert len(input_steps) == 1 and len(tool_steps) == 1
-        connection = tool_steps[0]["input_connections"]["input1"]
-        # .ga format may yield a single dict or a list of one dict.
-        connection = connection[0] if isinstance(connection, list) else connection
-        assert connection["id"] == input_steps[0]["id"]
+        self._assert_single_input_single_tool(downloaded)
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -878,15 +830,7 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
             hda_ids=[d_b["id"]],
             job_ids=[cat1_job_id],
         )
-        # Exactly one input + one tool step; tool wires to the input step.
-        steps = downloaded["steps"]
-        assert len(steps) == 2, steps
-        input_steps = [s for s in steps.values() if s["type"] == "data_input"]
-        tool_steps = [s for s in steps.values() if s["type"] == "tool"]
-        assert len(input_steps) == 1 and len(tool_steps) == 1
-        cat1_step = tool_steps[0]
-        assert cat1_step["tool_id"] == "cat1"
-        assert cat1_step["input_connections"]["input1"]["id"] == input_steps[0]["id"]
+        self._assert_single_input_single_tool(downloaded, expected_tool_id="cat1")
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
@@ -895,18 +839,7 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         from B with hda_ids/job_ids referring to B-side rows. Workflow should
         wire B-side input to B-side cached job, not pull A-side rows in."""
         history_a = self.dataset_populator.new_history()
-        d_a = self.dataset_populator.new_dataset(history_a, content="cache me\n")
-        d2_a = self.dataset_populator.new_dataset(history_a, content="other\n")
-        self.dataset_populator.wait_for_history(history_a, assert_ok=True)
-        self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d_a["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2_a["id"]},
-            },
-            history_id=history_a,
-        )
-        self.dataset_populator.wait_for_history(history_a, assert_ok=True)
+        d_a, d2_a, _ = self._seed_two_inputs_and_run_cat1(history_a, c1="cache me\n", c2="other\n")
 
         d_b = self._copy_hda_to_history(history_id, d_a)
         d2_b = self._copy_hda_to_history(history_id, d2_a)
@@ -929,31 +862,12 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         )
         self.assert_cat1_workflow_structure(downloaded)
 
-    def _extract_workflow_id_by_ids(self, **payload):
-        if "workflow_name" not in payload:
-            payload["workflow_name"] = "extract roundtrip"
-        response = self._post("workflows/extract", data=payload, json=True)
-        self._assert_status_code_is(response, 200)
-        return response.json()["id"]
-
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_roundtrip_basic_by_ids(self, history_id):
         """Extract a cat1 workflow via the by-ids endpoint, invoke it on a
         fresh history, and assert it produces an output."""
-        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n")
-        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=history_id,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        cat1_job_id = run["jobs"][0]["id"]
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
         workflow_id = self._extract_workflow_id_by_ids(
             from_history_id=history_id,
             hda_ids=[d1["id"], d2["id"]],
@@ -1017,19 +931,7 @@ class TestWorkflowExtractionByIdsApi(BaseWorkflowsApiTestCase, WorkflowStructure
         differ across input orderings, but step types, tool set, and
         connection topology must match.
         """
-        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n")
-        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n")
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        run = self.dataset_populator.run_tool(
-            tool_id="cat1",
-            inputs={
-                "input1": {"src": "hda", "id": d1["id"]},
-                "queries_0|input2": {"src": "hda", "id": d2["id"]},
-            },
-            history_id=history_id,
-        )
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        cat1_job_id = run["jobs"][0]["id"]
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
 
         wf_a = self._extract_and_download_workflow_by_ids(
             workflow_name="ordering A",
