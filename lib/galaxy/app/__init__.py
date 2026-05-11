@@ -76,6 +76,7 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.object_store_instances import UserObjectStoreResolverImpl
+from galaxy.managers.pulsar_byoc import PulsarByocManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.sse import SSEConnectionManager
@@ -889,6 +890,9 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             TestDataResolver(file_dirs=self.config.tool_test_data_directories),
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
+        # Exposed as ``app.byoc_manager`` so TPV rules can call
+        # ``app.byoc_manager.get_active_for(user)`` at job dispatch time.
+        self.byoc_manager = self._register_singleton(PulsarByocManager)
 
         # Genomes
         self.genomes = self._register_singleton(Genomes)

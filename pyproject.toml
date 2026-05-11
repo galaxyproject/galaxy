@@ -73,6 +73,7 @@ dependencies = [
     "pillow",
     "psutil",
     "pulsar-galaxy-lib>=0.15.10",
+    "pulsar-relay-client>=1.0,<2",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
