@@ -321,6 +321,15 @@ runners:
     #pulsar_limits_cpu: 1
     #tool_limits_cpu: 4
 
+  pulsar_byoc:
+    # Multi-tenant Pulsar runner backing user-self-registered compute
+    # resources ("Bring Your Own Compute"). Requires
+    # ``enable_pulsar_byoc: true`` in galaxy.yml. Per-user relay URLs,
+    # manager names, and refresh tokens are resolved at submit time from
+    # ``app.byoc_manager``; the runner holds no static credentials and one
+    # registered instance serves every user's BYOC resource.
+    #load: galaxy.jobs.runners.pulsar:PulsarMQBYOCJobRunner
+
   pulsar_legacy:
     # Pulsar job runner with default parameters matching those
     # of old LWR job runner. If your Pulsar server is running on a
