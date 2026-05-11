@@ -1,0 +1,33 @@
+# Pulsar app.yml for the BYOC integration test subprocess.
+#
+# Rendered by the fixture with three placeholders:
+#   {manager_name}             — the JWT sub from the device-flow login
+#   {message_queue_url}        — the relay's base URL
+#   {credentials_file}         — absolute path to the relay_credentials.json
+#                                holding the primary refresh token
+#   {staging_directory}        — Pulsar's per-test staging dir
+#   {persistence_directory}    — Pulsar's per-test persistence dir
+
+managers:
+  {manager_name}:
+    type: queued_python
+    num_concurrent_jobs: 1
+
+staging_directory: {staging_directory}
+persistence_directory: {persistence_directory}
+
+message_queue_url: {message_queue_url}
+message_queue_credentials_file: {credentials_file}
+
+conda_auto_init: false
+conda_auto_install: false
+
+logging:
+  version: 1
+  disable_existing_loggers: false
+  formatters:
+    default: {{format: "%(asctime)s %(name)s %(levelname)s %(message)s"}}
+  handlers:
+    console: {{class: logging.StreamHandler, formatter: default, stream: ext://sys.stdout}}
+    file: {{class: logging.FileHandler, formatter: default, filename: "{persistence_directory}/pulsar.log", mode: "w"}}
+  root: {{level: DEBUG, handlers: [console, file]}}
