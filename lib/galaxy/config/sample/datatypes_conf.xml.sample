@@ -413,10 +413,10 @@
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true">
         <infer_from suffix="mzml" />
     </datatype>
-    <datatype extension="mzspeclib_json" type="galaxy.datatypes.proteomics:MzSpecLibJson" mimetype="application/json" display_in_upload="true" description="mzSpecLib in JSON format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
+    <datatype extension="mzspeclib.json" type="galaxy.datatypes.proteomics:MzSpecLibJson" mimetype="application/json" display_in_upload="true" description="mzSpecLib in JSON format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
       <infer_from suffix="mzspeclib.json" />
     </datatype>
-    <datatype extension="mzspeclib_txt" type="galaxy.datatypes.proteomics:MzSpecLibTxt" mimetype="text/plain" display_in_upload="true" description="mzSpecLib in text format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
+    <datatype extension="mzspeclib.txt" type="galaxy.datatypes.proteomics:MzSpecLibTxt" mimetype="text/plain" display_in_upload="true" description="mzSpecLib in text format." description_url="https://github.com/HUPO-PSI/mzSpecLib">
       <infer_from suffix="mzspeclib.txt" />
     </datatype>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
