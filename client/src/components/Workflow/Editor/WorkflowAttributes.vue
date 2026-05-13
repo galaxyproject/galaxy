@@ -108,14 +108,14 @@
             <div>
                 <b>Readme</b>
             </div>
-            <b-button
+            <GButton
                 id="workflow-readme"
                 class="w-100"
-                size="sm"
+                size="small"
                 :pressed="readmeActive"
                 @click="$emit('update:readme-active', !readmeActive)">
                 {{ readmeActive ? "Hide" : "Show" }} Readme
-            </b-button>
+            </GButton>
             <div class="form-text text-muted">
                 A detailed description of what the workflow does. It is best to include descriptions of what kinds of
                 data are required. Researchers looking for the workflow will see this text. Markdown is enabled.
@@ -165,6 +165,7 @@ import {
 import { UntypedParameters } from "./modules/parameters";
 
 import WorkflowVersionSelector from "../WorkflowVersionSelector.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import ItemListEditor from "@/components/Common/ItemListEditor.vue";
 import LicenseSelector from "@/components/License/LicenseSelector.vue";
@@ -182,6 +183,7 @@ export default {
         CreatorEditor,
         ItemListEditor,
         ActivityPanel,
+        GButton,
         GLink,
         WorkflowVersionSelector,
     },

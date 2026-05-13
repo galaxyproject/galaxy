@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-button variant="link" @click="onGoBack">Go back</b-button>
+        <GButton transparent @click="onGoBack">Go back</GButton>
         <PermissionsHeader v-if="folder" :name="folder.name" />
         <b-container fluid>
             <div class="dataset_table">
@@ -50,6 +50,7 @@ import { Services } from "@/components/Libraries/LibraryPermissions/services";
 import { Toast } from "@/composables/toast";
 import { getAppRoot } from "@/onload/loadConfig";
 
+import GButton from "@/components/BaseComponents/GButton.vue";
 import PermissionsHeader from "@/components/Libraries/LibraryPermissions/PermissionsHeader.vue";
 import PermissionsInputField from "@/components/Libraries/LibraryPermissions/PermissionsInputField.vue";
 
@@ -60,6 +61,7 @@ export default {
         PermissionsInputField,
         PermissionsHeader,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         folder_id: {
