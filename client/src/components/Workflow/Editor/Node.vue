@@ -23,7 +23,7 @@
             @dblclick.exact="onDoubleClick"
             @click.shift.capture.prevent.stop="toggleSelected"
             @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
                 <GButton
                     v-if="credentials.length > 0"
@@ -80,7 +80,7 @@
                             @onCreate="onCreate" />
                     </div>
                 </b-popover>
-            </b-button-group>
+            </GButtonGroup>
             <i :class="iconClass" />
             <span v-if="step.when" v-g-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon :icon="faCodeBranch" />
@@ -189,6 +189,7 @@ import { ToggleStepSelectedAction } from "./Actions/stepActions";
 import type { OutputTerminals } from "./modules/terminals";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

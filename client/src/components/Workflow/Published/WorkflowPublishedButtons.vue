@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faDownload, faEdit, faLink, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { StoredWorkflowDetailed } from "@/api/workflows";
@@ -12,6 +11,7 @@ import { copy } from "@/utils/clipboard";
 import { withPrefix } from "@/utils/redirect";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 const props = defineProps<{
     id: string;
@@ -60,7 +60,7 @@ function logInTitle(title: string) {
 
 <template>
     <span>
-        <BButtonGroup>
+        <GButtonGroup>
             <GButton v-g-tooltip.hover title="Download workflow in .ga format" color="blue" outline :href="downloadUrl">
                 <FontAwesomeIcon :icon="faDownload" />
                 Download
@@ -68,7 +68,7 @@ function logInTitle(title: string) {
             <GButton v-g-tooltip.hover title="Copy link to workflow" color="blue" outline @click="copyLink">
                 <FontAwesomeIcon :icon="faLink" />
             </GButton>
-        </BButtonGroup>
+        </GButtonGroup>
 
         <GButton
             v-if="!props.embed && sharedWorkflow"

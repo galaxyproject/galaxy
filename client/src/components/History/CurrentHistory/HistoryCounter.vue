@@ -10,7 +10,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { watchImmediate } from "@vueuse/core";
-import { BButtonGroup } from "bootstrap-vue";
 import { formatDistanceToNowStrict } from "date-fns";
 import { storeToRefs } from "pinia";
 import prettyBytes from "pretty-bytes";
@@ -31,6 +30,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -218,8 +218,8 @@ onMounted(() => {
             </GButton>
         </div>
 
-        <BButtonGroup v-if="currentUser">
-            <BButtonGroup>
+        <GButtonGroup v-if="currentUser">
+            <GButtonGroup>
                 <GButton
                     v-g-tooltip.hover
                     :title="localize('Show active')"
@@ -270,13 +270,13 @@ onMounted(() => {
                     @click="reloadContents()">
                     <FontAwesomeIcon :icon="faSync" :spin="reloadButtonLoading" />
                 </GButton>
-            </BButtonGroup>
-        </BButtonGroup>
+            </GButtonGroup>
+        </GButtonGroup>
     </div>
 </template>
 
 <style lang="scss" scoped>
-.btn {
+:deep(.g-button) {
     white-space: nowrap;
 }
 </style>

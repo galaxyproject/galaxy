@@ -2,7 +2,7 @@
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faCaretDown, faEdit, faPen, faSpinner, faStar, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButtonGroup, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
+import { BBadge, BDropdown, BDropdownItem, BFormCheckbox, BLink } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { sizeToGSize, variantToColor } from "@/components/BaseComponents/variantToColor";
@@ -13,6 +13,7 @@ import localize from "@/utils/localization";
 import type { CardAction, CardBadge, CardIndicator, Title, TitleIcon, TitleSize } from "./GCard.types";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
@@ -644,10 +645,9 @@ function onKeyDown(event: KeyboardEvent) {
 
                         <div class="align-items-center d-flex flex-gapx-1 justify-content-end ml-auto">
                             <slot name="secondary-actions">
-                                <BButtonGroup
+                                <GButtonGroup
                                     v-if="props.secondaryActions?.length"
                                     :id="getElementId(props.id, 'secondary-actions')"
-                                    size="sm"
                                     class="mt-1">
                                     <template v-for="sa in props.secondaryActions">
                                         <GButton
@@ -673,7 +673,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             </span>
                                         </GButton>
                                     </template>
-                                </BButtonGroup>
+                                </GButtonGroup>
                             </slot>
 
                             <div :id="getElementId(props.id, 'primary-actions')" class="d-flex flex-gapx-1">

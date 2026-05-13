@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
+import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -9,6 +9,7 @@ import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import GCollapse from "@/components/BaseComponents/GCollapse.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -136,7 +137,7 @@ function togglePreferences() {
                 <div align-h="end" align-v="center">
                     <span class="mx-2"> Filters: </span>
 
-                    <BButtonGroup>
+                    <GButtonGroup>
                         <GButton
                             id="show-unread-filter"
                             size="small"
@@ -158,7 +159,7 @@ function togglePreferences() {
                             <FontAwesomeIcon :icon="faRetweet" />
                             Shared
                         </GButton>
-                    </BButtonGroup>
+                    </GButtonGroup>
                 </div>
             </div>
 

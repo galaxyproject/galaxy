@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -14,6 +14,7 @@ import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
@@ -132,7 +133,7 @@ function showRecent() {
 
             <div class="d-flex justify-content-between">
                 <div>
-                    <BButtonGroup v-g-tooltip.hover :title="showRecentTitle">
+                    <GButtonGroup v-g-tooltip.hover :title="showRecentTitle">
                         <GButton
                             size="small"
                             data-description="show recent histories"
@@ -144,7 +145,7 @@ function showRecent() {
                             <FontAwesomeIcon v-else :icon="faClock" />
                             <span v-localize>Recent</span>
                         </GButton>
-                    </BButtonGroup>
+                    </GButtonGroup>
                     <GButton
                         v-g-tooltip.hover
                         :title="localize('Open modal to select/deselect histories')"

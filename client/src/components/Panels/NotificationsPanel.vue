@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButtonGroup } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -10,6 +10,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import NotificationCard from "@/components/Notifications/NotificationCard.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
@@ -43,7 +44,7 @@ async function onMarkAllAsRead() {
         :go-to-all-title="localize('All notifications')"
         href="/user/notifications">
         <template v-slot:header-buttons>
-            <BButtonGroup>
+            <GButtonGroup>
                 <GButton
                     v-g-tooltip.bottom.hover
                     data-description="mark all as read"
@@ -54,7 +55,7 @@ async function onMarkAllAsRead() {
                     @click="onMarkAllAsRead">
                     <FontAwesomeIcon :icon="faCheckDouble" fixed-width />
                 </GButton>
-            </BButtonGroup>
+            </GButtonGroup>
         </template>
 
         <template v-slot:header>

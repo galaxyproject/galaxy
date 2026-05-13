@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { faEdit, faEye, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButtonGroup, BCard, BFormTextarea } from "bootstrap-vue";
+import { BCard, BFormTextarea } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ToolHelpMarkdown from "@/components/Tool/ToolHelpMarkdown.vue";
 
@@ -55,7 +56,7 @@ watch(
             <Heading h3 separator inline size="sm" class="flex-grow-1 m-0">
                 <span v-localize>Workflow Readme</span>
             </Heading>
-            <BButtonGroup>
+            <GButtonGroup>
                 <GButton size="small" color="blue" outline :disabled="readmeEdit" @click="readmeEdit = true">
                     <FontAwesomeIcon :icon="faEdit" />
                     <span v-localize>Edit</span>
@@ -64,7 +65,7 @@ watch(
                     <FontAwesomeIcon :icon="faEye" />
                     <span v-localize>Preview</span>
                 </GButton>
-            </BButtonGroup>
+            </GButtonGroup>
             <GButton
                 v-g-tooltip.hover
                 size="small"

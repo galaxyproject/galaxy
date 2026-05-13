@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCog, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButtonGroup, BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownForm, BDropdownItemButton, BFormCheckbox } from "bootstrap-vue";
 //@ts-ignore deprecated package without types (vue 2, remove this comment on vue 3 migration)
 import { ArrowLeftFromLine, ArrowRightToLine } from "lucide-vue";
 import { computed } from "vue";
@@ -12,6 +12,7 @@ import type { PostJobActions, Step } from "@/stores/workflowStepStore";
 import FormDefault from "./Forms/FormDefault.vue";
 import FormTool from "./Forms/FormTool.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DraggableSeparator from "@/components/Common/DraggableSeparator.vue";
 import Heading from "@/components/Common/Heading.vue";
 import IdleLoad from "@/components/Common/IdleLoad.vue";
@@ -69,7 +70,7 @@ function updateStored(v: boolean) {
         <div class="inspector-heading">
             <Heading h2 inline size="sm"> {{ title }} </Heading>
 
-            <BButtonGroup>
+            <GButtonGroup>
                 <GButton
                     v-if="!maximized"
                     class="heading-button"
@@ -106,7 +107,7 @@ function updateStored(v: boolean) {
                 <GButton class="heading-button" transparent title="close" @click="close">
                     <FontAwesomeIcon :icon="faTimes" fixed-width />
                 </GButton>
-            </BButtonGroup>
+            </GButtonGroup>
         </div>
 
         <div class="inspector-content">

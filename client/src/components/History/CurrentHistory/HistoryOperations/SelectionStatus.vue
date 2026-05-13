@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BButtonGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 interface Props {
     selectionSize: number;
@@ -27,19 +27,20 @@ function resetSelection() {
 </script>
 
 <template>
-    <BButtonGroup size="sm">
+    <GButtonGroup>
         <GButton
             v-if="hasSelection"
             v-g-tooltip.hover
             :title="localize('Clear selection')"
             transparent
+            size="small"
             data-test-id="clear-btn"
             @click="resetSelection">
             <span class="fa fa-fw fa-times" />
         </GButton>
 
-        <GButton v-else transparent data-test-id="select-all-btn" @click="selectAll">
+        <GButton v-else transparent size="small" data-test-id="select-all-btn" @click="selectAll">
             <span v-localize>Select All</span>
         </GButton>
-    </BButtonGroup>
+    </GButtonGroup>
 </template>

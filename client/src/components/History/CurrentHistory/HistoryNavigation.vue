@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faChevronRight, faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButtonGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 
@@ -11,6 +10,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import HistoryOptions from "@/components/History/HistoryOptions.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
 
@@ -55,7 +55,7 @@ function userTitle(title: string) {
                 <span v-localize>History</span>
             </GButton>
 
-            <BButtonGroup>
+            <GButtonGroup>
                 <GButton
                     v-if="!props.minimal"
                     v-g-tooltip.top.hover
@@ -85,7 +85,7 @@ function userTitle(title: string) {
                 </GButton>
 
                 <HistoryOptions :history="history" :minimal="props.minimal" />
-            </BButtonGroup>
+            </GButtonGroup>
         </nav>
 
         <SelectorModal
