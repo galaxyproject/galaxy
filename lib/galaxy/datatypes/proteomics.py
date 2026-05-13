@@ -2,6 +2,7 @@
 Proteomics Datatypes
 """
 
+import json
 import logging
 import re
 from typing import (
@@ -13,6 +14,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.text import Json
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -225,6 +227,82 @@ class MzTab2(MzTab):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class MzSpecLibJson(Json):
+    """
+    mzSpecLib v1.0 is a formal standard and file format 
+    to store and distribute spectral libraries/archives
+    https://github.com/HUPO-PSI/mzSpecLib
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mzSpecLib.json')
+    >>> MzSpecLibJson().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mzSpecLib.txt')
+    >>> MzSpecLibJson().sniff(fname)
+    False
+    """
+    
+    file_ext = "mzspeclib.json"
+
+    _required_keys = ("format_version", "attributes", "spectra")
+    _key_pattern = re.compile(r"\"(format_version|attributes|spectra)\"\s*:")
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        header = file_prefix.contents_header
+        if not header or not header.lstrip().startswith("{"):
+            return False
+
+        if not file_prefix.truncated:
+            try:
+                payload = json.loads(header)
+            except Exception:
+                return False
+            return isinstance(payload, dict) and all(key in payload for key in self._required_keys)
+
+        found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
+        return all(key in found_keys for key in self._required_keys)
+
+
+@build_sniff_from_prefix
+class MzSpecLibTxt(Text):
+    """
+    mzSpecLib v1.0 is a formal standard and file format 
+    to store and distribute spectral libraries/archives
+    https://github.com/HUPO-PSI/mzSpecLib
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.mzSpecLib.txt')
+    >>> MzSpecLibTxt().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mzSpecLib.json')
+    >>> MzSpecLibTxt().sniff(fname)
+    False
+    """
+    
+    file_ext = "mzspeclib.txt"
+
+    _format_header = "<mzSpecLib>"
+    _version_prefix = "MS:1003186|library format version="
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        saw_header = False
+        for idx, line in enumerate(file_prefix.string_io()):
+            if idx > 50:
+                break
+            stripped = line.strip()
+            if not stripped:
+                continue
+            if not saw_header:
+                if stripped != self._format_header:
+                    return False
+                saw_header = True
+                continue
+            if stripped.startswith(self._version_prefix):
+                return True
+        return False
 
 
 @build_sniff_from_prefix
