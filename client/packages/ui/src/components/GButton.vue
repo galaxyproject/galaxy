@@ -99,7 +99,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? (props.to ?? props.href) : ''"
-        :type="baseComponent === 'button' && !$attrs.type ? 'button' : undefined"
+        :type="baseComponent === 'button' ? ($attrs.type ?? 'button') : undefined"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
