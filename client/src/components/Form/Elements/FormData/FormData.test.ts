@@ -90,7 +90,7 @@ describe("FormData", () => {
             product: false,
             values: [{ id: "hda4", src: "hda", map_over_type: null }],
         };
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(4);
         expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Single dataset");
@@ -150,7 +150,7 @@ describe("FormData", () => {
             optional: true,
             options: defaultOptions,
         });
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
         expect(options.at(0).classes()).toContain("g-pressed");
         expect(options.at(0).attributes("title")).toBe("Multiple datasets");
@@ -521,7 +521,7 @@ describe("FormData", () => {
             options: defaultOptions,
         });
         await wrapper.vm.$nextTick();
-        const options = wrapper.find(".btn-group").findAll("button");
+        const options = wrapper.find(".g-button-group").findAll("button");
         expect(options.length).toBe(3);
         expect(options.at(1).classes()).toContain("g-pressed");
         expect(options.at(1).attributes("title")).toBe("Dataset collection");
