@@ -99,6 +99,7 @@ const buttonElementRef = useResolveElement(buttonRef);
         :class="{ ...variantClasses, ...styleClasses }"
         :to="!props.disabled ? props.to : ''"
         :href="!props.disabled ? (props.to ?? props.href) : ''"
+        :type="baseComponent === 'button' && !$attrs.type ? 'button' : undefined"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
         v-bind="$attrs"
@@ -185,6 +186,11 @@ const buttonElementRef = useResolveElement(buttonRef);
             border-color: var(--color-grey-600);
         }
 
+        &.g-pressed:not(.g-outline):not(.g-transparent) {
+            background-color: var(--color-grey-400);
+            border-color: var(--color-grey-600);
+        }
+
         &.g-outline.g-pressed {
             background-color: var(--color-grey-600);
             color: var(--color-grey-100);
@@ -210,6 +216,11 @@ const buttonElementRef = useResolveElement(buttonRef);
             }
 
             &:focus-visible {
+                border-color: var(--color-#{$color}-900);
+            }
+
+            &.g-pressed:not(.g-outline):not(.g-transparent) {
+                background-color: var(--color-#{$color}-700);
                 border-color: var(--color-#{$color}-900);
             }
         }
