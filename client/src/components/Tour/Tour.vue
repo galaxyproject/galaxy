@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -14,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GModal from "../BaseComponents/GModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import TourStep from "./TourStep.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 /** Popup display duration when auto-playing the tour */
 const PLAY_DELAY = 3000;
@@ -267,10 +267,10 @@ function modalDismiss(ok = true) {
             :footer="Boolean(errorMessage)"
             @ok="modalDismiss"
             @cancel="modalDismiss(false)">
-            <BAlert :variant="modalContents.variant" show>
+            <GAlert :variant="modalContents.variant" show>
                 <span v-if="!modalContents.loading">{{ modalContents.message }}</span>
                 <LoadingSpan v-else :message="modalContents.message" />
-            </BAlert>
+            </GAlert>
             <div v-if="errorMessage">
                 The tour encountered an issue and cannot continue to the next step. This may be due to:
                 <ul class="mb-2">

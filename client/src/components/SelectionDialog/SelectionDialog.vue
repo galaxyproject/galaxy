@@ -2,7 +2,7 @@
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
+import { BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { RowClickEvent, RowSelectEvent, TableField } from "@/components/Common/GTable.types";
@@ -13,6 +13,7 @@ import type { SelectionItem } from "./selectionTypes";
 
 import GModal from "../BaseComponents/GModal.vue";
 import Heading from "../Common/Heading.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -294,9 +295,9 @@ defineExpose({
             </div>
         </template>
         <slot name="helper" />
-        <BAlert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <div v-else>
             <div v-if="optionsShow" data-description="selection dialog options">
                 <GTable

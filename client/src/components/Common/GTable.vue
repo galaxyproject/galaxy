@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, any>">
 import { faEllipsisV, faSort, faSortDown, faSortUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
+import { BDropdown, BDropdownItem, BFormCheckbox } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { BootstrapSize } from "@/components/Common";
@@ -18,6 +18,7 @@ import type {
     TableItemClassMeta,
 } from "./GTable.types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -767,9 +768,9 @@ defineExpose({
                         <tr v-if="props.showEmpty && !props.items.length" class="g-table-empty-row">
                             <td :colspan="(selectable ? 1 : 0) + props.fields.length + (props.actions ? 1 : 0)">
                                 <slot name="empty">
-                                    <BAlert v-if="!loading" variant="info" show class="w-100 m-0">
+                                    <GAlert v-if="!loading" variant="info" show class="w-100 m-0">
                                         {{ props.emptyState?.message ?? "No data available" }}
-                                    </BAlert>
+                                    </GAlert>
                                 </slot>
                             </td>
                         </tr>

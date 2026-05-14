@@ -2,12 +2,13 @@
 import { faArrowDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import { BAlert, BListGroup } from "bootstrap-vue";
+import { BListGroup } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ScrollToTopButton from "@/components/ToolsList/ScrollToTopButton.vue";
@@ -214,12 +215,12 @@ watch(
                     toolMenuContainer: inPanel,
                 }"
                 role="list">
-                <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+                <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
                 <template v-else>
                     <slot v-if="items.length === 0" name="loading">
-                        <BAlert v-if="busy" variant="info" show>
+                        <GAlert v-if="busy" variant="info" show>
                             <LoadingSpan :message="`Loading ${props.namePlural}`" />
-                        </BAlert>
+                        </GAlert>
                     </slot>
                     <component
                         :is="props.gridView ? 'div' : BListGroup"

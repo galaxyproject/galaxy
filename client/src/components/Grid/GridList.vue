@@ -2,7 +2,7 @@
 import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
-import { BAlert, BButton, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BButton, BCard, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,6 +16,7 @@ import GridExpand from "./GridElements/GridExpand.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -322,8 +323,8 @@ watch(operationMessage, () => {
 
 <template>
     <div :id="gridConfig.id" class="d-flex flex-column overflow-auto">
-        <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
+        <GAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+        <GAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</GAlert>
         <div v-if="!embedded || filterClass" class="grid-header d-flex justify-content-between pb-2 flex-column">
             <div v-if="!embedded" class="d-flex">
                 <Heading h1 separator inline size="lg" class="flex-grow-1 m-0" data-description="grid title">
@@ -359,14 +360,14 @@ watch(operationMessage, () => {
             <LoadingOverlay />
         </div>
         <span v-else-if="!isAvailable || hasInvalidFilters">
-            <BAlert v-if="!hasInvalidFilters" variant="info" show>
+            <GAlert v-if="!hasInvalidFilters" variant="info" show>
                 <span v-if="filterText">
                     <span v-localize>Nothing found with:</span>
                     <b>{{ filterText }}</b>
                 </span>
                 <span v-else v-localize>{{ noDataMessage }}</span>
-            </BAlert>
-            <BAlert v-else-if="invalidFilters" variant="danger" show>
+            </GAlert>
+            <GAlert v-else-if="invalidFilters" variant="danger" show>
                 <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -386,7 +387,7 @@ watch(operationMessage, () => {
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </a>
-            </BAlert>
+            </GAlert>
         </span>
         <template v-else>
             <div class="position-relative">
