@@ -3,7 +3,6 @@ import { faTimesCircle } from "@fortawesome/free-regular-svg-icons";
 import { faInfoCircle, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import { computed, onUnmounted, ref, watch } from "vue";
 
 import type { WorkflowInvocationElementView } from "@/api/invocations";
@@ -19,6 +18,7 @@ import ParameterStep from "./ParameterStep.vue";
 import SubworkflowAlert from "./SubworkflowAlert.vue";
 import WorkflowInvocationStepHeader from "./WorkflowInvocationStepHeader.vue";
 import WorkflowStepTitle from "./WorkflowStepTitle.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
@@ -228,11 +228,11 @@ onUnmounted(() => {
 
                 <div v-if="isReady && invocationStepId !== undefined">
                     <div style="min-width: 1">
-                        <BAlert v-if="loading" variant="info" show>
+                        <GAlert v-if="loading" variant="info" show>
                             <LoadingSpan message="Loading invocation step details" />
-                        </BAlert>
+                        </GAlert>
 
-                        <BAlert v-else-if="!stepDetails" variant="info" show> Unable to load step details. </BAlert>
+                        <GAlert v-else-if="!stepDetails" variant="info" show> Unable to load step details. </GAlert>
 
                         <div v-else>
                             <ParameterStep
@@ -283,7 +283,7 @@ onUnmounted(() => {
                                                 class="mt-1"
                                                 :jobs="stepDetails.jobs"
                                                 :invocation-id="props.invocation.id" />
-                                            <BAlert v-else v-localize variant="info" show>This step has no jobs</BAlert>
+                                            <GAlert v-else v-localize variant="info" show>This step has no jobs</GAlert>
                                         </div>
                                     </GTab>
 
@@ -324,9 +324,9 @@ onUnmounted(() => {
                                             <FontAwesomeIcon :icon="faWrench" />
                                             <span v-localize>Step Config</span>
                                         </template>
-                                        <BAlert v-if="loadingStepConfig" show>
+                                        <GAlert v-if="loadingStepConfig" show>
                                             <LoadingSpan message="Loading step configuration" />
-                                        </BAlert>
+                                        </GAlert>
                                         <fieldset v-else-if="activeStepWithConfig" disabled>
                                             <FormTool
                                                 v-if="workflowStepType === 'tool'"

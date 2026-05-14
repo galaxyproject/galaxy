@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BPagination } from "bootstrap-vue";
+import { BPagination } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { JobBaseModel, JobState } from "@/api/jobs";
@@ -9,6 +9,7 @@ import GButton from "../BaseComponents/GButton.vue";
 import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
 import InvocationStepStateDisplay from "./InvocationStepStateDisplay.vue";
 import JobStepJobs from "./JobStepJobs.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const PER_PAGE = 10;
 
@@ -70,7 +71,7 @@ watch(
 </script>
 
 <template>
-    <BAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <GAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </GAlert>
     <div v-else-if="jobCount === 1 && firstJob">
         <JobDetailsDisplayed :job-id="firstJob.id" :invocation-id="props.invocationId" />
     </div>
@@ -100,7 +101,7 @@ watch(
             </div>
         </div>
 
-        <BAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </BAlert>
+        <GAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </GAlert>
         <JobStepJobs
             v-else
             :jobs="currentStateJobs"

@@ -1,11 +1,11 @@
 <template>
     <div v-if="currentUser && currentHistoryId" class="workflow-expanded-form">
-        <BAlert v-if="!canRunOnHistory" variant="warning" show>
+        <GAlert v-if="!canRunOnHistory" variant="warning" show>
             <span v-localize>
                 The workflow cannot run because the current history is immutable. Please select a different history or
                 send the results to a new one.
             </span>
-        </BAlert>
+        </GAlert>
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b> <i>(version: {{ model.runData.version + 1 }})</i>
             <div class="float-right d-flex flex-gapx-1">
@@ -29,7 +29,7 @@
             </div>
         </div>
 
-        <BAlert v-if="disableSimpleFormReason" show variant="warning">
+        <GAlert v-if="disableSimpleFormReason" show variant="warning">
             This is the legacy workflow run form.
             <span v-if="disableSimpleFormReason === 'hasReplacementParameters'">
                 This workflow contains parameters in tool steps that require advanced handling. The simplified form does
@@ -43,7 +43,7 @@
                 This workflow is configured with resource request parameters. The simplified form does not support
                 workflows with resource options.
             </span>
-        </BAlert>
+        </GAlert>
 
         <WorkflowCredentials v-if="credentialTools.length" :tool-identifiers="credentialTools" />
 
@@ -93,7 +93,6 @@
 </template>
 
 <script>
-import { BAlert } from "bootstrap-vue";
 import { mapState } from "pinia";
 
 import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
@@ -106,6 +105,7 @@ import { invokeWorkflow } from "./services";
 
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep.vue";
 import WorkflowRunInputStep from "./WorkflowRunInputStep.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import FormCard from "@/components/Form/FormCard.vue";
@@ -116,7 +116,7 @@ import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.v
 
 export default {
     components: {
-        BAlert,
+        GAlert,
         GButton,
         ButtonSpinner,
         FormDisplay,
