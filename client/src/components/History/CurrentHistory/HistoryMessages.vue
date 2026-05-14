@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { faArchive, faBurn, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type AnyUser, type HistorySummary, userOwnsHistory } from "@/api";
 import localize from "@/utils/localization";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     history: HistorySummary;
@@ -27,26 +28,26 @@ const currentUserOwnsHistory = computed(() => {
 
 <template>
     <div v-if="hasMessages" class="mx-3 mt-2" data-description="history messages">
-        <BAlert v-if="history.purged" :show="history.purged" variant="warning">
+        <GAlert v-if="history.purged" :show="history.purged" variant="warning">
             <FontAwesomeIcon :icon="faBurn" fixed-width />
             {{ localize("History has been permanently deleted") }}
-        </BAlert>
-        <BAlert v-else-if="history.deleted" :show="history.deleted" variant="warning">
+        </GAlert>
+        <GAlert v-else-if="history.deleted" :show="history.deleted" variant="warning">
             <FontAwesomeIcon :icon="faTrash" fixed-width />
             {{ localize("History has been deleted") }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert :show="history.archived && currentUserOwnsHistory" variant="warning">
+        <GAlert :show="history.archived && currentUserOwnsHistory" variant="warning">
             <FontAwesomeIcon :icon="faArchive" fixed-width />
             {{ localize("History has been archived") }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert :show="userOverQuota" variant="warning">
+        <GAlert :show="userOverQuota" variant="warning">
             {{
                 localize(
                     "You are over your disk quota. Tool execution is on hold until your disk usage drops below your allocated quota.",
                 )
             }}
-        </BAlert>
+        </GAlert>
     </div>
 </template>
