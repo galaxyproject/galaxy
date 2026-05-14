@@ -6,6 +6,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { parseMarkdown } from "./parse";
 import type { MarkdownConfig } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -133,12 +134,12 @@ onMounted(() => {
                 </div>
             </div>
             <div class="flex-grow-1 w-100 mx-auto position-relative">
-                <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
+                <GAlert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
-                </b-alert>
+                </GAlert>
                 <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-component">
                     <SectionWrapper :name="obj.name" :content="obj.content" />
                 </div>

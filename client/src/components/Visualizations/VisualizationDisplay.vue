@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { onMounted, ref } from "vue";
 import { onBeforeRouteLeave } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import VisualizationFrame from "@/components/Visualizations/VisualizationFrame.vue";
 
@@ -107,9 +107,9 @@ onMounted(async () => {
 
 <template>
     <div class="position-relative h-100 overflow-hidden">
-        <BAlert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="isLoading" class="iframe-loading bg-light">
             <LoadingSpan message="Loading visualization" />
         </div>

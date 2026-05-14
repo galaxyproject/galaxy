@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -7,6 +6,7 @@ import type { FetchTargets } from "@/api/tools";
 import { useToolLandingStore } from "@/stores/toolLandingStore";
 
 import FetchLanding from "./FetchLanding.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -49,9 +49,9 @@ const fetchTargets = computed<FetchTargets | null>(() => {
 <template>
     <div>
         <div v-if="claimState.errorMessage">
-            <BAlert variant="danger" show>
+            <GAlert variant="danger" show>
                 {{ claimState.errorMessage }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="!claimState.toolId">
             <LoadingSpan message="Loading tool parameters" />
