@@ -3,10 +3,12 @@
 Owns the API-shaped glue:
 
 * Model -> Pydantic-schema mapping (``_to_summary``).
-* The one-liner command string formatting that the controller previously
-  did inline using ``trans.app.config`` reads.
 * Domain-exception → ``HTTPException`` translation, so the controller stays
   free of try/except chains and the manager stays free of FastAPI types.
+
+Registration-command artefacts (relay URL, one-liner) are composed by the
+manager — this service just maps the manager's result onto the response
+schema.
 
 Matches the pattern used by ``galaxy.webapps.galaxy.services.credentials``
 and other recently-introduced services.
@@ -74,20 +76,15 @@ class PulsarByocService:
     def start_registration(self, trans: ProvidesUserContext) -> RegistrationTicket:
         user = _require_authenticated(trans)
         try:
-            row = self.byoc_manager.start_registration(user)
+            ticket = self.byoc_manager.start_registration(user)
         except RegistrationRateLimited as exc:
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc)) from exc
 
-        galaxy_url = trans.app.config.galaxy_infrastructure_url or ""
-        relay_url = trans.app.config.pulsar_byoc_relay_url or ""
-        one_liner = (
-            f"pulsar-config register-with-galaxy --galaxy {galaxy_url} --token {row.token} --relay {relay_url}"
-        )
         return RegistrationTicket(
-            bootstrap_token=row.token,
-            expires_at=row.expiration_time,
-            relay_url=relay_url,
-            one_liner=one_liner,
+            bootstrap_token=ticket.bootstrap_token,
+            expires_at=ticket.expires_at,
+            relay_url=ticket.relay_url,
+            one_liner=ticket.one_liner,
         )
 
     def complete_registration(self, trans: ProvidesUserContext, payload: BootstrapPayload) -> PulsarByocResourceSummary:

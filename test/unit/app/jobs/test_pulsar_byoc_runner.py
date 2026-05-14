@@ -7,12 +7,15 @@ isolation. The Pulsar client factory is injected via the runner's
 directly (state verification, not interaction verification).
 """
 
-import threading
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
-from galaxy.jobs.runners.pulsar import PulsarMQBYOCJobRunner
+from galaxy.jobs.runners.pulsar import (
+    BYOCClientManagerRegistry,
+    PulsarMQBYOCJobRunner,
+)
 
 
 class _StubResource:
@@ -71,11 +74,50 @@ class _StubSession:
         return None
 
 
+class _StubByocManager:
+    """Stand-in for ``app.byoc_manager`` exposing only the surface the
+    runner uses (``capabilities_for``). Tests set ``snapshot`` to control
+    what the runner sees; ``calls`` records each invocation."""
+
+    def __init__(self, snapshot=None):
+        self.snapshot = snapshot
+        self.calls: list = []
+
+    def capabilities_for(self, resource, *, user):
+        self.calls.append((resource, user))
+        return self.snapshot
+
+
 class _StubApp:
-    def __init__(self, resources_by_id, vault):
+    def __init__(self, resources_by_id, vault, byoc_manager=None):
         self.model = MagicMock()
         self.model.session = _StubSession(resources_by_id)
         self.vault = vault
+        self.byoc_manager = byoc_manager or _StubByocManager(snapshot=None)
+
+
+class _StubJobDestination:
+    def __init__(self, params: dict[str, Any]) -> None:
+        self.params = params
+
+
+class _RecordingJobWrapper:
+    """Records ``fail()`` calls in plain attributes so tests can assert on
+    *state* (the wrapper was failed, with this message) rather than on
+    MagicMock's call_args introspection."""
+
+    def __init__(self, destination_params: dict[str, Any]) -> None:
+        self.job_destination = _StubJobDestination(destination_params)
+        self.failures: list[str] = []
+
+    def fail(self, message: str) -> None:
+        self.failures.append(message)
+
+
+class _StubJob:
+    def __init__(self, id: int, user: "_StubUser") -> None:
+        self.id = id
+        self.user = user
 
 
 class _FakeClientManager:
@@ -117,18 +159,19 @@ class _FakeClientManagerFactory:
         return cm
 
 
-def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None):
+def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None, byoc_manager=None):
     """Build a PulsarMQBYOCJobRunner bypassing its inherited __init__.
 
     ``factory`` is the ``client_manager_factory`` that __init__ would
     normally store — we just attach it directly because we're skipping
-    the chain.
+    the chain. ``byoc_manager`` is the stub the downgrade tests use to
+    drive ``self.app.byoc_manager.capabilities_for``.
     """
     runner = object.__new__(PulsarMQBYOCJobRunner)
     # We bypass __init__ to skip worker-thread setup; mypy sees these
     # attributes as the parent class's exact types but the runtime methods
     # we exercise only use the simple in-test surface.
-    runner.app = _StubApp(resources_by_id, vault)  # type: ignore[assignment]
+    runner.app = _StubApp(resources_by_id, vault, byoc_manager=byoc_manager)  # type: ignore[assignment]
     runner.runner_params = runner_params or {  # type: ignore[assignment]
         "manager": None,
         "cache": None,
@@ -136,9 +179,7 @@ def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None):
         "persistence_directory": None,
     }
     runner.client_manager_kwargs = {}
-    runner._client_managers = {}
-    runner._client_managers_lock = threading.RLock()
-    runner._client_manager_factory = factory or _FakeClientManagerFactory()
+    runner._registry = BYOCClientManagerRegistry(factory or _FakeClientManagerFactory())
     return runner
 
 
@@ -285,7 +326,7 @@ def test_shutdown_closes_all_cached_client_managers(monkeypatch):
 
     assert cm1.shutdowns == 1
     assert cm2.shutdowns == 1
-    assert runner._client_managers == {}
+    assert len(runner._registry) == 0
 
 
 def test_recover_fails_job_cleanly_when_resource_deleted():
@@ -294,12 +335,208 @@ def test_recover_fails_job_cleanly_when_resource_deleted():
     user = _StubUser(id=7)
     runner = _make_runner(resources_by_id={}, vault=_StubVault())
 
-    job = MagicMock(id=99, user=user)
-    job_wrapper = MagicMock()
-    job_wrapper.job_destination.params = {"pulsar_byoc_resource_id": 42}
+    job = _StubJob(id=99, user=user)
+    job_wrapper = _RecordingJobWrapper({"pulsar_byoc_resource_id": 42})
 
     runner.recover(job, job_wrapper)
 
-    job_wrapper.fail.assert_called_once()
-    failure_message = job_wrapper.fail.call_args.args[0]
-    assert "BYOC resource removed" in failure_message
+    assert len(job_wrapper.failures) == 1
+    assert "BYOC resource removed" in job_wrapper.failures[0]
+
+
+# ---- _apply_capability_downgrades ---------------------------------------
+
+
+def _make_snapshot(
+    *,
+    manager_name: str = "byoc_7_lab",
+    staging_directory: str = "/srv/pulsar/files/staging",
+    docker: bool = False,
+    singularity: bool = False,
+    apptainer: bool = False,
+    conda: bool = False,
+) -> dict:
+    return {
+        "schema_version": 1,
+        "manager_name": manager_name,
+        "pulsar_version": "0.15.16",
+        "staging_directory": staging_directory,
+        "persistence_directory": "/srv/pulsar/files/persisted",
+        "tool_dependency_dir": None,
+        "dependency_resolvers": [],
+        "conda_available": conda,
+        "container_runtime": {
+            "docker_available": docker,
+            "singularity_available": singularity,
+            "apptainer_available": apptainer,
+        },
+        "manager": {"name": manager_name, "type": "queued_python", "num_concurrent_jobs": 1},
+    }
+
+
+def _runner_with_snapshot(snapshot, *, vault=None):
+    user = _StubUser(id=7)
+    if vault is None:
+        vault = _StubVault({f"user/{user.id}/pulsar_byoc/42/relay_refresh_token": "RT-AAA"})
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    byoc_manager = _StubByocManager(snapshot=snapshot)
+    runner = _make_runner(
+        resources_by_id={42: resource},
+        vault=vault,
+        byoc_manager=byoc_manager,
+    )
+    return runner, user, byoc_manager
+
+
+def test_downgrade_no_op_when_no_resource_id():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot())
+    params = {"docker_enabled": True}  # no pulsar_byoc_resource_id
+    runner._apply_capability_downgrades(params, user)
+    assert params == {"docker_enabled": True}
+
+
+def test_downgrade_no_op_when_capabilities_for_returns_none():
+    """No snapshot → trust operator params verbatim."""
+    runner, user, byoc_manager = _runner_with_snapshot(snapshot=None)
+    params = {
+        "pulsar_byoc_resource_id": 42,
+        "docker_enabled": True,
+        "dependency_resolution": "remote",
+    }
+    runner._apply_capability_downgrades(params, user)
+    assert params["docker_enabled"] is True
+    assert params["dependency_resolution"] == "remote"
+    assert byoc_manager.calls == [(byoc_manager.calls[0][0], user)]
+
+
+# --- jobs_directory auto-fill ---
+
+
+def test_downgrade_fills_jobs_directory_when_unset():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"pulsar_byoc_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_fills_jobs_directory_when_set_to_required_sentinel():
+    """The destination_default sentinel means "operator must supply this";
+    the snapshot's staging_directory is exactly that operator-supplied
+    value, so use it."""
+    from galaxy.jobs.runners.pulsar import PARAMETER_SPECIFICATION_REQUIRED
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": PARAMETER_SPECIFICATION_REQUIRED}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_leaves_matching_jobs_directory_alone():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": "/srv/staging"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_warns_on_mismatched_jobs_directory_but_does_not_overwrite(caplog):
+    """Operator override wins (perhaps they know something we don't)
+    but they get a loud warning that paths will be wrong."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": "/some/other/path"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/some/other/path"  # unchanged
+    assert any("path rewrites WILL be wrong" in r.message for r in caplog.records)
+
+
+def test_downgrade_no_op_when_snapshot_has_no_staging_directory():
+    snap = _make_snapshot()
+    snap["staging_directory"] = None
+    runner, user, _ = _runner_with_snapshot(snap)
+    params = {"pulsar_byoc_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert "jobs_directory" not in params
+
+
+# --- container runtimes (clear-only) ---
+
+
+@pytest.mark.parametrize(
+    "param_name,available_kw",
+    [
+        ("docker_enabled", "docker"),
+        ("singularity_enabled", "singularity"),
+        ("apptainer_enabled", "apptainer"),
+    ],
+)
+def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, available_kw, caplog):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**{available_kw: False}))
+    params = {"pulsar_byoc_resource_id": 42, param_name: True}
+    runner._apply_capability_downgrades(params, user)
+    assert params[param_name] is False
+    assert any(f"requested {param_name}=true" in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize(
+    "param_name,available_kw",
+    [
+        ("docker_enabled", "docker"),
+        ("singularity_enabled", "singularity"),
+        ("apptainer_enabled", "apptainer"),
+    ],
+)
+def test_downgrade_preserves_runtime_flag_when_remote_has_it(param_name, available_kw):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**{available_kw: True}))
+    params = {"pulsar_byoc_resource_id": 42, param_name: True}
+    runner._apply_capability_downgrades(params, user)
+    assert params[param_name] is True
+
+
+def test_downgrade_does_not_set_runtime_flag_when_operator_did_not_request_it():
+    """Clear-only: even if pulsar reports docker available, we never auto-enable it."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(docker=True))
+    params = {"pulsar_byoc_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert "docker_enabled" not in params
+
+
+def test_downgrade_clears_remote_container_handling_when_no_runtime_at_all(caplog):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot())  # all runtimes False
+    params = {"pulsar_byoc_resource_id": 42, "remote_container_handling": True}
+    runner._apply_capability_downgrades(params, user)
+    assert params["remote_container_handling"] is False
+    assert any("no container runtime" in r.message for r in caplog.records)
+
+
+def test_downgrade_keeps_remote_container_handling_if_any_runtime_present():
+    """Even one runtime is enough to honor the request."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(singularity=True))
+    params = {"pulsar_byoc_resource_id": 42, "remote_container_handling": True}
+    runner._apply_capability_downgrades(params, user)
+    assert params["remote_container_handling"] is True
+
+
+# --- conda dependency resolution ---
+
+
+def test_downgrade_demotes_dependency_resolution_remote_to_none_when_no_conda(caplog):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
+    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": "remote"}
+    runner._apply_capability_downgrades(params, user)
+    # NOT "local" — that would be a broken path on a non-shared FS.
+    assert params["dependency_resolution"] == "none"
+    assert any("downgrading to 'none'" in r.message for r in caplog.records)
+
+
+def test_downgrade_keeps_dependency_resolution_remote_when_conda_available():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=True))
+    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": "remote"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["dependency_resolution"] == "remote"
+
+
+@pytest.mark.parametrize("resolution", ["local", "none"])
+def test_downgrade_does_not_touch_non_remote_dependency_resolution(resolution):
+    """Operator already opted out of remote conda; we don't second-guess."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
+    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": resolution}
+    runner._apply_capability_downgrades(params, user)
+    assert params["dependency_resolution"] == resolution

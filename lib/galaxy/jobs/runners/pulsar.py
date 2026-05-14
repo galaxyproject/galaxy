@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import threading
+from collections.abc import Callable
 from time import sleep
 from typing import (
     Any,
@@ -54,6 +55,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.managers.pulsar_byoc import relay_refresh_token_vault_path
 from galaxy.model.base import check_database_connection
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.deps import dependencies
@@ -1224,6 +1226,55 @@ class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 
+class BYOCClientManagerRegistry:
+    """Per-tenant Pulsar client managers, lazily created and held under a lock.
+
+    Keyed by ``(relay_url, manager_name)``. Decoupled from the
+    runner so the lifecycle (lazy create → cache → shutdown) can be
+    exercised without bypassing the runner's ``__init__`` in tests.
+
+    ``factory`` is the Pulsar ``build_client_manager`` callable (or a fake
+    in tests); ``kwargs_builder`` is invoked only on cache miss so its
+    cost (vault read for the refresh token, on-the-fly callback build)
+    is paid once per tenant rather than on every job.
+    """
+
+    def __init__(self, factory: Callable[..., Any]) -> None:
+        self._factory = factory
+        self._client_managers: dict[tuple[str, str], Any] = {}
+        self._lock = threading.RLock()
+
+    def get_or_create(
+        self,
+        key: tuple[str, str],
+        kwargs_builder: Callable[[], dict[str, Any]],
+        on_create: Optional[Callable[[Any], None]] = None,
+    ) -> Any:
+        with self._lock:
+            cm = self._client_managers.get(key)
+            if cm is not None:
+                return cm
+            kwargs = kwargs_builder()
+            cm = self._factory(**kwargs)
+            if on_create is not None:
+                on_create(cm)
+            self._client_managers[key] = cm
+            return cm
+
+    def shutdown(self) -> None:
+        with self._lock:
+            for cm in self._client_managers.values():
+                try:
+                    cm.shutdown()
+                except Exception:
+                    log.exception("failure shutting down BYOC client manager")
+            self._client_managers.clear()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._client_managers)
+
+
 class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
     """Multi-tenant Pulsar runner backing user-self-registered compute resources.
 
@@ -1263,7 +1314,14 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         private_token=PARAMETER_SPECIFICATION_IGNORED,
     )
 
-    def __init__(self, app, nworkers, *, client_manager_factory=None, **kwds):
+    def __init__(
+        self,
+        app: Any,
+        nworkers: int,
+        *,
+        client_manager_factory: Optional[Callable[..., Any]] = None,
+        **kwds: Any,
+    ) -> None:
         """``client_manager_factory`` defaults to pulsar's ``build_client_manager``.
 
         Tests inject a fake to avoid touching the AMQP/relay transport and to
@@ -1271,9 +1329,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         threading by inspecting the recorded kwargs.
         """
         super().__init__(app, nworkers, **kwds)
-        self._client_manager_factory = client_manager_factory or build_client_manager
-        self._client_managers: dict[tuple[str, str], Any] = {}
-        self._client_managers_lock = threading.RLock()
+        self._registry = BYOCClientManagerRegistry(client_manager_factory or build_client_manager)
 
     def _monitor(self) -> None:
         # Skip the parent's attempt to wire ``ensure_has_status_update_callback``
@@ -1292,7 +1348,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             return None
         return self.app.model.session.get(model.PulsarByocResource, resource_id)
 
-    def _read_refresh_token(self, resource, user) -> Optional[str]:
+    def _read_refresh_token(self, resource: "model.PulsarByocResource", user: Optional["model.User"]) -> Optional[str]:
         """Fetch the relay refresh token from the per-user vault.
 
         Returns ``None`` if the secret is missing or unreadable — the caller
@@ -1301,13 +1357,15 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         if user is None:
             return None
         vault = UserVaultWrapper(self.app.vault, user)
-        return vault.read_secret(f"pulsar_byoc/{resource.id}/relay_refresh_token")
+        return vault.read_secret(relay_refresh_token_vault_path(resource.id))
 
-    def _write_refresh_token(self, resource_id: int, user, data: dict) -> None:
-        vault = UserVaultWrapper(self.app.vault, user)
+    def _write_refresh_token(self, resource_id: int, user: Optional["model.User"], data: dict[str, Any]) -> None:
+        if user is None:
+            return
         token = data.get("refresh_token")
         if token:
-            vault.write_secret(f"pulsar_byoc/{resource_id}/relay_refresh_token", token)
+            vault = UserVaultWrapper(self.app.vault, user)
+            vault.write_secret(relay_refresh_token_vault_path(resource_id), token)
 
     def _get_or_create_client_manager(
         self, job_destination_params: dict[str, Any], user: Optional["model.User"]
@@ -1321,16 +1379,17 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             raise RuntimeError(f"PulsarByocResource id={resource.id} is in status '{resource.status}', not 'active'")
 
         key = (resource.relay_url, resource.manager_name)
-        with self._client_managers_lock:
-            client_manager = self._client_managers.get(key)
-            if client_manager is not None:
-                return client_manager
 
+        def _build_kwargs() -> dict[str, Any]:
             refresh_token = self._read_refresh_token(resource, user)
             if not refresh_token:
                 raise RuntimeError(f"No relay refresh token in vault for PulsarByocResource id={resource.id}")
 
-            def _persist_rotation(data, _resource_id=resource.id, _user=user):
+            def _persist_rotation(
+                data: dict[str, Any],
+                _resource_id: int = resource.id,
+                _user: Optional["model.User"] = user,
+            ) -> None:
                 self._write_refresh_token(_resource_id, _user, data)
 
             kwargs = self._pulsar_client_manager_args()
@@ -1347,19 +1406,19 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             # drop None overrides so we don't shadow the per-resource value.
             for k in ("relay_username", "relay_password"):
                 kwargs.pop(k, None)
+            return kwargs
 
-            client_manager = self._client_manager_factory(**kwargs)
+        def _on_create(cm: Any) -> None:
             # MQ runners attach the callback in ``_monitor``; for BYOC we
             # attach it as soon as the client manager is materialised so
             # status updates from this tenant's Pulsar are wired up before
             # any job is submitted against it.
-            client_manager.ensure_has_status_update_callback(self._async_update)
-            client_manager.ensure_has_ack_consumers()
+            cm.ensure_has_status_update_callback(self._async_update)
+            cm.ensure_has_ack_consumers()
 
-            self._client_managers[key] = client_manager
-            return client_manager
+        return self._registry.get_or_create(key, _build_kwargs, _on_create)
 
-    def _get_user_for_job_id(self, job_id) -> Optional["model.User"]:
+    def _get_user_for_job_id(self, job_id: Union[int, str]) -> Optional["model.User"]:
         """Look up the Galaxy User for a Galaxy job_id.
 
         Used by call paths that don't carry a job_wrapper (e.g. ``stop_job``
@@ -1371,21 +1430,122 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             return None
         return job.user if job else None
 
-    def get_client_from_wrapper(self, job_wrapper):
+    def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
         # Resolve the per-tenant client manager up front so the inherited
         # ``get_client`` body sees the right ``self`` state via the helper.
         job = job_wrapper.get_job()
         params = job_wrapper.job_destination.params
         self._get_or_create_client_manager(params, job.user)
+        # Mutate destination_params in place to reflect what the remote
+        # pulsar can actually do — the static helpers
+        # ``__remote_container_handling`` / ``__dependency_resolution``
+        # then read the downgraded values when ``__prepare_job`` runs.
+        # Only the submission path runs this; recover/stop reuse the
+        # already-cached client and don't re-downgrade.
+        self._apply_capability_downgrades(params, job.user)
         return super().get_client_from_wrapper(job_wrapper)
 
-    def get_client_from_state(self, job_state):
+    def _apply_capability_downgrades(
+        self, params: dict[str, Any], user: Optional["model.User"]
+    ) -> None:
+        """Reflect the remote pulsar's capability snapshot into ``params``.
+
+        Three things happen, in order:
+
+        1. ``jobs_directory`` data-supply: if unset (or the destination_default
+           sentinel), set from the snapshot's ``staging_directory``. If set
+           and matching, no-op. If set and mismatched, log a loud warning —
+           BYOC has no shared FS between Galaxy and pulsar, so the two
+           values *must* agree for path rewrites to work.
+        2. Container-runtime clear-only: if the operator asked for
+           ``docker_enabled`` / ``singularity_enabled`` / ``apptainer_enabled``
+           but the remote reports the binary isn't on PATH, clear it. Same
+           treatment for ``remote_container_handling`` if no runtime at all.
+        3. Conda dependency-resolution downgrade: ``remote`` → ``none``
+           when the remote reports no conda. NOT ``local`` — BYOC has no
+           shared FS so galaxy's local conda paths don't exist on pulsar;
+           ``none`` lets jobs without conda needs still run, and jobs that
+           need conda fail at startup with a clear error.
+
+        ``capabilities_for`` returning ``None`` (older pulsar version, network
+        glitch, schema mismatch, missing vault token) means we trust the
+        operator's params verbatim — capabilities are advisory.
+        """
+        resource = self._resource_for_params(params)
+        if resource is None:
+            return
+        caps = self.app.byoc_manager.capabilities_for(resource, user=user)
+        if caps is None:
+            return
+
+        manager_name = caps.get("manager_name", resource.manager_name)
+
+        # 1. jobs_directory: data-supply.
+        snapshot_staging = caps.get("staging_directory")
+        if snapshot_staging:
+            existing = params.get("jobs_directory")
+            if existing in (None, "", PARAMETER_SPECIFICATION_REQUIRED):
+                params["jobs_directory"] = snapshot_staging
+            elif existing != snapshot_staging:
+                log.warning(
+                    "Destination jobs_directory=%r doesn't match pulsar %s "
+                    "staging_directory=%r; path rewrites WILL be wrong. "
+                    "BYOC has no shared FS — these must agree.",
+                    existing, manager_name, snapshot_staging,
+                )
+
+        # 2. Container runtimes: clear-only.
+        cr = caps.get("container_runtime") or {}
+        runtime_available = {
+            "docker_enabled": bool(cr.get("docker_available", False)),
+            "singularity_enabled": bool(cr.get("singularity_available", False)),
+            "apptainer_enabled": bool(cr.get("apptainer_available", False)),
+        }
+        for param_name, available in runtime_available.items():
+            if available:
+                continue
+            if not string_as_bool_or_none(params.get(param_name, False)):
+                continue
+            runtime = param_name.removesuffix("_enabled")
+            log.warning(
+                "Destination requested %s=true but pulsar %s reports no %s; clearing.",
+                param_name, manager_name, runtime,
+            )
+            params[param_name] = False
+        if not any(runtime_available.values()):
+            if string_as_bool_or_none(params.get("remote_container_handling", False)):
+                log.warning(
+                    "Destination requested remote_container_handling=true but "
+                    "pulsar %s reports no container runtime; clearing.",
+                    manager_name,
+                )
+                params["remote_container_handling"] = False
+
+        # 3. Dependency resolution: remote -> none (NOT local), because
+        # BYOC has no shared FS so galaxy's local conda paths don't
+        # exist on pulsar.
+        if params.get("dependency_resolution") == "remote" and not caps.get("conda_available"):
+            log.warning(
+                "Destination requested dependency_resolution=remote but pulsar %s "
+                "reports no conda; downgrading to 'none' (BYOC has no shared FS, "
+                "so 'local' would just shift the failure). Tools that need conda "
+                "will fail at startup; tools that don't will still run.",
+                manager_name,
+            )
+            params["dependency_resolution"] = "none"
+
+    def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
         params = job_state.job_destination.params
         job = job_state.job_wrapper.get_job()
         self._get_or_create_client_manager(params, job.user)
         return super().get_client_from_state(job_state)
 
-    def get_client(self, job_destination_params, job_id, env=None):
+    def get_client(
+        self,
+        job_destination_params: dict[str, Any],
+        job_id: Union[int, str],
+        env: Optional[list] = None,
+    ) -> "BaseJobClient":
         # ``stop_job`` calls this directly with the external pulsar job_id; we
         # rely on the previously-materialised client manager for the key
         # ``(relay_url, manager_name)`` in destination_params.
@@ -1410,7 +1570,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         job_destination_params = dict(job_destination_params.items())
         return client_manager.get_client(job_destination_params, **get_client_kwds)
 
-    def recover(self, job, job_wrapper) -> None:
+    def recover(self, job: "model.Job", job_wrapper: "MinimalJobWrapper") -> None:
         """Recover BYOC jobs. If the BYOC resource has been deleted while the
         job was running, fail the job cleanly rather than crashing recovery."""
         params = dict(job_wrapper.job_destination.params)
@@ -1432,13 +1592,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         # PulsarJobRunner because of the generic parameter; the call is
         # safe at runtime.
         AsynchronousJobRunner.shutdown(self)  # type: ignore[arg-type]
-        with self._client_managers_lock:
-            for client_manager in self._client_managers.values():
-                try:
-                    client_manager.shutdown()
-                except Exception:
-                    log.exception("failure shutting down BYOC client manager")
-            self._client_managers.clear()
+        self._registry.shutdown()
 
 
 class PulsarComputeEnvironment(ComputeEnvironment):

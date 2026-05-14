@@ -1,29 +1,33 @@
 """User-self-registered Pulsar compute resources ("Bring Your Own Compute").
 
-This module exposes :class:`PulsarByocManager`, which Galaxy hangs on the
-``UniverseApplication`` as ``app.byoc_manager`` so TPV rules can resolve the
-acting user's active BYOC resource at job dispatch time via
-``app.byoc_manager.get_active_for(user)``.
+This module exposes :class:`PulsarByocManager`, registered as a Lagom
+singleton and reachable on the live Galaxy app as ``app.byoc_manager`` so
+TPV rules can resolve the acting user's active BYOC resource at job
+dispatch time via ``app.byoc_manager.get_active_for(user)``.
+
+Dependencies (session, vault, config) are injected directly via Lagom
+rather than reached for through ``app.*``.
 """
 
 from __future__ import annotations
 
 import logging
 import secrets
+import threading
+import time
+from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import (
     datetime,
     timedelta,
     timezone,
 )
-from typing import Optional
-
-import jwt
-from sqlalchemy import (
-    delete,
-    func,
-    select,
+from typing import (
+    Any,
+    Optional,
 )
 
+import jwt
 from pulsar_relay_client import (
     default_relay_client_factory,
     RefreshTokenRejectedError,
@@ -32,17 +36,24 @@ from pulsar_relay_client import (
     RelayClientFactory,
     TopicOwnershipConflictError,
 )
+from sqlalchemy import (
+    delete,
+    func,
+    select,
+)
+
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import (
     Job,
     PulsarByocBootstrapToken,
     PulsarByocResource,
     User,
 )
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.vault import (
     UserVaultWrapper,
     Vault,
 )
-from galaxy.structured_app import BasicSharedApp
 
 log = logging.getLogger(__name__)
 
@@ -69,6 +80,153 @@ RATE_LIMIT_WINDOW = timedelta(hours=1)
 #: of job_setup / job_kill) and the user's Pulsar daemon (publisher of
 #: job_status_update; consumer of the other two).
 BYOC_TOPIC_PREFIXES = ("job_setup", "job_kill", "job_status_update")
+
+#: Topic stem Pulsar publishes its capability snapshot to (post-namespace,
+#: per the publisher's `__make_capabilities_topic_name` convention in
+#: pulsar/messaging/bind_relay.py). The full topic on the wire is
+#: ``[<topic_prefix>_]pulsar_capabilities[_<manager>]`` — see
+#: :func:`_make_capabilities_topic_name` below.
+CAPABILITIES_TOPIC_STEM = "pulsar_capabilities"
+
+#: Schema versions this Galaxy understands for the capability snapshot.
+#: Unknown versions are dropped with a one-time warning so the runner
+#: falls back to operator-supplied params.
+SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS = frozenset({1})
+
+#: Default TTL for the in-memory capability cache. Short enough that an
+#: admin restart of pulsar (with a new container runtime added) is picked
+#: up within a minute; long enough that a burst of N jobs to one
+#: destination triggers at most one fetch.
+CAPABILITIES_CACHE_TTL_SECONDS = 60.0
+
+
+def relay_refresh_token_vault_path(resource_id: int) -> str:
+    """Vault path under which the relay refresh token for a BYOC resource lives.
+
+    Centralised so the manager (writer + capability fetcher) and the
+    pulsar runner (reader + rotation persister) cannot drift apart on the
+    layout.
+    """
+    return f"pulsar_byoc/{resource_id}/relay_refresh_token"
+
+
+def _make_capabilities_topic_name(prefix: Optional[str], manager_name: str) -> str:
+    """Mirror of pulsar/messaging/bind_relay.py:__make_capabilities_topic_name.
+
+    Examples:
+        ('', '_default_')      -> 'pulsar_capabilities'
+        ('', 'cluster_a')      -> 'pulsar_capabilities_cluster_a'
+        ('prod', '_default_')  -> 'prod_pulsar_capabilities'
+        ('prod', 'cluster_a')  -> 'prod_pulsar_capabilities_cluster_a'
+    """
+    parts: list[str] = []
+    if prefix:
+        parts.append(prefix)
+    parts.append(CAPABILITIES_TOPIC_STEM)
+    if manager_name != "_default_":
+        parts.append(manager_name)
+    return "_".join(parts)
+
+
+class RelayCapabilitiesCache:
+    """In-memory TTL cache of capability snapshots, keyed by
+    ``(relay_url, manager_name)``.
+
+    The caller supplies a ``fetch`` callable on :meth:`get`; we invoke
+    it only on cache miss/expiry. This lets the caller defer expensive
+    setup (refresh-token exchange, access-token mint) to the moment a
+    fetch is actually required, and lets the cache stay agnostic to
+    *how* a snapshot is obtained — useful for tests too.
+
+    ``None`` results are cached: a flapping relay or a pulsar that
+    isn't publishing snapshots yet shouldn't trigger an HTTP fetch on
+    every job. Validation (empty messages, missing payload, unknown
+    ``schema_version``) lives in :meth:`extract_payload`, which the
+    caller's fetch closure typically wraps around its HTTP call.
+    """
+
+    def __init__(
+        self,
+        ttl_seconds: float = CAPABILITIES_CACHE_TTL_SECONDS,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
+        self._ttl = ttl_seconds
+        self._clock = clock
+        self._lock = threading.Lock()
+        self._entries: dict[tuple[str, str], tuple[Optional[dict[str, Any]], float]] = {}
+
+    def get(
+        self,
+        relay_url: str,
+        manager_name: str,
+        fetch: Callable[[], Optional[dict[str, Any]]],
+    ) -> Optional[dict[str, Any]]:
+        key = (relay_url, manager_name)
+        now = self._clock()
+        with self._lock:
+            cached = self._entries.get(key)
+            if cached is not None and now - cached[1] < self._ttl:
+                return cached[0]
+        # Defer the I/O outside the lock: a slow fetch shouldn't block
+        # other tenants. The trade-off is that two concurrent misses on
+        # the same key both run their fetches; harmless because the
+        # last-writer-wins on the dict and both call paths are
+        # idempotent.
+        snapshot = fetch()
+        with self._lock:
+            self._entries[key] = (snapshot, self._clock())
+        return snapshot
+
+    def invalidate(self, relay_url: str, manager_name: str) -> None:
+        with self._lock:
+            self._entries.pop((relay_url, manager_name), None)
+
+
+def extract_capability_payload(
+    response: dict[str, Any], topic: str, relay_url: str
+) -> Optional[dict[str, Any]]:
+    """Pull the latest payload out of a ``PaginatedMessagesResponse`` body.
+
+    Validates: at least one message, payload is a dict, ``schema_version``
+    is one we understand. Logs a warning on rejection but never raises —
+    the caller treats ``None`` as "no snapshot, trust operator params".
+    """
+    messages = response.get("messages") or []
+    if not messages:
+        log.debug("Capability topic %s on %s is empty (no snapshot published yet).", topic, relay_url)
+        return None
+    payload = messages[0].get("payload")
+    if not isinstance(payload, dict):
+        log.warning(
+            "Capability message on %s has non-dict payload (got %s); ignoring.",
+            topic, type(payload).__name__,
+        )
+        return None
+    version = payload.get("schema_version")
+    if version not in SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS:
+        log.warning(
+            "Capability snapshot on %s has unsupported schema_version=%r (supported: %s); "
+            "ignoring. Update Galaxy to consume newer snapshots.",
+            topic, version, sorted(SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS),
+        )
+        return None
+    return payload
+
+
+@dataclass(frozen=True)
+class RegistrationTicketData:
+    """Data the service hands to the user after :meth:`PulsarByocManager.start_registration`.
+
+    Holds the bootstrap token row plus the registration-command artifacts
+    (configured relay URL + one-liner the user pastes) so the service layer
+    is pure schema-mapping.
+    """
+
+    bootstrap_token: str
+    expires_at: datetime
+    relay_url: str
+    one_liner: str
 
 
 class PulsarByocError(Exception):
@@ -99,21 +257,27 @@ class ResourceHasRunningJobs(PulsarByocError):
 class PulsarByocManager:
     def __init__(
         self,
-        app: BasicSharedApp,
+        session: galaxy_scoped_session,
+        vault: Vault,
+        config: GalaxyAppConfiguration,
         *,
-        vault: Optional[Vault] = None,
         relay_client_factory: Optional[RelayClientFactory] = None,
+        capabilities_cache: Optional[RelayCapabilitiesCache] = None,
     ) -> None:
-        """Galaxy DI entry point. ``vault`` and ``relay_client_factory`` default
-        to the app-bound vault and a real-HTTP factory; tests pass fakes."""
-        self.app = app
-        self.session = app.model.context
-        # ``BasicSharedApp`` is the broadest contract we can declare and still
-        # satisfy the manager's needs; the live app object (``UniverseApplication``)
-        # always carries ``vault`` so the fall-through here is sound at runtime.
-        self._vault: Vault = vault if vault is not None else app.vault  # type: ignore[attr-defined]
+        """Galaxy DI entry point.
+
+        Dependencies are injected directly (Lagom resolves them by type)
+        rather than reaching into ``app.*``. ``relay_client_factory`` and
+        ``capabilities_cache`` are test seams.
+        """
+        self.session = session
+        self._vault = vault
+        self._config = config
         self._relay_client_factory: RelayClientFactory = (
             relay_client_factory if relay_client_factory is not None else default_relay_client_factory
+        )
+        self._capabilities_cache = (
+            capabilities_cache if capabilities_cache is not None else RelayCapabilitiesCache()
         )
 
     # ---- query ------------------------------------------------------------
@@ -155,14 +319,91 @@ class PulsarByocManager:
         )
         return self.session.scalars(stmt).first()
 
+    # ---- capability snapshot ---------------------------------------------
+
+    def capabilities_for(
+        self, resource: PulsarByocResource, *, user: Optional[User]
+    ) -> Optional[dict[str, Any]]:
+        """Return the latest capability snapshot for a BYOC resource, or ``None``.
+
+        Most calls are a dict lookup against
+        :class:`RelayCapabilitiesCache`; the closure that does the
+        refresh-token exchange + ``HttpRelayClient.fetch_messages`` runs
+        only on cache miss. Rotated refresh tokens are persisted back
+        to vault so the runner's separately-cached client manager sees
+        them on its next refresh.
+
+        ``None`` means the snapshot is not available — older pulsar
+        version, network glitch, schema mismatch, or no vault token.
+        Callers treat ``None`` as "trust operator-supplied params" and
+        skip downgrades.
+        """
+        if user is None:
+            return None
+        topic = _make_capabilities_topic_name(resource.relay_topic_prefix, resource.manager_name)
+        return self._capabilities_cache.get(
+            resource.relay_url,
+            resource.manager_name,
+            lambda: self._fetch_capabilities(resource, user, topic),
+        )
+
+    def _fetch_capabilities(
+        self, resource: PulsarByocResource, user: User, topic: str
+    ) -> Optional[dict[str, Any]]:
+        vault_wrapper = UserVaultWrapper(self._vault, user)
+        secret_path = relay_refresh_token_vault_path(resource.id)
+        refresh_token = vault_wrapper.read_secret(secret_path)
+        if not refresh_token:
+            log.debug(
+                "No relay refresh token in vault for PulsarByocResource id=%s; "
+                "cannot fetch capabilities.",
+                resource.id,
+            )
+            return None
+
+        client = self._relay_client(resource.relay_url)
+        try:
+            body = client.exchange_refresh_token(refresh_token)
+        except (RefreshTokenRejectedError, RelayClientError) as exc:
+            log.warning(
+                "Relay refresh failed while fetching capabilities for resource id=%s: %s",
+                resource.id, exc,
+            )
+            return None
+
+        rotated = body.get("refresh_token")
+        if rotated and rotated != refresh_token:
+            # Persist the rotation so the runner's next exchange sees it
+            # — same vault key the runner reads from.
+            vault_wrapper.write_secret(secret_path, rotated)
+        access_token = body.get("access_token")
+        if not access_token:
+            log.warning(
+                "Relay refresh response missing access_token for resource id=%s.",
+                resource.id,
+            )
+            return None
+
+        try:
+            response = client.fetch_messages(access_token, topic, limit=1, order="desc")
+        except RelayClientError as exc:
+            log.warning(
+                "Capability fetch from %s on %s failed: %s",
+                topic, resource.relay_url, exc,
+            )
+            return None
+        return extract_capability_payload(response, topic, resource.relay_url)
+
     # ---- registration: start ---------------------------------------------
 
-    def start_registration(self, user: User) -> PulsarByocBootstrapToken:
-        """Mint a short-lived single-use bootstrap token.
+    def start_registration(self, user: User) -> RegistrationTicketData:
+        """Mint a short-lived single-use bootstrap token and return the
+        registration ticket the user needs.
 
-        The returned row's ``token`` is the opaque secret the user passes to
-        ``pulsar-config register-with-galaxy``; the row is deleted on
-        successful redemption (or aged out by ``complete_registration``).
+        The returned ``bootstrap_token`` is the opaque secret the user passes
+        to ``pulsar-config register-with-galaxy``; the underlying row is
+        deleted on successful redemption (or aged out by
+        :meth:`complete_registration`).
 
         Reaps any of this user's expired tokens inline, then enforces a
         rolling-hour rate limit of :data:`RATE_LIMIT_PER_HOUR` mints —
@@ -191,7 +432,9 @@ class PulsarByocManager:
             or 0
         )
         if recent_count >= RATE_LIMIT_PER_HOUR:
-            self.session.commit()  # persist the reap even when we refuse
+            # Persist the reap even when we refuse so a hot-looping client
+            # doesn't keep regrowing the table between every refusal.
+            self.session.commit()
             raise RegistrationRateLimited(
                 f"User has minted {recent_count} bootstrap tokens in the last "
                 f"{int(RATE_LIMIT_WINDOW.total_seconds() / 60)} minutes "
@@ -206,7 +449,16 @@ class PulsarByocManager:
         )
         self.session.add(row)
         self.session.commit()
-        return row
+
+        galaxy_url = self._config.galaxy_infrastructure_url or ""
+        relay_url = self._config.pulsar_byoc_relay_url or ""
+        one_liner = f"pulsar-config register-with-galaxy --galaxy {galaxy_url} --token {row.token} --relay {relay_url}"
+        return RegistrationTicketData(
+            bootstrap_token=row.token,
+            expires_at=row.expiration_time,
+            relay_url=relay_url,
+            one_liner=one_liner,
+        )
 
     # ---- registration: complete ------------------------------------------
 
@@ -271,9 +523,17 @@ class PulsarByocManager:
         Asserts ``sub == manager_name`` so a user can't redirect another
         relay user's topics into their Galaxy account.
 
+        If the admin has pinned a relay URL via ``pulsar_byoc_relay_url``,
+        refuse any other ``relay_url`` — otherwise a user could bind their
+        resource to an attacker-controlled relay.
+
         Replaces any existing ``active`` resource the user has (disables it)
         and returns the new ``active`` row.
         """
+        configured_relay = self._config.pulsar_byoc_relay_url
+        if configured_relay and relay_url != configured_relay:
+            raise RelayVerificationFailed(f"relay_url {relay_url!r} does not match configured pulsar_byoc_relay_url")
+
         ticket = self._redeem_bootstrap_token(bootstrap_token)
         user = self.session.get(User, ticket.user_id)
         if user is None:
@@ -324,17 +584,18 @@ class PulsarByocManager:
             manager_name=manager_name,
             relay_url=relay_url,
             relay_topic_prefix=relay_topic_prefix,
-            status=STATUS_PENDING,
+            status=STATUS_ACTIVE,
         )
         self.session.add(resource)
-        self.session.commit()  # flush so resource.id is populated
+        # flush() (not commit()) so resource.id is populated for the vault
+        # path. The vault write below and the commit are paired: if either
+        # raises, the transaction rolls back and nothing is persisted —
+        # closing the prior pending-row-without-vault-secret leak.
+        self.session.flush()
 
         UserVaultWrapper(self._vault, user).write_secret(
-            f"pulsar_byoc/{resource.id}/relay_refresh_token", rotated_refresh_token
+            relay_refresh_token_vault_path(resource.id), rotated_refresh_token
         )
-
-        resource.status = STATUS_ACTIVE
-        self.session.add(resource)
         self.session.commit()
         return resource
 
@@ -407,7 +668,7 @@ class PulsarByocManager:
         # Vault wrapper namespaces under the user — clearing the secret here
         # is safe because the resource is owner-scoped.
         try:
-            UserVaultWrapper(self._vault, user).write_secret(f"pulsar_byoc/{resource_id}/relay_refresh_token", "")
+            UserVaultWrapper(self._vault, user).write_secret(relay_refresh_token_vault_path(resource_id), "")
         except Exception:
             log.exception("Failed to clear vault secret for BYOC resource %s", resource_id)
             # Continue: the row is still going to ``deleted``; an orphaned

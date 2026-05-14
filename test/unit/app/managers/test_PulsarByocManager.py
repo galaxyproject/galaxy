@@ -59,7 +59,9 @@ class TestPulsarByocManager(BaseTestCase):
         self.app.setup_test_vault()
         self.fake_relay_client = _fake_relay_client()
         self.byoc_manager = PulsarByocManager(
-            self.app,
+            self.app.model.context,
+            self.app.vault,
+            self.app.config,
             relay_client_factory=lambda _relay_url: self.fake_relay_client,
         )
 
@@ -121,12 +123,16 @@ class TestPulsarByocManager(BaseTestCase):
 
     def test_start_registration_persists_token(self):
         user = self.user_manager.create(email="reg1@example.test", username="reg1", password="x" * 8)
-        row = self.byoc_manager.start_registration(user)
-        assert row.token
-        assert len(row.token) > 16
+        ticket = self.byoc_manager.start_registration(user)
+        assert ticket.bootstrap_token
+        assert len(ticket.bootstrap_token) > 16
+        assert ticket.expires_at > datetime.now(tz=timezone.utc).replace(tzinfo=None)
+        # The one-liner contains the bootstrap token so the user can paste it
+        # straight into a terminal.
+        assert ticket.bootstrap_token in ticket.one_liner
         # Round-trips through the DB.
         fetched = self.trans.sa_session.scalars(
-            select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == row.token)
+            select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.bootstrap_token)
         ).first()
         assert fetched is not None
         assert fetched.user_id == user.id
@@ -139,7 +145,7 @@ class TestPulsarByocManager(BaseTestCase):
         self._stub_relay_exchange(sub=manager_name)
 
         resource = self.byoc_manager.complete_registration(
-            bootstrap_token=ticket.token,
+            bootstrap_token=ticket.bootstrap_token,
             refresh_token="RT-ORIGINAL",
             relay_url="https://relay.example.test",
             manager_name=manager_name,
@@ -152,7 +158,7 @@ class TestPulsarByocManager(BaseTestCase):
         # Token store is consumed on redemption.
         assert (
             self.trans.sa_session.scalars(
-                select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.token)
+                select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.bootstrap_token)
             ).first()
             is None
         )
@@ -174,15 +180,19 @@ class TestPulsarByocManager(BaseTestCase):
     def test_complete_registration_rejects_expired_bootstrap_token(self):
         user = self.user_manager.create(email="reg4@example.test", username="reg4", password="x" * 8)
         ticket = self.byoc_manager.start_registration(user)
-        # Backdate so the token is past its TTL.
-        ticket.expiration_time = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
-        self.trans.sa_session.add(ticket)
+        # Backdate the underlying DB row so the token is past its TTL.
+        row = self.trans.sa_session.scalars(
+            select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.bootstrap_token)
+        ).first()
+        assert row is not None
+        row.expiration_time = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
+        self.trans.sa_session.add(row)
         self.trans.sa_session.commit()
         self._stub_relay_exchange(sub=f"byoc_{user.id}_x")
 
         with pytest.raises(BootstrapTokenExpired):
             self.byoc_manager.complete_registration(
-                bootstrap_token=ticket.token,
+                bootstrap_token=ticket.bootstrap_token,
                 refresh_token="RT",
                 relay_url="https://relay.example.test",
                 manager_name=f"byoc_{user.id}_x",
@@ -190,7 +200,7 @@ class TestPulsarByocManager(BaseTestCase):
         # Expired tokens are cleaned up so they can't be retried.
         assert (
             self.trans.sa_session.scalars(
-                select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.token)
+                select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == ticket.bootstrap_token)
             ).first()
             is None
         )
@@ -206,7 +216,7 @@ class TestPulsarByocManager(BaseTestCase):
 
         with pytest.raises(RelayVerificationFailed, match="does not match"):
             self.byoc_manager.complete_registration(
-                bootstrap_token=ticket.token,
+                bootstrap_token=ticket.bootstrap_token,
                 refresh_token="RT",
                 relay_url="https://relay.example.test",
                 manager_name="me",
@@ -220,7 +230,7 @@ class TestPulsarByocManager(BaseTestCase):
         ticket = self.byoc_manager.start_registration(user)
         self._stub_relay_exchange(sub=f"byoc_{user.id}_second")
         new_resource = self.byoc_manager.complete_registration(
-            bootstrap_token=ticket.token,
+            bootstrap_token=ticket.bootstrap_token,
             refresh_token="RT",
             relay_url="https://relay.example.test",
             manager_name=f"byoc_{user.id}_second",
@@ -265,18 +275,26 @@ class TestPulsarByocManager(BaseTestCase):
         """Expired tokens of *the same user* are deleted inline, so they
         don't count against the rate limit and don't accumulate in the DB."""
         user = self.user_manager.create(email="rl2@example.test", username="rl2", password="x" * 8)
-        for _ in range(RATE_LIMIT_PER_HOUR):
-            row = self.byoc_manager.start_registration(user)
-            # Backdate so the next call finds them expired.
-            row.expiration_time = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
-            row.create_time = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
-            self.trans.sa_session.add(row)
+        # Seed RATE_LIMIT_PER_HOUR already-expired + outside-window rows
+        # directly. Going through the manager would commit + re-flush each
+        # iteration and trip SQLAlchemy's strict identity-map rules in tests.
+        past_expiration = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(minutes=1)
+        past_create = datetime.now(tz=timezone.utc).replace(tzinfo=None) - timedelta(hours=2)
+        for i in range(RATE_LIMIT_PER_HOUR):
+            self.trans.sa_session.add(
+                PulsarByocBootstrapToken(
+                    token=f"expired-{i}-{user.id}",
+                    user_id=user.id,
+                    create_time=past_create,
+                    expiration_time=past_expiration,
+                )
+            )
         self.trans.sa_session.commit()
 
         # A fresh call should succeed (expired tokens reaped + outside the
         # rolling window).
         fresh = self.byoc_manager.start_registration(user)
-        assert fresh.token
+        assert fresh.bootstrap_token
 
     def test_list_for_excludes_deleted(self):
         user = self.user_manager.create(email="list1@example.test", username="list1", password="x" * 8)
@@ -353,3 +371,146 @@ class TestPulsarByocManager(BaseTestCase):
         returned = self.byoc_manager.purge(user, resource.id)
         assert returned is not None
         assert returned.status == STATUS_DELETED
+
+    # ---- capabilities_for tests ------------------------------------------
+
+    def _capability_payload(self, **overrides) -> dict:
+        """Minimal valid v1 snapshot used as the canned relay response."""
+        base = {
+            "schema_version": 1,
+            "manager_name": "_default_",
+            "pulsar_version": "0.15.16",
+            "staging_directory": "/srv/pulsar/files/staging",
+            "persistence_directory": "/srv/pulsar/files/persisted",
+            "tool_dependency_dir": None,
+            "dependency_resolvers": [],
+            "conda_available": False,
+            "container_runtime": {
+                "docker_available": False,
+                "singularity_available": False,
+                "apptainer_available": False,
+            },
+            "manager": {"name": "_default_", "type": "queued_python", "num_concurrent_jobs": 1},
+        }
+        base.update(overrides)
+        return base
+
+    def _seed_capability_message(self, topic: str, payload: dict) -> None:
+        """Make ``self.fake_relay_client.fetch_messages(topic, ...)`` return ``payload``."""
+        self.fake_relay_client.stored_messages[topic] = [{
+            "message_id": "1700000000-0",
+            "topic": topic,
+            "payload": payload,
+            "timestamp": "2026-05-14T10:00:00.000Z",
+            "metadata": None,
+        }]
+
+    def _register_byoc(self, user, *, manager_name: str) -> "PulsarByocResource":
+        """End-to-end registration so the vault has a refresh token under
+        the right key. Reuses the same fake relay client the test setup
+        configured."""
+        ticket = self.byoc_manager.start_registration(user)
+        self._stub_relay_exchange(sub=manager_name)
+        return self.byoc_manager.complete_registration(
+            bootstrap_token=ticket.bootstrap_token,
+            refresh_token="RT-ORIGINAL",
+            relay_url="https://relay.example.test",
+            manager_name=manager_name,
+        )
+
+    def test_capabilities_for_returns_none_for_anonymous(self):
+        user = self.user_manager.create(email="cap_anon@example.test", username="cap_anon", password="x" * 8)
+        resource = self._register_byoc(user, manager_name=f"byoc_{user.id}_anon")
+        assert self.byoc_manager.capabilities_for(resource, user=None) is None
+
+    def test_capabilities_for_returns_none_when_no_vault_token(self):
+        """Resource exists but vault is empty (e.g. registration interrupted
+        before the vault write). capabilities_for must not crash; just
+        return None so the runner trusts operator params."""
+        user = self.user_manager.create(email="cap_novault@example.test", username="cap_novault", password="x" * 8)
+        resource = self._add_resource(user, status=STATUS_ACTIVE, manager_name=f"byoc_{user.id}_n")
+        assert self.byoc_manager.capabilities_for(resource, user=user) is None
+
+    def test_capabilities_for_returns_payload_on_happy_path(self):
+        user = self.user_manager.create(email="cap_ok@example.test", username="cap_ok", password="x" * 8)
+        manager_name = f"byoc_{user.id}_lab"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        payload = self._capability_payload(manager_name=manager_name, conda_available=True)
+        # Topic mirrors pulsar's __make_capabilities_topic_name convention:
+        # non-default manager name → suffix; no prefix configured here.
+        self._seed_capability_message(f"pulsar_capabilities_{manager_name}", payload)
+
+        out = self.byoc_manager.capabilities_for(resource, user=user)
+        assert out == payload
+
+    def test_capabilities_for_uses_topic_prefix_when_resource_carries_one(self):
+        user = self.user_manager.create(email="cap_pfx@example.test", username="cap_pfx", password="x" * 8)
+        manager_name = f"byoc_{user.id}_lab"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        resource.relay_topic_prefix = "prod"
+        self.trans.sa_session.add(resource)
+        self.trans.sa_session.commit()
+        payload = self._capability_payload(manager_name=manager_name)
+        self._seed_capability_message(f"prod_pulsar_capabilities_{manager_name}", payload)
+
+        out = self.byoc_manager.capabilities_for(resource, user=user)
+        assert out is not None
+        assert out["manager_name"] == manager_name
+
+    def test_capabilities_for_returns_none_when_topic_empty(self):
+        user = self.user_manager.create(email="cap_empty@example.test", username="cap_empty", password="x" * 8)
+        manager_name = f"byoc_{user.id}_e"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        # Don't seed any messages — the fake returns an empty list.
+        assert self.byoc_manager.capabilities_for(resource, user=user) is None
+
+    def test_capabilities_for_returns_none_for_unknown_schema_version(self):
+        user = self.user_manager.create(email="cap_v99@example.test", username="cap_v99", password="x" * 8)
+        manager_name = f"byoc_{user.id}_99"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        self._seed_capability_message(
+            f"pulsar_capabilities_{manager_name}",
+            {"schema_version": 99, "manager_name": manager_name},
+        )
+        assert self.byoc_manager.capabilities_for(resource, user=user) is None
+
+    def test_capabilities_for_caches_within_ttl(self):
+        """Within the TTL window, two calls only invoke the relay once."""
+        user = self.user_manager.create(email="cap_cached@example.test", username="cap_cached", password="x" * 8)
+        manager_name = f"byoc_{user.id}_cached"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        self._seed_capability_message(
+            f"pulsar_capabilities_{manager_name}",
+            self._capability_payload(manager_name=manager_name),
+        )
+        self.fake_relay_client.fetch_calls.clear()
+        self.fake_relay_client.exchange_calls.clear()
+
+        self.byoc_manager.capabilities_for(resource, user=user)
+        self.byoc_manager.capabilities_for(resource, user=user)
+
+        # Cache hit on the second call: no new fetch, no new exchange.
+        assert len(self.fake_relay_client.fetch_calls) == 1
+        assert len(self.fake_relay_client.exchange_calls) == 1
+
+    def test_capabilities_for_persists_rotated_refresh_token(self):
+        """The relay rotates the refresh token on every exchange; the
+        manager must vault the new one so the runner's separately-cached
+        client manager doesn't try to use a stale token next time."""
+        user = self.user_manager.create(email="cap_rotate@example.test", username="cap_rotate", password="x" * 8)
+        manager_name = f"byoc_{user.id}_rot"
+        resource = self._register_byoc(user, manager_name=manager_name)
+        # Reconfigure the fake to return a different rotated token on
+        # this exchange than the one written by complete_registration.
+        self._stub_relay_exchange(sub=manager_name, rotated_token="RT-ROTATED-AGAIN")
+        self._seed_capability_message(
+            f"pulsar_capabilities_{manager_name}",
+            self._capability_payload(manager_name=manager_name),
+        )
+
+        self.byoc_manager.capabilities_for(resource, user=user)
+
+        stored = UserVaultWrapper(self.app.vault, user).read_secret(
+            f"pulsar_byoc/{resource.id}/relay_refresh_token"
+        )
+        assert stored == "RT-ROTATED-AGAIN"
