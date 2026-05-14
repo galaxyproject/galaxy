@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-alert
+        <GAlert
             v-if="errorMessage"
             class="mt-2"
             :show="dismissCountDown"
@@ -12,7 +12,7 @@
             <b-progress :max="dismissSecs" :value="dismissCountDown" height="4px" class="mt-1">
                 <b-progress-bar :value="dismissCountDown" variant="info" />
             </b-progress>
-        </b-alert>
+        </GAlert>
         <b-row align-v="center">
             <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
@@ -37,7 +37,10 @@
 <script>
 import { isDefined } from "@/utils/validation";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
+
 export default {
+    components: { GAlert },
     props: {
         value: {
             required: true,
