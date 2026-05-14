@@ -47,6 +47,10 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_params,
+    job_token_kind_for_params,
+)
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.job_destination import JobDestination
@@ -686,14 +690,19 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if env is None:
             env = []
         encoded_job_id = self.app.security.encode_id(job_id)
-        job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+        # Credential ``kind`` selection lives in job_security.py — for the
+        # base runner this resolves to the legacy ``"jobs_files"`` /
+        # ``"jobs_token"`` (or the per-destination ``job_secret_base``
+        # override). The verifier side calls the matching helper.
+        files_kind = job_files_kind_for_params(job_destination_params)
+        token_kind = job_token_kind_for_params(job_destination_params)
+        files_key = self.app.security.encode_id(job_id, kind=files_kind)
+        token_key = self.app.security.encode_id(job_id, kind=token_kind)
         endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + self.app.config.nginx_upload_job_files_path + "?job_id=%s&job_key=%s"
-        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, job_key)
-        secret = job_destination_params.get("job_secret_base", "jobs_token")
-        job_key = self.app.security.encode_id(job_id, kind=secret)
-        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={job_key}"
+        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, files_key)
+        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={token_key}"
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
@@ -1586,14 +1595,19 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         if env is None:
             env = []
         encoded_job_id = self.app.security.encode_id(job_id)
-        job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+        # Tenant-scoped credential ``kind``s — see job_security.py. Verifier
+        # picks the same kind based on ``compute_resource_id`` in the
+        # job's persisted destination_params, so a key minted for one BYOC
+        # resource cannot be replayed against another tenant's job.
+        files_kind = job_files_kind_for_params(job_destination_params)
+        token_kind = job_token_kind_for_params(job_destination_params)
+        files_key = self.app.security.encode_id(job_id, kind=files_kind)
+        token_key = self.app.security.encode_id(job_id, kind=token_kind)
         endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + self.app.config.nginx_upload_job_files_path + "?job_id=%s&job_key=%s"
-        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, job_key)
-        secret = job_destination_params.get("job_secret_base", "jobs_token")
-        job_key = self.app.security.encode_id(job_id, kind=secret)
-        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={job_key}"
+        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, files_key)
+        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={token_key}"
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )

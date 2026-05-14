@@ -14,7 +14,10 @@ from galaxy import (
     util,
 )
 from galaxy.authnz.util import provider_name_to_backend
-from galaxy.job_execution.job_security import resolve_job_key
+from galaxy.job_execution.job_security import (
+    job_token_kind_for_job,
+    resolve_job_key,
+)
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -68,14 +71,14 @@ class FastAPIJobTokens:
         session = trans.sa_session
         job_id = trans.security.decode_id(encoded_job_id)
         job = session.get(Job, job_id)
-        secret = job.destination_params.get("job_secret_base", "jobs_token")
+        if job is None:
+            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
 
-        job_key_internal = trans.security.encode_id(job_id, kind=secret)
-        if not util.safe_str_cmp(job_key_internal, job_key):
+        expected = trans.security.encode_id(job_id, kind=job_token_kind_for_job(job))
+        if not util.safe_str_cmp(expected, job_key):
             raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
 
         # Verify job is active
-        job = session.get(Job, job_id)
         if job.state not in Job.non_ready_states:
             error_message = "Attempting to get oidc token for a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)

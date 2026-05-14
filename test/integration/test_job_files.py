@@ -202,6 +202,30 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
 
+    def test_compute_resource_scoped_key_rejects_legacy_kind(self):
+        """A job bound to a compute resource refuses the legacy ``jobs_files``
+        key — only the tenant-scoped ``jobs_files:compute_resource:<resource_id>``
+        key is accepted. Prevents cross-tenant replay of a leaked credential."""
+        job, _, _ = self.create_static_job_with_state("running")
+        sa_session = self.sa_session
+        job.destination_params = {"compute_resource_id": 42}
+        sa_session.add(job)
+        sa_session.commit()
+
+        job_id = self._app.security.encode_id(job.id)
+        legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
+        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:42")
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        data["job_key"] = scoped_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
     @property
     def sa_session(self):
         return self._app.model.session

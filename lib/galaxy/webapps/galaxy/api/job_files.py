@@ -12,7 +12,10 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.job_execution.job_security import resolve_job_key
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_job,
+    resolve_job_key,
+)
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
@@ -212,13 +215,18 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
 
         job_id = trans.security.decode_id(encoded_job_id)
-        job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(str(supplied_job_key), job_key):
+        job = trans.sa_session.get(Job, job_id)
+        if job is None:
+            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
+
+        # Pick the kind from the job's BYOC binding (if any). Verifying with
+        # the wrong kind yields a plain mismatch, so callers see the same
+        # 403 we'd give for a forged key — without leaking the kind itself.
+        expected = trans.security.encode_id(job_id, kind=job_files_kind_for_job(job))
+        if not util.safe_str_cmp(str(supplied_job_key), expected):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
-        job = trans.sa_session.get(Job, job_id)
-        assert job
         if job.state not in Job.non_ready_states:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)
