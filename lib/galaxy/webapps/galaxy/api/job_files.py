@@ -16,6 +16,8 @@ from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
+    JobToInputDatasetAssociation,
+    JobToInputLibraryDatasetAssociation,
     JobToOutputDatasetAssociation,
     JobToOutputLibraryDatasetAssociation,
 )
@@ -66,6 +68,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         job = self.__authorize_job_access(trans, job_id, **kwargs)
         path = kwargs["path"]
+        self.__check_job_can_read_path(trans, job, path)
         try:
             return open(path, "rb")
         except FileNotFoundError:
@@ -221,6 +224,23 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             raise exceptions.ItemAccessibilityException(error_message)
         return job
 
+    def __check_job_can_read_path(self, trans: ProvidesAppContext, job: Job, path: str):
+        """Verify a job runner is allowed to read the requested path.
+
+        Prior to this check, ``index`` would ``open()`` any path the caller
+        named, gated only on possessing a valid ``job_key``. In the BYOC
+        threat model the credential lives on user-controlled compute, so the
+        endpoint effectively offered arbitrary-file-read on the Galaxy server
+        for the lifetime of the job. We now restrict reads to files this job
+        legitimately needs to stage: its working directory, its input
+        dataset files (and extra-files paths), and its output dataset paths.
+        """
+        if self.__in_working_directory(job, path, trans.app):
+            return
+        if self.__is_job_dataset_path(job, path, include_inputs=True):
+            return
+        raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
+
     def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
         """Verify an idealized job runner should actually be able to write to
         the specified path - it must be a dataset output, a dataset "extra
@@ -230,25 +250,42 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         files make this very difficult. (See abandoned work here
         https://gist.github.com/jmchilton/9103619.)
         """
-        in_work_dir = self.__in_working_directory(job, path, trans.app)
-        if not in_work_dir and not self.__is_output_dataset_path(job, path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+        if self.__in_working_directory(job, path, trans.app):
+            return
+        if self.__is_job_dataset_path(job, path, include_inputs=False):
+            return
+        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
-    def __is_output_dataset_path(self, job: Job, path: str):
-        """Check if is an output path for this job or a file in the an
-        output's extra files path.
+    def __is_job_dataset_path(self, job: Job, path: str, include_inputs: bool) -> bool:
+        """True if ``path`` is one of this job's dataset files or lives inside
+        one of its dataset extra-files directories.
+
+        ``include_inputs`` is True for reads (so a job runner can fetch the
+        inputs it needs to stage) and False for writes (writes must target
+        outputs only — we never let a runner overwrite an input).
         """
-        all_output_assocs: list[Union[JobToOutputDatasetAssociation, JobToOutputLibraryDatasetAssociation]] = [
-            *job.output_datasets,
-            *job.output_library_datasets,
-        ]
-        for assoc in all_output_assocs:
+        assocs: list[
+            Union[
+                JobToInputDatasetAssociation,
+                JobToInputLibraryDatasetAssociation,
+                JobToOutputDatasetAssociation,
+                JobToOutputLibraryDatasetAssociation,
+            ]
+        ] = [*job.output_datasets, *job.output_library_datasets]
+        if include_inputs:
+            assocs = [*job.input_datasets, *job.input_library_datasets, *assocs]
+        # ``realpath`` defeats symlink races where a malicious BYOC node might
+        # ask for a path that resolves outside the allowed set via a symlink
+        # the Galaxy process happens to follow.
+        target = os.path.realpath(path)
+        for assoc in assocs:
             dataset = assoc.dataset
             if not dataset:
                 continue
-            if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
+            if os.path.realpath(dataset.get_file_name()) == target:
                 return True
-            elif util.in_directory(path, dataset.extra_files_path):
+            extra = dataset.extra_files_path
+            if extra and util.in_directory(target, os.path.realpath(extra)):
                 return True
         return False
 
@@ -256,4 +293,4 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         working_directory = app.object_store.get_filename(
             job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
         )
-        return util.in_directory(path, working_directory)
+        return util.in_directory(os.path.realpath(path), os.path.realpath(working_directory))

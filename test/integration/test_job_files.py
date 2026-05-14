@@ -170,6 +170,24 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files)
         _assert_insufficient_permissions(response)
 
+    def test_read_path_constraint(self):
+        """A valid job_key must not be usable to read arbitrary paths on the
+        Galaxy server — only paths the job legitimately needs to stage."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        # A tempfile that has nothing to do with this job's I/O — previously
+        # would have been served verbatim. Reject now.
+        with tempfile.NamedTemporaryFile("w", delete=False) as t_file:
+            t_file.write("server-side secret")
+            outside_path = t_file.name
+        try:
+            response = requests.get(get_url, params={"path": outside_path, "job_key": job_key})
+            _assert_insufficient_permissions(response)
+        finally:
+            os.unlink(outside_path)
+
     def test_read_via_authorization_header(self):
         """``Authorization: Bearer <key>`` should be accepted in place of the
         query-string ``job_key`` parameter."""
