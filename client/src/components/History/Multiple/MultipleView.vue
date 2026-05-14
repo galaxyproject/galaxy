@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -13,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import MultipleViewList from "./MultipleViewList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -160,9 +160,9 @@ function showRecent() {
                 </div>
             </div>
         </div>
-        <BAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
+        <GAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </BAlert>
+        </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <FilterMenu
                 name="History Multiview"
@@ -180,9 +180,9 @@ function showRecent() {
                 :show-modal.sync="showSelectModal"
                 @load-more="loadMore" />
         </div>
-        <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
+        <GAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </BAlert>
+        </GAlert>
         <SelectorModal
             v-show="showSelectModal"
             :multiple="true"

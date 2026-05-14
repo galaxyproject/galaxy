@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faFileExport, faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import type { AnyHistory } from "@/api";
@@ -24,6 +23,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import type { HistoryExportData } from "./types";
 
 import HistoryExportWizard from "./HistoryExportWizard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -254,9 +254,9 @@ const breadcrumbItems = computed(() => [
             </GButton>
         </BreadcrumbHeading>
 
-        <BAlert v-if="isFatalError" id="fatal-error-alert" variant="danger" class="mt-3" show>
+        <GAlert v-if="isFatalError" id="fatal-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <div v-if="history">
             <div v-if="latestExportRecord">
@@ -280,9 +280,9 @@ const breadcrumbItems = computed(() => [
                 :is-busy="isBusy"
                 @onExport="onExportHistory" />
 
-            <BAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+            <GAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
                 {{ errorMessage }}
-            </BAlert>
+            </GAlert>
         </div>
 
         <GModal

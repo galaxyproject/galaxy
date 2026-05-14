@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -23,6 +22,7 @@ import ZipFileSelector from "./ZipFileSelector.vue";
 import ZipImportSummary from "./ZipImportSummary.vue";
 import ZipPreview from "./ZipPreview.vue";
 import ZipSelector from "./ZipSelector.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 
@@ -187,16 +187,16 @@ archiveExplorerEventBus.on((key, source) => {
 
 <template>
     <div>
-        <BAlert
+        <GAlert
             v-if="props.showTargetHistoryWarning && targetHistoryWarning && hasRegularFilesToImport"
             show
             variant="warning">
             {{ targetHistoryWarning }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
+        <GAlert v-if="errorMessage" show dismissible fade variant="danger" @dismissed="errorMessage = undefined">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <GenericWizard
             container-component="div"
