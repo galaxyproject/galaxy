@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
@@ -25,6 +24,7 @@ import LoadingSpan from "../LoadingSpan.vue";
 import ListCollectionCreator from "./ListCollectionCreator.vue";
 import WhichBuilder from "./ListWizard/WhichBuilder.vue";
 import PairedOrUnpairedListCollectionCreator from "./PairedOrUnpairedListCollectionCreator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GenericWizard from "@/components/Common/Wizard/GenericWizard.vue";
 import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 
@@ -213,22 +213,22 @@ function onRuleState(newRuleState: boolean) {
             <i class="d-flex align-items-center"> {{ selectedItems.length }} datasets selected </i>
         </BreadcrumbHeading>
         <div v-if="creationError">
-            <BAlert variant="danger" show>
+            <GAlert variant="danger" show>
                 {{ creationError }}
-            </BAlert>
+            </GAlert>
         </div>
         <div v-if="collectionCreated">
-            <BAlert variant="success" show> Collection created and it has been added to your history. </BAlert>
+            <GAlert variant="success" show> Collection created and it has been added to your history. </GAlert>
         </div>
         <div v-else-if="!selectedItems">
-            <BAlert variant="info" show>
+            <GAlert variant="info" show>
                 <LoadingSpan />
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="selectedItems.length == 0">
-            <BAlert variant="info" show>
+            <GAlert variant="info" show>
                 Select datasets from the history panel to use the Galaxy list building wizard.
-            </BAlert>
+            </GAlert>
         </div>
         <GenericWizard v-else :use="wizard" :is-busy="isBusy" :submit-button-label="buildButtonLabel" @submit="submit">
             <div v-if="wizard.isCurrent('which-builder')">
@@ -288,6 +288,6 @@ function onRuleState(newRuleState: boolean) {
         </GenericWizard>
     </div>
     <div v-else>
-        <BAlert show> Select datasets from the history panel to use the Galaxy list building wizard. </BAlert>
+        <GAlert show> Select datasets from the history panel to use the Galaxy list building wizard. </GAlert>
     </div>
 </template>
