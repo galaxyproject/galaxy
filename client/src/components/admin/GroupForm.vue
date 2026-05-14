@@ -3,7 +3,7 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox } from "bootstrap-vue";
+import { BButton, BFormCheckbox } from "bootstrap-vue";
 import { ref } from "vue";
 import Multiselect from "vue-multiselect";
 import { useRouter } from "vue-router/composables";
@@ -11,6 +11,7 @@ import { useRouter } from "vue-router/composables";
 import { GalaxyApi } from "@/api";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FormInput from "@/components/Form/Elements/FormInput.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElementLabel from "@/components/Form/FormElementLabel.vue";
@@ -174,7 +175,7 @@ loadGroupData();
     <div>
         <LoadingSpan v-if="loading" />
         <div v-else>
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
             <FormCard :title="isEditMode ? `Group '${groupName}'` : 'Create a new Group'" icon="fa-users">
                 <template v-slot:body>
                     <FormElementLabel title="Name" :required="!isEditMode" :condition="!!groupName">
