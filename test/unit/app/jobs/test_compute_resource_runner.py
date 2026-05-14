@@ -133,6 +133,7 @@ class _FakeClientManager:
         self.shutdowns = 0
         self.status_callbacks: list = []
         self.ack_consumers_armed = 0
+        self.get_client_calls: list[dict] = []
 
     def ensure_has_status_update_callback(self, callback) -> None:
         self.status_callbacks.append(callback)
@@ -142,6 +143,13 @@ class _FakeClientManager:
 
     def shutdown(self) -> None:
         self.shutdowns += 1
+
+    def get_client(self, destination_params, **client_kwds):
+        # Recorded so tests that drive ``runner.get_client`` can inspect the
+        # endpoints/kwargs the runner passes through to its per-tenant client
+        # manager. Returns a sentinel — callers only assert on the kwds.
+        self.get_client_calls.append({"destination_params": destination_params, **client_kwds})
+        return MagicMock(name="PulsarClient")
 
 
 class _FakeClientManagerFactory:
@@ -567,3 +575,48 @@ def test_downgrade_does_not_touch_non_remote_dependency_resolution(resolution):
     params = {"compute_resource_id": 42, "dependency_resolution": resolution}
     runner._apply_capability_downgrades(params, user)
     assert params["dependency_resolution"] == resolution
+
+
+def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
+    """The compute-resource runner must encode the credential ``kind`` with
+    the resource id baked in — so a key minted for one tenant can never
+    validate against another tenant's job (see job_security.py).
+    """
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+
+    # Capture the kinds passed to ``encode_id`` so we can assert on the
+    # exact ``kind=`` values, not just the resulting (random-looking) tokens.
+    encode_calls: list[dict] = []
+
+    def fake_encode_id(job_id, kind=None):
+        encode_calls.append({"job_id": job_id, "kind": kind})
+        return f"ENC[{kind}]:{job_id}"
+
+    runner.app.security = MagicMock()
+    runner.app.security.encode_id = fake_encode_id
+    runner.app.config = MagicMock()
+    runner.app.config.nginx_upload_job_files_path = None
+
+    # Pre-bind the user→job lookup the runner consults via ``_get_user_for_job_id``.
+    job_obj = MagicMock(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}
+
+    runner.get_client({"compute_resource_id": 42}, 99)
+
+    # The runner must have minted credentials with the tenant-scoped kinds.
+    kinds_used = [c["kind"] for c in encode_calls]
+    assert "jobs_files:compute_resource:42" in kinds_used
+    assert "jobs_token:compute_resource:42" in kinds_used
+    # And — crucially — never the legacy unscoped kinds.
+    assert "jobs_files" not in kinds_used
+    assert "jobs_token" not in kinds_used
+
+    # The minted kinds end up in the endpoint URLs handed to Pulsar.
+    [cm] = factory.created
+    [client_kwds] = cm.get_client_calls
+    assert "job_key=ENC[jobs_files:compute_resource:42]:99" in client_kwds["files_endpoint"]
+    assert "job_key=ENC[jobs_token:compute_resource:42]:99" in client_kwds["token_endpoint"]
