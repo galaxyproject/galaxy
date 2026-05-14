@@ -424,6 +424,7 @@ def test_downgrade_fills_jobs_directory_when_set_to_required_sentinel():
     the snapshot's staging_directory is exactly that operator-supplied
     value, so use it."""
     from galaxy.jobs.runners.pulsar import PARAMETER_SPECIFICATION_REQUIRED
+
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
     params = {"pulsar_byoc_resource_id": 42, "jobs_directory": PARAMETER_SPECIFICATION_REQUIRED}
     runner._apply_capability_downgrades(params, user)

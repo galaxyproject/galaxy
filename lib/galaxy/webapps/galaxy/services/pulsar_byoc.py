@@ -16,7 +16,6 @@ and other recently-introduced services.
 
 from __future__ import annotations
 
-
 from fastapi import (
     HTTPException,
     status,

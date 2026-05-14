@@ -5,6 +5,7 @@ the helper validates a ``PaginatedMessagesResponse`` body and returns the
 payload (or ``None`` for unusable shapes). Both are pure / mockable, so
 these tests don't need a Galaxy app fixture.
 """
+
 from __future__ import annotations
 
 from typing import (
@@ -15,13 +16,12 @@ from typing import (
 import pytest
 
 from galaxy.managers.pulsar_byoc import (
+    _make_capabilities_topic_name,
     CAPABILITIES_CACHE_TTL_SECONDS,
+    extract_capability_payload,
     RelayCapabilitiesCache,
     SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS,
-    _make_capabilities_topic_name,
-    extract_capability_payload,
 )
-
 
 # --- _make_capabilities_topic_name ----------------------------------------
 

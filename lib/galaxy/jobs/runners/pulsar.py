@@ -1445,9 +1445,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         self._apply_capability_downgrades(params, job.user)
         return super().get_client_from_wrapper(job_wrapper)
 
-    def _apply_capability_downgrades(
-        self, params: dict[str, Any], user: Optional["model.User"]
-    ) -> None:
+    def _apply_capability_downgrades(self, params: dict[str, Any], user: Optional["model.User"]) -> None:
         """Reflect the remote pulsar's capability snapshot into ``params``.
 
         Three things happen, in order:
@@ -1491,7 +1489,9 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
                     "Destination jobs_directory=%r doesn't match pulsar %s "
                     "staging_directory=%r; path rewrites WILL be wrong. "
                     "BYOC has no shared FS — these must agree.",
-                    existing, manager_name, snapshot_staging,
+                    existing,
+                    manager_name,
+                    snapshot_staging,
                 )
 
         # 2. Container runtimes: clear-only.
@@ -1509,7 +1509,9 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             runtime = param_name.removesuffix("_enabled")
             log.warning(
                 "Destination requested %s=true but pulsar %s reports no %s; clearing.",
-                param_name, manager_name, runtime,
+                param_name,
+                manager_name,
+                runtime,
             )
             params[param_name] = False
         if not any(runtime_available.values()):

@@ -128,7 +128,10 @@ def login_via_keycloak(
 
 
 def code_and_state_from_callback(location: str) -> tuple[str, str]:
-    from urllib.parse import parse_qs, urlparse
+    from urllib.parse import (
+        parse_qs,
+        urlparse,
+    )
 
     parsed = urlparse(location)
     qs = parse_qs(parsed.query)

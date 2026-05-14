@@ -397,13 +397,15 @@ class TestPulsarByocManager(BaseTestCase):
 
     def _seed_capability_message(self, topic: str, payload: dict) -> None:
         """Make ``self.fake_relay_client.fetch_messages(topic, ...)`` return ``payload``."""
-        self.fake_relay_client.stored_messages[topic] = [{
-            "message_id": "1700000000-0",
-            "topic": topic,
-            "payload": payload,
-            "timestamp": "2026-05-14T10:00:00.000Z",
-            "metadata": None,
-        }]
+        self.fake_relay_client.stored_messages[topic] = [
+            {
+                "message_id": "1700000000-0",
+                "topic": topic,
+                "payload": payload,
+                "timestamp": "2026-05-14T10:00:00.000Z",
+                "metadata": None,
+            }
+        ]
 
     def _register_byoc(self, user, *, manager_name: str) -> "PulsarByocResource":
         """End-to-end registration so the vault has a refresh token under
@@ -510,7 +512,5 @@ class TestPulsarByocManager(BaseTestCase):
 
         self.byoc_manager.capabilities_for(resource, user=user)
 
-        stored = UserVaultWrapper(self.app.vault, user).read_secret(
-            f"pulsar_byoc/{resource.id}/relay_refresh_token"
-        )
+        stored = UserVaultWrapper(self.app.vault, user).read_secret(f"pulsar_byoc/{resource.id}/relay_refresh_token")
         assert stored == "RT-ROTATED-AGAIN"

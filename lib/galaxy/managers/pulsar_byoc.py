@@ -22,7 +22,6 @@ from datetime import (
     timedelta,
     timezone,
 )
-from collections.abc import Callable
 from typing import (
     Any,
     Optional,
@@ -184,9 +183,7 @@ class RelayCapabilitiesCache:
             self._entries.pop((relay_url, manager_name), None)
 
 
-def extract_capability_payload(
-    response: dict[str, Any], topic: str, relay_url: str
-) -> Optional[dict[str, Any]]:
+def extract_capability_payload(response: dict[str, Any], topic: str, relay_url: str) -> Optional[dict[str, Any]]:
     """Pull the latest payload out of a ``PaginatedMessagesResponse`` body.
 
     Validates: at least one message, payload is a dict, ``schema_version``
@@ -201,7 +198,8 @@ def extract_capability_payload(
     if not isinstance(payload, dict):
         log.warning(
             "Capability message on %s has non-dict payload (got %s); ignoring.",
-            topic, type(payload).__name__,
+            topic,
+            type(payload).__name__,
         )
         return None
     version = payload.get("schema_version")
@@ -209,7 +207,9 @@ def extract_capability_payload(
         log.warning(
             "Capability snapshot on %s has unsupported schema_version=%r (supported: %s); "
             "ignoring. Update Galaxy to consume newer snapshots.",
-            topic, version, sorted(SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS),
+            topic,
+            version,
+            sorted(SUPPORTED_CAPABILITIES_SCHEMA_VERSIONS),
         )
         return None
     return payload
@@ -277,9 +277,7 @@ class PulsarByocManager:
         self._relay_client_factory: RelayClientFactory = (
             relay_client_factory if relay_client_factory is not None else default_relay_client_factory
         )
-        self._capabilities_cache = (
-            capabilities_cache if capabilities_cache is not None else RelayCapabilitiesCache()
-        )
+        self._capabilities_cache = capabilities_cache if capabilities_cache is not None else RelayCapabilitiesCache()
 
     # ---- query ------------------------------------------------------------
 
@@ -322,9 +320,7 @@ class PulsarByocManager:
 
     # ---- capability snapshot ---------------------------------------------
 
-    def capabilities_for(
-        self, resource: PulsarByocResource, *, user: Optional[User]
-    ) -> Optional[dict[str, Any]]:
+    def capabilities_for(self, resource: PulsarByocResource, *, user: Optional[User]) -> Optional[dict[str, Any]]:
         """Return the latest capability snapshot for a BYOC resource, or ``None``.
 
         Most calls are a dict lookup against
@@ -348,16 +344,13 @@ class PulsarByocManager:
             lambda: self._fetch_capabilities(resource, user, topic),
         )
 
-    def _fetch_capabilities(
-        self, resource: PulsarByocResource, user: User, topic: str
-    ) -> Optional[dict[str, Any]]:
+    def _fetch_capabilities(self, resource: PulsarByocResource, user: User, topic: str) -> Optional[dict[str, Any]]:
         vault_wrapper = UserVaultWrapper(self._vault, user)
         secret_path = relay_refresh_token_vault_path(resource.id)
         refresh_token = vault_wrapper.read_secret(secret_path)
         if not refresh_token:
             log.debug(
-                "No relay refresh token in vault for PulsarByocResource id=%s; "
-                "cannot fetch capabilities.",
+                "No relay refresh token in vault for PulsarByocResource id=%s; " "cannot fetch capabilities.",
                 resource.id,
             )
             return None
@@ -368,7 +361,8 @@ class PulsarByocManager:
         except (RefreshTokenRejectedError, RelayClientError) as exc:
             log.warning(
                 "Relay refresh failed while fetching capabilities for resource id=%s: %s",
-                resource.id, exc,
+                resource.id,
+                exc,
             )
             return None
 
@@ -390,7 +384,9 @@ class PulsarByocManager:
         except RelayClientError as exc:
             log.warning(
                 "Capability fetch from %s on %s failed: %s",
-                topic, resource.relay_url, exc,
+                topic,
+                resource.relay_url,
+                exc,
             )
             return None
         return extract_capability_payload(response, topic, resource.relay_url)
