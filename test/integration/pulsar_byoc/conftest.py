@@ -5,12 +5,13 @@ subprocess wired up to it. The Galaxy side runs in-process so the suite
 can exercise ``PulsarByocManager`` against the real relay HTTP API
 without the cost of a full Galaxy server boot.
 
-Skips automatically when ``docker`` is not on ``$PATH`` or the daemon
-isn't reachable.
+Skips automatically when ``docker`` is not on ``$PATH``, the daemon
+isn't reachable, or the ``pulsar_relay`` server package isn't installed.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shutil
 import socket
@@ -28,6 +29,16 @@ from ._keycloak_bootstrap import (
     KeycloakSetup,
     provision,
 )
+
+# pulsar-relay (the *server* package, distinct from pulsar-relay-client)
+# is the FastAPI app the suite launches under uvicorn. Skip rather than
+# error when it isn't installed — the e2e suite is heavy and devs often
+# run the unit tests without a full integration env.
+if importlib.util.find_spec("pulsar_relay") is None:
+    pytest.skip(
+        "pulsar-relay (server) is not installed; pip install pulsar-relay to run BYOC e2e",
+        allow_module_level=True,
+    )
 
 HARNESS_DIR = Path(__file__).parent
 COMPOSE_FILE = HARNESS_DIR / "docker-compose.yml"

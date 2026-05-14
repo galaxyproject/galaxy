@@ -129,6 +129,7 @@ proto-plus==1.28.0
 protobuf==6.33.6
 psutil==7.2.2 ; sys_platform != 'cygwin'
 psycopg==3.3.4
+pulsar-relay==0.2.0
 pyasn1==0.6.3
 pyasn1-modules==0.4.2
 pycparser==3.0 ; (implementation_name != 'PyPy' and implementation_name != 'pypy' and os_name == 'nt') or (implementation_name != 'PyPy' and platform_python_implementation != 'PyPy')

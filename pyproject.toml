@@ -135,6 +135,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
+    "pulsar-relay>=0.2.0",  # BYOC e2e tests boot the relay server in-process
     "pytest",
     "pytest-asyncio",
     "pytest-cov",
