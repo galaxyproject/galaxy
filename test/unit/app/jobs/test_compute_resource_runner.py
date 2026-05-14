@@ -91,12 +91,42 @@ class _StubByocManager:
         return self.snapshot
 
 
+class _StubSecurity:
+    """Minimal stand-in for ``IdEncodingHelper`` that records each
+    ``encode_id`` call and returns a synthetic, easy-to-assert token of the
+    form ``"ENC[<kind>]:<job_id>"``. Tests inspect ``encode_calls`` to
+    verify the runner passed the expected ``kind=`` value through."""
+
+    def __init__(self) -> None:
+        self.encode_calls: list[dict[str, Any]] = []
+
+    def encode_id(self, obj_id: int, kind: Optional[str] = None) -> str:
+        self.encode_calls.append({"obj_id": obj_id, "kind": kind})
+        return f"ENC[{kind}]:{obj_id}"
+
+
+class _StubConfig:
+    """Minimal stand-in for ``GalaxyAppConfiguration`` covering just the
+    runner-relevant fields. Defaults match production fall-through."""
+
+    nginx_upload_job_files_path: Optional[str] = None
+
+
+class _StubModel:
+    def __init__(self, session: "_StubSession") -> None:
+        self.session = session
+
+
 class _StubApp:
     def __init__(self, resources_by_id, vault, compute_resource_manager=None):
-        self.model = MagicMock()
-        self.model.session = _StubSession(resources_by_id)
+        self.model = _StubModel(_StubSession(resources_by_id))
         self.vault = vault
         self.compute_resource_manager = compute_resource_manager or _StubByocManager(snapshot=None)
+        # security and config are unused by most tests and set lazily by
+        # ``test_get_client_mints_compute_resource_scoped_job_keys`` when it
+        # needs to observe encode_id calls.
+        self.security: Optional[_StubSecurity] = None
+        self.config: Optional[_StubConfig] = None
 
 
 class _StubJobDestination:
@@ -598,27 +628,20 @@ def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
     runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
     runner.galaxy_url = "https://galaxy.test"
 
-    # Capture the kinds passed to ``encode_id`` so we can assert on the
-    # exact ``kind=`` values, not just the resulting (random-looking) tokens.
-    encode_calls: list[dict] = []
-
-    def fake_encode_id(job_id, kind=None):
-        encode_calls.append({"job_id": job_id, "kind": kind})
-        return f"ENC[{kind}]:{job_id}"
-
-    runner.app.security = MagicMock()
-    runner.app.security.encode_id = fake_encode_id
-    runner.app.config = MagicMock()
-    runner.app.config.nginx_upload_job_files_path = None
+    # Wire the security/config stubs so we can observe the kinds the runner
+    # passes through to encode_id without monkey-patching MagicMocks.
+    security = _StubSecurity()
+    runner.app.security = security
+    runner.app.config = _StubConfig()
 
     # Pre-bind the user→job lookup the runner consults via ``_get_user_for_job_id``.
-    job_obj = MagicMock(id=99, user=user)
+    job_obj = _StubJob(id=99, user=user)
     runner.app.model.session._jobs = {99: job_obj}
 
     runner.get_client({"compute_resource_id": 42}, 99)
 
     # The runner must have minted credentials with the tenant-scoped kinds.
-    kinds_used = [c["kind"] for c in encode_calls]
+    kinds_used = [c["kind"] for c in security.encode_calls]
     assert "jobs_files:compute_resource:42" in kinds_used
     assert "jobs_token:compute_resource:42" in kinds_used
     # And — crucially — never the legacy unscoped kinds.
