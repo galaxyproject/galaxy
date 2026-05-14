@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faExternalLinkAlt, faStop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormInput } from "bootstrap-vue";
+import { BButton, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -9,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 import type { TableField } from "@/components/Common/GTable.types";
 import { useInteractiveToolsStore } from "@/stores/interactiveToolsStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GTable from "@/components/Common/GTable.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -109,9 +110,9 @@ onMounted(() => {
 
 <template>
     <div aria-labelledby="interactive-tools-heading">
-        <BAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">
+        <GAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">
             {{ message }}
-        </BAlert>
+        </GAlert>
 
         <Heading id="interactive-tools-heading" h1 separator inline size="lg"> Active Interactive Tools </Heading>
 
@@ -126,13 +127,13 @@ onMounted(() => {
 
         <GTable id="interactive-tool-table" show-empty striped :fields="fields" :items="filteredTools">
             <template v-slot:empty>
-                <BAlert variant="info" show class="mb-0">
+                <GAlert variant="info" show class="mb-0">
                     <div v-if="isActiveToolsListEmpty">You do not have active interactive tools yet</div>
                     <div v-else-if="showNotFound">
                         No matching entries found for:
                         <span class="font-weight-bold"> {{ filter }} </span>.
                     </div>
-                </BAlert>
+                </GAlert>
             </template>
 
             <template v-slot:cell(actions)="{ item }">

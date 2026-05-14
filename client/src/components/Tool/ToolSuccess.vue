@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -10,6 +9,7 @@ import { useJobStore } from "@/stores/jobStore";
 import LoadingSpan from "../LoadingSpan.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolSuccessMessage from "./ToolSuccessMessage.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Webhook from "@/components/Common/Webhook.vue";
 import ToolEntryPoints from "@/components/ToolEntryPoints/ToolEntryPoints.vue";
 
@@ -31,9 +31,9 @@ if (!latestResponse.value || Object.keys(latestResponse.value).length === 0) {
 
 <template>
     <section>
-        <BAlert v-if="!jobResponse" variant="info" show>
+        <GAlert v-if="!jobResponse" variant="info" show>
             <LoadingSpan message="Waiting on data" />
-        </BAlert>
+        </GAlert>
         <div v-else>
             <div v-if="jobResponse?.produces_entry_points">
                 <ToolEntryPoints v-for="job in jobResponse.jobs" :key="job.id" :job-id="job.id" />
