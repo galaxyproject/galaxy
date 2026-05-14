@@ -23,12 +23,13 @@
 
 import { faExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { ServiceCredentialsContext } from "@/api/userCredentials";
 import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
 import { useUserToolsServiceCredentialsStore } from "@/stores/userToolsServiceCredentialsStore";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     /**
@@ -82,7 +83,7 @@ const currentSelectedIdsAreDifferent = computed(() => {
 </script>
 
 <template>
-    <BAlert v-if="currentSelectedIdsAreDifferent" show variant="warning" class="my-2">
+    <GAlert v-if="currentSelectedIdsAreDifferent" show variant="warning" class="my-2">
         <FontAwesomeIcon :icon="faExclamation" fixed-width />
 
         <span v-for="value in props.jobCredentialsContext" :key="value.name + value.version">
@@ -97,5 +98,5 @@ const currentSelectedIdsAreDifferent = computed(() => {
                 >. Previously used <b>{{ value.selected_group.name }} </b>.
             </template>
         </span>
-    </BAlert>
+    </GAlert>
 </template>
