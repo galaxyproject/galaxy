@@ -45,12 +45,13 @@ function close() {
             class="text-left text-decoration-none overflow-hidden text-nowrap w-100"
             style="text-overflow: ellipsis"
             transparent
+            color="blue"
             @click="close">
             <FontAwesomeIcon :icon="faAngleDoubleLeft" class="mr-1" data-description="back to history" fixed-width />
             <span> History: {{ historyName }} </span>
         </GButton>
 
-        <GButton v-if="previousName" size="small" class="text-decoration-none" transparent @click="back">
+        <GButton v-if="previousName" size="small" class="text-decoration-none" transparent color="blue" @click="back">
             <FontAwesomeIcon :icon="faAngleLeft" class="mr-1" fixed-width />
             <span>{{ previousName }}</span>
         </GButton>

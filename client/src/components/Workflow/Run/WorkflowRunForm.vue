@@ -13,6 +13,7 @@
                     v-if="!disableSimpleForm"
                     v-g-tooltip.hover
                     transparent
+                    color="blue"
                     class="text-decoration-none"
                     title="Use simplified run form instead"
                     @click="$emit('showSimple')">

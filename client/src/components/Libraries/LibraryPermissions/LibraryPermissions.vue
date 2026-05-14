@@ -1,6 +1,6 @@
 <template>
     <div>
-        <GButton transparent @click="onGoBack">Go back to Libraries</GButton>
+        <GButton transparent color="blue" @click="onGoBack">Go back to Libraries</GButton>
         <PermissionsHeader v-if="library" :name="library.name" />
         <h1 class="text-center h-lg">Library permissions</h1>
         <PermissionsInputField

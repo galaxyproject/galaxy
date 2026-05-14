@@ -408,6 +408,7 @@ watch(operationMessage, () => {
                             <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
                                 <GButton
                                     transparent
+                                    color="blue"
                                     class="text-nowrap font-weight-bold p-0"
                                     :data-description="`grid sort key ${fieldEntry.key}`"
                                     @click="onSort(fieldEntry.key)">

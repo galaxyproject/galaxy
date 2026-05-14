@@ -39,7 +39,7 @@ function resetSelection() {
             <span class="fa fa-fw fa-times" />
         </GButton>
 
-        <GButton v-else transparent size="small" data-test-id="select-all-btn" @click="selectAll">
+        <GButton v-else transparent color="blue" size="small" data-test-id="select-all-btn" @click="selectAll">
             <span v-localize>Select All</span>
         </GButton>
     </GButtonGroup>

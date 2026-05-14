@@ -26,7 +26,7 @@ export function variantToColor(variant: string | null | undefined): {
         case "default":
             return { outline: isOutline };
         case "link":
-            return { transparent: true };
+            return { transparent: true, color: "blue" };
         case "disabled":
             return {};
         case "dark":

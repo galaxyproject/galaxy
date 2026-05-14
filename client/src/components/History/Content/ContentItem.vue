@@ -384,6 +384,7 @@ function unexpandedClick(event: Event) {
                         class="display-btn px-1 align-items-center"
                         size="small"
                         transparent
+                        color="blue"
                         @click.prevent.stop="subItemsVisible = !subItemsVisible">
                         <FontAwesomeIcon :icon="faExchangeAlt" />
                         <span class="indicator">{{ item.sub_items?.length }}</span>

@@ -120,9 +120,10 @@ describe("HistoryCounter — refresh button", () => {
 
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toBe("Refresh history");
-            // ``link`` variant maps to ``transparent`` on GButton via variantToColor().
+            // ``link`` variant maps to ``transparent`` + ``color=blue`` via variantToColor()
+            // to preserve Bootstrap's link-blue text color on the GButton render.
             expect(button.attributes("transparent")).toBe("true");
-            expect(button.attributes("color")).toBeUndefined();
+            expect(button.attributes("color")).toBe("blue");
         });
 
         it("does not flag the initial-connect window as a connection loss", async () => {
@@ -136,7 +137,7 @@ describe("HistoryCounter — refresh button", () => {
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toBe("Refresh history");
             expect(button.attributes("transparent")).toBe("true");
-            expect(button.attributes("color")).toBeUndefined();
+            expect(button.attributes("color")).toBe("blue");
         });
 
         it("turns red when the SSE connection is lost after a successful open", async () => {
@@ -170,7 +171,7 @@ describe("HistoryCounter — refresh button", () => {
             const button = refreshButton(wrapper);
             expect(button.attributes("title")).toMatch(/^Last refreshed .+ ago$/);
             expect(button.attributes("transparent")).toBe("true");
-            expect(button.attributes("color")).toBeUndefined();
+            expect(button.attributes("color")).toBe("blue");
         });
 
         it("turns red after 2 minutes of staleness", async () => {

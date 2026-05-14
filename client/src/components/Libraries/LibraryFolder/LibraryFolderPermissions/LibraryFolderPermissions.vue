@@ -1,6 +1,6 @@
 <template>
     <div>
-        <GButton transparent @click="onGoBack">Go back</GButton>
+        <GButton transparent color="blue" @click="onGoBack">Go back</GButton>
         <PermissionsHeader v-if="folder" :name="folder.name" />
         <b-container fluid>
             <div class="dataset_table">
