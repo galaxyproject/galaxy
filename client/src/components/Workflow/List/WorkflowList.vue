@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faStar, faTags, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { faTrashRestore } from "font-awesome-6";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -20,6 +20,7 @@ import { useWorkflowCardActions } from "./useWorkflowCardActions";
 import type WorkflowCard from "./WorkflowCard.vue";
 
 import WorkflowCardList from "./WorkflowCardList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -473,23 +474,23 @@ onMounted(() => {
         </div>
 
         <div v-if="loading" class="workflow-list-alert">
-            <BAlert variant="info" show>
+            <GAlert variant="info" show>
                 <LoadingSpan message="Loading workflows" />
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="workflow-list-alert">
-            <BAlert id="workflow-list-empty" variant="info" show>
+            <GAlert id="workflow-list-empty" variant="info" show>
                 <span v-localize
                     >No workflows found. You may create or import new workflows using the buttons above.</span
                 >
-            </BAlert>
+            </GAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="workflow-list-alert">
-            <BAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
+            <GAlert v-if="!hasInvalidFilters" id="no-workflow-found" variant="info" show>
                 No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
-            </BAlert>
+            </GAlert>
 
-            <BAlert v-else id="no-workflow-found-invalid" variant="danger" show>
+            <GAlert v-else id="no-workflow-found-invalid" variant="danger" show>
                 <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -505,7 +506,7 @@ onMounted(() => {
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </GLink>
-            </BAlert>
+            </GAlert>
         </span>
         <GOverlay v-else id="workflow-cards" :show="overlay" class="cards-list">
             <WorkflowCardList

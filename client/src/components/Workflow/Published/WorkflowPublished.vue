@@ -2,7 +2,7 @@
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until } from "@vueuse/core";
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { getWorkflowInfo, type StoredWorkflowDetailed } from "@/api/workflows";
@@ -15,6 +15,7 @@ import { assertDefined } from "@/utils/assertions";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
@@ -127,9 +128,9 @@ defineExpose({
             <div v-else-if="hasError">
                 <Heading h1 separator size="lg"> Failed to load published Workflow </Heading>
 
-                <BAlert show variant="danger">
+                <GAlert show variant="danger">
                     {{ errorMessage }}
-                </BAlert>
+                </GAlert>
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div v-if="props.showHeading || props.showButtons" class="workflow-header">

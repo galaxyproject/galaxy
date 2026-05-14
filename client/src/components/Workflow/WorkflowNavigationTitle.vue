@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faEdit, faPlay, faRedo, faSitemap, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
@@ -24,6 +23,7 @@ import AsyncButton from "../Common/AsyncButton.vue";
 import ButtonSpinner from "../Common/ButtonSpinner.vue";
 import NavigationTitle from "../Common/NavigationTitle.vue";
 import LoadingSpan from "../LoadingSpan.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const router = useRouter();
 
@@ -127,18 +127,18 @@ async function rerunWorkflow() {
 
 <template>
     <div>
-        <BAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
+        <GAlert v-if="importErrorMessage" variant="danger" dismissible show @dismissed="importErrorMessage = null">
             {{ importErrorMessage }}
-        </BAlert>
-        <BAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
+        </GAlert>
+        <GAlert v-else-if="importedWorkflow" variant="info" dismissible show @dismissed="importedWorkflow = null">
             <span>
                 Workflow <b>{{ importedWorkflow.name }}</b> imported successfully.
             </span>
             <RouterLink to="/workflows/list">Click here</RouterLink> to view the imported workflow in the workflows
             list.
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
+        <GAlert v-if="error" variant="danger" show>{{ error }}</GAlert>
 
         <div class="position-relative">
             <NavigationTitle
@@ -230,9 +230,9 @@ async function rerunWorkflow() {
                 Successfully invoked workflow
                 <b>{{ getWorkflowName() }}</b>
             </div>
-            <BAlert v-else-if="loading" variant="info" show>
+            <GAlert v-else-if="loading" variant="info" show>
                 <LoadingSpan message="Loading workflow details" />
-            </BAlert>
+            </GAlert>
         </div>
     </div>
 </template>

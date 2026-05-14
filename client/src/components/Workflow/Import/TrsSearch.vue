@@ -2,7 +2,7 @@
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { BCard, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -14,6 +14,7 @@ import { withPrefix } from "@/utils/redirect";
 
 import type { TrsSelection, TrsTool as TrsSearchData } from "./types";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTable from "@/components/Common/GTable.vue";
 import HelpText from "@/components/Help/HelpText.vue";
@@ -158,9 +159,9 @@ defineExpose({ triggerImport });
 
 <template>
     <div class="container workflow-import-trs-search">
-        <BAlert :show="hasErrorMessage" variant="danger">
+        <GAlert :show="hasErrorMessage" variant="danger">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
         <div class="mb-3">
             <b>TRS Server:</b>
@@ -191,13 +192,13 @@ defineExpose({ triggerImport });
         </div>
 
         <div class="vertical-scroll">
-            <BAlert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
-            </BAlert>
-            <BAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </BAlert>
-            <BAlert v-else-if="results.length == 0" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="!query" variant="info" show> Enter search query to begin search. </GAlert>
+            <GAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
-            </BAlert>
+            </GAlert>
             <GTable
                 v-else
                 :fields="fields"
@@ -209,9 +210,9 @@ defineExpose({ triggerImport });
                 @row-click="showRowDetails">
                 <template v-slot:row-details="{ item }">
                     <BCard>
-                        <BAlert v-if="importing" variant="info" show>
+                        <GAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
-                        </BAlert>
+                        </GAlert>
 
                         <TrsTool
                             :trs-tool="item.data"
