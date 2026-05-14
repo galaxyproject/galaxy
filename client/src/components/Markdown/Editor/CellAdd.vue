@@ -24,7 +24,7 @@
                         </div>
                     </div>
                 </div>
-                <BAlert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </BAlert>
+                <GAlert v-else class="m-1 p-1" variant="info" show> No results found for "{{ query }}". </GAlert>
             </div>
         </Popper>
     </div>
@@ -32,7 +32,6 @@
 
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref } from "vue";
 
 import { getVisualizations } from "./services";
@@ -41,6 +40,7 @@ import type { CellType, TemplateEntry } from "./types";
 
 import CellButton from "./CellButton.vue";
 import CellOption from "./CellOption.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import Popper from "@/components/Popper/Popper.vue";
 

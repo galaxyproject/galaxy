@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import Vue, { computed, type Ref, ref, watch } from "vue";
 
 import { GalaxyApi, type MessageException } from "@/api";
@@ -22,6 +21,7 @@ import {
 
 import PermissionObjectType from "./PermissionObjectType.vue";
 import SharingIndicator from "./SharingIndicator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -344,7 +344,7 @@ async function makeAccessible(item: ItemInterface) {
         <GTable show-empty :items="tableItems" :fields="tableFields">
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading objects" />
-                <BAlert v-else show variant="info"> No objects found in referenced Galaxy markdown content. </BAlert>
+                <GAlert v-else show variant="info"> No objects found in referenced Galaxy markdown content. </GAlert>
             </template>
 
             <template v-slot:cell(name)="{ item }">

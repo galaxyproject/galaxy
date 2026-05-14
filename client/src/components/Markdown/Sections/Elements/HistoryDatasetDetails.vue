@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 type AttributeType = "name" | "misc_blurb" | "peek" | "extension";
 
@@ -43,6 +44,6 @@ const getClass = computed(() => `dataset-${ATTRIBUTES[props.name || ""]}`);
 </script>
 
 <template>
-    <BAlert v-if="error" show variant="warning">{{ error }}</BAlert>
+    <GAlert v-if="error" show variant="warning">{{ error }}</GAlert>
     <pre v-else :class="getClass" class="m-0" v-html="attributeValue" />
 </template>
