@@ -202,6 +202,63 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
 
+    def test_compute_resource_write_allowlist_blocks_outputs_populated(self):
+        """A compute-resource job must not write into ``metadata/outputs_populated``
+        even via a path that's lexically inside its working directory. That
+        path is the remote-extended-metadata import store; trusting it from
+        user-controlled compute is a cross-user mutation primitive (and the
+        compute-resource runner refuses ``metadata_strategy='extended'`` at
+        dispatch for the same reason)."""
+        job, _, working_directory = self.create_static_job_with_state("running")
+        sa_session = self.sa_session
+        job.destination_params = {"compute_resource_id": 99}
+        sa_session.add(job)
+        sa_session.commit()
+
+        job_id = self._app.security.encode_id(job.id)
+        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:99")
+
+        post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        # metadata/outputs_populated/* is denied for compute-resource jobs
+        denied_paths = [
+            os.path.join(working_directory, "metadata", "outputs_populated", "results.json"),
+            os.path.join(working_directory, "container_runtime.json"),
+            os.path.join(working_directory, "tool_script.sh"),
+            os.path.join(working_directory, "configs", "foo.txt"),
+        ]
+        for path in denied_paths:
+            data = {"path": path, "job_key": scoped_key}
+            files = {"file": io.StringIO("attack payload")}
+            response = requests.post(post_url, data=data, files=files)
+            _assert_insufficient_permissions(response)
+
+        # working/** is the tool's CWD — legitimately writable
+        allowed_path = os.path.join(working_directory, "working", "outputs", "galaxy.json")
+        data = {"path": allowed_path, "job_key": scoped_key}
+        files = {"file": io.StringIO('{"foo": 1}')}
+        response = requests.post(post_url, data=data, files=files)
+        api_asserts.assert_status_code_is_ok(response)
+
+    def test_write_through_symlink_is_rejected(self):
+        """Defense in depth: refuse to write to a path that's already a
+        symlink. Galaxy never places symlinks at output paths a runner
+        would post to, so an existing symlink can only be a foreign artefact
+        the API should not blindly follow."""
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        real_path = self._app.object_store.get_filename(output_hda.dataset)
+        assert real_path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            symlink_path = os.path.join(tmpdir, "linked")
+            os.symlink(real_path, symlink_path)
+            data = {"path": symlink_path, "job_key": job_key}
+            files = {"file": io.StringIO("attack payload")}
+            post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+            response = requests.post(post_url, data=data, files=files)
+            _assert_insufficient_permissions(response)
+
     def test_compute_resource_scoped_key_rejects_legacy_kind(self):
         """A job bound to a compute resource refuses the legacy ``jobs_files``
         key — only the tenant-scoped ``jobs_files:compute_resource:<resource_id>``
