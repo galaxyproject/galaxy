@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExchangeAlt, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -19,6 +18,7 @@ import GTable from "../Common/GTable.vue";
 import Heading from "../Common/Heading.vue";
 import ExternalLink from "../ExternalLink.vue";
 import UtcDate from "../UtcDate.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const BEACON_HISTORY_NAME = "Beacon Export 📡";
 
@@ -165,22 +165,22 @@ onOpenModal();
             negotiate further information exchange or data access.
         </p>
 
-        <BAlert v-if="enabled" show>
+        <GAlert v-if="enabled" show>
             <div class="d-flex justify-content-between align-items-center">
                 <div>Beacon sharing is <span class="font-weight-bold">enabled</span> for your profile</div>
                 <GButton :disabled="togglingBeacon" color="red" @click="toggleBeacon(false)">Disable</GButton>
             </div>
-        </BAlert>
+        </GAlert>
 
         <!-- Setting to show when beacon is disabled -->
-        <BAlert v-else show>
+        <GAlert v-else show>
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     Beacon sharing is currently <span class="font-weight-bold">disabled</span> - no data will be shared
                 </div>
                 <GButton :disabled="togglingBeacon" color="green" @click="toggleBeacon(true)">Enable</GButton>
             </div>
-        </BAlert>
+        </GAlert>
 
         <template v-if="enabled">
             <div>
@@ -198,7 +198,7 @@ onOpenModal();
             <!-- Detailed information about the beacon history -->
             <div class="my-1">
                 <!-- Case: History does not exist-->
-                <BAlert v-if="!beaconHistories.length" show>
+                <GAlert v-if="!beaconHistories.length" show>
                     <div class="d-flex justify-content-between align-items-center">
                         <div>No beacon history found</div>
                         <GButton color="blue" @click="createBeaconHistory">
@@ -206,7 +206,7 @@ onOpenModal();
                             Create Beacon History
                         </GButton>
                     </div>
-                </BAlert>
+                </GAlert>
 
                 <div v-else>
                     <Heading separator size="sm">Existing Beacon Histories</Heading>

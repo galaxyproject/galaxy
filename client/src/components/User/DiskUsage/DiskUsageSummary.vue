@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
 const { config, isConfigLoaded } = useConfig(true);
@@ -86,10 +87,10 @@ onMounted(async () => {
 </script>
 <template>
     <div>
-        <b-alert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             <h2 v-localize class="alert-heading h-sm">Failed to access disk usage details.</h2>
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <b-container v-if="currentUser">
             <b-row v-if="isConfigLoaded && config.enable_quotas" class="justify-content-md-center">
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
@@ -99,10 +100,10 @@ onMounted(async () => {
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
-            <b-alert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
+            <GAlert v-if="isRefreshing" class="refreshing-alert" variant="info" show>
                 <b-spinner small class="mr-2" />
                 <span v-localize>Recalculating disk usage... this may take some time, please check back later.</span>
-            </b-alert>
+            </GAlert>
             <b-button
                 v-else
                 id="refresh-disk-usage"

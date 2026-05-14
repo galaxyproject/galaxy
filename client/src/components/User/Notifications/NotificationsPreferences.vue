@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faCheckCircle, faExclamationCircle, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton } from "bootstrap-vue";
+import { BButton } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -16,6 +16,7 @@ import {
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import NotificationsCategorySettings from "./NotificationsCategorySettings.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -116,13 +117,13 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             You can manage push notifications preferences here.
         </div>
 
-        <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading notifications preferences" />
-        </BAlert>
+        </GAlert>
 
         <div v-else-if="showPreferences" class="notifications-preferences-body">
             <div v-for="category in categories" :key="category" class="card-container">
@@ -148,7 +149,7 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             </BButton>
         </div>
 
-        <BAlert
+        <GAlert
             v-else-if="!loading && browserSupportsPushNotifications() && pushNotificationsGranted"
             show
             variant="info"
@@ -156,12 +157,12 @@ function onChannelChange(category: NotificationCategory, channel: NotificationCh
             <FontAwesomeIcon :icon="faCheckCircle" />
             Push notifications are enabled. You can disable them by revoking the site notification privilege in your
             browser.
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-else-if="!loading" show variant="warning" class="my-2">
+        <GAlert v-else-if="!loading" show variant="warning" class="my-2">
             <FontAwesomeIcon :icon="faExclamationCircle" />
             Push notifications are not supported by this browser. You can still receive in-app notifications.
-        </BAlert>
+        </GAlert>
 
         <div v-if="!loading && config.enable_notification_system" class="d-flex justify-content-center">
             <AsyncButton :action="updateNotificationsPreferences" :icon="faSave" color="blue" size="medium">
