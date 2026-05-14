@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faPlus, faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
+import { BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -10,6 +10,7 @@ import { createBroadcast, updateBroadcast } from "@/api/notifications.broadcast"
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -149,15 +150,15 @@ if (props.id) {
     <div>
         <Heading h1 separator inline class="flex-grow-1"> {{ title }} </Heading>
 
-        <BAlert v-if="loading" show>
+        <GAlert v-if="loading" show>
             <LoadingSpan message="Loading broadcast" />
-        </BAlert>
+        </GAlert>
 
         <div v-else>
-            <BAlert v-if="props.id && broadcastPublished" id="broadcast-published-warning" variant="warning" show>
+            <GAlert v-if="props.id && broadcastPublished" id="broadcast-published-warning" variant="warning" show>
                 This broadcast has already been published. Some users may have already seen it and changing it now will
                 not affect them.
-            </BAlert>
+            </GAlert>
 
             <FormElement
                 id="broadcast-subject"
