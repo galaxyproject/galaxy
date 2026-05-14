@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faArrowRight, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
+import { BButton, BFormCheckbox, BFormInput } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
@@ -9,6 +9,7 @@ import Multiselect from "vue-multiselect";
 import { GalaxyApi } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -160,8 +161,8 @@ defineExpose({
 <template>
     <div class="d-flex flex-column">
         <div>
-            <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-            <BAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
+            <GAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</GAlert>
+            <GAlert v-else-if="successTargetIds.length > 0 && successTargetIds[0]" variant="success" show>
                 {{ successItemCount }} item{{ successItemCount === 1 ? "" : "s" }} copied to:
                 <span v-if="successHistoryName">
                     <RouterLink
@@ -178,7 +179,7 @@ defineExpose({
                         <span v-if="targetIndex != successTargetIds.length - 1">, </span>
                     </span>
                 </span>
-            </BAlert>
+            </GAlert>
             <Heading h1 separator size="lg">Copy Datasets and Collections</Heading>
         </div>
 

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computedAsync } from "@vueuse/core";
-import { BAlert, BImg } from "bootstrap-vue";
+import { BImg } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
 import { getAppRoot } from "@/onload/loadConfig";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 interface Props {
     historyDatasetId: string;
@@ -47,9 +49,9 @@ const toggleFluid = () => {
 
 <template>
     <div v-if="imageUrl" class="w-100">
-        <BAlert v-if="!isImage" variant="warning" show>
+        <GAlert v-if="!isImage" variant="warning" show>
             This dataset does not appear to be an image: {{ imageUrl }}.
-        </BAlert>
+        </GAlert>
         <div
             v-else
             class="image-wrapper"
@@ -61,7 +63,7 @@ const toggleFluid = () => {
             </div>
         </div>
     </div>
-    <BAlert v-else variant="warning" show>Image not found: {{ imageUrl }}.</BAlert>
+    <GAlert v-else variant="warning" show>Image not found: {{ imageUrl }}.</GAlert>
 </template>
 
 <style lang="scss" scoped>

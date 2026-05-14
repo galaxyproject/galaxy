@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import Vue, { computed, onMounted, ref, watch } from "vue";
 
 import {
@@ -30,6 +29,7 @@ import { USER_FILE_PREFIX } from "@/utils/url";
 import { Model } from "./model";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 const filesSources = useFileSources();
@@ -490,7 +490,7 @@ onMounted(() => {
         @onSelectAll="onSelectAll"
         @onUndo="onGoBack">
         <template v-slot:helper>
-            <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
+            <GAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
                 <strong>{{ config.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
@@ -499,7 +499,7 @@ onMounted(() => {
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
                     form with your email to create a password for your account.</span
                 >
-            </BAlert>
+            </GAlert>
         </template>
         <template v-slot:buttons>
             <GButton
