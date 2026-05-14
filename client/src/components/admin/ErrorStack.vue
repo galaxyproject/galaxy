@@ -1,23 +1,22 @@
 <template>
     <div>
-        <BAlert :show="messageVisible" variant="danger"> {{ messageText }} </BAlert>
+        <GAlert :show="messageVisible" variant="danger"> {{ messageText }} </GAlert>
 
-        <BAlert :show="infoVisible" variant="info"> No errors available. </BAlert>
+        <GAlert :show="infoVisible" variant="info"> No errors available. </GAlert>
 
         <GTable v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
     </div>
 </template>
 
 <script>
-import { BAlert } from "bootstrap-vue";
-
 import { getErrorStack } from "./AdminServices";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
-        BAlert,
+        GAlert,
         GTable,
     },
     data() {
