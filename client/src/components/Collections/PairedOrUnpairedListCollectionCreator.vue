@@ -2,7 +2,7 @@
 import { faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { ColDef, GetRowIdParams, IRowDragItem, NewValueParams } from "ag-grid-community";
-import { BAlert, BCol, BLink, BRow } from "bootstrap-vue";
+import { BCol, BLink, BRow } from "bootstrap-vue";
 import { getActivePinia } from "pinia";
 import { computed, nextTick, ref, watch } from "vue";
 
@@ -34,6 +34,7 @@ import {
 
 import AutoPairing from "./common/AutoPairing.vue";
 import PairedOrUnpairedListCreatorHelp from "./PairedOrUnpairedListCreatorHelp.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import CollectionCreator from "@/components/Collections/common/CollectionCreator.vue";
 
@@ -911,17 +912,17 @@ export default {
                 <div>
                     <BRow v-if="!flatLists">
                         <BCol>
-                            <BAlert show variant="info" dismissible>
+                            <GAlert show variant="info" dismissible>
                                 {{ summaryText }}
                                 If this isn't correct,
                                 <BLink style="font-weight: bold" @click="goToAutoPairing">configure auto-pairing</BLink
                                 >.
-                            </BAlert>
+                            </GAlert>
                         </BCol>
                     </BRow>
                     <BRow v-if="unpairedProblemDatasetCount > 0">
                         <BCol>
-                            <BAlert show variant="warning" dismissible>
+                            <GAlert show variant="warning" dismissible>
                                 {{ unpairedProblemDatasetCount }} unmatched datasets, these should be either dismissed
                                 or paired off.
                                 <BLink
@@ -930,7 +931,7 @@ export default {
                                     @click="dismissUnmatchedDatasets"
                                     >Click here to discard all remaining unpaired datasets.</BLink
                                 >
-                            </BAlert>
+                            </GAlert>
                         </BCol>
                     </BRow>
                     <div class="d-flex justify-content-end mb-1">

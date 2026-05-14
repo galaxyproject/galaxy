@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { ColDef } from "ag-grid-community";
-import { BAlert } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import type { SampleSheetColumnDefinitions } from "@/api";
@@ -12,6 +11,7 @@ import {
 import { useDetailedCollection } from "@/composables/datasetCollections";
 import { useAgGrid } from "@/composables/useAgGrid";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
@@ -95,9 +95,9 @@ const defaultColDef = ref<ColDef>({
 <template>
     <div>
         <LoadingSpan v-if="!collection" />
-        <BAlert v-else-if="collectionLoadError" variant="danger" show dismissible>
+        <GAlert v-else-if="collectionLoadError" variant="danger" show dismissible>
             {{ collectionLoadError }}
-        </BAlert>
+        </GAlert>
         <div v-else>
             <div :class="theme">
                 <AgGridVue
