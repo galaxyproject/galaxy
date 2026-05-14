@@ -22,6 +22,7 @@ from datetime import (
     timedelta,
     timezone,
 )
+from collections.abc import Callable
 from typing import (
     Any,
     Optional,
