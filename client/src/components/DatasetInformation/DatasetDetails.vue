@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { onMounted, onUnmounted, ref } from "vue";
 
@@ -12,6 +11,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { stateIsTerminal } from "@/utils/utils";
 
 import Heading from "../Common/Heading.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import InheritanceChain from "@/components/InheritanceChain//InheritanceChain.vue";
@@ -92,12 +92,12 @@ onUnmounted(() => {
     <div aria-labelledby="dataset-details-heading">
         <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
 
-        <BAlert v-if="loading" variant="info" show>
+        <GAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading dataset details..." />
-        </BAlert>
-        <BAlert v-else-if="datasetLoadingError" variant="error">
+        </GAlert>
+        <GAlert v-else-if="datasetLoadingError" variant="error">
             {{ datasetLoadingError }}
-        </BAlert>
+        </GAlert>
         <div v-else-if="dataset">
             <div v-if="dataset.creating_job" class="details">
                 <DatasetInformation :dataset="dataset" />

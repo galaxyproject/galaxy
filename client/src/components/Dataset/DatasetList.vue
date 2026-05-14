@@ -17,6 +17,7 @@ import localize from "@/utils/localization";
 
 import { useDatasetTableActions } from "./useDatasetTableActions";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import DelayedInput from "@/components/Common/DelayedInput.vue";
