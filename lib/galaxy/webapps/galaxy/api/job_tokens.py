@@ -1,8 +1,12 @@
 """API asynchronous job running mechanisms can use to get a fresh OIDC token."""
 
 import logging
+from typing import Optional
 
-from fastapi import Query
+from fastapi import (
+    Header,
+    Query,
+)
 from fastapi.responses import PlainTextResponse
 
 from galaxy import (
@@ -10,6 +14,7 @@ from galaxy import (
     util,
 )
 from galaxy.authnz.util import provider_name_to_backend
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import Job
 from galaxy.schema.fields import EncodedDatabaseIdField
@@ -36,17 +41,25 @@ class FastAPIJobTokens:
     def get_token(
         self,
         job_id: EncodedDatabaseIdField,
-        job_key: str = Query(
-            description=(
-                "A key used to authenticate this request as acting on behalf or a job runner for the specified job"
-            ),
-        ),
         provider: str = Query(
             description=("OIDC provider name"),
         ),
+        job_key: Optional[str] = Query(
+            None,
+            description=(
+                "A key used to authenticate this request as acting on behalf of a job runner for "
+                "the specified job. Prefer the ``Authorization: Bearer <key>`` header; this "
+                "query-string form is kept only for backward compatibility with older Pulsar "
+                "versions that embed the secret in the URL."
+            ),
+        ),
+        authorization: Optional[str] = Header(None),
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> str:
-        job = self.__authorize_job_access(trans, job_id, job_key)
+        supplied = resolve_job_key({"Authorization": authorization or ""}, job_key)
+        if not supplied:
+            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
+        job = self.__authorize_job_access(trans, job_id, supplied)
         trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, job.user)  # type: ignore[attr-defined]
         tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
         return tokens["id"]

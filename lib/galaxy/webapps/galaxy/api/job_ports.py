@@ -2,6 +2,7 @@
 related to running and queued jobs.
 """
 
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.job_execution.ports import JobPortsView
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api_anonymous_and_sessionless
@@ -43,4 +44,10 @@ class JobPortsAPIController(BaseGalaxyAPIController):
         :returns:   an okay message
         """
         payload.update(kwargs)
+        # Promote an Authorization: Bearer <token> header into the payload's
+        # ``job_key`` so the view's auth check sees it the same way as the
+        # legacy query/body form.
+        resolved = resolve_job_key(trans.request.headers, payload.get("job_key"))
+        if resolved is not None:
+            payload["job_key"] = resolved
         return self._job_ports_view.register_container_information(job_id, **payload)

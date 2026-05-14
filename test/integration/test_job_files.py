@@ -170,6 +170,20 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files)
         _assert_insufficient_permissions(response)
 
+    def test_read_via_authorization_header(self):
+        """``Authorization: Bearer <key>`` should be accepted in place of the
+        query-string ``job_key`` parameter."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        response = requests.get(
+            get_url,
+            params={"path": self.input_hda.get_file_name()},
+            headers={"Authorization": f"Bearer {job_key}"},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
     @property
     def sa_session(self):
         return self._app.model.session

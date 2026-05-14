@@ -12,6 +12,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.model import (
     Job,
@@ -195,14 +196,21 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         pass
 
     def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs):
-        for key in ["path", "job_key"]:
-            if key not in kwargs:
-                error_message = f"Job files action requires a valid '{key}'."
-                raise exceptions.ObjectAttributeMissingException(error_message)
+        if "path" not in kwargs:
+            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
+
+        # Resolve the per-job credential: Authorization: Bearer <token> wins;
+        # legacy callers that put ?job_key=<token> in the URL still work.
+        # ``trans.request`` is webob's ``Request`` at runtime, but
+        # ``ProvidesAppContext`` does not expose the attribute — hence the
+        # ignore. The runtime always has it.
+        supplied_job_key = resolve_job_key(trans.request.headers, kwargs.get("job_key"))  # type: ignore[attr-defined]
+        if not supplied_job_key:
+            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
 
         job_id = trans.security.decode_id(encoded_job_id)
         job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
+        if not util.safe_str_cmp(str(supplied_job_key), job_key):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
