@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { BAlert, BFormCheckbox } from "bootstrap-vue";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
 
 import { findDescendants, flattenValues, getAllValues, type Option, type Value } from "./utilities";
 
 import FormDrilldownList from "./FormDrilldownList.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -114,7 +115,7 @@ function setElementValues(oldArray: string[], newArray: string[], value: string)
                 :handle-click="handleClick" />
         </div>
         <div v-else>
-            <BAlert show variant="info" class="mt-2"> No options available. </BAlert>
+            <GAlert show variant="info" class="mt-2"> No options available. </GAlert>
         </div>
     </div>
 </template>

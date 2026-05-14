@@ -1,12 +1,12 @@
 <template>
     <UrlDataProvider v-slot="{ result: config, loading }" :url="url" @error="onError">
         <div v-if="!loading" :id="id">
-            <b-alert v-if="config.message" :variant="configMessageVariant(config)" show>
+            <GAlert v-if="config.message" :variant="configMessageVariant(config)" show>
                 {{ config.message }}
-            </b-alert>
-            <b-alert v-if="messageText" :variant="messageVariant" show dismissible @dismissed="messageText = null">
+            </GAlert>
+            <GAlert v-if="messageText" :variant="messageVariant" show dismissible @dismissed="messageText = null">
                 {{ messageText }}
-            </b-alert>
+            </GAlert>
             <FormCard :title="configTitle(config)" :icon="configIcon(config)">
                 <template v-slot:body>
                     <FormDisplay :inputs="config.inputs" :replace-params="replaceParams" @onChange="onChange" />
@@ -31,12 +31,14 @@ import { withPrefix } from "@/utils/redirect";
 
 import { submitData } from "./services";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 
 export default {
     components: {
+        GAlert,
         FormCard,
         FormDisplay,
         UrlDataProvider,
