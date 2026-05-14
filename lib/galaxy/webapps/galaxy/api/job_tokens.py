@@ -67,7 +67,7 @@ class FastAPIJobTokens:
         tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
         return tokens["id"]
 
-    def __authorize_job_access(self, trans, encoded_job_id, job_key):
+    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, job_key: str) -> Job:
         session = trans.sa_session
         job_id = trans.security.decode_id(encoded_job_id)
         job = session.get(Job, job_id)

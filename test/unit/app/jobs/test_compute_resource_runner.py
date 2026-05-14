@@ -7,7 +7,10 @@ isolation. The Pulsar client factory is injected via the runner's
 directly (state verification, not interaction verification).
 """
 
-from typing import Any
+from typing import (
+    Any,
+    Optional,
+)
 from unittest.mock import MagicMock
 
 import pytest
@@ -167,7 +170,14 @@ class _FakeClientManagerFactory:
         return cm
 
 
-def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None, compute_resource_manager=None):
+def _make_runner(
+    *,
+    resources_by_id: dict[int, "_StubResource"],
+    vault: "_StubVault",
+    runner_params: Optional[dict[str, Any]] = None,
+    factory: Optional["_FakeClientManagerFactory"] = None,
+    compute_resource_manager: Optional["_StubByocManager"] = None,
+) -> PulsarMQBYOCJobRunner:
     """Build a PulsarMQBYOCJobRunner bypassing its inherited __init__.
 
     ``factory`` is the ``client_manager_factory`` that __init__ would
