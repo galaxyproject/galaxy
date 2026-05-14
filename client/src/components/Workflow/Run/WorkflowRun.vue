@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 import { useRouter } from "vue-router/composables";
@@ -17,6 +17,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { WorkflowRunModel } from "./model";
 import { getRunData } from "./services";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowRunForm from "@/components/Workflow/Run/WorkflowRunForm.vue";
 import WorkflowRunFormSimple from "@/components/Workflow/Run/WorkflowRunFormSimple.vue";
@@ -217,20 +218,20 @@ defineExpose({
 
 <template>
     <span>
-        <BAlert v-if="workflowError" variant="danger" show>
+        <GAlert v-if="workflowError" variant="danger" show>
             <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ workflowError }}
-        </BAlert>
+        </GAlert>
         <span v-else>
-            <BAlert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Loading workflow run data" />
-            </BAlert>
+            </GAlert>
             <WorkflowRunSuccess
                 v-else-if="invocations.length > 0"
                 :invocations="invocations"
                 :workflow-name="workflowName" />
             <div v-else class="h-100">
-                <BAlert
+                <GAlert
                     v-if="hasUpgradeMessages || hasStepVersionChanges"
                     class="mb-4"
                     variant="warning"
@@ -243,16 +244,16 @@ defineExpose({
                     <RouterLink v-if="isOwner" :to="editorLink">click here to edit and review the issues</RouterLink>
                     <BLink v-else @click="onImport">click here to import the workflow and review the issues</BLink>
                     <span>before running this workflow.</span>
-                </BAlert>
+                </GAlert>
                 <div v-else class="h-100">
-                    <BAlert
+                    <GAlert
                         v-if="submissionError"
                         class="mb-4"
                         variant="danger"
                         data-description="workflow run error"
                         show>
                         Workflow submission failed: {{ submissionError }}
-                    </BAlert>
+                    </GAlert>
                     <WorkflowRunFormSimple
                         v-if="fromVariant === 'simple'"
                         :model="workflowModel"
