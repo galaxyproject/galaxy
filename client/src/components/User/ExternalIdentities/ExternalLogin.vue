@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
-import { BAlert, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -16,6 +16,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -165,9 +166,9 @@ function getIdpPreference() {
 
 <template>
     <div class="h-100">
-        <BAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
+        <GAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
-        </BAlert>
+        </GAlert>
 
         <div :class="{ 'd-flex h-100': !props.columnDisplay }">
             <BForm v-if="cILogonConfigured" id="externalLogin" class="cilogon">
