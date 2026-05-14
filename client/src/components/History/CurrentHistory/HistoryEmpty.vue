@@ -2,10 +2,11 @@
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useEventBus } from "@vueuse/core";
-import { BAlert } from "bootstrap-vue";
 
 import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import localize from "@/utils/localization";
+
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const { emit } = useEventBus<string>("open-tool-section");
 
@@ -32,7 +33,7 @@ function clickDataLink() {
 </script>
 
 <template>
-    <BAlert show>
+    <GAlert show>
         <h4 id="empty-history-message" class="mb-1">
             <FontAwesomeIcon :icon="faInfoCircle" />
             <span>{{ localize(message) }}</span>
@@ -43,5 +44,5 @@ function clickDataLink() {
             <span v-localize>or</span>
             <a v-localize href="#" @click.prevent="clickDataLink">get data from an external source</a>.
         </p>
-    </BAlert>
+    </GAlert>
 </template>

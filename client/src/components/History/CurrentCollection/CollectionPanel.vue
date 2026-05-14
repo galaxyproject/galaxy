@@ -23,6 +23,7 @@ import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
 import CollectionOperations from "./CollectionOperations.vue";
 import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ContentItem from "@/components/History/Content/ContentItem.vue";
 import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
@@ -146,13 +147,13 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
-                    <b-alert
+                    <GAlert
                         v-if="collectionElements.length === 0"
                         class="m-2"
                         :variant="populatedStateMsg ? 'danger' : 'info'"
                         show>
                         {{ populatedStateMsg || "This is an empty collection." }}
-                    </b-alert>
+                    </GAlert>
                     <ListingLayout
                         v-else
                         data-key="element_index"

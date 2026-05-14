@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BFormRadioGroup } from "bootstrap-vue";
+import { BFormRadioGroup } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -12,6 +12,7 @@ import localize from "@/utils/localization";
 import GForm from "@/components/BaseComponents/Form/GForm.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -112,16 +113,16 @@ async function copy() {
         :close-on-ok="false"
         @ok="copy">
         <transition name="fade">
-            <BAlert v-localize :show="isAnonymous" variant="warning">
+            <GAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you log in or register, you will lose your current history after copying
                 this history. You can <a href="/login/start">log in or register here</a>.
-            </BAlert>
+            </GAlert>
         </transition>
 
         <transition name="fade">
-            <BAlert v-if="loading" show>
+            <GAlert v-if="loading" show>
                 <LoadingSpan message="Copying History" />
-            </BAlert>
+            </GAlert>
         </transition>
 
         <transition>

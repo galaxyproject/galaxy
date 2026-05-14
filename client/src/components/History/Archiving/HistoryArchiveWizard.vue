@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BCard } from "bootstrap-vue";
+import { BCard } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
@@ -12,6 +12,7 @@ import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
 import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
@@ -92,19 +93,19 @@ const breadcrumbItems = computed(() => [
         <BreadcrumbHeading :items="breadcrumbItems" />
 
         <Alert v-if="loadError" :message="loadError" variant="error" />
-        <BAlert v-else-if="!history" show>
+        <GAlert v-else-if="!history" show>
             <LoadingSpan spinner-only />
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
+        <GAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the
             <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-        </BAlert>
+        </GAlert>
         <div v-else-if="history">
-            <BAlert show variant="info">
+            <GAlert show variant="info">
                 Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
                 <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-            </BAlert>
+            </GAlert>
 
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>

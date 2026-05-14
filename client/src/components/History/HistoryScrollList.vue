@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArchive, faBurn, faColumns, faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
-import { BAlert, BBadge } from "bootstrap-vue";
+import { BBadge } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -13,6 +13,7 @@ import { useUserStore } from "@/stores/userStore";
 
 import { HistoriesFilters } from "./HistoriesFilters";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GCard from "@/components/Common/GCard.vue";
 import ScrollList from "@/components/ScrollList/ScrollList.vue";
 
@@ -300,7 +301,7 @@ function getHistoryTitleBadges(history: HistorySummary) {
             <BBadge v-if="props.filter && !validFilter" class="alert-warning w-100 mb-2">
                 Search term is too short
             </BBadge>
-            <BAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</BAlert>
+            <GAlert v-else-if="!busy && hasNoResults" class="mb-2" variant="danger" show>No histories found.</GAlert>
         </template>
 
         <template v-slot:item="{ item: history }">

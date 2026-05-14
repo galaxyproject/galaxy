@@ -21,7 +21,7 @@
 
 import { faBurn, faColumns, faPlus, faTags, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
+import { BButton, BNav, BNavItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -44,6 +44,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getHistoryListFilters } from "./historyList";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GLink from "@/components/BaseComponents/GLink.vue";
 import GOverlay from "@/components/BaseComponents/GOverlay.vue";
@@ -629,21 +630,21 @@ onMounted(async () => {
         </div>
 
         <div v-if="loading" class="h-100">
-            <BAlert variant="info" show>
+            <GAlert variant="info" show>
                 <LoadingSpan message="Loading histories" />
-            </BAlert>
+            </GAlert>
         </div>
         <div v-else-if="!loading && !overlay && noItems" class="h-100">
-            <BAlert id="history-list-empty" variant="info" show>
+            <GAlert id="history-list-empty" variant="info" show>
                 No histories found. You may create or import new histories using the buttons above.
-            </BAlert>
+            </GAlert>
         </div>
         <span v-else-if="!loading && !overlay && (noResults || hasInvalidFilters)" class="h-100">
-            <BAlert v-if="!hasInvalidFilters" id="no-history-found" variant="info" show>
+            <GAlert v-if="!hasInvalidFilters" id="no-history-found" variant="info" show>
                 No histories found matching: <span class="font-weight-bold">{{ filterText }}</span>
-            </BAlert>
+            </GAlert>
 
-            <BAlert v-else id="no-history-found-invalid" variant="danger" show>
+            <GAlert v-else id="no-history-found-invalid" variant="danger" show>
                 <Heading h4 inline size="sm" class="flex-grow-1 mb-2">Invalid filters in query:</Heading>
                 <ul>
                     <li v-for="[invalidKey, value] in Object.entries(invalidFilters)" :key="invalidKey">
@@ -659,7 +660,7 @@ onMounted(async () => {
                     @click="filterText = `'${filterText}'`">
                     Match the exact query provided
                 </GLink>
-            </BAlert>
+            </GAlert>
         </span>
         <GOverlay
             v-else

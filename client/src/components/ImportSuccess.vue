@@ -3,6 +3,7 @@ import { computed, watch } from "vue";
 
 import { useJobStore } from "@/stores/jobStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import SwitchToHistoryLink from "@/components/History/SwitchToHistoryLink.vue";
 
 interface Props {
@@ -32,7 +33,7 @@ watch(() => props.jobId, init, { immediate: true });
 </script>
 
 <template>
-    <b-alert show variant="success" dismissible @dismissed="emit('dismissed')">
+    <GAlert show variant="success" dismissible @dismissed="emit('dismissed')">
         <span class="mb-1 h-sm">Done!</span>
         <p v-if="historyId">
             {{ identifierTextCapitalized }} imported into
@@ -45,5 +46,5 @@ watch(() => props.jobId, init, { immediate: true });
             {{ identifierTextCapitalized }} imported, check out
             <router-link :to="linkToList">your {{ identifierTextPlural }}</router-link>
         </p>
-    </b-alert>
+    </GAlert>
 </template>
