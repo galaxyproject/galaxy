@@ -73,14 +73,17 @@ def test_complete_registration_against_real_relay(relay_against_keycloak):
         client.create_or_verify_topic(access_token, f"{prefix}_{sub}")
 
     # 5. Both refresh tokens still work independently.
-    with httpx.Client(timeout=10.0) as client:
-        rotated_primary = client.post(f"{relay}/auth/token/refresh", json={"refresh_token": primary})
+    # Use a distinct name from the outer ``client: HttpRelayClient`` so
+    # mypy can narrow the with-block to ``httpx.Client`` rather than
+    # complaining about a type rebind.
+    with httpx.Client(timeout=10.0) as http_client:
+        rotated_primary = http_client.post(f"{relay}/auth/token/refresh", json={"refresh_token": primary})
         assert rotated_primary.status_code == 200, rotated_primary.text
 
         # Replay of the now-rotated primary kills *primary's* chain only.
-        client.post(f"{relay}/auth/token/refresh", json={"refresh_token": primary})
+        http_client.post(f"{relay}/auth/token/refresh", json={"refresh_token": primary})
 
-        rotated_secondary = client.post(f"{relay}/auth/token/refresh", json={"refresh_token": secondary})
+        rotated_secondary = http_client.post(f"{relay}/auth/token/refresh", json={"refresh_token": secondary})
         assert (
             rotated_secondary.status_code == 200
         ), "Secondary refresh failed after primary chain was killed — pair-issuance independence regression!"

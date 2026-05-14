@@ -414,7 +414,7 @@ def test_downgrade_no_op_when_capabilities_for_returns_none():
 
 def test_downgrade_fills_jobs_directory_when_unset():
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
-    params = {"pulsar_byoc_resource_id": 42}
+    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42}
     runner._apply_capability_downgrades(params, user)
     assert params["jobs_directory"] == "/srv/staging"
 
@@ -468,8 +468,9 @@ def test_downgrade_no_op_when_snapshot_has_no_staging_directory():
     ],
 )
 def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, available_kw, caplog):
-    runner, user, _ = _runner_with_snapshot(_make_snapshot(**{available_kw: False}))
-    params = {"pulsar_byoc_resource_id": 42, param_name: True}
+    snapshot_kwargs: dict[str, Any] = {available_kw: False}
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
+    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42, param_name: True}
     runner._apply_capability_downgrades(params, user)
     assert params[param_name] is False
     assert any(f"requested {param_name}=true" in r.message for r in caplog.records)
@@ -484,8 +485,9 @@ def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, availabl
     ],
 )
 def test_downgrade_preserves_runtime_flag_when_remote_has_it(param_name, available_kw):
-    runner, user, _ = _runner_with_snapshot(_make_snapshot(**{available_kw: True}))
-    params = {"pulsar_byoc_resource_id": 42, param_name: True}
+    snapshot_kwargs: dict[str, Any] = {available_kw: True}
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
+    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42, param_name: True}
     runner._apply_capability_downgrades(params, user)
     assert params[param_name] is True
 

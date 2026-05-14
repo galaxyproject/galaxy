@@ -59,7 +59,7 @@ def _response(*messages: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _msg(payload: Optional[dict[str, Any]]) -> dict[str, Any]:
+def _msg(payload: Any) -> dict[str, Any]:
     return {
         "message_id": "1700000000-0",
         "topic": "pulsar_capabilities",
@@ -175,6 +175,7 @@ def test_cache_expires_after_ttl():
     # Advance past the TTL.
     fake_time[0] = 0.10
     out = cache.get("https://r", "m", fetch)
+    assert out is not None
     assert out["v"] == 2
     assert len(calls) == 2
 

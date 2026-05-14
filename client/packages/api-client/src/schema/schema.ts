@@ -4694,6 +4694,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pulsar_byoc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the requesting user's BYOC Pulsar resources */
+        get: operations["index_api_pulsar_byoc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pulsar_byoc/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a BYOC Pulsar registration (host-side callback) */
+        post: operations["complete_registration_api_pulsar_byoc_bootstrap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pulsar_byoc/registration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a BYOC Pulsar registration */
+        post: operations["start_registration_api_pulsar_byoc_registration_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pulsar_byoc/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of the requesting user's BYOC Pulsar resources */
+        get: operations["show_api_pulsar_byoc__resource_id__get"];
+        put?: never;
+        post?: never;
+        /** Disable one of the requesting user's BYOC Pulsar resources */
+        delete: operations["delete_api_pulsar_byoc__resource_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pulsar_byoc/{resource_id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fully delete a disabled BYOC resource (vault secret + DB row) */
+        post: operations["purge_api_pulsar_byoc__resource_id__purge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/quotas": {
         parameters: {
             query?: never;
@@ -8290,6 +8376,38 @@ export interface components {
              * @default false
              */
             value: boolean | null;
+        };
+        /**
+         * BootstrapPayload
+         * @description Body of ``POST /api/pulsar_byoc/bootstrap``, sent by the user's host
+         *     after the device-flow login. Authenticates via the bootstrap_token.
+         */
+        BootstrapPayload: {
+            /**
+             * Bootstrap Token
+             * @description The token from RegistrationTicket.
+             */
+            bootstrap_token: string;
+            /**
+             * Manager Name
+             * @description Relay user identifier (``sub`` claim); becomes the BYOC manager name. Validated against the access token decoded from a refresh of ``refresh_token``.
+             */
+            manager_name: string;
+            /**
+             * Refresh Token
+             * @description Relay refresh token earmarked for Galaxy (the secondary token from the device-flow pair). Stored in the user's vault and rotated by the BYOC runner.
+             */
+            refresh_token: string;
+            /**
+             * Relay Topic Prefix
+             * @description Optional relay topic prefix.
+             */
+            relay_topic_prefix?: string | null;
+            /**
+             * Relay Url
+             * @description Relay URL the user's Pulsar bound to.
+             */
+            relay_url: string;
         };
         /** BroadcastNotificationContent */
         BroadcastNotificationContent: {
@@ -20789,6 +20907,56 @@ export interface components {
              */
             model_store_format: components["schemas"]["ModelStoreFormat"];
         };
+        /**
+         * PulsarByocResourceSummary
+         * @description User-visible view of a registered Pulsar compute resource.
+         *
+         *     The relay refresh token is intentionally absent — it lives in the
+         *     Galaxy vault and is never exposed through the API.
+         */
+        PulsarByocResourceSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             */
+            create_time: string;
+            /**
+             * Id
+             * @description Encoded ID of the BYOC resource.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Last Seen Time
+             * @description Last time the relay observed this resource.
+             */
+            last_seen_time?: string | null;
+            /**
+             * Manager Name
+             * @description Globally unique relay user identifier; equals the JWT ``sub`` claim from the device-flow login and is used as the Pulsar manager name (relay topics are ``job_setup_<manager_name>`` etc.).
+             */
+            manager_name: string;
+            /**
+             * Relay Topic Prefix
+             * @description Optional relay topic prefix, when the operator namespaces topics.
+             */
+            relay_topic_prefix?: string | null;
+            /**
+             * Relay Url
+             * @description Base URL of the pulsar-relay this resource is wired to.
+             */
+            relay_url: string;
+            /**
+             * Status
+             * @description Lifecycle state: pending|active|disabled|deleted.
+             */
+            status: string;
+            /**
+             * Update Time
+             * Format: date-time
+             */
+            update_time: string;
+        };
         /** QuotaDetails */
         QuotaDetails: {
             /**
@@ -21092,6 +21260,36 @@ export interface components {
              * @enum {string}
              */
             type: "regex";
+        };
+        /**
+         * RegistrationTicket
+         * @description Returned by ``POST /api/pulsar_byoc/registration``.
+         *
+         *     Carries the one-shot bootstrap token the user passes to
+         *     ``pulsar-config register-with-galaxy`` so the host-side flow can call
+         *     back into Galaxy with the freshly-minted secondary refresh token.
+         */
+        RegistrationTicket: {
+            /**
+             * Bootstrap Token
+             * @description Single-use, short-TTL opaque token. Authenticates the subsequent ``POST /api/pulsar_byoc/bootstrap`` callback.
+             */
+            bootstrap_token: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * One Liner
+             * @description Convenience command — the user pastes this onto their Pulsar host to complete bootstrap.
+             */
+            one_liner: string;
+            /**
+             * Relay Url
+             * @description Operator-configured relay URL the user's Pulsar should bind to.
+             */
+            relay_url: string;
         };
         /** ReloadFeedback */
         ReloadFeedback: {
@@ -45881,6 +46079,261 @@ export interface operations {
                 content: {
                     "application/json": unknown;
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    index_api_pulsar_byoc_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PulsarByocResourceSummary"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    complete_registration_api_pulsar_byoc_bootstrap_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BootstrapPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PulsarByocResourceSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    start_registration_api_pulsar_byoc_registration_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTicket"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    show_api_pulsar_byoc__resource_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Numeric ID of a BYOC resource. */
+                resource_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PulsarByocResourceSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    delete_api_pulsar_byoc__resource_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Numeric ID of a BYOC resource. */
+                resource_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    purge_api_pulsar_byoc__resource_id__purge_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description Numeric ID of a BYOC resource. */
+                resource_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
