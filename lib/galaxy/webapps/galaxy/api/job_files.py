@@ -34,6 +34,47 @@ from . import BaseGalaxyAPIController
 log = logging.getLogger(__name__)
 
 
+def _is_byoc_job(job: Job) -> bool:
+    """A job is "BYOC" for the purposes of the write allowlist when its
+    destination params include a ``pulsar_byoc_resource_id`` — i.e. the
+    compute is user-controlled and Galaxy must not trust the job's working
+    directory the same way it would for a Galaxy-operated Pulsar."""
+    params = job.destination_params or {}
+    return params.get("pulsar_byoc_resource_id") is not None
+
+
+def _byoc_writable_working_dir_path(job: Job, path: str, app: MinimalManagerApp) -> bool:
+    """BYOC write allowlist: a much tighter subset of the job's working
+    directory than the legacy rule.
+
+    Allowed:
+      * Anything under ``<job_dir>/working/`` — the tool's CWD. Discovered
+        outputs, ``galaxy.json`` (tool-provided metadata, consumed by
+        ``output_collect``), and tool stdout/stderr all live here.
+
+    Specifically *not* allowed (each of these used to be writable under the
+    legacy rule):
+      * ``<job_dir>/metadata/outputs_populated/**`` — the model-import-store
+        results of remote extended-metadata. Galaxy applies this to existing
+        DB rows on edit, so trusting a BYOC node to write here is a
+        cross-user mutation primitive. BYOC dispatch refuses
+        ``remote_metadata=True`` for the same reason — this is the file-gate
+        backstop.
+      * ``<job_dir>/container_runtime.json`` — interactive-tool port
+        registration. Force callers through ``POST /api/jobs/{id}/ports``
+        so the auth check and audit logging are in one place.
+      * ``<job_dir>/tool_script.sh`` and ``<job_dir>/configs/**`` — the
+        tool script and its config files are produced by Galaxy before
+        dispatch; a BYOC node has no legitimate reason to rewrite them.
+      * Anything else at the working-directory root.
+    """
+    job_dir = os.path.realpath(
+        app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
+    )
+    tool_cwd = os.path.join(job_dir, "working")
+    return util.in_directory(os.path.realpath(path), tool_cwd)
+
+
 class JobFilesAPIController(BaseGalaxyAPIController):
     """This job files controller allows remote job running mechanisms to
     read and modify the current state of files for queued and running jobs.
@@ -243,6 +284,11 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         legitimately needs to stage: its working directory, its input
         dataset files (and extra-files paths), and its output dataset paths.
         """
+        # Defense in depth: Galaxy never places a symlink at a path a runner
+        # is supposed to read, so refusing them costs nothing and removes
+        # one class of "open through a foreign symlink" surprise.
+        if os.path.islink(path):
+            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
         if self.__in_working_directory(job, path, trans.app):
             return
         if self.__is_job_dataset_path(job, path, include_inputs=True):
@@ -250,18 +296,29 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
 
     def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
-        """Verify an idealized job runner should actually be able to write to
-        the specified path - it must be a dataset output, a dataset "extra
-        file", or a some place in the working directory of this job.
+        """Verify a job runner is allowed to write to the requested path.
 
-        Would like similar checks for reading the unstructured nature of loc
-        files make this very difficult. (See abandoned work here
-        https://gist.github.com/jmchilton/9103619.)
+        The legacy rule was "anywhere under the job working directory or to
+        any output dataset path of this job". For BYOC that was too generous:
+        the working directory contains files Galaxy reads back after the job
+        (``container_runtime.json``, ``metadata/outputs_populated/**``, the
+        tool script) and a write into any of those is a privilege-escalation
+        primitive against the Galaxy server. BYOC jobs therefore get a tight
+        allowlist (see :func:`_byoc_writable_working_dir_path`); everything
+        else keeps the historical broad rule.
         """
-        if self.__in_working_directory(job, path, trans.app):
-            return
+        # Same symlink defense as on the read path — a path that resolves
+        # through a symlink is rejected outright.
+        if os.path.islink(path):
+            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
         if self.__is_job_dataset_path(job, path, include_inputs=False):
             return
+        if _is_byoc_job(job):
+            if _byoc_writable_working_dir_path(job, path, trans.app):
+                return
+        else:
+            if self.__in_working_directory(job, path, trans.app):
+                return
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
 
     def __is_job_dataset_path(self, job: Job, path: str, include_inputs: bool) -> bool:
