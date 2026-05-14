@@ -46766,12 +46766,13 @@ export interface operations {
     get_token_api_jobs__job_id__oidc_tokens_get: {
         parameters: {
             query: {
-                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
-                job_key: string;
                 /** @description OIDC provider name */
                 provider: string;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the specified job. Prefer the ``Authorization: Bearer <key>`` header; this query-string form is kept only for backward compatibility with older Pulsar versions that embed the secret in the URL. */
+                job_key?: string | null;
             };
             header?: {
+                authorization?: string | null;
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };
