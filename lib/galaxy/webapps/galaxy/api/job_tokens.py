@@ -9,19 +9,13 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 
-from galaxy import (
-    exceptions,
-    util,
-)
 from galaxy.authnz.util import provider_name_to_backend
-from galaxy.job_execution.job_security import (
-    job_token_kind_for_job,
-    resolve_job_key,
-)
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.model import Job
+from galaxy.managers.job_files import JobFilesManager
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
+    depends,
     DependsOnTrans,
     Router,
 )
@@ -32,6 +26,8 @@ router = Router(tags=["remote files"])
 
 @router.cbv
 class FastAPIJobTokens:
+    manager: JobFilesManager = depends(JobFilesManager)
+
     @router.get(
         "/api/jobs/{job_id}/oidc-tokens",
         summary="Get a fresh OIDC token",
@@ -60,26 +56,8 @@ class FastAPIJobTokens:
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> str:
         supplied = resolve_job_key(authorization, job_key)
-        if not supplied:
-            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
-        job = self.__authorize_job_access(trans, job_id, supplied)
+        job = self.manager.authorize_for_token(job_id, supplied)
+        assert job.user is not None
         trans.app.authnz_manager.refresh_expiring_oidc_tokens(trans, job.user)  # type: ignore[attr-defined]
         tokens = job.user.get_oidc_tokens(provider_name_to_backend(provider))
         return tokens["id"]
-
-    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, job_key: str) -> Job:
-        session = trans.sa_session
-        job_id = trans.security.decode_id(encoded_job_id)
-        job = session.get(Job, job_id)
-        if job is None:
-            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
-
-        expected = trans.security.encode_id(job_id, kind=job_token_kind_for_job(job))
-        if not util.safe_str_cmp(expected, job_key):
-            raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
-
-        # Verify job is active
-        if job.state not in Job.non_ready_states:
-            error_message = "Attempting to get oidc token for a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
-        return job

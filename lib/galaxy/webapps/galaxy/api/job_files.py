@@ -6,73 +6,24 @@ import logging
 import os
 import re
 import shutil
-from typing import Union
 
 from galaxy import (
     exceptions,
     util,
 )
-from galaxy.job_execution.job_security import (
-    job_files_kind_for_job,
-    resolve_job_key,
-)
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.model import (
-    Job,
-    JobToInputDatasetAssociation,
-    JobToInputLibraryDatasetAssociation,
-    JobToOutputDatasetAssociation,
-    JobToOutputLibraryDatasetAssociation,
-)
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.managers.job_files import JobFilesManager
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from . import BaseGalaxyAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
-
-
-def _is_byoc_job(job: Job) -> bool:
-    """A job is "BYOC" for the purposes of the write allowlist when its
-    destination params include a ``pulsar_byoc_resource_id`` — i.e. the
-    compute is user-controlled and Galaxy must not trust the job's working
-    directory the same way it would for a Galaxy-operated Pulsar."""
-    params = job.destination_params or {}
-    return params.get("pulsar_byoc_resource_id") is not None
-
-
-def _byoc_writable_working_dir_path(job: Job, path: str, app: MinimalManagerApp) -> bool:
-    """BYOC write allowlist: a much tighter subset of the job's working
-    directory than the legacy rule.
-
-    Allowed:
-      * Anything under ``<job_dir>/working/`` — the tool's CWD. Discovered
-        outputs, ``galaxy.json`` (tool-provided metadata, consumed by
-        ``output_collect``), and tool stdout/stderr all live here.
-
-    Specifically *not* allowed (each of these used to be writable under the
-    legacy rule):
-      * ``<job_dir>/metadata/outputs_populated/**`` — the model-import-store
-        results of remote extended-metadata. Galaxy applies this to existing
-        DB rows on edit, so trusting a BYOC node to write here is a
-        cross-user mutation primitive. BYOC dispatch refuses
-        ``remote_metadata=True`` for the same reason — this is the file-gate
-        backstop.
-      * ``<job_dir>/container_runtime.json`` — interactive-tool port
-        registration. Force callers through ``POST /api/jobs/{id}/ports``
-        so the auth check and audit logging are in one place.
-      * ``<job_dir>/tool_script.sh`` and ``<job_dir>/configs/**`` — the
-        tool script and its config files are produced by Galaxy before
-        dispatch; a BYOC node has no legitimate reason to rewrite them.
-      * Anything else at the working-directory root.
-    """
-    job_dir = os.path.realpath(
-        app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
-    )
-    tool_cwd = os.path.join(job_dir, "working")
-    return util.in_directory(os.path.realpath(path), tool_cwd)
 
 
 class JobFilesAPIController(BaseGalaxyAPIController):
@@ -86,6 +37,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     low-level unfiltered files and such authorization would break Galaxy's
     security model for tool execution.
     """
+
+    manager: JobFilesManager = depends(JobFilesManager)
 
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans: ProvidesAppContext, job_id: str, **kwargs):
@@ -110,9 +63,16 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     binary
         :returns:   contents of file
         """
-        job = self.__authorize_job_access(trans, job_id, **kwargs)
+        if "path" not in kwargs:
+            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
+        # ``trans.request`` is a webob ``Request`` at runtime — ``request.headers``
+        # is webob-only and not part of the ``GalaxyAbstractRequest`` interface
+        # that ``ProvidesAppContext`` declares, hence the ignore.
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied = resolve_job_key(auth_header, kwargs.get("job_key"))
+        job = self.manager.authorize_for_files(job_id, supplied)
         path = kwargs["path"]
-        self.__check_job_can_read_path(trans, job, path)
+        self.manager.assert_readable(job, path)
         try:
             return open(path, "rb")
         except FileNotFoundError:
@@ -151,11 +111,13 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   an okay message
         """
-        job = self.__authorize_job_access(trans, job_id, **payload)
         path = payload.get("path")
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
-        self.__check_job_can_write_to_path(trans, job, path)
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied = resolve_job_key(auth_header, payload.get("job_key"))
+        job = self.manager.authorize_for_files(job_id, supplied)
+        self.manager.assert_writable(job, path)
 
         # Is this writing an unneeded file? Should this just copy in Python?
         if "__file_path" in payload:
@@ -241,122 +203,3 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         tus_patch.
         """
         pass
-
-    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs) -> Job:
-        if "path" not in kwargs:
-            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
-
-        # Resolve the per-job credential: Authorization: Bearer <token> wins;
-        # legacy callers that put ?job_key=<token> in the URL still work.
-        # ``trans.request`` is webob's ``Request`` at runtime, but
-        # ``ProvidesAppContext`` does not expose the attribute — hence the
-        # ignore. The runtime always has it.
-        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
-        supplied_job_key = resolve_job_key(auth_header, kwargs.get("job_key"))
-        if not supplied_job_key:
-            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
-
-        job_id = trans.security.decode_id(encoded_job_id)
-        job = trans.sa_session.get(Job, job_id)
-        if job is None:
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
-
-        # Pick the kind from the job's BYOC binding (if any). Verifying with
-        # the wrong kind yields a plain mismatch, so callers see the same
-        # 403 we'd give for a forged key — without leaking the kind itself.
-        expected = trans.security.encode_id(job_id, kind=job_files_kind_for_job(job))
-        if not util.safe_str_cmp(str(supplied_job_key), expected):
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
-
-        # Verify job is active. Don't update the contents of complete jobs.
-        if job.state not in Job.non_ready_states:
-            error_message = "Attempting to read or modify the files of a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
-        return job
-
-    def __check_job_can_read_path(self, trans: ProvidesAppContext, job: Job, path: str) -> None:
-        """Verify a job runner is allowed to read the requested path.
-
-        Prior to this check, ``index`` would ``open()`` any path the caller
-        named, gated only on possessing a valid ``job_key``. In the BYOC
-        threat model the credential lives on user-controlled compute, so the
-        endpoint effectively offered arbitrary-file-read on the Galaxy server
-        for the lifetime of the job. We now restrict reads to files this job
-        legitimately needs to stage: its working directory, its input
-        dataset files (and extra-files paths), and its output dataset paths.
-        """
-        # Defense in depth: Galaxy never places a symlink at a path a runner
-        # is supposed to read, so refusing them costs nothing and removes
-        # one class of "open through a foreign symlink" surprise.
-        if os.path.islink(path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
-        if self.__in_working_directory(job, path, trans.app):
-            return
-        if self.__is_job_dataset_path(job, path, include_inputs=True):
-            return
-        raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
-
-    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str) -> None:
-        """Verify a job runner is allowed to write to the requested path.
-
-        The legacy rule was "anywhere under the job working directory or to
-        any output dataset path of this job". For BYOC that was too generous:
-        the working directory contains files Galaxy reads back after the job
-        (``container_runtime.json``, ``metadata/outputs_populated/**``, the
-        tool script) and a write into any of those is a privilege-escalation
-        primitive against the Galaxy server. BYOC jobs therefore get a tight
-        allowlist (see :func:`_byoc_writable_working_dir_path`); everything
-        else keeps the historical broad rule.
-        """
-        # Same symlink defense as on the read path — a path that resolves
-        # through a symlink is rejected outright.
-        if os.path.islink(path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
-        if self.__is_job_dataset_path(job, path, include_inputs=False):
-            return
-        if _is_byoc_job(job):
-            if _byoc_writable_working_dir_path(job, path, trans.app):
-                return
-        else:
-            if self.__in_working_directory(job, path, trans.app):
-                return
-        raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
-
-    def __is_job_dataset_path(self, job: Job, path: str, include_inputs: bool) -> bool:
-        """True if ``path`` is one of this job's dataset files or lives inside
-        one of its dataset extra-files directories.
-
-        ``include_inputs`` is True for reads (so a job runner can fetch the
-        inputs it needs to stage) and False for writes (writes must target
-        outputs only — we never let a runner overwrite an input).
-        """
-        assocs: list[
-            Union[
-                JobToInputDatasetAssociation,
-                JobToInputLibraryDatasetAssociation,
-                JobToOutputDatasetAssociation,
-                JobToOutputLibraryDatasetAssociation,
-            ]
-        ] = [*job.output_datasets, *job.output_library_datasets]
-        if include_inputs:
-            assocs = [*job.input_datasets, *job.input_library_datasets, *assocs]
-        # ``realpath`` defeats symlink races where a malicious BYOC node might
-        # ask for a path that resolves outside the allowed set via a symlink
-        # the Galaxy process happens to follow.
-        target = os.path.realpath(path)
-        for assoc in assocs:
-            dataset = assoc.dataset
-            if not dataset:
-                continue
-            if os.path.realpath(dataset.get_file_name()) == target:
-                return True
-            extra = dataset.extra_files_path
-            if extra and util.in_directory(target, os.path.realpath(extra)):
-                return True
-        return False
-
-    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp) -> bool:
-        working_directory = app.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
-        )
-        return util.in_directory(os.path.realpath(path), os.path.realpath(working_directory))

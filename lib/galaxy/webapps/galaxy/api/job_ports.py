@@ -1,12 +1,21 @@
-"""API for asynchronous job running mechanisms can use to fetch or put files
-related to running and queued jobs.
+"""API endpoint that lets the interactive-tool container-monitor report back
+the host/port a running entry point can be reached at.
 """
 
+import logging
+from typing import Any
+
+from galaxy.exceptions import ObjectAttributeMissingException
 from galaxy.job_execution.job_security import resolve_job_key
-from galaxy.job_execution.ports import JobPortsView
-from galaxy.structured_app import StructuredApp
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.job_files import JobFilesManager
 from galaxy.web import expose_api_anonymous_and_sessionless
-from . import BaseGalaxyAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
+
+log = logging.getLogger(__name__)
 
 
 class JobPortsAPIController(BaseGalaxyAPIController):
@@ -18,12 +27,16 @@ class JobPortsAPIController(BaseGalaxyAPIController):
     See the JobFiles API for information about per-job API keys.
     """
 
-    def __init__(self, app: StructuredApp):
-        super().__init__(app)
-        self._job_ports_view = JobPortsView(app)
+    manager: JobFilesManager = depends(JobFilesManager)
 
     @expose_api_anonymous_and_sessionless
-    def create(self, trans, job_id, payload, **kwargs):
+    def create(
+        self,
+        trans: ProvidesAppContext,
+        job_id: str,
+        payload: dict[str, Any],
+        **kwargs: Any,
+    ) -> dict[str, str]:
         """
         create( self, trans, job_id, payload, **kwargs )
         * POST /api/jobs/{job_id}/ports
@@ -44,10 +57,14 @@ class JobPortsAPIController(BaseGalaxyAPIController):
         :returns:   an okay message
         """
         payload.update(kwargs)
-        # Promote an Authorization: Bearer <token> header into the payload's
-        # ``job_key`` so the view's auth check sees it the same way as the
-        # legacy query/body form.
-        resolved = resolve_job_key(trans.request.headers.get("Authorization"), payload.get("job_key"))
-        if resolved is not None:
-            payload["job_key"] = resolved
-        return self._job_ports_view.register_container_information(job_id, **payload)
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied = resolve_job_key(auth_header, payload.get("job_key"))
+        if not supplied:
+            raise ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
+        job = self.manager.authorize_for_files(job_id, supplied)
+        container_runtime = payload.get("container_runtime")
+        if container_runtime is None:
+            raise ObjectAttributeMissingException("Job ports action requires a 'container_runtime' mapping.")
+        log.info(payload)
+        trans.app.interactivetool_manager.configure_entry_points(job, container_runtime)
+        return {"message": "ok"}
