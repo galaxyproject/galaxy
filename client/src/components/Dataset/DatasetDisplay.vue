@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExclamationTriangle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -14,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
 import Alert from "@/components/Alert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import TabularChunkedView from "@/components/Dataset/Tabular/TabularChunkedView.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
@@ -122,18 +122,18 @@ watch(
 </script>
 
 <template>
-    <BAlert v-if="errorMessage" variant="danger" show>
+    <GAlert v-if="errorMessage" variant="danger" show>
         {{ errorMessage }}
-    </BAlert>
+    </GAlert>
     <LoadingSpan v-else-if="isLoading || !dataset" message="Loading dataset content" />
-    <BAlert v-else-if="STATES.PENDING_STATES.includes(dataset.state)" show variant="warning">
+    <GAlert v-else-if="STATES.PENDING_STATES.includes(dataset.state)" show variant="warning">
         <FontAwesomeIcon :icon="faSpinner" spin />
         <span>Waiting for dataset to become available. Please check the history panel for details.</span>
-    </BAlert>
-    <BAlert v-else-if="!STATES.OK_STATES.includes(dataset.state)" show variant="danger">
+    </GAlert>
+    <GAlert v-else-if="!STATES.OK_STATES.includes(dataset.state)" show variant="danger">
         <FontAwesomeIcon :icon="faExclamationTriangle" />
         <span>Dataset is unavailable. Please check the history panel for details.</span>
-    </BAlert>
+    </GAlert>
     <LoadingSpan v-else-if="!previewLoaded" message="Loading dataset content" />
     <div v-else class="dataset-display h-100">
         <Alert v-if="sanitizedMessage" :dismissible="true" variant="warning" data-description="sanitization warning">

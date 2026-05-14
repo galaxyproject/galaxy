@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faFolder, faGlobe, faPlus, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BFormCheckbox, BPagination } from "bootstrap-vue";
+import { BFormCheckbox, BPagination } from "bootstrap-vue";
 import { watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -12,6 +12,7 @@ import type { RemoteFileBrowserMode } from "@/composables/useRemoteFileBrowser";
 import { useRemoteFileBrowser } from "@/composables/useRemoteFileBrowser";
 import { USER_FILE_PREFIX } from "@/utils/url";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import BreadcrumbNavigation from "@/components/Common/BreadcrumbNavigation.vue";
 import GTable from "@/components/Common/GTable.vue";
@@ -202,12 +203,12 @@ defineExpose({
         </div>
 
         <!-- Error message -->
-        <BAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
+        <GAlert v-if="errorMessage" variant="danger" show dismissible @dismissed="errorMessage = undefined">
             <div class="d-flex justify-content-between align-items-center">
                 <span>{{ errorMessage }}</span>
                 <GButton color="red" class="ml-2" @click="onErrorRetry">Retry</GButton>
             </div>
-        </BAlert>
+        </GAlert>
 
         <!-- Browser table -->
         <div class="browser-table-container">
