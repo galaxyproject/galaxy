@@ -1,7 +1,6 @@
 <script setup>
 import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, onBeforeMount, ref, watch } from "vue";
 
@@ -19,6 +18,7 @@ import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GPopover from "@/components/BaseComponents/GPopover.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormCardSticky from "@/components/Form/FormCardSticky.vue";
@@ -229,7 +229,7 @@ onBeforeMount(() => {
                     :tool-id="props.id"
                     :tool-version="props.version"
                     :job-credentials-context="props.options.job_credentials_context" />
-                <BAlert
+                <GAlert
                     v-else-if="props.allowEditingCredentials"
                     v-g-tooltip.hover
                     variant="info"
@@ -251,7 +251,7 @@ onBeforeMount(() => {
                             </span>
                         </div>
                     </GPopover>
-                </BAlert>
+                </GAlert>
             </template>
 
             <FormMessage variant="danger" :message="errorText" :persistent="true" />

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 
@@ -8,6 +7,7 @@ import { type Tool, useToolStore } from "@/stores/toolStore";
 import LoadingSpan from "../LoadingSpan.vue";
 import ScrollList from "../ScrollList/ScrollList.vue";
 import ToolsListCard from "./ToolsListCard.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 /** Number of tools to fetch the help data for at a time. */
 const FETCH_LIMIT = 4;
@@ -62,9 +62,9 @@ const toolsKey = computed(() => JSON.stringify(props.tools.map((tool) => tool.id
         :grid-view="props.gridView"
         no-footer>
         <template v-slot:loading>
-            <BAlert v-if="props.tools.length" show>
+            <GAlert v-if="props.tools.length" show>
                 <LoadingSpan message="Loading tools" />
-            </BAlert>
+            </GAlert>
         </template>
 
         <template v-slot:item="{ item }">
