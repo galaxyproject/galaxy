@@ -15,10 +15,17 @@ import os
 
 import pytest
 import yaml
-from tpv.commands.test import mock_galaxy
-from tpv.rules import gateway
 
-from galaxy.jobs import JobDestination
+# tpv is a dev-only dep of the main lib install but isn't pulled in for
+# package-isolation tests (galaxy-app's setup.cfg doesn't list it). Skip
+# the whole module when it's missing so those CI shards can still run
+# the rest of test/unit/app without crashing on collection.
+pytest.importorskip("tpv")
+
+from tpv.commands.test import mock_galaxy  # noqa: E402 — guarded by importorskip above
+from tpv.rules import gateway  # noqa: E402 — guarded by importorskip above
+
+from galaxy.jobs import JobDestination  # noqa: E402 — guarded by importorskip above
 
 
 def _load_byoc_sample() -> dict:
