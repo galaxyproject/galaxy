@@ -30,7 +30,9 @@ from galaxy.datatypes.tabular import (
     TabularData,
 )
 from galaxy.datatypes.xml import GenericXml
+from galaxy import util
 from galaxy.util import nice_size
+import ijson
 
 log = logging.getLogger(__name__)
 MAX_LINE_LEN = 100
@@ -244,8 +246,17 @@ class MzSpecLibJson(Json):
     >>> MzSpecLibJson().sniff(fname)
     False
     """
-    
+
     file_ext = "mzspeclib.json"
+
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
 
     _required_keys = ("format_version", "attributes", "spectra")
     _key_pattern = re.compile(r"\"(format_version|attributes|spectra)\"\s*:")
@@ -259,11 +270,39 @@ class MzSpecLibJson(Json):
             try:
                 payload = json.loads(header)
             except Exception:
+                log.exception("Failed to parse mzSpecLib JSON")
                 return False
             return isinstance(payload, dict) and all(key in payload for key in self._required_keys)
 
         found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
         return all(key in found_keys for key in self._required_keys)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        spectra_count = self._count_spectra_json(dataset.get_file_name())
+        if spectra_count is not None:
+            dataset.metadata.spectra_count = spectra_count
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset, **kwd)
+        if not dataset.dataset.purged:
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+
+    def _count_spectra_json(self, path: str) -> Optional[int]:
+        count = 0
+        try:
+            with open(path, "rb") as handle:
+                for prefix, event, _ in ijson.parse(handle):
+                    if prefix == "spectra.item" and event == "start_map":
+                        count += 1
+            return count
+        except Exception:
+            log.exception("Failed to count spectra in mzSpecLib JSON")
+            return None
 
 
 @build_sniff_from_prefix
@@ -281,11 +320,21 @@ class MzSpecLibTxt(Text):
     >>> MzSpecLibTxt().sniff(fname)
     False
     """
-    
+
     file_ext = "mzspeclib.txt"
+
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
 
     _format_header = "<mzSpecLib>"
     _version_prefix = "MS:1003186|library format version="
+    _spectrum_line_re = re.compile(r"^<Spectr(?:um|a)\b")
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         saw_header = False
@@ -303,6 +352,33 @@ class MzSpecLibTxt(Text):
             if stripped.startswith(self._version_prefix):
                 return True
         return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        spectra_count = self._count_spectra_txt(dataset.get_file_name())
+        if spectra_count is not None:
+            dataset.metadata.spectra_count = spectra_count
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset, **kwd)
+        if not dataset.dataset.purged:
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+
+    def _count_spectra_txt(self, path: str) -> Optional[int]:
+        count = 0
+        try:
+            with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+                for line in handle:
+                    if self._spectrum_line_re.match(line):
+                        count += 1
+            return count
+        except Exception:
+            log.exception("Failed to count spectra in mzSpecLib text")
+            return None
 
 
 @build_sniff_from_prefix
