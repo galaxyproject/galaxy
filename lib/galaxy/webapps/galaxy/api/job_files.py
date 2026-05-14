@@ -242,7 +242,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         """
         pass
 
-    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs):
+    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs) -> Job:
         if "path" not in kwargs:
             raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
 
@@ -273,7 +273,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             raise exceptions.ItemAccessibilityException(error_message)
         return job
 
-    def __check_job_can_read_path(self, trans: ProvidesAppContext, job: Job, path: str):
+    def __check_job_can_read_path(self, trans: ProvidesAppContext, job: Job, path: str) -> None:
         """Verify a job runner is allowed to read the requested path.
 
         Prior to this check, ``index`` would ``open()`` any path the caller
@@ -295,7 +295,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             return
         raise exceptions.ItemAccessibilityException("Job is not authorized to read supplied path.")
 
-    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
+    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str) -> None:
         """Verify a job runner is allowed to write to the requested path.
 
         The legacy rule was "anywhere under the job working directory or to
@@ -352,6 +352,6 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 return True
         return False
 
-    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
+    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp) -> bool:
         working_directory = JobWorkingDirectory(job, app.object_store).resolve()
         return util.in_directory(os.path.realpath(path), os.path.realpath(working_directory))
