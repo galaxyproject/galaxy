@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { toRef } from "vue";
 
 import { useHelpForTerm } from "@/stores/helpTermsStore";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import ConfigurationMarkdown from "@/components/ObjectStore/ConfigurationMarkdown.vue";
 
@@ -25,7 +25,7 @@ const { loading, hasHelp, help } = useHelpForTerm(toRef(props, "term"));
             <ConfigurationMarkdown :markdown="help" :admin="true" />
         </div>
         <div v-else>
-            <BAlert variant="error"> Something went wrong, no Galaxy help found for term or URI {{ term }}. </BAlert>
+            <GAlert variant="error"> Something went wrong, no Galaxy help found for term or URI {{ term }}. </GAlert>
         </div>
     </div>
 </template>

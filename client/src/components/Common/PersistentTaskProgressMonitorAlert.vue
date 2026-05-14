@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BLink } from "bootstrap-vue";
+import { BLink } from "bootstrap-vue";
 import { computed, watch } from "vue";
 
 import { useDownloadTracker } from "@/composables/downloadTracker";
@@ -10,6 +10,7 @@ import type { MonitoringRequest } from "@/composables/persistentProgressMonitor"
 import { usePersistentProgressTaskMonitor } from "@/composables/persistentProgressMonitor";
 import { useShortTermStorage } from "@/composables/shortTermStorage";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import FileSourceNameSpan from "@/components/FileSources/FileSourceNameSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
@@ -121,14 +122,14 @@ function dismissAlert() {
 
 <template>
     <div v-if="hasMonitoringData" class="progress-monitor-alert">
-        <BAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
+        <GAlert v-if="hasExpired" variant="warning" show dismissible @dismissed="dismissAlert">
             The {{ monitorRequest.action }} task has <b>expired</b> and the result is no longer available.
-        </BAlert>
-        <BAlert v-else-if="isRunning" variant="info" show>
+        </GAlert>
+        <GAlert v-else-if="isRunning" variant="info" show>
             <b>{{ inProgressMessage }}</b>
             <FontAwesomeIcon :icon="faSpinner" class="mr-2" spin />
-        </BAlert>
-        <BAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
+        </GAlert>
+        <GAlert v-else-if="isCompleted" variant="success" show dismissible @dismissed="dismissAlert">
             <span>{{ completedMessage }}</span>
 
             <BLink v-if="downloadUrl" class="download-link" :href="downloadUrl">
@@ -145,15 +146,15 @@ function dismissAlert() {
             <span v-if="expirationDate">
                 This result will <b>expire <UtcDate :date="expirationDate.toISOString()" mode="elapsed" /></b>
             </span>
-        </BAlert>
-        <BAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
+        </GAlert>
+        <GAlert v-else-if="hasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <span>{{ failedMessage }}</span>
             <span v-if="failureReason">
                 Reason: <b>{{ failureReason }}</b>
             </span>
-        </BAlert>
-        <BAlert v-else-if="requestHasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
+        </GAlert>
+        <GAlert v-else-if="requestHasFailed" variant="danger" show dismissible @dismissed="dismissAlert">
             <b>{{ requestFailedMessage }}</b>
-        </BAlert>
+        </GAlert>
     </div>
 </template>
