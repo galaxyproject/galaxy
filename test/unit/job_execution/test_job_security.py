@@ -1,6 +1,52 @@
 """Unit tests for ``galaxy.job_execution.job_security``."""
 
-from galaxy.job_execution.job_security import resolve_job_key
+from galaxy.job_execution.job_security import (
+    DEFAULT_JOB_TOKEN_KIND,
+    JOB_FILES_KIND,
+    job_files_kind_for_params,
+    job_token_kind_for_params,
+    resolve_job_key,
+)
+
+
+class TestJobFilesKindForParams:
+    def test_no_compute_resource_returns_legacy_kind(self):
+        assert job_files_kind_for_params({}) == JOB_FILES_KIND
+        assert job_files_kind_for_params(None) == JOB_FILES_KIND
+        assert job_files_kind_for_params({"unrelated": "value"}) == JOB_FILES_KIND
+
+    def test_compute_resource_id_scopes_kind(self):
+        assert job_files_kind_for_params({"compute_resource_id": 17}) == "jobs_files:compute_resource:17"
+
+    def test_compute_resource_id_coerced_from_string(self):
+        # TPV / DB round-trip may stringify the int; verifier and issuer must
+        # converge on the same kind regardless.
+        assert job_files_kind_for_params({"compute_resource_id": "17"}) == "jobs_files:compute_resource:17"
+
+    def test_garbage_resource_id_falls_back_to_legacy(self):
+        # A non-coercible value isn't a valid binding — treating it as
+        # "not BYOC" keeps the legacy verifier path intact rather than
+        # creating an unverifiable kind that locks the job out forever.
+        assert job_files_kind_for_params({"compute_resource_id": "not-an-int"}) == JOB_FILES_KIND
+
+
+class TestJobTokenKindForParams:
+    def test_default_kind_when_no_overrides(self):
+        assert job_token_kind_for_params({}) == DEFAULT_JOB_TOKEN_KIND
+
+    def test_per_destination_override_honoured(self):
+        assert job_token_kind_for_params({"job_secret_base": "custom"}) == "custom"
+
+    def test_compute_resource_appends_tenant_suffix_to_default(self):
+        assert job_token_kind_for_params({"compute_resource_id": 5}) == "jobs_token:compute_resource:5"
+
+    def test_compute_resource_appends_tenant_suffix_to_override(self):
+        # Per-destination override + compute-resource binding compose; either
+        # dimension alone segments the keyspace.
+        assert (
+            job_token_kind_for_params({"compute_resource_id": 5, "job_secret_base": "custom"})
+            == "custom:compute_resource:5"
+        )
 
 
 class TestResolveJobKey:
