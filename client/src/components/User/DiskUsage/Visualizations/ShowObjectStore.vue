@@ -5,6 +5,7 @@ import { getObjectStoreDetails } from "@/api/objectStores";
 import type { ConcreteObjectStoreModel } from "@/components/ObjectStore/types";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 
@@ -45,6 +46,6 @@ const forWhat = "This Galaxy storage is";
         <LoadingSpan v-if="loading" v-localize :message="loadingMessage" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
-        <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>
+        <GAlert v-else-if="error" show variant="danger">{{ error }}</GAlert>
     </div>
 </template>

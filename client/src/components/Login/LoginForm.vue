@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
 import {
-    BAlert,
     BCard,
     BCardBody,
     BCardFooter,
@@ -24,6 +23,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import GButton from "../BaseComponents/GButton.vue";
 import GLink from "../BaseComponents/GLink.vue";
 import VerticalSeparator from "../Common/VerticalSeparator.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import NewUserConfirmation from "@/components/Login/NewUserConfirmation.vue";
 import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -162,16 +162,16 @@ function returnToLogin() {
         <div class="d-flex justify-content-md-center">
             <template v-if="!confirmURL">
                 <div>
-                    <BAlert :show="!!messageText" :variant="messageVariant">
+                    <GAlert :show="!!messageText" :variant="messageVariant">
                         <!-- eslint-disable-next-line vue/no-v-html -->
                         <span v-html="messageText" />
-                    </BAlert>
+                    </GAlert>
 
-                    <BAlert :show="!!connectExternalProvider" variant="info">
+                    <GAlert :show="!!connectExternalProvider" variant="info">
                         There already exists a user with the email <i>{{ connectExternalEmail }}</i
                         >. In order to associate this account with <i>{{ connectExternalLabel }}</i
                         >, you must first login to your existing account.
-                    </BAlert>
+                    </GAlert>
 
                     <div>
                         <BCard no-body style="width: fit-content">
