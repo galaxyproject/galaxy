@@ -3,6 +3,7 @@ import { ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import License from "@/components/License/License.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -42,7 +43,7 @@ watch(
 
 <template>
     <LoadingSpan v-if="loading" />
-    <BAlert v-else-if="errorMessage" show variant="warning">{{ errorMessage }}</BAlert>
+    <GAlert v-else-if="errorMessage" show variant="warning">{{ errorMessage }}</GAlert>
     <License v-else-if="licenseId" :license-id="licenseId" />
     <i v-else>Workflow does not define a license.</i>
 </template>

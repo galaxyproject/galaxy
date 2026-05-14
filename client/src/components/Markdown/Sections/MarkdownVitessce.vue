@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import type { DatasetLabel, Invocation } from "@/components/Markdown/Editor/types";
@@ -8,6 +7,7 @@ import { getAppRoot } from "@/onload";
 import { useInvocationStore } from "@/stores/invocationStore";
 
 import VisualizationWrapper from "./VisualizationWrapper.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const DEFAULT_HEIGHT = 400;
@@ -109,13 +109,13 @@ defineExpose({ visualizationConfig });
 </script>
 
 <template>
-    <BAlert v-if="missingInvocation" v-localize class="m-0" variant="info" show>
+    <GAlert v-if="missingInvocation" v-localize class="m-0" variant="info" show>
         Data for rendering this <b>Vitessce Dashboard</b> is not yet available.
-    </BAlert>
+    </GAlert>
     <div v-else class="markdown-visualization">
-        <BAlert v-if="errorMessage" v-localize class="m-0" variant="danger" show>
+        <GAlert v-if="errorMessage" v-localize class="m-0" variant="danger" show>
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
         <LoadingSpan v-else-if="loading" />
         <VisualizationWrapper
             v-else-if="visualizationConfig"
