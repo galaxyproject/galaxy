@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
+import { BCard, BCardTitle } from "bootstrap-vue";
 import { onMounted, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
@@ -8,6 +8,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import { urlData } from "@/utils/url";
 
 import JaggedDataAlert from "./JaggedDataAlert.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const emit = defineEmits(["onChange", "onError"]);
 const errorMessage = ref<string | undefined>(undefined);
@@ -57,7 +58,7 @@ watch(table, (newValue: string[][]) => {
             <b>Select dataset</b>
         </BCardTitle>
         <div>
-            <BAlert v-if="errorMessage" show variant="danger">{{ errorMessage }}</BAlert>
+            <GAlert v-if="errorMessage" show variant="danger">{{ errorMessage }}</GAlert>
             <JaggedDataAlert :jagged-data-warning="jaggedDataWarning" />
             Select a history datasets, the contents will be loaded as tabular data and made available to the rule based
             import utility.

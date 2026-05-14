@@ -2,7 +2,6 @@
 import { faBars, faCog, faDatabase, faSave, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -17,6 +16,7 @@ import localize from "@/utils/localization";
 import { prependPath } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
@@ -210,17 +210,17 @@ async function saveAttrs() {
             {{ localize("Edit Collection Attributes") }}
         </Heading>
 
-        <BAlert v-if="infoMessage" show variant="info" dismissible>
+        <GAlert v-if="infoMessage" show variant="info" dismissible>
             {{ localize(infoMessage) }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="errorMessage" show variant="danger">
+        <GAlert v-if="errorMessage" show variant="danger">
             {{ localize(errorMessage) }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="successMessage" show variant="success" dismissible>
+        <GAlert v-if="successMessage" show variant="success" dismissible>
             {{ localize(successMessage) }}
-        </BAlert>
+        </GAlert>
         <GTabs v-if="!errorMessage" class="mt-3">
             <GTab title-link-class="collection-edit-attributes-nav" @click="updateInfoMessage('')">
                 <template v-slot:title>
