@@ -16,12 +16,14 @@ class TestJobFilesKindForParams:
         assert job_files_kind_for_params({"unrelated": "value"}) == JOB_FILES_KIND
 
     def test_compute_resource_id_scopes_kind(self):
-        assert job_files_kind_for_params({"compute_resource_id": 17}) == "jobs_files:compute_resource:17"
+        # Terse by necessity: idencoding caps kinds at <15 chars (see job_security).
+        # The id is base62-encoded into the kind; base62(17) == "H".
+        assert job_files_kind_for_params({"compute_resource_id": 17}) == "jf:cr:H"
 
     def test_compute_resource_id_coerced_from_string(self):
         # TPV / DB round-trip may stringify the int; verifier and issuer must
         # converge on the same kind regardless.
-        assert job_files_kind_for_params({"compute_resource_id": "17"}) == "jobs_files:compute_resource:17"
+        assert job_files_kind_for_params({"compute_resource_id": "17"}) == "jf:cr:H"
 
     def test_garbage_resource_id_falls_back_to_legacy(self):
         # A non-coercible value isn't a valid binding — treating it as
@@ -37,41 +39,39 @@ class TestJobTokenKindForParams:
     def test_per_destination_override_honoured(self):
         assert job_token_kind_for_params({"job_secret_base": "custom"}) == "custom"
 
-    def test_compute_resource_appends_tenant_suffix_to_default(self):
-        assert job_token_kind_for_params({"compute_resource_id": 5}) == "jobs_token:compute_resource:5"
+    def test_compute_resource_uses_tenant_scoped_kind(self):
+        assert job_token_kind_for_params({"compute_resource_id": 5}) == "jt:cr:5"
 
-    def test_compute_resource_appends_tenant_suffix_to_override(self):
-        # Per-destination override + compute-resource binding compose; either
-        # dimension alone segments the keyspace.
-        assert (
-            job_token_kind_for_params({"compute_resource_id": 5, "job_secret_base": "custom"})
-            == "custom:compute_resource:5"
-        )
+    def test_compute_resource_kind_ignores_custom_base(self):
+        # A compute-resource job's token kind is namespaced by the resource id,
+        # not the per-destination ``job_secret_base`` override — the resource id
+        # already segments the keyspace, and composing an arbitrary-length base
+        # could exceed idencoding's <15-char kind limit.
+        assert job_token_kind_for_params({"compute_resource_id": 5, "job_secret_base": "custom"}) == "jt:cr:5"
 
 
 class TestResolveJobKey:
     def test_bearer_header_wins(self):
-        assert resolve_job_key({"Authorization": "Bearer abc123"}, "fallback") == "abc123"
+        assert resolve_job_key("Bearer abc123", "fallback") == "abc123"
 
-    def test_falls_back_to_query_param_when_no_header(self):
-        assert resolve_job_key({}, "fallback") == "fallback"
+    def test_falls_back_when_no_header(self):
+        assert resolve_job_key(None, "fallback") == "fallback"
+        assert resolve_job_key("", "fallback") == "fallback"
 
     def test_returns_none_when_neither_supplied(self):
-        assert resolve_job_key({}, None) is None
-        assert resolve_job_key({"Authorization": ""}, None) is None
-
-    def test_case_insensitive_header_name(self):
-        # ASGI / WSGI normalize differently; the helper must tolerate both.
-        assert resolve_job_key({"authorization": "Bearer xyz"}, None) == "xyz"
+        assert resolve_job_key(None, None) is None
+        assert resolve_job_key("", None) is None
 
     def test_case_insensitive_scheme(self):
-        assert resolve_job_key({"Authorization": "bearer xyz"}, None) == "xyz"
+        # The header *name* is normalized by webob/FastAPI before reaching
+        # the helper, but the scheme casing is the caller's responsibility.
+        assert resolve_job_key("bearer xyz", None) == "xyz"
 
     def test_non_bearer_scheme_falls_through(self):
         # Don't try to interpret Basic / Digest tokens as job_keys; fall
         # through to the query-string credential so a misconfigured client
         # gets a clean "Invalid job_key" rather than an unexpected match.
-        assert resolve_job_key({"Authorization": "Basic abc"}, "fb") == "fb"
+        assert resolve_job_key("Basic abc", "fb") == "fb"
 
     def test_empty_bearer_token_falls_through(self):
-        assert resolve_job_key({"Authorization": "Bearer "}, "fb") == "fb"
+        assert resolve_job_key("Bearer ", "fb") == "fb"
