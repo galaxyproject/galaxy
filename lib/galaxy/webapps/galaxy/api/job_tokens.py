@@ -59,7 +59,7 @@ class FastAPIJobTokens:
         authorization: Optional[str] = Header(None),
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> str:
-        supplied = resolve_job_key({"Authorization": authorization or ""}, job_key)
+        supplied = resolve_job_key(authorization, job_key)
         if not supplied:
             raise exceptions.AuthenticationFailed("Invalid job_key supplied.")
         job = self.__authorize_job_access(trans, job_id, supplied)

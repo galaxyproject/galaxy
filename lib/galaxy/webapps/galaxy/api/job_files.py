@@ -251,7 +251,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         # ``trans.request`` is webob's ``Request`` at runtime, but
         # ``ProvidesAppContext`` does not expose the attribute — hence the
         # ignore. The runtime always has it.
-        supplied_job_key = resolve_job_key(trans.request.headers, kwargs.get("job_key"))  # type: ignore[attr-defined]
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied_job_key = resolve_job_key(auth_header, kwargs.get("job_key"))
         if not supplied_job_key:
             raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'job_key'.")
 
