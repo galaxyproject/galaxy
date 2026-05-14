@@ -350,7 +350,7 @@ class PulsarByocManager:
         refresh_token = vault_wrapper.read_secret(secret_path)
         if not refresh_token:
             log.debug(
-                "No relay refresh token in vault for PulsarByocResource id=%s; " "cannot fetch capabilities.",
+                "No relay refresh token in vault for PulsarByocResource id=%s; cannot fetch capabilities.",
                 resource.id,
             )
             return None
