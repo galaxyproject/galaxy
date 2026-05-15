@@ -281,28 +281,25 @@ class MzSpecLibJson(Json):
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         if not dataset.has_data():
             return
-        spectra_count = self._count_spectra_json(dataset.get_file_name())
-        if spectra_count is not None:
-            dataset.metadata.spectra_count = spectra_count
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset, **kwd)
         if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             count = dataset.metadata.spectra_count
             label = "spectrum" if count == 1 else "spectra"
             dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
-    def _count_spectra_json(self, path: str) -> Optional[int]:
+    def _count_spectra(self, path: str) -> int:
         count = 0
-        try:
-            with open(path, "rb") as handle:
-                for prefix, event, _ in ijson.parse(handle):
-                    if prefix == "spectra.item" and event == "start_map":
-                        count += 1
-            return count
-        except Exception:
-            log.exception("Failed to count spectra in mzSpecLib JSON")
-            return None
+        with open(path, "rb") as handle:
+            for prefix, event, _ in ijson.parse(handle):
+                if prefix == "spectra.item" and event == "start_map":
+                    count += 1
+        return count
 
 
 @build_sniff_from_prefix
@@ -357,28 +354,25 @@ class MzSpecLibTxt(Text):
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         if not dataset.has_data():
             return
-        spectra_count = self._count_spectra_txt(dataset.get_file_name())
-        if spectra_count is not None:
-            dataset.metadata.spectra_count = spectra_count
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        super().set_peek(dataset, **kwd)
         if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             count = dataset.metadata.spectra_count
             label = "spectrum" if count == 1 else "spectra"
             dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
-    def _count_spectra_txt(self, path: str) -> Optional[int]:
+    def _count_spectra(self, path: str) -> int:
         count = 0
-        try:
-            with open(path, "r", encoding="utf-8", errors="ignore") as handle:
-                for line in handle:
-                    if self._spectrum_line_re.match(line):
-                        count += 1
-            return count
-        except Exception:
-            log.exception("Failed to count spectra in mzSpecLib text")
-            return None
+        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
+            for line in handle:
+                if self._spectrum_line_re.match(line):
+                    count += 1
+        return count
 
 
 @build_sniff_from_prefix
