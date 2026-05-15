@@ -18,12 +18,14 @@ API has gone too far.
 import io
 import os
 import tempfile
+from typing import ClassVar
 
 import requests
 from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.job_security import job_files_kind_for_params
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -40,6 +42,14 @@ TEST_TUS_CHUNK_SIZE = 1024
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
+    # The shared input dataset is created once per class and stored on the
+    # *class* (not the instance): pytest runs each test method on a fresh
+    # instance, so an instance attribute would only exist for whichever test
+    # happened to initialize it. With the class scattered across test shards
+    # any other test referencing ``self.input_hda`` would otherwise hit an
+    # AttributeError.
+    input_hda: ClassVar[model.HistoryDatasetAssociation]
+    input_hda_dict: ClassVar[dict]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -57,9 +67,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session = self.sa_session
             stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
+                history_id, content=TEST_INPUT_TEXT, wait=True
+            )
             assert len(sa_session.scalars(stmt).all()) == 1
-            self.input_hda = sa_session.scalars(stmt).all()[0]
+            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
@@ -210,15 +222,8 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         compute-resource runner refuses ``metadata_strategy='extended'`` at
         dispatch for the same reason)."""
         job, _, working_directory = self.create_static_job_with_state("running")
-        sa_session = self.sa_session
-        job.destination_params = {"compute_resource_id": 99}
-        sa_session.add(job)
-        sa_session.commit()
-
         job_id = self._app.security.encode_id(job.id)
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:99")
-
-        post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        scoped_key = self._bind_to_compute_resource(job, 99)
 
         # metadata/outputs_populated/* is denied for compute-resource jobs
         denied_paths = [
@@ -228,17 +233,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             os.path.join(working_directory, "configs", "foo.txt"),
         ]
         for path in denied_paths:
-            data = {"path": path, "job_key": scoped_key}
-            files = {"file": io.StringIO("attack payload")}
-            response = requests.post(post_url, data=data, files=files)
-            _assert_insufficient_permissions(response)
+            _assert_insufficient_permissions(self._post_file(job_id, scoped_key, path, "attack payload"))
 
         # working/** is the tool's CWD — legitimately writable
         allowed_path = os.path.join(working_directory, "working", "outputs", "galaxy.json")
-        data = {"path": allowed_path, "job_key": scoped_key}
-        files = {"file": io.StringIO('{"foo": 1}')}
-        response = requests.post(post_url, data=data, files=files)
-        api_asserts.assert_status_code_is_ok(response)
+        api_asserts.assert_status_code_is_ok(self._post_file(job_id, scoped_key, allowed_path, '{"foo": 1}'))
 
     def test_write_through_symlink_is_rejected(self):
         """Defense in depth: refuse to write to a path that's already a
@@ -253,25 +252,16 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             symlink_path = os.path.join(tmpdir, "linked")
             os.symlink(real_path, symlink_path)
-            data = {"path": symlink_path, "job_key": job_key}
-            files = {"file": io.StringIO("attack payload")}
-            post_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
-            response = requests.post(post_url, data=data, files=files)
-            _assert_insufficient_permissions(response)
+            _assert_insufficient_permissions(self._post_file(job_id, job_key, symlink_path, "attack payload"))
 
     def test_compute_resource_scoped_key_rejects_legacy_kind(self):
         """A job bound to a compute resource refuses the legacy ``jobs_files``
-        key — only the tenant-scoped ``jobs_files:compute_resource:<resource_id>``
-        key is accepted. Prevents cross-tenant replay of a leaked credential."""
+        key — only the tenant-scoped ``jf:cr:<resource_id>`` key is accepted.
+        Prevents cross-tenant replay of a leaked credential."""
         job, _, _ = self.create_static_job_with_state("running")
-        sa_session = self.sa_session
-        job.destination_params = {"compute_resource_id": 42}
-        sa_session.add(job)
-        sa_session.commit()
-
         job_id = self._app.security.encode_id(job.id)
         legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
-        scoped_key = self._app.security.encode_id(job.id, kind="jobs_files:compute_resource:42")
+        scoped_key = self._bind_to_compute_resource(job, 42)
 
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
@@ -326,6 +316,25 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session = self.sa_session
         sa_session.add(job)
         sa_session.commit()
+
+    def _bind_to_compute_resource(self, job, resource_id):
+        """Bind ``job`` to a compute resource and return the matching scoped
+        files key — what the BYOC runner would mint at dispatch. Derives the
+        ``kind`` via the shared helper so the test key always matches the
+        verifier (and the base62 encoding stays in one place)."""
+        job.destination_params = {"compute_resource_id": resource_id}
+        sa_session = self.sa_session
+        sa_session.add(job)
+        sa_session.commit()
+        kind = job_files_kind_for_params(job.destination_params)
+        return self._app.security.encode_id(job.id, kind=kind)
+
+    def _post_file(self, job_id, job_key, path, content):
+        return requests.post(
+            self._api_url(f"jobs/{job_id}/files", use_key=False),
+            data={"path": path, "job_key": job_key},
+            files={"file": io.StringIO(content)},
+        )
 
 
 def _assert_insufficient_permissions(response):
