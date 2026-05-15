@@ -1,9 +1,10 @@
-"""User-self-registered Pulsar compute resources ("Bring Your Own Compute").
+"""User-self-registered compute resources.
 
-This module exposes :class:`PulsarByocManager`, registered as a Lagom
-singleton and reachable on the live Galaxy app as ``app.byoc_manager`` so
-TPV rules can resolve the acting user's active BYOC resource at job
-dispatch time via ``app.byoc_manager.get_active_for(user)``.
+This module exposes :class:`ComputeResourceManager`, registered as a Lagom
+singleton and reachable on the live Galaxy app as
+``app.compute_resource_manager`` so TPV rules can resolve the acting
+user's active compute resource at job dispatch time via
+``app.compute_resource_manager.get_active_for(user)``.
 
 Dependencies (session, vault, config) are injected directly via Lagom
 rather than reached for through ``app.*``.
@@ -44,9 +45,9 @@ from sqlalchemy import (
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.model import (
+    ComputeResource,
+    ComputeResourceRegistration,
     Job,
-    PulsarByocBootstrapToken,
-    PulsarByocResource,
     User,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -57,21 +58,32 @@ from galaxy.security.vault import (
 
 log = logging.getLogger(__name__)
 
-#: Status values for ``PulsarByocResource.status``. The schema stores a free-form
+#: Status values for ``ComputeResource.status``. The schema stores a free-form
 #: string; lifecycle is enforced by this manager.
 STATUS_PENDING = "pending"
 STATUS_ACTIVE = "active"
 STATUS_DISABLED = "disabled"
 STATUS_DELETED = "deleted"
 
-#: TTL for bootstrap tokens. Long enough for a user to switch terminals and
-#: paste the one-liner; short enough that a leaked token isn't useful.
-BOOTSTRAP_TOKEN_TTL = timedelta(minutes=15)
+#: Runner id (``Job.job_runner_name``) used when a job is dispatched to a
+#: compute resource. Must match the ``id`` an operator gives the
+#: :class:`PulsarMQBYOCJobRunner` in ``job_conf.yml``; the sample config
+#: ships with this identifier.
+COMPUTE_RESOURCE_RUNNER_ID = "compute_resource"
+
+#: Destination-param key the TPV rule injects to bind a job to a specific
+#: compute-resource row. The runner reads this to look the resource up
+#: (and to filter non-terminal jobs in :meth:`ComputeResourceManager.purge`).
+COMPUTE_RESOURCE_ID_PARAM = "compute_resource_id"
+
+#: TTL for registration tokens. Long enough for a user to switch terminals
+#: and paste the one-liner; short enough that a leaked token isn't useful.
+REGISTRATION_TOKEN_TTL = timedelta(minutes=15)
 
 #: Rate limit on ``start_registration``: cap each user at this many tokens
-#: minted in a rolling hour. Mostly to keep abusive callers from filling the
-#: bootstrap-token table; the tokens are single-use, so the cap doesn't
-#: meaningfully restrict good-faith retries.
+#: minted in a rolling hour. Mostly to keep abusive callers from filling
+#: the registration-token table; the tokens are single-use, so the cap
+#: doesn't meaningfully restrict good-faith retries.
 RATE_LIMIT_PER_HOUR = 5
 RATE_LIMIT_WINDOW = timedelta(hours=1)
 
@@ -79,7 +91,7 @@ RATE_LIMIT_WINDOW = timedelta(hours=1)
 #: three topic prefixes — the wire contract between Galaxy (publisher,
 #: of job_setup / job_kill) and the user's Pulsar daemon (publisher of
 #: job_status_update; consumer of the other two).
-BYOC_TOPIC_PREFIXES = ("job_setup", "job_kill", "job_status_update")
+RELAY_TOPIC_PREFIXES = ("job_setup", "job_kill", "job_status_update")
 
 #: Topic stem Pulsar publishes its capability snapshot to (post-namespace,
 #: per the publisher's `__make_capabilities_topic_name` convention in
@@ -101,13 +113,13 @@ CAPABILITIES_CACHE_TTL_SECONDS = 60.0
 
 
 def relay_refresh_token_vault_path(resource_id: int) -> str:
-    """Vault path under which the relay refresh token for a BYOC resource lives.
+    """Vault path under which the relay refresh token for a compute resource lives.
 
     Centralised so the manager (writer + capability fetcher) and the
     pulsar runner (reader + rotation persister) cannot drift apart on the
     layout.
     """
-    return f"pulsar_byoc/{resource_id}/relay_refresh_token"
+    return f"compute_resource/{resource_id}/relay_refresh_token"
 
 
 def _make_capabilities_topic_name(prefix: Optional[str], manager_name: str) -> str:
@@ -217,9 +229,9 @@ def extract_capability_payload(response: dict[str, Any], topic: str, relay_url: 
 
 @dataclass(frozen=True)
 class RegistrationTicketData:
-    """Data the service hands to the user after :meth:`PulsarByocManager.start_registration`.
+    """Data the service hands to the user after :meth:`ComputeResourceManager.start_registration`.
 
-    Holds the bootstrap token row plus the registration-command artifacts
+    Holds the registration token plus the registration-command artifacts
     (configured relay URL + one-liner the user pastes) so the service layer
     is pure schema-mapping.
     """
@@ -230,32 +242,32 @@ class RegistrationTicketData:
     one_liner: str
 
 
-class PulsarByocError(Exception):
+class ComputeResourceError(Exception):
     """Domain errors that the API layer can translate into HTTP status codes."""
 
 
-class BootstrapTokenInvalid(PulsarByocError):
+class RegistrationTokenInvalid(ComputeResourceError):
     """The supplied bootstrap_token does not match any unredeemed ticket."""
 
 
-class BootstrapTokenExpired(PulsarByocError):
+class RegistrationTokenExpired(ComputeResourceError):
     """The supplied bootstrap_token has aged past its TTL."""
 
 
-class RelayVerificationFailed(PulsarByocError):
+class RelayVerificationFailed(ComputeResourceError):
     """The relay rejected the supplied refresh token, or its access token's
     ``sub`` claim does not match ``manager_name``."""
 
 
-class RegistrationRateLimited(PulsarByocError):
+class RegistrationRateLimited(ComputeResourceError):
     """User has exceeded the per-hour rate limit on start_registration."""
 
 
-class ResourceHasRunningJobs(PulsarByocError):
+class ResourceHasRunningJobs(ComputeResourceError):
     """A purge was attempted on a resource that still has non-terminal jobs."""
 
 
-class PulsarByocManager:
+class ComputeResourceManager:
     def __init__(
         self,
         session: galaxy_scoped_session,
@@ -281,47 +293,47 @@ class PulsarByocManager:
 
     # ---- query ------------------------------------------------------------
 
-    def get_active_for(self, user: Optional[User]) -> Optional[PulsarByocResource]:
-        """Return the user's single active BYOC resource, or ``None``.
+    def get_active_for(self, user: Optional[User]) -> Optional[ComputeResource]:
+        """Return the user's single active compute resource, or ``None``.
 
         Anonymous callers (``user is None``) always get ``None`` so TPV rules can
-        unconditionally reference ``app.byoc_manager.get_active_for(user)``
+        unconditionally reference ``app.compute_resource_manager.get_active_for(user)``
         without guarding for the anonymous case.
         """
         if user is None:
             return None
-        stmt = select(PulsarByocResource).where(
-            PulsarByocResource.user_id == user.id,
-            PulsarByocResource.status == STATUS_ACTIVE,
+        stmt = select(ComputeResource).where(
+            ComputeResource.user_id == user.id,
+            ComputeResource.status == STATUS_ACTIVE,
         )
         return self.session.scalars(stmt).first()
 
-    def list_for(self, user: Optional[User]) -> list[PulsarByocResource]:
+    def list_for(self, user: Optional[User]) -> list[ComputeResource]:
         if user is None:
             return []
         stmt = (
-            select(PulsarByocResource)
-            .where(PulsarByocResource.user_id == user.id)
-            .where(PulsarByocResource.status != STATUS_DELETED)
-            .order_by(PulsarByocResource.create_time.desc())
+            select(ComputeResource)
+            .where(ComputeResource.user_id == user.id)
+            .where(ComputeResource.status != STATUS_DELETED)
+            .order_by(ComputeResource.create_time.desc())
         )
         return list(self.session.scalars(stmt).all())
 
-    def get_for_user(self, user: Optional[User], resource_id: int) -> Optional[PulsarByocResource]:
+    def get_for_user(self, user: Optional[User], resource_id: int) -> Optional[ComputeResource]:
         """Look up a resource that belongs to ``user``. Returns ``None`` for
         cross-user lookups so the API can 404 without leaking existence."""
         if user is None:
             return None
-        stmt = select(PulsarByocResource).where(
-            PulsarByocResource.id == resource_id,
-            PulsarByocResource.user_id == user.id,
+        stmt = select(ComputeResource).where(
+            ComputeResource.id == resource_id,
+            ComputeResource.user_id == user.id,
         )
         return self.session.scalars(stmt).first()
 
     # ---- capability snapshot ---------------------------------------------
 
-    def capabilities_for(self, resource: PulsarByocResource, *, user: Optional[User]) -> Optional[dict[str, Any]]:
-        """Return the latest capability snapshot for a BYOC resource, or ``None``.
+    def capabilities_for(self, resource: ComputeResource, *, user: Optional[User]) -> Optional[dict[str, Any]]:
+        """Return the latest capability snapshot for a compute resource, or ``None``.
 
         Most calls are a dict lookup against
         :class:`RelayCapabilitiesCache`; the closure that does the
@@ -344,13 +356,13 @@ class PulsarByocManager:
             lambda: self._fetch_capabilities(resource, user, topic),
         )
 
-    def _fetch_capabilities(self, resource: PulsarByocResource, user: User, topic: str) -> Optional[dict[str, Any]]:
+    def _fetch_capabilities(self, resource: ComputeResource, user: User, topic: str) -> Optional[dict[str, Any]]:
         vault_wrapper = UserVaultWrapper(self._vault, user)
         secret_path = relay_refresh_token_vault_path(resource.id)
         refresh_token = vault_wrapper.read_secret(secret_path)
         if not refresh_token:
             log.debug(
-                "No relay refresh token in vault for PulsarByocResource id=%s; cannot fetch capabilities.",
+                "No relay refresh token in vault for ComputeResource id=%s; cannot fetch capabilities.",
                 resource.id,
             )
             return None
@@ -394,7 +406,7 @@ class PulsarByocManager:
     # ---- registration: start ---------------------------------------------
 
     def start_registration(self, user: User) -> RegistrationTicketData:
-        """Mint a short-lived single-use bootstrap token and return the
+        """Mint a short-lived single-use registration token and return the
         registration ticket the user needs.
 
         The returned ``bootstrap_token`` is the opaque secret the user passes
@@ -409,21 +421,21 @@ class PulsarByocManager:
         """
         now_naive = datetime.now(tz=timezone.utc).replace(tzinfo=None)
 
-        # Reap this user's expired bootstrap tokens. Bounded by their own
+        # Reap this user's expired registration tokens. Bounded by their own
         # rate limit so the delete is small.
         self.session.execute(
-            delete(PulsarByocBootstrapToken).where(
-                PulsarByocBootstrapToken.user_id == user.id,
-                PulsarByocBootstrapToken.expiration_time < now_naive,
+            delete(ComputeResourceRegistration).where(
+                ComputeResourceRegistration.user_id == user.id,
+                ComputeResourceRegistration.expiration_time < now_naive,
             )
         )
 
         window_start = now_naive - RATE_LIMIT_WINDOW
         recent_count = (
             self.session.scalar(
-                select(func.count(PulsarByocBootstrapToken.id)).where(
-                    PulsarByocBootstrapToken.user_id == user.id,
-                    PulsarByocBootstrapToken.create_time >= window_start,
+                select(func.count(ComputeResourceRegistration.id)).where(
+                    ComputeResourceRegistration.user_id == user.id,
+                    ComputeResourceRegistration.create_time >= window_start,
                 )
             )
             or 0
@@ -433,22 +445,22 @@ class PulsarByocManager:
             # doesn't keep regrowing the table between every refusal.
             self.session.commit()
             raise RegistrationRateLimited(
-                f"User has minted {recent_count} bootstrap tokens in the last "
+                f"User has minted {recent_count} registration tokens in the last "
                 f"{int(RATE_LIMIT_WINDOW.total_seconds() / 60)} minutes "
                 f"(limit: {RATE_LIMIT_PER_HOUR})."
             )
 
         token_value = secrets.token_urlsafe(48)
-        row = PulsarByocBootstrapToken(
+        row = ComputeResourceRegistration(
             token=token_value,
             user_id=user.id,
-            expiration_time=now_naive + BOOTSTRAP_TOKEN_TTL,
+            expiration_time=now_naive + REGISTRATION_TOKEN_TTL,
         )
         self.session.add(row)
         self.session.commit()
 
         galaxy_url = self._config.galaxy_infrastructure_url or ""
-        relay_url = self._config.pulsar_byoc_relay_url or ""
+        relay_url = self._config.compute_resource_relay_url or ""
         one_liner = f"pulsar-config register-with-galaxy --galaxy {galaxy_url} --token {row.token} --relay {relay_url}"
         return RegistrationTicketData(
             bootstrap_token=row.token,
@@ -485,19 +497,19 @@ class PulsarByocManager:
             return None
         return claims.get("sub")
 
-    def _redeem_bootstrap_token(self, token_value: str) -> PulsarByocBootstrapToken:
+    def _redeem_registration_token(self, token_value: str) -> ComputeResourceRegistration:
         # ``token`` is the unique-indexed secret column, not the PK — look it up
         # via select() rather than session.get().
         row = self.session.scalars(
-            select(PulsarByocBootstrapToken).where(PulsarByocBootstrapToken.token == token_value)
+            select(ComputeResourceRegistration).where(ComputeResourceRegistration.token == token_value)
         ).first()
         if row is None:
-            raise BootstrapTokenInvalid("unknown bootstrap_token")
+            raise RegistrationTokenInvalid("unknown bootstrap_token")
         now_naive = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         if row.expiration_time < now_naive:
             self.session.delete(row)
             self.session.commit()
-            raise BootstrapTokenExpired("bootstrap_token has expired")
+            raise RegistrationTokenExpired("bootstrap_token has expired")
         # Consume immediately — tokens are single-use even if downstream
         # steps fail. The user retries via ``start_registration``.
         self.session.delete(row)
@@ -511,8 +523,8 @@ class PulsarByocManager:
         relay_url: str,
         manager_name: str,
         relay_topic_prefix: Optional[str] = None,
-    ) -> PulsarByocResource:
-        """Redeem a bootstrap token and persist a BYOC resource for that user.
+    ) -> ComputeResource:
+        """Redeem a registration token and persist a compute resource for that user.
 
         Validates the supplied ``refresh_token`` by round-tripping it through
         the relay's ``/auth/token/refresh`` — this both proves the token is
@@ -520,21 +532,23 @@ class PulsarByocManager:
         Asserts ``sub == manager_name`` so a user can't redirect another
         relay user's topics into their Galaxy account.
 
-        If the admin has pinned a relay URL via ``pulsar_byoc_relay_url``,
+        If the admin has pinned a relay URL via ``compute_resource_relay_url``,
         refuse any other ``relay_url`` — otherwise a user could bind their
         resource to an attacker-controlled relay.
 
         Replaces any existing ``active`` resource the user has (disables it)
         and returns the new ``active`` row.
         """
-        configured_relay = self._config.pulsar_byoc_relay_url
+        configured_relay = self._config.compute_resource_relay_url
         if configured_relay and relay_url != configured_relay:
-            raise RelayVerificationFailed(f"relay_url {relay_url!r} does not match configured pulsar_byoc_relay_url")
+            raise RelayVerificationFailed(
+                f"relay_url {relay_url!r} does not match configured compute_resource_relay_url"
+            )
 
-        ticket = self._redeem_bootstrap_token(bootstrap_token)
+        ticket = self._redeem_registration_token(bootstrap_token)
         user = self.session.get(User, ticket.user_id)
         if user is None:
-            raise PulsarByocError("bootstrap_token references a missing user")
+            raise ComputeResourceError("bootstrap_token references a missing user")
 
         client = self._relay_client(relay_url)
         try:
@@ -556,12 +570,12 @@ class PulsarByocManager:
                 f"refresh_token's sub claim {sub!r} does not match manager_name {manager_name!r}"
             )
 
-        # Pin the three BYOC topics for this manager to the BYOC user's
+        # Pin the three job topics for this manager to the BYOC user's
         # ownership before we commit anything to our own DB / vault. Any
         # later failure (DB, vault) cleans up cleanly because the rotated
         # refresh token can simply be re-exchanged later.
         try:
-            for prefix in BYOC_TOPIC_PREFIXES:
+            for prefix in RELAY_TOPIC_PREFIXES:
                 client.create_or_verify_topic(access_token, f"{prefix}_{manager_name}")
         except TopicOwnershipConflictError as exc:
             raise RelayVerificationFailed(str(exc)) from exc
@@ -569,14 +583,14 @@ class PulsarByocManager:
             raise RelayVerificationFailed(str(exc)) from exc
 
         # Disable any existing active row for this user — the invariant is
-        # "at most one active BYOC per user". Running jobs continue to drain
-        # on their existing client manager (which we don't tear down here).
+        # "at most one active compute resource per user". Running jobs continue
+        # to drain on their existing client manager (which we don't tear down here).
         existing = self.get_active_for(user)
         if existing is not None:
             existing.status = STATUS_DISABLED
             self.session.add(existing)
 
-        resource = PulsarByocResource(
+        resource = ComputeResource(
             user_id=user.id,
             manager_name=manager_name,
             relay_url=relay_url,
@@ -598,7 +612,7 @@ class PulsarByocManager:
 
     # ---- delete -----------------------------------------------------------
 
-    def delete(self, user: Optional[User], resource_id: int) -> Optional[PulsarByocResource]:
+    def delete(self, user: Optional[User], resource_id: int) -> Optional[ComputeResource]:
         """Soft-delete a resource. Running jobs continue to drain through the
         runner's still-cached client manager; new jobs no longer route here
         because TPV's ``get_active_for`` skips disabled rows."""
@@ -614,22 +628,22 @@ class PulsarByocManager:
     # ---- purge ------------------------------------------------------------
 
     def _has_running_jobs(self, user: User, resource_id: int) -> bool:
-        """True if any non-terminal Job is bound to this BYOC resource.
+        """True if any non-terminal Job is bound to this compute resource.
 
-        We don't have a denormalised FK from Job to PulsarByocResource (the
+        We don't have a denormalised FK from Job to ComputeResource (the
         binding lives inside ``destination_params``), so we fetch the user's
-        non-terminal pulsar_byoc jobs and Python-filter. Safe because BYOC is
-        owner-only — the candidate set is small.
+        non-terminal compute-resource jobs and Python-filter. Safe because
+        the resources are owner-only — the candidate set is small.
         """
         stmt = (
             select(Job)
             .where(Job.user_id == user.id)
             .where(Job.state.in_(Job.non_ready_states))
-            .where(Job.job_runner_name == "pulsar_byoc")
+            .where(Job.job_runner_name == COMPUTE_RESOURCE_RUNNER_ID)
         )
         for job in self.session.scalars(stmt):
             params = job.destination_params or {}
-            raw = params.get("pulsar_byoc_resource_id")
+            raw = params.get(COMPUTE_RESOURCE_ID_PARAM)
             if raw is None:
                 continue
             try:
@@ -640,7 +654,7 @@ class PulsarByocManager:
                 return True
         return False
 
-    def purge(self, user: Optional[User], resource_id: int) -> Optional[PulsarByocResource]:
+    def purge(self, user: Optional[User], resource_id: int) -> Optional[ComputeResource]:
         """Fully delete a resource: clears the vault secret and transitions
         status to ``deleted``.
 
@@ -667,7 +681,7 @@ class PulsarByocManager:
         try:
             UserVaultWrapper(self._vault, user).write_secret(relay_refresh_token_vault_path(resource_id), "")
         except Exception:
-            log.exception("Failed to clear vault secret for BYOC resource %s", resource_id)
+            log.exception("Failed to clear vault secret for compute resource %s", resource_id)
             # Continue: the row is still going to ``deleted``; an orphaned
             # vault entry is a leak, not a correctness issue, and the
             # admin can clean it up if needed.

@@ -15,7 +15,7 @@ from typing import (
 
 import pytest
 
-from galaxy.managers.pulsar_byoc import (
+from galaxy.managers.compute_resources import (
     _make_capabilities_topic_name,
     CAPABILITIES_CACHE_TTL_SECONDS,
     extract_capability_payload,

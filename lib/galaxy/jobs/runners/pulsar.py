@@ -55,7 +55,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
-from galaxy.managers.pulsar_byoc import relay_refresh_token_vault_path
+from galaxy.managers.compute_resources import relay_refresh_token_vault_path
 from galaxy.model.base import check_database_connection
 from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.deps import dependencies
@@ -1226,7 +1226,7 @@ class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
 
 
-class BYOCClientManagerRegistry:
+class ComputeResourceClientManagerRegistry:
     """Per-tenant Pulsar client managers, lazily created and held under a lock.
 
     Keyed by ``(relay_url, manager_name)``. Decoupled from the
@@ -1267,7 +1267,7 @@ class BYOCClientManagerRegistry:
                 try:
                     cm.shutdown()
                 except Exception:
-                    log.exception("failure shutting down BYOC client manager")
+                    log.exception("failure shutting down compute-resource client manager")
             self._client_managers.clear()
 
     def __len__(self) -> int:
@@ -1278,23 +1278,23 @@ class BYOCClientManagerRegistry:
 class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
     """Multi-tenant Pulsar runner backing user-self-registered compute resources.
 
-    One statically-registered instance of this runner serves every BYOC
+    One statically-registered instance of this runner serves every compute
     resource. At startup it holds no relay credentials and no client manager;
     those are materialised lazily — keyed by ``(relay_url, manager_name)`` —
-    when a job's destination params point at a user's BYOC resource.
+    when a job's destination params point at a user's compute resource.
 
-    Per-job destination params required (injected by the TPV ``pulsar_byoc``
-    rule from ``app.byoc_manager.get_active_for(user)``):
+    Per-job destination params required (injected by the TPV
+    ``compute_resource`` rule from
+    ``app.compute_resource_manager.get_active_for(user)``):
 
-    * ``pulsar_byoc_resource_id`` — primary key of the user's
-      ``PulsarByocResource`` row; used to look up the row and locate the
-      refresh-token vault entry.
+    * ``compute_resource_id`` — primary key of the user's ``ComputeResource``
+      row; used to look up the row and locate the refresh-token vault entry.
     * ``relay_url``, ``manager`` — relay endpoint and per-user manager name.
 
     The relay refresh token lives in the Galaxy vault at
-    ``pulsar_byoc/<resource_id>/relay_refresh_token``; rotations are persisted
-    back to the vault via the ``on_refresh_token_rotated`` callback we hand
-    to Pulsar's client at construction time.
+    ``compute_resource/<resource_id>/relay_refresh_token``; rotations are
+    persisted back to the vault via the ``on_refresh_token_rotated`` callback
+    we hand to Pulsar's client at construction time.
     """
 
     use_mq = True
@@ -1329,7 +1329,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         threading by inspecting the recorded kwargs.
         """
         super().__init__(app, nworkers, **kwds)
-        self._registry = BYOCClientManagerRegistry(client_manager_factory or build_client_manager)
+        self._registry = ComputeResourceClientManagerRegistry(client_manager_factory or build_client_manager)
 
     def _monitor(self) -> None:
         # Skip the parent's attempt to wire ``ensure_has_status_update_callback``
@@ -1337,18 +1337,18 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         # not needed because ``poll`` is False.
         self._init_noop_monitor()
 
-    def _resource_for_params(self, job_destination_params: dict[str, Any]) -> Optional["model.PulsarByocResource"]:
-        resource_id = job_destination_params.get("pulsar_byoc_resource_id")
+    def _resource_for_params(self, job_destination_params: dict[str, Any]) -> Optional["model.ComputeResource"]:
+        resource_id = job_destination_params.get("compute_resource_id")
         if resource_id is None:
             return None
         try:
             resource_id = int(resource_id)
         except (TypeError, ValueError):
-            log.warning("pulsar_byoc_resource_id %r is not an int; refusing to dispatch", resource_id)
+            log.warning("compute_resource_id %r is not an int; refusing to dispatch", resource_id)
             return None
-        return self.app.model.session.get(model.PulsarByocResource, resource_id)
+        return self.app.model.session.get(model.ComputeResource, resource_id)
 
-    def _read_refresh_token(self, resource: "model.PulsarByocResource", user: Optional["model.User"]) -> Optional[str]:
+    def _read_refresh_token(self, resource: "model.ComputeResource", user: Optional["model.User"]) -> Optional[str]:
         """Fetch the relay refresh token from the per-user vault.
 
         Returns ``None`` if the secret is missing or unreadable — the caller
@@ -1373,17 +1373,17 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         resource = self._resource_for_params(job_destination_params)
         if resource is None:
             raise RuntimeError(
-                f"No PulsarByocResource for resource id {job_destination_params.get('pulsar_byoc_resource_id')!r}"
+                f"No ComputeResource for resource id {job_destination_params.get('compute_resource_id')!r}"
             )
         if resource.status != "active":
-            raise RuntimeError(f"PulsarByocResource id={resource.id} is in status '{resource.status}', not 'active'")
+            raise RuntimeError(f"ComputeResource id={resource.id} is in status '{resource.status}', not 'active'")
 
         key = (resource.relay_url, resource.manager_name)
 
         def _build_kwargs() -> dict[str, Any]:
             refresh_token = self._read_refresh_token(resource, user)
             if not refresh_token:
-                raise RuntimeError(f"No relay refresh token in vault for PulsarByocResource id={resource.id}")
+                raise RuntimeError(f"No relay refresh token in vault for ComputeResource id={resource.id}")
 
             def _persist_rotation(
                 data: dict[str, Any],
@@ -1402,14 +1402,15 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
                 manager=resource.manager_name,
                 relay_topic_prefix=resource.relay_topic_prefix or "",
             )
-            # The base ``manager`` runner param is None for the BYOC runner;
-            # drop None overrides so we don't shadow the per-resource value.
+            # The base ``manager`` runner param is None for the multi-tenant
+            # runner; drop None overrides so we don't shadow the per-resource value.
             for k in ("relay_username", "relay_password"):
                 kwargs.pop(k, None)
             return kwargs
 
         def _on_create(cm: Any) -> None:
-            # MQ runners attach the callback in ``_monitor``; for BYOC we
+            # MQ runners attach the callback in ``_monitor``; for the
+            # compute-resource runner we
             # attach it as soon as the client manager is materialised so
             # status updates from this tenant's Pulsar are wired up before
             # any job is submitted against it.
@@ -1453,15 +1454,16 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         1. ``jobs_directory`` data-supply: if unset (or the destination_default
            sentinel), set from the snapshot's ``staging_directory``. If set
            and matching, no-op. If set and mismatched, log a loud warning —
-           BYOC has no shared FS between Galaxy and pulsar, so the two
-           values *must* agree for path rewrites to work.
+           Compute-resource runners have no shared FS between Galaxy and
+           pulsar, so the two values *must* agree for path rewrites to work.
         2. Container-runtime clear-only: if the operator asked for
            ``docker_enabled`` / ``singularity_enabled`` / ``apptainer_enabled``
            but the remote reports the binary isn't on PATH, clear it. Same
            treatment for ``remote_container_handling`` if no runtime at all.
         3. Conda dependency-resolution downgrade: ``remote`` → ``none``
-           when the remote reports no conda. NOT ``local`` — BYOC has no
-           shared FS so galaxy's local conda paths don't exist on pulsar;
+           when the remote reports no conda. NOT ``local`` — the
+           compute-resource runner has no shared FS so galaxy's local conda
+           paths don't exist on pulsar;
            ``none`` lets jobs without conda needs still run, and jobs that
            need conda fail at startup with a clear error.
 
@@ -1472,7 +1474,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         resource = self._resource_for_params(params)
         if resource is None:
             return
-        caps = self.app.byoc_manager.capabilities_for(resource, user=user)
+        caps = self.app.compute_resource_manager.capabilities_for(resource, user=user)
         if caps is None:
             return
 
@@ -1488,7 +1490,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
                 log.warning(
                     "Destination jobs_directory=%r doesn't match pulsar %s "
                     "staging_directory=%r; path rewrites WILL be wrong. "
-                    "BYOC has no shared FS — these must agree.",
+                    "The compute-resource runner has no shared FS — these must agree.",
                     existing,
                     manager_name,
                     snapshot_staging,
@@ -1524,12 +1526,12 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
                 params["remote_container_handling"] = False
 
         # 3. Dependency resolution: remote -> none (NOT local), because
-        # BYOC has no shared FS so galaxy's local conda paths don't
-        # exist on pulsar.
+        # the compute-resource runner has no shared FS so galaxy's
+        # local conda paths don't exist on pulsar.
         if params.get("dependency_resolution") == "remote" and not caps.get("conda_available"):
             log.warning(
                 "Destination requested dependency_resolution=remote but pulsar %s "
-                "reports no conda; downgrading to 'none' (BYOC has no shared FS, "
+                "reports no conda; downgrading to 'none' (no shared FS, "
                 "so 'local' would just shift the failure). Tools that need conda "
                 "will fail at startup; tools that don't will still run.",
                 manager_name,
@@ -1573,14 +1575,15 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         return client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def recover(self, job: "model.Job", job_wrapper: "MinimalJobWrapper") -> None:
-        """Recover BYOC jobs. If the BYOC resource has been deleted while the
-        job was running, fail the job cleanly rather than crashing recovery."""
+        """Recover compute-resource jobs. If the resource has been deleted
+        while the job was running, fail the job cleanly rather than crashing
+        recovery."""
         params = dict(job_wrapper.job_destination.params)
         try:
             self._get_or_create_client_manager(params, job.user)
         except RuntimeError as exc:
-            log.warning("BYOC recovery failed for job %s: %s — failing job cleanly", job.id, exc)
-            job_wrapper.fail(f"BYOC resource removed while job was running: {exc}")
+            log.warning("Compute-resource recovery failed for job %s: %s — failing job cleanly", job.id, exc)
+            job_wrapper.fail(f"Compute resource removed while job was running: {exc}")
             return
         super().recover(job, job_wrapper)
 

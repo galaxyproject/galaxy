@@ -13,7 +13,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from galaxy.jobs.runners.pulsar import (
-    BYOCClientManagerRegistry,
+    ComputeResourceClientManagerRegistry,
     PulsarMQBYOCJobRunner,
 )
 
@@ -67,7 +67,7 @@ class _StubSession:
 
     def get(self, model_cls, pk):
         # Caller passes the SQLAlchemy class; we dispatch by name.
-        if model_cls.__name__ == "PulsarByocResource":
+        if model_cls.__name__ == "ComputeResource":
             return self._resources.get(pk)
         if model_cls.__name__ == "Job":
             return self._jobs.get(pk)
@@ -75,7 +75,7 @@ class _StubSession:
 
 
 class _StubByocManager:
-    """Stand-in for ``app.byoc_manager`` exposing only the surface the
+    """Stand-in for ``app.compute_resource_manager`` exposing only the surface the
     runner uses (``capabilities_for``). Tests set ``snapshot`` to control
     what the runner sees; ``calls`` records each invocation."""
 
@@ -89,11 +89,11 @@ class _StubByocManager:
 
 
 class _StubApp:
-    def __init__(self, resources_by_id, vault, byoc_manager=None):
+    def __init__(self, resources_by_id, vault, compute_resource_manager=None):
         self.model = MagicMock()
         self.model.session = _StubSession(resources_by_id)
         self.vault = vault
-        self.byoc_manager = byoc_manager or _StubByocManager(snapshot=None)
+        self.compute_resource_manager = compute_resource_manager or _StubByocManager(snapshot=None)
 
 
 class _StubJobDestination:
@@ -159,19 +159,19 @@ class _FakeClientManagerFactory:
         return cm
 
 
-def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None, byoc_manager=None):
+def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None, compute_resource_manager=None):
     """Build a PulsarMQBYOCJobRunner bypassing its inherited __init__.
 
     ``factory`` is the ``client_manager_factory`` that __init__ would
     normally store — we just attach it directly because we're skipping
-    the chain. ``byoc_manager`` is the stub the downgrade tests use to
-    drive ``self.app.byoc_manager.capabilities_for``.
+    the chain. ``compute_resource_manager`` is the stub the downgrade tests use to
+    drive ``self.app.compute_resource_manager.capabilities_for``.
     """
     runner = object.__new__(PulsarMQBYOCJobRunner)
     # We bypass __init__ to skip worker-thread setup; mypy sees these
     # attributes as the parent class's exact types but the runtime methods
     # we exercise only use the simple in-test surface.
-    runner.app = _StubApp(resources_by_id, vault, byoc_manager=byoc_manager)  # type: ignore[assignment]
+    runner.app = _StubApp(resources_by_id, vault, compute_resource_manager=compute_resource_manager)  # type: ignore[assignment]
     runner.runner_params = runner_params or {  # type: ignore[assignment]
         "manager": None,
         "cache": None,
@@ -179,14 +179,14 @@ def _make_runner(*, resources_by_id, vault, runner_params=None, factory=None, by
         "persistence_directory": None,
     }
     runner.client_manager_kwargs = {}
-    runner._registry = BYOCClientManagerRegistry(factory or _FakeClientManagerFactory())
+    runner._registry = ComputeResourceClientManagerRegistry(factory or _FakeClientManagerFactory())
     return runner
 
 
 @pytest.fixture
 def vault_with_token():
     user = _StubUser(id=7)
-    vault = _StubVault({f"user/{user.id}/pulsar_byoc/42/relay_refresh_token": "RT-AAA"})
+    vault = _StubVault({f"user/{user.id}/compute_resource/42/relay_refresh_token": "RT-AAA"})
     return user, vault
 
 
@@ -196,7 +196,7 @@ def test_lazy_creates_one_client_manager_per_resource(vault_with_token):
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
 
-    params = {"pulsar_byoc_resource_id": 42}
+    params = {"compute_resource_id": 42}
     cm1 = runner._get_or_create_client_manager(params, user)
     cm2 = runner._get_or_create_client_manager(params, user)
 
@@ -217,8 +217,8 @@ def test_different_resources_get_different_client_managers():
     user_a, user_b = _StubUser(id=1), _StubUser(id=2)
     vault = _StubVault(
         {
-            f"user/{user_a.id}/pulsar_byoc/10/relay_refresh_token": "RT-A",
-            f"user/{user_b.id}/pulsar_byoc/20/relay_refresh_token": "RT-B",
+            f"user/{user_a.id}/compute_resource/10/relay_refresh_token": "RT-A",
+            f"user/{user_b.id}/compute_resource/20/relay_refresh_token": "RT-B",
         }
     )
     resources = {
@@ -228,8 +228,8 @@ def test_different_resources_get_different_client_managers():
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
 
-    cm_a = runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 10}, user_a)
-    cm_b = runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 20}, user_b)
+    cm_a = runner._get_or_create_client_manager({"compute_resource_id": 10}, user_a)
+    cm_b = runner._get_or_create_client_manager({"compute_resource_id": 20}, user_b)
 
     assert cm_a is not cm_b
     assert len(factory.calls) == 2
@@ -244,7 +244,7 @@ def test_non_active_resource_is_refused(vault_with_token):
     runner = _make_runner(resources_by_id={42: resource}, vault=vault)
 
     with pytest.raises(RuntimeError, match="not 'active'"):
-        runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 42}, user)
+        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
 
 
 def test_missing_resource_is_refused():
@@ -252,8 +252,8 @@ def test_missing_resource_is_refused():
     vault = _StubVault()
     runner = _make_runner(resources_by_id={}, vault=vault)
 
-    with pytest.raises(RuntimeError, match="No PulsarByocResource"):
-        runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 999}, user)
+    with pytest.raises(RuntimeError, match="No ComputeResource"):
+        runner._get_or_create_client_manager({"compute_resource_id": 999}, user)
 
 
 def test_missing_vault_token_is_refused():
@@ -264,9 +264,9 @@ def test_missing_vault_token_is_refused():
     runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
 
     with pytest.raises(RuntimeError, match="No relay refresh token"):
-        runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 42}, user)
+        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
     # Vault was consulted at the right key
-    assert vault.reads == [f"user/{user.id}/pulsar_byoc/42/relay_refresh_token"]
+    assert vault.reads == [f"user/{user.id}/compute_resource/42/relay_refresh_token"]
     # The factory MUST NOT have been called when the token is missing.
     assert factory.calls == []
 
@@ -281,7 +281,7 @@ def test_rotation_callback_persists_to_vault(vault_with_token):
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
 
-    runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 42}, user)
+    runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
     rotated_callback = factory.calls[0]["on_refresh_token_rotated"]
 
     rotated_callback(
@@ -292,7 +292,7 @@ def test_rotation_callback_persists_to_vault(vault_with_token):
         }
     )
 
-    assert (f"user/{user.id}/pulsar_byoc/42/relay_refresh_token", "RT-ROTATED") in vault.writes
+    assert (f"user/{user.id}/compute_resource/42/relay_refresh_token", "RT-ROTATED") in vault.writes
 
 
 def test_shutdown_closes_all_cached_client_managers(monkeypatch):
@@ -308,8 +308,8 @@ def test_shutdown_closes_all_cached_client_managers(monkeypatch):
     user = _StubUser(id=7)
     vault = _StubVault(
         {
-            f"user/{user.id}/pulsar_byoc/10/relay_refresh_token": "RT-A",
-            f"user/{user.id}/pulsar_byoc/20/relay_refresh_token": "RT-B",
+            f"user/{user.id}/compute_resource/10/relay_refresh_token": "RT-A",
+            f"user/{user.id}/compute_resource/20/relay_refresh_token": "RT-B",
         }
     )
     resources = {
@@ -319,8 +319,8 @@ def test_shutdown_closes_all_cached_client_managers(monkeypatch):
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
 
-    cm1 = runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 10}, user)
-    cm2 = runner._get_or_create_client_manager({"pulsar_byoc_resource_id": 20}, user)
+    cm1 = runner._get_or_create_client_manager({"compute_resource_id": 10}, user)
+    cm2 = runner._get_or_create_client_manager({"compute_resource_id": 20}, user)
 
     runner.shutdown()
 
@@ -336,12 +336,12 @@ def test_recover_fails_job_cleanly_when_resource_deleted():
     runner = _make_runner(resources_by_id={}, vault=_StubVault())
 
     job = _StubJob(id=99, user=user)
-    job_wrapper = _RecordingJobWrapper({"pulsar_byoc_resource_id": 42})
+    job_wrapper = _RecordingJobWrapper({"compute_resource_id": 42})
 
     runner.recover(job, job_wrapper)
 
     assert len(job_wrapper.failures) == 1
-    assert "BYOC resource removed" in job_wrapper.failures[0]
+    assert "Compute resource removed" in job_wrapper.failures[0]
 
 
 # ---- _apply_capability_downgrades ---------------------------------------
@@ -377,36 +377,36 @@ def _make_snapshot(
 def _runner_with_snapshot(snapshot, *, vault=None):
     user = _StubUser(id=7)
     if vault is None:
-        vault = _StubVault({f"user/{user.id}/pulsar_byoc/42/relay_refresh_token": "RT-AAA"})
+        vault = _StubVault({f"user/{user.id}/compute_resource/42/relay_refresh_token": "RT-AAA"})
     resource = _StubResource(id=42, manager_name="byoc_7_lab")
-    byoc_manager = _StubByocManager(snapshot=snapshot)
+    compute_resource_manager = _StubByocManager(snapshot=snapshot)
     runner = _make_runner(
         resources_by_id={42: resource},
         vault=vault,
-        byoc_manager=byoc_manager,
+        compute_resource_manager=compute_resource_manager,
     )
-    return runner, user, byoc_manager
+    return runner, user, compute_resource_manager
 
 
 def test_downgrade_no_op_when_no_resource_id():
     runner, user, _ = _runner_with_snapshot(_make_snapshot())
-    params = {"docker_enabled": True}  # no pulsar_byoc_resource_id
+    params = {"docker_enabled": True}  # no compute_resource_id
     runner._apply_capability_downgrades(params, user)
     assert params == {"docker_enabled": True}
 
 
 def test_downgrade_no_op_when_capabilities_for_returns_none():
     """No snapshot → trust operator params verbatim."""
-    runner, user, byoc_manager = _runner_with_snapshot(snapshot=None)
+    runner, user, compute_resource_manager = _runner_with_snapshot(snapshot=None)
     params = {
-        "pulsar_byoc_resource_id": 42,
+        "compute_resource_id": 42,
         "docker_enabled": True,
         "dependency_resolution": "remote",
     }
     runner._apply_capability_downgrades(params, user)
     assert params["docker_enabled"] is True
     assert params["dependency_resolution"] == "remote"
-    assert byoc_manager.calls == [(byoc_manager.calls[0][0], user)]
+    assert compute_resource_manager.calls == [(compute_resource_manager.calls[0][0], user)]
 
 
 # --- jobs_directory auto-fill ---
@@ -414,7 +414,7 @@ def test_downgrade_no_op_when_capabilities_for_returns_none():
 
 def test_downgrade_fills_jobs_directory_when_unset():
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
-    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42}
+    params: dict[str, Any] = {"compute_resource_id": 42}
     runner._apply_capability_downgrades(params, user)
     assert params["jobs_directory"] == "/srv/staging"
 
@@ -426,14 +426,14 @@ def test_downgrade_fills_jobs_directory_when_set_to_required_sentinel():
     from galaxy.jobs.runners.pulsar import PARAMETER_SPECIFICATION_REQUIRED
 
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
-    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": PARAMETER_SPECIFICATION_REQUIRED}
+    params = {"compute_resource_id": 42, "jobs_directory": PARAMETER_SPECIFICATION_REQUIRED}
     runner._apply_capability_downgrades(params, user)
     assert params["jobs_directory"] == "/srv/staging"
 
 
 def test_downgrade_leaves_matching_jobs_directory_alone():
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
-    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": "/srv/staging"}
+    params = {"compute_resource_id": 42, "jobs_directory": "/srv/staging"}
     runner._apply_capability_downgrades(params, user)
     assert params["jobs_directory"] == "/srv/staging"
 
@@ -442,7 +442,7 @@ def test_downgrade_warns_on_mismatched_jobs_directory_but_does_not_overwrite(cap
     """Operator override wins (perhaps they know something we don't)
     but they get a loud warning that paths will be wrong."""
     runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
-    params = {"pulsar_byoc_resource_id": 42, "jobs_directory": "/some/other/path"}
+    params = {"compute_resource_id": 42, "jobs_directory": "/some/other/path"}
     runner._apply_capability_downgrades(params, user)
     assert params["jobs_directory"] == "/some/other/path"  # unchanged
     assert any("path rewrites WILL be wrong" in r.message for r in caplog.records)
@@ -452,7 +452,7 @@ def test_downgrade_no_op_when_snapshot_has_no_staging_directory():
     snap = _make_snapshot()
     snap["staging_directory"] = None
     runner, user, _ = _runner_with_snapshot(snap)
-    params = {"pulsar_byoc_resource_id": 42}
+    params = {"compute_resource_id": 42}
     runner._apply_capability_downgrades(params, user)
     assert "jobs_directory" not in params
 
@@ -471,7 +471,7 @@ def test_downgrade_no_op_when_snapshot_has_no_staging_directory():
 def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, available_kw, caplog):
     snapshot_kwargs: dict[str, Any] = {available_kw: False}
     runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
-    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42, param_name: True}
+    params: dict[str, Any] = {"compute_resource_id": 42, param_name: True}
     runner._apply_capability_downgrades(params, user)
     assert params[param_name] is False
     assert any(f"requested {param_name}=true" in r.message for r in caplog.records)
@@ -488,7 +488,7 @@ def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, availabl
 def test_downgrade_preserves_runtime_flag_when_remote_has_it(param_name, available_kw):
     snapshot_kwargs: dict[str, Any] = {available_kw: True}
     runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
-    params: dict[str, Any] = {"pulsar_byoc_resource_id": 42, param_name: True}
+    params: dict[str, Any] = {"compute_resource_id": 42, param_name: True}
     runner._apply_capability_downgrades(params, user)
     assert params[param_name] is True
 
@@ -496,14 +496,14 @@ def test_downgrade_preserves_runtime_flag_when_remote_has_it(param_name, availab
 def test_downgrade_does_not_set_runtime_flag_when_operator_did_not_request_it():
     """Clear-only: even if pulsar reports docker available, we never auto-enable it."""
     runner, user, _ = _runner_with_snapshot(_make_snapshot(docker=True))
-    params = {"pulsar_byoc_resource_id": 42}
+    params = {"compute_resource_id": 42}
     runner._apply_capability_downgrades(params, user)
     assert "docker_enabled" not in params
 
 
 def test_downgrade_clears_remote_container_handling_when_no_runtime_at_all(caplog):
     runner, user, _ = _runner_with_snapshot(_make_snapshot())  # all runtimes False
-    params = {"pulsar_byoc_resource_id": 42, "remote_container_handling": True}
+    params = {"compute_resource_id": 42, "remote_container_handling": True}
     runner._apply_capability_downgrades(params, user)
     assert params["remote_container_handling"] is False
     assert any("no container runtime" in r.message for r in caplog.records)
@@ -512,7 +512,7 @@ def test_downgrade_clears_remote_container_handling_when_no_runtime_at_all(caplo
 def test_downgrade_keeps_remote_container_handling_if_any_runtime_present():
     """Even one runtime is enough to honor the request."""
     runner, user, _ = _runner_with_snapshot(_make_snapshot(singularity=True))
-    params = {"pulsar_byoc_resource_id": 42, "remote_container_handling": True}
+    params = {"compute_resource_id": 42, "remote_container_handling": True}
     runner._apply_capability_downgrades(params, user)
     assert params["remote_container_handling"] is True
 
@@ -522,7 +522,7 @@ def test_downgrade_keeps_remote_container_handling_if_any_runtime_present():
 
 def test_downgrade_demotes_dependency_resolution_remote_to_none_when_no_conda(caplog):
     runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
-    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": "remote"}
+    params = {"compute_resource_id": 42, "dependency_resolution": "remote"}
     runner._apply_capability_downgrades(params, user)
     # NOT "local" — that would be a broken path on a non-shared FS.
     assert params["dependency_resolution"] == "none"
@@ -531,7 +531,7 @@ def test_downgrade_demotes_dependency_resolution_remote_to_none_when_no_conda(ca
 
 def test_downgrade_keeps_dependency_resolution_remote_when_conda_available():
     runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=True))
-    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": "remote"}
+    params = {"compute_resource_id": 42, "dependency_resolution": "remote"}
     runner._apply_capability_downgrades(params, user)
     assert params["dependency_resolution"] == "remote"
 
@@ -540,6 +540,6 @@ def test_downgrade_keeps_dependency_resolution_remote_when_conda_available():
 def test_downgrade_does_not_touch_non_remote_dependency_resolution(resolution):
     """Operator already opted out of remote conda; we don't second-guess."""
     runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
-    params = {"pulsar_byoc_resource_id": 42, "dependency_resolution": resolution}
+    params = {"compute_resource_id": 42, "dependency_resolution": resolution}
     runner._apply_capability_downgrades(params, user)
     assert params["dependency_resolution"] == resolution

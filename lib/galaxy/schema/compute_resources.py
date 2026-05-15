@@ -1,4 +1,4 @@
-"""Pydantic models for the /api/pulsar_byoc endpoints."""
+"""Pydantic models for the /api/compute_resources endpoints."""
 
 from datetime import datetime
 from typing import (
@@ -12,8 +12,8 @@ from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import Model
 
 
-class PulsarByocResourceSummary(Model):
-    """User-visible view of a registered Pulsar compute resource.
+class ComputeResourceSummary(Model):
+    """User-visible view of a registered compute resource.
 
     The relay refresh token is intentionally absent — it lives in the
     Galaxy vault and is never exposed through the API.
@@ -21,7 +21,7 @@ class PulsarByocResourceSummary(Model):
 
     id: Annotated[
         EncodedDatabaseIdField,
-        Field(description="Encoded ID of the BYOC resource."),
+        Field(description="Encoded ID of the compute resource."),
     ]
     manager_name: Annotated[
         str,
@@ -57,7 +57,7 @@ class PulsarByocResourceSummary(Model):
 
 
 class RegistrationTicket(Model):
-    """Returned by ``POST /api/pulsar_byoc/registration``.
+    """Returned by ``POST /api/compute_resources/registrations``.
 
     Carries the one-shot bootstrap token the user passes to
     ``pulsar-config register-with-galaxy`` so the host-side flow can call
@@ -69,7 +69,7 @@ class RegistrationTicket(Model):
         Field(
             description=(
                 "Single-use, short-TTL opaque token. Authenticates the "
-                "subsequent ``POST /api/pulsar_byoc/bootstrap`` callback."
+                "subsequent ``POST /api/compute_resources/registrations/complete`` callback."
             ),
         ),
     ]
@@ -86,9 +86,10 @@ class RegistrationTicket(Model):
     ]
 
 
-class BootstrapPayload(Model):
-    """Body of ``POST /api/pulsar_byoc/bootstrap``, sent by the user's host
-    after the device-flow login. Authenticates via the bootstrap_token.
+class RegistrationCompletionPayload(Model):
+    """Body of ``POST /api/compute_resources/registrations/complete``, sent by
+    the user's host after the device-flow login. Authenticates via the
+    bootstrap_token.
     """
 
     bootstrap_token: Annotated[str, Field(description="The token from RegistrationTicket.")]
@@ -98,7 +99,7 @@ class BootstrapPayload(Model):
             description=(
                 "Relay refresh token earmarked for Galaxy (the secondary "
                 "token from the device-flow pair). Stored in the user's "
-                "vault and rotated by the BYOC runner."
+                "vault and rotated by the compute-resource runner."
             ),
         ),
     ]
@@ -107,8 +108,8 @@ class BootstrapPayload(Model):
         str,
         Field(
             description=(
-                "Relay user identifier (``sub`` claim); becomes the BYOC "
-                "manager name. Validated against the access token decoded "
+                "Relay user identifier (``sub`` claim); becomes the compute "
+                "resource's manager name. Validated against the access token decoded "
                 "from a refresh of ``refresh_token``."
             ),
         ),

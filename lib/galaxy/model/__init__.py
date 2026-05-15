@@ -13017,14 +13017,14 @@ class Credential(Base):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
-class PulsarByocResource(Base, RepresentById):
-    """A user-registered Pulsar compute resource ("Bring Your Own Compute").
+class ComputeResource(Base, RepresentById):
+    """A user-registered compute resource.
 
     The relay refresh token associated with each row lives in the Galaxy vault at
-    ``pulsar_byoc/<id>/relay_refresh_token``; it is never stored on the row itself.
+    ``compute_resource/<id>/relay_refresh_token``; it is never stored on the row itself.
     """
 
-    __tablename__ = "pulsar_byoc_resource"
+    __tablename__ = "compute_resource"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
@@ -13037,16 +13037,17 @@ class PulsarByocResource(Base, RepresentById):
     last_seen_time: Mapped[Optional[datetime]] = mapped_column(nullable=True)
 
 
-class PulsarByocBootstrapToken(Base):
-    """Single-use short-TTL token authorising a ``POST /api/pulsar_byoc/bootstrap``
-    callback. The token row is deleted on successful redemption.
+class ComputeResourceRegistration(Base):
+    """Single-use short-TTL token authorising the
+    ``POST /api/compute_resources/registrations/complete`` callback. The
+    row is deleted on successful redemption.
 
     Galaxy convention: surrogate ``id`` integer PK + a unique secret column.
     The opaque ``token`` string is what the user posts back; we look it up
     via the unique index rather than treating it as the row identity.
     """
 
-    __tablename__ = "pulsar_byoc_bootstrap_token"
+    __tablename__ = "compute_resource_registration"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     token: Mapped[str] = mapped_column(String(64), unique=True, index=True)

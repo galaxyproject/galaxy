@@ -46,12 +46,12 @@ if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.jobs.manager import JobManager
     from galaxy.managers.collections import DatasetCollectionManager
+    from galaxy.managers.compute_resources import ComputeResourceManager
     from galaxy.managers.folders import FolderManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.interactivetool import InteractiveToolManager
     from galaxy.managers.jobs import JobSearch
-    from galaxy.managers.pulsar_byoc import PulsarByocManager
     from galaxy.managers.tools import DynamicToolManager
     from galaxy.managers.users import UserManager
     from galaxy.managers.workflows import (
@@ -124,7 +124,7 @@ class MinimalApp(BasicSharedApp):
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
     amqp_internal_connection_obj: Optional[Connection]
-    byoc_manager: "PulsarByocManager"
+    compute_resource_manager: "ComputeResourceManager"
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources

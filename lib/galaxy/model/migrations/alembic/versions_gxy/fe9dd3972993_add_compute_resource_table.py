@@ -1,4 +1,4 @@
-"""Add pulsar_byoc_resource + pulsar_byoc_bootstrap_token tables
+"""Add compute_resource + compute_resource_registration tables
 
 Revision ID: fe9dd3972993
 Revises: 6925fe4c8a17
@@ -20,22 +20,22 @@ down_revision = "6925fe4c8a17"
 branch_labels = None
 depends_on = None
 
-RESOURCE_TABLE = "pulsar_byoc_resource"
-BOOTSTRAP_TOKEN_TABLE = "pulsar_byoc_bootstrap_token"
+RESOURCE_TABLE = "compute_resource"
+REGISTRATION_TABLE = "compute_resource_registration"
 
 
 def upgrade():
-    """Create the tables backing user-self-registered Pulsar compute resources (BYOC).
+    """Create the tables backing user-self-registered compute resources.
 
     The relay refresh token associated with each resource is stored in the Galaxy
-    vault, not in these tables. ``pulsar_byoc_bootstrap_token`` holds short-lived
-    single-use tokens that authorise the ``POST /api/pulsar_byoc/bootstrap``
-    callback from the user's host.
+    vault, not in these tables. ``compute_resource_registration`` holds short-lived
+    single-use tokens that authorise the
+    ``POST /api/compute_resources/registrations/complete`` callback from the user's host.
 
     ``ondelete="CASCADE"`` on the ``user_id`` FKs: deleting a Galaxy user
-    removes their BYOC resource rows and any unredeemed bootstrap tokens
+    removes their compute_resource rows and any unredeemed registration tokens
     along with them, so the vault entries (cleared by
-    :meth:`PulsarByocManager.purge`) aren't orphaned by an admin user delete.
+    :meth:`ComputeResourceManager.purge`) aren't orphaned by an admin user delete.
     """
     with transaction():
         create_table(
@@ -63,7 +63,7 @@ def upgrade():
             sa.Column("last_seen_time", sa.DateTime, nullable=True),
         )
         create_table(
-            BOOTSTRAP_TOKEN_TABLE,
+            REGISTRATION_TABLE,
             sa.Column("id", sa.Integer, primary_key=True),
             sa.Column("token", sa.String(64), nullable=False, unique=True, index=True),
             sa.Column(
@@ -80,5 +80,5 @@ def upgrade():
 
 def downgrade():
     with transaction():
-        drop_table(BOOTSTRAP_TOKEN_TABLE)
+        drop_table(REGISTRATION_TABLE)
         drop_table(RESOURCE_TABLE)
