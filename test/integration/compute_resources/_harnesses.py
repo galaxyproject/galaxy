@@ -41,7 +41,7 @@ PULSAR_READY_TIMEOUT_SECONDS = 30
 class KeycloakHandle:
     port: int
     base_url: str
-    compose_env: dict
+    container_name: str
 
 
 @dataclass
@@ -59,26 +59,53 @@ class PulsarHandle:
     log_path: Path
 
 
-def bring_up_keycloak(*, compose: list[str], compose_file: Path, free_port: int) -> KeycloakHandle:
-    """Start Keycloak via docker-compose and wait until ``/realms/master`` is reachable."""
-    compose_env = {**os.environ, "KEYCLOAK_HOST_PORT": str(free_port)}
+def bring_up_keycloak(*, port: int, container_name: str) -> KeycloakHandle:
+    """Start Keycloak via ``docker run`` (HTTP + dynamic admin-API realm provision)
+    and wait until ``/realms/master`` is reachable.
+
+    Mirrors the ``docker run`` shape ``test/integration/oidc/test_auth_oidc.py``
+    uses; we don't share its helper because that one is hardcoded for HTTPS
+    + a realm-import file, neither of which this suite wants.
+    """
     subprocess.run(
-        [*compose, "-f", str(compose_file), "up", "-d", "keycloak"],
+        [
+            "docker",
+            "run",
+            "-d",
+            "--rm",
+            "--name",
+            container_name,
+            "-p",
+            f"{port}:8080",
+            "-e",
+            "KEYCLOAK_ADMIN=admin",
+            "-e",
+            "KEYCLOAK_ADMIN_PASSWORD=adminpassword",
+            "-e",
+            "KC_HTTP_ENABLED=true",
+            "-e",
+            "KC_HOSTNAME_STRICT=false",
+            "-e",
+            "KC_HOSTNAME_STRICT_HTTPS=false",
+            "quay.io/keycloak/keycloak:26.0",
+            "start-dev",
+            "--http-port=8080",
+        ],
         check=True,
-        env=compose_env,
     )
-    base_url = f"http://localhost:{free_port}"
+    base_url = f"http://localhost:{port}"
     deadline = time.time() + KEYCLOAK_READY_TIMEOUT_SECONDS
     while time.time() < deadline:
         try:
             with httpx.Client(timeout=2.0) as c:
                 r = c.get(f"{base_url}/realms/master")
                 if r.status_code in (200, 302):
-                    return KeycloakHandle(port=free_port, base_url=base_url, compose_env=compose_env)
+                    return KeycloakHandle(port=port, base_url=base_url, container_name=container_name)
         except Exception:
             pass
         time.sleep(2)
-    subprocess.run([*compose, "-f", str(compose_file), "logs", "keycloak"], env=compose_env)
+    subprocess.run(["docker", "logs", container_name], check=False)
+    subprocess.run(["docker", "rm", "-f", container_name], check=False)
     pytest.fail("Keycloak did not become ready within 3 minutes")
 
 
@@ -270,9 +297,5 @@ def teardown_subprocess(proc: Optional[subprocess.Popen], label: str) -> None:
         print(f"\n--- {label} stderr ---\n{stderr.decode(errors='replace')}")
 
 
-def teardown_compose(*, compose: list[str], compose_file: Path, compose_env: dict) -> None:
-    """Bring down the docker-compose stack used by the Keycloak harness."""
-    subprocess.run(
-        [*compose, "-f", str(compose_file), "down", "-v"],
-        env=compose_env,
-    )
+def teardown_keycloak_docker(container_name: str) -> None:
+    subprocess.run(["docker", "rm", "-f", container_name], check=False)
