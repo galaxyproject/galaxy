@@ -9,13 +9,18 @@ from __future__ import annotations
 import os
 from typing import (
     Any,
+    cast,
     Optional,
+    TYPE_CHECKING,
 )
 
 import pytest
 
 from galaxy import exceptions
 from galaxy.managers.job_files import JobFilesManager
+
+if TYPE_CHECKING:
+    from galaxy.model import Job
 
 
 class _StubSecurity:
@@ -111,6 +116,14 @@ class _StubJob:
         self.output_library_datasets: list[_StubAssoc] = []
 
 
+def _stub_job(**kwargs: Any) -> Job:
+    """Build a ``_StubJob`` but type it as the real ``Job`` so call sites
+    type-check against ``JobFilesManager``'s actual ``Job``-typed API. The
+    autouse ``_patch_job_class`` fixture makes the manager treat the stub as a
+    Job at runtime; this cast aligns the static view."""
+    return cast("Job", _StubJob(**kwargs))
+
+
 @pytest.fixture(autouse=True)
 def _patch_job_class(monkeypatch):
     """Reroute the manager's ``session.get(Job, ...)`` and ``Job.non_ready_states``
@@ -131,7 +144,7 @@ def tmp_working_dir(tmp_path):
     return str(d)
 
 
-def _make_manager(*, jobs: dict[int, _StubJob], working_directory: str = "/tmp/nonexistent") -> JobFilesManager:
+def _make_manager(*, jobs: dict[int, Any], working_directory: str = "/tmp/nonexistent") -> JobFilesManager:
     app = _StubApp(
         security=_StubSecurity(),
         model=_StubModel(_StubSession(jobs)),
@@ -145,23 +158,23 @@ def _make_manager(*, jobs: dict[int, _StubJob], working_directory: str = "/tmp/n
 
 class TestAuthorize:
     def test_files_happy_path_legacy_kind(self):
-        job = _StubJob(id=5)
+        job = _stub_job(id=5)
         mgr = _make_manager(jobs={5: job})
         returned = mgr.authorize_for_files("ENC:5", "EXPECTED[jobs_files]:5")
         assert returned is job
 
     def test_files_uses_compute_resource_kind_when_bound(self):
-        job = _StubJob(id=5, destination_params={"compute_resource_id": 7})
+        job = _stub_job(id=5, destination_params={"compute_resource_id": 7})
         mgr = _make_manager(jobs={5: job})
         # The legacy key MUST NOT validate
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.authorize_for_files("ENC:5", "EXPECTED[jobs_files]:5")
         # The tenant-scoped key validates
-        returned = mgr.authorize_for_files("ENC:5", "EXPECTED[jobs_files:compute_resource:7]:5")
+        returned = mgr.authorize_for_files("ENC:5", "EXPECTED[jf:cr:7]:5")
         assert returned is job
 
     def test_files_missing_key_raises(self):
-        mgr = _make_manager(jobs={5: _StubJob(id=5)})
+        mgr = _make_manager(jobs={5: _stub_job(id=5)})
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.authorize_for_files("ENC:5", None)
         with pytest.raises(exceptions.ItemAccessibilityException):
@@ -173,13 +186,13 @@ class TestAuthorize:
             mgr.authorize_for_files("ENC:5", "anything")
 
     def test_files_terminal_job_raises(self):
-        job = _StubJob(id=5, state="ok")
+        job = _stub_job(id=5, state="ok")
         mgr = _make_manager(jobs={5: job})
         with pytest.raises(exceptions.ItemAccessibilityException, match="already completed"):
             mgr.authorize_for_files("ENC:5", "EXPECTED[jobs_files]:5")
 
     def test_token_happy_path_raises_authentication_failed(self):
-        job = _StubJob(id=5)
+        job = _stub_job(id=5)
         mgr = _make_manager(jobs={5: job})
         returned = mgr.authorize_for_token("ENC:5", "EXPECTED[jobs_token]:5")
         assert returned is job
@@ -187,11 +200,11 @@ class TestAuthorize:
             mgr.authorize_for_token("ENC:5", "wrong")
 
     def test_token_uses_compute_resource_kind_when_bound(self):
-        job = _StubJob(id=5, destination_params={"compute_resource_id": 7})
+        job = _stub_job(id=5, destination_params={"compute_resource_id": 7})
         mgr = _make_manager(jobs={5: job})
         with pytest.raises(exceptions.AuthenticationFailed):
             mgr.authorize_for_token("ENC:5", "EXPECTED[jobs_token]:5")
-        returned = mgr.authorize_for_token("ENC:5", "EXPECTED[jobs_token:compute_resource:7]:5")
+        returned = mgr.authorize_for_token("ENC:5", "EXPECTED[jt:cr:7]:5")
         assert returned is job
 
 
@@ -200,7 +213,7 @@ class TestAuthorize:
 
 class TestPathPolicy:
     def test_read_in_working_dir_allowed(self, tmp_working_dir):
-        job = _StubJob(id=5)
+        job = _stub_job(id=5)
         path = os.path.join(tmp_working_dir, "working", "outputs", "discovered.txt")
         mgr = _make_manager(jobs={5: job}, working_directory=tmp_working_dir)
         # No raise.
@@ -209,14 +222,14 @@ class TestPathPolicy:
     def test_read_input_dataset_allowed(self, tmp_path):
         input_file = tmp_path / "input.dat"
         input_file.write_bytes(b"x")
-        job = _StubJob(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(input_file)))])
+        job = _stub_job(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(input_file)))])
         mgr = _make_manager(jobs={5: job})
         mgr.assert_readable(job, str(input_file))
 
     def test_read_arbitrary_path_rejected(self, tmp_path):
         outside = tmp_path / "outside.txt"
         outside.write_bytes(b"x")
-        job = _StubJob(id=5)
+        job = _stub_job(id=5)
         mgr = _make_manager(jobs={5: job}, working_directory="/tmp/nonexistent")
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_readable(job, str(outside))
@@ -228,7 +241,7 @@ class TestPathPolicy:
         os.symlink(str(target), str(link))
         # Even if the symlink TARGET would be allowed, the symlink path itself
         # is refused outright.
-        job = _StubJob(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(target)))])
+        job = _stub_job(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(target)))])
         mgr = _make_manager(jobs={5: job})
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_readable(job, str(link))
@@ -238,7 +251,7 @@ class TestPathPolicy:
         # the runner posts outputs, not inputs.
         input_file = tmp_path / "input.dat"
         input_file.write_bytes(b"x")
-        job = _StubJob(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(input_file)))])
+        job = _stub_job(id=5, input_datasets=[_StubAssoc(_StubDataset(file_path=str(input_file)))])
         mgr = _make_manager(jobs={5: job})
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_writable(job, str(input_file))
@@ -246,25 +259,25 @@ class TestPathPolicy:
     def test_write_output_path_allowed(self, tmp_path):
         out = tmp_path / "out.dat"
         out.write_bytes(b"")
-        job = _StubJob(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(out)))])
+        job = _stub_job(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(out)))])
         mgr = _make_manager(jobs={5: job})
         mgr.assert_writable(job, str(out))
 
     def test_write_compute_resource_blocks_outputs_populated(self, tmp_working_dir):
         # outputs_populated/** is denied for BYOC even though it's
         # inside the working directory.
-        job = _StubJob(id=5, destination_params={"compute_resource_id": 7})
+        job = _stub_job(id=5, destination_params={"compute_resource_id": 7})
         mgr = _make_manager(jobs={5: job}, working_directory=tmp_working_dir)
         denied = os.path.join(tmp_working_dir, "metadata", "outputs_populated", "results.json")
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_writable(job, denied)
         # While the non-BYOC variant of the same job WOULD permit it.
-        legacy_job = _StubJob(id=6)
+        legacy_job = _stub_job(id=6)
         mgr_legacy = _make_manager(jobs={6: legacy_job}, working_directory=tmp_working_dir)
         mgr_legacy.assert_writable(legacy_job, denied)  # No raise.
 
     def test_write_compute_resource_allows_working_subdir(self, tmp_working_dir):
-        job = _StubJob(id=5, destination_params={"compute_resource_id": 7})
+        job = _stub_job(id=5, destination_params={"compute_resource_id": 7})
         mgr = _make_manager(jobs={5: job}, working_directory=tmp_working_dir)
         allowed = os.path.join(tmp_working_dir, "working", "outputs", "galaxy.json")
         mgr.assert_writable(job, allowed)  # No raise.
@@ -274,7 +287,65 @@ class TestPathPolicy:
         target.write_bytes(b"")
         link = tmp_path / "link"
         os.symlink(str(target), str(link))
-        job = _StubJob(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(target)))])
+        job = _stub_job(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(target)))])
         mgr = _make_manager(jobs={5: job})
         with pytest.raises(exceptions.ItemAccessibilityException):
             mgr.assert_writable(job, str(link))
+
+
+class TestStoreUploadedFile:
+    def test_move_into_place(self, tmp_path):
+        # Realistic setup: an output dataset path the runner is allowed to
+        # write, and a NamedTemporaryFile-style ``source`` carrying content.
+        target_file = tmp_path / "outputs" / "out.dat"
+        job = _stub_job(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(target_file)))])
+        mgr = _make_manager(jobs={5: job})
+
+        source = tmp_path / "upload.tmp"
+        source.write_bytes(b"hello")
+
+        class _Src:
+            name = str(source)
+
+            def close(self):
+                pass
+
+        mgr.store_uploaded_file(job, str(target_file), _Src())  # type: ignore[arg-type]
+        # Move semantics: source is gone, target has the bytes, intermediate
+        # directories were created.
+        assert target_file.read_bytes() == b"hello"
+        assert not source.exists()
+
+    def test_append_to_existing_tool_stdout(self, tmp_path):
+        target = tmp_path / "outputs" / "tool_stdout"
+        target.parent.mkdir(parents=True)
+        target.write_bytes(b"first ")
+        job = _stub_job(id=5, output_datasets=[_StubAssoc(_StubDataset(file_path=str(target)))])
+        mgr = _make_manager(jobs={5: job})
+
+        source = tmp_path / "more.txt"
+        source.write_bytes(b"second")
+
+        class _Src:
+            name = str(source)
+
+        mgr.store_uploaded_file(job, str(target), _Src())  # type: ignore[arg-type]
+        # Append semantics: existing bytes preserved, new bytes follow.
+        # ``shutil.copyfileobj`` doesn't unlink the source — that's the
+        # contract — so we don't assert source absence here.
+        assert target.read_bytes() == b"first second"
+
+    def test_reauthorises_writability(self, tmp_path):
+        """The manager re-runs ``assert_writable`` itself; an unauthorised
+        path raises even if the caller forgot to check."""
+        job = _stub_job(id=5)  # no output datasets
+        mgr = _make_manager(jobs={5: job})
+
+        stray = tmp_path / "stray"
+        stray.write_bytes(b"")
+
+        class _Src:
+            name = str(stray)
+
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.store_uploaded_file(job, str(tmp_path / "anywhere.dat"), _Src())  # type: ignore[arg-type]

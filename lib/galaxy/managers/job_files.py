@@ -21,8 +21,10 @@ across :mod:`galaxy.webapps.galaxy.api.job_files`,
 from __future__ import annotations
 
 import os
+import shutil
 from collections.abc import Callable
 from typing import (
+    IO,
     Optional,
     Union,
 )
@@ -155,6 +157,32 @@ class JobFilesManager:
             if self._in_working_directory(job, path):
                 return
         raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
+
+    def store_uploaded_file(self, job: Job, path: str, source: IO[bytes]) -> None:
+        """Persist ``source`` at ``path`` on behalf of the job runner.
+
+        Reauthorises with :meth:`assert_writable` (defence in depth — the
+        controller has already done the check, but the manager owns the
+        invariant), then writes with the runner-specific semantics:
+
+        * The target directory is created if missing.
+        * ``tool_stdout`` / ``tool_stderr`` are appended to any existing
+          file — runners stream them in pieces over the course of a job.
+        * Anything else is moved into place via ``shutil.move``.
+
+        ``source`` must expose a ``.name`` attribute pointing at an
+        on-disk path (regular file or ``NamedTemporaryFile``); the
+        controller has already resolved the multipart / nginx / tus
+        transport into one of those.
+        """
+        self.assert_writable(job, path)
+        target_dir = os.path.dirname(path)
+        util.safe_makedirs(target_dir)
+        if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
+            with open(path, "ab") as destination:
+                shutil.copyfileobj(open(source.name, "rb"), destination)
+        else:
+            shutil.move(source.name, path)
 
     # ---- internal helpers ------------------------------------------------
 

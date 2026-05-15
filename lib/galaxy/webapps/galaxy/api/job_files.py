@@ -5,12 +5,8 @@ related to running and queued jobs.
 import logging
 import os
 import re
-import shutil
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions
 from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.job_files import JobFilesManager
@@ -72,20 +68,33 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         supplied = resolve_job_key(auth_header, kwargs.get("job_key"))
         job = self.manager.authorize_for_files(job_id, supplied)
         path = kwargs["path"]
-        self.manager.assert_readable(job, path)
+        try:
+            self.manager.assert_readable(job, path)
+        except exceptions.ItemAccessibilityException:
+            # A purged input dataset's object-store path no longer matches the
+            # read allowlist (the path changes on purge), but requesting it is
+            # a legitimate runner action — surface the purge as the 400 the
+            # runner expects rather than a generic 403.
+            self.__raise_if_input_purged(job, path)
+            raise
         try:
             return open(path, "rb")
         except FileNotFoundError:
             # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
             # Here we discriminate that case from truly unexpected bugs.
             # Not failing the job here, this is or should be handled by pulsar.
-            match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
-            if match:
-                # This looks like a galaxy dataset, check if any job input has been deleted.
-                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
-                    raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
-            else:
+            self.__raise_if_input_purged(job, path)
+            if not re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
                 raise
+
+    def __raise_if_input_purged(self, job, path):
+        """Raise a 400 ``ItemDeletionException`` if ``path`` looks like a Galaxy
+        dataset file and any of the job's input datasets have been purged.
+        Returns normally otherwise (the caller decides how to propagate)."""
+        if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)) and any(
+            jtid.dataset and jtid.dataset.dataset and jtid.dataset.dataset.purged for jtid in job.input_datasets
+        ):
+            raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans: ProvidesAppContext, job_id: str, payload, **kwargs):
@@ -117,9 +126,39 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
         supplied = resolve_job_key(auth_header, payload.get("job_key"))
         job = self.manager.authorize_for_files(job_id, supplied)
-        self.manager.assert_writable(job, path)
 
-        # Is this writing an unneeded file? Should this just copy in Python?
+        # Resolve the upload source from its transport-specific shape into a
+        # single file object the manager can persist. Each branch is a wire
+        # contract with a different Pulsar-facing transport (nginx_upload
+        # module, tus, direct multipart) — that's request-shaping, hence
+        # controller-layer.
+        input_file = self.__open_upload_source(trans, payload)
+        try:
+            self.manager.store_uploaded_file(job, path, input_file)
+        finally:
+            try:
+                input_file.close()
+            except OSError:
+                # Fails to close file if not using nginx upload because the
+                # tempfile has moved and Python wants to delete it.
+                pass
+        return {"message": "ok"}
+
+    def __open_upload_source(self, trans: ProvidesAppContext, payload):
+        """Return an open file-like for the upload, regardless of transport.
+
+        Picks between three Pulsar upload mechanisms:
+
+        * ``__file_path`` — nginx_upload module has already written the file
+          and forwarded the absolute path. We assert it sits inside the
+          configured ``nginx_upload_job_files_store`` before opening.
+        * ``session_id`` — the tus daemon has streamed the upload into its
+          configured store; we reconstruct the local path and open it. The
+          session id is regex-checked to keep this from being a path-traversal
+          primitive.
+        * Otherwise the payload carries a ``file`` field (regular
+          ``multipart/form-data``) and we read its underlying file object.
+        """
         if "__file_path" in payload:
             file_path = payload.get("__file_path")
             upload_store = trans.app.config.nginx_upload_job_files_store
@@ -131,8 +170,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             assert file_path.startswith(
                 upload_store
             ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
-            input_file = open(file_path)
-        elif "session_id" in payload:
+            return open(file_path)
+        if "session_id" in payload:
             # code stolen from basic.py
             session_id = payload["session_id"]
             upload_store = (
@@ -143,25 +182,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             if re.match(r"^[\w-]+$", session_id) is None:
                 raise ValueError("Invalid session id format.")
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            input_file = open(local_filename)
-        else:
-            input_file = payload.get("file", payload.get("__file", None)).file
-        target_dir = os.path.dirname(path)
-        util.safe_makedirs(target_dir)
-        try:
-            if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
-                with open(path, "ab") as destination:
-                    shutil.copyfileobj(open(input_file.name, "rb"), destination)
-            else:
-                shutil.move(input_file.name, path)
-        finally:
-            try:
-                input_file.close()
-            except OSError:
-                # Fails to close file if not using nginx upload because the
-                # tempfile has moved and Python wants to delete it.
-                pass
-        return {"message": "ok"}
+            return open(local_filename)
+        return payload.get("file", payload.get("__file", None)).file
 
     @expose_api_anonymous_and_sessionless
     def tus_patch(self, trans, **kwds):
