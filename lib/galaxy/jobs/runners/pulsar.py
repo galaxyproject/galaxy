@@ -1611,7 +1611,14 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
+        # The compute-resource dispatch is only used against Galaxy versions
+        # that ship this branch — which read the credential from the
+        # ``Authorization: Bearer …`` header. Opt Pulsar into header-only
+        # auth (``pulsar.client.action_mapper.FileActionMapper`` honours
+        # this flag) so the per-job secret stops being embedded in URLs
+        # that show up in launch_config on the user-controlled node.
         job_destination_params = dict(job_destination_params.items())
+        job_destination_params["use_bearer_auth"] = True
         return client_manager.get_client(job_destination_params, **get_client_kwds)
 
     def recover(self, job: "model.Job", job_wrapper: "MinimalJobWrapper") -> None:
