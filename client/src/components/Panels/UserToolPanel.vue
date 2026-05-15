@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCancel } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router";
 
 import type { UnprivilegedToolResponse } from "@/api";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";

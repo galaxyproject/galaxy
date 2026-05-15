@@ -94,6 +94,7 @@ const buttonElementRef = useResolveElement(buttonRef);
 <template>
     <component
         :is="baseComponent"
+        v-bind="$attrs"
         ref="buttonRef"
         class="g-button"
         :data-title="currentTitle"
@@ -102,7 +103,6 @@ const buttonElementRef = useResolveElement(buttonRef);
         :href="!props.disabled ? (props.to ?? props.href) : ''"
         :title="props.tooltip ? false : currentTitle"
         :aria-disabled="props.disabled"
-        v-bind="$attrs"
         @click="onClick">
         <slot></slot>
 

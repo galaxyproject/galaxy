@@ -180,7 +180,7 @@ const exportSummary = computed(() => {
             </BFormGroup>
 
             <GModal
-                :show.sync="showExportWizard"
+                v-model:show="showExportWizard"
                 title="Configure Export on Completion"
                 size="medium"
                 data-test-id="export-wizard-modal">

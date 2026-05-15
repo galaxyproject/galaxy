@@ -8,7 +8,7 @@ export async function getAPIKey(userId) {
     const url = getUrl(`api/users/${userId}/api_key/detailed`);
     const response = await axios.get(url);
     if (response.status === 204) {
-        return [];
+        return null;
     }
     if (response.status !== 200) {
         throw new Error("Unexpected response retrieving the API key.");

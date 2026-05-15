@@ -53,20 +53,22 @@ export const SingleQueryProvider = (lookup, stopRefresh = (result) => false) => 
         mounted() {
             this.doQuery();
         },
-        destroyed() {
+        unmounted() {
             if (this.timeoutId) {
                 clearTimeout(this.timeoutId);
             }
         },
         render() {
-            return (
-                this.$scopedSlots.default &&
-                this.$scopedSlots.default({
+            // Use $scopedSlots for Vue 3 compat mode
+            const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+            if (slotFn) {
+                return slotFn({
                     loading: this.loading,
                     result: this.result,
                     error: this.error,
-                })
-            );
+                });
+            }
+            return null;
         },
         methods: {
             update(attributes) {

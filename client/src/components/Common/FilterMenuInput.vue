@@ -103,7 +103,7 @@ watch(
 
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <GModal :show.sync="helpToggle" :title="modalTitle" size="small" fixed-height>
+            <GModal v-model:show="helpToggle" :title="modalTitle" size="small" fixed-height>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"

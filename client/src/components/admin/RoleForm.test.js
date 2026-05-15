@@ -12,7 +12,7 @@ const { server, http } = useServerMock();
 const localVue = getLocalVue();
 const mockPush = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRouter: () => ({
         push: (...args) => mockPush(...args),
     }),
@@ -28,7 +28,7 @@ vi.mock("@/composables/filter/filter.js", () => {
 function mountTarget() {
     setActivePinia(createPinia());
     return mount(RoleForm, {
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: true,
             FormSelection: true,

@@ -35,7 +35,7 @@ describe("FormTool", () => {
 
     function mountTarget() {
         return mount(FormTool, {
-            propsData: {
+            props: {
                 id: "input",
                 datatypes: [],
                 step: {
@@ -56,7 +56,7 @@ describe("FormTool", () => {
                     post_job_actions: {},
                 },
             },
-            localVue,
+            global: localVue,
             stubs: {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },

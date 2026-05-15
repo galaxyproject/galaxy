@@ -4,7 +4,7 @@ import { faExclamation, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { Placement } from "@popperjs/core";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { getGalaxyInstance } from "@/app";
 import { useActivityStore } from "@/stores/activityStore";

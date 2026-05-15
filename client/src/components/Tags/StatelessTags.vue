@@ -50,6 +50,7 @@ export default {
         useToggleLink: { type: Boolean, required: false, default: true },
         disabled: { type: Boolean, required: false, default: false },
     },
+    emits: ["tag-click", "tag-input-changed", "input", "show"],
     data() {
         // initialize toggle value
         const isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
@@ -127,7 +128,7 @@ export default {
             return false;
         },
         hasHandler(eventName) {
-            return Object.keys(this.$listeners).includes(eventName);
+            return Object.keys(this.$attrs).includes(`on${eventName.charAt(0).toUpperCase()}${eventName.slice(1)}`);
         },
     },
 };

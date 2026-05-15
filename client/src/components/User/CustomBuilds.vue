@@ -20,7 +20,9 @@
             <BRow>
                 <BCol id="installed-builds" class="mb-4">
                     <Multiselect
+                        id="installed-builds"
                         v-model="selectedInstalledBuilds"
+                        name="installed-builds"
                         multiple
                         taggable
                         label="label"
@@ -145,7 +147,7 @@ chr5    152537259
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 // Thin wrapper that simply routes to the existing Rule-based Data Import activity
 const router = useRouter();

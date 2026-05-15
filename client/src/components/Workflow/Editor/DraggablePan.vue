@@ -165,6 +165,7 @@ function onStart() {
 
 <template>
     <Draggable
+        v-bind="$attrs"
         :root-offset="rootOffset"
         :position="props.position"
         :prevent-default="preventDefault"
@@ -176,8 +177,7 @@ function onStart() {
         @move="onMove"
         @mouseup="onMouseUp"
         @start="onStart"
-        @mousedown="(e) => emit('mousedown', e)"
-        v-on="$listeners">
+        @mousedown="(e) => emit('mousedown', e)">
         <slot></slot>
     </Draggable>
 </template>

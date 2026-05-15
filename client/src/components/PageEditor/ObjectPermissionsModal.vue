@@ -9,7 +9,7 @@ defineProps<ObjectPermissionsProps>();
 </script>
 
 <template>
-    <b-modal v-bind="$attrs" title="Page Object Permissions" title-tag="h2" ok-only v-on="$listeners">
+    <b-modal v-bind="$attrs" title="Page Object Permissions" title-tag="h2" ok-only>
         <ObjectPermissions :markdown-content="markdownContent" />
     </b-modal>
 </template>

@@ -15,13 +15,13 @@ vi.mock("@/composables/config", () => ({
     })),
 }));
 
-vi.mock("vue-router/composables", () => ({
+vi.mock("vue-router", () => ({
     useRoute: vi.fn(() => ({})),
 }));
 
 function createTarget(propsData = {}) {
     return mount(MountTarget, {
-        localVue,
+        global: localVue,
         propsData,
         stubs: {
             routerLink: true,

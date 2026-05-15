@@ -1,19 +1,17 @@
-import type { NavigationGuardNext, Route } from "vue-router";
+import type { RouteLocationNormalized } from "vue-router";
 
 import { useUserStore } from "@/stores/userStore";
 
-export async function requireAuth(to: Route, from: Route, next: NavigationGuardNext) {
+export async function requireAuth(to: RouteLocationNormalized) {
     const userStore = useUserStore();
     await userStore.loadUser(false);
 
     if (userStore.isAnonymous) {
-        next({
+        return {
             path: "/login/start",
             query: {
                 redirect: to.fullPath,
             },
-        });
-        return;
+        };
     }
-    next();
 }

@@ -47,6 +47,6 @@ function updateName(v: string) {
             size="sm"
             required
             :state="!name ? false : null"
-            @update="updateName" />
+            @input="updateName" />
     </BFormGroup>
 </template>

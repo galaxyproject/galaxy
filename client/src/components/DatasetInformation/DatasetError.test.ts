@@ -81,10 +81,10 @@ async function montDatasetError(has_duplicate_inputs = true, has_empty_inputs = 
     );
 
     const wrapper = mount(DatasetError as object, {
-        propsData: {
+        props: {
             datasetId: DATASET_ID,
         },
-        localVue,
+        global: localVue,
         pinia,
     });
 

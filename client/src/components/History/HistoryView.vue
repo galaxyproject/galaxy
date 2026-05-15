@@ -32,13 +32,13 @@
 
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
+            v-model:selected-collections="selectedCollections"
             :history="history"
-            :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
         <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
 
-        <CopyModal :history="history" :show-modal.sync="showCopyModal" @ok="copyOkay" />
+        <CopyModal v-model:show-modal="showCopyModal" :history="history" @ok="copyOkay" />
     </div>
 </template>
 

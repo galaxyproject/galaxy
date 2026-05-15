@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { useTargetHistoryUploadState } from "@/composables/history/useTargetHistoryUploadState";
 import { useUploadSubmission } from "@/composables/upload/useUploadSubmission";

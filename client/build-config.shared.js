@@ -18,8 +18,8 @@ export const legacyAliases = {
     jqueryVendor: path.join(libsBase, "jquery/jquery.js"),
     storemodern: path.join(__dirname, "node_modules/store/dist/store.modern.js"),
 
-    // Vue
-    vue: path.join(__dirname, "node_modules/vue/dist/vue.esm.js"),
+    // Vue - use @vue/compat for Vue 3 compatibility mode
+    vue: path.join(__dirname, "node_modules/@vue/compat"),
 
     // Build config
     config: path.join(scriptsBase, "config", process.env.NODE_ENV || "development") + ".js",

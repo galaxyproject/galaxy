@@ -63,7 +63,7 @@
         </b-dropdown>
 
         <GModal
-            :show.sync="showChangeDbKeyModal"
+            v-model:show="showChangeDbKeyModal"
             title="Change Database/Build?"
             confirm
             size="small"
@@ -81,7 +81,7 @@
             </DbKeyProvider>
         </GModal>
         <GModal
-            :show.sync="showChangeDatatypeModal"
+            v-model:show="showChangeDatatypeModal"
             title="Change data type?"
             confirm
             size="small"
@@ -100,7 +100,7 @@
             </DatatypesProvider>
         </GModal>
         <GModal
-            :show.sync="showAddTagsModal"
+            v-model:show="showAddTagsModal"
             title="Add tags?"
             confirm
             size="small"
@@ -112,7 +112,7 @@
             <GTip class="mt-2" :tips="['Press Enter after typing each tag.']" />
         </GModal>
         <GModal
-            :show.sync="showRemoveTagsModal"
+            v-model:show="showRemoveTagsModal"
             title="Remove tags?"
             confirm
             size="small"
@@ -125,12 +125,12 @@
         </GModal>
         <CollectionCreatorIndex
             v-if="collectionModalType"
+            v-model:show="collectionModalShow"
             :history-id="history.id"
             :collection-type="collectionModalType"
             :file-sources-configured="config.file_sources_configured"
             :filter-text="filterText"
             :selected-items="collectionSelection"
-            :show.sync="collectionModalShow"
             hide-on-create
             default-hide-source-items
             @created-collection="createdCollection" />

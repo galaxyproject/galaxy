@@ -68,17 +68,19 @@ describe("ToolForm", () => {
         suppressBootstrapVueWarnings();
 
         wrapper = mount(ToolForm, {
-            propsData: {
+            props: {
                 id: "tool_id",
                 version: "version",
             },
-            localVue,
-            router,
-            stubs: {
-                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
-                FormDisplay: true,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+                stubs: {
+                    ...(localVue.stubs ?? {}),
+                    UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
+                    FormDisplay: true,
+                },
             },
-            pinia,
         });
         userStore = useUserStore();
         userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });

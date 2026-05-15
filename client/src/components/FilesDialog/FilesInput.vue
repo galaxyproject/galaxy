@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import type { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { filesDialog } from "@/utils/dataModals";

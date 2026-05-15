@@ -199,7 +199,7 @@ onBeforeMount(() => {
                 :user="currentUser" />
             <GModal
                 id="modal-select-preferred-object-store"
-                :show.sync="showPreferredObjectStoreModal"
+                v-model:show="showPreferredObjectStoreModal"
                 :title="storageLocationModalTitle"
                 size="small">
                 <ToolSelectPreferredObjectStore

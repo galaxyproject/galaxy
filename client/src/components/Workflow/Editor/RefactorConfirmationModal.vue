@@ -118,7 +118,7 @@ async function executeRefactoring() {
 </script>
 
 <template>
-    <GModal :show.sync="show" :title="title" fixed-height ok-text="Save" @ok="executeRefactoring">
+    <GModal v-model:show="show" :title="title" fixed-height ok-text="Save" @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
             {{ message }}
             <ul>

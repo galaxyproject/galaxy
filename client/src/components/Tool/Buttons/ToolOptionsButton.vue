@@ -123,7 +123,7 @@ loadToolMenuWebhooks();
             </BDropdownItem>
         </BDropdown>
 
-        <GModal :show.sync="showToolSource" fullscreen :title="`Tool Source for ${id}`">
+        <GModal v-model:show="showToolSource" fullscreen :title="`Tool Source for ${id}`">
             <ToolSource v-if="showToolSource" :tool-id="id" :tool-uuid="toolUuid || undefined" />
         </GModal>
     </div>

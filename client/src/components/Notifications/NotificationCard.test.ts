@@ -18,8 +18,8 @@ async function mountComponent(component: object, propsData: object = {}): Promis
     setActivePinia(pinia);
 
     const wrapper = mount(component, {
-        localVue,
-        propsData,
+        global: localVue,
+        props: propsData,
         pinia,
     });
 

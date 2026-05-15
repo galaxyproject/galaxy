@@ -35,7 +35,7 @@ async function mountBroadcastsList(broadcasts?: BroadcastNotification[]) {
     );
 
     const wrapper = mount(BroadcastsList as object, {
-        localVue,
+        global: localVue,
         pinia,
         stubs: {
             FontAwesomeIcon: true,

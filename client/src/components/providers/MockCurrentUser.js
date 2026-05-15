@@ -1,8 +1,13 @@
 const MockCurrentUser = (fakeUser) => ({
     render() {
-        return this.$scopedSlots.default({
-            user: fakeUser,
-        });
+        // Use $scopedSlots for Vue 3 compat mode
+        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        if (slotFn) {
+            return slotFn({
+                user: fakeUser,
+            });
+        }
+        return null;
     },
 });
 

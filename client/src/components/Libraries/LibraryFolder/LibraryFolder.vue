@@ -1,10 +1,10 @@
 <template>
     <div>
         <FolderTopBar
+            v-model:include-deleted="includeDeleted"
             :search-text="searchText"
             :can-add-library-item="canAddLibraryItem"
             :folder-contents="folderContents"
-            :include-deleted.sync="includeDeleted"
             :folder-id="currentFolderId"
             :selected="selected"
             :metadata="folder_metadata"

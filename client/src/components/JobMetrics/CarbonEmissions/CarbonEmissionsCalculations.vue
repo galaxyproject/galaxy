@@ -143,8 +143,10 @@ const greenAlgorithmsUrl = "https://www.green-algorithms.org/";
 
             <table class="tabletip info_data_table">
                 <thead>
-                    <th>Term</th>
-                    <th>Definition</th>
+                    <tr>
+                        <th>Term</th>
+                        <th>Definition</th>
+                    </tr>
                 </thead>
 
                 <tbody>

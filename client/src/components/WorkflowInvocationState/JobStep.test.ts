@@ -24,7 +24,7 @@ const SELECTORS = {
 describe("Job Step", () => {
     it("shows jobs grouped by state in tables when multiple jobs", async () => {
         const wrapper = mount(JobStep as object, {
-            propsData: {
+            props: {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
@@ -73,7 +73,7 @@ describe("Job Step", () => {
 
     it("reacts to job states changing when multiple jobs", async () => {
         const wrapper = mount(JobStep as object, {
-            propsData: {
+            props: {
                 jobs: TEST_JOBS_JSON,
                 invocationId: TEST_INVOCATION_ID,
             },
@@ -123,7 +123,7 @@ describe("Job Step", () => {
         const singleJob = TEST_JOBS_JSON.slice(0, 1)[0] as JobBaseModel;
 
         const wrapper = shallowMount(JobStep as object, {
-            propsData: {
+            props: {
                 jobs: [singleJob],
                 invocationId: TEST_INVOCATION_ID,
             },

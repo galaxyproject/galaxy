@@ -15,7 +15,7 @@ type IntersectionObserverType = {
 
 function getWrapper() {
     return mount(DefaultBox as object, {
-        propsData: {
+        props: {
             chunkUploadSize: 100,
             defaultDbKey: "?",
             defaultExtension: "auto",
@@ -26,7 +26,7 @@ function getWrapper() {
             lazyLoad: 3,
             listDbKeys: [],
         },
-        localVue,
+        global: localVue,
         stubs: {
             FontAwesomeIcon: true,
         },

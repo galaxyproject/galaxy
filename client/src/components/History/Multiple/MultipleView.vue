@@ -161,19 +161,19 @@ function showRecent() {
         </BAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
             <FilterMenu
+                v-model:filter-text="filter"
+                v-model:show-advanced="showAdvanced"
                 name="History Multiview"
                 :placeholder="localize('Search datasets and collections in selected histories')"
                 :filter-class="HistoryFilters"
-                :filter-text.sync="filter"
-                :loading="historiesLoading"
-                :show-advanced.sync="showAdvanced" />
+                :loading="historiesLoading" />
             <MultipleViewList
                 v-show="!showAdvanced"
+                v-model:show-modal="showSelectModal"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
                 :can-load-more="canLoadMore"
-                :show-modal.sync="showSelectModal"
                 @load-more="loadMore" />
         </div>
         <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
@@ -181,10 +181,10 @@ function showRecent() {
         </BAlert>
         <SelectorModal
             v-show="showSelectModal"
+            v-model:show-modal="showSelectModal"
             :multiple="true"
             :histories="histories"
             :additional-options="['center', 'set-current']"
-            :show-modal.sync="showSelectModal"
             title="Select/Deselect histories"
             @selectHistories="addHistoriesToList" />
     </div>

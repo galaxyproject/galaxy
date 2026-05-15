@@ -48,11 +48,16 @@ export default {
         }
     },
     render() {
-        return this.$scopedSlots.default({
-            isExpanded: this.isExpanded,
-            setExpanded: this.setExpanded,
-            collapseAll: this.reset,
-            expandedCount: this.expandedCount,
-        });
+        // Use $scopedSlots for Vue 3 compat mode
+        const slotFn = this.$scopedSlots?.default || this.$slots?.default;
+        if (slotFn) {
+            return slotFn({
+                isExpanded: this.isExpanded,
+                setExpanded: this.setExpanded,
+                collapseAll: this.reset,
+                expandedCount: this.expandedCount,
+            });
+        }
+        return null;
     },
 };

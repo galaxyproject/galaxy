@@ -30,11 +30,15 @@ const WHOOSH_QUERY = createWhooshQuery(FILTER_SETTINGS);
 
 const routerPushMock = vi.fn();
 
-vi.mock("vue-router/composables", () => ({
-    useRouter: () => ({
-        push: routerPushMock,
-    }),
-}));
+vi.mock("vue-router", async (importOriginal) => {
+    const actual = (await importOriginal()) as Record<string, unknown>;
+    return {
+        ...actual,
+        useRouter: () => ({
+            push: routerPushMock,
+        }),
+    };
+});
 
 const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
@@ -57,9 +61,10 @@ describe("ToolsList", () => {
 
     it("performs an advanced search with a router push", async () => {
         const wrapper = mount(ToolsList as object, {
-            localVue,
-            pinia,
-            router,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
         });
 
         // By default, no search text, fetch tools is still called but without a query
@@ -96,10 +101,11 @@ describe("ToolsList", () => {
 
     it("detects filters in the route and searches the backend", async () => {
         mount(ToolsList as object, {
-            localVue,
-            pinia,
-            router,
-            propsData: FILTER_SETTINGS,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
+            props: FILTER_SETTINGS,
         });
 
         expect(fetchToolsMock).toHaveBeenCalledWith(WHOOSH_QUERY);

@@ -308,7 +308,7 @@ const display = computed(() => {
 
         <!-- Remote file browser modal -->
         <RemoteFileBrowserModal
-            :show.sync="showRemoteBrowser"
+            v-model:show="showRemoteBrowser"
             title="Browse Remote Files"
             mode="file"
             :multiple="false"

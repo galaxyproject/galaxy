@@ -10,7 +10,7 @@
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <GModal :show.sync="showError" size="medium" :title="errorTitle | l" fixed-height>
+        <GModal v-model:show="showError" size="medium" :title="localize(errorTitle)" fixed-height>
             <b-alert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
             </b-alert>
@@ -82,7 +82,7 @@
                     v-model="dataManagerMode"
                     :options="bundleOptions"
                     :title="localize('Create dataset bundle instead of adding data table to loc file ?')"></FormSelect>
-                <ToolFormTags :tags.sync="tags" />
+                <ToolFormTags v-model:tags="tags" />
             </div>
             <template v-slot:buttons>
                 <ButtonSpinner

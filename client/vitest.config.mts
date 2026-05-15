@@ -1,18 +1,45 @@
 /// <reference types="vitest" />
-import vue from "@vitejs/plugin-vue2";
+import vue from "@vitejs/plugin-vue";
 import path from "path";
 import { fileURLToPath } from "url";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
 import { i18nPlugin } from "./tests/vitest/test-plugin";
 import { yamlPlugin } from "./tests/vitest/yaml-plugin";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Plugin to redirect portal-vue imports to our mock.
+ * portal-vue uses Vue.extend which doesn't exist in Vue 3.
+ */
+function portalVueMockPlugin(): Plugin {
+    const mockPath = path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js");
+    return {
+        name: "portal-vue-mock",
+        enforce: "pre",
+        resolveId(source, importer) {
+            // Intercept any import of portal-vue
+            if (source === "portal-vue" || source.includes("node_modules/portal-vue")) {
+                return mockPath;
+            }
+            return null;
+        },
+        // Also handle load for files that slip through
+        load(id) {
+            if (id.includes("node_modules/portal-vue")) {
+                return `export * from "${mockPath}"; export { default } from "${mockPath}";`;
+            }
+            return null;
+        },
+    };
+}
+
 // List of modules that need to be transformed
 const modulesToTransform = [
     "axios",
     "bootstrap-vue",
+    "portal-vue",
     "rxjs",
     "@hirez_io",
     "pretty-bytes",
@@ -22,7 +49,20 @@ const modulesToTransform = [
 ];
 
 export default defineConfig({
-    plugins: [vue(), i18nPlugin(), yamlPlugin()],
+    plugins: [
+        portalVueMockPlugin(), // Must be first to intercept portal-vue imports
+        vue({
+            template: {
+                compilerOptions: {
+                    compatConfig: {
+                        MODE: 2,
+                    },
+                },
+            },
+        }),
+        i18nPlugin(),
+        yamlPlugin(),
+    ],
     test: {
         globals: false,
         environment: "happy-dom",
@@ -51,6 +91,15 @@ export default defineConfig({
                 inline: modulesToTransform,
             },
         },
+        // Force these modules through Vite's transform pipeline
+        deps: {
+            optimizer: {
+                web: {
+                    // Exclude portal-vue from pre-bundling so our plugin can intercept it
+                    exclude: ["portal-vue"],
+                },
+            },
+        },
         // Use thread pool for faster test execution
         pool: "threads",
         // Test file patterns
@@ -60,6 +109,19 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            // Vue Test Utils adapter - wraps mount/shallowMount to handle old v1 patterns
+            "@vue/test-utils": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-test-utils-adapter.ts"),
+            // Vue Router adapter - provides both VR3 (default export, constructor) and VR4 APIs
+            "vue-router": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-router-adapter.ts"),
+            // Use @vue/compat for Vue 3 compatibility mode
+            vue: "@vue/compat",
+            // Use ESM version of bootstrap-vue so Vite can transform its imports
+            "bootstrap-vue": path.resolve(__dirname, "node_modules/bootstrap-vue/esm/index.js"),
+            // Mock portal-vue for Vue 3 compatibility (used by bootstrap-vue)
+            "portal-vue": path.resolve(__dirname, "./tests/vitest/__mocks__/portal-vue.js"),
+            // vue-virtual-scroll-list calls Vue.component at module load (Vue 2 only).
+            // Replace with a passthrough that just renders the data-component for each source.
+            "vue-virtual-scroll-list": path.resolve(__dirname, "./tests/vitest/__mocks__/vue-virtual-scroll-list.js"),
             // Match former Jest's module name mapping
             "@": path.resolve(__dirname, "./src"),
             "@tests": path.resolve(__dirname, "./tests"),

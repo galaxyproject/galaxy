@@ -201,7 +201,7 @@ function getCollapsedState(id: string): boolean | undefined {
         </div>
         <transition name="slide">
             <div v-if="opened" data-description="opened tool panel section">
-                <template v-for="[key, el] in sortedElements">
+                <template v-for="[key, el] in sortedElements" :key="key">
                     <ToolPanelLabel
                         v-if="isToolSectionLabel(el)"
                         :key="`label-${key}`"

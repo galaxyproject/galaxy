@@ -13,7 +13,7 @@ export function useUserLocalStorageFromHashId<T>(
     initialValue: T,
     hashedUserId: Ref<string | null>,
 ): Ref<UnwrapRef<T>> {
-    const refToSync = ref(initialValue);
+    const refToSync = ref<T>(initialValue);
     let hasSynced = false;
 
     watchImmediate(
@@ -26,5 +26,5 @@ export function useUserLocalStorageFromHashId<T>(
         },
     );
 
-    return refToSync;
+    return refToSync as Ref<UnwrapRef<T>>;
 }

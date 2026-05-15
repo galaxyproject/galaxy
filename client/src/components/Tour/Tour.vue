@@ -2,7 +2,7 @@
 import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, nextTick, onUnmounted, ref, watch } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRouter } from "vue-router";
 
 import { isAdminUser, isAnonymousUser } from "@/api";
 import type { TourRequirements, TourStep as TourStepType } from "@/api/tours";

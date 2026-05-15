@@ -3,7 +3,7 @@ import { faAngleDoubleUp, faQuestion, faSearch } from "@fortawesome/free-solid-s
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BPopover } from "bootstrap-vue";
 import { kebabCase } from "lodash";
-import { computed, ref, set } from "vue";
+import { computed, ref } from "vue";
 
 import type Filtering from "@/utils/filtering";
 import { type Alias, type ErrorType, getOperatorForAlias, type ValidFilter } from "@/utils/filtering";
@@ -187,10 +187,10 @@ function setDisabled(filter: string, newVal: any) {
     if (disablesFilters && type !== Boolean) {
         for (const [disabledFilter, disablingValues] of Object.entries(disablesFilters)) {
             if (newVal && (disablingValues === null || disablingValues.includes(newVal))) {
-                set(isDisabled.value, disabledFilter, true);
+                isDisabled.value[disabledFilter] = true;
                 filters.value[disabledFilter] = undefined;
             } else {
-                set(isDisabled.value, disabledFilter, false);
+                isDisabled.value[disabledFilter] = false;
             }
         }
     }
@@ -236,8 +236,8 @@ function updateFilterText(newFilterText: string) {
             v-if="
                 (props.view === 'popover' && toggleMenuButton) || props.menuType == 'standalone' || props.showAdvanced
             "
+            v-model:show="localAdvancedToggle"
             class="mt-2"
-            :show.sync="localAdvancedToggle"
             :target="toggleMenuButton"
             placement="bottomleft"
             data-description="advanced filters"
@@ -345,9 +345,9 @@ function updateFilterText(newFilterText: string) {
 
                 <GModal
                     v-if="props.hasHelp"
+                    v-model:show="showHelp"
                     fixed-height
                     size="small"
-                    :show.sync="showHelp"
                     :title="`${capitalizeFirstLetter(props.name)} Advanced Search Help`">
                     <!-- Slot for Menu help section -->
                     <slot name="menu-help-text"></slot>

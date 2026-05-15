@@ -1,5 +1,5 @@
 import { storeToRefs } from "pinia";
-import { computed, reactive } from "vue";
+import { computed, shallowRef } from "vue";
 
 import type { ToolIdentifier } from "@/api/tools";
 import { getToolKey } from "@/api/tools";
@@ -23,13 +23,13 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
     const { isBusy } = storeToRefs(useUserToolsServiceCredentialsStore());
 
     /** Map of tool credentials by tool key. */
-    const userToolCredentialsByKey = reactive(new Map<string, ReturnType<typeof useUserToolCredentials>>());
+    const userToolCredentialsByKey = shallowRef(new Map<string, ReturnType<typeof useUserToolCredentials>>());
 
     /** Initialize user tool credentials for each tool. */
     tools.forEach(({ toolId, toolVersion }) => {
         const toolKey = getToolKey(toolId, toolVersion);
-        if (!userToolCredentialsByKey.has(toolKey)) {
-            userToolCredentialsByKey.set(toolKey, useUserToolCredentials(toolId, toolVersion));
+        if (!userToolCredentialsByKey.value.has(toolKey)) {
+            userToolCredentialsByKey.value.set(toolKey, useUserToolCredentials(toolId, toolVersion));
         }
     });
 
@@ -44,7 +44,7 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
          */
         return (toolId: string, toolVersion: string): SourceCredentialsDefinition => {
             const toolKey = getToolKey(toolId, toolVersion);
-            const userToolCredentials = userToolCredentialsByKey.get(toolKey);
+            const userToolCredentials = userToolCredentialsByKey.value.get(toolKey);
             if (!userToolCredentials) {
                 throw new Error(
                     `No credentials found for tool ${getToolKey(
@@ -72,36 +72,36 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
             sd: ServiceCredentialsIdentifier,
         ): UserServiceCredentialsResponse | undefined => {
             const toolKey = getToolKey(toolId, toolVersion);
-            const userToolCredentials = userToolCredentialsByKey.get(toolKey);
+            const userToolCredentials = userToolCredentialsByKey.value.get(toolKey);
             return userToolCredentials?.userServiceFor.value(sd);
         };
     });
 
     /** Whether some tools have required service credentials. */
     const someToolsHasRequiredServiceCredentials = computed(() => {
-        return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials.value,
+        return Array.from(userToolCredentialsByKey.value.values()).some(
+            (userToolCredentials) => userToolCredentials.toolHasRequiredServiceCredentials,
         );
     });
 
     /** Whether user has provided all service credentials for all tools. */
     const hasUserProvidedAllToolsServiceCredentials = computed(() => {
-        return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials.value,
+        return Array.from(userToolCredentialsByKey.value.values()).every(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllServiceCredentials,
         );
     });
 
     /** Whether user has provided all required service credentials for all tools. */
     const hasUserProvidedAllRequiredToolsServiceCredentials = computed(() => {
-        return Array.from(userToolCredentialsByKey.values()).every(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials.value,
+        return Array.from(userToolCredentialsByKey.value.values()).every(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedAllRequiredServiceCredentials,
         );
     });
 
     /** Whether user has provided some optional service credentials for any tools. */
     const hasUserProvidedSomeOptionalToolsServiceCredentials = computed(() => {
-        return Array.from(userToolCredentialsByKey.values()).some(
-            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials.value,
+        return Array.from(userToolCredentialsByKey.value.values()).some(
+            (userToolCredentials) => userToolCredentials.hasUserProvidedSomeOptionalServiceCredentials,
         );
     });
 
@@ -137,7 +137,7 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
      * @throws {Error} If any credential check fails.
      */
     async function checkAllUserCredentials(): Promise<void[]> {
-        const promises = Array.from(userToolCredentialsByKey.values()).map((c) => c.checkUserCredentials());
+        const promises = Array.from(userToolCredentialsByKey.value.values()).map((c) => c.checkUserCredentials());
         return await Promise.all(promises);
     }
 
@@ -150,7 +150,7 @@ export function useUserMultiToolCredentials(tools: ToolIdentifier[]) {
      */
     function getToolCredentials(toolId: string, toolVersion: string): ReturnType<typeof useUserToolCredentials> {
         const toolKey = getToolKey(toolId, toolVersion);
-        const userToolCredentials = userToolCredentialsByKey.get(toolKey);
+        const userToolCredentials = userToolCredentialsByKey.value.get(toolKey);
         if (!userToolCredentials) {
             throw new Error(
                 `No credentials found for tool ${getToolKey(

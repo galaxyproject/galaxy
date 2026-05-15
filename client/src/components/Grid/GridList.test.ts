@@ -18,7 +18,7 @@ vi.useFakeTimers();
 
 setupMockConfig({ disabled: false, enabled: true });
 
-vi.mock("vue-router/composables");
+vi.mock("vue-router");
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -102,7 +102,7 @@ interface TargetProps {
 function createTarget(propsData: TargetProps) {
     const pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false });
     return mount(MountTarget as object, {
-        localVue,
+        global: localVue,
         propsData,
         pinia,
     });

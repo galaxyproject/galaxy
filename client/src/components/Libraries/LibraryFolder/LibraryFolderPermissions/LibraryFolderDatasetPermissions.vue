@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import "vue-multiselect/dist/vue-multiselect.min.css";
+import "vue-multiselect/dist/vue-multiselect.css";
 
 import { faFile, faSave } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";

@@ -63,7 +63,7 @@ describe("VegaWrapper", () => {
             propsData: { spec: defaultSpec },
         });
         await flushPromises();
-        wrapper.destroy();
+        wrapper.unmount();
 
         expect(mockFinalize).toHaveBeenCalled();
     });

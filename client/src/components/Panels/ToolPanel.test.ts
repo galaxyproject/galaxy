@@ -121,14 +121,15 @@ describe("ToolPanel", () => {
 
         const pinia = createPinia();
         const wrapper = mount(ToolPanel as object, {
-            propsData: {
+            props: {
                 workflow: false,
                 editorWorkflows: null,
                 useSearchWorker: false,
             },
-            localVue,
-            router,
-            pinia,
+            global: {
+                ...localVue,
+                plugins: [...(localVue.plugins ?? []), pinia, router],
+            },
         });
 
         await flushPromises();
