@@ -1,4 +1,4 @@
-"""Unit tests for the PulsarByocResource model."""
+"""Unit tests for the ComputeResource model."""
 
 import uuid
 
@@ -44,14 +44,14 @@ def _make_user(session):
 def test_create_resource_applies_defaults(session):
     user = _make_user(session)
     suffix = uuid.uuid4().hex[:8]
-    resource = model.PulsarByocResource(
+    resource = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix}",
         relay_url="https://relay.example.test",
     )
     persist(session, resource)
 
-    fetched = session.get(model.PulsarByocResource, resource.id)
+    fetched = session.get(model.ComputeResource, resource.id)
     assert fetched is not None
     assert fetched.status == "pending"
     assert fetched.create_time is not None
@@ -64,14 +64,14 @@ def test_manager_name_unique(session):
     user = _make_user(session)
     suffix = uuid.uuid4().hex[:8]
     manager_name = f"byoc_{user.id}_{suffix}"
-    first = model.PulsarByocResource(
+    first = model.ComputeResource(
         user_id=user.id,
         manager_name=manager_name,
         relay_url="https://relay.example.test",
     )
     persist(session, first)
 
-    duplicate = model.PulsarByocResource(
+    duplicate = model.ComputeResource(
         user_id=user.id,
         manager_name=manager_name,
         relay_url="https://relay.example.test",
@@ -87,12 +87,12 @@ def test_user_can_have_multiple_resources(session):
     'one active per user', not the schema."""
     user = _make_user(session)
     suffix = uuid.uuid4().hex
-    r1 = model.PulsarByocResource(
+    r1 = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix[:8]}",
         relay_url="https://relay.example.test",
     )
-    r2 = model.PulsarByocResource(
+    r2 = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix[8:16]}",
         relay_url="https://relay.example.test",
@@ -100,7 +100,7 @@ def test_user_can_have_multiple_resources(session):
     persist(session, r1)
     persist(session, r2)
 
-    rows = session.scalars(select(model.PulsarByocResource).where(model.PulsarByocResource.user_id == user.id)).all()
+    rows = session.scalars(select(model.ComputeResource).where(model.ComputeResource.user_id == user.id)).all()
     assert len(rows) >= 2
 
 
@@ -109,7 +109,7 @@ def test_status_lifecycle_is_a_plain_string(session):
     manager layer, not the schema."""
     user = _make_user(session)
     suffix = uuid.uuid4().hex[:8]
-    resource = model.PulsarByocResource(
+    resource = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix}",
         relay_url="https://relay.example.test",
@@ -119,4 +119,4 @@ def test_status_lifecycle_is_a_plain_string(session):
 
     resource.status = "disabled"
     persist(session, resource)
-    assert session.get(model.PulsarByocResource, resource.id).status == "disabled"
+    assert session.get(model.ComputeResource, resource.id).status == "disabled"
