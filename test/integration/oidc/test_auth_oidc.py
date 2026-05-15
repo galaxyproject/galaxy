@@ -3,9 +3,9 @@
 import html
 import os
 import re
-import subprocess
 import tempfile
 import time
+from pathlib import Path
 from string import Template
 from typing import (
     ClassVar,
@@ -22,6 +22,10 @@ from galaxy.authnz.psa_authnz import PSAAuthnz
 from galaxy.util import requests
 from galaxy_test.base.api import ApiTestInteractor
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.keycloak import (
+    start_keycloak_https_with_realm,
+    stop_keycloak_docker,
+)
 
 KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"
@@ -53,54 +57,6 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 DEBUG_AUTH_PIPELINE_EXTRA = ("galaxy.authnz.util.debug_access_token_data",)
 
 
-def wait_till_app_ready(url, timeout=60):
-    import time
-
-    start = time.time()
-    while time.time() - start < timeout:
-        try:
-            response = requests.get(url, verify=False, timeout=(1, 5))
-            if response.status_code in (200, 302):  # allow redirect to login etc.
-                return True
-        except requests.exceptions.RequestException:
-            pass
-        time.sleep(1)
-    raise RuntimeError(f"Keycloak did not become ready in {timeout} seconds")
-
-
-def start_keycloak_docker(container_name, image="keycloak/keycloak:26.2"):
-    keycloak_realm_data = os.path.dirname(__file__)
-    START_SLURM_DOCKER = [
-        "docker",
-        "run",
-        "-p",
-        f"{KEYCLOAK_HOST_PORT}:8443",
-        "-d",
-        "--name",
-        container_name,
-        "--rm",
-        "-v",
-        f"{keycloak_realm_data}:/opt/keycloak/data/import",
-        "-e",
-        f"KC_BOOTSTRAP_ADMIN_USERNAME={KEYCLOAK_ADMIN_USERNAME}",
-        "-e",
-        f"KC_BOOTSTRAP_ADMIN_PASSWORD={KEYCLOAK_ADMIN_PASSWORD}",
-        "-e",
-        "KC_HOSTNAME_STRICT=false",
-        image,
-        "start",
-        "--import-realm",
-        "--https-certificate-file=/opt/keycloak/data/import/keycloak-server.crt.pem",
-        "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
-    ]
-    subprocess.check_call(START_SLURM_DOCKER)
-    wait_till_app_ready(f"{KEYCLOAK_URL}/.well-known/openid-configuration")
-
-
-def stop_keycloak_docker(container_name):
-    subprocess.check_call(["docker", "rm", "-f", container_name])
-
-
 class AbstractTestCases:
     @integration_util.skip_unless_docker()
     class BaseKeycloakIntegrationTestCase(integration_util.IntegrationTestCase):
@@ -125,7 +81,13 @@ class AbstractTestCases:
             # we forcibly disable it for now
             cls.disableOauthlibHttps()
             cls.container_name = f"{cls.__name__}_container"
-            start_keycloak_docker(container_name=cls.container_name)
+            start_keycloak_https_with_realm(
+                container_name=cls.container_name,
+                host_port=KEYCLOAK_HOST_PORT,
+                cert_and_realm_dir=Path(__file__).parent,
+                admin_username=KEYCLOAK_ADMIN_USERNAME,
+                admin_password=KEYCLOAK_ADMIN_PASSWORD,
+            )
 
             super().setUpClass()
             # Restart the test driver to parse the OIDC config file
