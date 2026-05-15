@@ -1432,6 +1432,10 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         return job.user if job else None
 
     def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
+        # Refuse extended metadata before any client setup — failing here
+        # is cheaper than letting the job submit and die opaquely on the
+        # remote.
+        self._refuse_extended_metadata(job_wrapper)
         # Resolve the per-tenant client manager up front so the inherited
         # ``get_client`` body sees the right ``self`` state via the helper.
         job = job_wrapper.get_job()
@@ -1445,6 +1449,28 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         # already-cached client and don't re-downgrade.
         self._apply_capability_downgrades(params, job.user)
         return super().get_client_from_wrapper(job_wrapper)
+
+    @staticmethod
+    def _refuse_extended_metadata(job_wrapper: "MinimalJobWrapper") -> None:
+        """Statically refuse ``metadata_strategy=extended`` on this runner.
+
+        Extended metadata has pulsar write the post-job ``model store`` on
+        the remote host and Galaxy collects it from the destination's
+        staging directory. The compute-resource runner has no shared FS
+        between Galaxy and the user's pulsar — the strategy is wedged
+        regardless of operator config — and the remote pulsar typically
+        doesn't ship Galaxy's metadata writer either. Fail at submit
+        time with a clear message instead of letting the job die opaquely
+        on the remote.
+        """
+        strategy = job_wrapper.metadata_strategy
+        if strategy == "extended":
+            raise RuntimeError(
+                "The compute-resource runner does not support metadata_strategy='extended' "
+                "(no shared filesystem between Galaxy and the user's pulsar, and the remote "
+                "typically lacks Galaxy's metadata writer). Set metadata_strategy='directory' "
+                "on this destination."
+            )
 
     def _apply_capability_downgrades(self, params: dict[str, Any], user: Optional["model.User"]) -> None:
         """Reflect the remote pulsar's capability snapshot into ``params``.
