@@ -1,15 +1,15 @@
-# Job configuration for the BYOC tool-execution integration test.
+# Job configuration for the compute-resource tool-execution integration test.
 #
 # This file is rendered by the test fixture with one placeholder:
 #   {{tpv_config_file}}  — absolute path to the TPV YAML rendered for the test
 #
 # All jobs route to the ``dynamic_tpv`` dispatcher, which loads the TPV
-# config and falls through to the ``pulsar_byoc`` destination once
-# ``app.byoc_manager.get_active_for(user)`` returns the resource the test
-# inserts in ``_configure_app``.
+# config and falls through to the ``compute_resource`` destination once
+# ``app.compute_resource_manager.get_active_for(user)`` returns the resource
+# the test inserts in ``_configure_app``.
 
 runners:
-  pulsar_byoc:
+  compute_resource:
     load: galaxy.jobs.runners.pulsar:PulsarMQBYOCJobRunner
 
 execution:

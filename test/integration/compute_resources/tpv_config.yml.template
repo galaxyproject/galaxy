@@ -1,0 +1,42 @@
+# TPV config for the compute-resource tool-execution integration test.
+#
+# Mirrors the operator-shipped lib/galaxy/config/sample/tpv/compute_resources.yml.sample
+# stanza plus a minimal base so the mapper can resolve. ``default_inherits``
+# = ``default`` so the catch-all tool rule fires for every tool, and the
+# fallback ``default`` destination keeps non-compute-resource users running.
+
+global:
+  default_inherits: default
+
+destinations:
+  default:
+    runner: compute_resource
+    max_accepted_cores: 16
+    max_accepted_mem: 64
+    scheduling:
+      accept: [general]
+  compute_resource:
+    runner: compute_resource
+    params:
+      jobs_directory: __JOBS_DIR__
+    scheduling:
+      require: [compute_resource]
+    rules:
+      - id: inject_compute_resource_params
+        if: app.compute_resource_manager.get_active_for(user) is not None
+        params:
+          compute_resource_id: "{app.compute_resource_manager.get_active_for(user).id}"
+          relay_url: "{app.compute_resource_manager.get_active_for(user).relay_url}"
+          manager: "{app.compute_resource_manager.get_active_for(user).manager_name}"
+
+tools:
+  default:
+    cores: 1
+    mem: 2
+    scheduling:
+      accept: [general]
+    rules:
+      - id: compute_resource_eligibility
+        if: app.compute_resource_manager.get_active_for(user) is not None
+        scheduling:
+          require: [compute_resource]

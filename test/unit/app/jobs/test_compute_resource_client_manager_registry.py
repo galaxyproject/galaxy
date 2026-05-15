@@ -1,4 +1,4 @@
-"""Direct unit tests for :class:`BYOCClientManagerRegistry`.
+"""Direct unit tests for :class:`ComputeResourceClientManagerRegistry`.
 
 The registry is the per-tenant client-manager cache lifted out of
 ``PulsarMQBYOCJobRunner`` so its lazy-create / cache-hit / shutdown
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from galaxy.jobs.runners.pulsar import BYOCClientManagerRegistry
+from galaxy.jobs.runners.pulsar import ComputeResourceClientManagerRegistry
 
 
 class _FakeClientManager:
@@ -48,7 +48,7 @@ def _factory_recorder() -> tuple[list[dict[str, Any]], list[_FakeClientManager],
 
 def test_returns_cached_client_manager_on_repeat_lookup():
     calls, _created, factory = _factory_recorder()
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
     key = ("https://relay.test", "manager_a")
 
     cm1 = registry.get_or_create(key, kwargs_builder=lambda: {"relay_url": key[0], "manager": key[1]})
@@ -60,7 +60,7 @@ def test_returns_cached_client_manager_on_repeat_lookup():
 
 def test_different_keys_get_distinct_client_managers():
     _calls, _created, factory = _factory_recorder()
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
 
     cm_a = registry.get_or_create(
         ("https://relay.test", "manager_a"),
@@ -78,7 +78,7 @@ def test_kwargs_builder_skipped_on_cache_hit():
     """The kwargs builder is what does the expensive vault read; the cache
     hit must not pay that cost on every job."""
     _calls, _created, factory = _factory_recorder()
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
     key = ("https://relay.test", "manager_a")
     build_count = [0]
 
@@ -93,7 +93,7 @@ def test_kwargs_builder_skipped_on_cache_hit():
 
 def test_on_create_invoked_once_per_fresh_manager():
     calls, _created, factory = _factory_recorder()
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
     key = ("https://relay.test", "manager_a")
     on_create_invocations: list[_FakeClientManager] = []
 
@@ -112,7 +112,7 @@ def test_on_create_invoked_once_per_fresh_manager():
 
 def test_shutdown_drains_all_cached_managers():
     _calls, created, factory = _factory_recorder()
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
 
     registry.get_or_create(("https://relay.test", "m_a"), kwargs_builder=lambda: {"a": 1})
     registry.get_or_create(("https://relay.test", "m_b"), kwargs_builder=lambda: {"b": 2})
@@ -138,7 +138,7 @@ def test_shutdown_swallows_per_manager_exceptions():
         created.append(cm)
         return cm
 
-    registry = BYOCClientManagerRegistry(factory)
+    registry = ComputeResourceClientManagerRegistry(factory)
     registry.get_or_create(("https://relay.test", "m_ok"), kwargs_builder=lambda: {"explode": False})
     registry.get_or_create(("https://relay.test", "m_boom"), kwargs_builder=lambda: {"explode": True})
     registry.get_or_create(("https://relay.test", "m_ok2"), kwargs_builder=lambda: {"explode": False})
