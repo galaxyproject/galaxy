@@ -24,10 +24,6 @@ re-running.
 
 from __future__ import annotations
 
-import os
-import shutil
-import socket
-import subprocess
 import threading
 from pathlib import Path
 from typing import (
@@ -45,6 +41,7 @@ from pulsar_relay_client import (
 from sqlalchemy import select
 
 from galaxy import model
+from galaxy.util.sockets import unused_port
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -55,7 +52,7 @@ from ._harnesses import (
     KeycloakHandle,
     PulsarHandle,
     RelayHandle,
-    teardown_compose,
+    teardown_keycloak_docker,
     teardown_subprocess,
 )
 from ._keycloak_bootstrap import (
@@ -64,48 +61,21 @@ from ._keycloak_bootstrap import (
 )
 from ._keycloak_login import login_via_keycloak
 
+# ``pulsar_relay`` is the *server* package launched as a subprocess by
+# ``bring_up_relay``; ``pulsar_relay_client`` (imported above) is a separate
+# package. Skip cleanly when the server isn't installed rather than letting
+# the uvicorn subprocess fail with an unhelpful import error.
+pytest.importorskip("pulsar_relay")
+
 pytestmark = pytest.mark.e2e
 
 HERE = Path(__file__).parent
-COMPOSE_FILE = HERE / "docker-compose.yml"
 JOB_CONF_TEMPLATE = HERE / "job_conf.yml.template"
 TPV_CONFIG_TEMPLATE = HERE / "tpv_config.yml.template"
 PULSAR_APP_TEMPLATE = HERE / "pulsar_app.yml.template"
 
-# --- Helpers (mirrored from conftest so this file is grep-able standalone) ---
 
-
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))
-        return int(s.getsockname()[1])
-
-
-def _compose_cmd() -> Optional[list[str]]:
-    docker = shutil.which("docker")
-    if docker is not None:
-        try:
-            subprocess.run([docker, "compose", "version"], check=True, capture_output=True, timeout=5)
-            return [docker, "compose"]
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
-            pass
-    legacy = shutil.which("docker-compose")
-    if legacy is not None:
-        return [legacy]
-    return None
-
-
-def _docker_running() -> bool:
-    docker = shutil.which("docker")
-    if docker is None:
-        return False
-    try:
-        subprocess.run([docker, "info"], check=True, capture_output=True, timeout=5)
-        return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        return False
-
-
+@integration_util.skip_unless_docker()
 class TestComputeResourceToolExecution(
     integration_util.IntegrationTestCase,
     integration_util.ConfiguresDatabaseVault,
@@ -122,7 +92,6 @@ class TestComputeResourceToolExecution(
     _keycloak: ClassVar[Optional[KeycloakHandle]] = None
     _relay: ClassVar[Optional[RelayHandle]] = None
     _pulsar: ClassVar[Optional[PulsarHandle]] = None
-    _compose: ClassVar[Optional[list[str]]] = None
     _secondary_refresh_token: ClassVar[str]
     _compute_resource_manager_name: ClassVar[str]
     _resource_id: ClassVar[Optional[int]] = None  # genuinely None until setUp() inserts the row
@@ -132,30 +101,20 @@ class TestComputeResourceToolExecution(
 
     @classmethod
     def _prepare_galaxy(cls) -> None:
-        if not _docker_running():
-            pytest.skip("Docker daemon not reachable; skipping compute-resource tool-execution suite.")
-        compose = _compose_cmd()
-        if compose is None:
-            pytest.skip("docker / docker-compose not available")
-        cls._compose = compose
+        # IntegrationTestCase set up ``_test_driver`` before calling us; its
+        # ``galaxy_test_tmp_dir`` is per-class and torn down by the parent's
+        # ``tearDownClass``. Use it for Pulsar's staging + rendered configs.
+        cls._tmp_dir = Path(cls._test_driver.galaxy_test_tmp_dir) / "compute_resources"
+        cls._tmp_dir.mkdir(parents=True, exist_ok=True)
 
-        # Per-class working dir for Pulsar's staging/persistence and the
-        # rendered job_conf/tpv_config files. ``COMPUTE_RESOURCE_E2E_TMP`` lets a tester
-        # pin it to a known path for ad-hoc debugging; otherwise mkdtemp.
-        override = os.environ.get("COMPUTE_RESOURCE_E2E_TMP")
-        if override:
-            cls._tmp_dir = Path(override)
-            cls._tmp_dir.mkdir(parents=True, exist_ok=True)
-        else:
-            import tempfile
-
-            cls._tmp_dir = Path(tempfile.mkdtemp(prefix="compute_resource_e2e_"))
-
-        cls._keycloak = bring_up_keycloak(compose=compose, compose_file=COMPOSE_FILE, free_port=_free_port())
+        cls._keycloak = bring_up_keycloak(
+            port=unused_port(),
+            container_name=f"{cls.__name__}_keycloak",
+        )
         # Reserve the relay port up-front so the keycloak client registration
         # can point its redirect_uri at the right callback before the relay
         # subprocess actually starts.
-        relay_port = _free_port()
+        relay_port = unused_port()
         relay_base_url = f"http://localhost:{relay_port}"
         keycloak_setup = cls._provision_keycloak(relay_base_url=relay_base_url)
         cls._relay = bring_up_relay(
@@ -226,14 +185,6 @@ class TestComputeResourceToolExecution(
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "directory"
 
-    @classmethod
-    def _configure_app(cls) -> None:
-        super()._configure_app()
-        # Galaxy is now up. Insert the compute resource + vault secret for
-        # whichever user dataset_populator will end up running as.
-        # We resolve that user lazily in setUp() because dataset_populator
-        # provisions on first use.
-
     def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -269,12 +220,8 @@ class TestComputeResourceToolExecution(
         # has no lingering long-polls, then the relay, then Keycloak.
         teardown_subprocess(cls._pulsar.process if cls._pulsar is not None else None, "pulsar")
         teardown_subprocess(cls._relay.process if cls._relay is not None else None, "relay")
-        if cls._keycloak is not None and cls._compose is not None:
-            teardown_compose(
-                compose=cls._compose,
-                compose_file=COMPOSE_FILE,
-                compose_env=cls._keycloak.compose_env,
-            )
+        if cls._keycloak is not None:
+            teardown_keycloak_docker(cls._keycloak.container_name)
         super().tearDownClass()
 
     # --- Sub-fixtures -------------------------------------------------------
