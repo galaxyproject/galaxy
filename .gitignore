@@ -209,3 +209,5 @@ test/evals/models.yaml
 # baseline file pairs back to the exact commit it came from.
 test/evals/results/*
 !test/evals/results/.gitkeep
+# Claude Code local settings
+.claude/settings.local.json
