@@ -329,6 +329,30 @@ def test_shutdown_closes_all_cached_client_managers(monkeypatch):
     assert len(runner._registry) == 0
 
 
+class _StubJobWrapperWithStrategy:
+    """Minimal job-wrapper double exposing only ``metadata_strategy`` —
+    that's the one attribute the refusal check reads."""
+
+    def __init__(self, metadata_strategy: str) -> None:
+        self.metadata_strategy = metadata_strategy
+
+
+def test_refuse_extended_metadata_raises_when_strategy_is_extended():
+    """The compute-resource runner has no shared FS with Galaxy and the
+    remote pulsar doesn't ship Galaxy's metadata writer, so
+    ``metadata_strategy='extended'`` is statically refused at submit time."""
+    with pytest.raises(RuntimeError, match="metadata_strategy='extended'"):
+        # Stub stands in for MinimalJobWrapper; the refusal only reads
+        # ``.metadata_strategy``.
+        PulsarMQBYOCJobRunner._refuse_extended_metadata(_StubJobWrapperWithStrategy("extended"))  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("strategy", ["directory", None, "legacy"])
+def test_refuse_extended_metadata_accepts_other_strategies(strategy):
+    """Only ``extended`` is refused — directory / legacy / unset all pass."""
+    PulsarMQBYOCJobRunner._refuse_extended_metadata(_StubJobWrapperWithStrategy(strategy))  # type: ignore[arg-type]
+
+
 def test_recover_fails_job_cleanly_when_resource_deleted():
     """If the BYOC resource has been purged while a job was running, the
     next recovery attempt must fail the job — not crash the recovery loop."""
