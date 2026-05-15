@@ -28,25 +28,26 @@ import os
 import shutil
 import socket
 import subprocess
+import threading
 from pathlib import Path
 from typing import (
+    Any,
     ClassVar,
     Optional,
 )
 
 import httpx
 import pytest
+from pulsar_relay_client import (
+    CredentialsFile,
+    RelayDeviceFlowAuthenticator,
+)
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.managers.compute_resources import (
-    relay_refresh_token_vault_path,
-    STATUS_ACTIVE,
-)
-from galaxy.security.vault import UserVaultWrapper
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
-from ._device_flow import drive_device_flow_with_pair
 from ._harnesses import (
     bring_up_keycloak,
     bring_up_pulsar,
@@ -61,6 +62,7 @@ from ._keycloak_bootstrap import (
     KeycloakSetup,
     provision,
 )
+from ._keycloak_login import login_via_keycloak
 
 pytestmark = pytest.mark.e2e
 
@@ -161,9 +163,7 @@ class TestComputeResourceToolExecution(
             base_url=relay_base_url,
             keycloak_setup=keycloak_setup,
         )
-        tokens = drive_device_flow_with_pair(
-            cls._relay.base_url, keycloak_setup, client_hint="compute-resource-tool-execution"
-        )
+        tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
         cls._secondary_refresh_token = tokens["refresh_token_secondary"]
         # manager_name = the relay user's username, which Keycloak maps from
         # the OIDC claim_username configured for the relay. We pull it from
@@ -241,26 +241,26 @@ class TestComputeResourceToolExecution(
         if cls._resource_id is not None:
             return
         assert cls._relay is not None
-        # First test: create the resource scoped to the populator's user.
-        user_id_encoded = self.dataset_populator.user_id()
-        user_id = self._app.security.decode_id(user_id_encoded)
-        user = self._app.model.session.get(model.User, user_id)
-        assert user is not None, "expected dataset_populator to provision a user"
+        # Run Galaxy's production bootstrap path end-to-end through its FastAPI
+        # endpoints — exercising ``ComputeResourceManager.complete_registration``
+        # (token-exchange → sub-claim validation → topic pinning → DB insert →
+        # vault write) rather than reproducing those steps from the test side.
+        reg_resp = self.dataset_populator._post("compute_resources/registrations", data={}, json=True)
+        api_asserts.assert_status_code_is_ok(reg_resp)
+        bootstrap_token = reg_resp.json()["bootstrap_token"]
 
-        resource = model.ComputeResource(
-            user_id=user.id,
-            manager_name=cls._compute_resource_manager_name,
-            relay_url=cls._relay.base_url,
-            status=STATUS_ACTIVE,
+        complete_resp = self.dataset_populator._post(
+            "compute_resources/registrations/complete",
+            data={
+                "bootstrap_token": bootstrap_token,
+                "refresh_token": cls._secondary_refresh_token,
+                "relay_url": cls._relay.base_url,
+                "manager_name": cls._compute_resource_manager_name,
+            },
+            json=True,
         )
-        self._app.model.session.add(resource)
-        self._app.model.session.commit()
-        cls._resource_id = resource.id
-
-        UserVaultWrapper(self._app.vault, user).write_secret(
-            relay_refresh_token_vault_path(resource.id),
-            cls._secondary_refresh_token,
-        )
+        api_asserts.assert_status_code_is_ok(complete_resp)
+        cls._resource_id = complete_resp.json()["id"]
 
     @classmethod
     def tearDownClass(cls) -> None:
@@ -284,6 +284,58 @@ class TestComputeResourceToolExecution(
         assert cls._keycloak is not None
         callback = f"{relay_base_url}/auth/oidc/keycloak/callback"
         return provision(redirect_uris=[callback], setup=KeycloakSetup(base_url=cls._keycloak.base_url))
+
+    @classmethod
+    def _drive_device_flow(cls, keycloak_setup: KeycloakSetup, *, client_hint: str) -> dict[str, Any]:
+        """Drive RFC 8628 device flow via ``pulsar_relay_client``, completing
+        the Keycloak operator login automatically from a worker thread.
+
+        ``RelayDeviceFlowAuthenticator``'s ``on_user_code`` hook lets us
+        substitute the human-points-a-browser step with ``login_via_keycloak``
+        against the same Keycloak the relay's OIDC provider is wired to.
+        """
+        assert cls._relay is not None
+        relay_url = cls._relay.base_url
+        cred_path = cls._tmp_dir / "device_flow_credentials.json"
+        operator_error: list[Exception] = []
+        op_thread: list[threading.Thread] = []
+
+        def on_user_code(verification_uri_complete: str, user_code: str) -> None:
+            def operator() -> None:
+                try:
+                    with httpx.Client(timeout=10.0, follow_redirects=False) as op:
+                        start = op.get(
+                            f"{relay_url}/auth/oidc/keycloak/login",
+                            params={"device_user_code": user_code},
+                        )
+                        assert start.status_code == 302, start.text
+                        final = login_via_keycloak(
+                            authorization_url=start.headers["location"],
+                            username=keycloak_setup.user_username,
+                            password=keycloak_setup.user_password,
+                            follow_relay_callback=True,
+                        )
+                        assert final.status_code == 200
+                except Exception as exc:
+                    operator_error.append(exc)
+
+            t = threading.Thread(target=operator, daemon=True)
+            t.start()
+            op_thread.append(t)
+
+        flow = RelayDeviceFlowAuthenticator(
+            relay_url=relay_url,
+            credentials_file=CredentialsFile(str(cred_path)),
+            client_hint=client_hint,
+            pair=True,
+            on_user_code=on_user_code,
+        )
+        creds = flow.run()
+        if op_thread:
+            op_thread[0].join(timeout=10)
+        if operator_error:
+            raise operator_error[0]
+        return creds
 
     @classmethod
     def _render_galaxy_config_files(cls) -> None:
