@@ -32,7 +32,8 @@ import httpx
 import pytest
 from pulsar_relay_client import CredentialsFile
 
-KEYCLOAK_READY_TIMEOUT_SECONDS = 180
+from galaxy_test.driver.keycloak import start_keycloak_http_dev
+
 RELAY_READY_TIMEOUT_SECONDS = 30
 PULSAR_READY_TIMEOUT_SECONDS = 30
 
@@ -60,53 +61,15 @@ class PulsarHandle:
 
 
 def bring_up_keycloak(*, port: int, container_name: str) -> KeycloakHandle:
-    """Start Keycloak via ``docker run`` (HTTP + dynamic admin-API realm provision)
-    and wait until ``/realms/master`` is reachable.
-
-    Mirrors the ``docker run`` shape ``test/integration/oidc/test_auth_oidc.py``
-    uses; we don't share its helper because that one is hardcoded for HTTPS
-    + a realm-import file, neither of which this suite wants.
-    """
-    subprocess.run(
-        [
-            "docker",
-            "run",
-            "-d",
-            "--rm",
-            "--name",
-            container_name,
-            "-p",
-            f"{port}:8080",
-            "-e",
-            "KEYCLOAK_ADMIN=admin",
-            "-e",
-            "KEYCLOAK_ADMIN_PASSWORD=adminpassword",
-            "-e",
-            "KC_HTTP_ENABLED=true",
-            "-e",
-            "KC_HOSTNAME_STRICT=false",
-            "-e",
-            "KC_HOSTNAME_STRICT_HTTPS=false",
-            "quay.io/keycloak/keycloak:26.0",
-            "start-dev",
-            "--http-port=8080",
-        ],
-        check=True,
-    )
-    base_url = f"http://localhost:{port}"
-    deadline = time.time() + KEYCLOAK_READY_TIMEOUT_SECONDS
-    while time.time() < deadline:
-        try:
-            with httpx.Client(timeout=2.0) as c:
-                r = c.get(f"{base_url}/realms/master")
-                if r.status_code in (200, 302):
-                    return KeycloakHandle(port=port, base_url=base_url, container_name=container_name)
-        except Exception:
-            pass
-        time.sleep(2)
-    subprocess.run(["docker", "logs", container_name], check=False)
-    subprocess.run(["docker", "rm", "-f", container_name], check=False)
-    pytest.fail("Keycloak did not become ready within 3 minutes")
+    """Start Keycloak (HTTP dev mode) via the shared helper. Realm + clients
+    + users are provisioned later via the admin API; see ``_keycloak_bootstrap.py``."""
+    try:
+        start_keycloak_http_dev(container_name=container_name, host_port=port)
+    except RuntimeError as exc:
+        subprocess.run(["docker", "logs", container_name], check=False)
+        subprocess.run(["docker", "rm", "-f", container_name], check=False)
+        pytest.fail(str(exc))
+    return KeycloakHandle(port=port, base_url=f"http://localhost:{port}", container_name=container_name)
 
 
 def bring_up_relay(*, port: int, base_url: str, keycloak_setup) -> RelayHandle:
@@ -295,7 +258,3 @@ def teardown_subprocess(proc: Optional[subprocess.Popen], label: str) -> None:
         print(f"\n--- {label} stdout ---\n{stdout.decode(errors='replace')}")
     if stderr:
         print(f"\n--- {label} stderr ---\n{stderr.decode(errors='replace')}")
-
-
-def teardown_keycloak_docker(container_name: str) -> None:
-    subprocess.run(["docker", "rm", "-f", container_name], check=False)
