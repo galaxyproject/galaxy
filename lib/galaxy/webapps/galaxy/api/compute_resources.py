@@ -1,20 +1,20 @@
-"""HTTP API for user-self-registered Pulsar compute resources (BYOC).
+"""HTTP API for user-self-registered compute resources.
 
 Three flows live here:
 
-1. ``POST /api/pulsar_byoc/registration`` — logged-in user asks Galaxy for a
-   one-shot bootstrap token. Returns a copy-pasteable command the user runs
-   on the Pulsar host.
-2. ``POST /api/pulsar_byoc/bootstrap`` — host-side callback. The
-   bootstrap_token authenticates the call; the body carries the relay
+1. ``POST /api/compute_resources/registrations`` — logged-in user asks Galaxy
+   for a one-shot registration token. Returns a copy-pasteable command the user
+   runs on the Pulsar host.
+2. ``POST /api/compute_resources/registrations/complete`` — host-side callback.
+   The bootstrap_token authenticates the call; the body carries the relay
    refresh token + manager_name (= relay user ``sub``) from the device-flow
    login. We round-trip the refresh token against the relay to validate it
    and pull the rotated value into the vault.
-3. ``GET/DELETE /api/pulsar_byoc[/{id}]`` — list/inspect/disable the
+3. ``GET/DELETE /api/compute_resources[/{id}]`` — list/inspect/disable the
    resources owned by the requesting user.
 
 Controller stays thin: request parsing, response shaping, dependency
-injection of :class:`PulsarByocService`. Business logic + exception
+injection of :class:`ComputeResourceService`. Business logic + exception
 translation lives in the service.
 """
 
@@ -30,9 +30,9 @@ from fastapi import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.pulsar_byoc import (
-    BootstrapPayload,
-    PulsarByocResourceSummary,
+from galaxy.schema.compute_resources import (
+    ComputeResourceSummary,
+    RegistrationCompletionPayload,
     RegistrationTicket,
 )
 from galaxy.webapps.galaxy.api import (
@@ -40,23 +40,24 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
-from galaxy.webapps.galaxy.services.pulsar_byoc import PulsarByocService
+from galaxy.webapps.galaxy.services.compute_resources import ComputeResourceService
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["pulsar_byoc"])
+router = Router(tags=["compute_resources"])
 
-ResourceIdPathParam: int = Path(..., title="Resource ID", description="Numeric ID of a BYOC resource.")
+ResourceIdPathParam: int = Path(..., title="Resource ID", description="Numeric ID of a compute resource.")
 
 
 def _require_enabled(trans: ProvidesUserContext = DependsOnTrans) -> None:
-    """FastAPI dependency that 404s every BYOC route when the feature flag
-    is off. Use via ``Depends(_require_enabled)`` in the route decorator's
-    ``dependencies`` list — keeps individual handlers free of the gate."""
-    if not trans.app.config.enable_pulsar_byoc:
+    """FastAPI dependency that 404s every compute-resource route when the
+    feature flag is off. Use via ``Depends(_require_enabled)`` in the route
+    decorator's ``dependencies`` list — keeps individual handlers free of
+    the gate."""
+    if not trans.app.config.enable_compute_resources:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Pulsar BYOC is disabled on this Galaxy instance.",
+            detail="Compute resources are disabled on this Galaxy instance.",
         )
 
 
@@ -66,12 +67,12 @@ _GATE = [Depends(_require_enabled)]
 
 
 @router.cbv
-class FastAPIPulsarByoc:
-    service: PulsarByocService = depends(PulsarByocService)
+class FastAPIComputeResources:
+    service: ComputeResourceService = depends(ComputeResourceService)
 
     @router.post(
-        "/api/pulsar_byoc/registration",
-        summary="Start a BYOC Pulsar registration",
+        "/api/compute_resources/registrations",
+        summary="Start a compute-resource registration",
         response_model=RegistrationTicket,
         dependencies=_GATE,
     )
@@ -82,49 +83,49 @@ class FastAPIPulsarByoc:
         return self.service.start_registration(trans)
 
     @router.post(
-        "/api/pulsar_byoc/bootstrap",
-        summary="Complete a BYOC Pulsar registration (host-side callback)",
-        response_model=PulsarByocResourceSummary,
+        "/api/compute_resources/registrations/complete",
+        summary="Complete a compute-resource registration (host-side callback)",
+        response_model=ComputeResourceSummary,
         dependencies=_GATE,
     )
     def complete_registration(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: BootstrapPayload = Body(...),
-    ) -> PulsarByocResourceSummary:
+        payload: RegistrationCompletionPayload = Body(...),
+    ) -> ComputeResourceSummary:
         # The bootstrap_token in ``payload`` is the auth here — this endpoint
         # must work even when Galaxy is called from a host the user is not
         # browser-authenticated against.
         return self.service.complete_registration(trans, payload)
 
     @router.get(
-        "/api/pulsar_byoc",
-        summary="List the requesting user's BYOC Pulsar resources",
-        response_model=list[PulsarByocResourceSummary],
+        "/api/compute_resources",
+        summary="List the requesting user's compute resources",
+        response_model=list[ComputeResourceSummary],
         dependencies=_GATE,
     )
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> list[PulsarByocResourceSummary]:
+    ) -> list[ComputeResourceSummary]:
         return self.service.list_for(trans)
 
     @router.get(
-        "/api/pulsar_byoc/{resource_id}",
-        summary="Get one of the requesting user's BYOC Pulsar resources",
-        response_model=PulsarByocResourceSummary,
+        "/api/compute_resources/{resource_id}",
+        summary="Get one of the requesting user's compute resources",
+        response_model=ComputeResourceSummary,
         dependencies=_GATE,
     )
     def show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         resource_id: int = ResourceIdPathParam,
-    ) -> PulsarByocResourceSummary:
+    ) -> ComputeResourceSummary:
         return self.service.show(trans, resource_id)
 
     @router.delete(
-        "/api/pulsar_byoc/{resource_id}",
-        summary="Disable one of the requesting user's BYOC Pulsar resources",
+        "/api/compute_resources/{resource_id}",
+        summary="Disable one of the requesting user's compute resources",
         status_code=status.HTTP_204_NO_CONTENT,
         dependencies=_GATE,
     )
@@ -137,8 +138,8 @@ class FastAPIPulsarByoc:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post(
-        "/api/pulsar_byoc/{resource_id}/purge",
-        summary="Fully delete a disabled BYOC resource (vault secret + DB row)",
+        "/api/compute_resources/{resource_id}/purge",
+        summary="Fully delete a disabled compute resource (vault secret + DB row)",
         status_code=status.HTTP_204_NO_CONTENT,
         dependencies=_GATE,
     )

@@ -2,7 +2,7 @@
 
 Brings up an OIDC IdP (Keycloak) via docker-compose, then a pulsar-relay
 subprocess wired up to it. The Galaxy side runs in-process so the suite
-can exercise ``PulsarByocManager`` against the real relay HTTP API
+can exercise ``ComputeResourceManager`` against the real relay HTTP API
 without the cost of a full Galaxy server boot.
 
 Skips automatically when ``docker`` is not on ``$PATH``, the daemon

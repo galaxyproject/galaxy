@@ -315,9 +315,9 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.galaxy_url_prefix = "/"
         self.display_builtin_converters = True
         self.enable_notification_system = True
-        # BYOC config attrs read by PulsarByocManager.
-        self.enable_pulsar_byoc = False
-        self.pulsar_byoc_relay_url = None
+        # Config attrs read by ComputeResourceManager.
+        self.enable_compute_resources = False
+        self.compute_resource_relay_url = None
         self.galaxy_infrastructure_url = ""
         self.config_dict = self.dict()
 
