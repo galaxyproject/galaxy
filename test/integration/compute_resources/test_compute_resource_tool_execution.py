@@ -24,6 +24,9 @@ re-running.
 
 from __future__ import annotations
 
+import os
+import shutil
+import tempfile
 import threading
 from pathlib import Path
 from typing import (
@@ -45,6 +48,7 @@ from galaxy.util.sockets import unused_port
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.keycloak import stop_keycloak_docker
 from ._harnesses import (
     bring_up_keycloak,
     bring_up_pulsar,
@@ -52,7 +56,6 @@ from ._harnesses import (
     KeycloakHandle,
     PulsarHandle,
     RelayHandle,
-    teardown_keycloak_docker,
     teardown_subprocess,
 )
 from ._keycloak_bootstrap import (
@@ -101,11 +104,19 @@ class TestComputeResourceToolExecution(
 
     @classmethod
     def _prepare_galaxy(cls) -> None:
-        # IntegrationTestCase set up ``_test_driver`` before calling us; its
-        # ``galaxy_test_tmp_dir`` is per-class and torn down by the parent's
-        # ``tearDownClass``. Use it for Pulsar's staging + rendered configs.
-        cls._tmp_dir = Path(cls._test_driver.galaxy_test_tmp_dir) / "compute_resources"
-        cls._tmp_dir.mkdir(parents=True, exist_ok=True)
+        # Heavy opt-in e2e: brings up a Keycloak container, a pulsar-relay
+        # subprocess, and a Pulsar daemon, then boots Galaxy against them.
+        # Far too heavy/flaky for the standard integration matrix (and it
+        # would poison its shard if a subprocess lingers), so it only runs
+        # when explicitly requested. Needs Docker + the pulsar-relay server
+        # package + a local pulsar source tree.
+        if not os.environ.get("GALAXY_TEST_COMPUTE_RESOURCE_E2E"):
+            pytest.skip("Set GALAXY_TEST_COMPUTE_RESOURCE_E2E=1 to run the compute-resource tool-execution e2e.")
+
+        # ``_test_driver.galaxy_test_tmp_dir`` isn't populated until the driver's
+        # ``setup()`` runs (after this hook), so allocate our own dir here and
+        # clean it up in ``tearDownClass``.
+        cls._tmp_dir = Path(tempfile.mkdtemp(prefix="compute_resource_e2e_"))
 
         cls._keycloak = bring_up_keycloak(
             port=unused_port(),
@@ -221,7 +232,10 @@ class TestComputeResourceToolExecution(
         teardown_subprocess(cls._pulsar.process if cls._pulsar is not None else None, "pulsar")
         teardown_subprocess(cls._relay.process if cls._relay is not None else None, "relay")
         if cls._keycloak is not None:
-            teardown_keycloak_docker(cls._keycloak.container_name)
+            stop_keycloak_docker(cls._keycloak.container_name)
+        tmp_dir = getattr(cls, "_tmp_dir", None)
+        if tmp_dir is not None and not os.environ.get("GALAXY_TEST_NO_CLEANUP"):
+            shutil.rmtree(tmp_dir, ignore_errors=True)
         super().tearDownClass()
 
     # --- Sub-fixtures -------------------------------------------------------
