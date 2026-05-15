@@ -376,6 +376,8 @@ class GalaxyAppConfigurationAttributes:
     galaxy_data_manager_data_path: str | None
     job_config_file: str
     job_config: Any
+    enable_compute_resources: bool
+    compute_resource_relay_url: str | None
     dependency_resolvers: list[Any]
     dependency_resolution: Any
     default_job_resubmission_condition: str | None
