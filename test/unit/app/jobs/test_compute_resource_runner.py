@@ -15,6 +15,10 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_params,
+    job_token_kind_for_params,
+)
 from galaxy.jobs.runners.pulsar import (
     ComputeResourceClientManagerRegistry,
     PulsarMQBYOCJobRunner,
@@ -276,8 +280,8 @@ def test_different_resources_get_different_client_managers():
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
 
-    cm_a = runner._get_or_create_client_manager({"compute_resource_id": 10}, user_a)
-    cm_b = runner._get_or_create_client_manager({"compute_resource_id": 20}, user_b)
+    cm_a = runner._get_or_create_client_manager({"compute_resource_id": 10}, user_a)  # type: ignore[arg-type]
+    cm_b = runner._get_or_create_client_manager({"compute_resource_id": 20}, user_b)  # type: ignore[arg-type]
 
     assert cm_a is not cm_b
     assert len(factory.calls) == 2
@@ -301,7 +305,7 @@ def test_missing_resource_is_refused():
     runner = _make_runner(resources_by_id={}, vault=vault)
 
     with pytest.raises(RuntimeError, match="No ComputeResource"):
-        runner._get_or_create_client_manager({"compute_resource_id": 999}, user)
+        runner._get_or_create_client_manager({"compute_resource_id": 999}, user)  # type: ignore[arg-type]
 
 
 def test_missing_vault_token_is_refused():
@@ -312,7 +316,7 @@ def test_missing_vault_token_is_refused():
     runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
 
     with pytest.raises(RuntimeError, match="No relay refresh token"):
-        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
+        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)  # type: ignore[arg-type]
     # Vault was consulted at the right key
     assert vault.reads == [f"user/{user.id}/compute_resource/42/relay_refresh_token"]
     # The factory MUST NOT have been called when the token is missing.
@@ -367,8 +371,8 @@ def test_shutdown_closes_all_cached_client_managers(monkeypatch):
     factory = _FakeClientManagerFactory()
     runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
 
-    cm1 = runner._get_or_create_client_manager({"compute_resource_id": 10}, user)
-    cm2 = runner._get_or_create_client_manager({"compute_resource_id": 20}, user)
+    cm1 = runner._get_or_create_client_manager({"compute_resource_id": 10}, user)  # type: ignore[arg-type]
+    cm2 = runner._get_or_create_client_manager({"compute_resource_id": 20}, user)  # type: ignore[arg-type]
 
     runner.shutdown()
 
@@ -410,7 +414,7 @@ def test_recover_fails_job_cleanly_when_resource_deleted():
     job = _StubJob(id=99, user=user)
     job_wrapper = _RecordingJobWrapper({"compute_resource_id": 42})
 
-    runner.recover(job, job_wrapper)
+    runner.recover(job, job_wrapper)  # type: ignore[arg-type]
 
     assert len(job_wrapper.failures) == 1
     assert "Compute resource removed" in job_wrapper.failures[0]
@@ -631,19 +635,24 @@ def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
     # Wire the security/config stubs so we can observe the kinds the runner
     # passes through to encode_id without monkey-patching MagicMocks.
     security = _StubSecurity()
-    runner.app.security = security
-    runner.app.config = _StubConfig()
+    runner.app.security = security  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
 
     # Pre-bind the user→job lookup the runner consults via ``_get_user_for_job_id``.
     job_obj = _StubJob(id=99, user=user)
-    runner.app.model.session._jobs = {99: job_obj}
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
 
     runner.get_client({"compute_resource_id": 42}, 99)
 
-    # The runner must have minted credentials with the tenant-scoped kinds.
+    # The runner must have minted credentials with the tenant-scoped kinds
+    # (terse, base62-packed ``jf:cr:`` / ``jt:cr:`` form — idencoding caps
+    # kinds at <15 chars). Compare against the shared helper rather than a
+    # hard-coded literal so this stays correct if the encoding ever changes.
+    files_kind = job_files_kind_for_params({"compute_resource_id": 42})
+    token_kind = job_token_kind_for_params({"compute_resource_id": 42})
     kinds_used = [c["kind"] for c in security.encode_calls]
-    assert "jobs_files:compute_resource:42" in kinds_used
-    assert "jobs_token:compute_resource:42" in kinds_used
+    assert files_kind in kinds_used
+    assert token_kind in kinds_used
     # And — crucially — never the legacy unscoped kinds.
     assert "jobs_files" not in kinds_used
     assert "jobs_token" not in kinds_used
@@ -651,5 +660,9 @@ def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
     # The minted kinds end up in the endpoint URLs handed to Pulsar.
     [cm] = factory.created
     [client_kwds] = cm.get_client_calls
-    assert "job_key=ENC[jobs_files:compute_resource:42]:99" in client_kwds["files_endpoint"]
-    assert "job_key=ENC[jobs_token:compute_resource:42]:99" in client_kwds["token_endpoint"]
+    assert f"job_key=ENC[{files_kind}]:99" in client_kwds["files_endpoint"]
+    assert f"job_key=ENC[{token_kind}]:99" in client_kwds["token_endpoint"]
+    # And the runner tells Pulsar to strip the secret out of URLs and send
+    # it as ``Authorization: Bearer …`` — see pulsar's
+    # ``FileActionMapper.use_bearer_auth`` handling.
+    assert client_kwds["destination_params"].get("use_bearer_auth") is True
