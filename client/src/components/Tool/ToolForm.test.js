@@ -32,7 +32,7 @@ describe("ToolForm", () => {
     let userStore;
     let historyStore;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // I tried using the useConfig mock and this component seems to bypass that, it would be
         // better if it didn't. We shouldn't have to stub out an API request to get a particular config.
         server.use(
@@ -94,6 +94,9 @@ describe("ToolForm", () => {
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
         historyStore.startWatchingHistory = () => {};
+
+        await flushPromises();
+        userStore.clearRecentTools();
     });
 
     it("shows props", async () => {

@@ -30,7 +30,7 @@ const SELECTORS = {
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
     EXECUTE_WORKFLOW_BUTTON: "[data-description='execute workflow button']",
     ROUTE_TO_RERUN_BUTTON: "[data-button-rerun][title='Rerun Workflow with same inputs']",
-    ALERT_MESSAGE: "balert-stub",
+    ALERT_MESSAGE: "galert-stub",
 };
 
 // Mock the copyWorkflow function for importing a workflow
