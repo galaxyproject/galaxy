@@ -160,6 +160,12 @@ function onDismiss() {
 onBeforeUnmount(clearCountDownTimeout);
 </script>
 
+<script lang="ts">
+export default {
+    name: "GAlert",
+};
+</script>
+
 <template>
     <Transition v-if="fade" name="g-alert-fade">
         <div

@@ -18,7 +18,7 @@ vi.mock("vue-router/composables", () => ({
 
 const selectors = {
     invocationSummary: ".invocation-overview",
-    bAlertStub: "balert-stub",
+    gAlertStub: "galert-stub",
     spanElement: "span",
     invocationDebugTab: ".invocation-debug-tab",
     invocationReportTab: ".invocation-report-tab",
@@ -192,7 +192,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(0);
 
         // expect there to be an alert for the missing invocation
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.gAlertStub);
         expect(alert.attributes("variant")).toBe("info");
         const span = alert.find(selectors.spanElement);
         expect(span.text()).toBe("Invocation not found.");
@@ -234,7 +234,7 @@ describe("WorkflowInvocationState check invocation and job terminal states", () 
         assertJobsSummaryFetched(0);
 
         // expect there to be an alert for the handled error
-        const alert = wrapper.find(selectors.bAlertStub);
+        const alert = wrapper.find(selectors.gAlertStub);
         expect(alert.attributes("variant")).toBe("danger");
         expect(alert.text()).toBe("User does not own specified item.");
     });
