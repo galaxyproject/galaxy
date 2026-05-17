@@ -999,6 +999,15 @@ class Msp(Text):
 
     file_ext = "msp"
 
+    MetadataElement(
+        name="spectra_count",
+        default=0,
+        desc="Number of spectra",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
+
     @staticmethod
     def next_line_starts_with(contents: IO, prefix: str) -> bool:
         next_line = contents.readline()
@@ -1022,7 +1031,31 @@ class Msp(Text):
                 has_num_peaks = True
 
         return in_block and has_num_peaks
+    
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        if not dataset.has_data():
+            return
+        dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
 
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            count = dataset.metadata.spectra_count
+            label = "spectrum" if count == 1 else "spectra"
+            dataset.blurb = f"{util.commaify(str(count))} {label}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _count_spectra(self, path: str) -> int:
+        count = 0
+        with open(path, "rb") as handle:
+            for line in handle:
+                lower_line = line.lower()
+                if lower_line.startswith("num peaks:"):
+                    count += 1
+        return count
 
 class SPLibNoIndex(Text):
     """SPlib without index file"""
