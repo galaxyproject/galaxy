@@ -1006,13 +1006,22 @@ class Msp(Text):
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a NIST MSP output file."""
-        begin_contents = file_prefix.contents_header
-        if "\n" not in begin_contents:
-            return False
-        lines = begin_contents.splitlines()
-        if len(lines) < 2:
-            return False
-        return lines[0].startswith("Name:") and lines[1].startswith("MW:")
+        contents = file_prefix.string_io()
+        in_block = False
+        has_num_peaks = False
+
+        for line in contents:
+            lower_line = line.lower()
+            if lower_line.startswith("name:"):
+                if in_block and has_num_peaks:
+                    return True
+                in_block = True
+                has_num_peaks = False
+                continue
+            if in_block and lower_line.startswith("num peaks:"):
+                has_num_peaks = True
+
+        return in_block and has_num_peaks
 
 
 class SPLibNoIndex(Text):
