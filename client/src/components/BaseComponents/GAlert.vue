@@ -8,7 +8,11 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 type AlertVariant = "info" | "warning" | "danger" | "success" | "primary" | "secondary" | "light" | "dark";
-type AlertShow = boolean | number | string;
+// `string & {}` keeps IDE autocomplete for the recommended variants while still accepting arbitrary
+// strings (and null) -- mirrors BAlert's permissive prop typing so existing call sites don't have
+// to cast. Null/empty variants fall back to the default `info` style.
+type AlertVariantProp = AlertVariant | (string & {}) | null;
+type AlertShow = boolean | number | string | null;
 
 interface Props {
     /** Controls alert visibility */
@@ -18,7 +22,7 @@ interface Props {
     /** Vue 3 default v-model value */
     modelValue?: AlertShow;
     /** Bootstrap contextual variant */
-    variant?: AlertVariant;
+    variant?: AlertVariantProp;
     /** Render a close button */
     dismissible?: boolean;
     /** Aria label for the dismiss button */
@@ -45,7 +49,7 @@ const emit = defineEmits<{
     (e: "update:show", show: AlertShow): void;
 }>();
 
-const variantClass = computed(() => `alert-${props.variant}`);
+const variantClass = computed(() => `alert-${props.variant || "info"}`);
 
 const boundShow = computed<AlertShow>(() => {
     if (props.value !== undefined) {
@@ -62,7 +66,7 @@ const localShow = ref(parseShow(boundShow.value));
 let countDownTimeout: ReturnType<typeof setTimeout> | undefined;
 
 function parseCountDown(show: AlertShow | undefined) {
-    if (show === "" || typeof show === "boolean" || show === undefined) {
+    if (show === "" || show === null || show === undefined || typeof show === "boolean") {
         return 0;
     }
 
@@ -75,6 +79,10 @@ function parseShow(show: AlertShow | undefined) {
         return true;
     }
 
+    if (show === null || show === undefined || show === false) {
+        return false;
+    }
+
     const count = Number.parseInt(String(show), 10);
     if (!Number.isFinite(count) || count < 1) {
         return false;
@@ -84,7 +92,10 @@ function parseShow(show: AlertShow | undefined) {
 }
 
 function hasNumericShow(show: AlertShow | undefined) {
-    return show !== "" && typeof show !== "boolean" && show !== undefined && Number.isFinite(Number(show));
+    if (show === "" || show === null || show === undefined || typeof show === "boolean") {
+        return false;
+    }
+    return Number.isFinite(Number(show));
 }
 
 function emitModel(show: AlertShow) {
