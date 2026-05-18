@@ -98,13 +98,24 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def get(self, hash: str) -> Optional[StoredToolSource]:
         """Retrieve a tool source by hash."""
         session = self._get_session()
-
-        model = session.execute(select(ToolSourceModel).where(ToolSourceModel.hash == hash)).scalar_one_or_none()
-
-        if not model:
-            return None
-
-        return self._model_to_stored(model)
+        try:
+            model = session.execute(
+                select(ToolSourceModel).where(ToolSourceModel.hash == hash)
+            ).scalar_one_or_none()
+            if not model:
+                return None
+            return self._model_to_stored(model)
+        finally:
+            # See ``load_index`` for the rationale: ``select`` on the shared
+            # scoped session opens an implicit read transaction that nothing
+            # later closes; on SQLite this holds a read lock that blocks
+            # subsequent writers (the cold-start populator, integration test
+            # client requests, …). ``rollback()`` after a pure read is a
+            # no-op for data but closes the transaction.
+            try:
+                session.rollback()
+            except Exception as e:
+                log.debug(f"get rollback raised: {e}")
 
     def _model_to_stored(self, model: ToolSourceModel) -> StoredToolSource:
         """Convert database model to StoredToolSource."""
@@ -130,10 +141,20 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def exists(self, hash: str) -> bool:
         """Check if a tool source exists."""
         session = self._get_session()
-
-        result = session.execute(select(ToolSourceModel.id).where(ToolSourceModel.hash == hash)).scalar_one_or_none()
-
-        return result is not None
+        try:
+            result = session.execute(
+                select(ToolSourceModel.id).where(ToolSourceModel.hash == hash)
+            ).scalar_one_or_none()
+            return result is not None
+        finally:
+            # Close the implicit read transaction. The populator calls
+            # ``exists`` once per discovered tool (484× on a default
+            # checkout); without this rollback those reads accumulate into
+            # an open shared-session transaction that locks SQLite.
+            try:
+                session.rollback()
+            except Exception as e:
+                log.debug(f"exists rollback raised: {e}")
 
     def delete(self, hash: str) -> bool:
         """Delete a tool source by hash."""
@@ -161,18 +182,21 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
         """Get tool sources by tool ID and optional version."""
         session = self._get_session()
-
-        # Query all and filter in Python since tool_id is in JSON
-        result = session.execute(select(ToolSourceModel))
-        sources = []
-
-        for (model,) in result:
-            source_data = model.source or {}
-            if source_data.get("tool_id") == tool_id:
-                if version is None or source_data.get("tool_version") == version:
-                    sources.append(self._model_to_stored(model))
-
-        return sources
+        try:
+            # Query all and filter in Python since tool_id is in JSON
+            result = session.execute(select(ToolSourceModel))
+            sources = []
+            for (model,) in result:
+                source_data = model.source or {}
+                if source_data.get("tool_id") == tool_id:
+                    if version is None or source_data.get("tool_version") == version:
+                        sources.append(self._model_to_stored(model))
+            return sources
+        finally:
+            try:
+                session.rollback()
+            except Exception as e:
+                log.debug(f"get_by_tool_id rollback raised: {e}")
 
     def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
         """Get the stored source for a given on-disk file path.
@@ -182,13 +206,22 @@ class DatabaseToolSourceStore(ToolSourceStore):
         populator writes one entry per file, so there is at most one match.
         """
         session = self._get_session()
-
-        result = session.execute(select(ToolSourceModel))
-        for (model,) in result:
-            source_data = model.source or {}
-            if source_data.get("source_path") == source_path:
-                return self._model_to_stored(model)
-        return None
+        try:
+            result = session.execute(select(ToolSourceModel))
+            for (model,) in result:
+                source_data = model.source or {}
+                if source_data.get("source_path") == source_path:
+                    return self._model_to_stored(model)
+            return None
+        finally:
+            # ``LazyToolBox._index_needs_population`` calls this once per
+            # discovered tool at cold boot. Without the rollback the
+            # accumulated read transaction would block the populator's
+            # subsequent writes and the integration test client's reads.
+            try:
+                session.rollback()
+            except Exception as e:
+                log.debug(f"get_by_source_path rollback raised: {e}")
 
     def count(self) -> int:
         """Return the total number of stored tool sources."""
