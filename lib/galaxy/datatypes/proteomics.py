@@ -28,6 +28,9 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
+from galaxy import util
+from galaxy.datatypes.metadata import MetadataElement
+
 
 log = logging.getLogger(__name__)
 
@@ -1050,12 +1053,13 @@ class Msp(Text):
 
     def _count_spectra(self, path: str) -> int:
         count = 0
-        with open(path, "rb") as handle:
+        with open(path) as handle:
             for line in handle:
                 lower_line = line.lower()
                 if lower_line.startswith("num peaks:"):
                     count += 1
         return count
+
 
 class SPLibNoIndex(Text):
     """SPlib without index file"""
