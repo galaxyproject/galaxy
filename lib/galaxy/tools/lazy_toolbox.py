@@ -287,72 +287,6 @@ class LazyTool:
         )
 
 
-class _LazyToolsByIdView:
-    """Mapping wrapper over ``LazyToolBox._tools_by_id`` that lazy-loads on access.
-
-    ``__getitem__`` returns the materialised Tool, calling ``get_tool`` when the
-    underlying dict has a ``None`` placeholder. Provides the bare slice of
-    ``Mapping`` that callers in the codebase actually use (``in``, ``[]``,
-    ``get``, iteration, ``len``).
-    """
-
-    def __init__(self, toolbox: "LazyToolBox") -> None:
-        self._toolbox = toolbox
-
-    def _materialised(self, tool_id: str) -> Optional["Tool"]:
-        tool = self._toolbox._tools_by_id.get(tool_id)
-        if tool is not None:
-            return tool
-        # Placeholder hit — go through ``get_tool`` which honors the index.
-        return self._toolbox.get_tool(tool_id=tool_id)
-
-    def __getitem__(self, tool_id: str) -> "Tool":
-        tool = self._materialised(tool_id)
-        if tool is None:
-            raise KeyError(tool_id)
-        return tool
-
-    def get(self, tool_id: str, default: Any = None) -> Any:
-        try:
-            return self.__getitem__(tool_id)
-        except KeyError:
-            return default
-
-    def __contains__(self, tool_id: object) -> bool:
-        return tool_id in self._toolbox._tools_by_id
-
-    def __iter__(self):
-        return iter(self._toolbox._tools_by_id)
-
-    def __len__(self) -> int:
-        return len(self._toolbox._tools_by_id)
-
-    def keys(self):
-        return self._toolbox._tools_by_id.keys()
-
-    def values(self):
-        for tool_id in self._toolbox._tools_by_id:
-            tool = self._materialised(tool_id)
-            if tool is not None:
-                yield tool
-
-    def items(self):
-        for tool_id in self._toolbox._tools_by_id:
-            tool = self._materialised(tool_id)
-            if tool is not None:
-                yield tool_id, tool
-
-    def copy(self) -> dict:
-        """Return a shallow copy as a regular dict.
-
-        Used by ``galaxy.tool_util.deps.containers.ContainerFinder.find_best_container_description``
-        (via ``copy.copy`` on the registry) and similar places that expect a
-        plain dict. Materialise every entry — callers iterating the copy
-        expect real Tool objects, not ``None`` placeholders.
-        """
-        return dict(self.items())
-
-
 class _IndexEntryFilterAdapter:
     """Wraps a :class:`ToolIndexEntry` so it satisfies ``ToolFilterContext``.
 
@@ -1674,20 +1608,6 @@ class LazyToolBox(ToolBox):
                     self._tool_object_cache.pop(key, None)
         return result
 
-    @property
-    def tools_by_id(self) -> "_LazyToolsByIdView":
-        """Lazy-loading view over ``_tools_by_id``.
-
-        ``AbstractToolBox.tools_by_id`` returns the raw dict, but in the lazy
-        path that dict holds ``None`` placeholders for tools that haven't been
-        materialised yet. Callers that index by id (e.g.
-        ``galaxy.tool_util.deps.views.resolve``: ``self._app.toolbox.tools_by_id[tool_id]``)
-        otherwise get ``None`` and crash. This view delegates ``__getitem__``
-        through ``get_tool`` so a placeholder triggers a lazy load instead of
-        being returned as ``None``.
-        """
-        return _LazyToolsByIdView(self)
-
     # === Override has_tool to check index ===
 
     def has_tool(
@@ -1750,17 +1670,6 @@ class LazyToolBox(ToolBox):
             exact=exact,
             user=user,
         )
-
-    # === Override tools() to iterate loaded tools ===
-
-    def tools(self):
-        """
-        Return loaded tools.
-
-        Note: This only returns tools that have been loaded on-demand.
-        For a full list, use the index.
-        """
-        return {k: v for k, v in self._tools_by_id.items() if v is not None}.items()
 
     # === Index access methods ===
 
