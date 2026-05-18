@@ -39,10 +39,7 @@ from galaxy.tool_source_store.search import (
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.toolbox.panel import (
-    panel_item_types,
-    ToolSection,
-)
+from galaxy.tool_util.toolbox.panel import panel_item_types
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -335,26 +332,10 @@ class LazyToolBox(ToolBox):
         )
 
         # Post-eager-walk: build the short-id lookup from whatever guids
-        # the panel pass registered.
+        # the panel pass registered. Section metadata, conf-level hidden,
+        # and labels are already on the index entries (the populator stamps
+        # them at discovery time), so no post-walk sync is needed.
         self._rebuild_shed_short_id_map()
-
-        # Stamp panel-section metadata from the now-populated ``_tool_panel``
-        # back onto the ``ToolIndexEntry`` for each tool. The eager walk
-        # records ``(tool_id, section_id, section_name)`` via
-        # ``ToolPanelElements.record_section_for_tool_id``, but doesn't
-        # touch the persisted index — and the ``to_panel_view`` / ``to_dict``
-        # fast paths key off ``entry.panel_section_id`` to group by section.
-        self._stamp_panel_sections_onto_index()
-
-        # Sync post-create mutations the eager pipeline applied to each Tool
-        # back onto the index entries. ``_load_tool_tag_set`` sets
-        # ``tool.hidden = True`` (from conf-level ``hidden="true"``) and
-        # ``tool.labels = …`` *after* our ``create_tool`` seam returned,
-        # so ``_persist_tool_source`` had no way to see them. Without this
-        # sync, materialising a re-loaded tool resurrects the un-flagged
-        # version (``test_show_lists_every_indexed_version`` fails because
-        # the conf-level hidden of v0.1 is lost on materialise).
-        self._sync_tool_mutations_to_index()
 
         # Commit anything ``create_tool`` persisted during the eager walk.
         # No-op when the store didn't see any new content. When the
@@ -378,7 +359,6 @@ class LazyToolBox(ToolBox):
             self._tools_parsed_from_file,
             self._tools_loaded_from_store,
         )
-        self._warn_if_index_misses_panel_tools()
 
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load the persistent ``ToolIndex`` before delegating to the eager walk.
@@ -396,50 +376,6 @@ class LazyToolBox(ToolBox):
             self._tool_index = ToolIndex()
         super()._init_tools_from_configs(config_filenames)
 
-    def _warn_if_index_misses_panel_tools(self) -> None:
-        """Warn loudly if the index doesn't cover every tool the operator configured.
-
-        ``_tool_section_map`` is built from the same tool confs that the bootstrap
-        walks. When ``/api/tools`` short-circuits to the index, panel-known ids
-        that are missing from the index disappear from the API response — the
-        regression that caused 316 ``GALAXY_TEST_REQUIRE_ALL_NEEDED_TOOLS`` API
-        failures on the lazy-toolbox-atomic branch. Emit a single WARNING with
-        a sample so the cause is visible at boot.
-        """
-        if self._tool_index is None:
-            return
-        index_ids = set(self._tool_index.entries.keys())
-        # ``_tool_section_map`` is built by the (Phase-2-doomed)
-        # ``_init_panel_structure_from_configs``; in the seam-driven boot
-        # path the eager walk populates ``_tool_panel`` directly, so derive
-        # the panel-id set from that instead. Falls back to whatever
-        # the legacy code path left behind.
-        if hasattr(self, "_tool_section_map") and self._tool_section_map:
-            panel_ids: set[str] = set(self._tool_section_map.keys())
-        else:
-            panel_ids = set()
-            for _key, item in self._tool_panel.items():
-                if isinstance(item, ToolSection):
-                    for _sub_key, sub_type, sub_item in item.elems.panel_items_iter():
-                        if sub_type == panel_item_types.TOOL and sub_item is not None:
-                            tool_id = getattr(sub_item, "id", None)
-                            if tool_id:
-                                panel_ids.add(tool_id)
-                elif _key.startswith("tool_") and item is not None:
-                    tool_id = getattr(item, "id", None)
-                    if tool_id:
-                        panel_ids.add(tool_id)
-        missing = panel_ids - index_ids
-        if missing:
-            sample = sorted(missing)[:20]
-            log.warning(
-                "LazyToolBox index is missing %d tool id(s) referenced by tool confs "
-                "(sample: %s). /api/tools?in_panel=False will under-report. "
-                "Check earlier 'Bootstrap skipping' / 'Error building index entry' warnings.",
-                len(missing),
-                ", ".join(sample),
-            )
-
     def _rebuild_shed_short_id_map(self) -> None:
         """Walk the index and rebuild short-id → guid mappings for shed installs.
 
@@ -455,83 +391,6 @@ class LazyToolBox(ToolBox):
             short_id = extract_short_id_from_guid(entry_id)
             if short_id and short_id != entry_id:
                 self._shed_short_id_to_guids.setdefault(short_id, set()).add(entry_id)
-
-    def _stamp_panel_sections_onto_index(self) -> None:
-        """Mirror ``_tool_panel``'s section assignments onto ``_tool_index`` entries.
-
-        The eager walk records section membership inside ``_tool_panel``
-        (via ``record_section_for_tool_id``), but the ``ToolIndex`` entries
-        — the source of truth for ``to_panel_view`` / ``to_dict`` fast
-        paths and for the next boot's warm load — don't know about the
-        section. Walk the panel once after the eager init finishes and
-        copy that information across; persist if anything changed.
-        """
-        if self._tool_index is None:
-            return
-        dirty = False
-        for _key, item in self._tool_panel.items():
-            if not isinstance(item, ToolSection):
-                continue
-            section_id = item.id
-            section_name = item.name or section_id
-            for _sub_key, sub_type, sub_item in item.elems.panel_items_iter():
-                if sub_type != panel_item_types.TOOL or sub_item is None:
-                    continue
-                tool_id = getattr(sub_item, "id", None)
-                if not tool_id:
-                    continue
-                # Stamp every indexed version of this tool — multi-version
-                # tools live in the same panel slot in the eager world.
-                for entry in self._tool_index.entries_by_version.get(tool_id, {}).values():
-                    if entry.panel_section_id != section_id or entry.panel_section_name != section_name:
-                        entry.panel_section_id = section_id
-                        entry.panel_section_name = section_name
-                        dirty = True
-                default_entry = self._tool_index.entries.get(tool_id)
-                if default_entry is not None and (
-                    default_entry.panel_section_id != section_id or default_entry.panel_section_name != section_name
-                ):
-                    default_entry.panel_section_id = section_id
-                    default_entry.panel_section_name = section_name
-                    dirty = True
-        if dirty and self._store is not None:
-            try:
-                self._store.store_index(self._tool_index)
-            except Exception as e:
-                log.debug("store_index after section stamping raised: %s", e)
-
-    def _sync_tool_mutations_to_index(self) -> None:
-        """Copy post-``create_tool`` Tool mutations back to ``ToolIndexEntry``.
-
-        Specifically: ``tool.hidden`` and ``tool.labels`` get set by the
-        eager ``_load_tool_tag_set`` *after* our seam returned, so
-        ``_persist_tool_source`` couldn't capture them. Walk
-        ``_tool_versions_by_id`` (which has every (id, version) → Tool
-        the eager walk registered) and stamp those attributes onto the
-        matching entry. Persists if anything changed.
-        """
-        if self._tool_index is None:
-            return
-        dirty = False
-        for tool_id, versions in list(self._tool_versions_by_id.items()):
-            entries_for_id = self._tool_index.entries_by_version.get(tool_id, {})
-            for version, tool in versions.items():
-                entry = entries_for_id.get(version or "")
-                if entry is None:
-                    continue
-                tool_hidden = bool(getattr(tool, "hidden", False))
-                if tool_hidden and not entry.hidden:
-                    entry.hidden = True
-                    dirty = True
-                tool_labels = getattr(tool, "labels", None) or []
-                if tool_labels and list(entry.labels) != list(tool_labels):
-                    entry.labels = list(tool_labels)
-                    dirty = True
-        if dirty and self._store is not None:
-            try:
-                self._store.store_index(self._tool_index)
-            except Exception as e:
-                log.debug("store_index after mutation sync raised: %s", e)
 
     def _make_index_entry(
         self,
