@@ -127,9 +127,15 @@ class ToolFileWatcher:
         use_polling: bool = False,
         verbose: bool = False,
         notify_callable: Optional[Callable[[Any], bool]] = None,
+        sa_session: Any = None,
     ):
         self.config = config
         self.store = store
+        # ``sa_session`` is required when the watcher should update the index
+        # alongside the store on each file change; passing ``None`` keeps the
+        # watcher store-only (used by older callers / tests that mock the
+        # session out).
+        self.sa_session = sa_session
         self.tools_dirs = tools_dirs
         self.debounce_seconds = debounce_seconds
         self.use_polling = use_polling
@@ -217,17 +223,17 @@ class ToolFileWatcher:
             self._notify(self.config)
 
     def _process_tool_file(self, path: str) -> bool:
-        """Process a single tool file and update the store.
+        """Process a single tool file and update the store + index.
 
-        Watch-mode does a lightweight raw-content hash and ElementTree
-        root-tag check rather than running Galaxy's full tool-source
-        parser, so an in-flight edit doesn't block on macro expansion or
-        full validation. The slower canonical path (``populate_store``
-        run) re-parses with macros expanded the next time it runs.
+        First does a lightweight raw-content hash check so the watcher
+        can bail on unchanged files without paying for macro expansion.
+        If the content is new, delegates to :func:`populate_for_paths`,
+        which runs the full parse-and-persist path: ``StoredToolSource``
+        write, ``ToolIndexEntry`` build (with section + labels from the
+        conf walk), whoosh rebuild, and the ``reload_tool_source_cache``
+        broadcast — same machinery a shed install hits.
         """
         import xml.etree.ElementTree as ET
-
-        from galaxy.tool_source_store import StoredToolSource
 
         try:
             with open(path) as f:
@@ -251,22 +257,28 @@ class ToolFileWatcher:
                 log.debug(f"Tool unchanged: {path}")
             return False
 
-        tool_id = root.get("id")
-        tool_version = root.get("version")
+        if self.sa_session is None:
+            # Legacy/no-session caller: degrade to store-only update so the
+            # watcher still keeps StoredToolSource current. The next full
+            # populator run picks up the index entry.
+            from galaxy.tool_source_store import StoredToolSource
 
-        stored = StoredToolSource(
-            hash=content_hash,
-            tool_source_class="XmlToolSource",
-            raw_source=raw_content,
-            tool_id=tool_id,
-            tool_version=tool_version,
-            tool_dir=str(Path(path).parent),
-            source_path=str(path),
-            stored_at=datetime.now(timezone.utc),
-        )
+            stored = StoredToolSource(
+                hash=content_hash,
+                tool_source_class="XmlToolSource",
+                raw_source=raw_content,
+                tool_id=root.get("id"),
+                tool_version=root.get("version"),
+                tool_dir=str(Path(path).parent),
+                source_path=str(path),
+                stored_at=datetime.now(timezone.utc),
+            )
+            self.store.store(stored)
+            log.info("Updated stored source for %s (index left stale)", path)
+            return True
 
-        self.store.store(stored)
-        log.info(f"Updated tool: {tool_id or path}")
+        populate_for_paths(self.config, self.sa_session, [path], rebuild_whoosh=True)
+        log.info("Updated tool: %s", path)
         return True
 
     def wait(self):
@@ -864,6 +876,7 @@ def watch_mode(
     watcher = ToolFileWatcher(
         config=config,
         store=store,
+        sa_session=model.context,
         tools_dirs=tools_dirs,
         debounce_seconds=debounce,
         use_polling=use_polling,
