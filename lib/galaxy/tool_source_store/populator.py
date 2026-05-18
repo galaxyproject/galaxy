@@ -291,6 +291,110 @@ class ToolFileWatcher:
 DEFAULT_STORE_NAME = "__default__"
 
 
+def build_index_entry_from_source(
+    discovered,
+    stored,
+    tool_source,
+):
+    """Assemble a :class:`ToolIndexEntry` from a populator triple.
+
+    ``discovered`` carries conf-level metadata that isn't visible to the tool
+    source parser (section membership, ``labels="a,b"`` on the ``<tool>``
+    element, conf-level ``hidden="true"``). ``stored`` carries the
+    content-addressed hash and source class. ``tool_source`` is the parsed
+    body — we read identity (id, version, name, description), EDAM
+    operations / topics, ``require_login``, and ``tool_type`` off it.
+
+    Returns ``None`` if the tool source does not yield a usable id; callers
+    log + skip in that case.
+    """
+    # Avoid importing ToolIndexEntry at module load time — only the populator's
+    # post-walk index-build step needs it, and tests that exercise the
+    # CLI plumbing alone shouldn't pull the whole index machinery in.
+    from galaxy.tool_source_store.index import ToolIndexEntry
+
+    try:
+        tool_id = tool_source.parse_id() or stored.tool_id
+        if not tool_id:
+            return None
+
+        uuid_val = None
+        if hasattr(tool_source, "parse_uuid"):
+            try:
+                parsed_uuid = tool_source.parse_uuid()
+                uuid_val = str(parsed_uuid) if parsed_uuid else None
+            except Exception:
+                pass
+
+        # XML-body ``<tool hidden="true">`` from the parsed source OR
+        # conf-level ``hidden="true"`` from the ``<tool>`` element — either
+        # forces the entry hidden. Mirrors the eager pipeline's
+        # ``_load_tool_tag_set`` ordering.
+        body_hidden = False
+        if hasattr(tool_source, "parse_hidden"):
+            try:
+                body_hidden = bool(tool_source.parse_hidden())
+            except Exception:
+                pass
+        hidden = bool(body_hidden or discovered.hidden)
+
+        require_login = False
+        if hasattr(tool_source, "parse_require_login"):
+            try:
+                require_login = bool(tool_source.parse_require_login(False))
+            except Exception:
+                pass
+
+        tool_type = "default"
+        if hasattr(tool_source, "parse_tool_type"):
+            try:
+                tool_type = tool_source.parse_tool_type() or "default"
+            except Exception:
+                pass
+
+        edam_operations: list[str] = []
+        if hasattr(tool_source, "parse_edam_operations"):
+            try:
+                edam_operations = list(tool_source.parse_edam_operations() or ())
+            except Exception:
+                pass
+
+        edam_topics: list[str] = []
+        if hasattr(tool_source, "parse_edam_topics"):
+            try:
+                edam_topics = list(tool_source.parse_edam_topics() or ())
+            except Exception:
+                pass
+
+        return ToolIndexEntry(
+            id=tool_id,
+            uuid=uuid_val,
+            version=tool_source.parse_version(),
+            name=tool_source.parse_name() or "",
+            description=tool_source.parse_description() or "",
+            panel_section_id=discovered.section_id,
+            panel_section_name=discovered.section_name,
+            labels=list(discovered.labels or ()),
+            edam_operations=edam_operations,
+            edam_topics=edam_topics,
+            source_hash=stored.hash,
+            source_class=stored.tool_source_class,
+            hidden=hidden,
+            require_login=require_login,
+            tool_type=tool_type,
+            tags=[],
+            indexed_at=datetime.now(timezone.utc),
+        )
+    except Exception as e:
+        log.warning(
+            "Error building index entry (id=%s, hash=%s): %s",
+            getattr(stored, "tool_id", None),
+            getattr(stored, "hash", None),
+            e,
+        )
+        return None
+
+
 def _build_stores(config, sa_session) -> dict[str, Any]:
     """Build {store_name: store_instance} for the default + every named store
     referenced from any tool_conf."""
@@ -421,95 +525,130 @@ def populate_store(
     stats = {"processed": 0, "stored": 0, "skipped": 0, "errors": 0}
 
     # Use the discover module to find all tool files from config
-    from galaxy.tool_source_store.discover import discover_tools
+    from galaxy.tool_source_store.discover import (
+        discover_tools,
+        DiscoveredTool,
+    )
 
     discovered_tools = list(discover_tools(config, include_bundled=True))
 
     # Bundled tools have tool_conf="bundled"; those go to the default store.
-    tool_specs: list[tuple[str, str]] = []
+    tool_specs: list[tuple[DiscoveredTool, str]] = []
     for d in discovered_tools:
         store_name = conf_to_store.get(d.tool_conf, DEFAULT_STORE_NAME)
         if store_name not in writable_names:
             # tool routed to a read-only store, or to a store not in --target.
             continue
-        tool_specs.append((d.path, store_name))
+        tool_specs.append((d, store_name))
 
     log.info(f"Found {len(discovered_tools)} tool files; routing {len(tool_specs)} to writable stores")
 
     if pattern:
-        tool_specs = [(p, n) for p, n in tool_specs if pattern in p]
+        tool_specs = [(d, n) for d, n in tool_specs if pattern in d.path]
         log.info(f"Filtered to {len(tool_specs)} tools matching '{pattern}'")
 
     # Import tool parsing utilities
     from galaxy.tool_util.parser import get_tool_source
     from galaxy.util import xml_to_string
 
-    def process_tool(path: str, store_name: str) -> tuple[str, str, Optional[str]]:
-        """Process a single tool file with proper macro expansion."""
-        try:
-            # Use Galaxy's tool source parser which handles macro expansion
-            tool_source = get_tool_source(config_file=path)
+    def process_tool(
+        d: DiscoveredTool, store_name: str
+    ) -> tuple[str, DiscoveredTool, str, Optional[StoredToolSource], Optional[Any], Optional[str]]:
+        """Process a single tool file with proper macro expansion.
 
-            # Get the expanded XML as a string
+        Returns ``(status, discovered, store_name, stored, tool_source, err)``.
+        ``stored`` and ``tool_source`` are populated on ``stored`` and
+        ``skipped`` so the post-walk index build can read them; ``error``
+        carries the message in the last slot.
+        """
+        path = d.path
+        try:
+            # Galaxy's tool source parser handles macro expansion.
+            tool_source = get_tool_source(config_file=path)
             root = tool_source.xml_tree.getroot()
             expanded_content = xml_to_string(root, pretty=True)
-
             content_hash = compute_hash(expanded_content)
             target_store = stores[store_name]
-
-            if incremental and target_store.exists(content_hash):
-                return ("skipped", path, None)
-
-            # Get tool ID and version from the parsed source
-            tool_id = tool_source.parse_id()
-            tool_version = tool_source.parse_version()
 
             stored = StoredToolSource(
                 hash=content_hash,
                 tool_source_class=type(tool_source).__name__,
                 raw_source=expanded_content,
-                tool_id=tool_id,
-                tool_version=tool_version,
+                tool_id=tool_source.parse_id(),
+                tool_version=tool_source.parse_version(),
                 tool_dir=str(Path(path).parent),
                 source_path=str(path),
                 stored_at=datetime.now(timezone.utc),
             )
 
+            if incremental and target_store.exists(content_hash):
+                # Source already on disk in the store — skip the write but still
+                # return the parsed source so the index build sees this tool.
+                return ("skipped", d, store_name, stored, tool_source, None)
+
             if not dry_run:
                 target_store.store(stored)
-
-            return ("stored", path, tool_id)
+            return ("stored", d, store_name, stored, tool_source, None)
         except Exception as e:
             log.error(f"Error processing {path}: {e}")
-            return ("error", path, str(e))
+            return ("error", d, store_name, None, None, str(e))
 
     log.info(f"Processing {len(tool_specs)} tools with {parallel} workers...")
 
+    # Collect (discovered, stored, tool_source) per writable store so the
+    # post-walk pass can build a fresh ToolIndex from this run's discoveries.
+    parsed_per_store: dict[str, list[tuple[DiscoveredTool, StoredToolSource, Any]]] = {
+        name: [] for name in writable_names
+    }
+
     with ThreadPoolExecutor(max_workers=parallel) as executor:
-        futures = {executor.submit(process_tool, p, n): p for p, n in tool_specs}
+        futures = {executor.submit(process_tool, d, n): (d, n) for d, n in tool_specs}
         for future in as_completed(futures):
-            result = future.result()
-            status = result[0]
+            status, discovered, store_name, stored, tool_source, err = future.result()
 
             if status == "error":
                 stats["errors"] += 1
             elif status == "skipped":
                 stats["skipped"] += 1
+                if stored is not None and tool_source is not None:
+                    parsed_per_store[store_name].append((discovered, stored, tool_source))
             else:
                 stats["stored"] += 1
+                if stored is not None and tool_source is not None:
+                    parsed_per_store[store_name].append((discovered, stored, tool_source))
 
             stats["processed"] += 1
 
             if verbose or status == "error":
-                log.info(f"{status}: {result[1]}")
+                log.info(f"{status}: {discovered.path}{' — ' + err if err else ''}")
 
     log.info(f"Population complete: {stats}")
 
-    if rebuild_index and not dry_run:
-        log.info("Rebuilding tool index...")
-        # We need a minimal app context for this
-        # For now, just log that this would happen
-        log.info("Index rebuild would happen here with full app context")
+    if not dry_run:
+        # Build a fresh ToolIndex per writable store from this run's parsed
+        # sources, including section metadata and conf-level labels/hidden
+        # captured at discovery time. This is the seam the prior LazyToolBox
+        # post-walk syncs (_stamp_panel_sections_onto_index,
+        # _sync_tool_mutations_to_index) replaced ad-hoc.
+        from galaxy.tool_source_store.index import ToolIndex
+
+        for store_name in sorted(writable_names):
+            triples = parsed_per_store[store_name]
+            index = ToolIndex()
+            for d, stored, tool_source in triples:
+                entry = build_index_entry_from_source(d, stored, tool_source)
+                if entry is not None:
+                    index.add_entry(entry)
+            try:
+                stores[store_name].store_index(index)
+                stores[store_name].commit()
+                log.info(
+                    "Persisted ToolIndex for store %s (%d entries)",
+                    store_name,
+                    len(index.entries),
+                )
+            except Exception as e:
+                log.warning("store_index for %s raised: %s", store_name, e)
 
     return stats
 
