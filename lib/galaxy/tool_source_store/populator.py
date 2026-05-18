@@ -59,9 +59,26 @@ from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
+from kombu import Connection
+from kombu.pools import producers
+from watchdog.events import FileSystemEventHandler
+from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
+
+from galaxy.config import GalaxyAppConfiguration
+from galaxy.datatypes.registry import Registry
+from galaxy.model import set_datatypes_registry
+from galaxy.model.mapping import init_models_from_config
+from galaxy.queues import galaxy_exchange
+from galaxy.tool_source_store import build_tool_source_store
+from galaxy.tool_source_store.search import (
+    ToolSearchTuning,
+    ToolWhooshIndex,
+)
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
+from galaxy.util.properties import load_app_properties
 
 log = logging.getLogger(__name__)
 
@@ -96,11 +113,6 @@ def send_reload_notification(config) -> bool:
         True if message was sent successfully, False otherwise.
     """
     try:
-        from kombu import Connection
-        from kombu.pools import producers
-
-        from galaxy.queues import galaxy_exchange
-
         amqp_url = config.amqp_internal_connection
         if not amqp_url:
             log.warning("No amqp_internal_connection configured, cannot send reload notification")
@@ -169,14 +181,6 @@ class ToolFileWatcher:
 
     def start(self):
         """Start watching for file changes."""
-        try:
-            from watchdog.events import FileSystemEventHandler
-            from watchdog.observers import Observer
-            from watchdog.observers.polling import PollingObserver
-        except ImportError:
-            log.error("watchdog library not installed. Install with: pip install watchdog")
-            return False
-
         observer_class = PollingObserver if self.use_polling else Observer
 
         class ToolFileHandler(FileSystemEventHandler):
@@ -353,11 +357,6 @@ def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
     if index_dir is None:
         return
     try:
-        from galaxy.tool_source_store.search import (
-            ToolSearchTuning,
-            ToolWhooshIndex,
-        )
-
         tuning = ToolSearchTuning.from_config(config)
         searcher = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
         count = searcher.build(tool_index)
@@ -531,12 +530,6 @@ def populate_store(
     ``rebuild_index`` is accepted for backwards compat but has no effect:
     the index is rebuilt on every non-dry-run.
     """
-    from galaxy.config import GalaxyAppConfiguration
-    from galaxy.datatypes.registry import Registry
-    from galaxy.model import set_datatypes_registry
-    from galaxy.model.mapping import init_models_from_config
-    from galaxy.util.properties import load_app_properties
-
     log.info("Loading Galaxy configuration...")
     registry = Registry()
     registry.load_datatypes()
@@ -848,13 +841,6 @@ def watch_mode(
         debounce: Debounce time in seconds.
         verbose: Enable verbose logging.
     """
-    from galaxy.config import GalaxyAppConfiguration
-    from galaxy.datatypes.registry import Registry
-    from galaxy.model import set_datatypes_registry
-    from galaxy.model.mapping import init_models_from_config
-    from galaxy.tool_source_store import build_tool_source_store
-    from galaxy.util.properties import load_app_properties
-
     log.info("Loading Galaxy configuration...")
 
     # Initialize datatypes registry (required for model)

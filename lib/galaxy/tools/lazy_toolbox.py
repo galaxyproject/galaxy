@@ -32,7 +32,13 @@ from galaxy.tool_source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tool_source_store.populator import populate_store_inline
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
+from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_util.id_util import extract_short_id_from_guid
+from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import (
@@ -510,12 +516,6 @@ class LazyToolBox(ToolBox):
 
         Overrides ToolBox.get_tool to implement lazy loading.
         """
-        # Lazy import: galaxy.exceptions pulls in webapp framework deps.
-        from galaxy.exceptions import (
-            ObjectNotFound,
-            RequestParameterInvalidException,
-        )
-
         if tool_id is None and tool_uuid is None:
             raise RequestParameterInvalidException("get_tool cannot be called with both tool_id and tool_uuid as None")
 
@@ -867,8 +867,6 @@ class LazyToolBox(ToolBox):
         if not (tool_shed and repo_name and repo_owner and installed_changeset):
             return None
         try:
-            from galaxy.tool_shed.util.repository_util import get_installed_repository
-
             return get_installed_repository(
                 self.app,
                 tool_shed=tool_shed,
@@ -1086,8 +1084,6 @@ class LazyToolBox(ToolBox):
             # come back from there even after removal.
             self._tool_versions_by_id.pop(tool_id, None)
             if hasattr(self, "_lineage_map"):
-                from galaxy.util.tool_version import remove_version_from_guid
-
                 self._lineage_map.lineage_map.pop(tool_id, None)
                 versionless = remove_version_from_guid(tool_id)
                 if versionless:
