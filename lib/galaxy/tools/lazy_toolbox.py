@@ -308,10 +308,11 @@ class LazyToolBox(ToolBox):
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
-        # Whoosh search infrastructure — built lazily on first ``search_tools``
-        # call and re-built whenever the underlying ``ToolIndex`` version changes.
+        # Whoosh search infrastructure — opened lazily on first ``search_tools``
+        # call. The populator owns the index; this slot is just a per-process
+        # cached reader. ``invalidate_index_cache`` clears it so peer-process
+        # populator runs are picked up on the next query.
         self._whoosh_search_index: Optional[ToolWhooshIndex] = None
-        self._whoosh_search_index_version: Optional[str] = None
         # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
         # before the eager walk runs.
         self._tool_index: Optional[ToolIndex] = None
@@ -989,6 +990,10 @@ class LazyToolBox(ToolBox):
         # peer-process installs (which only update the persisted index)
         # are reachable via short-id lookups in this process.
         self._rebuild_shed_short_id_map()
+        # Drop the cached whoosh reader; the populator may have rebuilt the
+        # on-disk index under us, and the next ``search_tools`` should
+        # re-open it.
+        self._whoosh_search_index = None
 
     def _register_loaded_tool(self, tool: "Tool") -> None:
         """Register a lazily-loaded tool in the toolbox registries."""
@@ -1219,20 +1224,28 @@ class LazyToolBox(ToolBox):
         return None
 
     def _get_search_index(self) -> Optional[ToolWhooshIndex]:
-        """Return the cached :class:`ToolWhooshIndex` or build one on demand.
+        """Return the cached :class:`ToolWhooshIndex`, opening it on first use.
 
-        Resolves the index path under ``tool_search_index_dir`` (the same
-        root the eager ``ToolBoxSearch`` uses), in a sub-folder so neither
-        path stomps the other. ``ToolSearchTuning`` is built from
-        ``self.app.config`` once and passed in — the search index code
-        doesn't need a god-object reference.
+        The on-disk index is built by the populator
+        (``galaxy.tool_source_store.populator`` after every ``store_index``
+        write). This method opens — never builds. ``invalidate_index_cache``
+        clears the cached reference so a peer-process populator run is
+        picked up on the next query.
+
+        Returns ``None`` only when ``config.tool_search_index_dir`` is unset
+        (search disabled by config); a missing/unreadable on-disk index is
+        surfaced by ``ToolWhooshIndex.search`` itself.
         """
         if self._whoosh_search_index is not None:
             return self._whoosh_search_index
-        base = self.app.config.tool_search_index_dir
-        if not base:
+        from galaxy.tool_source_store.populator import (
+            DEFAULT_STORE_NAME,
+            whoosh_dir_for_store,
+        )
+
+        index_dir = whoosh_dir_for_store(self.app.config.tool_search_index_dir, DEFAULT_STORE_NAME)
+        if index_dir is None:
             return None
-        index_dir = os.path.join(base, "_lazy_default")
         tuning = ToolSearchTuning.from_config(self.app.config)
         self._whoosh_search_index = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
         return self._whoosh_search_index
@@ -1240,29 +1253,17 @@ class LazyToolBox(ToolBox):
     def search_tools(self, query: str, limit: int = 50) -> list[ToolIndexEntry]:
         """Rank index entries against ``query`` using Whoosh (BM25F).
 
-        Builds the on-disk Whoosh index lazily on first call (or after a
-        ``ToolIndex`` version change) so the populator does not need to know
-        about search infrastructure. Falls back to ``ToolIndex.search``'s
-        in-process scorer when Whoosh setup fails (e.g. read-only directory).
+        The whoosh index is owned by the populator; this method is read-only.
+        On missing / unreadable index, ``ToolWhooshIndex.search`` raises —
+        operators see the error in the API response with a clear "run the
+        populator" pointer instead of a silently-degraded scorer response.
         """
         if self._tool_index is None:
             return []
         searcher = self._get_search_index()
         if searcher is None:
             return self._tool_index.search(query, limit=limit)
-        current_version = self._tool_index.compute_version()
-        if self._whoosh_search_index_version != current_version:
-            try:
-                searcher.build(self._tool_index)
-                self._whoosh_search_index_version = current_version
-            except Exception as e:
-                log.warning("Falling back to in-process scorer; Whoosh build failed: %s", e)
-                return self._tool_index.search(query, limit=limit)
-        try:
-            ids = searcher.search(query, limit=limit)
-        except Exception as e:
-            log.warning("Falling back to in-process scorer; Whoosh search failed: %s", e)
-            return self._tool_index.search(query, limit=limit)
+        ids = searcher.search(query, limit=limit)
         return [entry for entry in (self._tool_index.entries.get(tool_id) for tool_id in ids) if entry is not None]
 
     # === Required property overrides ===
