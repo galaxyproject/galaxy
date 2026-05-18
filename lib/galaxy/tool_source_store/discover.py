@@ -15,7 +15,10 @@ from collections.abc import (
     Iterable,
     Iterator,
 )
-from dataclasses import dataclass
+from dataclasses import (
+    dataclass,
+    field,
+)
 from pathlib import Path
 from typing import (
     Optional,
@@ -49,6 +52,15 @@ class DiscoveredTool:
     # set; the lazy path needs the same flag to make ``hidden_tool_versions``
     # in /api/tools/{id} match the eager toolbox.
     hidden: bool = False
+    # Conf-level ``labels="a,b"`` on the ``<tool>`` element. Same population
+    # ownership as ``hidden`` above: parsed once at populator time so the
+    # toolbox doesn't have to re-discover them in a post-walk sync.
+    labels: list[str] = field(default_factory=list)
+    # Parent ``<section id="..." name="...">`` of this tool, if any. The
+    # populator stamps these onto ``ToolIndexEntry`` so the panel render in
+    # ``LazyToolBox`` doesn't need a separate post-walk pass to find them.
+    section_id: Optional[str] = None
+    section_name: Optional[str] = None
 
 
 def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
@@ -132,19 +144,24 @@ def _resolve_file_template_kwds(root_dir: Optional[str]) -> dict[str, str]:
     return {"model_tools_path": MODEL_TOOLS_PATH}
 
 
-def _iter_tool_items(items: Iterable[ToolConfItem]) -> Iterator[ToolConfItem]:
+def _iter_tool_items(
+    items: Iterable[ToolConfItem],
+    parent_section: Optional[ToolConfSection] = None,
+) -> Iterator[tuple[ToolConfItem, Optional[ToolConfSection]]]:
     """
     Recursively iterate over tool items, including those nested in sections.
 
-    Yields ``tool`` and ``tool_dir`` items. ``tool_dir`` items reference an
-    on-disk directory rather than a single file; the caller is responsible for
-    walking the directory.
+    Yields ``(item, parent_section)`` pairs for each ``tool`` and ``tool_dir``
+    entry. ``parent_section`` is the immediate enclosing ``ToolConfSection`` or
+    ``None`` for top-level items. ``tool_dir`` items reference an on-disk
+    directory rather than a single file; the caller is responsible for walking
+    the directory.
     """
     for item in items:
         if item.type in ("tool", "tool_dir"):
-            yield item
+            yield item, parent_section
         elif isinstance(item, ToolConfSection):
-            yield from _iter_tool_items(item.items)
+            yield from _iter_tool_items(item.items, parent_section=item)
 
 
 def _looks_like_a_tool(path: str) -> bool:
@@ -234,7 +251,9 @@ def discover_tools_from_config(
     # dropped at the os.path.exists check below.
     file_template_kwds = _resolve_file_template_kwds(root_dir)
 
-    for item in _iter_tool_items(tool_conf_source.parse_items()):
+    for item, section in _iter_tool_items(tool_conf_source.parse_items()):
+        section_id = section.get("id") if section is not None else None
+        section_name = section.get("name") if section is not None else None
         if item.type == "tool_dir":
             dir_attr = item.get("dir")
             if not dir_attr:
@@ -254,6 +273,8 @@ def discover_tools_from_config(
                     tool_path=resolved_tool_path,
                     guid=None,
                     is_shed_tool=is_shed_conf,
+                    section_id=section_id,
+                    section_name=section_name,
                 )
             continue
 
@@ -283,6 +304,9 @@ def discover_tools_from_config(
             guid=item.get("guid"),
             is_shed_tool=is_shed_conf,
             hidden=str(item.get("hidden", "false")).lower() == "true",
+            labels=list(item.labels or ()),
+            section_id=section_id,
+            section_name=section_name,
         )
 
 
