@@ -553,7 +553,7 @@ def populate_store_inline(
     *,
     paths: Optional[list[str]] = None,
     pattern: Optional[str] = None,
-    parallel: int = 4,
+    parallel: int = 1,
     dry_run: bool = False,
     incremental: bool = True,
     verbose: bool = False,
@@ -569,13 +569,20 @@ def populate_store_inline(
     and shed-install reroute (``tool_panel_manager``) don't pay the config-
     load cost a second time.
 
+    ``parallel`` defaults to ``1`` so the in-process callers don't share
+    ``sa_session`` across threads — ``DatabaseToolSourceStore.store()``
+    writes through that session, and SQLAlchemy ``Session`` is not thread-
+    safe. The CLI overrides via ``populate_store(config_file, parallel=...)``;
+    it operates on its own fresh ``model.context`` with no concurrent
+    readers and can safely fan out.
+
     ``paths`` semantics:
 
     - ``paths=None`` (default): full scan. Every discovered tool gets
       indexed; the index is **replaced** per writable store.
     - ``paths=[...]``: partial scan restricted to the listed paths. The
       existing index for each store is loaded, the entries for the matched
-      paths are added/replaced, and the merged result is written back.
+      paths are added/replaces, and the merged result is written back.
       Other entries are untouched.
 
     ``prune=True`` forces full-scan replacement even when ``paths`` is set,
