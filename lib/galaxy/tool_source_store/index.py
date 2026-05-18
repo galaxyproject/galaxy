@@ -252,11 +252,11 @@ class ToolIndex:
         """Add an entry, populating both the default and per-version maps.
 
         The "default" entry per id (used by ``ToolIndex.get(tool_id)`` and
-        the ``/api/tools`` listing) is the highest version per
-        :func:`packaging.version.parse`. Pure string comparison fails on
-        e.g. ``"0.1+galaxy6"`` vs ``"0.2"`` (which compares as ``"0.1+..."
-        < "0.2"`` lexically only by accident — a different prefix would
-        flip the sign).
+        the ``/api/tools`` listing) is the highest version per Galaxy's
+        vendored :func:`galaxy.tool_util.version.parse_version`. Pure
+        string comparison fails on e.g. ``"0.1+galaxy6"`` vs ``"0.2"``
+        (which compares as ``"0.1+..." < "0.2"`` lexically only by
+        accident — a different prefix would flip the sign).
         """
         self.entries_by_version.setdefault(entry.id, {})[entry.version or ""] = entry
         existing = self.entries.get(entry.id)
@@ -264,7 +264,7 @@ class ToolIndex:
             self.entries[entry.id] = entry
             return
         try:
-            from packaging.version import parse as _parse_version
+            from galaxy.tool_util.version import parse_version as _parse_version
 
             new_v = _parse_version(entry.version or "0")
             old_v = _parse_version(existing.version or "0")

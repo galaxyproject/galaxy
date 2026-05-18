@@ -20,7 +20,7 @@ from typing import (
 from uuid import UUID
 
 from cachetools import LRUCache
-from packaging.version import parse as parse_version
+from galaxy.tool_util.version import parse_version
 
 from galaxy.tool_source_store import (
     StoredToolSource,
@@ -540,9 +540,10 @@ class LazyToolBox(ToolBox):
                 # determine the latest; returning only the requested version
                 # makes upgrades silently no-op.
                 def _ver_key(v: str):
-                    # ``packaging.version.parse`` matches what the
-                    # eager ToolLineage uses to order versions and
-                    # tolerates non-numeric segments (e.g. ``"1.0.0+galaxy0"``).
+                    # ``galaxy.tool_util.version.parse_version`` matches what
+                    # the eager ToolLineage uses to order versions and
+                    # tolerates non-numeric segments (e.g. ``"1.0.0+galaxy0"``)
+                    # via ``LegacyVersion`` fallback.
                     try:
                         return (0, parse_version(v))
                     except Exception:
