@@ -364,18 +364,69 @@ class LazyToolBox(ToolBox):
     def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
         """Load the persistent ``ToolIndex`` before delegating to the eager walk.
 
+        Cold-start safety net: if the index doesn't yet cover every tool the
+        configs reference (fresh checkout, a new conf entry, a wiped store),
+        invoke the populator in-process to fill the gap. The populator is
+        content-addressed and idempotent, so re-runs on a warm store only
+        touch the new rows.
+
         After this returns, the eager pipeline calls into ``create_tool`` for
-        every ``<tool>`` it walks. The seam short-circuits indexed sources to a
-        :class:`LazyTool` stub; misses fall through to the parent's full
-        ``ToolBox.create_tool`` and ``_persist_tool_source`` writes them to
-        the store, so the next boot sees them as hits.
+        every ``<tool>`` it walks. The seam short-circuits indexed sources to
+        a :class:`LazyTool` stub; misses raise — by contract the cold-start
+        populator below guarantees coverage.
         """
         if self._store is not None:
-            loaded = self._store.load_index()
-            self._tool_index = loaded if loaded is not None else ToolIndex()
+            self._tool_index = self._store.load_index() or ToolIndex()
+            if self._index_needs_population():
+                self._run_inline_populator()
+                self._tool_index = self._store.load_index() or ToolIndex()
         else:
             self._tool_index = ToolIndex()
         super()._init_tools_from_configs(config_filenames)
+
+    def _index_needs_population(self) -> bool:
+        """Return True when at least one config-discovered tool path is absent
+        from the store. The first miss short-circuits the scan — we don't need
+        an exhaustive answer, just a decision to run the populator.
+        """
+        if self._store is None:
+            return False
+        if not self._tool_index or not self._tool_index.entries:
+            return True
+        # The discover walker reads tool confs only; no DB round-trip per file.
+        from galaxy.tool_source_store.discover import discover_tools
+
+        try:
+            for d in discover_tools(self.app.config):
+                if self._store.get_by_source_path(d.path) is None:
+                    return True
+        except Exception as e:
+            log.warning("Index coverage check raised; running populator defensively: %s", e)
+            return True
+        return False
+
+    def _run_inline_populator(self) -> None:
+        """Cold-start hook: write the index + whoosh in this process.
+
+        Wraps ``populator.populate_store_inline`` so boot can use the same
+        single-writer machinery as the CLI script and the shed-install
+        reroute. Failures here are logged and swallowed — the eager walk
+        that follows still has the (about-to-be-removed) ``_persist_tool_source``
+        fallthrough to recover on a per-tool basis; once that's gone, the
+        boot will surface the populator error to the operator at the
+        ``create_tool`` raise.
+        """
+        try:
+            from galaxy.tool_source_store.populator import populate_store_inline
+
+            log.info("LazyToolBox: running populator inline to backfill the index")
+            populate_store_inline(
+                self.app.config,
+                self.app.model.context,
+                rebuild_whoosh=True,
+            )
+        except Exception as e:
+            log.warning("Inline populator failed: %s", e)
 
     def _rebuild_shed_short_id_map(self) -> None:
         """Walk the index and rebuild short-id → guid mappings for shed installs.
