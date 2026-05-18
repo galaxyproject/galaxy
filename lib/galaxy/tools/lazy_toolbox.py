@@ -287,34 +287,6 @@ class LazyTool:
         )
 
 
-class _IndexEntryFilterAdapter:
-    """Wraps a :class:`ToolIndexEntry` so it satisfies ``ToolFilterContext``.
-
-    ``Tool.allow_user_access`` consults ``self.app`` to do per-subclass admin
-    checks (``DataManagerTool`` is admin-only). ``ToolIndexEntry`` is a lightweight
-    record with no app reference; instead of dragging one onto every entry,
-    the adapter takes the admin-check callable at construction time. Filter
-    functions call ``tool.allow_user_access(user)`` polymorphically and never
-    reach through ``context.trans.app.config``.
-    """
-
-    __slots__ = ("entry", "_is_admin_user")
-
-    def __init__(self, entry: "ToolIndexEntry", is_admin_user):
-        self.entry = entry
-        self._is_admin_user = is_admin_user
-
-    def __getattr__(self, name):
-        return getattr(self.entry, name)
-
-    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
-        if self.entry.require_login and user is None:
-            return False
-        if self.entry.tool_type == "data_manager":
-            return user is not None and bool(self._is_admin_user(user))
-        return True
-
-
 class LazyToolBox(ToolBox):
     """
     ToolBox that loads tools on-demand from the tool source store.
@@ -1759,43 +1731,30 @@ class LazyToolBox(ToolBox):
     def to_dict(
         self, trans, in_panel: bool = True, tool_help: bool = False, view: Optional[str] = None, **kwds
     ) -> list[dict[str, Any]]:
-        """
-        Create a dictionary representation of the toolbox.
+        """Toolbox API serialisation.
 
-        For the *flat* listing (``in_panel=False``) we serve straight from
-        the index — no Tool loading needed — but still run every entry
-        through ``FilterFactory`` so admin / user toolbox filters apply
-        identically to the eager path. Filters take ``ToolFilterContext``,
-        which both ``Tool`` and ``ToolIndexEntry`` satisfy. For the panel
-        listing (``in_panel=True``, e.g. ``tools?in_panel=True&view=custom_13``)
-        we defer to the parent: it walks ``_tool_panel_view_rendered``
-        which is built by ``apply_view`` against
-        ``_integrated_tool_panel`` and produces the section-aware
-        response shape (interleaved Tools and ToolSections) that the UI
-        and tests expect. ``ToolBoxRegistry.get_tool`` lazy-loads the
-        per-section tools as ``apply_view`` walks them, so this stays
-        cheap as long as the requested view scopes to a small section.
-        """
-        if self._tool_index is None:
-            return []
+        For ``in_panel=False`` (the flat ``/api/tools`` listing the
+        Galaxy client uses), walk ``_tools_by_id`` directly: every value
+        is a ``LazyTool`` stub or a real ``Tool``, both implement
+        ``ToolFilterContext`` (``allow_user_access``, ``require_login``,
+        ``tool_type``, ...) and ``to_dict(link_details=False)`` returns
+        the listing-shaped dict from the entry without parsing XML.
 
+        For ``in_panel=True`` (the section-aware response), defer to the
+        parent — it walks the eager-populated ``_tool_panel_view_rendered``
+        which already holds ``LazyTool`` stubs from the seam-driven boot.
+        """
         if in_panel:
             return super().to_dict(trans, in_panel=True, tool_help=tool_help, view=view, **kwds)
 
         filter_method = self._build_filter_method(trans)
-        # The adapter exposes ``allow_user_access`` so the stock
-        # ``_handle_authorization`` filter is polymorphic across
-        # ``Tool`` (eager) and the index view (lazy) — see
-        # ``_IndexEntryFilterAdapter``.
-        is_admin_user = self.app.config.is_admin_user
         rval = []
-        for _tool_id, entry in self._tool_index.entries.items():
-            candidate = _IndexEntryFilterAdapter(entry, is_admin_user)
-            if not filter_method(candidate, panel_item_types.TOOL):
+        for _tool_id, tool in list(self._tools_by_id.items()):
+            if not filter_method(tool, panel_item_types.TOOL):
                 continue
-            rval.append(self._index_entry_to_api_dict(entry))
+            rval.append(tool.to_dict(trans, link_details=False))
 
-        log.debug(f"LazyToolBox.to_dict: returning {len(rval)} tools from index (no loading)")
+        log.debug("LazyToolBox.to_dict: returning %d tools (in_panel=False)", len(rval))
         return rval
 
     def to_panel_view(self, trans, view="default_panel_view", **kwds) -> dict[str, dict]:
