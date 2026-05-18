@@ -105,9 +105,25 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
     def test_api_tools_list_populated_via_bootstrap(self):
         # With use_lazy_toolbox=true and an empty store, LazyToolBox
         # auto-bootstraps from the configured tool confs on first boot;
-        # /api/tools must therefore return a non-empty tool list.
+        # /api/tools must therefore return a non-empty tool list AND must
+        # contain every tool referenced by the active tool confs. The bare
+        # ``len(tools) > 0`` check used to mask a bug where ~third of stored
+        # sources were silently dropped during index build.
         response = self._get("tools")
         self._assert_status_code_is(response, 200)
         tools = response.json()
         assert isinstance(tools, list)
-        assert len(tools) > 0, "Bootstrap should have populated the store with framework tools"
+        tool_ids = {t["id"] for t in tools}
+        # Each id below anchors a distinct bootstrap dropout that previously
+        # failed silently:
+        #   - ``cat1`` lives under tool_conf.xml.sample, exercising the
+        #     ``${model_tools_path}`` template-expansion path.
+        #   - ``job_properties`` lives under sample_tool_conf.xml, exercising
+        #     the ``${tool_conf_dir}`` template-expansion path.
+        #   - ``cat_user_defined`` is a YAML tool, exercising the non-XML
+        #     branch (no ``xml_tree``) that used to drop every YAML source.
+        for required in ("cat1", "job_properties", "cat_user_defined"):
+            assert required in tool_ids, (
+                f"Bootstrap silently dropped {required!r} from the index "
+                f"(have {len(tool_ids)} ids: {sorted(tool_ids)[:10]}…)"
+            )
