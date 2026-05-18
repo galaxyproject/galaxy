@@ -1,5 +1,6 @@
 import errno
 import logging
+import os
 from typing import (
     Any,
 )
@@ -20,6 +21,30 @@ from galaxy.util.tool_shed.common_util import remove_protocol_and_user_from_clon
 from galaxy.util.tool_shed.xml_util import parse_xml
 
 log = logging.getLogger(__name__)
+
+
+def _collect_new_tool_paths(elem_list, tool_path: str) -> list[str]:
+    """Walk ``elem_list`` and return the absolute paths of every ``<tool>``.
+
+    ``elem_list`` is the freshly-generated panel additions for a shed install
+    — either top-level ``<tool>`` elements or ``<section>`` elements with
+    nested ``<tool>`` children. Paths are ``os.path.join(tool_path, file)``,
+    matching what ``galaxy.tool_source_store.discover.discover_tools`` yields
+    after the conf is rewritten on disk.
+    """
+    new_paths: list[str] = []
+    for elem in elem_list:
+        if elem.tag == "tool":
+            relative = elem.get("file")
+            if relative:
+                new_paths.append(os.path.normpath(os.path.join(tool_path, relative)))
+        elif elem.tag == "section":
+            for child in elem:
+                if child.tag == "tool":
+                    relative = child.get("file")
+                    if relative:
+                        new_paths.append(os.path.normpath(os.path.join(tool_path, relative)))
+    return new_paths
 
 
 class ToolPanelManager:
@@ -115,22 +140,43 @@ class ToolPanelManager:
         )
         if new_install:
             tool_path = shed_tool_conf_dict["tool_path"]
-            # Add the new elements to the shed_tool_conf file on disk.
+            # Build the new in-memory list of config_elems. We persist the
+            # updated shed_tool_conf.xml *before* invoking the populator so
+            # ``discover_tools`` sees the new entries when it walks the confs.
             config_elems = shed_tool_conf_dict["config_elems"]
             for config_elem in elem_list:
-                # Add the new elements to the in-memory list of config_elems.
                 config_elems.append(config_elem)
-                # Load the tools into the in-memory tool panel.
+            shed_tool_conf_dict["config_elems"] = config_elems
+            self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+            self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
+            # Populator writes ``StoredToolSource`` + ``ToolIndexEntry`` +
+            # whoosh for every new tool file, then broadcasts
+            # ``reload_tool_source_cache`` so peer Galaxy processes refresh.
+            # ``create_tool`` raises on index miss, so this MUST run before
+            # ``load_item`` reaches the seam.
+            new_paths = _collect_new_tool_paths(elem_list, tool_path)
+            if new_paths:
+                from galaxy.tool_source_store.populator import populate_for_paths
+
+                populate_for_paths(
+                    self.app.config,
+                    self.app.model.context,
+                    paths=new_paths,
+                    rebuild_whoosh=True,
+                )
+                # Refresh THIS process synchronously; the AMQP broadcast
+                # above only reaches peers asynchronously, but the install
+                # response should reflect the new tools immediately.
+                self.app.toolbox.invalidate_index_cache()
+            # Wire the new tools into the in-memory panel. ``create_tool``
+            # now finds them in the index and hands back ``LazyTool`` stubs.
+            for config_elem in elem_list:
                 self.app.toolbox.load_item(
                     config_elem,
                     tool_path=tool_path,
                     load_panel_dict=True,
                     guid=config_elem.get("guid"),
                 )
-            # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
-            shed_tool_conf_dict["config_elems"] = config_elems
-            self.app.toolbox.update_shed_config(shed_tool_conf_dict)
-            self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
     def config_elems_to_xml_file(self, config_elems, config_filename, tool_path) -> None:
         """
