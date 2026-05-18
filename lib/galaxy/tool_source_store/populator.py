@@ -290,6 +290,52 @@ class ToolFileWatcher:
 
 DEFAULT_STORE_NAME = "__default__"
 
+# Sub-directory under ``config.tool_search_index_dir`` where the default
+# store's whoosh index lives. Named for backwards-compat with the LazyToolBox
+# ``_get_search_index`` path (which previously built this index in-process).
+_WHOOSH_DEFAULT_SUBDIR = "_lazy_default"
+
+
+def whoosh_dir_for_store(tool_search_index_dir: Optional[str], store_name: str) -> Optional[str]:
+    """Resolve the on-disk whoosh dir for ``store_name``.
+
+    Returns ``None`` if the config doesn't define ``tool_search_index_dir``
+    (whoosh search is then disabled). The default store maps to
+    ``_lazy_default`` so :class:`galaxy.tools.lazy_toolbox.LazyToolBox` reads
+    the same path it always has; named stores get their own sub-dir.
+    """
+    if not tool_search_index_dir:
+        return None
+    sub = _WHOOSH_DEFAULT_SUBDIR if store_name == DEFAULT_STORE_NAME else store_name
+    import os
+
+    return os.path.join(tool_search_index_dir, sub)
+
+
+def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
+    """Rebuild the whoosh index for ``store_name`` from ``tool_index``.
+
+    No-ops if ``tool_search_index_dir`` is unset. Logs and swallows whoosh
+    failures: the toolbox surfaces them to users at query time (the
+    populator's job is to write what it can; an unbuildable index is a
+    deploy issue, not a populator-CLI fatal).
+    """
+    index_dir = whoosh_dir_for_store(getattr(config, "tool_search_index_dir", None), store_name)
+    if index_dir is None:
+        return
+    try:
+        from galaxy.tool_source_store.search import (
+            ToolSearchTuning,
+            ToolWhooshIndex,
+        )
+
+        tuning = ToolSearchTuning.from_config(config)
+        searcher = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
+        count = searcher.build(tool_index)
+        log.info("Built whoosh index for store %s at %s (%d docs)", store_name, index_dir, count)
+    except Exception as e:
+        log.warning("Whoosh build for store %s failed: %s", store_name, e)
+
 
 def build_index_entry_from_source(
     discovered,
@@ -649,6 +695,11 @@ def populate_store(
                 )
             except Exception as e:
                 log.warning("store_index for %s raised: %s", store_name, e)
+                continue
+            # Rebuild the whoosh search index from the persisted ToolIndex.
+            # Single-writer principle: the toolbox stops re-building this in
+            # the search hot path.
+            _build_whoosh_for_store(config, store_name, index)
 
     return stats
 
