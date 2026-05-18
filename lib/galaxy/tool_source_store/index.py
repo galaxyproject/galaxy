@@ -51,6 +51,16 @@ class ToolIndexEntry:
     # === Status ===
     hidden: bool = False
     disabled: bool = False
+    require_login: bool = False
+
+    # === Filter metadata ===
+    # ``tool_type`` is the Tool subclass key (``default``, ``data_manager``,
+    # ``interactive_tool``, ``data_source``, ...). Filter authors and
+    # ``DataManagerTool.allow_user_access`` (admin-only) both branch on this.
+    tool_type: str = "default"
+    # User-facing tags from ``<tool>`` config (distinct from ``labels``).
+    # Surfaced for custom tool filters that bucket tools by tag.
+    tags: list[str] = field(default_factory=list)
 
     # === Tests (for /api/tools/tests_summary) ===
     test_count: int = 0
@@ -135,6 +145,9 @@ class ToolIndexEntry:
             "source_class": self.source_class,
             "hidden": self.hidden,
             "disabled": self.disabled,
+            "require_login": self.require_login,
+            "tool_type": self.tool_type,
+            "tags": self.tags,
             "test_count": self.test_count,
             "requirements": self.requirements,
             "container_requirements": self.container_requirements,
@@ -169,6 +182,9 @@ class ToolIndexEntry:
             source_class=data.get("source_class", "XmlToolSource"),
             hidden=data.get("hidden", False),
             disabled=data.get("disabled", False),
+            require_login=data.get("require_login", False),
+            tool_type=data.get("tool_type", "default"),
+            tags=data.get("tags", []),
             test_count=data.get("test_count", 0),
             requirements=data.get("requirements", []),
             container_requirements=data.get("container_requirements", []),

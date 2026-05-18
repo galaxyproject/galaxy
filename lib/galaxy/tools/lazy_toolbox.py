@@ -47,6 +47,7 @@ from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import (
+    panel_item_types,
     ToolPanelElements,
     ToolSection,
 )
@@ -1287,6 +1288,32 @@ class LazyToolBox(ToolBox):
                 except Exception:
                     pass
 
+            # ``parse_require_login`` is what ``Tool.parse`` calls to set
+            # ``tool.require_login``. Default False matches ``Tool.__init__``.
+            require_login = False
+            if hasattr(tool_source, "parse_require_login"):
+                try:
+                    require_login = bool(tool_source.parse_require_login(False))
+                except Exception:
+                    pass
+
+            # ``tool_type`` is the Tool subclass key (``data_manager``,
+            # ``interactive_tool``, etc.). Stock filters branch on this for the
+            # admin-only check on ``DataManagerTool``; custom filters use it
+            # to categorize.
+            tool_type = "default"
+            if hasattr(tool_source, "parse_tool_type"):
+                try:
+                    tool_type = tool_source.parse_tool_type() or "default"
+                except Exception:
+                    pass
+
+            # ``tags`` are currently not exposed via the ToolSource parser API.
+            # The field on ``ToolIndexEntry`` is here so admin/user filters that
+            # bucket tools by tag have a place to read from when the populator
+            # learns to fill it.
+            tags: list[str] = []
+
             return ToolIndexEntry(
                 id=tool_id,
                 uuid=uuid_val,
@@ -1296,6 +1323,9 @@ class LazyToolBox(ToolBox):
                 source_hash=source_hash,
                 source_class=source_class,
                 hidden=hidden,
+                require_login=require_login,
+                tool_type=tool_type,
+                tags=tags,
                 indexed_at=datetime.utcnow(),
             )
         except Exception as e:
@@ -2291,8 +2321,11 @@ class LazyToolBox(ToolBox):
         Create a dictionary representation of the toolbox.
 
         For the *flat* listing (``in_panel=False``) we serve straight from
-        the index — no Tool loading needed. For the panel listing
-        (``in_panel=True``, e.g. ``tools?in_panel=True&view=custom_13``)
+        the index — no Tool loading needed — but still run every entry
+        through ``FilterFactory`` so admin / user toolbox filters apply
+        identically to the eager path. Filters take ``ToolFilterContext``,
+        which both ``Tool`` and ``ToolIndexEntry`` satisfy. For the panel
+        listing (``in_panel=True``, e.g. ``tools?in_panel=True&view=custom_13``)
         we defer to the parent: it walks ``_tool_panel_view_rendered``
         which is built by ``apply_view`` against
         ``_integrated_tool_panel`` and produces the section-aware
@@ -2307,16 +2340,17 @@ class LazyToolBox(ToolBox):
         if in_panel:
             return super().to_dict(trans, in_panel=True, tool_help=tool_help, view=view, **kwds)
 
+        filter_method = self._build_filter_method(trans)
         rval = []
-        # Return data directly from index - no tool loading needed!
         for _tool_id, entry in self._tool_index.entries.items():
-            # Skip hidden tools unless requested
-            if entry.hidden and not kwds.get("include_hidden", False):
+            # ``filter_method`` honours ``_not_hidden`` + ``_handle_authorization``
+            # (the always-on stock filters) plus any ``tool_filters`` /
+            # ``user_tool_filters`` the operator configured. Both stock filters
+            # read only fields on ``ToolFilterContext``, which ``ToolIndexEntry``
+            # exposes — no Tool materialisation needed.
+            if not filter_method(entry, panel_item_types.TOOL):
                 continue
-
-            # Convert index entry to API dict format
-            tool_dict = self._index_entry_to_api_dict(entry)
-            rval.append(tool_dict)
+            rval.append(self._index_entry_to_api_dict(entry))
 
         log.debug(f"LazyToolBox.to_dict: returning {len(rval)} tools from index (no loading)")
         return rval
