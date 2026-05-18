@@ -665,17 +665,23 @@ class LazyToolBox(ToolBox):
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
         installs via ``tool_panel_manager.add_to_tool_panel``) is the single
-        writer of the index, so the common path lands in the ``LazyTool``
-        branch. On miss we delegate to the eager parent: ``load_hidden_lib_tool``
-        ( ``set_metadata_tool.xml`` and friends) and any other ad-hoc load
-        from outside a tool_conf parses eagerly and registers as a real
-        ``Tool``. No store write — these tools are never re-loaded from the
-        index.
+        writer of the index. Hidden lib tools (``set_metadata_tool.xml``,
+        ``data_fetch``, history import/export) are indexed via
+        ``galaxy.tools.special_tools.hidden_lib_tool_paths``, so the
+        post-boot ``load_hidden_lib_tool`` calls resolve through the seam
+        too. Any miss is therefore a contract failure — operator added a
+        tool to a conf without re-running the populator, or a code path
+        introduced a new ad-hoc tool load without adding it to the
+        hidden-lib list.
         """
         entry = self._resolve_index_entry(config_file, guid)
         if entry is None:
-            return super().create_tool(
-                config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds
+            raise RuntimeError(
+                "LazyToolBox.create_tool: no index entry for "
+                f"(config_file={config_file!r}, guid={guid!r}). The populator "
+                "owns the index — run scripts/tool_source/populate_store.py "
+                "or, for a new Galaxy-internal lib tool, add it to "
+                "galaxy.tools.special_tools.hidden_lib_tool_paths()."
             )
         # LazyTool is duck-typed against Tool — the eager pipeline (audited
         # in plans/witty-drifting-clock.md) only consults attributes the
