@@ -34,6 +34,10 @@ from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
+from galaxy.tool_source_store.search import (
+    ToolSearchTuning,
+    ToolWhooshIndex,
+)
 from galaxy.tool_util.id_util import (
     extract_short_id_from_guid,
     extract_tool_id_from_file,
@@ -301,6 +305,34 @@ class _LazyToolsByIdView:
         return dict(self.items())
 
 
+class _IndexEntryFilterAdapter:
+    """Wraps a :class:`ToolIndexEntry` so it satisfies ``ToolFilterContext``.
+
+    ``Tool.allow_user_access`` consults ``self.app`` to do per-subclass admin
+    checks (``DataManagerTool`` is admin-only). ``ToolIndexEntry`` is a lightweight
+    record with no app reference; instead of dragging one onto every entry,
+    the adapter takes the admin-check callable at construction time. Filter
+    functions call ``tool.allow_user_access(user)`` polymorphically and never
+    reach through ``context.trans.app.config``.
+    """
+
+    __slots__ = ("entry", "_is_admin_user")
+
+    def __init__(self, entry: "ToolIndexEntry", is_admin_user):
+        self.entry = entry
+        self._is_admin_user = is_admin_user
+
+    def __getattr__(self, name):
+        return getattr(self.entry, name)
+
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
+        if self.entry.require_login and user is None:
+            return False
+        if self.entry.tool_type == "data_manager":
+            return user is not None and bool(self._is_admin_user(user))
+        return True
+
+
 class LazyToolBox(ToolBox):
     """
     ToolBox that loads tools on-demand from the tool source store.
@@ -335,6 +367,10 @@ class LazyToolBox(ToolBox):
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
         self._reload_count = 0
+        # Whoosh search infrastructure — built lazily on first ``search_tools``
+        # call and re-built whenever the underlying ``ToolIndex`` version changes.
+        self._whoosh_search_index: Optional[ToolWhooshIndex] = None
+        self._whoosh_search_index_version: Optional[str] = None
 
         # Initialize core attributes that AbstractToolBox.__init__ would set
         # We do this manually to avoid loading all tools
@@ -2297,29 +2333,23 @@ class LazyToolBox(ToolBox):
             return self._tool_index.get(tool_id)
         return None
 
-    def _search_index_dir(self) -> Optional[str]:
-        """Resolve the directory the lazy Whoosh search index lives in.
+    def _get_search_index(self) -> Optional[ToolWhooshIndex]:
+        """Return the cached :class:`ToolWhooshIndex` or build one on demand.
 
-        Sits under ``tool_search_index_dir`` (the same root the eager
-        ``ToolBoxSearch`` uses) in a sub-folder so neither path stomps the
-        other.
+        Resolves the index path under ``tool_search_index_dir`` (the same
+        root the eager ``ToolBoxSearch`` uses), in a sub-folder so neither
+        path stomps the other. ``ToolSearchTuning`` is built from
+        ``self.app.config`` once and passed in — the search index code
+        doesn't need a god-object reference.
         """
-        base = getattr(self.app.config, "tool_search_index_dir", None)
+        if self._whoosh_search_index is not None:
+            return self._whoosh_search_index
+        base = self.app.config.tool_search_index_dir
         if not base:
             return None
-        return os.path.join(base, "_lazy_default")
-
-    def _get_search_index(self):
-        """Return the cached :class:`ToolWhooshIndex` or build one on demand."""
-        existing = getattr(self, "_whoosh_search_index", None)
-        if existing is not None:
-            return existing
-        index_dir = self._search_index_dir()
-        if not index_dir:
-            return None
-        from galaxy.tool_source_store.search import ToolWhooshIndex
-
-        self._whoosh_search_index = ToolWhooshIndex(index_dir=index_dir, config=self.app.config)
+        index_dir = os.path.join(base, "_lazy_default")
+        tuning = ToolSearchTuning.from_config(self.app.config)
+        self._whoosh_search_index = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
         return self._whoosh_search_index
 
     def search_tools(self, query: str, limit: int = 50) -> list[ToolIndexEntry]:
@@ -2336,8 +2366,7 @@ class LazyToolBox(ToolBox):
         if searcher is None:
             return self._tool_index.search(query, limit=limit)
         current_version = self._tool_index.compute_version()
-        last_version = getattr(self, "_whoosh_search_index_version", None)
-        if last_version != current_version:
+        if self._whoosh_search_index_version != current_version:
             try:
                 searcher.build(self._tool_index)
                 self._whoosh_search_index_version = current_version
@@ -2397,14 +2426,15 @@ class LazyToolBox(ToolBox):
             return super().to_dict(trans, in_panel=True, tool_help=tool_help, view=view, **kwds)
 
         filter_method = self._build_filter_method(trans)
+        # The adapter exposes ``allow_user_access`` so the stock
+        # ``_handle_authorization`` filter is polymorphic across
+        # ``Tool`` (eager) and the index view (lazy) — see
+        # ``_IndexEntryFilterAdapter``.
+        is_admin_user = self.app.config.is_admin_user
         rval = []
         for _tool_id, entry in self._tool_index.entries.items():
-            # ``filter_method`` honours ``_not_hidden`` + ``_handle_authorization``
-            # (the always-on stock filters) plus any ``tool_filters`` /
-            # ``user_tool_filters`` the operator configured. Both stock filters
-            # read only fields on ``ToolFilterContext``, which ``ToolIndexEntry``
-            # exposes — no Tool materialisation needed.
-            if not filter_method(entry, panel_item_types.TOOL):
+            candidate = _IndexEntryFilterAdapter(entry, is_admin_user)
+            if not filter_method(candidate, panel_item_types.TOOL):
                 continue
             rval.append(self._index_entry_to_api_dict(entry))
 

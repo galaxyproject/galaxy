@@ -11,7 +11,10 @@ on-disk Whoosh index and queries it with ``BM25F`` scoring.
 """
 
 import logging
+import os
 import re
+import shutil
+from dataclasses import dataclass
 from typing import (
     Optional,
     TYPE_CHECKING,
@@ -38,7 +41,6 @@ from whoosh.writing import AsyncWriter
 from galaxy.util import unicodify
 
 if TYPE_CHECKING:
-    from galaxy.config import GalaxyAppConfiguration
     from .index import (
         ToolIndex,
         ToolIndexEntry,
@@ -47,39 +49,78 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-def build_schema(config: "GalaxyAppConfiguration") -> Schema:
+@dataclass(frozen=True)
+class ToolSearchTuning:
+    """Whoosh schema/boost knobs for tool search.
+
+    Mirrors the ``tool_*`` keys on ``GalaxyAppConfiguration`` so this module
+    can build a search index without importing the full Galaxy config type
+    or carrying a god-object reference. Wire one in at the call site —
+    typically via :meth:`from_config`.
+    """
+
+    id_boost: float
+    name_boost: float
+    name_exact_multiplier: float
+    stub_boost: float
+    section_boost: float
+    description_boost: float
+    label_boost: float
+    ngram_minsize: int
+    ngram_maxsize: int
+    enable_ngram_search: bool
+    ngram_factor: float
+
+    @classmethod
+    def from_config(cls, config) -> "ToolSearchTuning":
+        return cls(
+            id_boost=float(config.tool_id_boost),
+            name_boost=float(config.tool_name_boost),
+            name_exact_multiplier=float(config.tool_name_exact_multiplier),
+            stub_boost=float(config.tool_stub_boost),
+            section_boost=float(config.tool_section_boost),
+            description_boost=float(config.tool_description_boost),
+            label_boost=float(config.tool_label_boost),
+            ngram_minsize=int(config.tool_ngram_minsize),
+            ngram_maxsize=int(config.tool_ngram_maxsize),
+            enable_ngram_search=bool(config.tool_enable_ngram_search),
+            ngram_factor=float(config.tool_ngram_factor),
+        )
+
+
+def build_schema(tuning: ToolSearchTuning) -> Schema:
     """Whoosh schema mirroring ``ToolPanelViewSearch`` field set + boosts."""
     schema_conf: dict = {
         "id": ID(stored=True, unique=True),
         "id_exact": NGRAMWORDS(
-            minsize=config.tool_ngram_minsize,
-            maxsize=config.tool_ngram_maxsize,
-            field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
+            minsize=tuning.ngram_minsize,
+            maxsize=tuning.ngram_maxsize,
+            field_boost=(tuning.id_boost * tuning.name_exact_multiplier),
         ),
         "name_exact": TEXT(
-            field_boost=(config.tool_name_boost * config.tool_name_exact_multiplier),
+            field_boost=(tuning.name_boost * tuning.name_exact_multiplier),
             analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
         ),
-        "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
-        "section": TEXT(field_boost=float(config.tool_section_boost)),
-        "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
-        "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
-        "repository": TEXT(field_boost=float(config.tool_section_boost)),
-        "owner": TEXT(field_boost=float(config.tool_section_boost)),
+        "stub": KEYWORD(field_boost=tuning.stub_boost),
+        "section": TEXT(field_boost=tuning.section_boost),
+        "edam_operations": TEXT(field_boost=tuning.section_boost),
+        "edam_topics": TEXT(field_boost=tuning.section_boost),
+        "repository": TEXT(field_boost=tuning.section_boost),
+        "owner": TEXT(field_boost=tuning.section_boost),
         "description": TEXT(
-            field_boost=config.tool_description_boost,
+            field_boost=tuning.description_boost,
             analyzer=analysis.StemmingAnalyzer(),
         ),
-        "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
+        "labels": KEYWORD(field_boost=tuning.label_boost),
     }
-    if config.tool_enable_ngram_search:
+    if tuning.enable_ngram_search:
         schema_conf["name"] = NGRAMWORDS(
-            minsize=config.tool_ngram_minsize,
-            maxsize=config.tool_ngram_maxsize,
-            field_boost=(float(config.tool_name_boost) * config.tool_ngram_factor),
+            minsize=tuning.ngram_minsize,
+            maxsize=tuning.ngram_maxsize,
+            field_boost=tuning.name_boost * tuning.ngram_factor,
         )
     else:
-        schema_conf["name"] = TEXT(field_boost=float(config.tool_name_boost))
+        schema_conf["name"] = TEXT(field_boost=tuning.name_boost)
     return Schema(**schema_conf)
 
 
@@ -139,14 +180,12 @@ class ToolWhooshIndex:
     no Galaxy-specific encoding, so an operator can reopen it offline.
     """
 
-    def __init__(self, index_dir: str, config: "GalaxyAppConfiguration") -> None:
+    def __init__(self, index_dir: str, tuning: ToolSearchTuning) -> None:
         self.index_dir = index_dir
-        self.config = config
-        self.schema = build_schema(config)
+        self.tuning = tuning
+        self.schema = build_schema(tuning)
 
     def _open(self) -> index.FileIndex:
-        import os
-
         os.makedirs(self.index_dir, exist_ok=True)
         if index.exists_in(self.index_dir):
             ix = index.open_dir(self.index_dir)
@@ -156,8 +195,6 @@ class ToolWhooshIndex:
             # poison ranking.
             log.info("ToolWhooshIndex schema changed; rebuilding %s", self.index_dir)
             ix.close()
-            import shutil
-
             shutil.rmtree(self.index_dir)
             os.makedirs(self.index_dir, exist_ok=True)
         return index.create_in(self.index_dir, schema=self.schema)
@@ -197,8 +234,6 @@ class ToolWhooshIndex:
         """
         if not query or not query.strip():
             return []
-        import os
-
         if not (os.path.isdir(self.index_dir) and index.exists_in(self.index_dir)):
             return []
         ix = index.open_dir(self.index_dir)
