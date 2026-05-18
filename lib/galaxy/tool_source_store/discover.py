@@ -385,6 +385,33 @@ def discover_tools(
     except Exception as e:
         log.debug("Failed to enumerate hidden-lib tool paths: %s", e)
 
+    # Datatype converters. ``Registry.load_datatype_converters`` calls
+    # ``toolbox.load_tool`` per converter after boot; strict
+    # ``LazyToolBox.create_tool`` raises on miss, so they need to be in
+    # the index. Use the active datatypes registry (populated by
+    # ``set_datatypes_registry`` at app boot / CLI startup) as the
+    # source of truth — same list that ``load_datatype_converters``
+    # iterates, so we never index a converter the registry won't load
+    # and vice versa.
+    try:
+        from galaxy.model import _get_datatypes_registry
+
+        registry = _get_datatypes_registry()
+        if registry is not None and getattr(registry, "converters_path", None):
+            for tool_config, _src_dt, _tgt_dt in registry.converters:
+                path = os.path.normpath(os.path.join(registry.converters_path, tool_config))
+                if path in seen_paths or not os.path.exists(path):
+                    continue
+                seen_paths.add(path)
+                yield DiscoveredTool(
+                    path=path,
+                    tool_conf="<converter>",
+                    tool_path=registry.converters_path,
+                    is_shed_tool=False,
+                )
+    except Exception as e:
+        log.debug("Failed to enumerate datatype converters: %s", e)
+
 
 def discover_tool_files(
     config: "GalaxyAppConfiguration",
