@@ -1,10 +1,13 @@
 import abc
+import logging
 import os
 import shutil
 import string
 import tempfile
 from typing import ClassVar
 from unittest import SkipTest
+
+log = logging.getLogger(__name__)
 
 from galaxy.app import UniverseApplication
 from galaxy.util.tool_shed.tool_shed_registry import DEFAULT_TOOL_SHED_URL
@@ -82,6 +85,16 @@ class UsesShed(UsesShedApi):
         self._app.config.shed_tools_dir = self.shed_tools_dir
         with open(self._app.config.shed_tool_config_file, "w") as tool_conf_file:
             tool_conf_file.write(SHED_TOOL_CONF.substitute(shed_tools_path=self._app.config.shed_tools_dir))
+        # Drop shed-tool index entries that no longer have a backing conf.
+        # The populator is the single writer of the index, so a stale entry
+        # would otherwise survive the ``reload_toolbox`` below: ``LazyToolBox``
+        # only re-runs the populator when discovery turns up a *new* path.
+        try:
+            from galaxy.tool_source_store.populator import reconcile_index
+
+            reconcile_index(self._app.config, self._app.model.context, rebuild_whoosh=True)
+        except Exception as e:
+            log.warning("reset_shed_tools: reconcile_index raised (continuing): %s", e)
         # deleting the containing folder doesn't trigger a toolbox reload, so signal it now and wait until it's done
         self._app.queue_worker.send_control_task("reload_toolbox", get_response=True)
 
