@@ -185,6 +185,22 @@ class LazyTool:
         return self._lineage
 
     @property
+    def version_object(self):
+        # Mirror ``Tool.version_object`` (lib/galaxy/tools/__init__.py:1213).
+        # ``to_panel_view`` walks ``_lineage_in_panel`` → ``_newer_tool`` which
+        # compares ``tool.version_object``; computing it off the entry's
+        # ``version`` string keeps the stub self-sufficient.
+        GALAXY_VERSION_SUFFIX = "+galaxy"
+        version = self._entry.version or ""
+        if GALAXY_VERSION_SUFFIX not in version:
+            return parse_version(version)
+        base_version, suffix = version.split(GALAXY_VERSION_SUFFIX, 1)
+        if suffix:
+            # PEP-440 numeric sort hint — keep the eager Tool's behaviour.
+            version = f"{base_version}{GALAXY_VERSION_SUFFIX}.{suffix.lstrip('.')}"
+        return parse_version(version)
+
+    @property
     def tool_shed_repository(self):
         # The eager pipeline sets this on the real ``Tool`` for shed-installed
         # tools (passing ``tool_shed_repository=<repo>`` to ``create_tool``);
