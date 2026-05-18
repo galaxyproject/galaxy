@@ -1,8 +1,11 @@
 """
 Tool discovery utilities.
 
-Used by ``populate_store.py`` to walk Galaxy's tool configuration without
-booting a full ToolBox.
+Walks Galaxy's tool configuration files to enumerate every ``<tool>`` referenced
+from any tool_conf without booting a full ``ToolBox``. Used by the populator
+(``galaxy.tool_source_store.populator``) and by callers that need to compare
+on-disk confs against the indexed tool set (cold-start auto-populate,
+``reset_shed_tools``).
 """
 
 import logging
