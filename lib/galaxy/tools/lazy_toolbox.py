@@ -6,11 +6,9 @@ lightweight index in memory and loads full Tool objects on-demand with
 LRU eviction.
 """
 
-import hashlib
 import logging
 import os
 import threading
-from datetime import datetime
 from typing import (
     Any,
     Literal,
@@ -410,23 +408,19 @@ class LazyToolBox(ToolBox):
 
         Wraps ``populator.populate_store_inline`` so boot can use the same
         single-writer machinery as the CLI script and the shed-install
-        reroute. Failures here are logged and swallowed — the eager walk
-        that follows still has the (about-to-be-removed) ``_persist_tool_source``
-        fallthrough to recover on a per-tool basis; once that's gone, the
-        boot will surface the populator error to the operator at the
-        ``create_tool`` raise.
+        reroute. Failures here surface to the operator: the eager walk that
+        follows calls ``create_tool``, which raises on index miss, so a
+        broken populator (missing perms, bad config) fails boot loudly
+        rather than degrading silently.
         """
-        try:
-            from galaxy.tool_source_store.populator import populate_store_inline
+        from galaxy.tool_source_store.populator import populate_store_inline
 
-            log.info("LazyToolBox: running populator inline to backfill the index")
-            populate_store_inline(
-                self.app.config,
-                self.app.model.context,
-                rebuild_whoosh=True,
-            )
-        except Exception as e:
-            log.warning("Inline populator failed: %s", e)
+        log.info("LazyToolBox: running populator inline to backfill the index")
+        populate_store_inline(
+            self.app.config,
+            self.app.model.context,
+            rebuild_whoosh=True,
+        )
 
     def _rebuild_shed_short_id_map(self) -> None:
         """Walk the index and rebuild short-id → guid mappings for shed installs.
@@ -443,104 +437,6 @@ class LazyToolBox(ToolBox):
             short_id = extract_short_id_from_guid(entry_id)
             if short_id and short_id != entry_id:
                 self._shed_short_id_to_guids.setdefault(short_id, set()).add(entry_id)
-
-    def _make_index_entry(
-        self,
-        tool_source: Any,
-        source_hash: str,
-        source_class: str,
-        fallback_tool_id: Optional[str] = None,
-    ) -> Optional[ToolIndexEntry]:
-        """Build an index entry from an already-parsed tool source.
-
-        Used by both the bootstrap path (parsing fresh from a file) and the
-        rebuild path (parsing from raw stored bytes). Returning ``None`` means
-        the source did not yield a usable id — callers should log and skip.
-        """
-        try:
-            tool_id = tool_source.parse_id() or fallback_tool_id
-            if not tool_id:
-                return None
-
-            uuid_val = None
-            if hasattr(tool_source, "parse_uuid"):
-                try:
-                    parsed_uuid = tool_source.parse_uuid()
-                    uuid_val = str(parsed_uuid) if parsed_uuid else None
-                except Exception:
-                    pass
-
-            hidden = False
-            if hasattr(tool_source, "parse_hidden"):
-                try:
-                    hidden = tool_source.parse_hidden()
-                except Exception:
-                    pass
-
-            # ``parse_require_login`` is what ``Tool.parse`` calls to set
-            # ``tool.require_login``. Default False matches ``Tool.__init__``.
-            require_login = False
-            if hasattr(tool_source, "parse_require_login"):
-                try:
-                    require_login = bool(tool_source.parse_require_login(False))
-                except Exception:
-                    pass
-
-            # ``tool_type`` is the Tool subclass key (``data_manager``,
-            # ``interactive_tool``, etc.). Stock filters branch on this for the
-            # admin-only check on ``DataManagerTool``; custom filters use it
-            # to categorize.
-            tool_type = "default"
-            if hasattr(tool_source, "parse_tool_type"):
-                try:
-                    tool_type = tool_source.parse_tool_type() or "default"
-                except Exception:
-                    pass
-
-            # ``tags`` are currently not exposed via the ToolSource parser API.
-            # The field on ``ToolIndexEntry`` is here so admin/user filters that
-            # bucket tools by tag have a place to read from when the populator
-            # learns to fill it.
-            tags: list[str] = []
-
-            return ToolIndexEntry(
-                id=tool_id,
-                uuid=uuid_val,
-                version=tool_source.parse_version(),
-                name=tool_source.parse_name() or "",
-                description=tool_source.parse_description() or "",
-                source_hash=source_hash,
-                source_class=source_class,
-                hidden=hidden,
-                require_login=require_login,
-                tool_type=tool_type,
-                tags=tags,
-                indexed_at=datetime.utcnow(),
-            )
-        except Exception as e:
-            log.warning(f"Error building index entry (id={fallback_tool_id}, hash={source_hash}): {e}")
-            return None
-
-    def _build_index_entry_from_stored(self, stored: StoredToolSource) -> Optional[ToolIndexEntry]:
-        """Build an index entry from a stored tool source by re-parsing its raw bytes.
-
-        Used by the rebuild path (`_rebuild_index_from_store`) where the only
-        thing we have is the persisted ``StoredToolSource``.
-        """
-        try:
-            tool_source = get_tool_source(
-                raw_tool_source=stored.raw_source,
-                tool_source_class=stored.tool_source_class,
-            )
-        except Exception as e:
-            log.warning(f"Error re-parsing stored tool source (id={stored.tool_id}, hash={stored.hash}): {e}")
-            return None
-        return self._make_index_entry(
-            tool_source=tool_source,
-            source_hash=stored.hash,
-            source_class=stored.tool_source_class,
-            fallback_tool_id=stored.tool_id,
-        )
 
     # === Override get_tool for lazy loading ===
 
@@ -730,28 +626,31 @@ class LazyToolBox(ToolBox):
     # === create_tool seam: return LazyTool stub when the index already has the source ===
 
     def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
-        """Return a :class:`LazyTool` whenever the source is already in the store.
+        """Return a :class:`LazyTool` for every indexed tool source.
 
-        Fallthrough to the eager ``ToolBox.create_tool`` only when the index has no
-        entry — the parsed Tool is then persisted via :meth:`_persist_tool_source`
-        so the next boot sees it as a hit. The eager pipeline's downstream
-        mutations (``tool.hidden = True``, shed metadata, ``tool.labels = …``)
-        land in the stub's ``_overrides`` and survive any later materialisation.
+        The populator (cold-start in :meth:`_init_tools_from_configs`, shed
+        installs via ``tool_panel_manager.add_to_tool_panel``) is the single
+        writer of the index; a miss here means the operator added a tool to
+        a conf without re-running the populator. Raise rather than parsing
+        in-toolbox so the contract failure is loud and addressable.
         """
         entry = self._resolve_index_entry(config_file, guid)
-        if entry is not None:
-            # LazyTool is duck-typed against Tool — the eager pipeline (audited
-            # in plans/witty-drifting-clock.md) only consults attributes the
-            # stub forwards from ToolIndexEntry, with mutations stored on
-            # ``_overrides``.
-            return LazyTool(  # type: ignore[return-value]
-                entry,
-                materialize_callback=self._materialize_for_lazy_tool,
-                is_admin_user=self.app.config.is_admin_user,
+        if entry is None:
+            raise RuntimeError(
+                "LazyToolBox.create_tool: no index entry for "
+                f"(config_file={config_file!r}, guid={guid!r}). The populator "
+                "owns the index — run scripts/tool_source/populate_store.py or "
+                "call galaxy.tool_source_store.populator.populate_for_paths."
             )
-        tool = super().create_tool(config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds)
-        self._persist_tool_source(tool, config_file, guid=guid)
-        return tool
+        # LazyTool is duck-typed against Tool — the eager pipeline (audited
+        # in plans/witty-drifting-clock.md) only consults attributes the
+        # stub forwards from ToolIndexEntry, with mutations stored on
+        # ``_overrides``.
+        return LazyTool(  # type: ignore[return-value]
+            entry,
+            materialize_callback=self._materialize_for_lazy_tool,
+            is_admin_user=self.app.config.is_admin_user,
+        )
 
     def load_tool_from_cache(self, config_file, recover_tool: bool = False):
         """Skip Galaxy's disk-backed ``ToolCache``.
@@ -823,83 +722,6 @@ class LazyToolBox(ToolBox):
         tool = self._create_tool_from_stored_source(stored, entry=entry)
         self._register_loaded_tool(tool)
         return tool
-
-    def _persist_tool_source(self, tool: "Tool", config_file, guid: Optional[str]) -> None:
-        """Write a freshly-parsed tool's source to the store and add an index entry.
-
-        Called from :meth:`create_tool` whenever the eager fallthrough actually
-        parsed the XML. Idempotent on ``content_hash`` (the store dedupes). After
-        a successful write, broadcasts ``reload_tool_source_cache`` so peer
-        Galaxy processes refresh their index.
-        """
-        if self._store is None or self._tool_index is None:
-            return
-        try:
-            tool_source = tool.tool_source
-            xml_tree = getattr(tool_source, "xml_tree", None)
-            if xml_tree is not None:
-                from galaxy.util import xml_to_string
-
-                raw_source = xml_to_string(xml_tree.getroot(), pretty=True)
-            elif config_file is not None and os.path.exists(str(config_file)):
-                with open(str(config_file), encoding="utf-8") as fh:
-                    raw_source = fh.read()
-            else:
-                log.debug("Cannot persist tool source for %s: no xml_tree and no readable config_file", tool.id)
-                return
-        except Exception as e:
-            log.warning("Failed to serialise tool source for persistence (id=%s): %s", tool.id, e)
-            return
-
-        content_hash = hashlib.sha256(raw_source.encode("utf-8")).hexdigest()
-        tool_id = guid or tool.id
-        if not tool_id:
-            return
-        source_path = str(config_file) if config_file is not None else None
-        tool_dir = os.path.dirname(str(config_file)) if source_path else None
-        stored = StoredToolSource(
-            hash=content_hash,
-            tool_source_class=type(tool_source).__name__,
-            raw_source=raw_source,
-            tool_id=tool_id,
-            tool_version=tool.version,
-            tool_dir=tool_dir,
-            source_path=source_path,
-            stored_at=datetime.utcnow(),
-        )
-        try:
-            self._store.store(stored)
-        except Exception as e:
-            log.warning("Failed to persist tool source (id=%s): %s", tool_id, e)
-            return
-
-        entry = self._build_index_entry_from_stored(stored)
-        if entry is None:
-            return
-        # Mirror the shed-metadata stamps the eager pipeline applies to the Tool
-        # after create_tool returns. We capture them here so a subsequent
-        # lookup off the index agrees with the in-memory Tool.
-        if guid:
-            entry.id = guid
-            entry.is_local = False
-            entry.tool_shed = getattr(tool, "tool_shed", None) or entry.tool_shed
-            entry.repository_name = getattr(tool, "repository_name", None) or entry.repository_name
-            entry.repository_owner = getattr(tool, "repository_owner", None) or entry.repository_owner
-            entry.changeset_revision = getattr(tool, "installed_changeset_revision", None) or entry.changeset_revision
-        self._tool_index.add_entry(entry)
-        self._tool_index.invalidate_caches()
-        try:
-            self._store.store_index(self._tool_index)
-        except Exception as e:
-            log.debug("store_index after persist raised: %s", e)
-        # Fan out to peer processes — same broadcast the prior shed-install
-        # path used to fire from ``_lazy_register_tool_item``.
-        try:
-            from galaxy.queue_worker import send_control_task
-
-            send_control_task(self.app, "reload_tool_source_cache", noop_self=True)
-        except Exception as e:
-            log.debug("send_control_task(reload_tool_source_cache) failed: %s", e)
 
     def _load_tool_on_demand(self, tool_id: str, tool_version: Optional[str] = None) -> Optional["Tool"]:
         """

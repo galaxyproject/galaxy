@@ -265,6 +265,15 @@ def test_resolve_index_entry_returns_none_when_nothing_matches():
     assert box._resolve_index_entry(None, None) is None
 
 
+def test_create_tool_raises_on_index_miss():
+    # The populator owns the index now; a miss in create_tool is a contract
+    # failure, not a recovery path. Surface it with a clear message that
+    # points operators at the populator entry.
+    box = _seam_box()
+    with pytest.raises(RuntimeError, match="no index entry"):
+        box.create_tool(config_file="/tools/unknown.xml", guid=None)
+
+
 def test_load_tool_from_cache_returns_none():
     box = _seam_box()
     assert box.load_tool_from_cache("any/path.xml") is None
