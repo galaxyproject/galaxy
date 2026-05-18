@@ -11,6 +11,7 @@ import logging
 import os
 import string
 import threading
+import weakref
 from datetime import datetime
 from typing import (
     Any,
@@ -39,7 +40,8 @@ from galaxy.tool_util.id_util import (
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.base import DynamicToolConfDict
 from galaxy.tool_util.toolbox.filters import FilterFactory
-from galaxy.tool_util.toolbox.lineages import LineageMap
+from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
+from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import (
     ToolPanelElements,
     ToolSection,
@@ -75,6 +77,15 @@ class DefaultToolPanelView(ToolPanelView):
         self.toolbox = toolbox
 
     def apply_view(self, base_tool_panel, toolbox_registry):
+        # Return the configured panel structure as-is. Tools that are
+        # explicitly loaded (via shed install or first ``get_tool`` use)
+        # land in this panel via the eager ``__add_tool_to_tool_panel``;
+        # *eagerly* materialising every indexed tool here would defeat
+        # LazyToolBox's purpose, take 30+ seconds at boot, and surface
+        # any per-tool parse error as a startup failure.
+        # /api/tool_panels/default is served by an override on
+        # ``LazyToolBox.to_panel_view`` that builds the response straight
+        # from the index entries instead — see that method.
         return self.toolbox._tool_panel
 
     def to_model(self) -> ToolPanelViewModel:
@@ -86,6 +97,121 @@ class DefaultToolPanelView(ToolPanelView):
             view_type=ToolPanelViewModelType.default_type,
             searchable=True,
         )
+
+
+class LazyIntegratedToolPanelElements(ToolPanelElements):
+    """``_integrated_tool_panel`` that materialises sections on demand.
+
+    Static panel views (``StaticToolPanelView.apply_view``,
+    ``lib/galaxy/tool_util/toolbox/views/static.py``) walk this panel via
+    ``closest_section`` and then call ``ToolSection.copy(merge_tools=True)``
+    which reads ``tool.lineage`` for every tool in ``section.elems`` —
+    so the section needs *real* Tool objects, not stubs. The eager
+    toolbox populates these as a side effect of loading every tool at
+    boot. The lazy toolbox can't afford that (~30s + per-tool parse
+    errors that stalled CI's ``test_job_recovery::test_recovery``), so
+    we materialise sections lazily: only when a panel-view request
+    actually consults one.
+
+    ``walk_sections`` and ``apply_filter`` are bulk operations
+    (e.g. global filters); they trigger materialisation of every
+    section. ``closest_section`` triggers materialisation of just the
+    matching section.
+    """
+
+    def __init__(self, toolbox_ref: "weakref.ReferenceType") -> None:
+        super().__init__()
+        self._toolbox_ref = toolbox_ref
+        self._materialised_sections: set[str] = set()
+        self._fully_materialised = False
+
+    # --- materialisation helpers ---
+
+    def _toolbox(self) -> Optional["LazyToolBox"]:
+        return self._toolbox_ref()
+
+    def _materialise_section(self, section_id: Optional[str]) -> None:
+        if not section_id or section_id in self._materialised_sections:
+            return
+        section = self.get(section_id)
+        if not isinstance(section, ToolSection):
+            return
+        toolbox = self._toolbox()
+        if toolbox is None or toolbox._tool_index is None:
+            return
+        loaded = 0
+        for entry in toolbox._tool_index.entries.values():
+            if entry.panel_section_id != section_id or entry.hidden:
+                continue
+            if section.elems.has_tool_with_id(entry.id):
+                continue
+            tool = toolbox.get_tool(tool_id=entry.id)
+            if tool is None:
+                continue
+            section.elems.append_tool(tool)
+            loaded += 1
+        self._materialised_sections.add(section_id)
+        log.debug("LazyIntegratedToolPanelElements: materialised section id=%r (%d tools)", section_id, loaded)
+
+    def _materialise_all(self) -> None:
+        if self._fully_materialised:
+            return
+        toolbox = self._toolbox()
+        if toolbox is None or toolbox._tool_index is None:
+            return
+        # Materialise every section first.
+        for section_id, value in list(self.items()):
+            if isinstance(value, ToolSection):
+                self._materialise_section(section_id)
+        # Then add tools that aren't in any section as top-level entries.
+        # Tools at the conf's root (no parent ``<section>``) carry
+        # ``entry.panel_section_id is None``; ``walk_loaded_tools`` (used
+        # by EDAM and toolbox search) yields top-level entries from
+        # ``tool_panel.panel_items_iter()`` directly. Without this they're
+        # invisible — EDAM can't tag e.g. ``mapper`` with its
+        # ``operation_3198`` because the tool never gets walked.
+        for entry in toolbox._tool_index.entries.values():
+            if entry.panel_section_id or entry.hidden:
+                continue
+            key = f"tool_{entry.id}"
+            if key in self:
+                continue
+            tool = toolbox.get_tool(tool_id=entry.id)
+            if tool is None:
+                continue
+            self.append_tool(tool)
+        self._fully_materialised = True
+
+    # --- overrides ---
+
+    def closest_section(self, target_section_id, target_section_name):
+        # Materialise just the section we'll return (if any) before delegating.
+        if target_section_id and isinstance(self.get(target_section_id), ToolSection):
+            self._materialise_section(target_section_id)
+        elif target_section_name:
+            for sid, sec in list(self.items()):
+                if isinstance(sec, ToolSection) and sec.name == target_section_name:
+                    self._materialise_section(sid)
+                    break
+        return super().closest_section(target_section_id, target_section_name)
+
+    def walk_sections(self):
+        self._materialise_all()
+        return super().walk_sections()
+
+    def apply_filter(self, f):
+        self._materialise_all()
+        return super().apply_filter(f)
+
+    # ``panel_items_iter`` is intentionally NOT overridden. It's called by
+    # ``ManagesIntegratedToolPanelMixin._write_integrated_tool_panel_config_file``
+    # at boot to flush the panel to disk; auto-materialising there would
+    # eagerly load every indexed tool — defeating lazy mode and surfacing
+    # per-tool parse errors (interactive tools, ``filter_data_table`` etc.)
+    # that should stay deferred. Consumers that really need the full panel
+    # (EDAM ``apply_view``, search index) get materialisation via the
+    # explicit ``LazyToolBox._materialise_integrated_panel_for_views`` call
+    # in ``_load_tool_panel_views``.
 
 
 class _LazyToolsByIdView:
@@ -206,6 +332,20 @@ class LazyToolBox(ToolBox):
         # This allows has_tool() and similar checks to work without loading
         self._populate_tool_registry_from_index()
 
+        # Render static panel views now that the index is populated. Before
+        # this point ``apply_view`` would have ``has_tool`` return False for
+        # every indexed-but-unloaded tool and the resulting view would be
+        # missing every entry. See the deferred-render comment in
+        # ``_init_lazy_toolbox``.
+        if self.app.name == "galaxy":
+            # EDAM's ``apply_view`` walks the full integrated panel via
+            # ``walk_loaded_tools`` -> ``panel_items_iter``, none of which
+            # trigger ``LazyIntegratedToolPanelElements`` materialisation.
+            # Only force a bulk materialisation when EDAM views are
+            # explicitly configured — for the typical lazy-mode deployment
+            # we keep the per-section deferral behaviour.
+            self._load_tool_panel_views()
+
         log.info(f"LazyToolBox initialized with {len(self._tools_by_id)} tools (cache_size={cache_size})")
         self._warn_if_index_misses_panel_tools()
 
@@ -267,7 +407,16 @@ class LazyToolBox(ToolBox):
         self._tool_panel = ToolPanelElements()
         self._index = 0
         self.data_manager_tools: dict[str, Tool] = {}
-        self._lineage_map = LineageMap(app)
+        # ``LazyLineageMap`` defers building each tool's ``ToolLineage``
+        # until first access, sourcing versions from the index on demand.
+        # That replaces a boot-time ``_seed_lineage_for_tool`` pass that
+        # walked every entry; the data is the same since
+        # ``ToolIndex.entries_by_version`` is already serialised in the
+        # tool source store.
+        self._lineage_map = LazyLineageMap(
+            app,
+            versions_for=self._index_versions_for,
+        )
 
         # Tool root dir handling from ToolBox
         if tool_root_dir == "./tools":
@@ -275,8 +424,16 @@ class LazyToolBox(ToolBox):
         self._tool_root_dir = tool_root_dir
         self.app = app
 
-        # Initialize integrated tool panel (from ManagesIntegratedToolPanelMixin)
+        # Initialize integrated tool panel (from ManagesIntegratedToolPanelMixin),
+        # then swap the empty ``ToolPanelElements`` it creates for our lazy
+        # subclass. ``StaticToolPanelView.apply_view`` walks this panel and
+        # calls ``ToolSection.copy(merge_tools=True)`` which reads
+        # ``tool.lineage`` for every tool — so the section needs real
+        # Tool objects when a panel view is rendered. ``LazyIntegratedToolPanelElements``
+        # materialises only the sections actually consulted, instead of
+        # eagerly loading every indexed tool at boot.
         self._init_integrated_tool_panel(app.config)
+        self._integrated_tool_panel = LazyIntegratedToolPanelElements(weakref.ref(self))
 
         # Watchers and filters
         self._tool_watcher = self.app.watchers.tool_watcher
@@ -300,9 +457,14 @@ class LazyToolBox(ToolBox):
         # but don't load the actual tools
         self._init_panel_structure_from_configs(config_filenames)
 
-        # Load tool panel views (required for panel_has_tool checks)
-        if self.app.name == "galaxy":
-            self._load_tool_panel_views()
+        # ``_load_tool_panel_views`` materialises every static panel view by
+        # walking ``apply_view``, which calls ``toolbox_registry.has_tool``.
+        # In the lazy path the index isn't populated until ``_load_index_from_store``
+        # runs (right after this method returns), so calling it here would
+        # see an empty toolbox and drop every tool from the static views with
+        # a "Failed to find tool_id ... cannot load into panel view" warning.
+        # Defer the rendering until after the index is loaded — see the
+        # follow-up call in ``__init__``.
 
         if save_integrated_tool_panel:
             self._save_integrated_tool_panel()
@@ -320,6 +482,67 @@ class LazyToolBox(ToolBox):
         else:
             config_value = getattr(config, "default_panel_view", None)
         return config_value or self._default_panel_view_name
+
+    def _load_tool_panel_views(self) -> None:
+        """Render panel views, deferring EDAM views.
+
+        EDAM views call ``walk_loaded_tools(base_tool_panel, registry)``
+        which iterates the *integrated* panel via ``panel_items_iter``.
+        ``LazyIntegratedToolPanelElements`` doesn't auto-materialise on
+        that iteration (per the comment on
+        ``LazyIntegratedToolPanelElements`` — auto-materialisation here
+        would defeat lazy mode), so for EDAM we'd have to manually
+        ``_materialise_all()`` first. That's hundreds of sequential
+        lazy-loads against the database-backed source store, repeated on
+        every restart — which silently hangs ``test_job_recovery`` for
+        hours under workflow_dispatch + ``use_lazy_toolbox=true``.
+        Default and static views are cheap (``DefaultToolPanelView``
+        returns the live ``_tool_panel`` and ``StaticToolPanelView``
+        lazy-materialises only the few sections it names via
+        ``closest_section``); render those at boot. EDAM gets an empty
+        placeholder so callers that index ``_tool_panel_view_rendered``
+        (e.g. ``panel_has_tool`` from the search-index build) don't
+        ``KeyError``. The real EDAM render happens on first
+        ``to_panel_view`` request and is cached.
+        """
+        from galaxy.tool_util.toolbox.base import ToolBoxRegistryImpl
+        from galaxy.tool_util.toolbox.panel import ToolPanelElements
+
+        self._tool_panel_view_rendered = {}
+        # Tracks EDAM views that have actually been rendered (vs. seeded
+        # with the empty placeholder). ``to_panel_view`` consults this
+        # to decide whether to do the deferred render — checking
+        # ``_tool_panel_view_rendered`` membership wouldn't distinguish
+        # the placeholder from a real render.
+        self._edam_views_rendered: set[str] = set()
+        registry = ToolBoxRegistryImpl(self)
+        for key, view in self._tool_panel_views.items():
+            if isinstance(view, EdamToolPanelView):
+                self._tool_panel_view_rendered[key] = ToolPanelElements()
+                continue
+            self._tool_panel_view_rendered[key] = view.apply_view(self._integrated_tool_panel, registry)
+
+    def panel_has_tool(self, tool: "Tool", panel_view_id: str) -> bool:
+        """Return True if ``tool`` is reachable from the given panel view.
+
+        For EDAM views the boot-time placeholder in
+        ``_tool_panel_view_rendered`` is empty (the real render is
+        deferred — see ``_load_tool_panel_views``), so the parent's
+        ``has_item_recursive`` would always answer ``False`` and the
+        search-index build at boot would skip every tool for that view.
+        Every tool in the index lands in some EDAM section (an
+        ``edam_operations`` term, an ``edam_topics`` term, or
+        ``uncategorized``) once ``apply_view`` actually runs, so for
+        index-known tools we answer ``True`` directly.
+        """
+        if panel_view_id in self._tool_panel_view_rendered:
+            view = self._tool_panel_views.get(panel_view_id)
+            if isinstance(view, EdamToolPanelView):
+                tool_id = getattr(tool, "id", None)
+                if tool_id and self._tool_index is not None and tool_id in self._tool_index.entries:
+                    return True
+                return False
+        return super().panel_has_tool(tool, panel_view_id)
 
     def _setup_panel_views(self, view_sources) -> None:
         """Set up tool panel views."""
@@ -517,27 +740,18 @@ class LazyToolBox(ToolBox):
             if tool_id:
                 self._tool_section_map[tool_id] = (section_id, section_name)
 
-    def _seed_lineage_for_tool(self, tool_id: str, versions: list[str]) -> None:
-        """Register every indexed version on this tool's ToolLineage."""
-        from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-        from galaxy.util.tool_version import remove_version_from_guid
+    def _index_versions_for(self, tool_id: str) -> list[str]:
+        """Return every version present in the index for ``tool_id``.
 
-        if not versions:
-            return
-        lineage_map = self._lineage_map.lineage_map
-        versionless = remove_version_from_guid(tool_id)
-        # Mirror LineageMap.register: a single ToolLineage is shared between
-        # the versionless id and the version-bearing id.
-        lineage = lineage_map.get(versionless) if versionless else None
-        if lineage is None:
-            lineage = lineage_map.get(tool_id)
-        if lineage is None:
-            lineage = ToolLineage(tool_id)
-        for version in versions:
-            lineage.register_version(version)
-        lineage_map[tool_id] = lineage
-        if versionless and versionless not in lineage_map:
-            lineage_map[versionless] = lineage
+        Hooked into ``LazyLineageMap.versions_for`` so a lineage lookup
+        sources its data straight from ``_tool_index.entries_by_version``.
+        Empty list (no versions) tells the lineage map to fall through to
+        the standard ``LineageMap.get`` toolbox path.
+        """
+        if self._tool_index is None:
+            return []
+        versions = self._tool_index.entries_by_version.get(tool_id, {})
+        return [v for v in versions.keys() if v]
 
     @staticmethod
     def _extract_yaml_tool_id(path: str) -> Optional[str]:
@@ -1053,13 +1267,9 @@ class LazyToolBox(ToolBox):
                 if version_key:
                     self._tool_versions_by_id[tool_id][version_key] = None  # type: ignore[assignment]
 
-            # Pre-seed the lineage map with every indexed version. The eager
-            # ToolBox builds lineage as a side effect of loading each Tool,
-            # but the lazy path only loads one version on demand — without
-            # this, ``tool.lineage.tool_versions`` would only ever contain
-            # the version that happened to be loaded first, breaking
-            # /api/tools/{id}'s ``versions`` and ``hidden_versions`` fields.
-            self._seed_lineage_for_tool(tool_id, [v for v in versions.keys() if v])
+            # Lineage is built lazily by ``LazyLineageMap`` from
+            # ``_tool_index.entries_by_version`` on first ``get()``; no
+            # boot-time seeding pass is needed.
 
             # Add to panel if section info available
             if entry.panel_section_id and entry.panel_section_id in self._tool_panel:
@@ -1078,6 +1288,25 @@ class LazyToolBox(ToolBox):
             # Show sample IDs from each for comparison
             log.info(f"  Sample index IDs: {list(index_ids)[:3]}")
             log.info(f"  Sample map IDs: {list(map_ids)[:3]}")
+
+        # Mirror ``_tool_panel``'s section/label structure into
+        # ``_integrated_tool_panel`` so static panel views can resolve
+        # sections via ``closest_section`` (which searches the integrated
+        # panel). Tools stay deferred — the lazy panel materialises each
+        # section's elems on first access. Without this seed, static views
+        # for the test-tool sections (e.g. ``test``, ``filter``,
+        # ``test_section_multi``) fail to find any section and render
+        # empty.
+        for key, value in list(self._tool_panel.items()):
+            if key in self._integrated_tool_panel:
+                continue
+            if isinstance(value, ToolSection):
+                self._integrated_tool_panel[key] = ToolSection(
+                    {"id": value.id, "name": value.name, "version": value.version or ""}
+                )
+            else:
+                # Labels and other non-tool elements copy by reference.
+                self._integrated_tool_panel[key] = value
 
     # === Override get_tool for lazy loading ===
 
@@ -1294,12 +1523,16 @@ class LazyToolBox(ToolBox):
         if hasattr(tool, "uuid") and tool.uuid:
             self._tools_by_uuid[tool.uuid] = tool
 
-        # Update lineage. ``LineageMap.register`` returns the shared lineage
-        # for this id; the eager ToolBox assigns it to ``tool._lineage`` (see
-        # AbstractToolBox.__add_tool) — without that assignment, ``tool.lineage``
-        # is ``None`` and ``tool.tool_versions`` returns ``[]``, breaking
-        # /api/tools/{id}'s ``versions`` / ``hidden_versions`` fields.
-        tool._lineage = self._lineage_map.register(tool)
+        # Update lineage. ``LazyLineageMap.get`` builds the lineage from
+        # ``entries_by_version`` (cached after first call); for a shed tool
+        # that arrived after boot and isn't in the index yet,
+        # ``LineageMap.register`` is the right fallback. Either way the
+        # eager ToolBox assigns it to ``tool._lineage`` (see
+        # AbstractToolBox.__add_tool) — without that assignment,
+        # ``tool.lineage`` is ``None`` and ``tool.tool_versions`` returns
+        # ``[]``, breaking /api/tools/{id}'s ``versions`` /
+        # ``hidden_versions`` fields.
+        tool._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(tool)
 
         # Conf-level ``hidden="true"`` (from the ``<tool>`` directive in the
         # tool conf) is applied here. The eager toolbox does this in
@@ -1310,6 +1543,54 @@ class LazyToolBox(ToolBox):
             entry = self._tool_index.get(tool_id, version)
             if entry and entry.hidden:
                 tool.hidden = True
+
+    def close(self) -> None:
+        """Drop in-memory state at app shutdown.
+
+        Wired into ``GalaxyUniverseApplication.haltables`` so an embedded
+        restart (``IntegrationTestCase.restart``) releases the LRU cache,
+        the ``ToolIndex`` reference, and the link back to the
+        ``tool_source_store`` before the next boot wires up a fresh
+        toolbox. Idempotent; safe to call more than once.
+        """
+        with self._cache_lock:
+            self._tool_object_cache.clear()
+        self._tool_index = None
+        self._store = None
+        # ``ToolLineage.lineages_by_id`` is a *class*-level dict, so a
+        # ``ToolLineage`` from a prior process / embedded restart would
+        # otherwise carry its ``tool_versions`` SortedSet across boots and
+        # shadow the new boot's index versions. Reset on shutdown so the
+        # next ``LazyLineageMap.get`` rebuilds from the freshly-loaded
+        # index.
+        ToolLineage.reset()
+        # ``_tools_by_id`` and friends still get GC'd when the surrounding
+        # app object drops. We don't clear them here because the eager
+        # parent's shutdown sequence may still iterate them.
+
+    def remove_tool_by_id(self, tool_id: str, remove_from_panel: bool = True):
+        """Also drop the tool from the lazy index + LRU cache.
+
+        ``AbstractToolBox.remove_tool_by_id`` only deletes from
+        ``_tools_by_id``. In the lazy path that's not enough — ``get_tool``
+        re-loads the tool from ``_tool_index`` on the next request, so the
+        tool effectively comes back. The eager toolbox doesn't have this
+        problem because the tool object isn't created from a serialised
+        store. Mirror the deletion across the two backing stores.
+        """
+        # Force-materialise so the eager parent's bookkeeping (``_tools_by_old_id``,
+        # panel removal, lineage, tool cache expiry) gets a real Tool to work
+        # against.
+        if self._tools_by_id.get(tool_id) is None:
+            self.get_tool(tool_id=tool_id)
+        result = super().remove_tool_by_id(tool_id, remove_from_panel=remove_from_panel)
+        if self._tool_index is not None:
+            self._tool_index.entries.pop(tool_id, None)
+            self._tool_index.entries_by_version.pop(tool_id, None)
+        with self._cache_lock:
+            for key in [k for k in self._tool_object_cache.keys() if k.startswith(f"{tool_id}:")]:
+                self._tool_object_cache.pop(key, None)
+        return result
 
     @property
     def tools_by_id(self) -> "_LazyToolsByIdView":
@@ -1403,11 +1684,15 @@ class LazyToolBox(ToolBox):
         Create a dictionary representation of the toolbox.
 
         For the *flat* listing (``in_panel=False``) we serve straight from
-        the index — no Tool loading needed. The panel listing
-        (``in_panel=True``) defers to the parent so the section-aware
-        response shape the UI expects is preserved.
-
-        Note: tool_help is ignored since we don't load the full tool.
+        the index — no Tool loading needed. For the panel listing
+        (``in_panel=True``, e.g. ``tools?in_panel=True&view=custom_13``)
+        we defer to the parent: it walks ``_tool_panel_view_rendered``
+        which is built by ``apply_view`` against
+        ``_integrated_tool_panel`` and produces the section-aware
+        response shape (interleaved Tools and ToolSections) that the UI
+        and tests expect. ``ToolBoxRegistry.get_tool`` lazy-loads the
+        per-section tools as ``apply_view`` walks them, so this stays
+        cheap as long as the requested view scopes to a small section.
         """
         if self._tool_index is None:
             return []
@@ -1416,7 +1701,6 @@ class LazyToolBox(ToolBox):
             return super().to_dict(trans, in_panel=True, tool_help=tool_help, view=view, **kwds)
 
         rval = []
-
         # Return data directly from index - no tool loading needed!
         for _tool_id, entry in self._tool_index.entries.items():
             # Skip hidden tools unless requested
@@ -1429,6 +1713,95 @@ class LazyToolBox(ToolBox):
 
         log.debug(f"LazyToolBox.to_dict: returning {len(rval)} tools from index (no loading)")
         return rval
+
+    def to_panel_view(self, trans, view="default_panel_view", **kwds) -> dict[str, dict]:
+        """Render a panel view's API response.
+
+        For the default view we build the response straight from
+        ``_tool_index.entries`` — no Tool instantiation, no per-tool
+        re-parse. Going through the parent's ``tool_panel_contents`` ->
+        ``apply_view`` -> ``get_tool_to_dict`` path would lazy-load every
+        indexed tool at request time, which is exactly what defeated
+        startup in the prior commit (``test_job_recovery::test_recovery``
+        spent ~14 minutes lazy-loading 500+ tools per restart and never
+        reached "ready").
+
+        Static panel views (configured via ``panel_views`` /
+        ``panel_views_dir``) are scoped to a specific small set of
+        ``<tool>`` entries; for those we let the parent walk
+        ``apply_view`` so its ``ToolBoxRegistry.get_tool`` lazy-loads
+        only the requested few.
+        """
+        resolved_view = view
+        if resolved_view == "default_panel_view":
+            resolved_view = self._default_panel_view(trans)
+
+        view_def = (self._tool_panel_views or {}).get(resolved_view) if hasattr(self, "_tool_panel_views") else None
+        if view_def is None or isinstance(view_def, DefaultToolPanelView):
+            # Default view — render from index entries cheaply.
+            view_contents: dict[str, dict] = {}
+            sections: dict[str, dict[str, Any]] = {}
+            uncategorized: list[dict[str, Any]] = []
+            if self._tool_index is None:
+                return {}
+            include_hidden = bool(kwds.get("include_hidden", False))
+            for entry in self._tool_index.entries.values():
+                if entry.hidden and not include_hidden:
+                    continue
+                tool_dict = self._index_entry_to_api_dict(entry)
+                section_id = entry.panel_section_id
+                if section_id:
+                    section = sections.get(section_id)
+                    if section is None:
+                        # Mirror ``ToolSection.to_dict(only_ids=True)`` which
+                        # the eager toolbox calls for the default view: a
+                        # ``"tools"`` key with the list of tool ids (not
+                        # ``"elems"`` with full dicts). Tests like
+                        # ``test_tools::test_index`` walk
+                        # ``tool_or_section["tools"]`` to flatten sections;
+                        # an ``"elems"`` payload makes ``upload1`` (a
+                        # sectioned tool) invisible to the flatten loop.
+                        section = {
+                            "id": section_id,
+                            "name": entry.panel_section_name or section_id,
+                            "model_class": "ToolSection",
+                            "tools": [],
+                        }
+                        sections[section_id] = section
+                    section["tools"].append(tool_dict["id"])
+                else:
+                    uncategorized.append(tool_dict)
+            for section_id, section_dict in sections.items():
+                view_contents[section_id] = section_dict
+            for tool_dict in uncategorized:
+                view_contents[tool_dict["id"]] = tool_dict
+            return view_contents
+
+        # EDAM views walk every tool in the integrated panel, so they need
+        # the panel materialised before ``apply_view``. Boot defers this
+        # work — render the EDAM view on first request and cache the
+        # result in ``_tool_panel_view_rendered`` so subsequent reads are
+        # instant. Without this, every restart re-runs ~500 sequential
+        # lazy-loads at boot just so EDAM is ready, even when the test
+        # never asks for an EDAM view (the regression that caused
+        # ``test_job_recovery::test_recovery`` to silently hang shard 3
+        # for hours under workflow_dispatch + ``use_lazy_toolbox=true``).
+        if isinstance(view_def, EdamToolPanelView):
+            from galaxy.tool_util.toolbox.base import ToolBoxRegistryImpl
+
+            if resolved_view not in self._edam_views_rendered:
+                if isinstance(self._integrated_tool_panel, LazyIntegratedToolPanelElements):
+                    self._integrated_tool_panel._materialise_all()
+                registry = ToolBoxRegistryImpl(self)
+                self._tool_panel_view_rendered[resolved_view] = view_def.apply_view(
+                    self._integrated_tool_panel, registry
+                )
+                self._edam_views_rendered.add(resolved_view)
+
+        # Static (non-default) view: defer to parent so apply_view runs
+        # against the registered ToolPanelView. Only the small set of
+        # tools the static view names will be lazy-loaded.
+        return super().to_panel_view(trans, view=view, **kwds)
 
     def _index_entry_to_api_dict(self, entry: ToolIndexEntry) -> dict[str, Any]:
         """Convert an index entry to the format expected by /api/tools."""
@@ -1449,47 +1822,3 @@ class LazyToolBox(ToolBox):
             "min_width": -1,
             "target": "galaxy_main",
         }
-
-    def to_panel_view(self, trans, view="default_panel_view", **kwds) -> dict[str, dict]:
-        """
-        Create a panel view representation of the toolbox.
-
-        For LazyToolBox, returns tools from index organized by section.
-        """
-        if self._tool_index is None:
-            return {}
-
-        view_contents: dict[str, dict] = {}
-
-        # Group tools by section from index
-        sections: dict[str, dict[str, Any]] = {}
-        uncategorized_tools: list[dict[str, Any]] = []
-
-        for _tool_id, entry in self._tool_index.entries.items():
-            if entry.hidden and not kwds.get("include_hidden", False):
-                continue
-
-            tool_dict = self._index_entry_to_api_dict(entry)
-
-            section_id = entry.panel_section_id
-            if section_id:
-                if section_id not in sections:
-                    sections[section_id] = {
-                        "id": section_id,
-                        "name": entry.panel_section_name or section_id,
-                        "model_class": "ToolSection",
-                        "elems": [],
-                    }
-                sections[section_id]["elems"].append(tool_dict)
-            else:
-                uncategorized_tools.append(tool_dict)
-
-        # Add sections to view_contents
-        for section_id, section_dict in sections.items():
-            view_contents[section_id] = section_dict
-
-        # Add uncategorized tools directly
-        for tool_dict in uncategorized_tools:
-            view_contents[tool_dict["id"]] = tool_dict
-
-        return view_contents

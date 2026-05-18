@@ -428,6 +428,32 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         stats = self.tool_source_store.get_stats()
         tool_count = stats.get("count", 0)
         log.info(f"Initialized tool source store (backend: {stats.get('backend', 'unknown')}, tools: {tool_count})")
+        # Hand the store + (eventual) lazy toolbox to ``Galaxy.shutdown()``
+        # so embedded restarts (IntegrationTestCase.restart) drop their
+        # in-memory caches before the next boot wires its own. Without this,
+        # the prior boot's cached ToolIndex sticks around long enough to
+        # race with the new boot's _load_index_from_store.
+        self.haltables.append(("tool source store", self._shutdown_tool_source_store))
+        self.haltables.append(("lazy toolbox", self._shutdown_lazy_toolbox))
+
+    def _shutdown_tool_source_store(self) -> None:
+        store = getattr(self, "tool_source_store", None)
+        if store is not None:
+            try:
+                store.close()
+            finally:
+                self.tool_source_store = None
+
+    def _shutdown_lazy_toolbox(self) -> None:
+        toolbox = getattr(self, "_toolbox", None)
+        # Lazy import: only relevant when the lazy path is in use.
+        try:
+            from galaxy.tools.lazy_toolbox import LazyToolBox
+
+            if isinstance(toolbox, LazyToolBox):
+                toolbox.close()
+        except Exception as e:
+            log.debug(f"_shutdown_lazy_toolbox: {e}")
 
     def _use_lazy_toolbox(self) -> bool:
         """Determine whether to use LazyToolBox instead of regular ToolBox.

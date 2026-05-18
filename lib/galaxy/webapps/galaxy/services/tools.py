@@ -624,13 +624,20 @@ class ToolsService(ServiceBase):
         """
         toolbox = trans.app.toolbox
         lazy_toolbox = self._get_lazy_toolbox(trans)
+        # Prefer the index's pre-computed view dicts when present, but fall
+        # back to the live ``toolbox.panel_view_dicts()`` when empty —
+        # ``LazyToolBox`` doesn't currently populate
+        # ``tool_index.panel_views`` (the views are registered live in
+        # ``_setup_panel_views``), so the index lookup yields ``{}`` and
+        # callers like ``test_edam_toolbox`` see no views at all.
         if lazy_toolbox and lazy_toolbox.tool_index:
-            return {
-                "default_panel_view": toolbox.default_panel_view(trans),
-                "views": lazy_toolbox.tool_index.get_panel_views(),
-            }
+            indexed_views = lazy_toolbox.tool_index.get_panel_views()
+            if indexed_views:
+                return {
+                    "default_panel_view": toolbox.default_panel_view(trans),
+                    "views": indexed_views,
+                }
 
-        # Fallback to traditional toolbox
         return {
             "default_panel_view": toolbox.default_panel_view(trans),
             "views": toolbox.panel_view_dicts(),

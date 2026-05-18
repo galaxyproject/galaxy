@@ -71,6 +71,18 @@ class ToolLineage:
     def register_version(self, tool_version: str) -> None:
         self.tool_versions.add(tool_version)
 
+    @classmethod
+    def reset(cls) -> None:
+        """Clear the global ``lineages_by_id`` cache.
+
+        ``lineages_by_id`` is a class attribute, so a ``ToolLineage`` built
+        in a prior process / embedded ``IntegrationTestCase.restart()`` boot
+        carries its ``tool_versions`` SortedSet into the next boot. Wired
+        into ``LazyToolBox.close()`` so a restart sees a clean cache.
+        """
+        with cls.lock:
+            cls.lineages_by_id.clear()
+
     def get_versions(self) -> list[ToolLineageVersion]:
         """
         Return an ordered list of lineages (ToolLineageVersion) in this

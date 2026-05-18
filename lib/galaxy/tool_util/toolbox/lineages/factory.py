@@ -1,4 +1,7 @@
 from typing import (
+    Callable,
+    Iterable,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -68,4 +71,68 @@ class LineageMap:
         return self.lineage_map.get(versionless_tool_id)
 
 
-__all__ = ("LineageMap",)
+class LazyLineageMap(LineageMap):
+    """Lineage map that derives versions from a callable on first access.
+
+    Used by ``galaxy.tools.lazy_toolbox.LazyToolBox`` so the lineage view
+    over ``ToolIndex.entries_by_version`` doesn't need a boot-time pass to
+    seed every tool's version set into ``ToolLineage.tool_versions``.
+    Lineage data is already serialised inside the index
+    (``ToolIndex.to_dict``); this class just exposes it as a ``LineageMap``
+    on demand.
+    """
+
+    def __init__(self, app, versions_for: Optional[Callable[[str], Iterable[str]]] = None):
+        super().__init__(app)
+        self._versions_for = versions_for
+
+    def get(self, tool_id: str) -> Optional[ToolLineage]:
+        # Always source versions from the index when available — the parent's
+        # fallback path builds a lineage from a single ``Tool`` object's
+        # version (via ``ToolLineage.from_tool``) and memoises it, which
+        # would freeze ``tool_versions`` at ``[just-loaded version]`` and
+        # hide every other version present in the index. That breaks
+        # ``get_safe_version`` (used by ``ToolModule.__init__`` at workflow
+        # upload to map a pinned-but-missing tool_version onto the nearest
+        # safe-upgrade version, e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0): it
+        # walks ``tool.lineage.tool_versions`` and only finds candidates
+        # within ``WORKFLOW_SAFE_TOOL_VERSION_UPDATES``' bounds, so a
+        # one-element ``[1.2.0]`` lineage misses 1.1.0 and the workflow
+        # ends up bound to 1.2.0 with state shaped for 1.0.0.
+        if self._versions_for is not None:
+            try:
+                versions = list(self._versions_for(tool_id))
+            except Exception:
+                versions = []
+            if versions:
+                # Share the lineage object across every tool_id that maps
+                # to the same versionless guid — eager ``LineageMap.register``
+                # does this via the ``versionless_tool_id`` key, and tools
+                # rely on it for ``ToolSection.copy(merge_tools=True)``.
+                # Without sharing, two shed installs of the same tool (e.g.
+                # ``fastp/0.19.5+galaxy1`` and ``fastp/0.20.1+galaxy0``) get
+                # distinct ``ToolLineage`` objects whose ``tool_versions``
+                # only carry the version that happened to be in the index
+                # at first lookup. ``test_only_latest_version_in_panel_fastp``
+                # then sees both tools survive lineage dedup (with
+                # ``tools[0]`` reflecting whichever was inserted first into
+                # ``section.elems`` instead of the newest version).
+                versionless = remove_version_from_guid(tool_id)
+                lineage = self.lineage_map.get(tool_id)
+                if lineage is None and versionless:
+                    lineage = self.lineage_map.get(versionless)
+                if lineage is None:
+                    lineage = ToolLineage(tool_id)
+                    if versionless:
+                        self.lineage_map[versionless] = lineage
+                self.lineage_map[tool_id] = lineage
+                for version in versions:
+                    if version:
+                        lineage.register_version(version)
+                return lineage
+        # Index has no entry for this tool_id — fall back to whatever the
+        # parent class can derive (a registered Tool, etc.).
+        return super().get(tool_id)
+
+
+__all__ = ("LazyLineageMap", "LineageMap")

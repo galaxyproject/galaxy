@@ -7,7 +7,7 @@ a designated *default* store. Used to layer e.g. a CVMFS-resident
 read-only sqlite bundle on top of the local writable store.
 
 The composite is invisible to the rest of Galaxy: it implements the same
-:class:`ToolSourceStore` interface, and consumers / the populator
+:class:`ToolSourceStore` interface, and ``LazyToolBox`` / the populator
 keep working unchanged.
 """
 
@@ -15,15 +15,16 @@ import logging
 from collections.abc import Iterator
 from typing import (
     Any,
+    Optional,
 )
 
+from . import (
+    StoredToolSource,
+    ToolSourceStore,
+)
 from .index import (
     ToolIndex,
     ToolIndexEntry,
-)
-from .interface import (
-    StoredToolSource,
-    ToolSourceStore,
 )
 
 log = logging.getLogger(__name__)
@@ -73,12 +74,9 @@ class CompositeToolSourceStore(ToolSourceStore):
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         self._default_store.update_index_entry(entry)
 
-    def remove_index_entry(self, tool_id: str) -> None:
-        self._default_store.remove_index_entry(tool_id)
-
     # --- read ops: priority order --------------------------------------
 
-    def get(self, hash: str) -> StoredToolSource | None:
+    def get(self, hash: str) -> Optional[StoredToolSource]:
         for _name, member in self._members:
             found = member.get(hash)
             if found is not None:
@@ -88,7 +86,7 @@ class CompositeToolSourceStore(ToolSourceStore):
     def exists(self, hash: str) -> bool:
         return any(m.exists(hash) for _, m in self._members)
 
-    def get_by_tool_id(self, tool_id: str, version: str | None = None) -> list[StoredToolSource]:
+    def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
         # Union across members, deduped by hash, preserving member order.
         seen: set[str] = set()
         out: list[StoredToolSource] = []
@@ -99,13 +97,6 @@ class CompositeToolSourceStore(ToolSourceStore):
                 seen.add(src.hash)
                 out.append(src)
         return out
-
-    def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
-        for _name, member in self._members:
-            found = member.get_by_source_path(source_path)
-            if found is not None:
-                return found
-        return None
 
     def list_all(self) -> Iterator[str]:
         seen: set[str] = set()
@@ -151,14 +142,14 @@ class CompositeToolSourceStore(ToolSourceStore):
 
     # --- index ---------------------------------------------------------
 
-    def load_index(self) -> ToolIndex | None:
+    def load_index(self) -> Optional[ToolIndex]:
         merged = ToolIndex()
         any_loaded = False
         for name, member in self._members:
             try:
                 idx = member.load_index()
             except Exception as e:
-                log.error(f"Failed to load index from store {name!r}: {e}")
+                log.warning(f"Failed to load index from store {name!r}: {e}")
                 continue
             if idx is None:
                 continue
@@ -168,14 +159,6 @@ class CompositeToolSourceStore(ToolSourceStore):
                 if tool_id in merged.entries:
                     continue
                 merged.entries[tool_id] = entry
-            # Merge the per-version map too — ``ToolIndex.get(tool_id,
-            # tool_version)`` resolves exact versions through it, so skipping
-            # it would make every non-newest version of a member-store tool
-            # unreachable. Same collision rule, applied per (id, version).
-            for tool_id, versions in idx.entries_by_version.items():
-                version_bucket = merged.entries_by_version.setdefault(tool_id, {})
-                for version, entry in versions.items():
-                    version_bucket.setdefault(version, entry)
             for section_id, ids in idx.by_section.items():
                 bucket = merged.by_section.setdefault(section_id, [])
                 for tid in ids:
@@ -196,6 +179,7 @@ class CompositeToolSourceStore(ToolSourceStore):
                 merged.built_at = idx.built_at
         if not any_loaded:
             return None
+        merged.version = merged.compute_version()
         return merged
 
     def invalidate_index_cache(self) -> None:
@@ -236,4 +220,4 @@ class CompositeToolSourceStore(ToolSourceStore):
             try:
                 member.close()
             except Exception as e:
-                log.error(f"Composite store close failed for member '{_name}': {e}")
+                log.warning(f"Composite store close failed for member '{_name}': {e}")
