@@ -677,6 +677,6 @@ class ToolsService(ServiceBase):
         """
         lazy_toolbox = self._get_lazy_toolbox(trans)
         if lazy_toolbox and lazy_toolbox.tool_index:
-            results = lazy_toolbox.tool_index.search(query, limit)
+            results = lazy_toolbox.search_tools(query, limit)
             return [entry.id for entry in results]
         return list(self._search(query, view) or [])

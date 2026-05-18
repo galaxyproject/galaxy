@@ -2297,6 +2297,60 @@ class LazyToolBox(ToolBox):
             return self._tool_index.get(tool_id)
         return None
 
+    def _search_index_dir(self) -> Optional[str]:
+        """Resolve the directory the lazy Whoosh search index lives in.
+
+        Sits under ``tool_search_index_dir`` (the same root the eager
+        ``ToolBoxSearch`` uses) in a sub-folder so neither path stomps the
+        other.
+        """
+        base = getattr(self.app.config, "tool_search_index_dir", None)
+        if not base:
+            return None
+        return os.path.join(base, "_lazy_default")
+
+    def _get_search_index(self):
+        """Return the cached :class:`ToolWhooshIndex` or build one on demand."""
+        existing = getattr(self, "_whoosh_search_index", None)
+        if existing is not None:
+            return existing
+        index_dir = self._search_index_dir()
+        if not index_dir:
+            return None
+        from galaxy.tool_source_store.search import ToolWhooshIndex
+
+        self._whoosh_search_index = ToolWhooshIndex(index_dir=index_dir, config=self.app.config)
+        return self._whoosh_search_index
+
+    def search_tools(self, query: str, limit: int = 50) -> list[ToolIndexEntry]:
+        """Rank index entries against ``query`` using Whoosh (BM25F).
+
+        Builds the on-disk Whoosh index lazily on first call (or after a
+        ``ToolIndex`` version change) so the populator does not need to know
+        about search infrastructure. Falls back to ``ToolIndex.search``'s
+        in-process scorer when Whoosh setup fails (e.g. read-only directory).
+        """
+        if self._tool_index is None:
+            return []
+        searcher = self._get_search_index()
+        if searcher is None:
+            return self._tool_index.search(query, limit=limit)
+        current_version = self._tool_index.compute_version()
+        last_version = getattr(self, "_whoosh_search_index_version", None)
+        if last_version != current_version:
+            try:
+                searcher.build(self._tool_index)
+                self._whoosh_search_index_version = current_version
+            except Exception as e:
+                log.warning("Falling back to in-process scorer; Whoosh build failed: %s", e)
+                return self._tool_index.search(query, limit=limit)
+        try:
+            ids = searcher.search(query, limit=limit)
+        except Exception as e:
+            log.warning("Falling back to in-process scorer; Whoosh search failed: %s", e)
+            return self._tool_index.search(query, limit=limit)
+        return [entry for entry in (self._tool_index.entries.get(tool_id) for tool_id in ids) if entry is not None]
+
     # === Required property overrides ===
 
     @property
