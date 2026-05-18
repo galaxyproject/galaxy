@@ -134,6 +134,11 @@ class LazyTool:
             "parameters",
             "new_state",
             "input_translator",
+            "check_and_update_param_values",  # validation called from handle_input
+            "wants_params_cleaned",  # parameter scrub before execution
+            "tool_source",  # raw ToolSource; some callers walk it directly
+            "dynamic_tool",  # dynamic-tool linkage on execution
+            "produces_entry_points",  # interactive tool entry points
             # Job runner reads this on the tool to decide environment setup.
             "requires_galaxy_python_environment",
         }
