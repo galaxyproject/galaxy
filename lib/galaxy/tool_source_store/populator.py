@@ -60,6 +60,7 @@ from galaxy.tool_source_store.index import (
     ToolIndexEntry,
 )
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.util import parse_tool_version_with_defaults
 from galaxy.tool_util.toolbox.parser import get_toolbox_parser
 
 log = logging.getLogger(__name__)
@@ -435,10 +436,20 @@ def build_index_entry_from_source(
             except Exception:
                 pass
 
+        # Honour the same version-default rules as ``Tool.__init__``: empty
+        # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
+        # profiles it raises. Without this, ``ToolLineage.register_version``
+        # crashes on ``Version(None)`` during the eager walk.
+        try:
+            version = parse_tool_version_with_defaults(tool_id, tool_source)
+        except Exception as e:
+            log.warning("parse_tool_version_with_defaults raised for %s: %s", tool_id, e)
+            version = tool_source.parse_version() or "0"
+
         return ToolIndexEntry(
             id=tool_id,
             uuid=uuid_val,
-            version=tool_source.parse_version(),
+            version=version,
             name=tool_source.parse_name() or "",
             description=tool_source.parse_description() or "",
             panel_section_id=discovered.section_id,
