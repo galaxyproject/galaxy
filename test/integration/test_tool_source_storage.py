@@ -242,11 +242,13 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     # --- Default-panel response shape ---------------------------------------
 
     def test_default_panel_view_section_tools_use_id_list(self):
-        # Pins the section-shape fix that ``ToolSection.to_dict(only_ids=True)``
-        # emits: each section dict has a ``tools`` key holding a list of
-        # tool-id strings (not full Tool dicts under ``elems``). Regression
-        # for ``test_tools::test_index`` which walks ``tool_or_section["tools"]``
-        # to flatten sections; a different shape makes upload1 invisible.
+        # Pins ``ToolSection.to_dict(only_ids=True)``: each section dict has a
+        # ``tools`` key holding tool-id strings (interleaved with
+        # ``ToolSectionLabel`` dicts where the conf places labels). The
+        # regression this guards against is *Tool* dicts appearing in
+        # ``tools`` — that breaks ``test_tools::test_index``, which walks
+        # ``tool_or_section["tools"]`` to flatten sections and would
+        # otherwise miss sectioned tools like ``upload1``.
         response = self._get("tool_panels/default")
         self._assert_status_code_is(response, 200)
         panel = response.json()
@@ -256,9 +258,12 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
             if isinstance(entry, dict) and entry.get("model_class") == "ToolSection":
                 sections_seen += 1
                 assert "tools" in entry, f"section {entry_id} missing 'tools' key"
-                assert all(
-                    isinstance(t, str) for t in entry["tools"]
-                ), f"section {entry_id} should hold tool ids as strings, got {entry['tools'][:3]}"
+                for item in entry["tools"]:
+                    if isinstance(item, str):
+                        continue
+                    assert (
+                        isinstance(item, dict) and item.get("model_class") == "ToolSectionLabel"
+                    ), f"section {entry_id} should hold tool-id strings or ToolSectionLabel dicts, got {item!r}"
         # Sanity: the framework conf has at least one section, otherwise the
         # assertion above never ran.
         assert sections_seen > 0, "expected at least one section in default panel view"
