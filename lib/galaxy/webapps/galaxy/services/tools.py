@@ -670,13 +670,12 @@ class ToolsService(ServiceBase):
         view: Optional[str] = None,
         limit: int = 50,
     ) -> list[str]:
-        """
-        Search tools, preferring the lazy toolbox index when available.
+        """Search tools via the ``app.toolbox_search`` singleton.
 
-        Returns a list of matching tool IDs.
+        In lazy mode that singleton is :class:`LazyToolboxSearch`, which reads
+        the populator-owned whoosh index; in eager mode it's
+        :class:`ToolBoxSearch` walking ``tool_cache``. Both expose the same
+        ``search(q, panel_view, config)`` interface, so this method doesn't
+        branch on which toolbox flavour is active.
         """
-        lazy_toolbox = self._get_lazy_toolbox(trans)
-        if lazy_toolbox and lazy_toolbox.tool_index:
-            results = lazy_toolbox.search_tools(query, limit)
-            return [entry.id for entry in results]
         return list(self._search(query, view) or [])

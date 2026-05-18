@@ -126,6 +126,52 @@ class ToolBoxSearch:
         return panel_search.search(q, config)
 
 
+class LazyToolboxSearch(ToolBoxSearch):
+    """Drop-in for :class:`ToolBoxSearch` in lazy-toolbox mode.
+
+    The populator (``galaxy.tool_source_store.populator``) builds and owns
+    the whoosh index; this class is a thin reader that opens it on each
+    query. Per-panel-view fan-out is collapsed: ``search`` ignores
+    ``panel_view`` and reads the single populator-owned index.
+
+    ``build_index`` is a no-op (the populator's job). ``index_count`` is
+    still incremented so :func:`galaxy.queue_worker.rebuild_toolbox_search_index`
+    keeps its watermark check happy — it stops at "in sync with the
+    toolbox reload count" without re-building anything.
+    """
+
+    def __init__(self, config: GalaxyAppConfiguration) -> None:
+        # Skip ToolBoxSearch.__init__ — it walks ``toolbox.panel_views()`` and
+        # builds a ToolPanelViewSearch per view. Under lazy mode the
+        # populator owns one whoosh index for the default store; per-view
+        # filtering is a follow-up if needed.
+        self.config = config
+        self.panel_searches: dict[str, ToolPanelViewSearch] = {}
+        self.index_count = -1
+
+    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+        # Populator side owns whoosh writes; bump the watermark so the
+        # rebuild_toolbox_search_index control task observes "in sync".
+        self.index_count += 1
+
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
+        # Lazy import: avoids pulling populator's deps into module load.
+        from galaxy.tool_source_store.populator import (
+            DEFAULT_STORE_NAME,
+            whoosh_dir_for_store,
+        )
+        from galaxy.tool_source_store.search import (
+            ToolSearchTuning,
+            ToolWhooshIndex,
+        )
+
+        index_dir = whoosh_dir_for_store(getattr(config, "tool_search_index_dir", None), DEFAULT_STORE_NAME)
+        if index_dir is None:
+            return []
+        searcher = ToolWhooshIndex(index_dir=index_dir, tuning=ToolSearchTuning.from_config(config))
+        return searcher.search(q, limit=int(getattr(config, "tool_search_limit", 20)))
+
+
 class ToolPanelViewSearch:
     """
     Support searching tools in a toolbox. This implementation uses

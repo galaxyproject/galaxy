@@ -30,10 +30,6 @@ from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
-from galaxy.tool_source_store.search import (
-    ToolSearchTuning,
-    ToolWhooshIndex,
-)
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
@@ -306,11 +302,6 @@ class LazyToolBox(ToolBox):
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
-        # Whoosh search infrastructure — opened lazily on first ``search_tools``
-        # call. The populator owns the index; this slot is just a per-process
-        # cached reader. ``invalidate_index_cache`` clears it so peer-process
-        # populator runs are picked up on the next query.
-        self._whoosh_search_index: Optional[ToolWhooshIndex] = None
         # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
         # before the eager walk runs.
         self._tool_index: Optional[ToolIndex] = None
@@ -863,10 +854,6 @@ class LazyToolBox(ToolBox):
         # peer-process installs (which only update the persisted index)
         # are reachable via short-id lookups in this process.
         self._rebuild_shed_short_id_map()
-        # Drop the cached whoosh reader; the populator may have rebuilt the
-        # on-disk index under us, and the next ``search_tools`` should
-        # re-open it.
-        self._whoosh_search_index = None
         # Wire newly-indexed entries (e.g. shed-install partial updates from
         # a peer process) into this process's in-memory registries as
         # ``LazyTool`` stubs. Without this, ``/api/tools`` would return the
@@ -1165,48 +1152,6 @@ class LazyToolBox(ToolBox):
             return self._tool_index.get(tool_id)
         return None
 
-    def _get_search_index(self) -> Optional[ToolWhooshIndex]:
-        """Return the cached :class:`ToolWhooshIndex`, opening it on first use.
-
-        The on-disk index is built by the populator
-        (``galaxy.tool_source_store.populator`` after every ``store_index``
-        write). This method opens — never builds. ``invalidate_index_cache``
-        clears the cached reference so a peer-process populator run is
-        picked up on the next query.
-
-        Returns ``None`` only when ``config.tool_search_index_dir`` is unset
-        (search disabled by config); a missing/unreadable on-disk index is
-        surfaced by ``ToolWhooshIndex.search`` itself.
-        """
-        if self._whoosh_search_index is not None:
-            return self._whoosh_search_index
-        from galaxy.tool_source_store.populator import (
-            DEFAULT_STORE_NAME,
-            whoosh_dir_for_store,
-        )
-
-        index_dir = whoosh_dir_for_store(self.app.config.tool_search_index_dir, DEFAULT_STORE_NAME)
-        if index_dir is None:
-            return None
-        tuning = ToolSearchTuning.from_config(self.app.config)
-        self._whoosh_search_index = ToolWhooshIndex(index_dir=index_dir, tuning=tuning)
-        return self._whoosh_search_index
-
-    def search_tools(self, query: str, limit: int = 50) -> list[ToolIndexEntry]:
-        """Rank index entries against ``query`` using Whoosh (BM25F).
-
-        The whoosh index is owned by the populator; this method is read-only.
-        On missing / unreadable index, ``ToolWhooshIndex.search`` raises —
-        operators see the error in the API response with a clear "run the
-        populator" pointer instead of a silently-degraded scorer response.
-        """
-        if self._tool_index is None:
-            return []
-        searcher = self._get_search_index()
-        if searcher is None:
-            return self._tool_index.search(query, limit=limit)
-        ids = searcher.search(query, limit=limit)
-        return [entry for entry in (self._tool_index.entries.get(tool_id) for tool_id in ids) if entry is not None]
 
     # === Required property overrides ===
 

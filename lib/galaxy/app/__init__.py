@@ -176,7 +176,10 @@ from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
 from galaxy.tools.evaluation import ToolTemplatingException
-from galaxy.tools.search import ToolBoxSearch
+from galaxy.tools.search import (
+    LazyToolboxSearch,
+    ToolBoxSearch,
+)
 from galaxy.tools.special_tools import load_lib_tools
 from galaxy.tours import (
     build_tours_registry,
@@ -403,10 +406,15 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self._init_container_finder()
         self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
-        self.toolbox_search = self._register_singleton(
-            ToolBoxSearch,
-            ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
-        )
+        if self._use_lazy_toolbox():
+            # Populator owns the whoosh index in lazy mode; the toolbox search
+            # singleton is a thin reader. See ``LazyToolboxSearch``.
+            search_singleton: ToolBoxSearch = LazyToolboxSearch(self.config)
+        else:
+            search_singleton = ToolBoxSearch(
+                self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help
+            )
+        self.toolbox_search = self._register_singleton(ToolBoxSearch, search_singleton)
 
     def _init_tool_source_store(self) -> None:
         """Initialize the tool source store for efficient tool loading.
