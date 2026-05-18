@@ -503,53 +503,83 @@ def populate_store(
     rebuild_index: bool = False,
     target: Optional[str] = None,
 ) -> dict[str, int]:
-    """
-    Main population function.
+    """CLI entry: load Galaxy config from disk, then delegate to
+    :func:`populate_store_inline` for the actual work.
 
-    Args:
-        config_file: Path to Galaxy configuration file.
-        dry_run: If True, don't actually store anything.
-        incremental: If True, skip already stored tools.
-        pattern: Optional tool ID pattern to filter.
-        parallel: Number of parallel workers.
-        verbose: Enable verbose logging.
-        rebuild_index: Rebuild index after population.
-        target: If set, restrict population to the named store only.
-            Use ``__default__`` for the default store. Without ``target``,
-            every writable store is populated in one run.
-
-    Returns:
-        Statistics dictionary with counts.
+    ``rebuild_index`` is accepted for backwards compat but has no effect:
+    the index is rebuilt on every non-dry-run.
     """
     from galaxy.config import GalaxyAppConfiguration
     from galaxy.datatypes.registry import Registry
     from galaxy.model import set_datatypes_registry
     from galaxy.model.mapping import init_models_from_config
+    from galaxy.util.properties import load_app_properties
+
+    log.info("Loading Galaxy configuration...")
+    registry = Registry()
+    registry.load_datatypes()
+    set_datatypes_registry(registry)
+    properties = load_app_properties(config_file=config_file, config_section="galaxy")
+    config = GalaxyAppConfiguration(**properties)
+    log.info(f"Connecting to database: {config.database_connection[:50]}...")
+    model = init_models_from_config(config)
+    return populate_store_inline(
+        config,
+        model.context,
+        pattern=pattern,
+        parallel=parallel,
+        dry_run=dry_run,
+        incremental=incremental,
+        verbose=verbose,
+        target=target,
+    )
+
+
+def populate_store_inline(
+    config,
+    sa_session,
+    *,
+    paths: Optional[list[str]] = None,
+    pattern: Optional[str] = None,
+    parallel: int = 4,
+    dry_run: bool = False,
+    incremental: bool = True,
+    verbose: bool = False,
+    rebuild_whoosh: bool = True,
+    broadcast: bool = False,
+    target: Optional[str] = None,
+    prune: bool = False,
+) -> dict[str, int]:
+    """In-process populator entry.
+
+    Caller supplies an already-built ``GalaxyAppConfiguration`` and a
+    SQLAlchemy session, so cold-start auto-populate (LazyToolBox boot path)
+    and shed-install reroute (``tool_panel_manager``) don't pay the config-
+    load cost a second time.
+
+    ``paths`` semantics:
+
+    - ``paths=None`` (default): full scan. Every discovered tool gets
+      indexed; the index is **replaced** per writable store.
+    - ``paths=[...]``: partial scan restricted to the listed paths. The
+      existing index for each store is loaded, the entries for the matched
+      paths are added/replaced, and the merged result is written back.
+      Other entries are untouched.
+
+    ``prune=True`` forces full-scan replacement even when ``paths`` is set,
+    matching :func:`reconcile_index`.
+
+    ``broadcast=True`` sends a ``reload_tool_source_cache`` control task
+    after every store write succeeds, so peer Galaxy processes refresh
+    their cached index. Shed-install and ``reset_shed_tools`` set this.
+    """
     from galaxy.tool_source_store import (
         ReadOnlyStoreError,
         StoredToolSource,
     )
-    from galaxy.util.properties import load_app_properties
-
-    log.info("Loading Galaxy configuration...")
-
-    # Initialize datatypes registry (required for model)
-    registry = Registry()
-    registry.load_datatypes()
-    set_datatypes_registry(registry)
-
-    # Load app properties from config file, then create config object
-    properties = load_app_properties(config_file=config_file, config_section="galaxy")
-    config = GalaxyAppConfiguration(**properties)
-
-    log.info(f"Connecting to database: {config.database_connection[:50]}...")
-
-    # Initialize model from config
-    model = init_models_from_config(config)
 
     log.info(f"Building tool source stores (default backend: {config.tool_source_store})...")
-
-    stores = _build_stores(config, model.context)
+    stores = _build_stores(config, sa_session)
     conf_to_store = _build_conf_to_store_map(config)
 
     if target is not None:
@@ -588,6 +618,11 @@ def populate_store(
         tool_specs.append((d, store_name))
 
     log.info(f"Found {len(discovered_tools)} tool files; routing {len(tool_specs)} to writable stores")
+
+    if paths is not None:
+        paths_set = {str(p) for p in paths}
+        tool_specs = [(d, n) for d, n in tool_specs if d.path in paths_set]
+        log.info(f"Restricted to {len(tool_specs)} tools matching {len(paths_set)} requested path(s)")
 
     if pattern:
         tool_specs = [(d, n) for d, n in tool_specs if pattern in d.path]
@@ -671,16 +706,25 @@ def populate_store(
     log.info(f"Population complete: {stats}")
 
     if not dry_run:
-        # Build a fresh ToolIndex per writable store from this run's parsed
-        # sources, including section metadata and conf-level labels/hidden
-        # captured at discovery time. This is the seam the prior LazyToolBox
+        # Build / update the ToolIndex per writable store from this run's
+        # parsed sources. Section metadata and conf-level labels/hidden are
+        # already on each entry (build_index_entry_from_source threads them
+        # off DiscoveredTool) — this is the seam the prior LazyToolBox
         # post-walk syncs (_stamp_panel_sections_onto_index,
         # _sync_tool_mutations_to_index) replaced ad-hoc.
         from galaxy.tool_source_store.index import ToolIndex
 
+        full_scan = paths is None or prune
         for store_name in sorted(writable_names):
             triples = parsed_per_store[store_name]
-            index = ToolIndex()
+            if full_scan:
+                # Replace the index entirely from this run's discoveries.
+                index = ToolIndex()
+            else:
+                # Partial update: load the existing index, then add/replace
+                # entries for the paths we just rescanned. Anything else
+                # stays as-is (use reconcile_index for full prune).
+                index = stores[store_name].load_index() or ToolIndex()
             for d, stored, tool_source in triples:
                 entry = build_index_entry_from_source(d, stored, tool_source)
                 if entry is not None:
@@ -689,9 +733,10 @@ def populate_store(
                 stores[store_name].store_index(index)
                 stores[store_name].commit()
                 log.info(
-                    "Persisted ToolIndex for store %s (%d entries)",
+                    "Persisted ToolIndex for store %s (%d entries, mode=%s)",
                     store_name,
                     len(index.entries),
+                    "full" if full_scan else "partial",
                 )
             except Exception as e:
                 log.warning("store_index for %s raised: %s", store_name, e)
@@ -699,9 +744,62 @@ def populate_store(
             # Rebuild the whoosh search index from the persisted ToolIndex.
             # Single-writer principle: the toolbox stops re-building this in
             # the search hot path.
-            _build_whoosh_for_store(config, store_name, index)
+            if rebuild_whoosh:
+                _build_whoosh_for_store(config, store_name, index)
+
+        if broadcast:
+            # Tell peer Galaxy processes to drop their cached index so the
+            # next request reloads what we just wrote. ``send_reload_notification``
+            # tolerates a missing AMQP config (logs WARN, returns False).
+            send_reload_notification(config)
 
     return stats
+
+
+def populate_for_paths(
+    config,
+    sa_session,
+    paths: list[str],
+    *,
+    rebuild_whoosh: bool = True,
+) -> dict[str, int]:
+    """Partial-update populator entry for shed installs.
+
+    Restricts the scan to ``paths`` (typically the freshly-written tool
+    files of a newly-installed repository), adds/replaces their index
+    entries, and broadcasts ``reload_tool_source_cache`` so peer Galaxy
+    processes pick up the new tools.
+    """
+    return populate_store_inline(
+        config,
+        sa_session,
+        paths=paths,
+        rebuild_whoosh=rebuild_whoosh,
+        broadcast=True,
+    )
+
+
+def reconcile_index(
+    config,
+    sa_session,
+    *,
+    rebuild_whoosh: bool = True,
+) -> dict[str, int]:
+    """Full prune-enabled scan; used by ``reset_shed_tools``.
+
+    Walks every config-discovered tool and replaces the index per writable
+    store with the result. Anything previously indexed that no longer has a
+    matching ``<tool>`` entry in any conf is dropped. Broadcasts
+    ``reload_tool_source_cache`` so peer processes drop their stale view.
+    """
+    return populate_store_inline(
+        config,
+        sa_session,
+        paths=None,
+        prune=True,
+        rebuild_whoosh=rebuild_whoosh,
+        broadcast=True,
+    )
 
 
 def watch_mode(
