@@ -26,14 +26,19 @@ from galaxy.tool_source_store import (
     StoredToolSource,
     ToolSourceStore,
 )
+from galaxy.tool_source_store.discover import discover_tools
 from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
+from galaxy.tool_source_store.populator import populate_store_inline
 from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.toolbox.panel import panel_item_types
+from galaxy.tool_util.toolbox.panel import (
+    panel_item_types,
+    ToolSection,
+)
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -108,6 +113,9 @@ class LazyTool:
         {
             "to_archive",  # tool packaging endpoint
             "build_dependency_cache",  # explicit cache-warming
+            "tool_requirements",  # container_resolvers/toolbox admin endpoint
+            "containers",  # container resolution
+            "requirements",  # alias used by some callers
         }
     )
 
@@ -397,8 +405,6 @@ class LazyToolBox(ToolBox):
         if not self._tool_index or not self._tool_index.entries:
             return True
         # The discover walker reads tool confs only; no DB round-trip per file.
-        from galaxy.tool_source_store.discover import discover_tools
-
         try:
             for d in discover_tools(self.app.config):
                 if self._store.get_by_source_path(d.path) is None:
@@ -414,12 +420,10 @@ class LazyToolBox(ToolBox):
         Wraps ``populator.populate_store_inline`` so boot can use the same
         single-writer machinery as the CLI script and the shed-install
         reroute. Failures here surface to the operator: the eager walk that
-        follows calls ``create_tool``, which raises on index miss, so a
-        broken populator (missing perms, bad config) fails boot loudly
-        rather than degrading silently.
+        follows calls ``create_tool``, which falls through to the parent
+        on miss — a broken populator surfaces immediately on first tool
+        load instead of degrading silently.
         """
-        from galaxy.tool_source_store.populator import populate_store_inline
-
         log.info("LazyToolBox: running populator inline to backfill the index")
         populate_store_inline(
             self.app.config,
@@ -635,30 +639,17 @@ class LazyToolBox(ToolBox):
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
         installs via ``tool_panel_manager.add_to_tool_panel``) is the single
-        writer of the index. On an unexpected miss we attempt a one-shot
-        ``populate_single_path`` to cover ad-hoc loads (``load_hidden_lib_tool``
-        for ``set_metadata_tool.xml`` and friends — Galaxy-internal tools
-        loaded after boot from outside any tool_conf). Only fall through to
-        a hard raise if even that recovery doesn't yield an entry.
+        writer of the index, so the common path lands in the ``LazyTool``
+        branch. On miss we delegate to the eager parent: ``load_hidden_lib_tool``
+        ( ``set_metadata_tool.xml`` and friends) and any other ad-hoc load
+        from outside a tool_conf parses eagerly and registers as a real
+        ``Tool``. No store write — these tools are never re-loaded from the
+        index.
         """
         entry = self._resolve_index_entry(config_file, guid)
-        if entry is None and config_file is not None and self._store is not None:
-            from galaxy.tool_source_store.populator import populate_single_path
-
-            if populate_single_path(self.app.config, self.app.model.context, str(config_file)):
-                # Drop the cached index so the next resolve sees the new row.
-                try:
-                    self._store.invalidate_index_cache()
-                except Exception as e:
-                    log.debug("invalidate_index_cache after populate_single_path raised: %s", e)
-                self._tool_index = self._store.load_index() or self._tool_index
-                entry = self._resolve_index_entry(config_file, guid)
         if entry is None:
-            raise RuntimeError(
-                "LazyToolBox.create_tool: no index entry for "
-                f"(config_file={config_file!r}, guid={guid!r}). The populator "
-                "owns the index — run scripts/tool_source/populate_store.py or "
-                "call galaxy.tool_source_store.populator.populate_for_paths."
+            return super().create_tool(
+                config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds
             )
         # LazyTool is duck-typed against Tool — the eager pipeline (audited
         # in plans/witty-drifting-clock.md) only consults attributes the
@@ -913,8 +904,6 @@ class LazyToolBox(ToolBox):
         peer-process populator run added new entries that this process should
         surface immediately.
         """
-        from galaxy.tool_util.toolbox.panel import ToolSection
-
         stub = LazyTool(
             entry,
             materialize_callback=self._materialize_for_lazy_tool,

@@ -265,13 +265,26 @@ def test_resolve_index_entry_returns_none_when_nothing_matches():
     assert box._resolve_index_entry(None, None) is None
 
 
-def test_create_tool_raises_on_index_miss():
-    # The populator owns the index now; a miss in create_tool is a contract
-    # failure, not a recovery path. Surface it with a clear message that
-    # points operators at the populator entry.
+def test_create_tool_falls_through_to_eager_on_index_miss(monkeypatch):
+    # The populator owns the index for everything that lives in a tool_conf;
+    # ad-hoc loads (``load_hidden_lib_tool`` for ``set_metadata_tool.xml`` and
+    # friends) miss the index and delegate to the eager ``ToolBox.create_tool``
+    # to parse + register as a real Tool. The lazy path's only responsibility
+    # is "return a stub on hit"; misses are not the toolbox's contract.
     box = _seam_box()
-    with pytest.raises(RuntimeError, match="no index entry"):
-        box.create_tool(config_file="/tools/unknown.xml", guid=None)
+    called: list[tuple] = []
+
+    def _fake_super_create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds):
+        called.append((config_file, guid))
+        return object()
+
+    # Patch the parent's create_tool on the type so super() routes here.
+    from galaxy.tools import ToolBox
+
+    monkeypatch.setattr(ToolBox, "create_tool", _fake_super_create_tool, raising=True)
+    result = box.create_tool(config_file="/tools/unknown.xml", guid=None)
+    assert called == [("/tools/unknown.xml", None)]
+    assert result is not None
 
 
 def test_load_tool_from_cache_returns_none():

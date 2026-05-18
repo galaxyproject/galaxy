@@ -44,6 +44,24 @@ from typing import (
     Optional,
 )
 
+from galaxy.tool_source_store import (
+    _build_default_store,
+    build_named_store,
+    ReadOnlyStoreError,
+    StoredToolSource,
+    ToolSourceStore,
+)
+from galaxy.tool_source_store.discover import (
+    discover_tools,
+    DiscoveredTool,
+)
+from galaxy.tool_source_store.index import (
+    ToolIndex,
+    ToolIndexEntry,
+)
+from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.toolbox.parser import get_toolbox_parser
+
 log = logging.getLogger(__name__)
 
 
@@ -261,8 +279,6 @@ class ToolFileWatcher:
             # Legacy/no-session caller: degrade to store-only update so the
             # watcher still keeps StoredToolSource current. The next full
             # populator run picks up the index entry.
-            from galaxy.tool_source_store import StoredToolSource
-
             stored = StoredToolSource(
                 hash=content_hash,
                 tool_source_class="XmlToolSource",
@@ -366,11 +382,6 @@ def build_index_entry_from_source(
     Returns ``None`` if the tool source does not yield a usable id; callers
     log + skip in that case.
     """
-    # Avoid importing ToolIndexEntry at module load time — only the populator's
-    # post-walk index-build step needs it, and tests that exercise the
-    # CLI plumbing alone shouldn't pull the whole index machinery in.
-    from galaxy.tool_source_store.index import ToolIndexEntry
-
     try:
         tool_id = tool_source.parse_id() or stored.tool_id
         if not tool_id:
@@ -456,15 +467,6 @@ def build_index_entry_from_source(
 def _build_stores(config, sa_session) -> dict[str, Any]:
     """Build {store_name: store_instance} for the default + every named store
     referenced from any tool_conf."""
-    # Lazy imports: avoids loading the store factory on `--help` and keeps
-    # the script's startup snappy for trivial invocations.
-    from galaxy.tool_source_store import (
-        _build_default_store,
-        build_named_store,
-        ToolSourceStore,
-    )
-    from galaxy.tool_util.toolbox.parser import get_toolbox_parser
-
     stores: dict[str, ToolSourceStore] = {
         DEFAULT_STORE_NAME: _build_default_store(config, sa_session),
     }
@@ -491,9 +493,6 @@ def _build_stores(config, sa_session) -> dict[str, Any]:
 
 def _build_conf_to_store_map(config) -> dict[str, str]:
     """Map each tool_conf path to its declared store name (default if absent)."""
-    # Lazy import: matches _build_stores; not needed for --help.
-    from galaxy.tool_util.toolbox.parser import get_toolbox_parser
-
     out: dict[str, str] = {}
     for path in config.tool_configs or []:
         try:
@@ -592,11 +591,6 @@ def populate_store_inline(
     after every store write succeeds, so peer Galaxy processes refresh
     their cached index. Shed-install and ``reset_shed_tools`` set this.
     """
-    from galaxy.tool_source_store import (
-        ReadOnlyStoreError,
-        StoredToolSource,
-    )
-
     log.info(f"Building tool source stores (default backend: {config.tool_source_store})...")
     stores = _build_stores(config, sa_session)
     conf_to_store = _build_conf_to_store_map(config)
@@ -618,12 +612,6 @@ def populate_store_inline(
     log.info("Discovering tools from configuration...")
 
     stats = {"processed": 0, "stored": 0, "skipped": 0, "errors": 0}
-
-    # Use the discover module to find all tool files from config
-    from galaxy.tool_source_store.discover import (
-        discover_tools,
-        DiscoveredTool,
-    )
 
     discovered_tools = list(discover_tools(config, include_bundled=True))
 
@@ -647,10 +635,6 @@ def populate_store_inline(
         tool_specs = [(d, n) for d, n in tool_specs if pattern in d.path]
         log.info(f"Filtered to {len(tool_specs)} tools matching '{pattern}'")
 
-    # Import tool parsing utilities
-    from galaxy.tool_util.parser import get_tool_source
-    from galaxy.util import xml_to_string
-
     def process_tool(
         d: DiscoveredTool, store_name: str
     ) -> tuple[str, DiscoveredTool, str, Optional[StoredToolSource], Optional[Any], Optional[str]]:
@@ -663,10 +647,11 @@ def populate_store_inline(
         """
         path = d.path
         try:
-            # Galaxy's tool source parser handles macro expansion.
+            # Galaxy's tool source parser handles macro expansion (XML) and
+            # YAML user-tool / CWL parsing transparently; ``to_string`` then
+            # serialises whatever the source class needs to round-trip.
             tool_source = get_tool_source(config_file=path)
-            root = tool_source.xml_tree.getroot()
-            expanded_content = xml_to_string(root, pretty=True)
+            expanded_content = tool_source.to_string()
             content_hash = compute_hash(expanded_content)
             target_store = stores[store_name]
 
@@ -740,8 +725,6 @@ def populate_store_inline(
         # off DiscoveredTool) — this is the seam the prior LazyToolBox
         # post-walk syncs (_stamp_panel_sections_onto_index,
         # _sync_tool_mutations_to_index) replaced ad-hoc.
-        from galaxy.tool_source_store.index import ToolIndex
-
         full_scan = paths is None or prune
         for store_name in sorted(writable_names):
             triples = parsed_per_store[store_name]
@@ -816,84 +799,6 @@ def populate_for_paths(
     )
 
 
-def populate_single_path(config, sa_session, path: str) -> bool:
-    """Index a single tool file by path, bypassing ``discover_tools``.
-
-    Used by ``LazyToolBox.create_tool`` to recover from index misses on
-    paths the populator's conf walk doesn't cover — typically lib tools
-    loaded via ``load_hidden_lib_tool`` (``set_metadata_tool.xml`` and
-    friends), which live under ``lib/galaxy/`` rather than any tool_conf.
-
-    Parses the file, builds a ``StoredToolSource`` and ``ToolIndexEntry``
-    (with no panel section, since the tool isn't in any conf), persists to
-    every writable store, and updates the cached index. Returns True on
-    success.
-    """
-    import os
-
-    from galaxy.tool_source_store import StoredToolSource
-    from galaxy.tool_source_store.discover import DiscoveredTool
-    from galaxy.tool_source_store.index import ToolIndex
-    from galaxy.tool_util.parser import get_tool_source
-    from galaxy.util import xml_to_string
-
-    if not os.path.exists(path):
-        return False
-    try:
-        tool_source = get_tool_source(config_file=path)
-        root = tool_source.xml_tree.getroot()
-        expanded_content = xml_to_string(root, pretty=True)
-    except Exception as e:
-        log.warning("populate_single_path: parse of %s failed: %s", path, e)
-        return False
-
-    content_hash = compute_hash(expanded_content)
-    stored = StoredToolSource(
-        hash=content_hash,
-        tool_source_class=type(tool_source).__name__,
-        raw_source=expanded_content,
-        tool_id=tool_source.parse_id(),
-        tool_version=tool_source.parse_version(),
-        tool_dir=str(Path(path).parent),
-        source_path=str(path),
-        stored_at=datetime.now(timezone.utc),
-    )
-    discovered = DiscoveredTool(path=str(path), tool_conf="<lib-tool>", tool_path=None)
-    entry = build_index_entry_from_source(discovered, stored, tool_source)
-    if entry is None:
-        return False
-
-    stores = _build_stores(config, sa_session)
-    for store_name, store in stores.items():
-        if store.read_only:
-            continue
-        try:
-            store.store(stored)
-            store.commit()
-        except Exception as e:
-            log.warning("populate_single_path: store(%s) for %s raised: %s", store_name, path, e)
-            if sa_session is not None:
-                try:
-                    sa_session.rollback()
-                except Exception:
-                    pass
-            continue
-        # Merge entry into the existing index (partial-update semantics).
-        try:
-            index = store.load_index() or ToolIndex()
-            index.add_entry(entry)
-            store.store_index(index)
-            store.commit()
-        except Exception as e:
-            log.warning("populate_single_path: store_index for %s raised: %s", store_name, e)
-            if sa_session is not None:
-                try:
-                    sa_session.rollback()
-                except Exception:
-                    pass
-    return True
-
-
 def reconcile_index(
     config,
     sa_session,
@@ -960,8 +865,6 @@ def watch_mode(
     store = build_tool_source_store(config, model.context)
 
     # Determine directories to watch from tool configurations
-    from galaxy.tool_source_store.discover import discover_tools
-
     tools_dirs_set: set[Path] = set()
     for discovered in discover_tools(config, include_bundled=True):
         tool_dir = Path(discovered.tool_path) if discovered.tool_path else None
