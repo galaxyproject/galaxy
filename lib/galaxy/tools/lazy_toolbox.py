@@ -867,6 +867,75 @@ class LazyToolBox(ToolBox):
         # on-disk index under us, and the next ``search_tools`` should
         # re-open it.
         self._whoosh_search_index = None
+        # Wire newly-indexed entries (e.g. shed-install partial updates from
+        # a peer process) into this process's in-memory registries as
+        # ``LazyTool`` stubs. Without this, ``/api/tools`` would return the
+        # new ids only after the next full toolbox boot.
+        self._register_new_index_entries_as_stubs()
+
+    def _register_new_index_entries_as_stubs(self) -> None:
+        """For every index entry not yet in ``_tools_by_id``, build a
+        ``LazyTool`` stub, slot it into the toolbox registries, and place it
+        under its declared panel section.
+
+        Mirrors what the eager walk does at boot for each ``<tool>`` element,
+        but for a single entry already fully described by the populator.
+        """
+        if self._tool_index is None:
+            return
+        for tool_id, entry in self._tool_index.entries.items():
+            if tool_id in self._tools_by_id:
+                continue
+            try:
+                self._register_lazy_entry(entry)
+            except Exception as e:
+                log.warning("Failed to register new index entry %s: %s", tool_id, e)
+
+    def _register_lazy_entry(self, entry: ToolIndexEntry) -> "LazyTool":
+        """Construct + slot a ``LazyTool`` stub for ``entry``.
+
+        Inverse of :meth:`_register_loaded_tool`: same bookkeeping, but for
+        the stub side. Used by :meth:`invalidate_index_cache` when a
+        peer-process populator run added new entries that this process should
+        surface immediately.
+        """
+        from galaxy.tool_util.toolbox.panel import ToolSection
+
+        stub = LazyTool(
+            entry,
+            materialize_callback=self._materialize_for_lazy_tool,
+            is_admin_user=self.app.config.is_admin_user,
+        )
+        tool_id = entry.id
+        self._tools_by_id[tool_id] = stub  # type: ignore[assignment]
+        version = entry.version
+        self._tool_versions_by_id.setdefault(tool_id, {})[version or ""] = stub  # type: ignore[assignment]
+        old_id = stub.old_id
+        if old_id and old_id != tool_id:
+            bucket = self._tools_by_old_id.setdefault(old_id, [])
+            if not any(getattr(t, "id", None) == tool_id for t in bucket):
+                bucket.append(stub)  # type: ignore[arg-type]
+        if entry.uuid:
+            self._tools_by_uuid[entry.uuid] = stub  # type: ignore[assignment]
+        # Lineage: LazyLineageMap builds it from entries_by_version, which the
+        # populator wrote on the previous step, so .get() returns the right
+        # ToolLineage; register() is the fallback for an as-yet-unseen id.
+        stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)
+        # Place into the panel. The populator stamped panel_section_id /
+        # panel_section_name onto the entry; create the ToolSection if it
+        # doesn't already exist (peer-process install of the first tool in
+        # a new section).
+        section_id = entry.panel_section_id
+        if section_id:
+            section_key = f"section_{section_id}"
+            section = self._tool_panel.get(section_key)
+            if not isinstance(section, ToolSection):
+                section = ToolSection({"id": section_id, "name": entry.panel_section_name or section_id})
+                self._tool_panel[section_key] = section
+            section.elems.append_tool(stub)
+        else:
+            self._tool_panel[f"tool_{tool_id}"] = stub  # type: ignore[assignment]
+        return stub
 
     def _register_loaded_tool(self, tool: "Tool") -> None:
         """Register a lazily-loaded tool in the toolbox registries."""
