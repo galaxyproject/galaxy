@@ -79,6 +79,236 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+# Set LAZY_TOOL_PERMISSIVE=1 to downgrade unknown-attribute ``NotImplementedError``s
+# on a ``LazyTool`` to a warning + on-demand materialisation. Off by default so
+# accidental materialisation paths show up in CI / dev as clear failures.
+_LAZY_TOOL_PERMISSIVE = os.environ.get("LAZY_TOOL_PERMISSIVE") == "1"
+
+
+def _entry_attr(name: str, entry_attr: Optional[str] = None, mutable: bool = False):
+    """Build a ``LazyTool`` property forwarding ``name`` to ``ToolIndexEntry``.
+
+    ``_overrides`` shadows the entry so writes from the eager pipeline
+    (``tool.hidden = True``, ``tool.tool_shed = ...``) round-trip through
+    materialisation.
+    """
+    src = entry_attr or name
+
+    def getter(self):
+        overrides = self._overrides
+        if name in overrides:
+            return overrides[name]
+        return getattr(self._entry, src)
+
+    if mutable:
+
+        def setter(self, value):
+            self._overrides[name] = value
+
+        return property(getter, setter)
+    return property(getter)
+
+
+class LazyTool:
+    """Lightweight stand-in for ``galaxy.tools.Tool`` backed by a ``ToolIndexEntry``.
+
+    Returned by :meth:`LazyToolBox.create_tool` whenever the tool's source is
+    already persisted in the tool source store. The eager
+    ``AbstractToolBox._init_tools_from_configs`` pipeline reads and mutates
+    a narrow attribute surface (audited at plan time — see
+    ``.claude/plans/witty-drifting-clock.md``); ``LazyTool`` forwards every
+    read off ``ToolIndexEntry`` and stores writes in ``_overrides`` so they
+    are re-applied if the stub is later materialised.
+
+    **Strict by default.** Any attribute outside the explicit surface raises
+    :class:`NotImplementedError` so accidental materialisations show up at
+    test time as clear failures rather than silent multi-second parse stalls.
+    Set ``LAZY_TOOL_PERMISSIVE=1`` to downgrade to warn + materialise while
+    debugging.
+    """
+
+    __slots__ = ("_entry", "_materialize_cb", "_is_admin_user", "_overrides", "_real", "_lineage")
+
+    # ``watch_tool`` iterates ``tool._macro_paths`` for file-watching; lazy
+    # entries are content-addressed in the store, file-watching is a no-op.
+    # Class-level so it isn't writable on the instance.
+    _macro_paths: tuple = ()
+
+    # Methods we accept will materialise a real Tool. Add to this set only
+    # when the parse cost is genuinely warranted at the call site.
+    _MATERIALIZE_OK = frozenset(
+        {
+            "to_archive",  # tool packaging endpoint
+            "build_dependency_cache",  # explicit cache-warming
+        }
+    )
+
+    # --- forwarded read-only entry surface ---
+    id = _entry_attr("id")
+    uuid = _entry_attr("uuid")
+    name = _entry_attr("name", mutable=True)
+    description = _entry_attr("description")
+    tool_type = _entry_attr("tool_type")
+    tags = _entry_attr("tags")
+    require_login = _entry_attr("require_login")
+    edam_operations = _entry_attr("edam_operations")
+    edam_topics = _entry_attr("edam_topics")
+
+    # --- forwarded mutable entry surface ---
+    # Eager ``_load_tool_tag_set`` (base.py:964-987) mutates these post-create.
+    version = _entry_attr("version", mutable=True)
+    hidden = _entry_attr("hidden", mutable=True)
+    labels = _entry_attr("labels", mutable=True)
+    tool_shed = _entry_attr("tool_shed", mutable=True)
+    repository_name = _entry_attr("repository_name", mutable=True)
+    repository_owner = _entry_attr("repository_owner", mutable=True)
+    # Eager naming: ``installed_changeset_revision`` (vs entry's ``changeset_revision``).
+    installed_changeset_revision = _entry_attr(
+        "installed_changeset_revision",
+        entry_attr="changeset_revision",
+        mutable=True,
+    )
+
+    def __init__(self, entry: "ToolIndexEntry", materialize_callback, is_admin_user) -> None:
+        self._entry = entry
+        self._materialize_cb = materialize_callback
+        self._is_admin_user = is_admin_user
+        self._overrides: dict[str, Any] = {}
+        self._real: Optional[Tool] = None
+        # Assigned by AbstractToolBox.__add_tool via _lineage_map.register(tool).
+        self._lineage: Optional[Any] = None
+
+    # --- derived properties ---
+    @property
+    def guid(self):
+        return self._overrides.get("guid") or (self._entry.id if "/repos/" in self._entry.id else None)
+
+    @guid.setter
+    def guid(self, value):
+        self._overrides["guid"] = value
+
+    @property
+    def old_id(self) -> str:
+        if "old_id" in self._overrides:
+            return self._overrides["old_id"]
+        short = extract_short_id_from_guid(self._entry.id)
+        return short or self._entry.id
+
+    @property
+    def config_file(self) -> Optional[str]:
+        # ``StoredToolSource.source_path`` was added on this branch precisely
+        # so the lazy path can resolve a tool back to its on-disk conf without
+        # parsing. Older entries serialised before that field exists return
+        # ``None`` — callers that need a real path (``_write_integrated_tool_panel_config_file``,
+        # ``get_externally_referenced_paths``) fall through to ``__getattr__``
+        # and materialise.
+        return getattr(self._entry, "source_path", None)
+
+    @property
+    def lineage(self):
+        return self._lineage
+
+    @property
+    def tool_errors(self):
+        return self._overrides.get("tool_errors")
+
+    @tool_errors.setter
+    def tool_errors(self, value):
+        self._overrides["tool_errors"] = value
+
+    # --- entry-only methods (no materialise) ---
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
+        """Mirror of :meth:`Tool.allow_user_access` derived from index metadata.
+
+        ``DataManagerTool`` overrides ``allow_user_access`` to require admin
+        (lib/galaxy/tools/__init__.py:3893). On the stub we can't dispatch
+        polymorphically on subclass, so branch on ``tool_type`` instead.
+        ``dynamic_tool`` (unprivileged-tool gating) is not in the index — fall
+        through to materialise via ``__getattr__`` for that one case if a
+        caller passes a dynamic tool. Stock filters never do.
+        """
+        if self.require_login and user is None:
+            return False
+        if self.tool_type == "data_manager":
+            if user is None or not bool(self._is_admin_user(user)):
+                if attempting_access:
+                    log.debug(
+                        "User (%s) attempted to access a data manager tool (%s), but is not an admin.",
+                        getattr(user, "id", None),
+                        self.id,
+                    )
+                return False
+        return True
+
+    def to_dict(self, trans=None, link_details: bool = False, tool_help: bool = False, **kw) -> dict[str, Any]:
+        """API serialisation. ``link_details=False`` stays on the entry fast path.
+
+        ``link_details=True`` (used by ``/api/tools/<id>/build``) needs the full
+        :meth:`Tool.to_dict` payload (parameters, citations, ...). That triggers
+        materialise. The default and EDAM panel listings call with
+        ``link_details=False`` and stay cheap.
+        """
+        if link_details:
+            return self._materialize().to_dict(trans, link_details=True, tool_help=tool_help, **kw)
+        entry = self._entry
+        return {
+            "id": self.id,
+            "name": self.name,
+            "version": self.version,
+            "description": self.description,
+            "labels": self.labels if self.labels else [],
+            "edam_operations": entry.edam_operations or [],
+            "edam_topics": entry.edam_topics or [],
+            "hidden": self.hidden,
+            "model_class": "Tool",
+            "panel_section_id": entry.panel_section_id,
+            "panel_section_name": entry.panel_section_name,
+            "link": f"/api/tools/{self.id}",
+            "min_width": -1,
+            "target": "galaxy_main",
+        }
+
+    # --- materialisation ---
+    def _materialize(self) -> "Tool":
+        if self._real is None:
+            real = self._materialize_cb(self._entry)
+            # Re-apply mutations the eager pipeline recorded against the stub
+            # before materialise (``hidden``, ``labels``, shed metadata, etc.).
+            for name, value in self._overrides.items():
+                try:
+                    setattr(real, name, value)
+                except Exception:
+                    log.debug("LazyTool._materialize could not re-apply override %r on %s", name, self.id)
+            if self._lineage is not None:
+                real._lineage = self._lineage
+            self._real = real
+        return self._real
+
+    # --- strict fallthrough ---
+    def __getattr__(self, name: str):
+        # Private/dunder attrs are never materialise triggers — surface as
+        # ``AttributeError`` so e.g. ``hasattr(tool, "__something__")`` stays cheap.
+        if name.startswith("_"):
+            raise AttributeError(name)
+        if name in self._MATERIALIZE_OK:
+            return getattr(self._materialize(), name)
+        if _LAZY_TOOL_PERMISSIVE:
+            log.warning(
+                "LazyTool.%r forced materialise of tool %r (LAZY_TOOL_PERMISSIVE=1); "
+                "add to the stub surface or _MATERIALIZE_OK to make this explicit.",
+                name,
+                self.id,
+            )
+            return getattr(self._materialize(), name)
+        raise NotImplementedError(
+            f"LazyTool.{name!r} is not on the stub surface for tool {self.id!r}. "
+            f"If this attribute can be read off ToolIndexEntry, add a forwarded "
+            f"property; if it genuinely needs a parsed Tool, add it to "
+            f"LazyTool._MATERIALIZE_OK. Set LAZY_TOOL_PERMISSIVE=1 to bypass "
+            f"this check while debugging."
+        )
+
+
 class DefaultToolPanelView(ToolPanelView):
     """Default tool panel view for LazyToolBox."""
 
@@ -1943,6 +2173,176 @@ class LazyToolBox(ToolBox):
             exact=exact,
             user=user,
         )
+
+    # === create_tool seam: return LazyTool stub when the index already has the source ===
+
+    def create_tool(self, config_file, tool_shed_repository=None, guid=None, **kwds) -> "Tool":
+        """Return a :class:`LazyTool` whenever the source is already in the store.
+
+        Fallthrough to the eager ``ToolBox.create_tool`` only when the index has no
+        entry — the parsed Tool is then persisted via :meth:`_persist_tool_source`
+        so the next boot sees it as a hit. The eager pipeline's downstream
+        mutations (``tool.hidden = True``, shed metadata, ``tool.labels = …``)
+        land in the stub's ``_overrides`` and survive any later materialisation.
+        """
+        entry = self._resolve_index_entry(config_file, guid)
+        if entry is not None:
+            # LazyTool is duck-typed against Tool — the eager pipeline (audited
+            # in plans/witty-drifting-clock.md) only consults attributes the
+            # stub forwards from ToolIndexEntry, with mutations stored on
+            # ``_overrides``.
+            return LazyTool(  # type: ignore[return-value]
+                entry,
+                materialize_callback=self._materialize_for_lazy_tool,
+                is_admin_user=self.app.config.is_admin_user,
+            )
+        tool = super().create_tool(config_file, tool_shed_repository=tool_shed_repository, guid=guid, **kwds)
+        self._persist_tool_source(tool, config_file, guid=guid)
+        return tool
+
+    def load_tool_from_cache(self, config_file, recover_tool: bool = False):
+        """Skip Galaxy's disk-backed ``ToolCache``.
+
+        The index + LRU + content-addressed store already plays that role.
+        Returning ``None`` keeps ``load_tool`` honest — every call lands in
+        ``create_tool``, where the seam can decide stub vs real.
+        """
+        return None
+
+    def add_tool_to_cache(self, tool, config_file) -> None:
+        """Bypass the disk ``ToolCache`` — see :meth:`load_tool_from_cache`."""
+        return None
+
+    def _resolve_index_entry(self, config_file, guid: Optional[str]) -> Optional[ToolIndexEntry]:
+        """Find a matching index entry for the (config_file, guid) pair, or ``None``."""
+        if self._tool_index is None:
+            return None
+        # Shed install: guid is authoritative — keyed identically in the index.
+        if guid:
+            entry = self._tool_index.entries.get(guid)
+            if entry is not None:
+                return entry
+        if config_file is None:
+            return None
+        config_file_str = str(config_file)
+        # Exact source-path lookup against the store; ``source_path`` is set
+        # by the bootstrap and the shed-install persistence hook.
+        if self._store is not None:
+            try:
+                stored = self._store.get_by_source_path(config_file_str)
+            except Exception as e:
+                log.debug("get_by_source_path raised for %s: %s", config_file_str, e)
+                stored = None
+            if stored is not None and stored.tool_id:
+                entry = self._tool_index.entries.get(stored.tool_id)
+                if entry is not None:
+                    return entry
+        # Last resort: parse-cheap id extraction off the file header. Useful
+        # when the conf points at a file the store hasn't seen yet (first boot
+        # of a fresh deployment) — the eager fallthrough below will then
+        # actually parse and persist.
+        try:
+            tool_id = extract_tool_id_from_file(config_file_str, max_read=2000)
+        except Exception:
+            tool_id = None
+        if tool_id:
+            return self._tool_index.entries.get(tool_id)
+        return None
+
+    def _materialize_for_lazy_tool(self, entry: ToolIndexEntry) -> "Tool":
+        """Promote a stub to a real ``Tool`` via the existing store-backed loader.
+
+        Routed through :meth:`_register_loaded_tool` so ``_tools_by_id`` /
+        ``_tool_versions_by_id`` / ``_tools_by_old_id`` / lineage all agree
+        with the eager toolbox bookkeeping.
+        """
+        if self._store is None:
+            raise RuntimeError(f"LazyTool materialise needs a tool source store (id={entry.id!r})")
+        stored = self._store.get(entry.source_hash)
+        if stored is None:
+            raise RuntimeError(
+                f"LazyTool materialise: source missing from store (id={entry.id!r}, hash={entry.source_hash!r})"
+            )
+        tool = self._create_tool_from_stored_source(stored, entry=entry)
+        self._register_loaded_tool(tool)
+        return tool
+
+    def _persist_tool_source(self, tool: "Tool", config_file, guid: Optional[str]) -> None:
+        """Write a freshly-parsed tool's source to the store and add an index entry.
+
+        Called from :meth:`create_tool` whenever the eager fallthrough actually
+        parsed the XML. Idempotent on ``content_hash`` (the store dedupes). After
+        a successful write, broadcasts ``reload_tool_source_cache`` so peer
+        Galaxy processes refresh their index.
+        """
+        if self._store is None or self._tool_index is None:
+            return
+        try:
+            tool_source = tool.tool_source
+            xml_tree = getattr(tool_source, "xml_tree", None)
+            if xml_tree is not None:
+                from galaxy.util import xml_to_string
+
+                raw_source = xml_to_string(xml_tree.getroot(), pretty=True)
+            elif config_file is not None and os.path.exists(str(config_file)):
+                with open(str(config_file), encoding="utf-8") as fh:
+                    raw_source = fh.read()
+            else:
+                log.debug("Cannot persist tool source for %s: no xml_tree and no readable config_file", tool.id)
+                return
+        except Exception as e:
+            log.warning("Failed to serialise tool source for persistence (id=%s): %s", tool.id, e)
+            return
+
+        content_hash = hashlib.sha256(raw_source.encode("utf-8")).hexdigest()
+        tool_id = guid or tool.id
+        if not tool_id:
+            return
+        source_path = str(config_file) if config_file is not None else None
+        tool_dir = os.path.dirname(str(config_file)) if source_path else None
+        stored = StoredToolSource(
+            hash=content_hash,
+            tool_source_class=type(tool_source).__name__,
+            raw_source=raw_source,
+            tool_id=tool_id,
+            tool_version=tool.version,
+            tool_dir=tool_dir,
+            source_path=source_path,
+            stored_at=datetime.utcnow(),
+        )
+        try:
+            self._store.store(stored)
+        except Exception as e:
+            log.warning("Failed to persist tool source (id=%s): %s", tool_id, e)
+            return
+
+        entry = self._build_index_entry_from_stored(stored)
+        if entry is None:
+            return
+        # Mirror the shed-metadata stamps the eager pipeline applies to the Tool
+        # after create_tool returns. We capture them here so a subsequent
+        # lookup off the index agrees with the in-memory Tool.
+        if guid:
+            entry.id = guid
+            entry.is_local = False
+            entry.tool_shed = getattr(tool, "tool_shed", None) or entry.tool_shed
+            entry.repository_name = getattr(tool, "repository_name", None) or entry.repository_name
+            entry.repository_owner = getattr(tool, "repository_owner", None) or entry.repository_owner
+            entry.changeset_revision = getattr(tool, "installed_changeset_revision", None) or entry.changeset_revision
+        self._tool_index.add_entry(entry)
+        self._tool_index.invalidate_caches()
+        try:
+            self._store.store_index(self._tool_index)
+        except Exception as e:
+            log.debug("store_index after persist raised: %s", e)
+        # Fan out to peer processes — same broadcast the prior shed-install
+        # path used to fire from ``_lazy_register_tool_item``.
+        try:
+            from galaxy.queue_worker import send_control_task
+
+            send_control_task(self.app, "reload_tool_source_cache", noop_self=True)
+        except Exception as e:
+            log.debug("send_control_task(reload_tool_source_cache) failed: %s", e)
 
     def _load_tool_on_demand(self, tool_id: str, tool_version: Optional[str] = None) -> Optional["Tool"]:
         """
