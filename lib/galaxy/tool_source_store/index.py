@@ -233,15 +233,29 @@ class ToolIndex:
         return self.entries.get(tool_id)
 
     def add_entry(self, entry: ToolIndexEntry) -> None:
-        """Add an entry, populating both the default and per-version maps."""
+        """Add an entry, populating both the default and per-version maps.
+
+        The "default" entry per id (used by ``ToolIndex.get(tool_id)`` and
+        the ``/api/tools`` listing) is the highest version per
+        :func:`packaging.version.parse`. Pure string comparison fails on
+        e.g. ``"0.1+galaxy6"`` vs ``"0.2"`` (which compares as ``"0.1+..."
+        < "0.2"`` lexically only by accident — a different prefix would
+        flip the sign).
+        """
         self.entries_by_version.setdefault(entry.id, {})[entry.version or ""] = entry
         existing = self.entries.get(entry.id)
-        # Keep the highest version as the default. ``compare_versions`` from
-        # packaging would be more correct, but tool versions are typically
-        # plain numerics and a string compare is good enough; tie-break by
-        # last-write so panel-order semantics are preserved when a conf
-        # explicitly registers a default.
-        if existing is None or (entry.version or "") >= (existing.version or ""):
+        if existing is None:
+            self.entries[entry.id] = entry
+            return
+        try:
+            from packaging.version import parse as _parse_version
+
+            new_v = _parse_version(entry.version or "0")
+            old_v = _parse_version(existing.version or "0")
+            replace = new_v >= old_v
+        except Exception:
+            replace = (entry.version or "") >= (existing.version or "")
+        if replace:
             self.entries[entry.id] = entry
 
     def list_all(

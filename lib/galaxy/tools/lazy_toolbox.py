@@ -24,6 +24,7 @@ from typing import (
 from uuid import UUID
 
 from cachetools import LRUCache
+from packaging.version import parse as parse_version
 
 from galaxy.tool_source_store import (
     StoredToolSource,
@@ -414,7 +415,7 @@ class LazyToolBox(ToolBox):
         map stays consistent with whatever is currently in
         ``self._tool_index.entries``.
         """
-        self._shed_short_id_to_guids = {}
+        self._shed_short_id_to_guids.clear()
         if self._tool_index is None:
             return
         for entry_id in self._tool_index.entries.keys():
@@ -1732,9 +1733,18 @@ class LazyToolBox(ToolBox):
                 # refactor's ``upgrade_all_steps``) need every version to
                 # determine the latest; returning only the requested version
                 # makes upgrades silently no-op.
+                def _ver_key(v: str):
+                    # ``packaging.version.parse`` matches what the
+                    # eager ToolLineage uses to order versions and
+                    # tolerates non-numeric segments (e.g. ``"1.0.0+galaxy0"``).
+                    try:
+                        return (0, parse_version(v))
+                    except Exception:
+                        return (1, v)
+
                 versions = sorted(
                     self._tool_index.entries_by_version.get(tool_id, {}).keys(),
-                    key=lambda v: tuple(int(p) if p.isdigit() else p for p in v.split(".") if p),
+                    key=_ver_key,
                 )
                 tools: list[Tool] = []
                 for ver in versions:
@@ -1747,6 +1757,38 @@ class LazyToolBox(ToolBox):
                 tool = self._load_tool_on_demand(tool_id, tool_version)
                 if tool:
                     return tool
+                # Version not in the index. Fall back to the default (latest)
+                # entry's Tool — not the requested version, but a Tool for the
+                # same id. The eager toolbox does this after a
+                # ``_tool_versions_by_id`` miss when ``tool_id`` is in
+                # ``_tools_by_id`` and ``exact`` is False: the for-loop in
+                # ``AbstractToolBox.get_tool`` ``continue``s for ``exact``
+                # when the version doesn't match. Without this fallback,
+                # ``ToolModule.__init__`` invoked at workflow-upload time
+                # gets ``None`` for any workflow pinned to a tool_version we
+                # no longer ship — eager would have returned the
+                # lineage-newest Tool, then ``get_safe_version`` would have
+                # downgraded it to the safe-upgrade version
+                # (e.g. ``__BUILD_LIST__`` 1.0.0 → 1.1.0 via
+                # ``WORKFLOW_SAFE_TOOL_VERSION_UPDATES``). Returning ``None``
+                # here breaks that path and the workflow ends up bound to
+                # the latest version with state shaped for the old version,
+                # producing spurious upgrade-message 400s on invoke.
+                #
+                # Honor ``exact`` though: callers like the workflow
+                # missing-tool check pass ``exact=True`` specifically to
+                # ask "is THIS exact version installed", and silently
+                # substituting the latest makes the missing-tools list
+                # under-report (``test_run_workflow_with_missing_tool``
+                # asserts both ``nonexistent_tool`` and a known-absent
+                # ``compose_text_param 0.0.1`` show up as missing).
+                if tool_version and not exact:
+                    default_entry = self._tool_index.entries.get(tool_id)
+                    if default_entry is not None:
+                        default_version = default_entry.version or None
+                        tool = self._load_tool_on_demand(tool_id, default_version)
+                        if tool:
+                            return tool
 
         # Short-id fallback for shed installs. The eager toolbox resolves
         # ``get_tool("collection_column_join")`` via ``_tools_by_old_id``,
@@ -1758,14 +1800,8 @@ class LazyToolBox(ToolBox):
         # successfully-loaded Tools by version — matching the eager path's
         # ``rval.sort(key=lambda t: t.version_object)`` over
         # ``_tools_by_old_id[tool_id]``.
-        if (
-            self._tool_index
-            and self._shed_short_id_to_guids
-            and tool_id in self._shed_short_id_to_guids
-        ):
-            from packaging.version import parse as _parse_version
-
-            candidates: list[tuple[Any, "Tool"]] = []
+        if self._tool_index and self._shed_short_id_to_guids and tool_id in self._shed_short_id_to_guids:
+            candidates: list[tuple[tuple[int, Any], Tool]] = []
             for guid in sorted(self._shed_short_id_to_guids[tool_id]):
                 loaded = self._load_tool_on_demand(guid, tool_version)
                 if loaded is None and tool_version:
@@ -1774,8 +1810,9 @@ class LazyToolBox(ToolBox):
                     if default_entry is not None:
                         loaded = self._load_tool_on_demand(guid, default_entry.version or None)
                 if loaded is not None:
+                    ver_key: tuple[int, Any]
                     try:
-                        ver_key = (0, _parse_version(loaded.version or "0"))
+                        ver_key = (0, parse_version(loaded.version or "0"))
                     except Exception:
                         ver_key = (1, loaded.version or "")
                     candidates.append((ver_key, loaded))
@@ -1958,6 +1995,17 @@ class LazyToolBox(ToolBox):
             self._tool_versions_by_id[tool_id] = {}
         self._tool_versions_by_id[tool_id][version] = tool
 
+        # The eager ``__add_tool`` also tracks tools by their pre-shed
+        # ``old_id`` so callers like ``remove_tool_by_id``
+        # (``self._tools_by_old_id[tool.old_id].remove(tool)``) can find
+        # them. Without this, removing a lazy-loaded shed tool raises
+        # ``KeyError`` on ``_tools_by_old_id``.
+        old_id = getattr(tool, "old_id", None)
+        if old_id:
+            bucket = self._tools_by_old_id.setdefault(old_id, [])
+            if tool not in bucket:
+                bucket.append(tool)
+
         # Tool uses 'guid' not 'uuid'
         if hasattr(tool, "uuid") and tool.uuid:
             self._tools_by_uuid[tool.uuid] = tool
@@ -2100,13 +2148,50 @@ class LazyToolBox(ToolBox):
         exact: bool = False,
         user: Optional["User"] = None,
     ) -> bool:
-        """Check if tool exists, using index for fast lookup."""
-        if tool_id and self._tool_index and tool_id in self._tool_index.entries:
-            return True
+        """Check if tool exists, using index for fast lookup.
+
+        Honors ``tool_version`` + ``exact`` the same way the eager
+        ``AbstractToolBox.has_tool`` does — without that, the workflow
+        missing-tools check (``services/workflows.py``: ``has_tool(...,
+        exact=require_exact_tool_versions)``) silently passes any tool
+        whose id is in the index regardless of which version was
+        requested. ``test_run_workflow_with_missing_tool`` exercises
+        that surface by installing ``compose_text_param 0.1.0`` from
+        the toolshed and then asking the workflow runner to invoke a
+        workflow pinned to ``compose_text_param 0.0.1``: with the
+        version-blind lookup, ``has_tool`` answers ``True`` for 0.0.1,
+        the tool drops out of the missing-tools list, and the assertion
+        on the error message under-reports.
+        """
+        if tool_id and self._tool_index:
+            entries = self._tool_index.entries_by_version.get(tool_id)
+            if entries is not None:
+                if tool_version is None:
+                    return bool(entries) or tool_id in self._tool_index.entries
+                if str(tool_version) in entries:
+                    return True
+                if exact:
+                    # Exact version requested and not present — say so.
+                    # Don't fall through to the parent which would walk
+                    # lineage and return ``True`` for any version.
+                    return False
+                # Non-exact: fall through to parent for lineage walk.
+            elif tool_version is None and tool_id in self._tool_index.entries:
+                return True
         # Short-id alias for shed installs (see ``get_tool``'s short-id
         # fallback for the rationale).
         if tool_id and tool_id in self._shed_short_id_to_guids:
-            return True
+            if tool_version is None:
+                return True
+            # For version-specific short-id lookups, check if any guid
+            # mapped to this short id has the requested version.
+            if self._tool_index is not None:
+                for guid in self._shed_short_id_to_guids[tool_id]:
+                    versions = self._tool_index.entries_by_version.get(guid, {})
+                    if str(tool_version) in versions:
+                        return True
+            if exact:
+                return False
         # Fall back to parent for UUID lookups and edge cases
         return super().has_tool(
             tool_id=tool_id,
