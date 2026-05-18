@@ -9,9 +9,7 @@ LRU eviction.
 import hashlib
 import logging
 import os
-import string
 import threading
-import weakref
 from datetime import datetime
 from typing import (
     Any,
@@ -38,34 +36,14 @@ from galaxy.tool_source_store.search import (
     ToolSearchTuning,
     ToolWhooshIndex,
 )
-from galaxy.tool_util.id_util import (
-    extract_short_id_from_guid,
-    extract_tool_id_from_file,
-)
+from galaxy.tool_util.id_util import extract_short_id_from_guid
 from galaxy.tool_util.parser import get_tool_source
-from galaxy.tool_util.toolbox.base import (
-    DynamicToolConfDict,
-    SHED_TOOL_CONF_XML,
-)
-from galaxy.tool_util.toolbox.filters import FilterFactory
-from galaxy.tool_util.toolbox.lineages.factory import LazyLineageMap
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
 from galaxy.tool_util.toolbox.panel import (
     panel_item_types,
-    ToolPanelElements,
     ToolSection,
 )
-from galaxy.tool_util.toolbox.views.edam import (
-    EdamPanelMode,
-    EdamToolPanelView,
-)
-from galaxy.tool_util.toolbox.views.interface import (
-    ToolPanelView,
-    ToolPanelViewModel,
-    ToolPanelViewModelType,
-)
-from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
-from galaxy.util import listify
+from galaxy.tool_util.toolbox.views.edam import EdamToolPanelView
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -307,166 +285,6 @@ class LazyTool:
             f"LazyTool._MATERIALIZE_OK. Set LAZY_TOOL_PERMISSIVE=1 to bypass "
             f"this check while debugging."
         )
-
-
-class DefaultToolPanelView(ToolPanelView):
-    """Default tool panel view for LazyToolBox."""
-
-    def __init__(self, toolbox: "LazyToolBox"):
-        self.toolbox = toolbox
-
-    def apply_view(self, base_tool_panel, toolbox_registry):
-        # Return the configured panel structure as-is. Tools that are
-        # explicitly loaded (via shed install or first ``get_tool`` use)
-        # land in this panel via the eager ``__add_tool_to_tool_panel``;
-        # *eagerly* materialising every indexed tool here would defeat
-        # LazyToolBox's purpose, take 30+ seconds at boot, and surface
-        # any per-tool parse error as a startup failure.
-        # /api/tool_panels/default is served by an override on
-        # ``LazyToolBox.to_panel_view`` that builds the response straight
-        # from the index entries instead — see that method.
-        return self.toolbox._tool_panel
-
-    def to_model(self) -> ToolPanelViewModel:
-        return ToolPanelViewModel(
-            id="default",
-            name="Full Tool Panel",
-            description="Galaxy's fully configured toolbox panel.",
-            model_class="DefaultToolPanelView",
-            view_type=ToolPanelViewModelType.default_type,
-            searchable=True,
-        )
-
-
-class LazyIntegratedToolPanelElements(ToolPanelElements):
-    """``_integrated_tool_panel`` that materialises sections on demand.
-
-    Static panel views (``StaticToolPanelView.apply_view``,
-    ``lib/galaxy/tool_util/toolbox/views/static.py``) walk this panel via
-    ``closest_section`` and then call ``ToolSection.copy(merge_tools=True)``
-    which reads ``tool.lineage`` for every tool in ``section.elems`` —
-    so the section needs *real* Tool objects, not stubs. The eager
-    toolbox populates these as a side effect of loading every tool at
-    boot. The lazy toolbox can't afford that (~30s + per-tool parse
-    errors that stalled CI's ``test_job_recovery::test_recovery``), so
-    we materialise sections lazily: only when a panel-view request
-    actually consults one.
-
-    ``walk_sections`` and ``apply_filter`` are bulk operations
-    (e.g. global filters); they trigger materialisation of every
-    section. ``closest_section`` triggers materialisation of just the
-    matching section.
-    """
-
-    def __init__(self, toolbox_ref: "weakref.ReferenceType") -> None:
-        super().__init__()
-        self._toolbox_ref = toolbox_ref
-        self._materialised_sections: set[str] = set()
-        self._fully_materialised = False
-
-    # --- materialisation helpers ---
-
-    def _toolbox(self) -> Optional["LazyToolBox"]:
-        return self._toolbox_ref()
-
-    def _materialise_section(self, section_id: Optional[str]) -> None:
-        if not section_id or section_id in self._materialised_sections:
-            return
-        section = self.get(section_id)
-        if not isinstance(section, ToolSection):
-            return
-        toolbox = self._toolbox()
-        if toolbox is None or toolbox._tool_index is None:
-            return
-        # Order: shed-installed entries (``is_local=False``) before
-        # local entries. The eager toolbox achieves this implicitly via
-        # the install path's ``__add_tool_to_tool_panel`` insert/replace
-        # logic + the integrated panel rebuild; tests like
-        # ``test_only_latest_version_in_panel_fastp`` assert
-        # ``tools[0]`` is the just-installed shed tool, so the lazy
-        # materialiser needs to mirror that ordering. Insert shed
-        # tools at the section head (preserving sibling shed-tool
-        # order), append local tools at the tail. ``has_tool_with_id``
-        # skips tools already in the section so a re-materialise
-        # after install is idempotent for prior entries.
-        shed_count = 0
-        loaded = 0
-        for entry in toolbox._tool_index.entries.values():
-            if entry.panel_section_id != section_id or entry.hidden:
-                continue
-            if section.elems.has_tool_with_id(entry.id):
-                continue
-            tool = toolbox.get_tool(tool_id=entry.id)
-            if tool is None:
-                continue
-            if entry.is_local:
-                section.elems.append_tool(tool)
-            else:
-                section.elems.insert_tool(shed_count, tool)
-                shed_count += 1
-            loaded += 1
-        self._materialised_sections.add(section_id)
-        log.debug("LazyIntegratedToolPanelElements: materialised section id=%r (%d tools)", section_id, loaded)
-
-    def _materialise_all(self) -> None:
-        if self._fully_materialised:
-            return
-        toolbox = self._toolbox()
-        if toolbox is None or toolbox._tool_index is None:
-            return
-        # Materialise every section first.
-        for section_id, value in list(self.items()):
-            if isinstance(value, ToolSection):
-                self._materialise_section(section_id)
-        # Then add tools that aren't in any section as top-level entries.
-        # Tools at the conf's root (no parent ``<section>``) carry
-        # ``entry.panel_section_id is None``; ``walk_loaded_tools`` (used
-        # by EDAM and toolbox search) yields top-level entries from
-        # ``tool_panel.panel_items_iter()`` directly. Without this they're
-        # invisible — EDAM can't tag e.g. ``mapper`` with its
-        # ``operation_3198`` because the tool never gets walked.
-        for entry in toolbox._tool_index.entries.values():
-            if entry.panel_section_id or entry.hidden:
-                continue
-            key = f"tool_{entry.id}"
-            if key in self:
-                continue
-            tool = toolbox.get_tool(tool_id=entry.id)
-            if tool is None:
-                continue
-            self.append_tool(tool)
-        self._fully_materialised = True
-
-    # --- overrides ---
-
-    def closest_section(self, target_section_id, target_section_name):
-        # Materialise just the section we'll return (if any) before delegating.
-        if target_section_id and isinstance(self.get(target_section_id), ToolSection):
-            self._materialise_section(target_section_id)
-        elif target_section_name:
-            for sid, sec in list(self.items()):
-                if isinstance(sec, ToolSection) and sec.name == target_section_name:
-                    self._materialise_section(sid)
-                    break
-        return super().closest_section(target_section_id, target_section_name)
-
-    def walk_sections(self):
-        self._materialise_all()
-        return super().walk_sections()
-
-    def apply_filter(self, f):
-        self._materialise_all()
-        return super().apply_filter(f)
-
-    # ``panel_items_iter`` is intentionally NOT overridden. It's called by
-    # ``ManagesIntegratedToolPanelMixin._write_integrated_tool_panel_config_file``
-    # at boot to flush the panel to disk; auto-materialising there would
-    # eagerly load every indexed tool — defeating lazy mode and surfacing
-    # per-tool parse errors (interactive tools, ``filter_data_table`` etc.)
-    # that should stay deferred. Consumers that really need the full panel
-    # (EDAM ``apply_view``, search index) get materialisation via the
-    # explicit ``LazyToolBox._materialise_integrated_panel_for_views`` call
-    # in ``_load_tool_panel_views``.
 
 
 class _LazyToolsByIdView:
@@ -2144,30 +1962,12 @@ class LazyToolBox(ToolBox):
                 view_contents[tool_dict["id"]] = tool_dict
             return view_contents
 
-        # EDAM views walk every tool in the integrated panel, so they need
-        # the panel materialised before ``apply_view``. Boot defers this
-        # work — render the EDAM view on first request and cache the
-        # result in ``_tool_panel_view_rendered`` so subsequent reads are
-        # instant. Without this, every restart re-runs ~500 sequential
-        # lazy-loads at boot just so EDAM is ready, even when the test
-        # never asks for an EDAM view (the regression that caused
-        # ``test_job_recovery::test_recovery`` to silently hang shard 3
-        # for hours under workflow_dispatch + ``use_lazy_toolbox=true``).
-        if isinstance(view_def, EdamToolPanelView):
-            from galaxy.tool_util.toolbox.base import ToolBoxRegistryImpl
-
-            if resolved_view not in self._edam_views_rendered:
-                if isinstance(self._integrated_tool_panel, LazyIntegratedToolPanelElements):
-                    self._integrated_tool_panel._materialise_all()
-                registry = ToolBoxRegistryImpl(self)
-                self._tool_panel_view_rendered[resolved_view] = view_def.apply_view(
-                    self._integrated_tool_panel, registry
-                )
-                self._edam_views_rendered.add(resolved_view)
-
-        # Static (non-default) view: defer to parent so apply_view runs
-        # against the registered ToolPanelView. Only the small set of
-        # tools the static view names will be lazy-loaded.
+        # Non-default view (EDAM, static): defer to the parent. With the
+        # eager pipeline filling ``_integrated_tool_panel`` with ``LazyTool``
+        # stubs, EDAM's ``walk_loaded_tools`` reads ``tool.edam_operations``
+        # / ``edam_topics`` from the entry surface (no parse) and
+        # ``_load_tool_panel_views`` (run by ``super().__init__``) has
+        # already cached the rendered panel in ``_tool_panel_view_rendered``.
         return super().to_panel_view(trans, view=view, **kwds)
 
     def _index_entry_to_api_dict(self, entry: ToolIndexEntry) -> dict[str, Any]:
