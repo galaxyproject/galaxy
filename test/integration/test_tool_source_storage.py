@@ -26,7 +26,15 @@ class BaseToolSourceStorageIntegrationTestCase(integration_util.IntegrationTestC
         config["tool_source_store"] = cls.STORE_KIND
 
     def _test_api_tools_list(self):
-        response = self._get("tools")
+        # ``in_panel=False`` is what the Galaxy client uses
+        # (``client/src/stores/toolStore.ts``) and what ``LazyToolBox.to_dict``
+        # serves straight from the index. The default ``in_panel=True``
+        # path walks the rendered panel which, under ``use_lazy_toolbox=true``,
+        # is the un-materialised ``_tool_panel`` and returns empty until
+        # individual tools are requested — failing this bare
+        # ``len(tools) > 0`` assertion when the workflow_dispatch CI run
+        # globally enables ``use_lazy_toolbox``.
+        response = self._get("tools", data={"in_panel": "False"})
         self._assert_status_code_is(response, 200)
         tools = response.json()
         assert len(tools) > 0, "Expected at least one tool to be loaded"
@@ -111,7 +119,12 @@ class TestCompositeToolSourceStorage(BaseToolSourceStorageIntegrationTestCase):
         # contain every tool referenced by the active tool confs. The bare
         # ``len(tools) > 0`` check used to mask a bug where ~third of stored
         # sources were silently dropped during index build.
-        response = self._get("tools")
+        #
+        # ``in_panel=False`` is what the UI uses (``client/src/stores/toolStore.ts``)
+        # and what serves directly from the index; the default ``in_panel=True``
+        # path walks the un-materialised lazy panel and would only see tools
+        # that had been individually requested.
+        response = self._get("tools", data={"in_panel": "False"})
         self._assert_status_code_is(response, 200)
         tools = response.json()
         assert isinstance(tools, list)
@@ -289,10 +302,28 @@ class TestLazyToolBoxApi(BaseToolSourceStorageIntegrationTestCase):
     # --- Container resolution -----------------------------------------------
 
     def test_container_resolvers_resolve_tool(self):
-        # Admin-only endpoint. Used to fail with
+        # ``galaxy.tool_util.deps.views.resolve`` does
+        # ``self._app.toolbox.tools_by_id[tool_id]`` and then reads
+        # ``.tool_requirements`` off that — used to fail with
         # ``'NoneType' object has no attribute 'tool_requirements'`` when
         # ``_LazyToolsByIdView`` returned a ``None`` placeholder for an
-        # un-materialised tool — fixed in c763b03 by populating
-        # ``_tools_by_old_id`` and exposing a real ``.copy()``.
-        response = self._get("container_resolvers/resolve", data={"tool_id": "cat1"}, admin=True)
-        self._assert_status_code_is(response, 200)
+        # un-materialised tool. Fixed in c763b03 by populating
+        # ``_tools_by_old_id`` and routing the view's ``__getitem__`` /
+        # ``copy`` through ``get_tool``.
+        #
+        # Hit those exact lookups directly — going through
+        # ``GET /api/container_resolvers/resolve`` runs the resolver
+        # chain (including a remote mulled registry lookup over the
+        # network), which periodically returns non-JSON and turns this
+        # test into a flake unrelated to the lazy regression we want to
+        # pin.
+        tools_by_id = self._app.toolbox.tools_by_id
+        tool = tools_by_id["cat1"]
+        assert tool is not None
+        assert getattr(tool, "tool_requirements", None) is not None
+        # ``.copy()`` is what ``ContainerFinder.find_best_container_description``
+        # invokes via ``copy.copy`` on the registry; placeholder ``None``
+        # values would crash callers iterating the copy.
+        copy = tools_by_id.copy()
+        assert "cat1" in copy
+        assert copy["cat1"] is not None

@@ -1,8 +1,8 @@
-"""Shared fixtures for tool source store unit tests."""
+"""Shared fixtures for tool_source_store unit tests."""
 
 import pytest
 
-from galaxy.tools.source_store.index import (
+from galaxy.tool_source_store.index import (
     ToolIndex,
     ToolIndexEntry,
 )
