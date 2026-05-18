@@ -433,8 +433,14 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         # in-memory caches before the next boot wires its own. Without this,
         # the prior boot's cached ToolIndex sticks around long enough to
         # race with the new boot's _load_index_from_store.
-        self.haltables.append(("tool source store", self._shutdown_tool_source_store))
-        self.haltables.append(("lazy toolbox", self._shutdown_lazy_toolbox))
+        # ``_shutdown_tool_source_store`` commits any flushed-but-unwritten
+        # source/index rows on its way down (so the next embedded Galaxy
+        # boot doesn't have to re-bootstrap from configs). It must run
+        # before ``_shutdown_model`` disposes the engine — after that the
+        # session can't commit. Insert at index 1 (after object store,
+        # before database connection).
+        self.haltables.insert(1, ("tool source store", self._shutdown_tool_source_store))
+        self.haltables.insert(2, ("lazy toolbox", self._shutdown_lazy_toolbox))
 
     def _shutdown_tool_source_store(self) -> None:
         store = getattr(self, "tool_source_store", None)

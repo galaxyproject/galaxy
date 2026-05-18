@@ -164,6 +164,18 @@ class ToolSourceStore(ABC):
         Backends override this when they cache; the default is a no-op.
         """
 
+    def commit(self) -> None:  # noqa: B027 — intentional empty default
+        """Commit any pending writes to durable storage.
+
+        Backends that use a request-scoped session (``DatabaseToolSourceStore``)
+        only ``flush()`` inside ``store()`` / ``store_index()`` — the surrounding
+        session decides when to ``commit()``. The lazy toolbox bootstrap runs
+        *outside* a request, so it must drive the commit itself or every
+        bootstrap insert rolls back when the engine is disposed. File-backed
+        stores (``SqlAlchemyToolSourceStore``) already commit per write and
+        override this as a no-op; ``CompositeToolSourceStore`` propagates.
+        """
+
     def close(self) -> None:  # noqa: B027 — intentional empty default
         """Release any state the store is holding.
 

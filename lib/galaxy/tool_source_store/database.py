@@ -224,37 +224,57 @@ class DatabaseToolSourceStore(ToolSourceStore):
         self._cached_index = index
 
     def load_index(self) -> Optional[ToolIndex]:
-        """Load the tool index from the tool_index table."""
+        """Load the tool index from the tool_index table.
+
+        ``select`` on the shared scoped session implicitly opens a read
+        transaction. Boot and ``reload_toolbox`` paths call this from
+        threads (queue worker, embedded test driver) that don't bound
+        their work to a request lifecycle, so nothing later closes that
+        transaction — on SQLite (integration tests) the open transaction
+        retains a lock on the model database, on Postgres (CI) it
+        accumulates idle-in-transaction rows that block subsequent
+        DELETE/UPDATE for the entire test run. ``rollback()`` after a
+        pure read is a no-op for data but closes the transaction.
+        """
         if self._cached_index is not None:
             return self._cached_index
 
         session = self._get_session()
 
-        # Try to load from new tool_index table first
-        model = session.execute(select(ToolIndexCache).order_by(ToolIndexCache.id.desc())).scalar_one_or_none()
+        try:
+            # Try to load from new tool_index table first
+            model = session.execute(select(ToolIndexCache).order_by(ToolIndexCache.id.desc())).scalar_one_or_none()
 
-        if model and model.data:
+            if model and model.data:
+                try:
+                    json_bytes = gzip.decompress(model.data)
+                    index_data = json.loads(json_bytes.decode("utf-8"))
+                    self._cached_index = ToolIndex.from_dict(index_data)
+                    return self._cached_index
+                except Exception as e:
+                    log.warning(f"Failed to load index from tool_index table: {e}")
+
+            # Fall back to legacy storage in tool_source table
+            legacy = session.execute(
+                select(ToolSourceModel).where(ToolSourceModel.hash == "__tool_index__")
+            ).scalar_one_or_none()
+
+            if legacy:
+                source_data = legacy.source or {}
+                index_data = source_data.get("index")
+                if index_data:
+                    self._cached_index = ToolIndex.from_dict(index_data)
+                    return self._cached_index
+
+            return None
+        finally:
+            # Release the implicit read transaction so other writers
+            # don't block on it. Safe because we haven't added/modified
+            # anything in the session.
             try:
-                json_bytes = gzip.decompress(model.data)
-                index_data = json.loads(json_bytes.decode("utf-8"))
-                self._cached_index = ToolIndex.from_dict(index_data)
-                return self._cached_index
+                session.rollback()
             except Exception as e:
-                log.warning(f"Failed to load index from tool_index table: {e}")
-
-        # Fall back to legacy storage in tool_source table
-        legacy = session.execute(
-            select(ToolSourceModel).where(ToolSourceModel.hash == "__tool_index__")
-        ).scalar_one_or_none()
-
-        if legacy:
-            source_data = legacy.source or {}
-            index_data = source_data.get("index")
-            if index_data:
-                self._cached_index = ToolIndex.from_dict(index_data)
-                return self._cached_index
-
-        return None
+                log.debug(f"load_index rollback raised: {e}")
 
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         """Update a single index entry."""
@@ -278,13 +298,44 @@ class DatabaseToolSourceStore(ToolSourceStore):
         """Invalidate the cached index."""
         self._cached_index = None
 
-    def close(self) -> None:
-        """Drop in-memory state at app shutdown.
+    def commit(self) -> None:
+        """Commit pending writes on the shared scoped session."""
+        if self._sa_session is not None:
+            try:
+                self._sa_session.commit()
+            except Exception as e:
+                log.warning(f"DatabaseToolSourceStore.commit raised: {e}")
 
-        The SQLAlchemy session itself is owned by ``app.model.context`` and
-        gets closed via ``_shutdown_model``; we only need to drop the
-        cached index reference so it doesn't leak across embedded restarts.
+    def close(self) -> None:
+        """Commit pending writes and drop in-memory state at app shutdown.
+
+        ``store`` and ``store_index`` only ``flush()`` — they don't
+        ``commit()`` (so Galaxy's request-scoped session stays in
+        control of when its work lands on disk). On
+        ``IntegrationTestCase.restart()`` the prior Galaxy then disposes
+        its engine via ``_shutdown_model``, which forcibly closes
+        in-flight transactions; psycopg's abort path rolls them back.
+        Result: every shed-installed tool / bootstrapped index entry
+        the prior Galaxy wrote is gone when the next Galaxy starts —
+        the next boot sees an empty store and re-bootstraps from
+        configs (484 tool sources × XML parse + DB insert).
+
+        On CI the second bootstrap consistently stalls a few seconds in
+        and never completes, hanging the test (``test_recovery``'s
+        post-restart Galaxy is the most obvious victim — its first
+        Galaxy bootstrapped fine, the second got stuck part-way through
+        ``discover_tools``).
+
+        Commit on close so the next embedded Galaxy sees the
+        already-bootstrapped index and skips the second bootstrap
+        entirely. Outside the test driver this is a no-op for the
+        common case (production Galaxy doesn't restart in-process).
         """
+        if self._sa_session is not None:
+            try:
+                self._sa_session.commit()
+            except Exception as e:
+                log.debug(f"DatabaseToolSourceStore.close commit raised: {e}")
         self._cached_index = None
         # Don't null out the session — it's a scoped session shared with
         # the rest of Galaxy. Just stop holding a strong reference to the

@@ -379,6 +379,24 @@ class LazyToolBox(ToolBox):
             # we keep the per-section deferral behaviour.
             self._load_tool_panel_views()
 
+        # Commit any pending writes the constructor accumulated
+        # (``_bootstrap_store_from_configs`` already commits, but
+        # ``_prune_orphaned_shed_entries`` / ``_rebuild_index_from_store``
+        # ``flush()`` without committing). When the constructor runs in
+        # the queue-worker thread (``reload_toolbox`` control task),
+        # nothing later closes that transaction — on SQLite the open
+        # writer lock blocks the test driver's subsequent ``DELETE FROM
+        # repository_repository_dependency_association`` in
+        # ``reset_shed_tools`` (``test_repository_*`` teardown), on
+        # Postgres it leaves an idle-in-transaction row that blocks
+        # those same ``DELETE``s for the rest of the shard run. The
+        # commit is also a no-op when nothing was written.
+        if self._store is not None:
+            try:
+                self._store.commit()
+            except Exception as e:
+                log.warning(f"LazyToolBox: post-init commit raised: {e}")
+
         log.info(f"LazyToolBox initialized with {len(self._tools_by_id)} tools (cache_size={cache_size})")
         self._warn_if_index_misses_panel_tools()
 
@@ -1173,6 +1191,22 @@ class LazyToolBox(ToolBox):
             self._store.store_index(self._tool_index)
         except Exception as e:
             log.warning(f"Bootstrap could not persist index: {e}")
+
+        # Commit the freshly-bootstrapped sources + index. Without an
+        # explicit commit here every bootstrapped row is just ``flush()``-ed
+        # into the request-scoped session; on
+        # ``IntegrationTestCase.restart()`` the prior Galaxy disposes its
+        # engine without committing and every bootstrap insert rolls back.
+        # The next Galaxy boot then sees an empty store and runs the same
+        # bootstrap again — a per-restart cost that hangs ``test_recovery``
+        # (and others) on CI. Committing here is also a one-shot: bootstrap
+        # only runs when the store is genuinely empty, so we're not
+        # interfering with a long-running Galaxy's request-scoped commit
+        # boundaries. ``commit()`` is polymorphic over backends — composite
+        # propagates to its members, ``DatabaseToolSourceStore`` commits its
+        # shared scoped session, file-backed stores are a no-op.
+        self._store.commit()
+
         # ``stored_count`` counts every accepted source (per-hash); index
         # ``entries`` only counts unique tool ids. The interesting ratio for
         # operators is ids-vs-versions: an index with N ids covering V total

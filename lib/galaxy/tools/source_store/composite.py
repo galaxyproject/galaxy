@@ -214,6 +214,14 @@ class CompositeToolSourceStore(ToolSourceStore):
                 verdict = None
         return verdict
 
+    def commit(self) -> None:
+        """Propagate commit() to every writable member store."""
+        for _name, member in self._members:
+            try:
+                member.commit()
+            except Exception as e:
+                log.warning(f"Composite store commit failed for member '{_name}': {e}")
+
     def close(self) -> None:
         """Propagate close() to every member store."""
         for _name, member in self._members:
