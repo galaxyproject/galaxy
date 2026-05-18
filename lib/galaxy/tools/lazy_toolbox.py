@@ -1141,6 +1141,7 @@ class LazyToolBox(ToolBox):
                 tool_id=tool_id,
                 tool_version=tool_source.parse_version(),
                 tool_dir=str(_Path(tool_path).parent),
+                source_path=str(tool_path),
                 stored_at=datetime.utcnow(),
             )
             try:
@@ -1538,6 +1539,7 @@ class LazyToolBox(ToolBox):
             tool_id=tool_id,
             tool_version=tool_source.parse_version(),
             tool_dir=os.path.dirname(tool_full_path),
+            source_path=tool_full_path,
             stored_at=datetime.utcnow(),
         )
         try:

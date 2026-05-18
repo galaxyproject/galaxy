@@ -98,6 +98,13 @@ class CompositeToolSourceStore(ToolSourceStore):
                 out.append(src)
         return out
 
+    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+        for _name, member in self._members:
+            found = member.get_by_source_path(source_path)
+            if found is not None:
+                return found
+        return None
+
     def list_all(self) -> Iterator[str]:
         seen: set[str] = set()
         for _name, member in self._members:

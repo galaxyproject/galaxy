@@ -80,6 +80,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
             "tool_id": tool_source.tool_id,
             "tool_version": tool_source.tool_version,
             "tool_dir": tool_source.tool_dir,
+            "source_path": tool_source.source_path,
             "stored_at": (tool_source.stored_at.isoformat() if tool_source.stored_at else None),
             "metadata": tool_source.metadata,
         }
@@ -121,6 +122,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
             tool_id=source_data.get("tool_id"),
             tool_version=source_data.get("tool_version"),
             tool_dir=source_data.get("tool_dir"),
+            source_path=source_data.get("source_path"),
             stored_at=stored_at,
             metadata=source_data.get("metadata", {}),
         )
@@ -171,6 +173,22 @@ class DatabaseToolSourceStore(ToolSourceStore):
                     sources.append(self._model_to_stored(model))
 
         return sources
+
+    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+        """Get the stored source for a given on-disk file path.
+
+        ``source_path`` lives inside the JSON ``source`` blob so this scans the
+        table and filters in Python — same shape as ``get_by_tool_id``. The
+        populator writes one entry per file, so there is at most one match.
+        """
+        session = self._get_session()
+
+        result = session.execute(select(ToolSourceModel))
+        for (model,) in result:
+            source_data = model.source or {}
+            if source_data.get("source_path") == source_path:
+                return self._model_to_stored(model)
+        return None
 
     def count(self) -> int:
         """Return the total number of stored tool sources."""

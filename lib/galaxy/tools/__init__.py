@@ -76,7 +76,6 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.fetcher import ToolLocationFetcher
-from galaxy.tool_util.id_util import extract_tool_id_from_file
 from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tool_util.loader import (
     imported_macro_paths,
@@ -689,38 +688,31 @@ class ToolBox(AbstractToolBox):
         Returns:
             ToolSource if found in store, None otherwise.
         """
+        # Default (eager) deployments parse from disk; only consult the store
+        # when the operator opted into ``use_lazy_toolbox``. The macro-id and
+        # silent-wrong-source defects (see LAZY_TOOLBOX_FOLLOWUPS.md) live on
+        # the path that walks the store on every call.
+        if not getattr(self.app.config, "use_lazy_toolbox", False):
+            return None
+
         store = getattr(self.app, "tool_source_store", None)
         if store is None:
             return None
 
         stored = None
 
-        # If we have a tool_id, try direct lookup first (fastest)
+        # Shed installs hand us the full guid; look up directly.
         if tool_id:
             sources = store.get_by_tool_id(tool_id)
             if sources:
-                # Get most recent version
                 stored = sources[0]
 
-        # If no tool_id or not found, try to match by tool_dir
+        # Local tools have no tool_id at this point — resolve by the on-disk
+        # file path. ``source_path`` is recorded at populate time, so a hit
+        # here is exact (no regex shortcut, no ``sources[0]`` fallback that
+        # could silently return a different tool's source).
         if stored is None:
-            # Quick extraction of tool_id from raw XML without full macro expansion
-            try:
-                extracted_id = extract_tool_id_from_file(str(config_file), max_read=2000)
-                if extracted_id:
-                    sources = store.get_by_tool_id(extracted_id)
-                    if sources:
-                        # Check if any source matches this file's directory
-                        config_dir = str(Path(config_file).parent)
-                        for source in sources:
-                            if source.tool_dir == config_dir:
-                                stored = source
-                                break
-                        if stored is None:
-                            # Just use the first one if dir doesn't match
-                            stored = sources[0]
-            except Exception:
-                pass
+            stored = store.get_by_source_path(str(config_file))
 
         if stored is None:
             return None

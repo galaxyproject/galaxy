@@ -39,6 +39,7 @@ class StoredToolSource:
     tool_id: Optional[str] = None  # Tool ID if known
     tool_version: Optional[str] = None  # Tool version if known
     tool_dir: Optional[str] = None  # Original tool directory
+    source_path: Optional[str] = None  # Original file path (used as a lookup key)
     stored_at: Optional[datetime] = None
     metadata: Optional[dict] = field(default_factory=dict)
 
@@ -119,6 +120,23 @@ class ToolSourceStore(ABC):
 
         Returns:
             List of matching tool sources.
+        """
+
+    @abstractmethod
+    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+        """
+        Get the stored tool source for a given on-disk file path.
+
+        The populator records ``source_path`` for every stored entry so the
+        eager / lazy load paths can resolve a config file to the
+        already-parsed source without guessing through ``tool_id`` (which can
+        collide across directories or be macro-expanded after the regex shortcut).
+
+        Args:
+            source_path: Absolute path of the original tool config file.
+
+        Returns:
+            Matching stored source, or None if nothing was populated from that file.
         """
 
     @abstractmethod
