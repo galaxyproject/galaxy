@@ -581,91 +581,79 @@ class LazyToolBox(ToolBox):
         cache_size: int = 500,
         save_integrated_tool_panel: bool = True,
     ) -> None:
-        """
-        Initialize the lazy toolbox.
-
-        Args:
-            config_filenames: Tool configuration files (used for panel structure).
-            tool_root_dir: Root directory for tools.
-            app: Galaxy application instance.
-            tool_source_store: The tool source store to load from.
-            cache_size: Maximum number of Tool objects to cache in memory.
-            save_integrated_tool_panel: Whether to save integrated tool panel.
-        """
-        # Store references before any initialization
+        # Lazy-only state set BEFORE ``super().__init__`` because the
+        # eager ``_init_tools_from_configs`` (which super invokes mid-init)
+        # is overridden below to consult ``self._store`` and populate
+        # ``self._tool_index``.
         self._store = tool_source_store
         self._tool_object_cache: LRUCache = LRUCache(maxsize=cache_size)
         self._cache_lock = threading.RLock()
-        self._reload_count = 0
         # Whoosh search infrastructure — built lazily on first ``search_tools``
         # call and re-built whenever the underlying ``ToolIndex`` version changes.
         self._whoosh_search_index: Optional[ToolWhooshIndex] = None
         self._whoosh_search_index_version: Optional[str] = None
+        # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
+        # before the eager walk runs.
+        self._tool_index: Optional[ToolIndex] = None
+        # Mirror the eager toolbox's short-id → Tool mapping so
+        # ``GET /api/tools/<short_id>`` resolves shed installs even when
+        # only the guid landed in the panel. Filled after the eager walk
+        # via ``_rebuild_shed_short_id_map``.
+        self._shed_short_id_to_guids: dict[str, set[str]] = {}
 
-        # Initialize core attributes that AbstractToolBox.__init__ would set
-        # We do this manually to avoid loading all tools
-        self._init_lazy_toolbox(
+        # Eager init — its ``_init_tools_from_configs`` is overridden so the
+        # walk goes through our ``create_tool`` seam and hands back LazyTool
+        # stubs for indexed sources.
+        super().__init__(
             config_filenames=config_filenames,
             tool_root_dir=tool_root_dir,
             app=app,
             save_integrated_tool_panel=save_integrated_tool_panel,
         )
 
-        # Load tool index from store
-        self._tool_index: Optional[ToolIndex] = None
-        self._load_index_from_store()
-
-        # Drop persisted shed-install entries that no current shed_tool_conf
-        # references. Without this the persistent tool source store leaks
-        # shed installs across reloads (e.g. ``reset_shed_tools`` writes an
-        # empty shed conf and triggers a reload, but the previous test's
-        # install survives in the index and the next test sees the tool as
-        # already installed).
-        self._prune_orphaned_shed_entries()
-
-        # Populate _tools_by_id with stub entries from index
-        # This allows has_tool() and similar checks to work without loading
-        self._populate_tool_registry_from_index()
-
-        # Rebuild the short-id → guid map from the just-loaded index so
-        # short-id lookups for shed installs persisted across restarts
-        # resolve immediately, before any new install happens.
+        # Post-eager-walk: build the short-id lookup from whatever guids
+        # the panel pass registered.
         self._rebuild_shed_short_id_map()
 
-        # Render static panel views now that the index is populated. Before
-        # this point ``apply_view`` would have ``has_tool`` return False for
-        # every indexed-but-unloaded tool and the resulting view would be
-        # missing every entry. See the deferred-render comment in
-        # ``_init_lazy_toolbox``.
-        if self.app.name == "galaxy":
-            # EDAM's ``apply_view`` walks the full integrated panel via
-            # ``walk_loaded_tools`` -> ``panel_items_iter``, none of which
-            # trigger ``LazyIntegratedToolPanelElements`` materialisation.
-            # Only force a bulk materialisation when EDAM views are
-            # explicitly configured — for the typical lazy-mode deployment
-            # we keep the per-section deferral behaviour.
-            self._load_tool_panel_views()
-
-        # Commit any pending writes the constructor accumulated
-        # (``_bootstrap_store_from_configs`` already commits, but
-        # ``_prune_orphaned_shed_entries`` / ``_rebuild_index_from_store``
-        # ``flush()`` without committing). When the constructor runs in
-        # the queue-worker thread (``reload_toolbox`` control task),
-        # nothing later closes that transaction — on SQLite the open
-        # writer lock blocks the test driver's subsequent ``DELETE FROM
-        # repository_repository_dependency_association`` in
+        # Commit anything ``create_tool`` persisted during the eager walk.
+        # No-op when the store didn't see any new content. When the
+        # constructor runs in the queue-worker thread (``reload_toolbox``
+        # control task), nothing later closes that transaction — on SQLite
+        # the open writer lock blocks the test driver's subsequent
+        # ``DELETE FROM repository_repository_dependency_association`` in
         # ``reset_shed_tools`` (``test_repository_*`` teardown), on
-        # Postgres it leaves an idle-in-transaction row that blocks
-        # those same ``DELETE``s for the rest of the shard run. The
-        # commit is also a no-op when nothing was written.
+        # Postgres it leaves an idle-in-transaction row blocking those
+        # same ``DELETE``s for the rest of the shard run.
         if self._store is not None:
             try:
                 self._store.commit()
             except Exception as e:
                 log.warning(f"LazyToolBox: post-init commit raised: {e}")
 
-        log.info(f"LazyToolBox initialized with {len(self._tools_by_id)} tools (cache_size={cache_size})")
+        log.info(
+            "LazyToolBox initialized with %d tools (cache_size=%d, parsed=%d, from_store=%d)",
+            len(self._tools_by_id),
+            cache_size,
+            self._tools_parsed_from_file,
+            self._tools_loaded_from_store,
+        )
         self._warn_if_index_misses_panel_tools()
+
+    def _init_tools_from_configs(self, config_filenames: list[str]) -> None:
+        """Load the persistent ``ToolIndex`` before delegating to the eager walk.
+
+        After this returns, the eager pipeline calls into ``create_tool`` for
+        every ``<tool>`` it walks. The seam short-circuits indexed sources to a
+        :class:`LazyTool` stub; misses fall through to the parent's full
+        ``ToolBox.create_tool`` and ``_persist_tool_source`` writes them to
+        the store, so the next boot sees them as hits.
+        """
+        if self._store is not None:
+            loaded = self._store.load_index()
+            self._tool_index = loaded if loaded is not None else ToolIndex()
+        else:
+            self._tool_index = ToolIndex()
+        super()._init_tools_from_configs(config_filenames)
 
     def _warn_if_index_misses_panel_tools(self) -> None:
         """Warn loudly if the index doesn't cover every tool the operator configured.
@@ -680,7 +668,26 @@ class LazyToolBox(ToolBox):
         if self._tool_index is None:
             return
         index_ids = set(self._tool_index.entries.keys())
-        panel_ids = set(self._tool_section_map.keys())
+        # ``_tool_section_map`` is built by the (Phase-2-doomed)
+        # ``_init_panel_structure_from_configs``; in the seam-driven boot
+        # path the eager walk populates ``_tool_panel`` directly, so derive
+        # the panel-id set from that instead. Falls back to whatever
+        # the legacy code path left behind.
+        if hasattr(self, "_tool_section_map") and self._tool_section_map:
+            panel_ids: set[str] = set(self._tool_section_map.keys())
+        else:
+            panel_ids = set()
+            for _key, item in self._tool_panel.items():
+                if isinstance(item, ToolSection):
+                    for _sub_key, sub_type, sub_item in item.elems.panel_items_iter():
+                        if sub_type == panel_item_types.TOOL and sub_item is not None:
+                            tool_id = getattr(sub_item, "id", None)
+                            if tool_id:
+                                panel_ids.add(tool_id)
+                elif _key.startswith("tool_") and item is not None:
+                    tool_id = getattr(item, "id", None)
+                    if tool_id:
+                        panel_ids.add(tool_id)
         missing = panel_ids - index_ids
         if missing:
             sample = sorted(missing)[:20]
@@ -746,7 +753,7 @@ class LazyToolBox(ToolBox):
         # 404. Mirror the eager mapping at the index level so ``get_tool``
         # and ``has_tool`` can resolve short-id → guid → entry without
         # materialising the Tool first.
-        self._shed_short_id_to_guids: dict[str, set[str]] = {}
+        self._shed_short_id_to_guids = {}
         self._workflows_by_id: dict[str, Any] = {}
         self._tool_to_dict_cache: dict[str, dict[str, Any]] = {}
         self._tool_to_dict_cache_admin: dict[str, dict[str, Any]] = {}
@@ -1619,281 +1626,6 @@ class LazyToolBox(ToolBox):
             source_class=stored.tool_source_class,
             fallback_tool_id=stored.tool_id,
         )
-
-    def load_item(
-        self,
-        item,
-        tool_path,
-        panel_dict=None,
-        integrated_panel_dict=None,
-        load_panel_dict: bool = True,
-        guid=None,
-        index: Optional[int] = None,
-    ) -> None:
-        """Persist newly installed tools to the store + index without pinning a Tool object.
-
-        Called at runtime by the shed-install path
-        (``tool_panel_manager.add_to_tool_panel`` →
-        ``self.app.toolbox.load_item(...)``). The eager ``ToolBox.load_item``
-        materializes a fully parsed ``Tool`` and registers it in
-        ``_tools_by_id`` for the lifetime of the process — defeating the
-        whole point of the lazy path. We replace it for ``tool`` items
-        with the lazy-equivalent work; for ``section`` items we walk the
-        children ourselves so their section context survives (the eager
-        ``_load_section_tag_set`` post-walks ``integrated_elems`` to call
-        ``record_section_for_tool_id``, which finds nothing because the
-        lazy path never put a Tool object into ``integrated_elems``).
-        """
-        from galaxy.tool_util.toolbox.parser import ensure_tool_conf_item
-
-        item = ensure_tool_conf_item(item)
-        item_type = getattr(item, "type", None)
-
-        if self._store is None or self._tool_index is None:
-            # No lazy infra wired — fall back to eager load so the install still works.
-            super().load_item(
-                item,
-                tool_path=tool_path,
-                panel_dict=panel_dict,
-                integrated_panel_dict=integrated_panel_dict,
-                load_panel_dict=load_panel_dict,
-                guid=guid,
-                index=index,
-            )
-            return
-
-        if item_type == "tool":
-            with self.app._toolbox_lock:
-                self._lazy_register_tool_item(item, tool_path, guid=guid)
-            return
-
-        if item_type == "section":
-            with self.app._toolbox_lock:
-                self._lazy_register_section_item(item, tool_path, index=index)
-            return
-
-        super().load_item(
-            item,
-            tool_path=tool_path,
-            panel_dict=panel_dict,
-            integrated_panel_dict=integrated_panel_dict,
-            load_panel_dict=load_panel_dict,
-            guid=guid,
-            index=index,
-        )
-
-    def _lazy_register_section_item(self, item, tool_path: str, index: Optional[int] = None) -> None:
-        """Lazy equivalent of ``_load_section_tag_set`` for shed installs.
-
-        The eager path materializes each child ``Tool`` and walks
-        ``integrated_elems.panel_items_iter()`` to call
-        ``record_section_for_tool_id``. Without a Tool object the walk
-        finds nothing, so panel views (e.g. ``custom_13`` referencing
-        ``test_section_multi``) render the freshly-installed tool at root
-        instead of inside the requested section. We store the source +
-        index entry as for a bare tool, then explicitly stamp the
-        section onto the entry and the section/tool maps so subsequent
-        panel renders place it correctly.
-        """
-        section_id = item.get("id")
-        section_name = item.get("name", section_id) or ""
-        if section_id:
-            section_dict = {"id": section_id, "name": section_name, "version": item.get("version", "")}
-            if section_id not in self._tool_panel:
-                self._tool_panel.append_section(section_id, ToolSection(section_dict))
-            # Mirror into ``_integrated_tool_panel`` so static panel views
-            # (``apply_view`` walks the integrated panel via
-            # ``ToolPanelElements.closest_section`` / ``walk_sections``)
-            # can find the section. Without this, e.g. ``custom_13.yml``
-            # which references ``test_section_multi`` renders the
-            # freshly-installed shed tool at the panel root because the
-            # view doesn't see the section it was placed under.
-            if section_id not in self._integrated_tool_panel:
-                self._integrated_tool_panel[section_id] = ToolSection(section_dict)
-            # Drop the section from the materialised-set so the next view
-            # render pulls in the newly-installed tool. The lazy panel
-            # otherwise short-circuits on the already-materialised flag and
-            # keeps serving the pre-install snapshot.
-            if isinstance(self._integrated_tool_panel, LazyIntegratedToolPanelElements):
-                self._integrated_tool_panel._materialised_sections.discard(section_id)
-                self._integrated_tool_panel._fully_materialised = False
-        if not hasattr(item, "items"):
-            return
-        for sub_item in item.items:
-            sub_type = getattr(sub_item, "type", None)
-            if sub_type == "tool":
-                self._lazy_register_tool_item(
-                    sub_item,
-                    tool_path,
-                    guid=sub_item.get("guid"),
-                    section_id=section_id,
-                    section_name=section_name,
-                )
-            else:
-                # labels, workflows, nested sections — let the eager
-                # implementation handle them; they don't need lazy treatment.
-                super().load_item(sub_item, tool_path=tool_path, index=index)
-        # Re-render static panel views so newly-installed tools land in
-        # ``_tool_panel_view_rendered`` immediately. The view dict is
-        # otherwise frozen at boot — ``apply_view`` calls
-        # ``closest_section.copy(merge_tools=True)`` which snapshots the
-        # section's elems at render time, so a post-boot install is
-        # invisible to ``tools?in_panel=True&view=...`` until the next
-        # reload. Skip if ``app.name != "galaxy"`` (mirrors the eager
-        # ``_load_tool_panel_views`` guard in
-        # ``ToolBox._load_built_in_converters``).
-        if getattr(self.app, "name", None) == "galaxy":
-            try:
-                self._load_tool_panel_views()
-            except Exception as e:
-                log.warning(f"Lazy section install: panel view re-render failed: {e}")
-
-    def _lazy_register_tool_item(
-        self,
-        item,
-        tool_path: str,
-        guid: Optional[str] = None,
-        section_id: Optional[str] = None,
-        section_name: Optional[str] = None,
-    ) -> None:
-        """Persist a single tool item's source to the store and add an index entry.
-
-        Reused by the shed-install ``load_item`` override. Does *not*
-        instantiate a ``Tool`` object — the next ``get_tool`` call
-        lazy-loads it. ``section_id`` / ``section_name`` are propagated
-        from the enclosing ``<section>`` (when called from
-        ``_lazy_register_section_item``) so the index entry, the tool
-        section map, and the panel structure all agree on the tool's
-        section.
-        """
-        from galaxy.tool_source_store import StoredToolSource as _StoredToolSource
-        from galaxy.util import xml_to_string
-
-        assert self._store is not None
-        assert self._tool_index is not None
-
-        tool_file = item.get("file")
-        if not tool_file:
-            log.debug("Lazy load_item skipped: tool item has no 'file' attribute")
-            return
-        tool_full_path = os.path.join(tool_path, tool_file)
-        try:
-            tool_source = get_tool_source(config_file=tool_full_path)
-            root = tool_source.xml_tree.getroot()  # type: ignore[attr-defined]
-            expanded_content = xml_to_string(root, pretty=True)
-        except Exception as e:
-            log.warning(f"Lazy load_item could not parse {tool_full_path}: {e}")
-            return
-
-        content_hash = hashlib.sha256(expanded_content.encode("utf-8")).hexdigest()
-        # ``<tool guid="...">`` overrides the XML body's ``<tool id="...">``
-        # for shed installs — ``Tool.id`` becomes the guid in the eager path.
-        # Workflow / API lookups by full guid (e.g. ``toolshed.../pick_value/0.2.0``)
-        # consult ``has_tool``/``get_tool`` against that guid; without keying
-        # the index by guid the lookup returns ``None`` and downstream
-        # callers report "required tools are not installed".
-        installed_guid = guid or item.get("guid")
-        tool_id = installed_guid or tool_source.parse_id()
-        if not tool_id:
-            log.debug(f"Lazy load_item: no tool_id resolvable for {tool_full_path}")
-            return
-
-        stored = _StoredToolSource(
-            hash=content_hash,
-            tool_source_class=type(tool_source).__name__,
-            raw_source=expanded_content,
-            tool_id=tool_id,
-            tool_version=tool_source.parse_version(),
-            tool_dir=os.path.dirname(tool_full_path),
-            source_path=tool_full_path,
-            stored_at=datetime.utcnow(),
-        )
-        try:
-            self._store.store(stored)
-        except Exception as e:
-            log.warning(f"Lazy load_item could not store {tool_full_path}: {e}")
-            return
-
-        entry = self._build_index_entry_from_stored(stored)
-        if entry:
-            # ``_build_index_entry_from_stored`` keys the entry on
-            # ``tool_source.parse_id()`` (the XML's ``<tool id="...">``,
-            # i.e. the short id like ``map_param_value``). For shed
-            # installs the tool's *external* id is the guid — that's what
-            # ``Tool.id`` becomes in the eager path and what
-            # workflow / API callers consult via ``has_tool(guid)``.
-            # Override the entry id (and any tool-shed metadata) so the
-            # lazy index agrees with that contract.
-            if installed_guid:
-                entry.id = installed_guid
-                entry.is_local = False
-                # Pull tool_shed metadata from the install elem so the
-                # entry — and the lazy-loaded Tool — agrees with the
-                # eager toolbox's ``populate_tool_shed_info`` contract.
-                # The install path generates ``<tool guid="..."><tool_shed>...</tool_shed>...</tool>``
-                # via ``ToolPanelManager.generate_tool_elem``; ``ToolConfItem``
-                # exposes the underlying XML via ``.elem`` (and ``has_elem``
-                # tells us when that's safe). For dict-typed items there's
-                # no XML — skip silently.
-                xml_elem = item.elem if getattr(item, "has_elem", False) else None
-                if xml_elem is not None:
-                    shed_url = xml_elem.findtext("tool_shed")
-                    if shed_url:
-                        entry.tool_shed = shed_url
-                    repo_name = xml_elem.findtext("repository_name")
-                    if repo_name:
-                        entry.repository_name = repo_name
-                    repo_owner = xml_elem.findtext("repository_owner")
-                    if repo_owner:
-                        entry.repository_owner = repo_owner
-                    changeset = xml_elem.findtext("installed_changeset_revision")
-                    if changeset:
-                        entry.changeset_revision = changeset
-            if section_id:
-                entry.panel_section_id = section_id
-                entry.panel_section_name = section_name or section_id
-            # ``add_entry`` populates both the default-per-id ``entries``
-            # map and ``entries_by_version`` (keyed on the tool's version),
-            # which is what version-aware ``get_tool`` lookups consult.
-            # Direct assignment to ``entries`` would leave
-            # ``entries_by_version`` stale and break per-version routing.
-            self._tool_index.add_entry(entry)
-            self._tool_index.invalidate_caches()
-            # Mirror the eager toolbox's short-id → Tool mapping so
-            # ``GET /api/tools/<short_id>`` resolves immediately after
-            # install. Without this, ``test_repository_installation``'s
-            # ``self._get("/api/tools/collection_column_join")`` hits 404
-            # because the index entry is keyed on the full guid.
-            if installed_guid:
-                short_id = extract_short_id_from_guid(installed_guid)
-                if short_id and short_id != installed_guid:
-                    self._shed_short_id_to_guids.setdefault(short_id, set()).add(installed_guid)
-            if section_id:
-                self._tool_section_map[entry.id] = (section_id, section_name)
-                if section_id in self._tool_panel:
-                    self._tool_panel.record_section_for_tool_id(entry.id, section_id, section_name or "")
-            try:
-                self._store.store_index(self._tool_index)
-            except Exception as e:
-                log.warning(f"Lazy load_item could not persist index: {e}")
-
-        # Fan out to peer Galaxy processes so they reload the index. Skip
-        # ourselves — our in-memory ``_cached_index`` already reflects the
-        # just-added entry, but the local queue-worker handler would
-        # ``invalidate_index_cache`` and re-read the DB, where the WSGI
-        # thread's session has only flushed (not committed) the new row.
-        # That race used to clobber the live cache with the pre-write
-        # state, so the next install on this process saw an empty index
-        # and persisted only its own entry — losing the prior install's
-        # tool entirely (``test_only_latest_version_in_panel_fastp``
-        # surfaces this when ``fastp/0.19.5+galaxy1`` vanishes between
-        # install-1 and install-2).
-        try:
-            from galaxy.queue_worker import send_control_task
-
-            send_control_task(self.app, "reload_tool_source_cache", noop_self=True)
-        except Exception as e:
-            log.debug(f"Lazy load_item could not broadcast reload_tool_source_cache: {e}")
 
     def _populate_tool_registry_from_index(self) -> None:
         """
