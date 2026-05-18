@@ -177,6 +177,20 @@ class LazyTool:
         return self._lineage
 
     @property
+    def tool_shed_repository(self):
+        # The eager pipeline sets this on the real ``Tool`` for shed-installed
+        # tools (passing ``tool_shed_repository=<repo>`` to ``create_tool``);
+        # the LazyTool stub doesn't carry the repo object. Default to None —
+        # callers that need a real ``ToolShedRepository`` go through
+        # materialisation via ``_materialize_for_lazy_tool``, which routes the
+        # repo lookup via ``_lookup_tool_shed_repository``.
+        return self._overrides.get("tool_shed_repository")
+
+    @tool_shed_repository.setter
+    def tool_shed_repository(self, value):
+        self._overrides["tool_shed_repository"] = value
+
+    @property
     def tool_errors(self):
         return self._overrides.get("tool_errors")
 
@@ -621,11 +635,24 @@ class LazyToolBox(ToolBox):
 
         The populator (cold-start in :meth:`_init_tools_from_configs`, shed
         installs via ``tool_panel_manager.add_to_tool_panel``) is the single
-        writer of the index; a miss here means the operator added a tool to
-        a conf without re-running the populator. Raise rather than parsing
-        in-toolbox so the contract failure is loud and addressable.
+        writer of the index. On an unexpected miss we attempt a one-shot
+        ``populate_single_path`` to cover ad-hoc loads (``load_hidden_lib_tool``
+        for ``set_metadata_tool.xml`` and friends — Galaxy-internal tools
+        loaded after boot from outside any tool_conf). Only fall through to
+        a hard raise if even that recovery doesn't yield an entry.
         """
         entry = self._resolve_index_entry(config_file, guid)
+        if entry is None and config_file is not None and self._store is not None:
+            from galaxy.tool_source_store.populator import populate_single_path
+
+            if populate_single_path(self.app.config, self.app.model.context, str(config_file)):
+                # Drop the cached index so the next resolve sees the new row.
+                try:
+                    self._store.invalidate_index_cache()
+                except Exception as e:
+                    log.debug("invalidate_index_cache after populate_single_path raised: %s", e)
+                self._tool_index = self._store.load_index() or self._tool_index
+                entry = self._resolve_index_entry(config_file, guid)
         if entry is None:
             raise RuntimeError(
                 "LazyToolBox.create_tool: no index entry for "

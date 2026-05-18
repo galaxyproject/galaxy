@@ -688,6 +688,15 @@ def populate_store_inline(
 
             if not dry_run:
                 target_store.store(stored)
+                # Commit per tool so each write is a short transaction.
+                # When the populator runs inside a Galaxy process (cold
+                # start, shed install) the shared SQLAlchemy session is
+                # under concurrent pressure from request handlers and the
+                # queue worker; holding 484 inserts in one open transaction
+                # is enough to push SQLite past its 5s busy timeout. The
+                # CLI path takes the same hit but on its own model.context
+                # with no concurrent readers, so the cost is invisible.
+                target_store.commit()
             return ("stored", d, store_name, stored, tool_source, None)
         except Exception as e:
             log.error(f"Error processing {path}: {e}")
@@ -759,6 +768,15 @@ def populate_store_inline(
                 )
             except Exception as e:
                 log.warning("store_index for %s raised: %s", store_name, e)
+                # The flush failed — the session is now in PendingRollback
+                # state, which would surface to the very next caller as
+                # SQLAlchemyError. Clear it so the rest of the boot path
+                # (and the eventual test client) sees a clean session.
+                if sa_session is not None:
+                    try:
+                        sa_session.rollback()
+                    except Exception as rb_e:
+                        log.debug("session.rollback after store_index failure raised: %s", rb_e)
                 continue
             # Rebuild the whoosh search index from the persisted ToolIndex.
             # Single-writer principle: the toolbox stops re-building this in
@@ -796,6 +814,84 @@ def populate_for_paths(
         rebuild_whoosh=rebuild_whoosh,
         broadcast=True,
     )
+
+
+def populate_single_path(config, sa_session, path: str) -> bool:
+    """Index a single tool file by path, bypassing ``discover_tools``.
+
+    Used by ``LazyToolBox.create_tool`` to recover from index misses on
+    paths the populator's conf walk doesn't cover — typically lib tools
+    loaded via ``load_hidden_lib_tool`` (``set_metadata_tool.xml`` and
+    friends), which live under ``lib/galaxy/`` rather than any tool_conf.
+
+    Parses the file, builds a ``StoredToolSource`` and ``ToolIndexEntry``
+    (with no panel section, since the tool isn't in any conf), persists to
+    every writable store, and updates the cached index. Returns True on
+    success.
+    """
+    import os
+
+    from galaxy.tool_source_store import StoredToolSource
+    from galaxy.tool_source_store.discover import DiscoveredTool
+    from galaxy.tool_source_store.index import ToolIndex
+    from galaxy.tool_util.parser import get_tool_source
+    from galaxy.util import xml_to_string
+
+    if not os.path.exists(path):
+        return False
+    try:
+        tool_source = get_tool_source(config_file=path)
+        root = tool_source.xml_tree.getroot()
+        expanded_content = xml_to_string(root, pretty=True)
+    except Exception as e:
+        log.warning("populate_single_path: parse of %s failed: %s", path, e)
+        return False
+
+    content_hash = compute_hash(expanded_content)
+    stored = StoredToolSource(
+        hash=content_hash,
+        tool_source_class=type(tool_source).__name__,
+        raw_source=expanded_content,
+        tool_id=tool_source.parse_id(),
+        tool_version=tool_source.parse_version(),
+        tool_dir=str(Path(path).parent),
+        source_path=str(path),
+        stored_at=datetime.now(timezone.utc),
+    )
+    discovered = DiscoveredTool(path=str(path), tool_conf="<lib-tool>", tool_path=None)
+    entry = build_index_entry_from_source(discovered, stored, tool_source)
+    if entry is None:
+        return False
+
+    stores = _build_stores(config, sa_session)
+    for store_name, store in stores.items():
+        if store.read_only:
+            continue
+        try:
+            store.store(stored)
+            store.commit()
+        except Exception as e:
+            log.warning("populate_single_path: store(%s) for %s raised: %s", store_name, path, e)
+            if sa_session is not None:
+                try:
+                    sa_session.rollback()
+                except Exception:
+                    pass
+            continue
+        # Merge entry into the existing index (partial-update semantics).
+        try:
+            index = store.load_index() or ToolIndex()
+            index.add_entry(entry)
+            store.store_index(index)
+            store.commit()
+        except Exception as e:
+            log.warning("populate_single_path: store_index for %s raised: %s", store_name, e)
+            if sa_session is not None:
+                try:
+                    sa_session.rollback()
+                except Exception:
+                    pass
+    return True
 
 
 def reconcile_index(
