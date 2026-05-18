@@ -113,8 +113,11 @@ class LazyTool:
     # Class-level so it isn't writable on the instance.
     _macro_paths: tuple = ()
 
-    # Methods we accept will materialise a real Tool. Add to this set only
-    # when the parse cost is genuinely warranted at the call site.
+    # Methods / properties we accept will materialise a real Tool. Add to
+    # this set only when the parse cost is genuinely warranted at the call
+    # site — generally the tool-execution path (``handle_input``, the
+    # parameter machinery) and admin/container endpoints that need the
+    # fully-parsed Tool.
     _MATERIALIZE_OK = frozenset(
         {
             "to_archive",  # tool packaging endpoint
@@ -122,6 +125,17 @@ class LazyTool:
             "tool_requirements",  # container_resolvers/toolbox admin endpoint
             "containers",  # container resolution
             "requirements",  # alias used by some callers
+            # Tool-execution path. ``/api/tools/{id}`` POST → ``handle_input``
+            # → ``inputs`` / ``parameters`` / ``new_state`` / ``input_translator``.
+            # Materialising here is right: the caller is about to execute the
+            # tool, which fundamentally needs the parsed parameter tree.
+            "handle_input",
+            "inputs",
+            "parameters",
+            "new_state",
+            "input_translator",
+            # Job runner reads this on the tool to decide environment setup.
+            "requires_galaxy_python_environment",
         }
     )
 
