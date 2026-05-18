@@ -36,8 +36,8 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_util.id_util import extract_short_id_from_guid
+from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
@@ -835,49 +835,27 @@ class LazyToolBox(ToolBox):
         kwds: dict[str, Any] = {"tool_dir": stored.tool_dir}
         if stored.tool_id and "/repos/" in stored.tool_id:
             kwds["guid"] = stored.tool_id
-            # Hand the matching ToolShedRepository to the Tool ctor so
-            # ``populate_tool_shed_info`` can stamp ``tool_shed`` /
-            # ``repository_name`` / ``changeset_revision`` /
-            # ``installed_changeset_revision`` onto the Tool. Without
-            # them, ``Tool.to_dict`` skips the ``tool_shed_repository``
-            # block (gated on ``self.tool_shed`` being truthy) and tests
-            # like ``test_only_latest_version_in_panel_fastp`` raise
-            # ``KeyError: 'tool_shed_repository'`` on the rendered
-            # response.
-            shed_repo = self._lookup_tool_shed_repository(stored, entry)
-            if shed_repo is not None:
-                kwds["tool_shed_repository"] = shed_repo
+            # ``ToolConfRepository`` (lib/galaxy/tool_util/toolbox/base.py:87)
+            # is the same namedtuple stub the eager pipeline hands the Tool
+            # ctor for shed tools whose install-DB row hasn't materialised
+            # yet — see ``AbstractToolBox.get_tool_repository_from_xml_item``.
+            # ``Tool.populate_tool_shed_info`` only reads the scalar fields,
+            # all of which are on ``ToolIndexEntry``; building the stub
+            # directly avoids a per-materialise install-DB round-trip.
+            # ``installed_tool_dependencies`` readers get ``[]`` — same
+            # shape the eager pre-install code path produces.
+            if entry and not entry.is_local and entry.tool_shed:
+                kwds["tool_shed_repository"] = ToolConfRepository(
+                    tool_shed=entry.tool_shed,
+                    name=entry.repository_name,
+                    owner=entry.repository_owner,
+                    installed_changeset_revision=entry.changeset_revision,
+                    changeset_revision=entry.changeset_revision,
+                    tool_dependencies_installed_or_in_error=[],
+                    repository_path=None,
+                    tool_path=stored.tool_dir,
+                )
         return create_tool_from_source(self.app, tool_source, **kwds)
-
-    def _lookup_tool_shed_repository(self, stored: StoredToolSource, entry: Optional[ToolIndexEntry]) -> Optional[Any]:
-        """Resolve the installed ToolShedRepository for a stored shed tool.
-
-        Mirrors ``AbstractToolBox.get_tool_repository_from_xml_item`` but
-        sources the tool_shed / repository_name / repository_owner /
-        installed_changeset_revision from the index entry (stamped by
-        ``_lazy_register_tool_item`` from the install elem) instead of
-        re-parsing the conf XML.
-        """
-        if entry is None or entry.is_local:
-            return None
-        tool_shed = entry.tool_shed
-        repo_name = entry.repository_name
-        repo_owner = entry.repository_owner
-        installed_changeset = entry.changeset_revision
-        if not (tool_shed and repo_name and repo_owner and installed_changeset):
-            return None
-        try:
-            return get_installed_repository(
-                self.app,
-                tool_shed=tool_shed,
-                name=repo_name,
-                owner=repo_owner,
-                installed_changeset_revision=installed_changeset,
-                from_cache=True,
-            )
-        except Exception as e:
-            log.debug(f"Lazy lookup of tool_shed_repository for {stored.tool_id} failed: {e}")
-            return None
 
     def invalidate_index_cache(self) -> None:
         """Drop cached tool index so the next read picks up out-of-band updates.
