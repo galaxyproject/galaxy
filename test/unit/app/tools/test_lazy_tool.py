@@ -109,28 +109,26 @@ def test_old_id_short_circuits_for_shed_ids():
     assert _stub(_entry(id="local_tool")).old_id == "local_tool"
 
 
-def test_to_dict_falls_back_to_entry_dict_when_materialise_fails():
-    # ``LazyTool.to_dict`` always tries to materialise — the flat
-    # ``/api/tools?in_panel=False`` listing path bypasses it entirely via
-    # ``entry.to_api_dict()``, so every caller that reaches here needs the
-    # parsed payload. On materialise failure we return the entry-shape
-    # dict so the panel render / show endpoint still gets *something*.
+def test_to_dict_entry_fast_path_does_not_materialise():
+    # Default call (no ``io_details``, no ``tool_help``) is the panel-view
+    # path — the toolbox no longer asks for ``link_details``. Serve the
+    # entry-shape dict directly; never materialise.
     def boom(_e):
-        raise RuntimeError("materialise failed")
+        raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
     t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
-    d = t.to_dict(trans=None, link_details=False)
+    d = t.to_dict(trans=None)
     assert d["id"] == "bowtie2"
     assert d["model_class"] == "Tool"
-    assert d["link"] == "/api/tools/bowtie2"
+    assert d["link"] == "/tool_runner?tool_id=bowtie2"
 
 
-def test_to_dict_materialises_exactly_once_per_call():
+def test_to_dict_io_details_materialises():
     calls = []
 
     class _Real:
         def to_dict(self, trans, link_details, tool_help, **kw):
-            calls.append("real-to_dict")
+            calls.append(("real-to_dict", kw.get("io_details")))
             return {"id": "real"}
 
     def mat(_e):
@@ -138,10 +136,23 @@ def test_to_dict_materialises_exactly_once_per_call():
         return _Real()
 
     t = LazyTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
-    assert t.to_dict(trans=None, link_details=True) == {"id": "real"}
-    assert t.to_dict(trans=None, link_details=True) == {"id": "real"}
-    # First call materialises; second reuses ``_real``.
-    assert calls == ["mat", "real-to_dict", "real-to_dict"]
+    # ``io_details=True`` is the show-endpoint contract — materialise.
+    assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
+    # Second call reuses cached ``_real``.
+    assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
+    assert calls == ["mat", ("real-to_dict", True), ("real-to_dict", True)]
+
+
+def test_to_dict_falls_back_to_entry_when_materialise_fails():
+    # If a tool can't materialise (e.g. ``upload_dataset`` parameter factory
+    # failure) the show endpoint still gets the entry-shape dict.
+    def boom(_e):
+        raise RuntimeError("materialise failed")
+
+    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
+    d = t.to_dict(trans=None, io_details=True)
+    assert d["id"] == "bowtie2"
+    assert d["model_class"] == "Tool"
 
 
 def test_allow_user_access_uses_index_data_without_materialise():

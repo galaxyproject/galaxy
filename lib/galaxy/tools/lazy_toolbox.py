@@ -291,30 +291,30 @@ class LazyTool:
         return True
 
     def to_dict(self, trans=None, link_details: bool = False, tool_help: bool = False, **kw) -> dict[str, Any]:
-        """API serialisation — always materialises.
+        """API serialisation.
 
-        The flat ``/api/tools?in_panel=False`` listing already bypasses
-        ``LazyTool.to_dict`` via ``services/tools.py:list_tools`` which
-        calls ``entry.to_api_dict()`` directly off the index — so the
-        only callers that reach this method are paths that need the
-        parsed payload: ``/api/tools/<id>`` show (with or without
-        ``io_details``), the panel-view walk in ``to_panel_view`` /
-        ``ToolSection.to_dict``, and the per-tool ``Tool.to_dict`` reads
-        from filters / managers.
+        Entry-shape fast path covers the panel-view walk
+        (``AbstractToolBox.get_tool_to_dict`` no longer passes
+        ``link_details=True``; see commit ``f64858bf55e``) and the flat
+        ``/api/tools?in_panel=False`` listing handler. Materialise only
+        when the caller asks for ``io_details=True`` (the ``/api/tools/{id}``
+        show endpoint, which needs ``inputs`` / ``outputs`` / parameter
+        tree) or ``tool_help=True`` (rendered help payload).
 
         On materialise failure (tool XML the parameter factory can't
         handle — ``upload_dataset``, ``column="value"`` against an
-        unresolvable column-name spec, …) we fall back to an entry-only
+        unresolvable column-name spec, …) we fall back to the entry-only
         dict so the caller still gets a renderable shape; eager mode
         catches the same in ``_load_tool_tag_set`` and drops the tool
         from ``_tools_by_id``.
         """
-        try:
-            return self._materialize().to_dict(
-                trans, link_details=link_details, tool_help=tool_help, **kw
-            )
-        except Exception as e:
-            log.warning("LazyTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
+        if kw.get("io_details") or tool_help:
+            try:
+                return self._materialize().to_dict(
+                    trans, link_details=link_details, tool_help=tool_help, **kw
+                )
+            except Exception as e:
+                log.warning("LazyTool.to_dict: materialise failed for %s, falling back to entry: %s", self.id, e)
         entry = self._entry
         return {
             "id": self.id,
@@ -328,7 +328,9 @@ class LazyTool:
             "model_class": "Tool",
             "panel_section_id": entry.panel_section_id,
             "panel_section_name": entry.panel_section_name,
-            "link": f"/api/tools/{self.id}",
+            # Cheap URL pattern — matches what ``Tool.to_dict`` now emits
+            # unconditionally for the materialised side.
+            "link": f"/tool_runner?tool_id={self.id}",
         }
 
     # --- materialisation ---
