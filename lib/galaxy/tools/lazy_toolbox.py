@@ -329,8 +329,6 @@ class LazyTool:
             "panel_section_id": entry.panel_section_id,
             "panel_section_name": entry.panel_section_name,
             "link": f"/api/tools/{self.id}",
-            "min_width": -1,
-            "target": "galaxy_main",
         }
 
     # --- materialisation ---
