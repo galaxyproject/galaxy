@@ -109,15 +109,23 @@ def test_old_id_short_circuits_for_shed_ids():
     assert _stub(_entry(id="local_tool")).old_id == "local_tool"
 
 
-def test_to_dict_fast_path_does_not_materialise():
-    t = _stub()
+def test_to_dict_falls_back_to_entry_dict_when_materialise_fails():
+    # ``LazyTool.to_dict`` always tries to materialise — the flat
+    # ``/api/tools?in_panel=False`` listing path bypasses it entirely via
+    # ``entry.to_api_dict()``, so every caller that reaches here needs the
+    # parsed payload. On materialise failure we return the entry-shape
+    # dict so the panel render / show endpoint still gets *something*.
+    def boom(_e):
+        raise RuntimeError("materialise failed")
+
+    t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
     d = t.to_dict(trans=None, link_details=False)
     assert d["id"] == "bowtie2"
     assert d["model_class"] == "Tool"
     assert d["link"] == "/api/tools/bowtie2"
 
 
-def test_to_dict_link_details_materialises_exactly_once():
+def test_to_dict_materialises_exactly_once_per_call():
     calls = []
 
     class _Real:
@@ -132,6 +140,7 @@ def test_to_dict_link_details_materialises_exactly_once():
     t = LazyTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
     assert t.to_dict(trans=None, link_details=True) == {"id": "real"}
     assert t.to_dict(trans=None, link_details=True) == {"id": "real"}
+    # First call materialises; second reuses ``_real``.
     assert calls == ["mat", "real-to_dict", "real-to_dict"]
 
 
