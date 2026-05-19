@@ -2959,7 +2959,11 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         return tarball_archive
 
     def to_dict(self, trans, link_details=False, io_details=False, tool_help=False):
-        """Returns dict of tool."""
+        """Returns dict of tool.
+
+        ``link_details`` is accepted for backwards compatibility and no
+        longer gates any field.
+        """
 
         # Basic information
         tool_dict = self._dictify_view_keys()
@@ -2990,16 +2994,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             config_file = None if not self.config_file else os.path.abspath(self.config_file)
             tool_dict["config_file"] = config_file
 
-        # Add link details.
-        if link_details:
-            # Add details for creating a hyperlink to the tool.
-            if not isinstance(self, DataSourceTool):
-                link = self.app.url_for(controller="tool_runner", tool_id=self.id)
-            else:
-                link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
-
-            # Basic information
-            tool_dict["link"] = link
+        if isinstance(self, DataSourceTool):
+            tool_dict["link"] = self.app.url_for(
+                controller="tool_runner", action="data_source_redirect", tool_id=self.id
+            )
+        else:
+            tool_dict["link"] = self.app.url_for(controller="tool_runner", tool_id=self.id)
 
         # Add input and output details.
         if io_details:
