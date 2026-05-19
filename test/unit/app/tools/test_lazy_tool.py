@@ -109,21 +109,18 @@ def test_old_id_short_circuits_for_shed_ids():
     assert _stub(_entry(id="local_tool")).old_id == "local_tool"
 
 
-def test_to_dict_entry_fast_path_does_not_materialise():
-    # Default call (no ``io_details``, no ``tool_help``) is the panel-view
-    # path — the toolbox no longer asks for ``link_details``. Serve the
-    # entry-shape dict directly; never materialise.
+def test_to_panel_entry_does_not_materialise():
     def boom(_e):
         raise AssertionError(f"unexpected materialise for {_e.id!r}")
 
     t = LazyTool(_entry(), materialize_callback=boom, is_admin_user=lambda u: False)
-    d = t.to_dict(trans=None)
+    d = t.to_panel_entry(trans=None)
     assert d["id"] == "bowtie2"
     assert d["model_class"] == "Tool"
     assert d["link"] == "/tool_runner?tool_id=bowtie2"
 
 
-def test_to_dict_io_details_materialises():
+def test_to_dict_materialises():
     calls = []
 
     class _Real:
@@ -136,7 +133,6 @@ def test_to_dict_io_details_materialises():
         return _Real()
 
     t = LazyTool(_entry(), materialize_callback=mat, is_admin_user=lambda u: False)
-    # ``io_details=True`` is the show-endpoint contract — materialise.
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
     # Second call reuses cached ``_real``.
     assert t.to_dict(trans=None, io_details=True) == {"id": "real"}
