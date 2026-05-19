@@ -147,6 +147,13 @@ class LazyTool:
             "completed_jobs",  # job-search via tool
             "get_default_history_by_trans",  # default-history lookup on execute
             "regenerate_imported_metadata_if_needed",  # import/export path
+            "outputs",  # output spec read by execute / display
+            "tests",  # tool test definitions read by /api/tools tests endpoints
+            "to_json",  # tool JSON serialisation
+            "tool_requirements_status",  # /api/tools requirements_status
+            "provided_metadata_file",  # job-runner metadata path
+            "test_data_path",  # tool test data lookup
+            "get_configured_job_handler",  # job-runner handler routing
             # Job runner reads this on the tool to decide environment setup.
             "requires_galaxy_python_environment",
         }
