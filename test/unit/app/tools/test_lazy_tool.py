@@ -167,9 +167,13 @@ def test_allow_user_access_allows_admin_for_data_manager():
 
 def test_strict_getattr_raises_with_clear_message():
     t = _stub()
+    # Pick an attribute that is *not* on the forwarded surface and not in
+    # ``_MATERIALIZE_OK`` so the strict path fires. (``tool_action`` used to
+    # live here but is now a materialise-OK attr; ``totally_not_a_tool_attr``
+    # is guaranteed unaccounted-for.)
     with pytest.raises(NotImplementedError) as ei:
-        _ = t.tool_action
-    assert "tool_action" in str(ei.value)
+        _ = t.totally_not_a_tool_attr
+    assert "totally_not_a_tool_attr" in str(ei.value)
     assert "bowtie2" in str(ei.value)
 
 
