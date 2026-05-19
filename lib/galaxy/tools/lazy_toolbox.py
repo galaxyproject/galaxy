@@ -139,6 +139,14 @@ class LazyTool:
             "tool_source",  # raw ToolSource; some callers walk it directly
             "dynamic_tool",  # dynamic-tool linkage on execution
             "produces_entry_points",  # interactive tool entry points
+            "execute",  # actual tool execute method
+            "expand_incoming",  # parameter expansion for multi-run/map
+            "params_to_strings",  # parameter serialisation
+            "tool_action",  # execution action dispatch
+            "tool_dir",  # on-disk tool directory accessor
+            "completed_jobs",  # job-search via tool
+            "get_default_history_by_trans",  # default-history lookup on execute
+            "regenerate_imported_metadata_if_needed",  # import/export path
             # Job runner reads this on the tool to decide environment setup.
             "requires_galaxy_python_environment",
         }
