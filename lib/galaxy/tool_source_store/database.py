@@ -10,6 +10,7 @@ import gzip
 import json
 import logging
 from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     cast,
@@ -58,8 +59,31 @@ class DatabaseToolSourceStore(ToolSourceStore):
         self._cached_index: Optional[ToolIndex] = None
 
     def _get_session(self) -> Session:
-        """Get a database session."""
+        """Get the shared scoped session — used for writes that must commit
+        in the caller's context (request, queue worker, populator)."""
         return cast(Session, self._sa_session)
+
+    @contextmanager
+    def _read_session(self) -> Iterator[Session]:
+        """Yield a private Session for reads.
+
+        Reads must not run on the shared scoped session: this code can
+        be called mid-request (``LazyTool`` materialise during workflow
+        ``inject_all``), and the ``rollback()`` we issue afterwards to
+        release the implicit read transaction would expire the caller's
+        request-scoped objects (e.g. ``workflow.steps``). A private
+        ``Session`` bound to the same engine sees the same committed
+        data but its lifecycle is isolated from the caller's.
+        """
+        bind = self._sa_session.get_bind()
+        session = Session(bind=bind, autoflush=False, expire_on_commit=False)
+        try:
+            yield session
+        finally:
+            try:
+                session.close()
+            except Exception as e:
+                log.debug("read session close raised: %s", e)
 
     def store(self, tool_source: StoredToolSource) -> str:
         """Store a tool source in the database."""
@@ -97,25 +121,13 @@ class DatabaseToolSourceStore(ToolSourceStore):
 
     def get(self, hash: str) -> Optional[StoredToolSource]:
         """Retrieve a tool source by hash."""
-        session = self._get_session()
-        try:
+        with self._read_session() as session:
             model = session.execute(
                 select(ToolSourceModel).where(ToolSourceModel.hash == hash)
             ).scalar_one_or_none()
             if not model:
                 return None
             return self._model_to_stored(model)
-        finally:
-            # See ``load_index`` for the rationale: ``select`` on the shared
-            # scoped session opens an implicit read transaction that nothing
-            # later closes; on SQLite this holds a read lock that blocks
-            # subsequent writers (the cold-start populator, integration test
-            # client requests, …). ``rollback()`` after a pure read is a
-            # no-op for data but closes the transaction.
-            try:
-                session.rollback()
-            except Exception as e:
-                log.debug(f"get rollback raised: {e}")
 
     def _model_to_stored(self, model: ToolSourceModel) -> StoredToolSource:
         """Convert database model to StoredToolSource."""
@@ -140,21 +152,11 @@ class DatabaseToolSourceStore(ToolSourceStore):
 
     def exists(self, hash: str) -> bool:
         """Check if a tool source exists."""
-        session = self._get_session()
-        try:
+        with self._read_session() as session:
             result = session.execute(
                 select(ToolSourceModel.id).where(ToolSourceModel.hash == hash)
             ).scalar_one_or_none()
             return result is not None
-        finally:
-            # Close the implicit read transaction. The populator calls
-            # ``exists`` once per discovered tool (484× on a default
-            # checkout); without this rollback those reads accumulate into
-            # an open shared-session transaction that locks SQLite.
-            try:
-                session.rollback()
-            except Exception as e:
-                log.debug(f"exists rollback raised: {e}")
 
     def delete(self, hash: str) -> bool:
         """Delete a tool source by hash."""
@@ -171,18 +173,18 @@ class DatabaseToolSourceStore(ToolSourceStore):
 
     def list_all(self) -> Iterator[str]:
         """List all stored tool source hashes."""
-        session = self._get_session()
-
-        result = session.execute(select(ToolSourceModel.hash))
-
+        # Materialise eagerly so the private session can close before we
+        # yield — otherwise an outer caller could keep the session open
+        # indefinitely while iterating.
+        with self._read_session() as session:
+            result = session.execute(select(ToolSourceModel.hash)).all()
         for (hash_value,) in result:
             if hash_value:
                 yield hash_value
 
     def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
         """Get tool sources by tool ID and optional version."""
-        session = self._get_session()
-        try:
+        with self._read_session() as session:
             # Query all and filter in Python since tool_id is in JSON
             result = session.execute(select(ToolSourceModel))
             sources = []
@@ -192,11 +194,6 @@ class DatabaseToolSourceStore(ToolSourceStore):
                     if version is None or source_data.get("tool_version") == version:
                         sources.append(self._model_to_stored(model))
             return sources
-        finally:
-            try:
-                session.rollback()
-            except Exception as e:
-                log.debug(f"get_by_tool_id rollback raised: {e}")
 
     def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
         """Get the stored source for a given on-disk file path.
@@ -205,29 +202,19 @@ class DatabaseToolSourceStore(ToolSourceStore):
         table and filters in Python — same shape as ``get_by_tool_id``. The
         populator writes one entry per file, so there is at most one match.
         """
-        session = self._get_session()
-        try:
+        with self._read_session() as session:
             result = session.execute(select(ToolSourceModel))
             for (model,) in result:
                 source_data = model.source or {}
                 if source_data.get("source_path") == source_path:
                     return self._model_to_stored(model)
             return None
-        finally:
-            # ``LazyToolBox._index_needs_population`` calls this once per
-            # discovered tool at cold boot. Without the rollback the
-            # accumulated read transaction would block the populator's
-            # subsequent writes and the integration test client's reads.
-            try:
-                session.rollback()
-            except Exception as e:
-                log.debug(f"get_by_source_path rollback raised: {e}")
 
     def count(self) -> int:
         """Return the total number of stored tool sources."""
-        session = self._get_session()
-        result = session.execute(select(func.count(ToolSourceModel.id)))
-        return result.scalar() or 0
+        with self._read_session() as session:
+            result = session.execute(select(func.count(ToolSourceModel.id)))
+            return result.scalar() or 0
 
     def get_stats(self) -> dict:
         """Return storage statistics."""
@@ -277,22 +264,15 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def load_index(self) -> Optional[ToolIndex]:
         """Load the tool index from the tool_index table.
 
-        ``select`` on the shared scoped session implicitly opens a read
-        transaction. Boot and ``reload_toolbox`` paths call this from
-        threads (queue worker, embedded test driver) that don't bound
-        their work to a request lifecycle, so nothing later closes that
-        transaction — on SQLite (integration tests) the open transaction
-        retains a lock on the model database, on Postgres (CI) it
-        accumulates idle-in-transaction rows that block subsequent
-        DELETE/UPDATE for the entire test run. ``rollback()`` after a
-        pure read is a no-op for data but closes the transaction.
+        Uses a private session so the implicit read transaction is
+        scoped to this call — the shared scoped session (which may be
+        request-bound or driving the cold-start populator) keeps its
+        own transaction state.
         """
         if self._cached_index is not None:
             return self._cached_index
 
-        session = self._get_session()
-
-        try:
+        with self._read_session() as session:
             # Try to load from new tool_index table first
             model = session.execute(select(ToolIndexCache).order_by(ToolIndexCache.id.desc())).scalar_one_or_none()
 
@@ -318,14 +298,6 @@ class DatabaseToolSourceStore(ToolSourceStore):
                     return self._cached_index
 
             return None
-        finally:
-            # Release the implicit read transaction so other writers
-            # don't block on it. Safe because we haven't added/modified
-            # anything in the session.
-            try:
-                session.rollback()
-            except Exception as e:
-                log.debug(f"load_index rollback raised: {e}")
 
     def update_index_entry(self, entry: ToolIndexEntry) -> None:
         """Update a single index entry."""
