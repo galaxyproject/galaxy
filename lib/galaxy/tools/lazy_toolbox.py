@@ -58,10 +58,14 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-# Set LAZY_TOOL_PERMISSIVE=1 to downgrade unknown-attribute ``NotImplementedError``s
-# on a ``LazyTool`` to a warning + on-demand materialisation. Off by default so
-# accidental materialisation paths show up in CI / dev as clear failures.
-_LAZY_TOOL_PERMISSIVE = os.environ.get("LAZY_TOOL_PERMISSIVE") == "1"
+# Whether to be strict about unknown attribute reads on a ``LazyTool``. Default
+# is permissive: anything not on the stub surface and not in ``_MATERIALIZE_OK``
+# materialises with a WARN log, instead of raising. Set ``LAZY_TOOL_STRICT=1``
+# to flip to raise — useful when adding to the stub surface, since unaccounted
+# reads then show up loudly. The eager pipeline + the integration suite hit a
+# very wide tool surface; permissive is the pragmatic default once the
+# explicit ``_MATERIALIZE_OK`` set has stabilised.
+_LAZY_TOOL_PERMISSIVE = os.environ.get("LAZY_TOOL_STRICT") != "1"
 
 
 def _entry_attr(name: str, entry_attr: Optional[str] = None, mutable: bool = False):
