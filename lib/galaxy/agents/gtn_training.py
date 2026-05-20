@@ -110,6 +110,33 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             except Exception as e:
                 log.warning(f"GTN search failed: {e}")
                 return json.dumps({"error": str(e)})
+            
+        @agent.tool
+        async def search_gtn_tutorial_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            topic: Optional[str] = None,
+            difficulty: Optional[str] = None,
+            hands_on_only: bool = False,
+            limit: int = 2,
+        ) -> str:
+            """Search GTN tutorials using full-text search over titles, descriptions, and content."""
+            if not self.gtn_db:
+                return json.dumps({"error": "GTN database not available"})
+            try:
+                results = self.gtn_db.search_vector_db(query=query, limit=limit)
+                log.info(f"GTN search found {len(results)} results, vector search found {len(results)} results for query: '{query}'")
+
+                return json.dumps(
+                    {
+                        #"results": [r.to_dict() for r in results],
+                        #"count": len(results),
+                        "tutorials": [r.to_dict() for r in results] 
+                    }
+                )
+            except (AttributeError, KeyError, TypeError) as e:
+                log.warning(f"GTN vector search failed: {e}")
+                return json.dumps({"error": str(e)})
 
         @agent.tool
         async def get_tutorial_content(
@@ -196,6 +223,120 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
+    @staticmethod
+    def _result_messages(result: Any) -> list[Any]:
+        """Return pydantic-ai run messages across supported result versions."""
+        for attr_name in ("all_messages", "new_messages"):
+            messages = getattr(result, attr_name, None)
+            if not messages:
+                continue
+            try:
+                collected = list(messages()) if callable(messages) else list(messages)
+            except (TypeError, ValueError):
+                continue
+            if collected:
+                return collected
+        return []
+
+    @staticmethod
+    def _json_payload(value: Any) -> Optional[dict[str, Any]]:
+        if isinstance(value, dict):
+            return value
+        if not isinstance(value, str):
+            return None
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+
+    @classmethod
+    def _extract_tool_payloads(cls, result: Any, tool_name: str) -> list[dict[str, Any]]:
+        payloads: list[dict[str, Any]] = []
+        for message in cls._result_messages(result):
+            for part in getattr(message, "parts", []) or []:
+                part_tool_name = getattr(part, "tool_name", None)
+                if part_tool_name is None and hasattr(part, "model_dump"):
+                    try:
+                        part_tool_name = part.model_dump().get("tool_name")
+                    except (AttributeError, TypeError, ValueError):
+                        part_tool_name = None
+                if part_tool_name != tool_name:
+                    continue
+                for attr_name in ("content", "return_value"):
+                    payload = cls._json_payload(getattr(part, attr_name, None))
+                    if payload:
+                        payloads.append(payload)
+                if hasattr(part, "model_dump"):
+                    try:
+                        dumped = part.model_dump()
+                    except (AttributeError, TypeError, ValueError):
+                        dumped = {}
+                    for key in ("content", "return_value"):
+                        payload = cls._json_payload(dumped.get(key))
+                        if payload:
+                            payloads.append(payload)
+        return payloads
+
+    @staticmethod
+    def _vector_result_to_tutorial(result: dict[str, Any]) -> dict[str, Any]:
+        tutorial = dict(result)
+        tutorial_slug = str(tutorial.get("tutorial") or "").strip()
+        title = str(tutorial.get("title") or "").strip()
+        if not title:
+            title = tutorial_slug.replace("-", " ").title() if tutorial_slug else "GTN Tutorial"
+        tutorial["title"] = title
+
+        if not tutorial.get("snippet"):
+            page_content = str(tutorial.get("page_content") or "").strip()
+            if page_content:
+                tutorial["snippet"] = page_content[:10000]
+        tutorial.setdefault("difficulty", "Unknown")
+        tutorial.setdefault("time_estimation", "Unknown")
+        tutorial.setdefault("result_type", "tutorial")
+        return tutorial
+
+    @classmethod
+    def _tutorials_from_vector_payloads(cls, payloads: list[dict[str, Any]], limit: int = 5) -> list[dict[str, Any]]:
+        tutorials: list[dict[str, Any]] = []
+        seen: set[tuple[str, str, str]] = set()
+        for payload in payloads:
+            raw_results = payload.get("tutorials") or payload.get("results") or []
+            if not isinstance(raw_results, list):
+                continue
+            for raw_result in raw_results:
+                if not isinstance(raw_result, dict):
+                    continue
+                tutorial = cls._vector_result_to_tutorial(raw_result)
+                key = (
+                    str(tutorial.get("topic") or ""),
+                    str(tutorial.get("tutorial") or ""),
+                    str(tutorial.get("url") or ""),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                tutorials.append(tutorial)
+                if len(tutorials) >= limit:
+                    return tutorials
+        return tutorials
+
+    def _search_vector_tutorials_for_response(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        if not self.gtn_db:
+            return []
+        try:
+            results = self.gtn_db.search_vector_db(query=query, limit=limit)
+        except (AttributeError, KeyError, TypeError, ValueError) as e:
+            log.warning(f"GTN direct vector fallback failed: {e}")
+            return []
+        tutorials = []
+        for result in results:
+            try:
+                tutorials.append(self._vector_result_to_tutorial(result.to_dict()))
+            except (AttributeError, TypeError, ValueError) as e:
+                log.warning(f"Skipping invalid GTN vector fallback result: {e}")
+        return tutorials
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
@@ -226,6 +367,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
             if self._supports_structured_output():
                 response_data = extract_structured_output(result, GTNSearchResponse, log)
+                log.info(f"Response data extracted: {response_data}")
                 if response_data is None:
                     return self._build_response(
                         content=extract_result_content(result),
@@ -238,6 +380,26 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
                 used_fallback = False
                 if not response_data.tutorials and not response_data.faqs:
+                    vector_tutorials = self._tutorials_from_vector_payloads(
+                        self._extract_tool_payloads(result, "search_gtn_tutorial_vectors")
+                    )
+                    if not vector_tutorials:
+                        log.info("No vector tool payloads found in result messages, running direct vector fallback")
+                        vector_tutorials = self._search_vector_tutorials_for_response(query)
+                    if vector_tutorials:
+                        log.info("Using vector search tool results")
+                        log.info("Found %d tutorials from vector search, using these results", len(vector_tutorials))
+                        used_fallback = True
+                        response_data = GTNSearchResponse(
+                            tutorials=vector_tutorials,
+                            summary=response_data.summary
+                            or f"Found {len(vector_tutorials)} GTN tutorial matches from vector search.",
+                            learning_path=response_data.learning_path,
+                            prerequisites=response_data.prerequisites,
+                            total_time=response_data.total_time,
+                        )
+
+                if not response_data.tutorials and not response_data.faqs:
                     log.info("No tutorials or FAQs in response, falling back to direct search")
                     fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
@@ -247,6 +409,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                             summary=f"Found {len(fallback_results)} tutorials related to your query",
                         )
 
+                log.info("Formatted GTN response with %d tutorials", len(response_data.tutorials))
                 return self._build_response(
                     content=self._format_gtn_response(response_data),
                     confidence=(

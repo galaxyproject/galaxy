@@ -14,6 +14,7 @@ and those that do not.
     export GALAXY_TEST_ENABLE_LIVE_LLM=1
 """
 
+import json
 import os
 from types import SimpleNamespace
 from typing import (
@@ -699,6 +700,81 @@ class TestAgentUnitMocked:
         assert "**Relevant FAQs:**" in content
         assert "How do I archive a history?" in content
         assert "**Relevant Tutorials:**" not in content
+
+    @pytest.mark.asyncio
+    async def test_gtn_process_uses_vector_tool_results_when_structured_output_is_empty(self):
+        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
+        agent.deps = self.deps
+        agent.gtn_db = MagicMock()
+
+        vector_payload = {
+            "results": [
+                {
+                    "type": "tutorial",
+                    "topic": "transcriptomics",
+                    "tutorial": "rna-seq-counts-to-genes",
+                    "page_content": "Use the RNA-seq counts to genes tutorial for differential expression analysis.",
+                    "score": 0.25,
+                    "url": "https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/rna-seq-counts-to-genes/tutorial.html",
+                    "source": "rna-seq-counts-to-genes.md",
+                }
+            ],
+            "count": 1,
+        }
+        tool_part = SimpleNamespace(
+            tool_name="search_gtn_tutorial_vectors",
+            content=json.dumps(vector_payload),
+        )
+        result = SimpleNamespace(
+            output=GTNSearchResponse(tutorials=[], faqs=[], summary="No matches."),
+            all_messages=lambda: [SimpleNamespace(parts=[tool_part])],
+        )
+        agent._run_with_retry = AsyncMock(return_value=result)
+
+        response = await agent.process("RNA-seq differential expression")
+
+        assert "Rna Seq Counts To Genes" in response.content
+        assert "differential expression analysis" in response.content
+        assert response.metadata["method"] == "structured_with_fallback"
+        assert response.metadata["tutorial_count"] == 1
+        agent.gtn_db.search.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_gtn_process_runs_direct_vector_fallback_when_tool_payload_is_unavailable(self):
+        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
+        agent.deps = self.deps
+        agent.gtn_db = MagicMock()
+        vector_result = MagicMock()
+        vector_result.to_dict.return_value = {
+            "type": "tutorial",
+            "topic": "variant-analysis",
+            "tutorial": "diploid-variant-calling",
+            "page_content": "Diploid variant calling explains SNP calling and genotyping.",
+            "score": 0.31,
+            "url": "https://training.galaxyproject.org/training-material/topics/variant-analysis/tutorials/diploid-variant-calling/tutorial.html",
+            "source": "diploid-variant-calling.md",
+        }
+        agent.gtn_db.search_vector_db.return_value = [vector_result]
+        result = SimpleNamespace(
+            output=GTNSearchResponse(
+                tutorials=[],
+                faqs=[],
+                summary="Variant calling in Galaxy follows a mapped-reads to VCF workflow.",
+                total_time="1-2 hours",
+            ),
+            all_messages=lambda: [],
+        )
+        agent._run_with_retry = AsyncMock(return_value=result)
+
+        response = await agent.process("variant calling")
+
+        assert "Variant calling in Galaxy follows" in response.content
+        assert "Diploid Variant Calling" in response.content
+        assert "SNP calling and genotyping" in response.content
+        assert response.metadata["method"] == "structured_with_fallback"
+        assert response.metadata["tutorial_count"] == 1
+        agent.gtn_db.search_vector_db.assert_called_once_with(query="variant calling", limit=5)
+        agent.gtn_db.search.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_workflow_orchestrator_generic_fallback_behavior(self):

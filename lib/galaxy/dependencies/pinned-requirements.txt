@@ -139,6 +139,9 @@ jsonschema-specifications==2025.9.1
 keyring==25.7.0
 kombu==5.6.2
 lagom==2.7.7
+langchain>=0.3
+langchain-chroma>=0.3
+langchain-openai>=0.3
 legacy-cgi==2.6.4 ; python_full_version >= '3.13'
 limits==5.8.0
 logfire==4.33.0

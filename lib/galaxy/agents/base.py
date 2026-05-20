@@ -307,7 +307,7 @@ class BaseGalaxyAgent(ABC):
 
     # Fallback when no max_tokens is configured. 8k leaves headroom on every
     # backend we currently support (smallest is Qwen3-32B at 32k context).
-    DEFAULT_MAX_TOKENS = 8192
+    DEFAULT_MAX_TOKENS = 32000 #8192
 
     def __init__(self, deps: GalaxyAgentDependencies):
         self.deps = deps

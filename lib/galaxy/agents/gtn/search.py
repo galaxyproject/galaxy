@@ -17,6 +17,10 @@ from typing import (
     Optional,
 )
 
+#from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
+from langchain_openai import OpenAIEmbeddings
+
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
 GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
 # Connect + per-read timeout for the initial GTN database download. The file
@@ -112,6 +116,38 @@ class SearchResult:
             "time_estimation": self.time_estimation,
             "snippet": snippet,
             "score": round(self.score, 2),
+        }
+
+
+@dataclass
+class VectorSearchDbResult:
+    """Represents a search result from vector store db."""
+
+    type: str
+    topic: str
+    tutorial: str
+    page_content: str
+    url: str
+    score: float
+    source: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization.
+
+        Returns only the fields the LLM needs to pick tutorials and
+        construct get_tutorial_content calls, keeping token usage low.
+        Includes ``score`` so the agent can gauge match quality.
+        """
+        # Truncate page_content to reasonable length for LLM processing
+        
+        return {
+            "type": self.type,
+            "topic": self.topic,
+            "tutorial": self.tutorial,
+            "page_content": self.page_content,
+            "score": round(self.score, 2),
+            "url": self.url,
+            "source": self.source
         }
 
 
@@ -403,6 +439,67 @@ class GTNSearchDB:
 
         except sqlite3.Error as e:
             log.warning(f"FAQ search failed for query '{query}': {e}")
+            return []
+        
+    def search_vector_db(
+        self,
+        query: str,
+        limit: int = 2,
+        doc_type: Optional[str] = None,
+    ) -> list[VectorSearchDbResult]:
+        try:
+            # Initialize embeddings
+
+            embeddings = OpenAIEmbeddings(
+                base_url="https://api.deepinfra.com/v1/openai",
+                model="BAAI/bge-large-en-v1.5",
+                api_key="2v7jO5zshabaCb1i0JJQmqVXbRciW5q2",
+                tiktoken_enabled=False,  # Disable tiktoken to avoid DNS issues with custom models
+                check_embedding_ctx_length=False  # Disable context length checking
+            )
+
+            GTN_VECTOR_CHROMADB_URL = "/home/anup/galaxycodes/galaxy/vector_search_agent/galaxy/lib/galaxy/agents/gtn/chroma_db_gtn/"
+
+            persist_dir = GTN_VECTOR_CHROMADB_URL
+            
+            # Check if the persist directory exists
+            if not Path(persist_dir).exists():
+                log.warning(f"ChromaDB persist directory does not exist: {persist_dir}")
+                return []
+
+            vectorstore = Chroma(
+                persist_directory=persist_dir,
+                collection_name="gtn_tutorials",
+                embedding_function=embeddings
+            )
+
+            # Use similarity_search_with_score to get relevance scores
+            results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
+
+            log.info(f"Found {len(results_with_scores)} similar documents")
+
+            vector_results = []
+
+            for i, (doc, score) in enumerate(results_with_scores, start=1):
+                result = VectorSearchDbResult(
+                    type=doc.metadata["type"],
+                    topic=doc.metadata["topic"],
+                    tutorial=doc.metadata["tutorial"],
+                    page_content=str(doc.page_content),
+                    score=score,
+                    url=doc.metadata["url"],
+                    source=doc.metadata["data_source"],
+                )
+                vector_results.append(result)
+
+            log.info(f"Processed {len(vector_results)} vector DB search results")
+            for i, result in enumerate(vector_results[:3]):  # Log first 3 results
+                log.debug(f"Result {i+1}: score={result.score:.3f}, source={result.source}")
+
+            return vector_results
+            
+        except Exception as e:
+            log.error(f"Vector DB search failed: {e}")
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
