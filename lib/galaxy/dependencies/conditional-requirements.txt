@@ -59,6 +59,11 @@ cloudbridge>=4.4.2
 # Synnefo / Pithos+ object store client
 kamaki
 
+# For RAG vector search support
+langchain
+langchain-chroma
+langchain-openai
+
 # Onedata REST-based client for data access, required by the Onedata object store
 onedatafilerestclient
 
