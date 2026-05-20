@@ -1,0 +1,140 @@
+name: Build and Test Container (Dev Branch)
+
+on:
+  push:
+    branches:
+      - dev
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test dev container
+    if: github.repository_owner == 'galaxyproject'
+    uses: ./.github/workflows/container_build_test.yml
+    with:
+      ref: ${{ github.sha }}
+      image_tag: dev
+
+  notify-dev-state-transitions:
+    name: Notify on dev build state transitions
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: always()
+    steps:
+      - name: Determine current run status
+        id: current-status
+        run: |
+          if [[ "${{ needs.build-and-test.result }}" == "failure" ]]; then
+            echo "status=failure" >> $GITHUB_OUTPUT
+            # Determine which step failed
+            if [[ "${{ needs.build-and-test.outputs.build_status }}" == "failure" ]]; then
+              echo "failed_job=Container build" >> $GITHUB_OUTPUT
+            elif [[ "${{ needs.build-and-test.outputs.smoke_test_status }}" == "failure" ]]; then
+              echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
+            else
+              echo "failed_job=Build or test" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "status=success" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get previous workflow run status
+        id: previous-status
+        run: |
+          # Get the previous workflow run for the same workflow and branch
+          previous_run=$(curl -s -H "Authorization: token ${{ github.token }}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/build_test_container.yml/runs?branch=${{ github.ref_name }}&per_page=2" \
+            | jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1].conclusion // "none"')
+
+          echo "previous_status=$previous_run" >> $GITHUB_OUTPUT
+          echo "Previous run status: $previous_run"
+          echo "Current run status: ${{ steps.current-status.outputs.status }}"
+
+      - name: Determine if notification should be sent
+        id: should-notify
+        run: |
+          current="${{ steps.current-status.outputs.status }}"
+          previous="${{ steps.previous-status.outputs.previous_status }}"
+
+          # Send notification on state transitions:
+          # - First failure (success/none -> failure)
+          # - Recovery (failure -> success)
+          if [[ "$current" == "failure" && "$previous" != "failure" ]]; then
+            echo "notify=true" >> $GITHUB_OUTPUT
+            echo "notification_type=first_failure" >> $GITHUB_OUTPUT
+          elif [[ "$current" == "success" && "$previous" == "failure" ]]; then
+            echo "notify=true" >> $GITHUB_OUTPUT
+            echo "notification_type=recovery" >> $GITHUB_OUTPUT
+          else
+            echo "notify=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification for state transition
+        if: steps.should-notify.outputs.notify == 'true'
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && ':white_check_mark: *Galaxy Dev Build Recovered*' || ':x: *Galaxy Dev Build Failed*' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && ':white_check_mark: Galaxy Dev Build Recovered' || ':x: Galaxy Dev Build Failed' }}",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && 'The Galaxy development build is now working again after previous failures.' || 'The Galaxy development build has started failing.' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:*\n${{ github.repository }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\n${{ github.ref_name }}"
+                    }${{ steps.should-notify.outputs.notification_type == 'first_failure' && format(',{{"type": "mrkdwn", "text": "*Failed Job:*\\n{0}"}}', steps.current-status.outputs.failed_job) || '' }},
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Galaxy Version:*\n${{ needs.build-and-test.outputs.galaxy_version }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Commit:*\n${{ needs.build-and-test.outputs.commit_sha }}"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Triggered by:*\n${{ github.actor }}"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }

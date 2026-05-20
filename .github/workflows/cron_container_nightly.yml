@@ -1,0 +1,265 @@
+name: Nightly Container Builds
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      force_all_release_branches:
+        description: 'Force build all release branches (ignore 24h check)'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  detect-changed-release-branches:
+    name: Find release branches with recent changes
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'galaxyproject'
+    outputs:
+      release_branches: ${{ steps.detect.outputs.release_branches }}
+      has_release_branches: ${{ steps.detect.outputs.has_release_branches }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Find changed release branches
+        id: detect
+        run: |
+          echo "Looking for release_* branches with changes in the last 24 hours..."
+
+          if [[ "${{ inputs.force_all_release_branches }}" == "true" ]]; then
+            echo "Force mode: including all release_* branches"
+            branches=$(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort | xargs)
+          else
+            since_date=$(date -d '24 hours ago' --iso-8601)
+            echo "Checking release_* branches with commits since: $since_date"
+
+            branches=""
+            for branch in $(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort); do
+              if git log --since="$since_date" --oneline "origin/$branch" --max-count=1 | head -1; then
+                branches="$branches $branch"
+                echo "✓ $branch has recent changes"
+              fi
+            done
+          fi
+
+          if [[ -z "$branches" || "$branches" == " " ]]; then
+            echo "No release branches with recent changes found"
+            echo "release_branches=[]" >> $GITHUB_OUTPUT
+            echo "has_release_branches=false" >> $GITHUB_OUTPUT
+          else
+            echo "Changed release branches: $branches"
+            json_branches=$(echo "$branches" | tr ' ' '\n' | grep -v '^$' | jq -R . | jq -s .)
+            echo "release_branches=$json_branches" >> $GITHUB_OUTPUT
+            echo "has_release_branches=true" >> $GITHUB_OUTPUT
+          fi
+
+  build-test-dev:
+    name: Build and test dev branch
+    if: github.repository_owner == 'galaxyproject'
+    uses: ./.github/workflows/container_build_test.yml
+    with:
+      ref: refs/heads/dev
+      image_tag: dev
+
+  publish-dev:
+    name: Publish dev container
+    runs-on: ubuntu-latest
+    needs: build-test-dev
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: dev
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and publish dev image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .k8s_ci.Dockerfile
+          push: true
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            IMAGE_TAG=dev
+          tags: |
+            galaxy/galaxy-min:dev
+            quay.io/galaxyproject/galaxy-min:dev
+
+  build-test-release-branches:
+    name: Build and test ${{ matrix.branch }}
+    needs: detect-changed-release-branches
+    if: needs.detect-changed-release-branches.outputs.has_release_branches == 'true'
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.detect-changed-release-branches.outputs.release_branches) }}
+      fail-fast: false
+    uses: ./.github/workflows/container_build_test.yml
+    with:
+      ref: refs/heads/${{ matrix.branch }}
+      image_tag: ${{ matrix.branch }}-auto
+
+  publish-release-branches:
+    name: Publish ${{ matrix.branch }}
+    runs-on: ubuntu-latest
+    needs: [detect-changed-release-branches, build-test-release-branches]
+    if: needs.detect-changed-release-branches.outputs.has_release_branches == 'true'
+    strategy:
+      matrix:
+        branch: ${{ fromJson(needs.detect-changed-release-branches.outputs.release_branches) }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.branch }}
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: Build and publish release branch image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .k8s_ci.Dockerfile
+          push: true
+          build-args: |
+            GIT_COMMIT=${{ github.sha }}
+            BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+            IMAGE_TAG=${{ matrix.branch }}-auto
+          tags: |
+            galaxy/galaxy-min:${{ matrix.branch }}-auto
+            quay.io/galaxyproject/galaxy-min:${{ matrix.branch }}-auto
+
+  notify-dev-transitions:
+    name: Notify dev build state transitions
+    runs-on: ubuntu-latest
+    needs: [build-test-dev, publish-dev]
+    if: always()
+    steps:
+      - name: Determine current status
+        id: current
+        run: |
+          # Job succeeds only if both build-test and publish succeed
+          if [[ "${{ needs.build-test-dev.result }}" == "success" && "${{ needs.publish-dev.result }}" == "success" ]]; then
+            echo "status=success" >> $GITHUB_OUTPUT
+          else
+            echo "status=failure" >> $GITHUB_OUTPUT
+            if [[ "${{ needs.build-test-dev.result }}" == "failure" ]]; then
+              echo "failed_job=Build or test" >> $GITHUB_OUTPUT
+            else
+              echo "failed_job=Publishing" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      - name: Get previous nightly run status
+        id: previous
+        run: |
+          previous_run=$(curl -s -H "Authorization: token ${{ github.token }}" \
+            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/cron_container_nightly.yml/runs?per_page=2" \
+            | jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1].conclusion // "none"')
+          echo "previous_status=$previous_run" >> $GITHUB_OUTPUT
+
+      - name: Check if should notify
+        id: notify
+        run: |
+          current="${{ steps.current.outputs.status }}"
+          previous="${{ steps.previous.outputs.previous_status }}"
+
+          if [[ "$current" == "failure" && "$previous" != "failure" ]]; then
+            echo "notify=true" >> $GITHUB_OUTPUT
+            echo "type=first_failure" >> $GITHUB_OUTPUT
+          elif [[ "$current" == "success" && "$previous" == "failure" ]]; then
+            echo "notify=true" >> $GITHUB_OUTPUT
+            echo "type=recovery" >> $GITHUB_OUTPUT
+          else
+            echo "notify=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        if: steps.notify.outputs.notify == 'true'
+        uses: slackapi/slack-github-action@v3.0.1
+        with:
+          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ steps.notify.outputs.type == 'recovery' && ':white_check_mark: *Galaxy Nightly Dev Build Recovered*' || ':x: *Galaxy Nightly Dev Build Failed*' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.notify.outputs.type == 'recovery' && ':white_check_mark: Galaxy Nightly Dev Build Recovered' || ':x: Galaxy Nightly Dev Build Failed' }}",
+                    "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Branch:*\ndev"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Version:*\n${{ needs.build-test-dev.outputs.galaxy_version }}"
+                    }${{ steps.notify.outputs.type == 'first_failure' && format(',{{"type": "mrkdwn", "text": "*Failed Job:*\\n{0}"}}', steps.current.outputs.failed_job) || '' }},
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Trigger:*\nNightly cron"
+                    }
+                  ]
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Workflow Run",
+                        "emoji": true
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
