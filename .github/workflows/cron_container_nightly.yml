@@ -4,13 +4,6 @@ on:
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
-  workflow_dispatch:
-    inputs:
-      force_all_release_branches:
-        description: 'Force build all release branches (ignore 24h check)'
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
   group: ${{ github.workflow }}
@@ -35,21 +28,16 @@ jobs:
         run: |
           echo "Looking for release_* branches with changes in the last 24 hours..."
 
-          if [[ "${{ inputs.force_all_release_branches }}" == "true" ]]; then
-            echo "Force mode: including all release_* branches"
-            branches=$(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort | xargs)
-          else
-            since_date=$(date -d '24 hours ago' --iso-8601)
-            echo "Checking release_* branches with commits since: $since_date"
+          since_date=$(date -d '24 hours ago' --iso-8601)
+          echo "Checking release_* branches with commits since: $since_date"
 
-            branches=""
-            for branch in $(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort); do
-              if git log --since="$since_date" --oneline "origin/$branch" --max-count=1 | head -1; then
-                branches="$branches $branch"
-                echo "✓ $branch has recent changes"
-              fi
-            done
-          fi
+          branches=""
+          for branch in $(git branch -r | grep 'origin/release_' | sed 's/origin\///' | sort); do
+            if git log --since="$since_date" --oneline "origin/$branch" --max-count=1 | head -1; then
+              branches="$branches $branch"
+              echo "✓ $branch has recent changes"
+            fi
+          done
 
           if [[ -z "$branches" || "$branches" == " " ]]; then
             echo "No release branches with recent changes found"
