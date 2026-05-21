@@ -204,7 +204,7 @@ pycparser==3.0 ; (implementation_name != 'PyPy' and platform_python_implementati
 pycryptodome==3.23.0
 pydantic==2.13.4
 pydantic-ai==1.97.0
-pydantic-ai-slim==1.97.0
+pydantic-ai-slim==1.99.0
 pydantic-core==2.46.4
 pydantic-evals==1.97.0
 pydantic-graph==1.97.0
