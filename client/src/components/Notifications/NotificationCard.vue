@@ -255,7 +255,7 @@ function markNotificationAsSeen() {
                         v-html="renderMarkdown(props.notification.content.message)" />
                 </template>
             </template>
-            <template v-else-if="props.notification.category === 'storage_operation'">
+            <template v-if="props.notification.category === 'storage_operation'">
                 <p>
                     {{ props.notification.content.message }}
                 </p>
@@ -279,41 +279,6 @@ function markNotificationAsSeen() {
                     @click="markNotificationAsSeen()">
                     Open storage operation run status
                 </BLink>
-            </template>
-            <template v-else-if="props.notification.category === 'tool_request'">
-                <dl class="mb-0">
-                    <template v-if="props.notification.content.description">
-                        <dt>Description</dt>
-                        <dd>{{ props.notification.content.description }}</dd>
-                    </template>
-                    <template v-if="props.notification.content.tool_url">
-                        <dt>URL</dt>
-                        <dd>
-                            <span class="text-break">{{ props.notification.content.tool_url }}</span>
-                        </dd>
-                    </template>
-                    <template v-if="props.notification.content.scientific_domain">
-                        <dt>Scientific domain</dt>
-                        <dd>{{ props.notification.content.scientific_domain }}</dd>
-                    </template>
-                    <template v-if="props.notification.content.requested_version">
-                        <dt>Version</dt>
-                        <dd>{{ props.notification.content.requested_version }}</dd>
-                    </template>
-                    <dt>Requested by</dt>
-                    <dd>
-                        <span v-if="props.notification.content.requester_name">
-                            {{ props.notification.content.requester_name }}
-                            <span v-if="props.notification.content.requester_affiliation">
-                                ({{ props.notification.content.requester_affiliation }})
-                            </span>
-                            &mdash;
-                        </span>
-                        <BLink :href="`mailto:${props.notification.content.requester_email}`">
-                            {{ props.notification.content.requester_email }}
-                        </BLink>
-                    </dd>
-                </dl>
             </template>
             <template v-else>
                 <span
