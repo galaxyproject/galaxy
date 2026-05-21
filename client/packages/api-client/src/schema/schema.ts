@@ -10524,7 +10524,7 @@ export interface components {
             name: string;
         };
         /**
-         * Custom builds collection
+         * CustomBuildsCollection
          * @description The custom builds associated with the user.
          */
         CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
@@ -11410,7 +11410,7 @@ export interface components {
             model_class: "DatasetHash";
         };
         /**
-         * Dataset inheritance chain
+         * DatasetInheritanceChain
          * @default []
          */
         DatasetInheritanceChain: components["schemas"]["DatasetInheritanceChainEntry"][];
@@ -11663,7 +11663,7 @@ export interface components {
             tool_id: string;
         };
         /**
-         * List of data type converters
+         * DatatypeConverterList
          * @default []
          */
         DatatypeConverterList: components["schemas"]["DatatypeConverter"][];
@@ -11748,7 +11748,7 @@ export interface components {
             visualization: string;
         };
         /**
-         * List of datatype visualization mappings
+         * DatatypeVisualizationMappingsList
          * @default []
          */
         DatatypeVisualizationMappingsList: components["schemas"]["DatatypeVisualizationMapping"][];
@@ -11766,7 +11766,7 @@ export interface components {
             datatypes_mapping: components["schemas"]["DatatypesMap"];
         };
         /**
-         * Dict of EDAM details for formats
+         * DatatypesEDAMDetailsDict
          * @default {}
          */
         DatatypesEDAMDetailsDict: {
@@ -13351,17 +13351,8 @@ export interface components {
             writable: boolean;
         };
         /**
-         * List of files source plugins
+         * FilesSourcePluginList
          * @default []
-         * @example {
-         *       "browsable": true,
-         *       "doc": "Galaxy's library import directory",
-         *       "id": "_import",
-         *       "label": "Library Import Directory",
-         *       "type": "gximport",
-         *       "uri_root": "gximport://",
-         *       "writable": false
-         *     }
          */
         FilesSourcePluginList: (
             | components["schemas"]["BrowsableFilesSourcePlugin"]
@@ -18058,7 +18049,7 @@ export interface components {
             value: string;
         };
         /**
-         * Job Metrics
+         * JobMetricCollection
          * @description Represents a collection of metrics associated with a Job.
          * @default []
          */
@@ -19259,7 +19250,7 @@ export interface components {
             synopsis?: string | null;
         };
         /**
-         * List with summary information of Libraries.
+         * LibrarySummaryList
          * @default []
          */
         LibrarySummaryList: components["schemas"]["LibrarySummary"][];
@@ -19358,14 +19349,14 @@ export interface components {
          */
         LinkDataOnly: "copy_files" | "link_to_files";
         /**
-         * List of files
+         * ListJstreeResponse
          * @deprecated
          * @description List of files in Jstree format.
          * @default []
          */
         ListJstreeResponse: unknown[];
         /**
-         * List of remote entries
+         * ListUriResponse
          * @description List of directories and files.
          * @default []
          */
@@ -19778,7 +19769,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolInstallationRequestNotificationContent"] (Rename "Tool Request" → "Tool Installation Request" across all layers)
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Expiration time
@@ -19868,7 +19859,7 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolInstallationRequestNotificationContent"] (Rename "Tool Request" → "Tool Installation Request" across all layers)
+                | components["schemas"]["ToolInstallationRequestNotificationContent"]
                 | components["schemas"]["BroadcastNotificationContent"];
             /**
              * Create time
@@ -20468,7 +20459,7 @@ export interface components {
             username: string;
         };
         /**
-         * List with summary information of Pages.
+         * PageSummaryList
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
@@ -21096,7 +21087,7 @@ export interface components {
          *     displayed in the notification preferences.
          * @enum {string}
          */
-        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request"; (Rename "Tool Request" → "Tool Installation Request" across all layers)
+        PersonalNotificationCategory: "message" | "new_shared_item" | "storage_operation" | "tool_installation_request";
         /** PluginAspectStatus */
         PluginAspectStatus: {
             /** Message */
@@ -21310,7 +21301,7 @@ export interface components {
             url: string;
         };
         /**
-         * List with summary information of Quotas.
+         * QuotaSummaryList
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
@@ -24666,7 +24657,7 @@ export interface components {
              */
             name: string;
         };
-        /** A list with details on individual data tables. */
+        /** ToolDataEntryList */
         ToolDataEntryList: components["schemas"]["ToolDataEntry"][];
         /** ToolDataField */
         ToolDataField: {
@@ -25213,7 +25204,7 @@ export interface components {
             title_default?: string | null;
         };
         /**
-         * List of tours
+         * TourList
          * @default []
          */
         TourList: components["schemas"]["Tour"][];
@@ -25755,7 +25746,6 @@ export interface components {
          *           "enabled": true
          *         },
          *         "tool_installation_request": {
-         *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
          *             "push": true
@@ -26180,7 +26170,6 @@ export interface components {
          *           "enabled": true
          *         },
          *         "tool_installation_request": {
-         *         "tool_installation_request": {
          *           "channels": {
          *             "email": true,
          *             "push": true
@@ -26217,7 +26206,6 @@ export interface components {
                 | components["schemas"]["MessageNotificationContent"]
                 | components["schemas"]["NewSharedItemNotificationContent"]
                 | components["schemas"]["StorageOperationNotificationContent"]
-                | components["schemas"]["ToolRequestNotificationContent"];
                 | components["schemas"]["ToolInstallationRequestNotificationContent"];
             /**
              * Create time
@@ -27018,7 +27006,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * List with detailed information of Visualizations.
+         * VisualizationSummaryList
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
