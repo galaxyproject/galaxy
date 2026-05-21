@@ -248,46 +248,40 @@ function markNotificationAsSeen() {
                         </template>
                     </dl>
                 </template>
+                <template v-else-if="props.notification.category === 'storage_operation'">
+                    <p>
+                        {{ props.notification.content.message }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Mode:</strong> {{ props.notification.content.mode }}
+                        <span class="mx-2">|</span>
+                        <strong>State:</strong> {{ props.notification.content.state }}
+                    </p>
+                    <p class="mb-1">
+                        <strong>Total:</strong> {{ props.notification.content.total_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Succeeded:</strong> {{ props.notification.content.succeeded_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Failed:</strong> {{ props.notification.content.failed_count }}
+                        <span class="mx-2">|</span>
+                        <strong>Skipped:</strong> {{ props.notification.content.skipped_count }}
+                    </p>
+                    <BLink
+                        class="text-primary"
+                        :href="props.notification.content.run_url"
+                        @click="markNotificationAsSeen()">
+                        Open storage operation run status
+                    </BLink>
+                </template>
                 <template v-else>
                     <span
                         class="notification-message"
                         @click="handleMessageClick"
-                        v-html="renderMarkdown(props.notification.content.message)" />
+                        v-html="renderMarkdown(props.notification.content.message)"></span>
                 </template>
             </template>
-            <template v-if="props.notification.category === 'storage_operation'">
-                <p>
-                    {{ props.notification.content.message }}
-                </p>
-                <p class="mb-1">
-                    <strong>Mode:</strong> {{ props.notification.content.mode }}
-                    <span class="mx-2">|</span>
-                    <strong>State:</strong> {{ props.notification.content.state }}
-                </p>
-                <p class="mb-1">
-                    <strong>Total:</strong> {{ props.notification.content.total_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Succeeded:</strong> {{ props.notification.content.succeeded_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Failed:</strong> {{ props.notification.content.failed_count }}
-                    <span class="mx-2">|</span>
-                    <strong>Skipped:</strong> {{ props.notification.content.skipped_count }}
-                </p>
-                <BLink
-                    class="text-primary"
-                    :href="props.notification.content.run_url"
-                    @click="markNotificationAsSeen()">
-                    Open storage operation run status
-                </BLink>
-            </template>
-            <template v-else>
-                <span
-                    class="notification-message"
-                    @click="handleMessageClick"
-                    v-html="renderMarkdown(props.notification.content.message)" />
-            </template>
-        </template>
-    </GCard>
+        </GCard>
+    </div>
 </template>
 
 <style lang="scss">
