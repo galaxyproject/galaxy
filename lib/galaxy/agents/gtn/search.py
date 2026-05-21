@@ -444,6 +444,7 @@ class GTNSearchDB:
     def search_vector_db(
         self,
         query: str,
+        collection_name: str = "gtn_tutorials",
         limit: int = 2,
         doc_type: Optional[str] = None,
     ) -> list[VectorSearchDbResult]:
@@ -453,12 +454,12 @@ class GTNSearchDB:
             embeddings = OpenAIEmbeddings(
                 base_url="https://api.deepinfra.com/v1/openai",
                 model="BAAI/bge-large-en-v1.5",
-                api_key="2v7jO5zshabaCb1i0JJQmqVXbRciW5q2",
+                api_key="",
                 tiktoken_enabled=False,  # Disable tiktoken to avoid DNS issues with custom models
                 check_embedding_ctx_length=False  # Disable context length checking
             )
 
-            GTN_VECTOR_CHROMADB_URL = "/home/anup/galaxycodes/galaxy/vector_search_agent/galaxy/lib/galaxy/agents/gtn/chroma_db_gtn/"
+            GTN_VECTOR_CHROMADB_URL = "/home/anup/galaxycodes/galaxy/vector_search_agent/galaxy/lib/galaxy/agents/gtn/chroma_db_composite/"
 
             persist_dir = GTN_VECTOR_CHROMADB_URL
             
@@ -469,7 +470,7 @@ class GTNSearchDB:
 
             vectorstore = Chroma(
                 persist_directory=persist_dir,
-                collection_name="gtn_tutorials",
+                collection_name=collection_name,
                 embedding_function=embeddings
             )
 
@@ -482,13 +483,13 @@ class GTNSearchDB:
 
             for i, (doc, score) in enumerate(results_with_scores, start=1):
                 result = VectorSearchDbResult(
-                    type=doc.metadata["type"],
-                    topic=doc.metadata["topic"],
-                    tutorial=doc.metadata["tutorial"],
+                    type=doc.metadata.get("type"),
+                    topic=doc.metadata.get("topic"),
+                    tutorial=doc.metadata.get("tutorial"),
                     page_content=str(doc.page_content),
                     score=score,
-                    url=doc.metadata["url"],
-                    source=doc.metadata["data_source"],
+                    url=doc.metadata.get("url"),
+                    source=doc.metadata.get("data_source"),
                 )
                 vector_results.append(result)
 
