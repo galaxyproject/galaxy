@@ -1,8 +1,4 @@
-from datetime import (
-    datetime,
-    timedelta,
-    timezone,
-)
+from datetime import datetime
 from typing import (
     NoReturn,
 )
@@ -150,13 +146,12 @@ class NotificationService(ServiceBase):
         ):
             content = content.model_copy(update={"requester_email": sender_context.user.email})
 
-        now = datetime.now(tz=timezone.utc).replace(tzinfo=None)
         notification_data = NotificationCreateData.model_construct(
             source=payload.notification.source or "tool_installation_request_form",
             category=payload.notification.category,
             variant=payload.notification.variant or NotificationVariant.info,
             content=content,
-            expiration_time=payload.notification.expiration_time or (now + timedelta(days=180)),
+            expiration_time=payload.notification.expiration_time,
         )
 
         return NotificationCreateRequest.model_construct(
