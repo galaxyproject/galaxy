@@ -32,6 +32,14 @@ const showButton = computed(
 );
 
 const toolCount = computed(() => props.missingToolIds.length);
+const submittedNotificationRoute = computed(() =>
+    submittedNotificationId.value
+        ? {
+              path: "/user/notifications",
+              hash: `#notification-card-${submittedNotificationId.value}`,
+          }
+        : undefined,
+);
 
 async function requestInstallation() {
     submitting.value = true;
@@ -67,7 +75,7 @@ async function requestInstallation() {
 
         <BAlert v-if="submittedNotificationId" variant="success" show>
             Installation request sent &mdash;
-            <BLink :href="`/user/notifications#notification-card-${submittedNotificationId}`">view your request</BLink>.
+            <BLink :to="submittedNotificationRoute">view your request</BLink>.
         </BAlert>
 
         <GButton
