@@ -12,6 +12,7 @@ import { useFavoriteSearchResults, useToolPanelFavorites } from "@/composables/t
 import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import type { Tool, ToolPanelItem, ToolSection as ToolSectionType, ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
 import { MY_PANEL_VIEW_ID, PANEL_LABEL_IDS } from "./panelViews";
@@ -40,6 +41,7 @@ import MyToolsLanding from "./MyToolsLanding.vue";
 const WORKFLOW_ONLY_SECTION_IDS = ["expression_tools"];
 
 const { config, isConfigLoaded } = useConfig();
+const { isAnonymous } = storeToRefs(useUserStore());
 const { openUploadModal } = useUploadMethodModal();
 const { routeToTool } = useToolRouting();
 
