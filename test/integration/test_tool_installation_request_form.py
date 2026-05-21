@@ -1,6 +1,5 @@
 """Integration tests for the tool-installation-request-form feature (routed via POST /api/notifications)."""
 
-import json
 import os
 from typing import ClassVar
 
@@ -235,8 +234,8 @@ class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRe
         config["email_from"] = "galaxy-no-reply@example.com"
         config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
 
-    def test_submission_sends_admin_email_when_force_sync_is_required(self):
-        """Tool installation requests should still deliver email notifications when the API forces synchronous processing."""
+    def test_submission_creates_notification_without_sending_admin_email_synchronously(self):
+        """Tool installation requests return the notification synchronously but leave email delivery to Celery."""
         user = self._setup_user("tool_installation_request_email_delivery@galaxy.test")
         with self._different_user(user["email"]):
             update_request = {
@@ -252,18 +251,10 @@ class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRe
 
             response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
             self._assert_status_code_is(response, 200)
+            data = response.json()
+            assert data["notification"]["id"]
 
-        with open(os.path.join(self.email_directory, "email.json")) as f:
-            email = json.loads(f.read())
-
-        assert email["from"] == "galaxy-no-reply@example.com"
-        assert email["to"] == ADMIN_TEST_USER
-        assert email["subject"] == "[Galaxy] Tool installation request: FastQC"
-        assert user["email"] in email["body"]
-        assert "Quality control tool for high-throughput sequencing data." in email["body"]
-        assert email["html"] is not None
-        assert "Would be great for the genomics team." in email["html"]
-        assert "/user/notifications" in email["html"]
+        assert not os.path.exists(os.path.join(self.email_directory, "email.json"))
 
 
 class TestToolInstallationRequestFormDisabledIntegration(IntegrationTestCase):

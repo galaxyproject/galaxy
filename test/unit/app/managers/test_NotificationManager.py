@@ -510,7 +510,7 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
             mock_send_mail.assert_called_once()
             assert len(emails_sent) == 1
 
-    def test_force_sync_dispatches_email_channel_when_async_is_enabled(self):
+    def test_force_sync_creates_notification_without_dispatching_email_channel_when_async_is_enabled(self):
         user = self._create_test_user()
         Security.security = IdEncodingHelper(id_secret="testing")
 
@@ -525,8 +525,18 @@ class TestUserNotificationsWithTasks(NotificationManagerBaseTestCaseWithTasks):
 
         assert isinstance(response, NotificationCreatedResponse)
         assert response.total_notifications_sent == 1
-        mock_send_mail.assert_called_once()
+        mock_send_mail.assert_not_called()
         assert "email" in self.notification_manager.get_supported_channels()
+        pending_notifications = self.notification_manager.get_pending_notifications()
+        assert len(pending_notifications) == 1
+        assert pending_notifications[0].category == response.notification.category
+
+        with patch("galaxy.util.send_mail") as mock_send_mail:
+            dispatched_count = self.notification_manager.dispatch_pending_notifications_via_channels()
+
+        assert dispatched_count == 1
+        mock_send_mail.assert_called_once()
+        assert self.notification_manager.get_pending_notifications() == []
 
 
 class TestNotificationRecipientResolver(NotificationsBaseTestCase):

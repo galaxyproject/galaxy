@@ -154,7 +154,7 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(wrapper.text()).toContain("view your request");
     });
 
-    it("success alert links to notification", async () => {
+    it("success alert links to notification via router", async () => {
         mockSubmitToolInstallationRequest.mockResolvedValueOnce("notification-id-xyz");
         const wrapper = mountComponent();
         await flushPromises();
@@ -164,9 +164,12 @@ describe("WorkflowMissingToolsRequest", () => {
         wrapper.findComponent(GModal).vm.$emit("ok");
         await flushPromises();
 
-        const link = wrapper.find(".alert-success a");
+        const link = wrapper.findComponent({ name: "BLink" });
         expect(link.exists()).toBe(true);
-        expect(link.attributes("href")).toContain("#notification-card-notification-id-xyz");
+        expect(link.props("to")).toEqual({
+            path: "/user/notifications",
+            hash: "#notification-card-notification-id-xyz",
+        });
     });
 
     it("shows error alert when submission fails", async () => {
