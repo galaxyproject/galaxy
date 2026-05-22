@@ -388,13 +388,7 @@ def _validate_format2(
     )
 
     results: List[ValidationStepResult] = []
-    # expand=False — see validation_format2.validate_workflow_format2 for why
-    # (gxformat2's expand pass drops GalaxyUserToolStub from step.run).
-    # Note: under prior ``expand=True``, the ``isinstance(step.run, NormalizedFormat2)``
-    # subworkflow-recursion branch below was unreachable (ExpandedWorkflowStep.run
-    # is ExpandedFormat2 | None) — this switch activates recursion for inline
-    # format2 subworkflows in addition to fixing the UDT case.
-    nf2 = ensure_format2(workflow_dict, expand=False)
+    nf2 = ensure_format2(workflow_dict, expand=True)
     for i, step in enumerate(nf2.steps):
         step_label = f"{prefix}{i}" if prefix else str(i)
 

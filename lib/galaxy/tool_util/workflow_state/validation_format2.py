@@ -54,13 +54,7 @@ def validate_format2_state(
 
 
 def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFormat2], get_tool_info: GetToolInfo):
-    # expand=False preserves ``GalaxyUserToolStub`` instances on ``step.run``;
-    # gxformat2's ``expanded_format2`` rewraps the run field through
-    # ``ExpandedWorkflowStep`` which drops UDT stubs as None. Inline
-    # subworkflows still arrive as ``NormalizedFormat2`` (handled below);
-    # ``@import``/URL subworkflow references would need expansion but are
-    # not part of the validation corpus today.
-    nf2 = ensure_format2(workflow, expand=False) if not isinstance(workflow, NormalizedFormat2) else workflow
+    nf2 = ensure_format2(workflow, expand=True) if not isinstance(workflow, NormalizedFormat2) else workflow
     for step in nf2.steps:
         if step.is_subworkflow_step:
             if isinstance(step.run, NormalizedFormat2):
