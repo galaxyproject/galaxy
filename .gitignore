@@ -201,3 +201,11 @@ lib/galaxy/agents/gtn/data/gtn_search.db
 .DS_Store
 *.rej
 *~
+
+# Agent eval runner: per-user model config (real keys live in env, but be safe)
+test/evals/models.yaml
+# Eval result artifacts -- keep baselines you care about somewhere outside
+# the repo. Filenames encode the repo SHA they were generated from, so any
+# baseline file pairs back to the exact commit it came from.
+test/evals/results/*
+!test/evals/results/.gitkeep

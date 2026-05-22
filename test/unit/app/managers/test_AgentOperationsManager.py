@@ -316,3 +316,68 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
 
         assert "job" in result
         assert result["job_id"] == "encoded_job_id"
+
+    def test_list_file_source_templates_filters_hidden(self):
+        visible = mock.MagicMock(hidden=False)
+        visible.model_dump.return_value = {
+            "id": "omero",
+            "name": "OMERO",
+            "type": "omero",
+            "hidden": False,
+        }
+        hidden = mock.MagicMock(hidden=True)
+        hidden.model_dump.return_value = {
+            "id": "legacy_dropbox",
+            "name": "Legacy Dropbox",
+            "type": "dropbox",
+            "hidden": True,
+        }
+        mock_summaries = mock.MagicMock()
+        mock_summaries.root = [visible, hidden]
+        mock_manager = mock.MagicMock()
+        mock_manager.summaries = mock_summaries
+
+        with mock.patch.object(
+            type(self.agent_ops),
+            "file_source_instances_manager",
+            new_callable=lambda: property(lambda self: mock_manager),
+        ):
+            result = self.agent_ops.list_file_source_templates()
+
+        assert result["count"] == 1
+        assert result["templates"][0]["id"] == "omero"
+        visible.model_dump.assert_called_once_with(mode="json")
+        hidden.model_dump.assert_not_called()
+
+    def test_list_user_file_sources(self):
+        instance = mock.MagicMock()
+        instance.model_dump.return_value = {
+            "uuid": "abc-123",
+            "name": "My Omero",
+            "type": "omero",
+            "uri_root": "gxuserfiles://omero/abc-123",
+            "active": True,
+            "template_id": "omero",
+        }
+        mock_manager = mock.MagicMock()
+        mock_manager.index.return_value = [instance]
+
+        with mock.patch.object(
+            type(self.agent_ops),
+            "file_source_instances_manager",
+            new_callable=lambda: property(lambda self: mock_manager),
+        ):
+            result = self.agent_ops.list_user_file_sources()
+
+        assert result["count"] == 1
+        assert result["file_sources"][0]["uuid"] == "abc-123"
+        assert result["file_sources"][0]["type"] == "omero"
+        mock_manager.index.assert_called_once_with(self.trans)
+        instance.model_dump.assert_called_once_with(mode="json")
+
+    def test_list_user_file_sources_requires_user(self):
+        self.trans.set_user(None)
+        agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+        with pytest.raises(ValueError, match="User must be authenticated"):
+            agent_ops.list_user_file_sources()

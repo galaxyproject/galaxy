@@ -1,4 +1,4 @@
-import { type Ref, ref, watch } from "vue";
+import { type Ref, ref, watch, type WatchSource } from "vue";
 
 import { GalaxyApi } from "@/api";
 
@@ -8,9 +8,14 @@ import type { HistoryGraphResponse } from "./historyGraphMapper";
  * Fetch the history-scoped graph from the API.
  *
  * The default call returns the full history graph (within bounds).
- * An optional seed parameter requests a focused subgraph.
+ * An optional (seedSrc, seedId) pair requests a focused subgraph.
  */
-export function useHistoryGraphData(historyId: Ref<string>, limit: Ref<number>, seed?: Ref<string | undefined>) {
+export function useHistoryGraphData(
+    historyId: Ref<string>,
+    limit: Ref<number>,
+    seedSrc?: Ref<string | undefined>,
+    seedId?: Ref<string | undefined>,
+) {
     const graphData = ref<HistoryGraphResponse | null>(null);
     const loading = ref(false);
     const error = ref<string | null>(null);
@@ -23,8 +28,9 @@ export function useHistoryGraphData(historyId: Ref<string>, limit: Ref<number>, 
             const query: Record<string, unknown> = {
                 limit: limit.value,
             };
-            if (seed?.value) {
-                query.seed = seed.value;
+            if (seedSrc?.value && seedId?.value) {
+                query.seed_src = seedSrc.value;
+                query.seed_id = seedId.value;
             }
 
             const { data, error: apiError } = await GalaxyApi().GET("/api/histories/{history_id}/graph", {
@@ -48,7 +54,13 @@ export function useHistoryGraphData(historyId: Ref<string>, limit: Ref<number>, 
         }
     }
 
-    const watchSources = seed ? [historyId, limit, seed] : [historyId, limit];
+    const watchSources: WatchSource[] = [historyId, limit];
+    if (seedSrc) {
+        watchSources.push(seedSrc);
+    }
+    if (seedId) {
+        watchSources.push(seedId);
+    }
     watch(watchSources, () => fetchGraph(), { immediate: true });
 
     return { graphData, loading, error };

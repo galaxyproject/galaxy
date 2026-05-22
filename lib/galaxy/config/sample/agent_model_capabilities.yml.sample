@@ -1,0 +1,55 @@
+# Capability hints for Galaxy agent inference models.
+#
+# Galaxy's agent stack (CustomToolAgent, ErrorAnalysisAgent, ...) needs to know
+# whether the configured model supports "structured output" -- pydantic-ai's
+# tool-calling / JSON-schema mode. Most modern hosted models do; some local
+# inference backends and a handful of specific model families do not.
+#
+# This file maps fnmatch-style globs against the configured model name (the
+# bare name -- any "openai:", "anthropic:", or "google:" prefix is stripped
+# before matching). The first matching pattern wins. If nothing matches, the
+# `default` block applies.
+#
+# Admins can override per-agent or globally in galaxy.yml under
+# inference_services using `structured_output_override: true|false`. That
+# override beats whatever this table says -- useful when you're running a
+# private model that isn't in the list yet.
+
+model_capabilities:
+  # DeepSeek's R1 family routinely fails on complex nested JSON schemas.
+  - pattern: "deepseek*"
+    structured_output: false
+
+  # OpenAI GPT-4 family -- full tool-calling support.
+  - pattern: "gpt-4*"
+    structured_output: true
+  - pattern: "gpt-5*"
+    structured_output: true
+  - pattern: "o1*"
+    structured_output: true
+  - pattern: "o3*"
+    structured_output: true
+
+  # Anthropic Claude.
+  - pattern: "claude-*"
+    structured_output: true
+
+  # Google Gemini.
+  - pattern: "gemini-*"
+    structured_output: true
+
+  # Meta Llama (3.x and 4.x both handle tool calls well in practice).
+  - pattern: "llama*"
+    structured_output: true
+
+  # Mistral / Mixtral.
+  - pattern: "mistral*"
+    structured_output: true
+  - pattern: "mixtral*"
+    structured_output: true
+
+# Fallback for any model not matched above. Most modern models support
+# structured output, so we assume true rather than locking new models out
+# of features like CustomToolAgent.
+default:
+  structured_output: true

@@ -2,7 +2,7 @@
  * Composable for fetching and watching history datasets based on filter criteria.
  * This encapsulates the logic for fetching datasets when history ID, update time,
  * or filter text changes, making it reusable across components like `CollectionCreatorIndex`
- * (and in the future `ChatGXY`).
+ * (and in the future `GalaxyAI`).
  */
 import { type MaybeRefOrGetter, toValue } from "@vueuse/shared";
 import { computed, ref, watch } from "vue";

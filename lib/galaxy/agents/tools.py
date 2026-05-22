@@ -1,7 +1,13 @@
 """
 Tool recommendation agent for suggesting appropriate Galaxy tools.
+
+Despite the historical name, this agent recommends both atomic Galaxy tools
+and end-to-end IWC workflows. Atomic asks ("which tool sorts a BAM?") still
+get a tool back; analysis-shaped asks ("RNA-seq from FASTQ to differential
+expression") get a workflow back.
 """
 
+import asyncio
 import logging
 import re
 from pathlib import Path
@@ -16,6 +22,7 @@ from pydantic import (
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
 
+from galaxy.agents import iwc
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     ActionSuggestion,
@@ -33,11 +40,25 @@ from .base import (
 log = logging.getLogger(__name__)
 
 
+def _iwc_search(query: str, limit: int) -> list[dict[str, Any]]:
+    workflows = iwc.all_workflows(iwc.fetch_manifest())
+    return iwc.search_workflows(workflows, query, limit=limit)
+
+
+def _iwc_details(trs_id: str) -> Optional[dict[str, Any]]:
+    workflows = iwc.all_workflows(iwc.fetch_manifest())
+    for wf in workflows:
+        if wf.get("trsID") == trs_id:
+            return iwc.enrich_workflow(wf, include_full_readme=False)
+    return None
+
+
 class SimplifiedToolRecommendationResult(BaseModel):
     """Tool recommendation result using simple types for local LLM compatibility."""
 
-    primary_tools: list[dict[str, Any]]
+    primary_tools: list[dict[str, Any]] = []
     alternative_tools: list[dict[str, Any]] = []
+    recommended_workflows: list[dict[str, Any]] = []
     workflow_suggestion: Optional[str] = None
     parameter_guidance: dict[str, Any] = {}
     confidence: ConfidenceLiteral
@@ -121,6 +142,49 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 return "No tool categories found"
             return "Available tool categories:\n" + "\n".join(f"- {cat}" for cat in categories)
 
+        @agent.tool
+        async def search_iwc_workflows(ctx: RunContext[GalaxyAgentDependencies], query: str, limit: int = 5) -> str:
+            """Search the IWC (Intergalactic Workflows Commission) catalog for workflows.
+
+            Use this when the user is asking for a multi-step analysis (e.g. "run
+            an RNA-seq pipeline", "variant calling from FASTQ") rather than a
+            single tool. Returns ranked workflow entries with trsID, name,
+            description, step count, and the tools each workflow uses.
+            """
+            results = await self.search_iwc_workflows(query, limit=limit)
+            if not results:
+                return f"No IWC workflows found matching '{query}'"
+            lines = [f"Found {len(results)} IWC workflows for '{query}':"]
+            for wf in results:
+                lines.append(
+                    f"- trsID: {wf['trsID']}, name: {wf['name']}, steps: {wf['step_count']}, "
+                    f"tools: {', '.join(wf.get('tools_used', [])[:6])}, "
+                    f"description: {(wf.get('description') or '')[:160]}"
+                )
+            return "\n".join(lines)
+
+        @agent.tool
+        async def get_iwc_workflow_details(ctx: RunContext[GalaxyAgentDependencies], trs_id: str) -> str:
+            """Fetch the full enriched IWC entry for a single workflow.
+
+            Use after search_iwc_workflows to get the complete tool list,
+            authors, categories, and readme summary before recommending.
+            """
+            details = await self.get_iwc_workflow_details(trs_id)
+            if details is None:
+                return f"No IWC workflow found with trsID {trs_id}"
+            lines = [
+                f"Name: {details.get('name')}",
+                f"trsID: {details.get('trsID')}",
+                f"Steps: {details.get('step_count')}",
+                f"Tags: {', '.join(details.get('tags', []))}",
+                f"Categories: {', '.join(details.get('categories', []))}",
+                f"Tools used: {', '.join(details.get('tools_used', []))}",
+                f"Description: {details.get('description', '')}",
+                f"Readme: {details.get('readme_summary', '')}",
+            ]
+            return "\n".join(lines)
+
         return agent
 
     def get_system_prompt(self) -> str:
@@ -201,6 +265,22 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         except (AttributeError, KeyError, TypeError) as e:
             log.warning(f"Error getting tool details for {tool_id}: {e}")
             return {"id": tool_id, "error": str(e)}
+
+    async def search_iwc_workflows(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        """Search the IWC manifest. Network-bound on cache miss; runs in a thread."""
+        try:
+            return await asyncio.to_thread(_iwc_search, query, limit)
+        except (OSError, ValueError) as e:
+            log.warning(f"IWC search failed for query={query!r}: {e}")
+            return []
+
+    async def get_iwc_workflow_details(self, trs_id: str) -> Optional[dict[str, Any]]:
+        """Fetch one workflow from the IWC manifest, fully enriched."""
+        try:
+            return await asyncio.to_thread(_iwc_details, trs_id)
+        except (OSError, ValueError) as e:
+            log.warning(f"IWC details lookup failed for {trs_id!r}: {e}")
+            return None
 
     async def get_tool_categories(self) -> list[str]:
         if not self.deps.toolbox:
@@ -300,8 +380,11 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                     suggestions=suggestions,
                     agent_data={
                         "num_tools_found": len(recommendation.primary_tools),
+                        "num_workflows_found": len(recommendation.recommended_workflows),
                         "has_alternatives": bool(recommendation.alternative_tools),
-                        "has_workflow": bool(recommendation.workflow_suggestion),
+                        "has_workflow": bool(
+                            recommendation.recommended_workflows or recommendation.workflow_suggestion
+                        ),
                         "search_keywords": recommendation.search_keywords,
                     },
                     reasoning=recommendation.reasoning,
@@ -357,6 +440,23 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 tool_name = tool.get("name", tool.get("tool_name", "Unknown"))
                 parts.append(f"- **{tool_name}**: {tool.get('description', 'No description')}")
 
+        if recommendation.recommended_workflows:
+            parts.append("\n**Recommended IWC Workflows:**")
+            for i, wf in enumerate(recommendation.recommended_workflows[:3], 1):
+                wf_name = wf.get("name", "Unknown workflow")
+                trs_id = wf.get("trsID") or wf.get("trs_id") or ""
+                parts.append(f"\n{i}. **{wf_name}**")
+                if trs_id:
+                    parts.append(f"   - trsID: `{trs_id}`")
+                if wf.get("description"):
+                    parts.append(f"   - {wf['description']}")
+                if wf.get("step_count"):
+                    parts.append(f"   - Steps: {wf['step_count']}")
+                if wf.get("tools_used"):
+                    parts.append(f"   - Tools: {', '.join(wf['tools_used'][:6])}")
+                if wf.get("categories"):
+                    parts.append(f"   - Categories: {', '.join(wf['categories'])}")
+
         if recommendation.workflow_suggestion:
             parts.append(f"\n**Workflow Suggestion:**\n{recommendation.workflow_suggestion}")
 
@@ -366,12 +466,13 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 parts.append(f"- {param}: {value}")
 
         if recommendation.reasoning:
-            parts.append(f"\n**Why these tools?**\n{recommendation.reasoning}")
+            parts.append(f"\n**Why this recommendation?**\n{recommendation.reasoning}")
 
         return "\n".join(parts)
 
     def _create_suggestions(self, recommendation: SimplifiedToolRecommendationResult) -> list[ActionSuggestion]:
         suggestions = []
+        action_confidence = ConfidenceLevel(recommendation.confidence.lower())
 
         if recommendation.primary_tools:
             top_tool = recommendation.primary_tools[0]
@@ -381,7 +482,6 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.debug(f"Extracted tool_name={tool_name}, tool_id={tool_id}")
 
             if tool_id and self._verify_tool_exists(tool_id):
-                action_confidence = ConfidenceLevel(recommendation.confidence.lower())
                 suggestions.append(
                     ActionSuggestion(
                         action_type=ActionType.TOOL_RUN,
@@ -393,6 +493,21 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
                 )
             elif tool_id:
                 log.warning(f"Tool '{tool_id}' recommended but not found in toolbox - skipping suggestion")
+
+        if recommendation.recommended_workflows:
+            top_wf = recommendation.recommended_workflows[0]
+            trs_id = top_wf.get("trsID") or top_wf.get("trs_id")
+            wf_name = top_wf.get("name", "IWC workflow")
+            if trs_id:
+                suggestions.append(
+                    ActionSuggestion(
+                        action_type=ActionType.WORKFLOW_IMPORT,
+                        description=f"Import {wf_name} from IWC",
+                        parameters={"trs_id": trs_id, "name": wf_name},
+                        confidence=action_confidence,
+                        priority=1 if not recommendation.primary_tools else 2,
+                    )
+                )
 
         return suggestions
 

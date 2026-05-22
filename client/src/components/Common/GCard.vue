@@ -268,6 +268,17 @@ const emit = defineEmits<{
 
 const bookmarkLoading = ref(false);
 
+// Track open state of the extra-actions dropdown so the card can raise its
+// stacking context while open. Without this, the open menu can visually drop
+// over the next card row but get pixel-intercepted by that card's primary
+// action buttons (see issue surfaced by Selenium test_delete_and_undelete_history).
+const extraActionsOpen = ref(false);
+
+function onExtraDropdown(open: boolean) {
+    extraActionsOpen.value = open;
+    emit("dropdown", open);
+}
+
 /**
  * Toggles bookmark status with loading state
  */
@@ -316,6 +327,7 @@ function onKeyDown(event: KeyboardEvent) {
             { 'g-card-published': published },
             { 'g-card-clickable': props.clickable },
             { 'g-card-dim': props.dimWhenUnselected && !props.selected },
+            { 'g-card-dropdown-open': extraActionsOpen },
             containerClass,
         ]"
         :tabindex="props.clickable ? 0 : undefined"
@@ -329,7 +341,7 @@ function onKeyDown(event: KeyboardEvent) {
                 <div class="d-flex flex-column flex-gapy-1">
                     <div
                         :id="`g-card-${props.id}-header`"
-                        class="d-flex flex-wrap flex-gapy-1 flex-gapx-1 justify-content-between">
+                        class="d-flex flex-gapy-1 flex-gapx-1 justify-content-between">
                         <div class="d-flex flex-column flex-grow-1 g-card-title-section">
                             <div class="d-flex">
                                 <div v-if="selectable">
@@ -349,7 +361,6 @@ function onKeyDown(event: KeyboardEvent) {
                                             :id="getElementId(props.id, 'title')"
                                             bold
                                             inline
-                                            class="d-block"
                                             :size="props.titleSize">
                                             <FontAwesomeIcon
                                                 v-if="props.titleIcon?.icon"
@@ -371,7 +382,7 @@ function onKeyDown(event: KeyboardEvent) {
                                             <template v-else>
                                                 <span
                                                     :id="getElementId(props.id, 'title-text')"
-                                                    v-g-tooltip.hover
+                                                    v-g-tooltip.onoverflow
                                                     :title="localize(title)"
                                                     :class="{ 'g-card-title-truncate': props.titleNLines }">
                                                     {{ title }}
@@ -465,8 +476,8 @@ function onKeyDown(event: KeyboardEvent) {
                                         title="More options"
                                         toggle-class="inline-icon-button"
                                         variant="link"
-                                        @show="() => emit('dropdown', true)"
-                                        @hide="() => emit('dropdown', false)">
+                                        @show="() => onExtraDropdown(true)"
+                                        @hide="() => onExtraDropdown(false)">
                                         <template v-slot:button-content>
                                             <FontAwesomeIcon :icon="faCaretDown" fixed-width />
                                         </template>
@@ -694,6 +705,20 @@ function onKeyDown(event: KeyboardEvent) {
     container: g-card / inline-size;
     width: 100%;
 
+    // While the extra-actions dropdown is open, raise this card above its
+    // siblings so the menu does not get pixel-intercepted by a neighboring
+    // card's primary action buttons drawn at the same screen coordinates,
+    // and relax the content's overflow:hidden so popper-positioned menu
+    // items (especially when flipped above the toggle) are not clipped.
+    &.g-card-dropdown-open {
+        position: relative;
+        z-index: 2;
+
+        .g-card-content {
+            overflow: visible;
+        }
+    }
+
     &.g-card-grid-view {
         width: calc(100% / 3);
 
@@ -757,14 +782,7 @@ function onKeyDown(event: KeyboardEvent) {
     }
 
     .g-card-rename {
-        visibility: hidden;
-    }
-
-    &:hover,
-    &:focus-within {
-        .g-card-rename {
-            visibility: visible;
-        }
+        align-self: flex-start;
     }
 
     .g-card-content {

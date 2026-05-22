@@ -16,7 +16,7 @@ import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
-import ChatHistoryPanel from "../ChatGXY/ChatHistoryPanel.vue";
+import ChatHistoryPanel from "../GalaxyAI/ChatHistoryPanel.vue";
 import InvocationsPanel from "../Panels/InvocationsPanel.vue";
 import ActivityBarHeader from "./ActivityBarHeader.vue";
 import ActivityBarSeparator from "./ActivityBarSeparator.vue";
@@ -127,7 +127,7 @@ const activities = computed({
             if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
                 return false;
             }
-            if (activity.id === "chatgxy" && !config.value?.llm_api_configured) {
+            if (activity.id === "galaxyai" && !config.value?.llm_api_configured) {
                 return false;
             }
             return true;
@@ -139,7 +139,7 @@ const activities = computed({
             (activity) =>
                 (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
                 (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
-                (activity.id === "chatgxy" && !config.value?.llm_api_configured),
+                (activity.id === "galaxyai" && !config.value?.llm_api_configured),
         );
         storeActivities.value = [...newActivities, ...filteredOut];
     },
@@ -425,7 +425,7 @@ defineExpose({
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
-            <ChatHistoryPanel v-else-if="isActiveSideBar('chatgxy')" />
+            <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
             <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />

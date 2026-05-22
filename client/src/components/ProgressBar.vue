@@ -26,7 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 <template>
     <div class="my-1 progress-container">
-        <small v-if="props.note" class="progress-note">
+        <small v-if="props.note" v-g-tooltip.onoverflow class="progress-note" :title="props.note">
             {{ props.note }}<span v-if="props.loading">.<span class="blinking">..</span></span>
         </small>
         <BProgress :max="props.total">

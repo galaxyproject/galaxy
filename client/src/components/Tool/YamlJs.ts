@@ -162,30 +162,105 @@ declare global {
 }
 `;
 
-async function addExtraLibs(yamlContent?: string) {
-    if (yamlContent) {
-        const { schemaInterface, error } = await fetchAndConvertSchemaToInterface(yamlContent);
-        if (error) {
-            console.error(error);
-        } else {
-            const runtimeFragment = `${schemaInterface}\n${fragment}`;
-            const defModelUri = getDefModelUri();
-            const runtimeModel =
-                monacoInstance!.editor.getModel(defModelUri) ||
-                monacoInstance!.editor.createModel("", "typescript", defModelUri);
-            if (runtimeModel.getValue() != runtimeFragment) {
-                runtimeModel.setValue(runtimeFragment);
-            }
-        }
-    }
+interface RuntimeModelError {
+    err_msg?: string;
+    err_code?: number;
+    validation_errors?: string[];
 }
 
-export async function contentSync(yamlContent: string, scriptContent: string, embeddedModel: any) {
+async function addExtraLibs(yamlContent?: string): Promise<RuntimeModelError | undefined> {
+    if (!yamlContent) {
+        return undefined;
+    }
+    const { schemaInterface, error } = await fetchAndConvertSchemaToInterface(yamlContent);
+    if (error) {
+        return error as RuntimeModelError;
+    }
+    const runtimeFragment = `${schemaInterface}\n${fragment}`;
+    const defModelUri = getDefModelUri();
+    const runtimeModel =
+        monacoInstance!.editor.getModel(defModelUri) ||
+        monacoInstance!.editor.createModel("", "typescript", defModelUri);
+    if (runtimeModel.getValue() != runtimeFragment) {
+        runtimeModel.setValue(runtimeFragment);
+    }
+    return undefined;
+}
+
+export async function contentSync(
+    yamlContent: string,
+    scriptContent: string,
+    embeddedModel: any,
+): Promise<RuntimeModelError | undefined> {
     // Keep the embedded JavaScript model in sync with the YAML editor
+    let error: RuntimeModelError | undefined;
     if (yamlContent) {
-        await addExtraLibs(yamlContent);
+        error = await addExtraLibs(yamlContent);
     }
     embeddedModel.setValue(scriptContent);
+    return error;
+}
+
+// Locate a top-level YAML key by name; returns 1-based line number or undefined.
+function findYamlKeyLine(yamlContent: string, key: string): number | undefined {
+    const re = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*:`);
+    const lines = yamlContent.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+        if (re.test(lines[i]!)) {
+            return i + 1;
+        }
+    }
+    return undefined;
+}
+
+// Convert a runtime_model API error into Monaco markers anchored to the YAML.
+// The error.validation_errors entries are JSON-serialized pydantic errors with
+// `loc` paths like ('body','representation','<field>',...) — the first two
+// segments come from the FastAPI body wrapper and are stripped.
+function runtimeModelErrorMarkers(error: RuntimeModelError, yamlContent: string): any[] {
+    const Severity = monacoInstance!.MarkerSeverity.Error;
+    const markers: any[] = [];
+    const entries = error.validation_errors ?? [];
+    let consumed = 0;
+    for (const raw of entries) {
+        let parsed: { loc?: (string | number)[]; msg?: string } | undefined;
+        try {
+            parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+        } catch {
+            continue;
+        }
+        if (!parsed) {
+            continue;
+        }
+        const loc = (parsed.loc ?? []).filter((s) => s !== "body" && s !== "representation");
+        const fieldKey = loc.find((s) => typeof s === "string") as string | undefined;
+        const line = fieldKey ? findYamlKeyLine(yamlContent, fieldKey) : undefined;
+        const path = loc.length ? loc.join(".") : "(tool)";
+        const message = `${path}: ${parsed.msg ?? error.err_msg ?? "validation error"}`;
+        if (line) {
+            const lineText = yamlContent.split("\n")[line - 1] ?? "";
+            markers.push({
+                severity: Severity,
+                message,
+                startLineNumber: line,
+                startColumn: 1,
+                endLineNumber: line,
+                endColumn: Math.max(lineText.length + 1, 2),
+            });
+            consumed++;
+        }
+    }
+    if (consumed === 0 && error.err_msg) {
+        markers.push({
+            severity: Severity,
+            message: error.err_msg,
+            startLineNumber: 1,
+            startColumn: 1,
+            endLineNumber: 1,
+            endColumn: 2,
+        });
+    }
+    return markers;
 }
 
 async function mixJsYamlProviders(yamlProviderFunctions: any) {
@@ -302,11 +377,14 @@ function attachDiagnosticsProvider(yamlModel: any, embeddedModel: any, provideMa
         const embeddedJavaScript = extractExpressionLibJavaScript(yamlContent);
         // contentSync makes API call, we could consider updating the marker
         // only when fetch complete, but doesn't seem to be a problem ...
-        await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
+        const runtimeError = await contentSync(yamlContent, embeddedJavaScript, embeddedModel);
         const yamlMarkers = await provideMarkerData(yamlModel);
         const models = await allModels(yamlModel);
         const worker = await monacoInstance!.languages.typescript.getTypeScriptWorker();
         const markers = [...yamlMarkers];
+        if (runtimeError) {
+            markers.push(...runtimeModelErrorMarkers(runtimeError, yamlContent));
+        }
         const promises = models.map(async (modelData) => {
             const languageService = await worker(modelData.model.uri);
             const diagnostics = await languageService.getSemanticDiagnostics(modelData.model.uri.toString());

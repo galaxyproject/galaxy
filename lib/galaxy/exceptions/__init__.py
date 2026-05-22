@@ -176,6 +176,11 @@ class AuthenticationFailed(MessageException):
     err_code = error_codes_by_name["USER_AUTHENTICATION_FAILED"]
 
 
+class FileSourceCredentialExpired(MessageException):
+    status_code = 401
+    err_code = error_codes_by_name["FILE_SOURCE_CREDENTIAL_EXPIRED"]
+
+
 class AuthenticationRequired(MessageException):
     status_code = 403
     # TODO: as 401 and send WWW-Authenticate: ???

@@ -4,11 +4,14 @@ This is abstraction exported by newer tool shed APIS (circa 2024) and should be 
 for reasoning about tool state externally from Galaxy.
 """
 
+import re
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
+    Set,
     Tuple,
     Union,
 )
@@ -19,11 +22,15 @@ from pydantic import (
     ConfigDict,
     Discriminator,
     Field,
+    field_validator,
+    model_serializer,
     model_validator,
     RootModel,
+    SerializerFunctionWrapHandler,
     Tag,
     ValidationError,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
     Annotated,
     Literal,
@@ -41,6 +48,8 @@ from .parameters import ToolParameterT
 from .test_job import Job
 from .tool_outputs import (
     IncomingToolOutput,
+    IncomingToolOutputCollection,
+    IncomingToolOutputDataset,
     ToolOutput,
 )
 from .tool_source import (
@@ -68,6 +77,48 @@ def normalize_dict(values, keys: List[str]):
             values[key] = [{"name": k, **v} for k, v in items.items()]
 
 
+# Tool ID: lowercase, leading letter, letters/digits/'_'/'-'.
+_TOOL_ID_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
+TOOL_ID_PATTERN = r"^[a-z][a-z0-9_-]*$"
+
+# Templated ecmascript inside `shell_command` / `configfiles[*].content`.
+# Pull every $(<expr>) and extract the *leading* 'inputs.<name>' identifier.
+# Only the top-level name is checked, so nested references like
+# 'inputs.cond.test_parameter' or 'inputs.repeat[0].x' resolve against
+# the conditional / repeat / section's own top-level name -- no false
+# positives for nested structures. Computed/aliased references (e.g.
+# 'var x = inputs; x.foo') are intentionally not parsed; the goal is
+# catching obvious typos cheaply, not modelling ecmascript scope.
+_TEMPLATE_BLOCK_RE = re.compile(r"\$\((.*?)\)", re.DOTALL)
+_INPUTS_REF_RE = re.compile(r"\binputs\.([A-Za-z_][A-Za-z0-9_]*)")
+
+
+def _command_input_refs(text: Optional[str]) -> Set[str]:
+    refs: Set[str] = set()
+    if not text:
+        return refs
+    for block in _TEMPLATE_BLOCK_RE.findall(text):
+        for match in _INPUTS_REF_RE.findall(block):
+            refs.add(match)
+    return refs
+
+
+def format_validation_errors(exc: ValidationError) -> List[str]:
+    """Distill a pydantic ValidationError into a human-readable list.
+
+    Each entry is `<dotted.location>: <message>`, or just `<message>` for
+    model-level errors with no location. Suitable for surfacing directly to
+    a user (in the agent's bullet list, or as an API 4xx body).
+    """
+    lines: List[str] = []
+    for err in exc.errors():
+        loc_parts = [str(p) for p in err.get("loc", ()) if p not in ("__root__",)]
+        loc = ".".join(loc_parts)
+        msg = err.get("msg", "validation error")
+        lines.append(f"{loc}: {msg}" if loc else msg)
+    return lines
+
+
 class _DynamicToolSourceBase(ToolSourceBaseModel):
     # extra="forbid" rejects unknown top-level keys (e.g. a stray `argument:` at
     # the tool level), matching the strict-narrow stance on `inputs`.
@@ -79,17 +130,22 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     id: Annotated[
         Optional[str],
         Field(
-            description="Unique identifier for the tool. Should be all lower-case and should not include whitespace.",
+            description=(
+                "Unique identifier for the tool. Lowercase, must start with a letter, "
+                "may contain letters, digits, '_' and '-'."
+            ),
             examples=["my-cool-tool"],
             min_length=3,
             max_length=255,
+            pattern=TOOL_ID_PATTERN,
         ),
     ] = None
     version: Annotated[Optional[str], Field(description="Version for the tool.", examples=["0.1.0"])] = None
     name: Annotated[
         str,
         Field(
-            description="The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool."
+            description="The name of the tool, displayed in the tool menu. This is not the same as the tool id, which is a unique identifier for the tool.",
+            min_length=5,
         ),
     ]
     description: Annotated[
@@ -139,12 +195,119 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
             normalize_dict(values, ["inputs", "outputs"])
         return values
 
+    @field_validator("name", "version", mode="after")
+    @classmethod
+    def _reject_blank_strings(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not v.strip():
+            raise PydanticCustomError(
+                "dynamic_tool.blank_string",
+                "must not be empty or whitespace",
+            )
+        return v
+
+    @model_validator(mode="after")
+    def _check_input_refs(self) -> "_DynamicToolSourceBase":
+        declared_inputs: Set[str] = {param.root.name for param in self.inputs}
+        referenced: Set[str] = _command_input_refs(self.shell_command)
+        for configfile in self.configfiles or []:
+            referenced |= _command_input_refs(configfile.content)
+        undeclared = sorted(referenced - declared_inputs)
+        if undeclared:
+            joined = "; ".join(
+                f"references inputs.{name} but no input named '{name}' is declared" for name in undeclared
+            )
+            raise PydanticCustomError(
+                "dynamic_tool.undeclared_input_ref",
+                joined,
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _check_output_claims(self) -> "_DynamicToolSourceBase":
+        errors: List[str] = []
+        for output in self.outputs:
+            if isinstance(output, IncomingToolOutputDataset):
+                if not output.from_work_dir and not output.discover_datasets:
+                    errors.append(
+                        f"output '{output.name}' must set 'from_work_dir' or 'discover_datasets' "
+                        "(otherwise its bytes will never be claimed from the working directory)"
+                    )
+            elif isinstance(output, IncomingToolOutputCollection):
+                if not output.structure.discover_datasets:
+                    errors.append(
+                        f"output collection '{output.name}' must set 'structure.discover_datasets' "
+                        "(otherwise no elements will be claimed from the working directory)"
+                    )
+        if errors:
+            raise PydanticCustomError(
+                "dynamic_tool.output_unclaimed",
+                "; ".join(errors),
+            )
+        return self
+
 
 class UserToolSource(_DynamicToolSourceBase):
     class_: Annotated[Literal["GalaxyUserTool"], Field(alias="class")]
     container: Annotated[
         str, Field(description="Container image to use for this tool.", examples=["quay.io/biocontainers/python:3.13"])
     ]
+
+    # Field declaration order puts subclass fields (class_, container) after
+    # parent ones, which serializes them at the end. Re-order on dump so the
+    # YAML the tool editor renders leads with identity + runtime.
+    _CANONICAL_FIELD_ORDER: ClassVar[Tuple[str, ...]] = (
+        "class_",
+        "id",
+        "name",
+        "version",
+        "description",
+        "container",
+        "requirements",
+        "shell_command",
+        "configfiles",
+        "inputs",
+        "outputs",
+        "citations",
+        "license",
+        "profile",
+        "edam_operations",
+        "edam_topics",
+        "xrefs",
+        "help",
+        "tests",
+    )
+
+    @field_validator("container", mode="after")
+    @classmethod
+    def _reject_blank_container(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise PydanticCustomError(
+                "dynamic_tool.blank_container",
+                "container must not be empty",
+            )
+        return value
+
+    @model_serializer(mode="wrap")
+    def _canonical_order(self, handler: SerializerFunctionWrapHandler, info: Any):
+        # Runs for both direct ``model_dump`` calls and nested serialization
+        # (e.g. inside ``UnprivilegedToolResponse``), where pydantic_core
+        # bypasses ``model_dump`` on the child.
+        # No return annotation so pydantic derives the output JSON schema from
+        # the model fields instead of treating the result as opaque dict.
+        data = handler(self)
+        if not isinstance(data, dict):
+            return data
+        by_alias = bool(getattr(info, "by_alias", False))
+        fields = type(self).model_fields
+        ordered: Dict[str, Any] = {}
+        for field_name in self._CANONICAL_FIELD_ORDER:
+            field_info = fields.get(field_name)
+            key = (field_info.alias or field_name) if by_alias and field_info and field_info.alias else field_name
+            if key in data:
+                ordered[key] = data.pop(key)
+        # Preserve any unexpected keys (forward compat) at the end.
+        ordered.update(data)
+        return ordered
 
 
 class YamlToolSource(_DynamicToolSourceBase):
@@ -187,6 +350,8 @@ def _navigable_path(value: Any, loc: tuple) -> Tuple[Optional[Any], List[Any]]:
     container of the leaf and the cleaned path components, or (None, []) if
     the path can't be resolved."""
     cur: Any = value
+    if not loc:
+        return cur, []
     *prefix, leaf = loc
     cleaned: List[Any] = []
     for step in prefix:

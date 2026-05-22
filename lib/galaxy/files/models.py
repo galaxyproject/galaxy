@@ -203,6 +203,25 @@ class FilesSourceProperties(StrictModel):
             ),
         ),
     ] = None
+    oidc_auth_provider: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="OIDC authorization provider",
+            description=("Specify an OIDC provider key to inject the access token as a Bearer Authorization header."),
+        ),
+    ] = None
+    auth_expires_at: Annotated[
+        Optional[str],
+        Field(
+            title="Auth expires at",
+            description=(
+                "ISO-format UTC datetime at which the OIDC access token used by this source expires."
+                " Set at serialisation time for sources that resolve an Authorization header from"
+                " the user's OIDC credentials."
+            ),
+        ),
+    ] = None
     disable_templating: Annotated[
         Optional[bool],
         Field(

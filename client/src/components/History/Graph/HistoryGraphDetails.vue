@@ -16,16 +16,13 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const nodeType = computed(() => (props.node?.data?.type as string) ?? null);
-const encodedId = computed(() => (props.node?.data?.encodedId as string) ?? null);
+const nodeSrc = computed(() => (props.node?.data?.src as string) ?? null);
+const itemId = computed(() => (props.node?.data?.itemId as string) ?? null);
 
-/** Map graph node type to the item source GenericHistoryItem expects */
+/** src GenericHistoryItem expects, for the item node kinds it can render */
 const itemSrc = computed(() => {
-    if (nodeType.value === "dataset") {
-        return "hda";
-    }
-    if (nodeType.value === "collection") {
-        return "hdca";
+    if (nodeSrc.value === "hda" || nodeSrc.value === "hdca") {
+        return nodeSrc.value;
     }
     return null;
 });
@@ -36,11 +33,11 @@ const jobLoading = ref(false);
 const jobError = ref<string | null>(null);
 
 watch(
-    () => [nodeType.value, encodedId.value],
-    async ([type, id]) => {
+    () => [nodeSrc.value, itemId.value],
+    async ([src, id]) => {
         jobId.value = null;
         jobError.value = null;
-        if (type !== "tool_request" || !id) {
+        if (src !== "tool_request" || !id) {
             return;
         }
         jobLoading.value = true;
@@ -69,15 +66,15 @@ watch(
     <div class="history-graph-details border-left bg-white">
         <div class="details-body">
             <!-- Dataset or Collection -->
-            <div v-if="itemSrc && encodedId" :key="encodedId" class="p-2">
+            <div v-if="itemSrc && itemId" :key="itemId" class="p-2">
                 <Heading h1 separator inline size="md">
-                    {{ nodeType === "dataset" ? "Dataset Information" : "Collection Information" }}
+                    {{ nodeSrc === "hda" ? "Dataset Information" : "Collection Information" }}
                 </Heading>
-                <GenericHistoryItem :item-id="encodedId" :item-src="itemSrc" />
+                <GenericHistoryItem :item-id="itemId" :item-src="itemSrc" />
             </div>
 
             <!-- Tool request / Job details -->
-            <div v-else-if="nodeType === 'tool_request'" class="p-2">
+            <div v-else-if="nodeSrc === 'tool_request'" class="p-2">
                 <LoadingSpan v-if="jobLoading" message="Loading job details" />
                 <BAlert v-else-if="jobError" variant="info" show class="mb-0">{{ jobError }}</BAlert>
                 <JobInformation v-else-if="jobId" :job-id="jobId" :include-times="true" />

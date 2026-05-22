@@ -1078,12 +1078,18 @@ class MinimalJobWrapper(HasResourceParameters):
             tool_dir = os.path.abspath(tool_dir)
         return tool_dir
 
+    def _refresh_oidc_tokens_for_job(self, trans: WorkRequestContext) -> None:
+        authnz_manager = getattr(self.app, "authnz_manager", None)
+        if authnz_manager and trans.user:
+            authnz_manager.refresh_expiring_oidc_tokens(trans, trans.user)
+
     @property
     def job_io(self) -> JobIO:
         if self._job_io is None:
             job = self.get_job()
             work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
             user_context = ProvidesFileSourcesUserContext(work_request)
+            self._refresh_oidc_tokens_for_job(work_request)
             tool_source = self.tool.tool_source.to_string() if self.tool else None
             tool_dir = self.tool.tool_dir if self.tool else None
             self._job_io = JobIO(

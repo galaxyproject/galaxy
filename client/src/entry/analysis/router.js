@@ -18,7 +18,6 @@ import { patchRouterPush } from "./router-push";
 import CenterFrame from "./modules/CenterFrame.vue";
 import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes.vue";
-import ChatGXY from "@/components/ChatGXY.vue";
 import CitationsList from "@/components/Citation/CitationsList.vue";
 import ClientError from "@/components/ClientError.vue";
 import CollectionEditView from "@/components/Collections/common/CollectionEditView.vue";
@@ -36,6 +35,7 @@ import ManageFileSourceIndex from "@/components/FileSources/Instances/ManageInde
 import UpgradeFileSourceInstance from "@/components/FileSources/Instances/UpgradeInstance.vue";
 import CreateUserFileSource from "@/components/FileSources/Templates/CreateUserFileSource.vue";
 import FormGeneric from "@/components/Form/FormGeneric.vue";
+import GalaxyAI from "@/components/GalaxyAI.vue";
 import GalaxyWizard from "@/components/GalaxyWizard.vue";
 import GridInvocation from "@/components/Grid/GridInvocation.vue";
 import GridPage from "@/components/Grid/GridPage.vue";
@@ -50,6 +50,8 @@ import HistoryList from "@/components/History/HistoryList.vue";
 import HistoryPublished from "@/components/History/HistoryPublished.vue";
 import HistoryView from "@/components/History/HistoryView.vue";
 import HistoryMultipleView from "@/components/History/Multiple/MultipleView.vue";
+import StorageOperationHistoryView from "@/components/History/StorageOperations/StorageOperationHistoryView.vue";
+import StorageOperationRunView from "@/components/History/StorageOperations/StorageOperationRunView.vue";
 import WorkflowExtractionForm from "@/components/History/WorkflowExtractionForm.vue";
 import HistoryImport from "@/components/HistoryImport.vue";
 import ZipImportResults from "@/components/ImportData/zip/ZipImportResults.vue";
@@ -68,6 +70,7 @@ import UpgradeObjectStoreInstance from "@/components/ObjectStore/Instances/Upgra
 import CreateUserObjectStore from "@/components/ObjectStore/Templates/CreateUserObjectStore.vue";
 import PageView from "@/components/Page/PageView.vue";
 import PageForm from "@/components/PageDisplay/PageForm.vue";
+import HistoryPageView from "@/components/PageEditor/HistoryPageView.vue";
 import PageEditor from "@/components/PageEditor/PageEditor.vue";
 import UploadMethodView from "@/components/Panels/Upload/UploadMethodView.vue";
 import UploadPage from "@/components/Panels/Upload/UploadPage.vue";
@@ -193,6 +196,7 @@ export function getRouter(Galaxy) {
                     pageId: route.query.id,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
                     showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                    displayOnly: route.query.displayOnly === "true",
                 }),
             },
             {
@@ -423,6 +427,18 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/:historyId/storage/runs",
+                        component: StorageOperationHistoryView,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "histories/:historyId/storage/runs/:runId",
+                        component: StorageOperationRunView,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "histories/:historyId/extract_workflow",
                         component: WorkflowExtractionForm,
                         props: true,
@@ -432,7 +448,24 @@ export function getRouter(Galaxy) {
                         component: HistoryGraphView,
                         props: (route) => ({
                             historyId: route.params.historyId,
-                            seedNodeId: route.query.seed || undefined,
+                            seedSrc: route.query.seed_src || undefined,
+                            seedId: route.query.seed_id || undefined,
+                        }),
+                    },
+                    {
+                        path: "histories/:historyId/pages",
+                        component: HistoryPageView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                        }),
+                    },
+                    {
+                        path: "histories/:historyId/pages/:pageId",
+                        component: HistoryPageView,
+                        props: (route) => ({
+                            historyId: route.params.historyId,
+                            pageId: route.params.pageId,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
@@ -536,6 +569,7 @@ export function getRouter(Galaxy) {
                         component: PageEditor,
                         props: (route) => ({
                             pageId: route.query.id,
+                            displayOnly: route.query.displayOnly === "true",
                         }),
                     },
                     {
@@ -554,8 +588,8 @@ export function getRouter(Galaxy) {
                         component: Sharing,
                         props: (route) => ({
                             id: route.query.id,
-                            pluralName: "Pages",
-                            modelClass: "Page",
+                            pluralName: "Reports",
+                            modelClass: "Report",
                         }),
                     },
                     {
@@ -585,8 +619,8 @@ export function getRouter(Galaxy) {
                         component: TourList,
                     },
                     {
-                        path: "chatgxy/:exchangeId?",
-                        component: ChatGXY,
+                        path: "galaxyai/:exchangeId?",
+                        component: GalaxyAI,
                         redirect: redirectAnon(),
                         props: (route) => ({
                             exchangeId: route.params.exchangeId || undefined,

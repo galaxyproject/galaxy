@@ -41,6 +41,7 @@ from galaxy.schema.history_graph import (
     GraphEdge,
     GraphNode,
     HistoryGraphResponse,
+    NodeRef,
     TruncationInfo,
 )
 from galaxy.schema.schema import DataItemSourceType
@@ -52,7 +53,10 @@ log = logging.getLogger(__name__)
 
 TYPE_RANK = {"dataset": 0, "collection": 1, "tool_request": 2}
 EDGE_TYPE_RANK = {"dataset_input": 0, "dataset_output": 1, "collection_input": 2, "collection_output": 3}
-NODE_TYPE_PREFIX = {"dataset": "d", "collection": "c", "tool_request": "r"}
+# Internal node-type token -> public src value. The internal tokens
+# ("dataset"/"collection") stay because they mirror request payload
+# content_type; only the wire boundary speaks src.
+NODE_SRC: dict[str, str] = {"dataset": "hda", "collection": "hdca", "tool_request": "tool_request"}
 MAX_LIMIT = 1000
 
 
@@ -66,7 +70,7 @@ class HistoryGraphManager:
         history_id: int,
         limit: int = 500,
         include_deleted: bool = False,
-        seed: Optional[str] = None,
+        seed: Optional[NodeRef] = None,
         direction: Literal["backward", "forward", "both"] = "both",
         depth: int = 5,
         seed_scope_hid: Optional[int] = None,
@@ -113,7 +117,7 @@ class HistoryGraphBuilder:
         limit: int = 500,
         toolbox: Optional[AbstractToolBox] = None,
         include_deleted: bool = False,
-        seed: Optional[str] = None,
+        seed: Optional[NodeRef] = None,
         direction: Literal["backward", "forward", "both"] = "both",
         depth: int = 5,
         seed_scope_hid: Optional[int] = None,
@@ -130,7 +134,7 @@ class HistoryGraphBuilder:
         self.seed_scope_hid = seed_scope_hid
         self._older_than_hid: Optional[int] = None
         self._newer_than_hid: Optional[int] = None
-        self._sort_keys: dict[str, tuple[int, int]] = {}
+        self._sort_keys: dict[NodeRef, tuple[int, int]] = {}
 
     def build(self) -> HistoryGraphResponse:
         truncation = TruncationInfo()
@@ -161,20 +165,20 @@ class HistoryGraphBuilder:
         for item_key, (tr_id, tool_id) in all_producers.items():
             item_type, item_id = item_key
             tr_nodes[tr_id] = tool_id
-            src = self._encode("tool_request", tr_id)
-            tgt = self._encode(item_type, item_id)
+            source = self._ref("tool_request", tr_id)
+            target = self._ref(item_type, item_id)
             etype = "dataset_output" if item_type == "dataset" else "collection_output"
-            edges.append(GraphEdge(source=src, target=tgt, type=etype))
+            edges.append(GraphEdge(source=source, target=target, type=etype))
 
         # Batch-fetch all payloads, parse inputs, emit input edges.
         payloads = self._fetch_payloads(set(tr_nodes.keys()))
         for tr_id, payload in payloads.items():
             input_refs = self._extract_inputs(payload)
             for ref_type, ref_id in input_refs:
-                src = self._encode(ref_type, ref_id)
-                tgt = self._encode("tool_request", tr_id)
+                source = self._ref(ref_type, ref_id)
+                target = self._ref("tool_request", tr_id)
                 etype = "dataset_input" if ref_type == "dataset" else "collection_input"
-                edges.append(GraphEdge(source=src, target=tgt, type=etype))
+                edges.append(GraphEdge(source=source, target=target, type=etype))
                 if ref_type == "dataset" and ref_id not in dataset_ids:
                     closure_dataset_ids.add(ref_id)
                 elif ref_type == "collection" and ref_id not in collection_ids:
@@ -198,7 +202,7 @@ class HistoryGraphBuilder:
         # Invariant: every edge endpoint must be a node. Edges were emitted
         # before closure deletion filtering, so drop any that now reference
         # an item that did not survive.
-        node_id_set = {n.id for n in nodes}
+        node_id_set = {n.ref for n in nodes}
         edges = [e for e in edges if e.source in node_id_set and e.target in node_id_set]
 
         # 5. Resolve tool names.
@@ -206,7 +210,7 @@ class HistoryGraphBuilder:
 
         # 6. Optional seed subgraph filter (in-memory only).
         if self.seed:
-            node_ids = {n.id for n in nodes}
+            node_ids = {n.ref for n in nodes}
             truncation.seed_in_scope = self.seed in node_ids
             nodes, edges = self._seed_filter(self.seed, nodes, edges)
 
@@ -478,9 +482,9 @@ class HistoryGraphBuilder:
             .where(HistoryDatasetAssociation.id.in_(db_ids))
         )
         return [
-            GraphNode(
-                id=self._encode("dataset", row.id),
-                type="dataset",
+            self._node(
+                "dataset",
+                row.id,
                 name=row.name,
                 hid=row.hid,
                 state=row._state if row._state else row.dataset_state,
@@ -508,9 +512,9 @@ class HistoryGraphBuilder:
             .where(HistoryDatasetCollectionAssociation.id.in_(db_ids))
         )
         return [
-            GraphNode(
-                id=self._encode("collection", row.id),
-                type="collection",
+            self._node(
+                "collection",
+                row.id,
                 name=row.name,
                 hid=row.hid,
                 state=row.populated_state,
@@ -522,20 +526,13 @@ class HistoryGraphBuilder:
         ]
 
     def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
-        return [
-            GraphNode(
-                id=self._encode("tool_request", tr_id),
-                type="tool_request",
-                tool_id=tool_id,
-            )
-            for tr_id, tool_id in tr_map.items()
-        ]
+        return [self._node("tool_request", tr_id, tool_id=tool_id) for tr_id, tool_id in tr_map.items()]
 
     def _resolve_tool_names(self, nodes: list[GraphNode]) -> None:
         toolbox = self.toolbox
         if toolbox is None:
             return
-        tool_ids = {n.tool_id for n in nodes if n.type == "tool_request" and n.tool_id}
+        tool_ids = {n.tool_id for n in nodes if n.src == "tool_request" and n.tool_id}
         name_map: dict[str, str] = {}
         for tool_id in tool_ids:
             try:
@@ -545,28 +542,28 @@ class HistoryGraphBuilder:
             except MessageException:
                 pass
         for node in nodes:
-            if node.type == "tool_request" and node.tool_id and node.tool_id in name_map:
+            if node.src == "tool_request" and node.tool_id and node.tool_id in name_map:
                 node.tool_name = name_map[node.tool_id]
 
     # ── Seed subgraph filter (in-memory only) ──
 
     def _seed_filter(
-        self, seed: str, nodes: list[GraphNode], edges: list[GraphEdge]
+        self, seed: NodeRef, nodes: list[GraphNode], edges: list[GraphEdge]
     ) -> tuple[list[GraphNode], list[GraphEdge]]:
-        node_ids = {n.id for n in nodes}
+        node_ids = {n.ref for n in nodes}
         if seed not in node_ids:
-            raise RequestParameterInvalidException(f"Seed {seed} not found in graph.")
+            raise RequestParameterInvalidException(f"Seed {seed.src}:{seed.id} not found in graph.")
 
-        out_map: dict[str, set[str]] = {}
-        in_map: dict[str, set[str]] = {}
+        out_map: dict[NodeRef, set[NodeRef]] = {}
+        in_map: dict[NodeRef, set[NodeRef]] = {}
         for e in edges:
             out_map.setdefault(e.source, set()).add(e.target)
             in_map.setdefault(e.target, set()).add(e.source)
 
-        reachable: set[str] = {seed}
+        reachable: set[NodeRef] = {seed}
         frontier = {seed}
         for _ in range(self.depth):
-            nxt: set[str] = set()
+            nxt: set[NodeRef] = set()
             for nid in frontier:
                 if self.direction in ("forward", "both"):
                     nxt |= out_map.get(nid, set()) - reachable
@@ -577,7 +574,7 @@ class HistoryGraphBuilder:
             reachable |= nxt
             frontier = nxt
         return (
-            [n for n in nodes if n.id in reachable],
+            [n for n in nodes if n.ref in reachable],
             [e for e in edges if e.source in reachable and e.target in reachable],
         )
 
@@ -585,7 +582,7 @@ class HistoryGraphBuilder:
 
     def _sort(self, nodes: list[GraphNode], edges: list[GraphEdge]) -> tuple[list[GraphNode], list[GraphEdge]]:
         fallback = (99, 0)
-        nodes.sort(key=lambda n: self._sort_keys.get(n.id, fallback))
+        nodes.sort(key=lambda n: self._sort_keys.get(n.ref, fallback))
         edges.sort(
             key=lambda e: (
                 self._sort_keys.get(e.source, fallback),
@@ -597,7 +594,11 @@ class HistoryGraphBuilder:
 
     # ── Utilities ──
 
-    def _encode(self, node_type: str, db_id: int) -> str:
-        encoded = f"{NODE_TYPE_PREFIX[node_type]}{self.security.encode_id(db_id)}"
-        self._sort_keys[encoded] = (TYPE_RANK[node_type], db_id)
-        return encoded
+    def _ref(self, node_type: str, db_id: int) -> NodeRef:
+        ref = NodeRef(src=NODE_SRC[node_type], id=self.security.encode_id(db_id))
+        self._sort_keys[ref] = (TYPE_RANK[node_type], db_id)
+        return ref
+
+    def _node(self, node_type: str, db_id: int, **fields) -> GraphNode:
+        ref = self._ref(node_type, db_id)
+        return GraphNode(src=ref.src, id=ref.id, **fields)

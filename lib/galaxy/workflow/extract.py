@@ -3,9 +3,11 @@ histories.
 """
 
 import logging
+from collections.abc import Callable
 from typing import (
     Any,
     cast,
+    Literal,
     Optional,
 )
 
@@ -14,11 +16,13 @@ from galaxy import (
     model,
 )
 from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.jobs import JobManager
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     HistoryItem,
+    ImplicitCollectionJobs,
     Job,
     StoredWorkflow,
     User,
@@ -53,6 +57,24 @@ log = logging.getLogger(__name__)
 WARNING_SOME_DATASETS_NOT_READY = "Some datasets still queued or running were ignored"
 
 
+def _skip_output_assoc_name(name: str) -> bool:
+    """True for job-output-association names that aren't workflow-visible
+    outputs (named-collection-part placeholders and discovered-primary-file
+    rows). Both extraction paths skip these."""
+    return ToolOutputCollectionPart.is_named_collection_part_name(name) or name.startswith("__new_primary_file")
+
+
+def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, str]) -> None:
+    """Wire ``step``'s ``input_name`` to ``source`` (output_step, output_name).
+    The source is always an earlier step - a job only consumes outputs of jobs
+    that ran before it. Shared by both extraction paths."""
+    source_step, source_name = source
+    conn = model.WorkflowStepConnection()
+    conn.input_step_input = step.get_or_add_input(input_name)
+    conn.output_step = source_step
+    conn.output_name = source_name
+
+
 def extract_workflow(
     trans: ProvidesHistoryContext,
     user: User,
@@ -73,21 +95,25 @@ def extract_workflow(
         dataset_names=dataset_names,
         dataset_collection_names=dataset_collection_names,
     )
-    # Workflow to populate
+    return _finalize_workflow(trans, user, workflow_name, steps)
+
+
+def _finalize_workflow(
+    trans: ProvidesHistoryContext,
+    user: User,
+    workflow_name: Optional[str],
+    steps: list[WorkflowStep],
+) -> StoredWorkflow:
     workflow = model.Workflow()
     workflow.name = workflow_name
     workflow.steps = steps
-    # Order the steps if possible
     attach_ordered_steps(workflow)
-    # And let's try to set up some reasonable locations on the canvas
-    # (these are pretty arbitrary values)
     levorder = order_workflow_steps_with_levels(steps)
     base_pos = 10
     for i, steps_at_level in enumerate(levorder):
         for j, index in enumerate(steps_at_level):
             step = steps[index]
             step.position = dict(top=(base_pos + 120 * j), left=(base_pos + 220 * i))
-    # Store it
     stored = model.StoredWorkflow()
     stored.user = user
     stored.name = workflow_name
@@ -179,20 +205,12 @@ def extract_steps(
                 else:
                     log.info(f"Cannot find implicit input collection for {input_name}")
             if other_hid in hid_to_output_pair:
-                step_input = step.get_or_add_input(input_name)
-                other_step, other_name = hid_to_output_pair[other_hid]
-                conn = model.WorkflowStepConnection()
-                conn.input_step_input = step_input
-                # Should always be connected to an earlier step
-                conn.output_step = other_step
-                conn.output_name = other_name
+                _connect(step, input_name, hid_to_output_pair[other_hid])
         steps.append(step)
         # Store created dataset hids
         for assoc in job.output_datasets + job.output_dataset_collection_instances:
             assoc_name = assoc.name
-            if ToolOutputCollectionPart.is_named_collection_part_name(assoc_name):
-                continue
-            if assoc_name.startswith("__new_primary_file"):
+            if _skip_output_assoc_name(assoc_name):
                 continue
             if job in summary.implicit_map_jobs:
                 hid: Optional[int] = None
@@ -266,13 +284,28 @@ def summarize(
     return summary.jobs, summary.warnings
 
 
-class WorkflowSummary:
+class BaseWorkflowSummary:
+    """Shared helpers for workflow extraction summaries (HID-based and ID-based)."""
+
+    def __init__(self, trans: ProvidesHistoryContext) -> None:
+        self.trans = trans
+        self.warnings: set[str] = set()
+
+    def _check_state(self, hda: HistoryDatasetAssociation) -> Optional[HistoryDatasetAssociation]:
+        # FIXME: Create "Dataset.is_finished"
+        if hda.state in ("new", "running", "queued"):
+            self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
+            return None
+        return hda
+
+
+class WorkflowSummary(BaseWorkflowSummary):
     def __init__(self, trans: ProvidesHistoryContext, history: Optional[History]) -> None:
+        super().__init__(trans)
         if not history:
             history = trans.history
         assert history is not None
         self.history: History = history
-        self.warnings: set[str] = set()
         self.jobs: dict[Any, list[tuple[Optional[str], HistoryItem]]] = {}
         self.job_id2representative_job: dict[int, Job] = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs: list[Job] = []
@@ -324,7 +357,7 @@ class WorkflowSummary:
     def __summarize_dataset_collection(self, dataset_collection: HistoryDatasetCollectionAssociation) -> None:
         hid_in_history = dataset_collection.hid
         assert hid_in_history is not None, f"HDCA {dataset_collection.id} has no hid"
-        dataset_collection = self.__original_hdca(dataset_collection)
+        dataset_collection = _original_hdca(dataset_collection)
         self.hdca_hid_in_history[dataset_collection.id] = hid_in_history
 
         hid = dataset_collection.hid
@@ -359,12 +392,12 @@ class WorkflowSummary:
                 # TODO track this via tool request model
                 self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
                 return
-            if not self.__check_state(dataset_instance):
+            if not self._check_state(dataset_instance):
                 # Just checking the state of one instance, don't need more but
                 # makes me wonder if even need this check at all?
                 return
 
-            original_hda = self.__original_hda(dataset_instance)
+            original_hda = _original_hda(dataset_instance)
             if not original_hda.creating_job_associations:
                 log.warning(
                     "An implicitly create output dataset collection doesn't have a creating_job_association, should not happen!"
@@ -383,12 +416,12 @@ class WorkflowSummary:
             self.jobs[DatasetCollectionCreationJob(dataset_collection)] = [(None, dataset_collection)]
 
     def __summarize_dataset(self, dataset: HistoryDatasetAssociation) -> None:
-        if not self.__check_state(dataset):
+        if not self._check_state(dataset):
             return
 
         hid_in_history = dataset.hid
         assert hid_in_history is not None
-        original_hda = self.__original_hda(dataset)
+        original_hda = _original_hda(dataset)
         self.hda_hid_in_history[original_hda.id] = hid_in_history
 
         if not original_hda.creating_job_associations:
@@ -402,24 +435,6 @@ class WorkflowSummary:
                 self.jobs[job] = [(assoc.name, dataset)]
                 self.job_id2representative_job[job.id] = job
 
-    def __original_hdca(self, hdca: HistoryDatasetCollectionAssociation) -> HistoryDatasetCollectionAssociation:
-        while hdca.copied_from_history_dataset_collection_association:
-            hdca = hdca.copied_from_history_dataset_collection_association
-        return hdca
-
-    def __original_hda(self, hda: HistoryDatasetAssociation) -> HistoryDatasetAssociation:
-        # if this hda was copied from another, we need to find the job that created the original hda
-        while hda.copied_from_history_dataset_association:
-            hda = hda.copied_from_history_dataset_association
-        return hda
-
-    def __check_state(self, hda: HistoryDatasetAssociation) -> Optional[HistoryDatasetAssociation]:
-        # FIXME: Create "Dataset.is_finished"
-        if hda.state in ("new", "running", "queued"):
-            self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
-            return None
-        return hda
-
 
 def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, DataInputAssociations]:
     tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
@@ -432,50 +447,46 @@ def step_inputs(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, Da
     return tool_inputs, associations
 
 
-def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> DataInputAssociations:
+def _walk_data_param_tree(
+    inputs: ToolInputs,
+    values: ToolInputs,
+    leaf_handler: Callable[[Any, Any, str], None],
+) -> None:
+    """Walk a tool input tree, invoking ``leaf_handler`` once per
+    Data/DataCollection leaf with ``(input, value, full_key)``.
+
+    Clears the leaf's value in place and removes the deprecated metadata
+    cruft (``<key>_*`` siblings of the formal input keys) the framework
+    pushes into the root values dict. The cruft cleanup is shared because
+    both extraction variants need it; only the per-leaf association
+    emission differs.
     """
-    Remove 'Data' values from `param_values`, along with metadata cruft,
-    but track the associations.
-    """
-    associations = []
-    # dbkey is pushed in by the framework
     if "dbkey" in values:
         del values["dbkey"]
     root_values = values
     root_input_keys = inputs.keys()
 
-    # Recursively clean data inputs and dynamic selects
-    def cleanup(prefix, inputs, values):
+    def walk(prefix: str, inputs: ToolInputs, values: ToolInputs) -> None:
         for key, input in inputs.items():
-            if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                items = values[key]
+            if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+                leaf_handler(input, values[key], prefix + key)
                 values[key] = None
-                # HACK: Nested associations are not yet working, but we
-                #       still need to clean them up so we can serialize
-                # if not( prefix ):
-                for item in listify(items):
-                    if isinstance(item, model.DatasetCollectionElement):
-                        item = item.first_dataset_instance()
-                    if item:  # this is false for a non-set optional dataset
-                        associations.append((item.hid, prefix + key))
-
-                # Cleanup the other deprecated crap associated with datasets
-                # as well. Worse, for nested datasets all the metadata is
-                # being pushed into the root. FIXME: MUST REMOVE SOON
-                key = f"{prefix + key}_"
-                for k in root_values.keys():
-                    if k not in root_input_keys and k.startswith(key):
+                # FIXME: Nested data params leak deprecated metadata into the
+                # root values dict; scrub anything starting with `<key>_` that
+                # isn't itself a formal input.
+                cruft_prefix = f"{prefix + key}_"
+                for k in list(root_values.keys()):
+                    if k not in root_input_keys and k.startswith(cruft_prefix):
                         del root_values[k]
             elif isinstance(input, Repeat):
                 if key in values:
                     group_values = values[key]
                     for i, rep_values in enumerate(group_values):
                         rep_index = rep_values["__index__"]
-                        cleanup(f"{prefix}{key}_{rep_index}|", input.inputs, group_values[i])
+                        walk(f"{prefix}{key}_{rep_index}|", input.inputs, group_values[i])
             elif isinstance(input, Conditional):
-                # Scrub dynamic resource related parameters from workflows,
-                # they cause problems and the workflow probably should include
-                # their state in workflow encoding.
+                # __job_resource is a runtime-only group; strip and stop —
+                # workflow encoding shouldn't carry resource selections.
                 if input.name == "__job_resource":
                     if input.name in values:
                         del values[input.name]
@@ -483,13 +494,267 @@ def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> DataInputA
                 if input.name in values:
                     group_values = values[input.name]
                     current_case = group_values["__current_case__"]
-                    cleanup(f"{prefix}{key}|", input.cases[current_case].inputs, group_values)
+                    walk(f"{prefix}{key}|", input.cases[current_case].inputs, group_values)
             elif isinstance(input, Section):
                 if input.name in values:
-                    cleanup(f"{prefix}{key}|", input.inputs, values[input.name])
+                    walk(f"{prefix}{key}|", input.inputs, values[input.name])
 
-    cleanup("", inputs, values)
+    walk("", inputs, values)
+
+
+def __cleanup_param_values(inputs: ToolInputs, values: ToolInputs) -> DataInputAssociations:
+    """HID-keyed Data-leaf scrub: emit ``(hid, key)`` associations."""
+    associations: DataInputAssociations = []
+
+    def emit(input, value, key):
+        for item in listify(value):
+            if isinstance(item, model.DatasetCollectionElement):
+                item = item.first_dataset_instance()
+            if item:  # false for a non-set optional dataset
+                associations.append((item.hid, key))
+
+    _walk_data_param_tree(inputs, values, emit)
     return associations
 
 
-__all__ = ("summarize", "extract_workflow")
+def extract_workflow_by_ids(
+    trans: ProvidesHistoryContext,
+    user: User,
+    workflow_name: str,
+    job_manager: JobManager,
+    job_ids: Optional[list[int]] = None,
+    implicit_collection_jobs_ids: Optional[list[int]] = None,
+    hda_ids: Optional[list[int]] = None,
+    hdca_ids: Optional[list[int]] = None,
+    dataset_names: Optional[list[str]] = None,
+    dataset_collection_names: Optional[list[str]] = None,
+) -> StoredWorkflow:
+    """ID-based variant of :func:`extract_workflow`."""
+    steps = extract_steps_by_ids(
+        trans,
+        job_manager=job_manager,
+        job_ids=job_ids,
+        implicit_collection_jobs_ids=implicit_collection_jobs_ids,
+        hda_ids=hda_ids,
+        hdca_ids=hdca_ids,
+        dataset_names=dataset_names,
+        dataset_collection_names=dataset_collection_names,
+    )
+    return _finalize_workflow(trans, user, workflow_name, steps)
+
+
+IdKey = tuple[Literal["dataset", "collection"], int]
+IdAssociations = list[tuple[IdKey, str]]
+
+
+def extract_steps_by_ids(
+    trans: ProvidesHistoryContext,
+    job_manager: Optional[JobManager] = None,
+    job_ids: Optional[list[int]] = None,
+    implicit_collection_jobs_ids: Optional[list[int]] = None,
+    hda_ids: Optional[list[int]] = None,
+    hdca_ids: Optional[list[int]] = None,
+    dataset_names: Optional[list[str]] = None,
+    dataset_collection_names: Optional[list[str]] = None,
+) -> list[WorkflowStep]:
+    """ID-based variant of :func:`extract_steps`.
+
+    Inputs are decoded DB ids; each is fetched and access-checked against the
+    current user via the appropriate manager. Connections are keyed by
+    ``(content_type, db_id)`` of the resolved *original* HDA/HDCA so that
+    copied datasets and cross-history items map deterministically.
+
+    Mapped (map-over) steps are passed as ``implicit_collection_jobs_ids``;
+    each ICJ becomes a single workflow step whose inputs are wired to the
+    pre-map input HDCA(s) via ``ImplicitlyCreatedDatasetCollectionInput``.
+
+    ``job_manager`` may be omitted only when ``job_ids`` is empty (kept
+    Optional for unit-test ergonomics).
+    """
+    job_ids = list(job_ids or [])
+    implicit_collection_jobs_ids = list(implicit_collection_jobs_ids or [])
+    hda_ids = list(hda_ids or [])
+    hdca_ids = list(hdca_ids or [])
+
+    user = getattr(trans, "user", None)
+    sa_session = trans.sa_session
+    hda_manager = trans.app.hda_manager
+    dataset_collection_manager = trans.app.dataset_collection_manager
+
+    steps: list[WorkflowStep] = []
+    step_labels: set[str] = set()
+    id_to_output_pair: dict[IdKey, tuple[WorkflowStep, str]] = {}
+
+    for i, hda_id in enumerate(hda_ids):
+        hda = hda_manager.get_accessible(hda_id, user)
+        step = model.WorkflowStep()
+        step.type = "data_input"
+        name = dataset_names[i] if dataset_names else "Input Dataset"
+        if name not in step_labels:
+            step.label = name
+            step_labels.add(name)
+        step.tool_inputs = dict(name=name)
+        steps.append(step)
+        original = _original_hda(hda)
+        id_to_output_pair[("dataset", original.id)] = (step, "output")
+
+    for i, hdca_id in enumerate(hdca_ids):
+        hdca = dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
+        step = model.WorkflowStep()
+        step.type = "data_collection_input"
+        name = dataset_collection_names[i] if dataset_collection_names else "Input Dataset Collection"
+        if name not in step_labels:
+            step.label = name
+            step_labels.add(name)
+        step.tool_inputs = dict(name=name, collection_type=hdca.collection.collection_type)
+        steps.append(step)
+        original_hdca = _original_hdca(hdca)
+        id_to_output_pair[("collection", original_hdca.id)] = (step, "output")
+
+    # Build the list of work items: each tuple is (representative_job,
+    # output_hdcas). For plain jobs output_hdcas is empty; for ICJs it
+    # contains the ICJ's output HDCAs (used both for access checks and to
+    # drive input/output wiring without inferring map/over from job state).
+    # Service-layer validator ensures no job in job_ids has an ICJ
+    # association, so this branch handles only true plain jobs.
+    work_items: list[tuple[Job, list[HistoryDatasetCollectionAssociation]]] = []
+
+    for job_id in job_ids:
+        assert job_manager is not None, "job_manager required when job_ids supplied"
+        job = job_manager.get_accessible_job(trans, job_id)
+        work_items.append((job, []))
+
+    # FIXME: representative-job param read is the only remaining HID-style
+    # inference here. Swap step_inputs_by_id for a Job.tool_state /
+    # ToolRequest.request_state reader once that exists; see
+    # docs/research/Problem - YAML Tool Post-Hoc State Divergence.md.
+    for icj_id in implicit_collection_jobs_ids:
+        # Service-layer validator already checked existence, populated_state,
+        # output-HDCA presence, and per-HDCA accessibility.
+        icj = sa_session.get(ImplicitCollectionJobs, icj_id)
+        assert icj is not None, f"ImplicitCollectionJobs {icj_id} not found"
+        work_items.append((icj.representative_job, icj.output_dataset_collection_instances))
+
+    # Job.id is monotonically assigned at submission, so sorting by it
+    # produces dependency order: a downstream job always has a larger id
+    # than the jobs whose outputs it consumes.
+    work_items.sort(key=lambda item: item[0].id)
+
+    for job, output_hdcas in work_items:
+        tool_inputs, associations = step_inputs_by_id(trans, job)
+        step = model.WorkflowStep()
+        step.type = "tool"
+        step.tool_id = job.tool_id
+        step.tool_version = job.tool_version
+        step.tool_inputs = tool_inputs
+
+        mapped_inputs: dict[str, HistoryDatasetCollectionAssociation] = {}
+        if output_hdcas:
+            for icol in output_hdcas[0].implicit_input_collections:
+                if icol.name and icol.input_dataset_collection is not None:
+                    mapped_inputs[icol.name] = _original_hdca(icol.input_dataset_collection)
+
+        for key, input_name in associations:
+            if input_name in mapped_inputs:
+                key = ("collection", mapped_inputs[input_name].id)
+            if key in id_to_output_pair:
+                _connect(step, input_name, id_to_output_pair[key])
+        steps.append(step)
+
+        if output_hdcas:
+            seen_names: dict[str, HistoryDatasetCollectionAssociation] = {}
+            for output_hdca in output_hdcas:
+                output_name = output_hdca.implicit_output_name
+                if output_name and output_name not in seen_names:
+                    seen_names[output_name] = output_hdca
+            for output_name, output_hdca in seen_names.items():
+                original_output = _original_hdca(output_hdca)
+                id_to_output_pair[("collection", original_output.id)] = (step, output_name)
+        else:
+            for hda_assoc in job.output_datasets:
+                hda_assoc_name = hda_assoc.name
+                if _skip_output_assoc_name(hda_assoc_name):
+                    continue
+                original_hda = _original_hda(hda_assoc.dataset)
+                id_to_output_pair[("dataset", original_hda.id)] = (step, hda_assoc_name)
+            for hdca_assoc in job.output_dataset_collection_instances:
+                original_hdca = _original_hdca(hdca_assoc.dataset_collection_instance)
+                id_to_output_pair[("collection", original_hdca.id)] = (step, hdca_assoc.name)
+
+    return steps
+
+
+def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, IdAssociations]:
+    """ID-based variant of :func:`step_inputs`.
+
+    Returns associations keyed by ``(content_type, db_id)`` tuples (against
+    the *original* HDA/HDCA after walking ``copied_from_*``). Collection
+    and DCE inputs come from ``Job.input_dataset_collections`` /
+    ``Job.input_dataset_collection_elements`` directly rather than from the
+    param-value walk, which avoids the HID path's flattening of HDCAs to
+    leaf HDAs and prevents duplicate emission for DCE-as-data-param.
+    """
+    tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+    assert tool is not None, f"Tool {job.tool_id} (version {job.tool_version}) not found"
+    param_values = tool.get_param_values(job, ignore_errors=True)
+    associations: IdAssociations = __cleanup_param_values_by_id(tool.inputs, param_values)
+    for assoc in job.input_dataset_collections:
+        original_hdca = _original_hdca(assoc.dataset_collection)
+        associations.append((("collection", original_hdca.id), assoc.name))
+    for elem_assoc in job.input_dataset_collection_elements:
+        dce = elem_assoc.dataset_collection_element
+        leaf = dce.hda or dce.first_dataset_instance()
+        if not isinstance(leaf, HistoryDatasetAssociation):
+            continue
+        original_hda = _original_hda(leaf)
+        associations.append((("dataset", original_hda.id), elem_assoc.name))
+    tool_inputs = tool.params_to_strings(param_values, trans.app)
+    return tool_inputs, associations
+
+
+def _original_hda(hda: HistoryDatasetAssociation) -> HistoryDatasetAssociation:
+    while hda.copied_from_history_dataset_association:
+        hda = hda.copied_from_history_dataset_association
+    return hda
+
+
+def _original_hdca(hdca: HistoryDatasetCollectionAssociation) -> HistoryDatasetCollectionAssociation:
+    while hdca.copied_from_history_dataset_collection_association:
+        hdca = hdca.copied_from_history_dataset_collection_association
+    return hdca
+
+
+def __cleanup_param_values_by_id(inputs: ToolInputs, values: ToolInputs) -> IdAssociations:
+    """ID-keyed Data-leaf scrub.
+
+    HDA leaves emit ``("dataset", _original_hda(hda).id)``. DCE values and
+    ``DataCollectionToolParameter`` leaves are scrubbed but emit nothing —
+    collection / DCE inputs are appended in :func:`step_inputs_by_id` from
+    typed DB rows so HDCAs aren't lost to ``first_dataset_instance()``
+    flattening and DCEs aren't double-emitted alongside their typed
+    ``input_dataset_collection_elements`` row.
+    """
+    associations: IdAssociations = []
+
+    def emit(input, value, key):
+        if isinstance(input, DataCollectionToolParameter):
+            return
+        for item in listify(value):
+            if isinstance(item, model.DatasetCollectionElement):
+                # Covered by job.input_dataset_collection_elements; skip to
+                # avoid duplicate connections.
+                continue
+            if isinstance(item, HistoryDatasetAssociation):
+                original = _original_hda(item)
+                associations.append((("dataset", original.id), key))
+
+    _walk_data_param_tree(inputs, values, emit)
+    return associations
+
+
+__all__ = (
+    "summarize",
+    "extract_workflow",
+    "extract_workflow_by_ids",
+    "extract_steps_by_ids",
+)

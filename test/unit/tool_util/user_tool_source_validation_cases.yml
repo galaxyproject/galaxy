@@ -1,0 +1,184 @@
+# Conformance corpus for `UserToolSource` semantic validators.
+#
+# Each case overrides the in-memory ``VALID_TOOL`` document with the keys in
+# ``doc`` and then expects either ``valid: true`` (the document validates) or
+# a list of ``expected_errors`` (each matched by stable error ``code`` plus
+# optional ``loc`` and ``msg_contains`` substring).
+#
+# Error codes are stable across releases — downstream validators (the TS port
+# in galaxy-tool-util-ts, MCP clients, IDE plugins) can match on ``code``
+# instead of substring-matching Pydantic's English phrasing. Pydantic's own
+# built-in codes (e.g. ``string_pattern_mismatch``, ``string_too_short``) are
+# also stable and are referenced here directly.
+
+cases:
+  - name: happy_path
+    valid: true
+
+  - name: hyphenated_id_accepted
+    doc:
+      id: with-hyphens-and_underscores
+    valid: true
+
+  - name: bad_id_uppercase
+    doc:
+      id: My-Tool
+    expected_errors:
+      - loc: id
+        code: string_pattern_mismatch
+
+  - name: bad_id_starts_with_digit
+    doc:
+      id: 1starts_with_digit
+    expected_errors:
+      - loc: id
+        code: string_pattern_mismatch
+
+  - name: bad_id_has_space
+    doc:
+      id: has space
+    expected_errors:
+      - loc: id
+        code: string_pattern_mismatch
+
+  - name: bad_id_trailing_punctuation
+    doc:
+      id: trailing!
+    expected_errors:
+      - loc: id
+        code: string_pattern_mismatch
+
+  - name: bad_id_leading_underscore
+    doc:
+      id: _leading_underscore
+    expected_errors:
+      - loc: id
+        code: string_pattern_mismatch
+
+  - name: blank_container_empty
+    doc:
+      container: ""
+    expected_errors:
+      - loc: container
+        code: dynamic_tool.blank_container
+        msg_contains: container must not be empty
+
+  - name: blank_container_whitespace
+    doc:
+      container: "   "
+    expected_errors:
+      - loc: container
+        code: dynamic_tool.blank_container
+        msg_contains: container must not be empty
+
+  - name: blank_name_whitespace
+    # Long enough to clear ``min_length=5`` so the whitespace-rejection
+    # field_validator is what fires (rather than the Pydantic length check).
+    doc:
+      name: "       "
+    expected_errors:
+      - loc: name
+        code: dynamic_tool.blank_string
+        msg_contains: must not be empty or whitespace
+
+  - name: undeclared_inputs_ref_in_shell_command
+    doc:
+      shell_command: "echo $(inputs.foo)"
+    expected_errors:
+      - code: dynamic_tool.undeclared_input_ref
+        msg_contains: inputs.foo
+
+  - name: conditional_top_level_name_resolves_for_nested_ref
+    # ``inputs.cond.test_parameter`` resolves against the conditional's
+    # *top-level* name (``cond``) — regression test for the
+    # false-positive concern with conditionals/repeats/sections.
+    doc:
+      shell_command: "echo $(inputs.cond.test_parameter) > out.txt"
+      inputs:
+        - type: conditional
+          name: cond
+          test_parameter:
+            type: boolean
+            name: test_parameter
+          whens:
+            - {discriminator: true, parameters: []}
+            - {discriminator: false, parameters: []}
+    valid: true
+
+  - name: repeat_and_section_top_level_names_resolve
+    doc:
+      shell_command: "echo $(inputs.my_repeat[0].x) $(inputs.my_section.y) > out.txt"
+      inputs:
+        - {type: repeat, name: my_repeat, parameters: []}
+        - {type: section, name: my_section, parameters: []}
+    valid: true
+
+  - name: undeclared_inputs_ref_in_configfile
+    doc:
+      configfiles:
+        - name: script
+          filename: script.sh
+          content: "echo $(inputs.unknown)"
+          eval_engine: ecmascript
+    expected_errors:
+      - code: dynamic_tool.undeclared_input_ref
+        msg_contains: inputs.unknown
+
+  - name: data_output_without_from_work_dir_or_discovery
+    doc:
+      outputs:
+        - {type: data, name: out}
+    expected_errors:
+      - code: dynamic_tool.output_unclaimed
+        msg_contains: from_work_dir
+
+  - name: collection_output_without_discover
+    doc:
+      outputs:
+        - type: collection
+          name: outs
+          structure:
+            collection_type: list
+    expected_errors:
+      - code: dynamic_tool.output_unclaimed
+        msg_contains: discover_datasets
+
+  - name: invalid_doi_citation
+    doc:
+      citations:
+        - {type: doi, content: not-a-doi}
+    expected_errors:
+      - loc: citations.0
+        code: dynamic_tool.citation_doi_invalid
+        msg_contains: DOI
+
+  - name: invalid_bibtex_citation
+    doc:
+      citations:
+        - {type: bibtex, content: no leading at-sign}
+    expected_errors:
+      - loc: citations.0
+        code: dynamic_tool.citation_bibtex_invalid
+        msg_contains: bibtex
+
+  - name: unknown_type_citation_with_doi_content_accepted
+    doc:
+      citations:
+        - {type: reference, content: 10.1234/abc.def}
+    valid: true
+
+  - name: no_citations_accepted
+    doc:
+      citations: null
+    valid: true
+
+  - name: format_validation_errors_distillation
+    # Exact distilled bullet text used by ``format_validation_errors`` so
+    # downstream UIs (the agent's bullet list, API 4xx bodies) have a
+    # frozen golden.
+    doc:
+      id: BAD-ID
+      container: ""
+    expected_format:
+      - "id: String should match pattern '^[a-z][a-z0-9_-]*$'"
+      - "container: container must not be empty"

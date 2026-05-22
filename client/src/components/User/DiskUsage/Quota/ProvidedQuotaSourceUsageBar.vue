@@ -37,7 +37,9 @@ const quotaSourceLabel = computed(() => props.objectStore.quota.source ?? null);
 const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
 
 const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
-const isLoadingUsage = computed(() => Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]));
+const isLoadingUsage = computed(
+    () => quotaUsageStore.loadingAll || Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]),
+);
 
 watch(
     () => [props.objectStore.quota.enabled, quotaSourceLabel.value] as const,
@@ -46,7 +48,15 @@ watch(
             return;
         }
 
-        void quotaUsageStore.loadQuotaUsageForSource(sourceLabel, true);
+        // Load all usages in a single bulk request first, then read per-source from cache.
+        // This avoids N individual /api/users/current/usage/{label} requests when
+        // multiple ProvidedQuotaSourceUsageBar instances mount simultaneously (e.g. in
+        // a dropdown with many object store options).
+        if (!quotaUsageStore.isLoaded) {
+            void quotaUsageStore.loadQuotaUsages();
+        } else {
+            void quotaUsageStore.loadQuotaUsageForSource(sourceLabel, false);
+        }
     },
     { immediate: true },
 );

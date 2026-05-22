@@ -346,6 +346,9 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "create_user_tool",
             "delete_user_tool",
             "run_user_tool",
+            "search_iwc_workflows",
+            "get_iwc_workflow_details",
+            "import_workflow_from_iwc",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
 
@@ -508,3 +511,55 @@ class TestMCPServerSmoke(IntegrationTestCase):
         populator.wait_for_history(history_id, assert_ok=True)
         output = populator.get_history_dataset_content(history_id)
         assert output == "abc\n"
+
+    def test_mcp_import_workflow_from_iwc(self):
+        """import_workflow_from_iwc() imports a StoredWorkflow via the shared TRS pipeline."""
+        import json
+        from unittest.mock import patch
+
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        # Minimal valid Galaxy workflow definition, served as a Dockstore TRS descriptor.
+        definition = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "IWC smoke test workflow",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "data_input",
+                    "label": "input",
+                    "inputs": [],
+                    "outputs": [],
+                    "tool_state": "{}",
+                    "input_connections": {},
+                    "annotation": "",
+                    "position": {"left": 0, "top": 0},
+                }
+            },
+            "tags": [],
+            "annotation": "",
+        }
+        trs_id = "#workflow/github.com/iwc-workflows/smoke/main"
+
+        async def _import():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "import_workflow_from_iwc",
+                    {"api_key": api_key, "trs_id": trs_id},
+                )
+
+        # The TRS proxy fetches the workflow descriptor over HTTP; mock that so we
+        # don't actually hit Dockstore from CI.
+        with patch("galaxy.workflow.trs_proxy.requests.get") as mock_get:
+            mock_get.return_value.ok = True
+            mock_get.return_value.json.return_value = {"content": json.dumps(definition)}
+            result = self._run_async(_import())
+
+        assert not result.is_error, result
+        data = result.data
+        assert "id" in data
+        assert data["trsID"] == trs_id

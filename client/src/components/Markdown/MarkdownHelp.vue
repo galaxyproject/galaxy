@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import type { DirectiveMode } from "./directives";
+
 import ExternalLink from "../ExternalLink.vue";
 import DirectiveHelpSection from "./DirectiveHelpSection.vue";
 
 interface MarkdownHelpProps {
-    mode: "report" | "page";
+    mode: DirectiveMode;
 }
 
 const props = defineProps<MarkdownHelpProps>();
@@ -99,7 +101,7 @@ history_dataset_as_image(output=normalized_result_plot)
 
         <p v-if="page">
             These commands reference a workflow by an object ID. The following example would display a representation of
-            the workflow in the resulting Galaxy Page:
+            the workflow in the resulting document:
         </p>
         <p v-else>These commands reference the current workflow and do not require an input for the most part.</p>
 

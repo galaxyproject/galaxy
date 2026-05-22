@@ -26,6 +26,7 @@ from galaxy.model import (
     UserDynamicToolAssociation,
 )
 from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.toolbox import AbstractToolBox
 from galaxy.tool_util_models.dynamic_tool_models import (
@@ -189,6 +190,9 @@ class DynamicToolManager(ModelManager[DynamicTool]):
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
             )
         self.ensure_can_use_unprivileged_tool(user)
+        lint_errors = lint_user_tool_source(tool_payload.representation)
+        if lint_errors:
+            raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
             tool_id=tool_payload.representation.id,

@@ -11,6 +11,7 @@ from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.history_graph import HistoryGraphManager
+from galaxy.schema.history_graph import NodeRef
 from .base import (
     BaseTestCase,
     CreatesCollectionsMixin,
@@ -58,7 +59,8 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         )
 
     def _encode(self, prefix, db_id):
-        return f"{prefix}{self.app.security.encode_id(db_id)}"
+        src = {"d": "hda", "c": "hdca", "r": "tool_request"}[prefix]
+        return NodeRef(src=src, id=self.app.security.encode_id(db_id))
 
     def _create_history(self):
         user = self.user_manager.create(**_next_user_data())
@@ -216,8 +218,8 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         assert len(graph.nodes) == 3  # input + output + tool_request
         assert len(graph.edges) == 2  # dataset_input + dataset_output
 
-        types = {n.type for n in graph.nodes}
-        assert types == {"dataset", "tool_request"}
+        types = {n.src for n in graph.nodes}
+        assert types == {"hda", "tool_request"}
 
         edge_types = {e.type for e in graph.edges}
         assert edge_types == {"dataset_input", "dataset_output"}
@@ -255,7 +257,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         self._create_job(tool_request=tr, tool_id="__DATA_FETCH__")
 
         graph = self._build_graph(history)
-        tr_nodes = [n for n in graph.nodes if n.type == "tool_request"]
+        tr_nodes = [n for n in graph.nodes if n.src == "tool_request"]
         assert len(tr_nodes) == 0
 
     def test_collection_node(self):
@@ -272,7 +274,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         self._link_job_input_hdca(job, hdca)
 
         graph = self._build_graph(history)
-        collection_nodes = [n for n in graph.nodes if n.type == "collection"]
+        collection_nodes = [n for n in graph.nodes if n.src == "hdca"]
         assert len(collection_nodes) == 1
         assert collection_nodes[0].collection_type == "list"
 
@@ -324,7 +326,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         self._link_job_output_hda(job, hda)
 
         graph = self._build_graph(history)
-        dataset_node = [n for n in graph.nodes if n.type == "dataset" and n.name == "test.fastq"][0]
+        dataset_node = [n for n in graph.nodes if n.src == "hda" and n.name == "test.fastq"][0]
         assert dataset_node.hid is not None
         assert dataset_node.extension == "fastq"
 
@@ -345,7 +347,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         graph1 = self._build_graph(history)
         graph2 = self._build_graph(history)
-        assert [n.id for n in graph1.nodes] == [n.id for n in graph2.nodes]
+        assert [n.ref for n in graph1.nodes] == [n.ref for n in graph2.nodes]
         assert [(e.source, e.target, e.type) for e in graph1.edges] == [
             (e.source, e.target, e.type) for e in graph2.edges
         ]
@@ -415,7 +417,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         assert len(graph.nodes) <= 4
         # The seed item must be in scope
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert self._encode("d", middle.id) in node_ids
         assert graph.truncated.scope_type == "seed_centered"
 
@@ -507,7 +509,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         graph = self._build_graph(history)
 
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert self._encode("d", execution_hda.id) not in node_ids
         assert self._encode("d", visible_copy.id) in node_ids
         assert self._encode("d", output_hda.id) in node_ids
@@ -528,7 +530,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history)
 
         hidden_enc = self._encode("d", hidden_hda.id)
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert hidden_enc in node_ids
 
     def test_closure_completes_tool_requests_at_seed_boundary(self):
@@ -553,11 +555,11 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         # pull in the other side so the tool_request is complete.
         graph = self._build_graph(history, limit=1)
 
-        tr_nodes = [n for n in graph.nodes if n.type == "tool_request"]
+        tr_nodes = [n for n in graph.nodes if n.src == "tool_request"]
         assert len(tr_nodes) == 1
         assert graph.truncated.item_count_capped is True
 
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert self._encode("d", input_hda.id) in node_ids
         assert self._encode("d", output_hda.id) in node_ids
 
@@ -601,8 +603,8 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         small = self._build_graph(history, limit=4)
         large = self._build_graph(history, limit=8)
 
-        small_ids = {n.id for n in small.nodes}
-        large_ids = {n.id for n in large.nodes}
+        small_ids = {n.ref for n in small.nodes}
+        large_ids = {n.ref for n in large.nodes}
         # All nodes in the small graph should also be in the large graph
         assert small_ids.issubset(large_ids)
         assert len(large_ids) >= len(small_ids)
@@ -800,7 +802,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history)
 
         # Collection is one node, not 100
-        collection_nodes = [n for n in graph.nodes if n.type == "collection"]
+        collection_nodes = [n for n in graph.nodes if n.src == "hdca"]
         assert len(collection_nodes) == 1
 
         # Total nodes: 100 element HDAs (hidden, removed as elements) +
@@ -832,7 +834,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         graph = self._build_graph(history)
 
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert self._encode("d", copy1.id) in node_ids
         assert self._encode("d", copy2.id) in node_ids
         assert self._encode("d", copy3.id) in node_ids
@@ -1020,7 +1022,7 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         )
 
         hdca_enc = self._encode("c", hdca.id)
-        node_ids = {n.id for n in graph.nodes}
+        node_ids = {n.ref for n in graph.nodes}
         assert hdca_enc in node_ids, "Ambiguous HDCA should still be a node"
 
         # No producer edge for this HDCA.
@@ -1064,13 +1066,13 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
             counter["n"] = 0
             unseeded = self._build_graph(history)
             unseeded_count = counter["n"]
-            unseeded_ids = {n.id for n in unseeded.nodes}
+            unseeded_ids = {n.ref for n in unseeded.nodes}
 
             self.trans.sa_session.flush()
             counter["n"] = 0
             seeded = self._build_graph(history, seed=seed_enc, depth=20)
             seeded_count = counter["n"]
-            seeded_ids = {n.id for n in seeded.nodes}
+            seeded_ids = {n.ref for n in seeded.nodes}
         finally:
             event.remove(engine, "before_cursor_execute", _count)
 
@@ -1105,23 +1107,23 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         middle_hda = chain[2][0]
         graph = self._build_graph(history, seed_scope_hid=middle_hda.hid, limit=1)
 
-        node_ids = {n.id for n in graph.nodes}
-        tr_nodes = [n for n in graph.nodes if n.type == "tool_request"]
+        node_ids = {n.ref for n in graph.nodes}
+        tr_nodes = [n for n in graph.nodes if n.src == "tool_request"]
         assert len(tr_nodes) >= 1, "Expected at least one tool_request via closure"
 
         # For each tool_request in the graph, all its incident edges
         # must reference items that are also nodes in the graph.
         for tr_node in tr_nodes:
-            connected_items = {e.source for e in graph.edges if e.target == tr_node.id} | {
-                e.target for e in graph.edges if e.source == tr_node.id
+            connected_items = {e.source for e in graph.edges if e.target == tr_node.ref} | {
+                e.target for e in graph.edges if e.source == tr_node.ref
             }
             for item_id in connected_items:
                 assert item_id in node_ids, (
-                    f"Tool_request {tr_node.id} has edge referencing missing node {item_id} — "
+                    f"Tool_request {tr_node.ref} has edge referencing missing node {item_id} — "
                     "closure invariant violated"
                 )
             assert len(connected_items) >= 2, (
-                f"Tool_request {tr_node.id} has only {len(connected_items)} connected items — "
+                f"Tool_request {tr_node.ref} has only {len(connected_items)} connected items — "
                 "expected at least one input and one output after closure"
             )
 
@@ -1136,13 +1138,13 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
         # All 5 in scope
         graph1 = self._build_graph(history, limit=5)
-        ids1 = {n.id for n in graph1.nodes}
+        ids1 = {n.ref for n in graph1.nodes}
         assert len(ids1) == 5
 
         # Add a new item — now 6 total, limit=5 means oldest drops out
         new_hda = self._create_hda(history, name="ds_new")
         graph2 = self._build_graph(history, limit=5)
-        ids2 = {n.id for n in graph2.nodes}
+        ids2 = {n.ref for n in graph2.nodes}
         assert len(ids2) == 5
 
         # The new item is in scope
@@ -1188,7 +1190,8 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         )
 
     def _encode(self, prefix, db_id):
-        return f"{prefix}{self.app.security.encode_id(db_id)}"
+        src = {"d": "hda", "c": "hdca", "r": "tool_request"}[prefix]
+        return NodeRef(src=src, id=self.app.security.encode_id(db_id))
 
     def _create_history(self):
         user = self.user_manager.create(**_next_user_data())
@@ -1321,13 +1324,13 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
 
         # Items bounded by limit + closure (payload-driven closure can pull
         # in at most one extra input per representable TR).
-        item_nodes = [nd for nd in graph.nodes if nd.type != "tool_request"]
-        tr_nodes = [nd for nd in graph.nodes if nd.type == "tool_request"]
+        item_nodes = [nd for nd in graph.nodes if nd.src != "tool_request"]
+        tr_nodes = [nd for nd in graph.nodes if nd.src == "tool_request"]
         assert len(item_nodes) <= limit + len(tr_nodes)
 
         # Each TR has at least one edge
         for tr_node in tr_nodes:
-            tr_edges = [e for e in graph.edges if e.target == tr_node.id or e.source == tr_node.id]
+            tr_edges = [e for e in graph.edges if e.target == tr_node.ref or e.source == tr_node.ref]
             assert len(tr_edges) >= 1
 
     def test_collection_heavy_map_over(self):
@@ -1392,21 +1395,21 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history)
 
         # Collection nodes bounded by 2*m (input + output collections)
-        coll_nodes = [nd for nd in graph.nodes if nd.type == "collection"]
+        coll_nodes = [nd for nd in graph.nodes if nd.src == "hdca"]
         assert len(coll_nodes) <= 2 * m
 
         # No element-level dataset explosion: dataset nodes must be far fewer
         # than the total hidden elements created (m*k*2)
-        dataset_nodes = [nd for nd in graph.nodes if nd.type == "dataset"]
+        dataset_nodes = [nd for nd in graph.nodes if nd.src == "hda"]
         assert (
             len(dataset_nodes) < total_hidden_elements
         ), f"Element explosion: {len(dataset_nodes)} dataset nodes from {total_hidden_elements} hidden elements"
 
         # Collection-level edges present on representable TRs
-        tr_nodes = [nd for nd in graph.nodes if nd.type == "tool_request"]
+        tr_nodes = [nd for nd in graph.nodes if nd.src == "tool_request"]
         for tr_node in tr_nodes:
-            input_edges = [e for e in graph.edges if e.target == tr_node.id]
-            output_edges = [e for e in graph.edges if e.source == tr_node.id]
+            input_edges = [e for e in graph.edges if e.target == tr_node.ref]
+            output_edges = [e for e in graph.edges if e.source == tr_node.ref]
             for e in input_edges:
                 assert e.type == "collection_input", f"Expected collection_input, got {e.type}"
             for e in output_edges:
@@ -1433,7 +1436,7 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history, seed_scope_hid=early.hid, limit=limit)
 
         # Seed item must be in scope
-        node_ids = {nd.id for nd in graph.nodes}
+        node_ids = {nd.ref for nd in graph.nodes}
         assert self._encode("d", early.id) in node_ids
 
         # Response bounded
@@ -1465,7 +1468,7 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         assert len(after.nodes) == limit
         assert after.truncated.item_count_capped is True
 
-        after_ids = {nd.id for nd in after.nodes}
+        after_ids = {nd.ref for nd in after.nodes}
         # Oldest originals should be gone
         for hda in original[:added]:
             assert self._encode("d", hda.id) not in after_ids
@@ -1501,9 +1504,9 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
         graph = self._build_graph(history)
 
         # No hidden element HDAs as nodes
-        dataset_nodes = [nd for nd in graph.nodes if nd.type == "dataset"]
+        dataset_nodes = [nd for nd in graph.nodes if nd.src == "hda"]
         assert len(dataset_nodes) == 0, f"Expected 0 dataset nodes (all hidden elements), got {len(dataset_nodes)}"
 
         # Collection is present
-        coll_nodes = [nd for nd in graph.nodes if nd.type == "collection"]
+        coll_nodes = [nd for nd in graph.nodes if nd.src == "hdca"]
         assert len(coll_nodes) == 1

@@ -48,7 +48,10 @@ from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
 )
-from galaxy.schema.history_graph import HistoryGraphResponse
+from galaxy.schema.history_graph import (
+    HistoryGraphResponse,
+    NodeSrc,
+)
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -95,7 +98,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
-from galaxy.workflow.extract import extract_workflow
+from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -207,6 +210,7 @@ IndexExportsResponse = Annotated[
 @router.cbv
 class FastAPIHistories:
     service: HistoriesService = depends(HistoriesService)
+    workflows_service: WorkflowsService = depends(WorkflowsService)
 
     @router.get(
         "/api/histories",
@@ -375,10 +379,13 @@ class FastAPIHistories:
             default=False,
             description="Include deleted datasets and collections.",
         ),
-        seed: Optional[str] = Query(
+        seed_src: Optional[NodeSrc] = Query(
             default=None,
-            description="Optional: focus on subgraph reachable from this node (e.g. d<encoded_id>).",
-            pattern=r"^[dcr].+$",
+            description="Optional: src of the node to focus the subgraph on. Provide with seed_id.",
+        ),
+        seed_id: Optional[str] = Query(
+            default=None,
+            description="Optional: encoded id of the node to focus the subgraph on. Provide with seed_src.",
         ),
         direction: Literal["backward", "forward", "both"] = Query(
             default="both",
@@ -390,10 +397,13 @@ class FastAPIHistories:
             ge=1,
             le=20,
         ),
-        seed_scope: Optional[str] = Query(
+        seed_scope_src: Optional[Literal["hda", "hdca"]] = Query(
             default=None,
-            description="Center the selection window on this item. Format: d{encoded_id} or c{encoded_id}.",
-            pattern=r"^[dc].+$",
+            description="src of the item to center the selection window on. Required with seed_scope_id.",
+        ),
+        seed_scope_id: Optional[str] = Query(
+            default=None,
+            description="Center the selection window on this encoded id. Provide with seed_scope_src.",
         ),
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> HistoryGraphResponse:
@@ -402,10 +412,12 @@ class FastAPIHistories:
             history_id,
             limit=limit,
             include_deleted=include_deleted,
-            seed=seed,
+            seed_src=seed_src,
+            seed_id=seed_id,
             direction=direction,
             depth=depth,
-            seed_scope=seed_scope,
+            seed_scope_src=seed_scope_src,
+            seed_scope_id=seed_scope_id,
         )
 
     @router.post(
@@ -889,16 +901,4 @@ class FastAPIHistories:
         Returns the ID of the newly created workflow.
         """
         history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-
-        stored_workflow = extract_workflow(
-            trans,
-            user=trans.user,
-            history=history,
-            job_ids=payload.job_ids,
-            dataset_ids=payload.dataset_hids,
-            dataset_collection_ids=payload.dataset_collection_hids,
-            workflow_name=payload.workflow_name,
-            dataset_names=payload.dataset_names,
-            dataset_collection_names=payload.dataset_collection_names,
-        )
-        return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+        return self.workflows_service.extract_from_history(trans, history, payload)

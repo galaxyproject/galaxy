@@ -20,7 +20,8 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 interface Props {
     historyId: string;
-    seedNodeId?: string;
+    seedSrc?: string;
+    seedId?: string;
 }
 
 const props = defineProps<Props>();
@@ -32,7 +33,15 @@ const historyName = computed(() => historyStore.getHistoryNameById(props.history
 // Fetch params — product decisions owned here
 const limit = ref(500);
 
-const { graphData, loading, error } = useHistoryGraphData(toRef(props, "historyId"), limit, toRef(props, "seedNodeId"));
+const { graphData, loading, error } = useHistoryGraphData(
+    toRef(props, "historyId"),
+    limit,
+    toRef(props, "seedSrc"),
+    toRef(props, "seedId"),
+);
+
+// Renderer focus key mirrors the mapper's `${src}:${id}` node key.
+const focusNodeId = computed(() => (props.seedSrc && props.seedId ? `${props.seedSrc}:${props.seedId}` : null));
 
 // Layout
 const edgeStyle = ref<EdgeStyle>("orthogonal");
@@ -88,7 +97,7 @@ const isTruncated = computed(() => graphData.value?.truncated?.item_count_capped
             <div class="history-graph-content">
                 <GraphView
                     :layout="layout"
-                    :focus-node-id="seedNodeId ?? null"
+                    :focus-node-id="focusNodeId"
                     :edge-style="edgeStyle"
                     :minimap-component="HistoryGraphMinimap"
                     @nodeSelected="onNodeSelected" />

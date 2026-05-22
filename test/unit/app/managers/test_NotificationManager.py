@@ -4,6 +4,7 @@ from datetime import (
 )
 from typing import (
     Any,
+    cast,
     Optional,
 )
 from unittest.mock import (
@@ -20,6 +21,7 @@ from galaxy.managers.notification import (
     NotificationRecipientResolver,
 )
 from galaxy.model import (
+    DatasetStorageOperationRun,
     Group,
     Role,
     User,
@@ -38,6 +40,10 @@ from galaxy.schema.notifications import (
     UpdateUserNotificationPreferencesRequest,
     UserNotificationPreferences,
     UserNotificationUpdateRequest,
+)
+from galaxy.schema.storage_operations import (
+    StorageOperationExecutionResult,
+    StorageOperationRunState,
 )
 from galaxy.util import now
 from .base import BaseTestCase
@@ -255,6 +261,37 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
 
         assert actual_notifications_sent == num_target_users
         self._assert_notification_expected(actual_notification, expected_notification)
+
+    def test_send_storage_operation_notification(self):
+        user = self._create_test_user()
+
+        run = DatasetStorageOperationRun(
+            id=7,
+            history_id=11,
+            mode="move",
+            total_count=3,
+            succeeded_count=3,
+            failed_count=0,
+            skipped_count=0,
+        )
+
+        notification, sent_count = self.notification_manager.send_storage_operation_notification(
+            user_id=user.id,
+            run=run,
+            execution_result=StorageOperationExecutionResult(
+                state=StorageOperationRunState.completed,
+                message="Bulk move completed.",
+            ),
+            encode_id=lambda value: f"encoded-{value}",
+        )
+
+        assert sent_count == 1
+        assert notification is not None
+        assert notification.category == PersonalNotificationCategory.storage_operation
+        content = cast(dict[str, Any], notification.content)
+        assert content["state"] == StorageOperationRunState.completed.value
+        assert content["history_id"] == "encoded-11"
+        assert content["run_id"] == "encoded-7"
 
     def test_get_user_notifications(self):
         user = self._create_test_user()

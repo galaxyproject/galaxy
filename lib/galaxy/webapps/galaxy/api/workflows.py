@@ -88,6 +88,8 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    WorkflowExtractionByIdsPayload,
+    WorkflowExtractionResult,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -1090,6 +1092,22 @@ class FastAPIWorkflows:
     ):
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/extract",
+        summary="Extract a workflow from selected jobs and history items by encoded IDs.",
+    )
+    def extract_by_ids(
+        self,
+        payload: WorkflowExtractionByIdsPayload = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionResult:
+        """ID-based workflow extraction.
+
+        Per-item permission checks make this history-optional and allow
+        cross-history extraction.
+        """
+        return self.service.extract_by_ids(trans, payload)
 
     @router.post(
         "/api/workflows/{workflow_id}/invocations",

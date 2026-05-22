@@ -129,6 +129,17 @@
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
+                    <GButton
+                        tooltip
+                        title="Generate AI ChatGXY report based on the workflow and its expected results"
+                        variant="link"
+                        color="blue"
+                        transparent
+                        size="large"
+                        @click="generateAIReport">
+                        <FontAwesomeIcon :icon="faMagic" />
+                    </GButton>
+
                     <b-button
                         id="workflow-canvas-button"
                         v-g-tooltip.hover.bottom
@@ -254,7 +265,17 @@
 </template>
 
 <script>
-import { faCog, faKey, faRedo, faSave, faSitemap, faTimes, faUndo, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCog,
+    faKey,
+    faMagic,
+    faRedo,
+    faSave,
+    faSitemap,
+    faTimes,
+    faUndo,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -262,6 +283,7 @@ import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "boots
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
+import { generateAIReport } from "@/api/chat";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
@@ -304,6 +326,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GForm from "@/components/BaseComponents/Form/GForm.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
@@ -337,6 +360,7 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GButton,
         GForm,
         GFormLabel,
         GFormInput,
@@ -766,6 +790,7 @@ export default {
             navUrl: "",
             faTimes,
             faCog,
+            faMagic,
             faSave,
             faRedo,
             faUndo,
@@ -1097,6 +1122,38 @@ export default {
         },
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
+        },
+        async generateAIReport() {
+            if (this.hasChanges) {
+                Toast.error("Please save your workflow before generating the AI report.");
+                return;
+            }
+
+            if (!this.id || this.isNewTempWorkflow) {
+                Toast.error("Workflow must be saved before generating the AI report.");
+                return;
+            }
+
+            this.onWorkflowMessage("Generating AI Report", "progress");
+            try {
+                const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
+                this.onReportUpdate(report);
+                Toast.success(
+                    `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
+                    "AI Report generated successfully.",
+                );
+                this.hideModal();
+            } catch (e) {
+                this.onWorkflowError(
+                    "Generating AI report failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    },
+                );
+            }
         },
         onReportUpdate(markdown) {
             this.hasChanges = true;

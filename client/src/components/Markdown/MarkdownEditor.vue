@@ -30,6 +30,7 @@
                     :markdown-text="markdownText"
                     :steps="steps"
                     :mode="mode"
+                    :hide-toolbox="hideToolbox"
                     @update="$emit('update', $event)" />
                 <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
@@ -49,6 +50,7 @@ import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import type { DirectiveMode } from "./directives";
 import type { WorkflowLabel } from "./Editor/types";
 
 import GModal from "../BaseComponents/GModal.vue";
@@ -58,10 +60,11 @@ import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
 const props = defineProps<{
     markdownText: string;
-    mode: "report" | "page";
+    mode: DirectiveMode;
     labels?: Array<WorkflowLabel>;
     steps?: Record<string, any>;
     title: string;
+    hideToolbox?: boolean;
 }>();
 
 const showHelpModal = ref<boolean>(false);

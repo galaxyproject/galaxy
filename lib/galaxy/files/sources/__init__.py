@@ -2,6 +2,10 @@ import abc
 import builtins
 import os
 import time
+from datetime import (
+    datetime,
+    timezone,
+)
 from enum import Enum
 from typing import (
     Any,
@@ -361,6 +365,44 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
+        self._auth_expires_at: Optional[datetime] = (
+            datetime.fromisoformat(config.auth_expires_at) if config.auth_expires_at else None
+        )
+
+    def _check_credentials_fresh(self) -> None:
+        if self._auth_expires_at and datetime.now(timezone.utc) > self._auth_expires_at:
+            from galaxy.exceptions import FileSourceCredentialExpired
+
+            raise FileSourceCredentialExpired()
+
+    def _compute_auth_expires_at(self, user_context: "OptionalUserContext") -> Optional[datetime]:
+        if user_context is None:
+            return None
+        provider = self.template_config.oidc_auth_provider
+        if not provider:
+            return None
+        expirations = getattr(user_context, "oidc_access_token_expirations", {})
+        return expirations.get(provider)
+
+    def _inject_oidc_bearer_token(
+        self,
+        http_headers: dict[str, str],
+        user_context: "OptionalUserContext",
+    ) -> Optional[dict[str, str]]:
+        """Return a copy of http_headers with a Bearer token added for the configured OIDC provider.
+
+        Returns None if no provider is configured, no user context is available, or the user has
+        no token for that provider. Explicitly configured Authorization headers take precedence.
+        """
+        provider = self.template_config.oidc_auth_provider
+        if not provider or not user_context:
+            return None
+        token = (getattr(user_context, "oidc_access_tokens", None) or {}).get(provider)
+        if not token:
+            return None
+        headers = dict(http_headers)
+        headers.setdefault("Authorization", f"Bearer {token}")
+        return headers
 
     def to_dict(self, for_serialization=False, user_context: "OptionalUserContext" = None) -> dict[str, Any]:
         rval: dict[str, Any] = {
@@ -388,6 +430,13 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             context = self._get_runtime_context(user_context=user_context)
             serialized_config = self._serialize_config(context.config)
             rval.update(serialized_config)
+            if self.template_config.oidc_auth_provider is not None and user_context is not None:
+                updated_headers = self._inject_oidc_bearer_token(dict(rval.get("http_headers") or {}), user_context)
+                if updated_headers is not None:
+                    rval["http_headers"] = updated_headers
+            expires_at = self._compute_auth_expires_at(user_context)
+            if expires_at is not None:
+                rval["auth_expires_at"] = expires_at.isoformat()
         return rval
 
     def _serialize_config(self, config: TResolvedConfig) -> dict[str, Any]:
@@ -427,6 +476,10 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             self.template_config = self.template_config.model_copy(update=extra_props)
 
         resolved_config = self._evaluate_template_config(user_data)
+        if self.template_config.oidc_auth_provider and user_context and hasattr(resolved_config, "http_headers"):
+            updated_headers = self._inject_oidc_bearer_token(dict(resolved_config.http_headers or {}), user_context)
+            if updated_headers is not None:
+                resolved_config = resolved_config.model_copy(update={"http_headers": updated_headers})
         return FilesSourceRuntimeContext(user_data=user_data, config=resolved_config)
 
     def _apply_defaults_to_template(
@@ -467,6 +520,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         sort_by: Optional[str] = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
+        self._check_credentials_fresh()
         if not self.supports_pagination and (limit is not None or offset is not None):
             raise RequestParameterInvalidException("Pagination is not supported by this file source.")
         if not self.supports_search and query:
@@ -524,6 +578,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
+        self._check_credentials_fresh()
         resolved_config = self._get_runtime_context(opts, user_context)
         return self._write_from(target_path, native_path, resolved_config) or target_path
 
@@ -544,6 +599,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         opts: Optional[FilesSourceOptions] = None,
     ):
         self._check_user_access(user_context)
+        self._check_credentials_fresh()
         resolved_config = self._get_runtime_context(opts, user_context)
         self._realize_to(source_path, native_path, resolved_config)
 

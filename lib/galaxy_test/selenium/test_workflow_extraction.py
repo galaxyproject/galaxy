@@ -464,6 +464,12 @@ test_data:
         # one cat1 job per list element (typically 2, but may vary).
         job_count = self.count_job_checkboxes()
         assert job_count >= 1, f"Expected at least 1 job checkbox, found {job_count}"
+        mapped_cards = self.find_elements_by_selector(self.components.workflow_extract.mapped_tool_card.selector)
+        assert len(mapped_cards) >= 1, "Expected at least one mapped-tool card on a list:paired mapped flow"
+        for card in mapped_cards:
+            assert card.get_attribute("data-icj-id"), "mapped-tool card missing data-icj-id"
+        mapped_badges = self.find_elements_by_selector(self.components.workflow_extract.mapped_badge.selector)
+        assert len(mapped_badges) >= len(mapped_cards), "Expected mapped-tool cards to show a Mapped badge"
         self.screenshot("workflow_extract_nested_collection")
 
         workflow_name = "Selenium Nested Collection"

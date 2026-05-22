@@ -1,0 +1,267 @@
+Use this template to customize the HTML email your users will receive when a new notification of category
+"storage_operation" is sent to them. Copy the file to {{ templates_dir
+}}/mail/notifications/storage_operation-email.html and modify as required. If you are adding URLs, remember that only
+absolute URLs (with a domain name) make sense in email! They can be served from any stable location, including your
+Galaxy server or GitHub. The following variables are available for inserting into the HTML with Jinja2 syntax, like {{
+variable_name }}. They will be rendered into the text before the email is sent: - name The user's name - user_email The
+user's email - date Date and time of the notification - hostname Your galaxy's hostname (i.e. usegalaxy.* or the value
+in `server_name` from the galaxy config file) - contact_email Your galaxy's contact email - notification_settings_url
+The URL to the user's notification settings to manage their subscriptions - variant The notification variant indicates
+the level of importance of the notification (i.e. info, warning, urgent) - content The storage operation payload -
+subject Notification subject - message Notification body - run_url Link to the run status page - mode Storage operation
+mode - state Storage operation state - total_count Total datasets in run - succeeded_count Successful datasets count -
+failed_count Failed datasets count - skipped_count Skipped datasets count - galaxy_url The URL to the Galaxy instance
+(i.e. https://usegalaxy.*) Template begins here >>>>>>
+<!doctype html>
+<html lang="en" dir="ltr">
+    <head>
+        <meta charset="utf-8" />
+        <title>[Galaxy] {{ content['subject'] }}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    </head>
+    <body
+        style="
+            margin: 0;
+            padding: 0;
+            background-color: #f6f8fb;
+            font-family: &quot;Roboto&quot;, sans-serif;
+            color: #24344d;
+        ">
+        {% set total_count = content['total_count'] or 0 %} {% if total_count > 0 %} {% set succeeded_pct =
+        ((content['succeeded_count'] or 0) * 100 / total_count) | round(1) %} {% set failed_pct =
+        ((content['failed_count'] or 0) * 100 / total_count) | round(1) %} {% set skipped_pct =
+        ((content['skipped_count'] or 0) * 100 / total_count) | round(1) %} {% else %} {% set succeeded_pct = 0 %} {%
+        set failed_pct = 0 %} {% set skipped_pct = 0 %} {% endif %}
+
+        <table
+            role="presentation"
+            cellpadding="0"
+            cellspacing="0"
+            width="100%"
+            style="background-color: #f6f8fb; padding: 24px 12px">
+            <tr>
+                <td align="center">
+                    <table
+                        role="presentation"
+                        cellpadding="0"
+                        cellspacing="0"
+                        width="100%"
+                        style="
+                            max-width: 680px;
+                            background-color: #ffffff;
+                            border: 1px solid #dbe3f0;
+                            border-radius: 8px;
+                            overflow: hidden;
+                        ">
+                        <tr>
+                            <td
+                                style="
+                                    background: linear-gradient(90deg, #2c5aa0 0%, #315fbe 100%);
+                                    padding: 16px 24px;
+                                    color: #ffffff;
+                                ">
+                                <p style="margin: 0; font-size: 18px; font-weight: 700">
+                                    Galaxy storage operation update
+                                </p>
+                                <p style="margin: 6px 0 0 0; font-size: 12px; opacity: 0.92">
+                                    {{ content['subject'] }}
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 24px">
+                                <p style="margin: 0 0 16px 0; font-size: 16px">Hello {{ name }},</p>
+
+                                <p style="margin: 0 0 20px 0; font-size: 12pt; line-height: 1.5">
+                                    {{ content['message'] }}
+                                </p>
+
+                                <table
+                                    role="presentation"
+                                    cellpadding="0"
+                                    cellspacing="0"
+                                    width="100%"
+                                    style="
+                                        border: 1px solid #dbe3f0;
+                                        border-radius: 6px;
+                                        background-color: #fbfcfe;
+                                        margin: 0 0 20px 0;
+                                    ">
+                                    <tr>
+                                        <td
+                                            style="
+                                                padding: 14px 16px;
+                                                border-bottom: 1px solid #e5ebf5;
+                                                font-size: 13px;
+                                                font-weight: 700;
+                                                color: #223a63;
+                                            ">
+                                            Run summary
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 14px 16px">
+                                            <p style="margin: 0 0 8px 0; font-size: 12pt">
+                                                Mode: <strong>{{ content['mode'] }}</strong><br />
+                                                State: <strong>{{ content['state'] }}</strong>
+                                            </p>
+                                            <p style="margin: 0; font-size: 11pt; line-height: 1.6">
+                                                Total datasets: {{ content['total_count'] }}<br />
+                                                Succeeded:
+                                                <span style="color: #1f7a38">{{ content['succeeded_count'] }}</span> ({{
+                                                succeeded_pct }}%)<br />
+                                                Failed:
+                                                <span style="color: #b54747">{{ content['failed_count'] }}</span> ({{
+                                                failed_pct }}%)<br />
+                                                Skipped:
+                                                <span style="color: #8a6f16">{{ content['skipped_count'] }}</span> ({{
+                                                skipped_pct }}%)
+                                            </p>
+                                            <table
+                                                role="presentation"
+                                                cellpadding="0"
+                                                cellspacing="0"
+                                                width="100%"
+                                                style="margin-top: 12px; border-collapse: separate">
+                                                <tr>
+                                                    {% if total_count > 0 %}
+                                                    <td
+                                                        width="{{ succeeded_pct }}%"
+                                                        style="
+                                                            height: 12px;
+                                                            background-color: #2e8748;
+                                                            font-size: 0;
+                                                            line-height: 0;
+                                                        ">
+                                                        &nbsp;
+                                                    </td>
+                                                    <td
+                                                        width="{{ skipped_pct }}%"
+                                                        style="
+                                                            height: 12px;
+                                                            background-color: #d7a100;
+                                                            font-size: 0;
+                                                            line-height: 0;
+                                                        ">
+                                                        &nbsp;
+                                                    </td>
+                                                    <td
+                                                        width="{{ failed_pct }}%"
+                                                        style="
+                                                            height: 12px;
+                                                            background-color: #cc4b4b;
+                                                            font-size: 0;
+                                                            line-height: 0;
+                                                        ">
+                                                        &nbsp;
+                                                    </td>
+                                                    {% else %}
+                                                    <td
+                                                        style="
+                                                            width: 100%;
+                                                            height: 12px;
+                                                            background-color: #d9e2f2;
+                                                            font-size: 0;
+                                                            line-height: 0;
+                                                        ">
+                                                        &nbsp;
+                                                    </td>
+                                                    {% endif %}
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                {% if content['failed_count'] and content['failed_count'] > 0 %}
+                                <p
+                                    style="
+                                        margin: 0 0 20px 0;
+                                        font-size: 11pt;
+                                        line-height: 1.5;
+                                        color: #7c2d2d;
+                                        background-color: #fff1f1;
+                                        border: 1px solid #f1caca;
+                                        border-radius: 6px;
+                                        padding: 12px 14px;
+                                    ">
+                                    Some datasets failed during this run. Open the run details to review failure
+                                    reasons.
+                                </p>
+                                {% elif content['succeeded_count'] and content['total_count'] and
+                                content['succeeded_count'] == content['total_count'] %}
+                                <p
+                                    style="
+                                        margin: 0 0 20px 0;
+                                        font-size: 11pt;
+                                        line-height: 1.5;
+                                        color: #195b2e;
+                                        background-color: #effaf2;
+                                        border: 1px solid #c9e8d1;
+                                        border-radius: 6px;
+                                        padding: 12px 14px;
+                                    ">
+                                    All datasets were processed successfully.
+                                </p>
+                                {% endif %}
+
+                                <p style="margin: 0 0 20px 0">
+                                    <a
+                                        href="{{ content['run_url'] }}"
+                                        style="
+                                            display: inline-block;
+                                            background-color: #2c5aa0;
+                                            color: #ffffff;
+                                            text-decoration: none;
+                                            font-size: 12pt;
+                                            font-weight: 700;
+                                            border-radius: 6px;
+                                            padding: 10px 16px;
+                                        ">
+                                        Open run status
+                                    </a>
+                                </p>
+
+                                <p style="margin: 0 0 14px 0; font-size: 12pt">Thank you for using Galaxy.</p>
+
+                                <p style="margin: 0; font-size: 12pt; line-height: 1.5">
+                                    Regards,<br />
+                                    Your Galaxy Team at
+                                    <a href="{{ galaxy_url }}" style="color: #2c5aa0">{{ hostname }}</a>
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td
+                                style="
+                                    padding: 16px 24px;
+                                    border-top: 1px solid #e5ebf5;
+                                    background-color: #f8faff;
+                                    font-size: 10pt;
+                                    line-height: 1.45;
+                                    color: #4f5f79;
+                                ">
+                                You received this email because you are subscribed to storage operation notifications.
+                                {% if notification_settings_url %} You can manage your notification settings
+                                <a href="{{ notification_settings_url }}" style="color: #2c5aa0">here</a>. {% endif %}
+                                <br />
+                                {% if contact_email %} This is an automated email. Please do not reply directly; contact
+                                us at
+                                <a href="mailto:{{ contact_email }}" style="color: #2c5aa0">{{ contact_email }}</a>. {%
+                                endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 16px 24px 24px 24px; background-color: #f8faff">
+                                <img
+                                    style="width: 130px; height: auto; display: block"
+                                    src="https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo_square.png"
+                                    alt="Galaxy project logo" />
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </body>
+</html>

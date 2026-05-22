@@ -136,9 +136,9 @@ async function rerunWorkflow() {
 
         <div class="position-relative">
             <div v-if="workflow" class="bg-secondary px-2 py-1 rounded d-flex flex-gapx-1 justify-content-between">
-                <div class="py-1 d-flex flex-wrap align-items-center flex-gapx-1" data-description="workflow heading">
+                <div class="py-1 align-items-center" data-description="workflow heading">
                     <slot name="before-icon" />
-                    <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                    <FontAwesomeIcon class="mr-1" :icon="faSitemap" fixed-width />
                     <b> {{ props.invocation ? "Invoked " : "" }}Workflow: {{ getWorkflowName() }} </b>
                     <span>(Version: {{ workflow.version + 1 }})</span>
                 </div>

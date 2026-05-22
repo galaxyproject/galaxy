@@ -11,6 +11,7 @@ from typing import (
 )
 from urllib.parse import urlparse
 
+from celery import current_task
 from lagom.exceptions import UnresolvableType
 from sqlalchemy import (
     and_,
@@ -18,6 +19,7 @@ from sqlalchemy import (
     delete,
     exists,
     false,
+    or_,
     select,
     text,
     update,
@@ -34,6 +36,7 @@ from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -50,6 +53,8 @@ from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model import (
+    DatasetStorageOperationRun,
+    DatasetStorageOperationSnapshot,
     Job,
     User,
 )
@@ -58,6 +63,7 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.notifications import NotificationCreateRequest
+from galaxy.schema.storage_operations import StorageOperationRunState
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -306,6 +312,83 @@ def set_metadata(
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
         dataset_instance.state = dataset_instance.states.FAILED_METADATA
     sa_session.commit()
+
+
+@galaxy_task(action="execute bulk storage move run")
+def bulk_move_storage(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    notification_manager: NotificationManager,
+    app: MinimalManagerApp,
+    run_db_id: int,
+    task_user_id: int,
+    notify_on_completion: Optional[bool] = None,
+):
+    run = sa_session.get(DatasetStorageOperationRun, run_db_id)
+    if run is None:
+        log.error(f"Bulk storage move run not found: {run_db_id}")
+        return
+
+    current_task_id = getattr(getattr(current_task, "request", None), "id", None)
+    if current_task_id is not None:
+        if run.task_id is None:
+            # Claim ownership for the first worker execution in case run.task_id was not yet persisted.
+            run.task_id = str(current_task_id)
+            sa_session.add(run)
+            sa_session.commit()
+        elif str(run.task_id) != str(current_task_id):
+            log.info(
+                "Skipping bulk storage run %s because task ownership moved from %s to %s",
+                run.id,
+                current_task_id,
+                run.task_id,
+            )
+            return
+
+    if run.state in (StorageOperationRunState.completed.value, StorageOperationRunState.failed.value):
+        log.info("Skipping bulk storage run %s because it is already terminal (%s)", run.id, run.state)
+        return
+
+    user = sa_session.get(User, task_user_id)
+    if user is None:
+        log.error("Bulk storage run %s user %s not found; marking run as failed", run.id, task_user_id)
+        run.state = StorageOperationRunState.failed.value
+        run.failed_count = run.total_count or 0
+        sa_session.add(run)
+        sa_session.commit()
+        return
+
+    snapshot = sa_session.get(DatasetStorageOperationSnapshot, run.snapshot_id)
+    storage_operation_manager = DatasetStorageOperationManager(app.object_store, app.config)
+    executor = storage_operation_manager.create_run_executor(
+        sa_session=sa_session,
+        dataset_manager=dataset_manager,
+        app=app,
+        run=run,
+        user=user,
+        current_task_id=current_task_id,
+    )
+    execution_result = executor.execute_run(snapshot)
+
+    if execution_result.state not in (StorageOperationRunState.completed, StorageOperationRunState.failed):
+        return
+
+    run_notify_on_completion = notify_on_completion
+    if run_notify_on_completion is None:
+        run_notify_on_completion = run.notify_on_completion
+
+    if not run_notify_on_completion:
+        return
+
+    try:
+        notification_manager.send_storage_operation_notification(
+            user_id=user.id,
+            run=run,
+            execution_result=execution_result,
+            encode_id=app.security.encode_id,
+        )
+    except Exception:
+        log.exception("Failed to send storage operation notification for run %s", run.id)
 
 
 def _get_dataset_manager(
@@ -646,6 +729,23 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
     )
 
 
+@galaxy_task(action="prune expired bulk storage operations")
+def prune_expired_bulk_storage_operations(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    config: GalaxyAppConfiguration,
+):
+    storage_operation_manager = DatasetStorageOperationManager(object_store, config)
+    deleted_run_count = storage_operation_manager.prune_completed_runs(sa_session)
+    deleted_snapshot_count = storage_operation_manager.prune_expired_snapshots(sa_session)
+    if deleted_run_count or deleted_snapshot_count:
+        log.info(
+            "Pruned %s completed storage operation runs and %s expired storage operation snapshots",
+            deleted_run_count,
+            deleted_snapshot_count,
+        )
+
+
 @galaxy_task(action="prune object store cache directories")
 def clean_object_store_caches(object_store: BaseObjectStore):
     check_caches(object_store.cache_targets())
@@ -803,3 +903,60 @@ def cleanup_stale_concurrency_slots(
         )
         session.commit()
         log.info(f"Cleaned up {len(stale_task_ids)} stale concurrency tracking rows")
+
+
+@galaxy_task(action="recover stale storage operation runs")
+def recover_stale_bulk_storage_operation_runs(
+    session: galaxy_scoped_session,
+    stale_threshold_minutes: int = 30,
+):
+    threshold = datetime.datetime.now() - datetime.timedelta(minutes=stale_threshold_minutes)
+
+    stale_runs = (
+        session.execute(
+            select(DatasetStorageOperationRun).where(
+                or_(
+                    DatasetStorageOperationRun.state == StorageOperationRunState.pending.value,
+                    DatasetStorageOperationRun.state == StorageOperationRunState.running.value,
+                ),
+                DatasetStorageOperationRun.update_time < threshold,
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    if not stale_runs:
+        return
+
+    try:
+        active_response = celery_app.control.inspect().active() or {}
+    except Exception:
+        log.warning("Failed to inspect active tasks on workers; skipping stale storage operation recovery")
+        return
+
+    active_task_ids = {task["id"] for tasks in active_response.values() for task in tasks}
+    recovered_count = 0
+
+    for run in stale_runs:
+        run_task_id = str(run.task_id) if run.task_id is not None else None
+        if run_task_id is not None and run_task_id in active_task_ids:
+            continue
+
+        try:
+            task_result = bulk_move_storage.delay(
+                run_db_id=run.id,
+                task_user_id=run.user_id,
+                notify_on_completion=run.notify_on_completion,
+            )
+            run.state = StorageOperationRunState.pending.value
+            run.task_id = str(task_result.id)
+            session.add(run)
+            session.commit()
+            recovered_count += 1
+        except Exception:
+            session.rollback()
+            log.exception("Failed to redispatch stale storage operation run %s", run.id)
+
+    if recovered_count:
+        log.info("Redispatched %s stale storage operation runs", recovered_count)

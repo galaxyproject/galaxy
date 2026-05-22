@@ -778,12 +778,19 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         target_card = self.get_history_card(card_name)
 
         if is_in_extra:
+            # Open the extra-actions dropdown and click the menu item directly.
+            # Bootstrap-vue keeps menu items in the DOM for every card, so the
+            # action lookup must be scoped to target_card to avoid picking a
+            # match from a closed dropdown on another card.
             target_card.find_element(By.CSS_SELECTOR, '[id^="g-card-extra-actions-history-"]').click()
+            self.sleep_for(self.wait_types.UX_RENDER)
+            target_card.find_element(By.CSS_SELECTOR, action_selector).click()
+            return
 
-        action_selector = target_card.find_element(By.CSS_SELECTOR, action_selector)
+        action_element = target_card.find_element(By.CSS_SELECTOR, action_selector)
         # Hover over parent card first to activate hover state in headless mode
         self.action_chains().move_to_element(target_card).perform()
-        self.move_to_and_click(action_selector)
+        self.move_to_and_click(action_element)
 
     def edit_dataset_dbkey(self, dbkey_text):
         # precondition: need to be on the dataset edit component
@@ -1646,31 +1653,31 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.components.invocations.activity.wait_for_and_click()
         self.components.invocations.activity_expand.wait_for_and_click()
 
-    def navigate_to_chatgxy(self):
+    def navigate_to_galaxyai(self):
         self.home()
-        self.components.chatgxy.activity.wait_for_and_click()
+        self.components.galaxyai.activity.wait_for_and_click()
 
-    def chatgxy_ensure_new_chat(self):
-        """Ensure ChatGXY center panel shows an empty conversation."""
-        chatgxy = self.components.chatgxy
-        chatgxy._.wait_for_visible()
-        if len(chatgxy.query_cell.all()) > 0 or len(chatgxy.response_content.all()) > 0:
-            chatgxy.new_chat_button.wait_for_and_click()
-        self._chatgxy_assert_chat_empty()
+    def galaxyai_ensure_new_chat(self):
+        """Ensure GalaxyAI center panel shows an empty conversation."""
+        galaxyai = self.components.galaxyai
+        galaxyai._.wait_for_visible()
+        if len(galaxyai.query_cell.all()) > 0 or len(galaxyai.response_content.all()) > 0:
+            galaxyai.new_chat_button.wait_for_and_click()
+        self._galaxyai_assert_chat_empty()
 
-    def chatgxy_send_message(self, text):
+    def galaxyai_send_message(self, text):
         """Type a message, click send, and wait for the response to appear."""
-        chatgxy = self.components.chatgxy
-        chatgxy.input.wait_for_and_send_keys(text)
-        chatgxy.send_button.wait_for_and_click()
-        chatgxy.loading.wait_for_absent_or_hidden()
-        chatgxy.response_content.wait_for_visible()
+        galaxyai = self.components.galaxyai
+        galaxyai.input.wait_for_and_send_keys(text)
+        galaxyai.send_button.wait_for_and_click()
+        galaxyai.loading.wait_for_absent_or_hidden()
+        galaxyai.response_content.wait_for_visible()
 
     @retry_during_transitions
-    def _chatgxy_assert_chat_empty(self):
-        chatgxy = self.components.chatgxy
-        assert len(chatgxy.query_cell.all()) == 0
-        assert len(chatgxy.response_content.all()) == 0
+    def _galaxyai_assert_chat_empty(self):
+        galaxyai = self.components.galaxyai
+        assert len(galaxyai.query_cell.all()) == 0
+        assert len(galaxyai.response_content.all()) == 0
 
     def navigate_to_dataset_error(self, hid):
         """Display a dataset and click the error tab."""
@@ -2251,6 +2258,109 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def click_button_new_workflow(self):
         self.wait_for_and_click(self.navigation.workflows.selectors.new_button)
 
+    # --- Page Editor helpers ---
+
+    def navigate_to_page_editor(self, page_id):
+        """Navigate to the unified editor for a standalone page."""
+        self.get(f"pages/editor?id={page_id}")
+        self.components.pages.history.editor.wait_for_visible()
+
+    # --- History Page helpers ---
+
+    def navigate_to_history_pages(self):
+        """Navigate to the page list for the current history."""
+        history_id = self.current_history_id()
+        self.get(f"histories/{history_id}/pages")
+        self.components.pages.history.list.wait_for_visible()
+
+    def history_panel_click_edit_current_page(self):
+        """Click page icon — waits for editor toolbar (non-WM path)."""
+        self.components.history_panel.page_button.wait_for_and_click()
+        self.components.pages.history.toolbar.wait_for_visible()
+
+    def history_panel_click_view_current_page(self):
+        """Click page icon — waits for WinBox window (WM-active path)."""
+        self.components.history_panel.page_button.wait_for_and_click()
+        self.window_manager_wait_for_window_count_at_least(1)
+
+    def history_page_create(self, screenshot_name=None):
+        """Click the create button on the page list. Returns to editor view."""
+        self.components.pages.history.create_button.wait_for_and_click()
+        self.components.pages.history.toolbar.wait_for_visible()
+        if screenshot_name:
+            self.screenshot(screenshot_name)
+
+    def history_page_editor_set_content(self, content):
+        """Type content into the markdown editor textarea."""
+        editor = self.components.pages.history.markdown_editor
+        editor.wait_for_and_clear_and_send_keys(content)
+        self.components.pages.history.unsaved_indicator.wait_for_visible()
+
+    def history_page_save(self):
+        """Click the save button and wait for save to complete."""
+        save_btn = self.components.pages.history.save_button
+        save_btn.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.pages.history.unsaved_indicator.assert_absent_or_hidden_after_transitions()
+
+    def history_page_manage(self):
+        """Click back button to return to page list."""
+        self.components.pages.history.back_button.wait_for_and_click()
+        self.components.pages.history.list.wait_for_visible()
+
+    @retry_during_transitions
+    def history_page_assert_item_count(self, n):
+        """Assert the page list shows exactly n items."""
+        items = self.components.pages.history.item.all()
+        assert len(items) == n, f"Expected {n} page items, found {len(items)}"
+
+    def history_page_open_revisions(self):
+        """Click Revisions button in page toolbar."""
+        self.components.pages.history.revisions_button.wait_for_and_click()
+        self.components.pages.history.revision_list.wait_for_visible()
+        self.components.pages.history.revision_item.wait_for_visible()
+
+    @retry_during_transitions
+    def history_page_assert_revision_count(self, n):
+        """Assert the revision list shows exactly n items."""
+        items = self.components.pages.history.revision_item.all()
+        assert len(items) == n, f"Expected {n} revision items, found {len(items)}"
+
+    def history_page_rename(self, new_name):
+        """Rename page via ClickToEdit in toolbar."""
+        self.components.pages.history.toolbar_title.wait_for_and_click()
+        title_input = self.components.pages.history.toolbar_title_input.wait_for_visible()
+        self.aggressive_clear(title_input)
+        title_input.send_keys(new_name)
+        self.send_enter(title_input)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def history_page_open_chat(self):
+        """Click chat button in page toolbar, wait for chat panel visible."""
+        self.components.pages.history.chat_button.wait_for_and_click()
+        self.components.pages.history.chat_panel.wait_for_visible()
+
+    def history_page_chat_send_message(self, text):
+        """Type into chat input, click send, wait for response."""
+        chat = self.components.pages.history
+        chat.chat_input.wait_for_and_send_keys(text)
+        chat.chat_send_button.wait_for_and_click()
+        chat.chat_loading.wait_for_absent_or_hidden()
+        chat.chat_response_content.wait_for_visible()
+
+    def history_page_chat_ensure_new(self):
+        """Click new conversation button if messages exist."""
+        chat = self.components.pages.history
+        if len(chat.chat_query_cell.all()) > 0 or len(chat.chat_response_content.all()) > 0:
+            chat.chat_new_conversation.wait_for_and_click()
+        self._history_page_chat_assert_empty()
+
+    @retry_during_transitions
+    def _history_page_chat_assert_empty(self):
+        chat = self.components.pages.history
+        assert len(chat.chat_query_cell.all()) == 0
+        assert len(chat.chat_response_content.all()) == 0
+
     @retry_during_transitions
     def click_history_options(self):
         component = self.components.history_panel.options_button_icon
@@ -2302,6 +2412,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         if self.window_manager_is_active():
             self.window_manager_toggle()
 
+    @contextlib.contextmanager
+    def window_manager_active(self):
+        """Context manager: enable WM on entry, disable on exit."""
+        self.window_manager_enable()
+        try:
+            yield
+        finally:
+            self.window_manager_disable()
+
     def window_manager_is_active(self) -> bool:
         """Check if the window manager is currently enabled via the masthead toggle class."""
         return self.components.masthead.window_manager.has_class("toggle")
@@ -2315,9 +2434,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
 
         def check_count(driver=None):
             count = len(self.find_elements_by_selector(".window-manager-window"))
-            return count == expected_count
+            return True if count == expected_count else None
 
         self._wait_on(check_count, f"window count to be {expected_count}")
+
+    def window_manager_wait_for_window_count_at_least(self, minimum: int):
+        """Wait until at least minimum window manager windows exist."""
+
+        def check_count(driver=None):
+            count = len(self.find_elements_by_selector(".window-manager-window"))
+            return True if count >= minimum else None
+
+        self._wait_on(check_count, f"window count to be at least {minimum}")
 
     @contextlib.contextmanager
     def window_manager_frame(self, index=0):
@@ -2327,10 +2455,18 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
             with self.window_manager_frame(0):
                 self.wait_for_selector_visible(".dataset-view")
         """
-        iframes = self.find_elements_by_selector(".window-manager-window iframe")
-        assert len(iframes) > index, f"Expected at least {index + 1} window manager iframes, found {len(iframes)}"
+        captured: list = []
+
+        def has_enough_iframes(driver=None):
+            elements = self.find_elements_by_selector(".window-manager-window iframe")
+            if len(elements) > index:
+                captured[:] = elements
+                return True
+            return None
+
+        self._wait_on(has_enough_iframes, f"at least {index + 1} window manager iframes")
         try:
-            self.switch_to_frame(iframes[index])
+            self.switch_to_frame(captured[index])
             yield
         finally:
             self.switch_to_default_content()

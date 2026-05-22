@@ -61,9 +61,8 @@ const workflowLoading = ref(false);
 const args = computed(() => {
     if (invocation.value && workflowId.value) {
         return parseInvocation(invocation.value, workflowId.value, name.value, attributes.value.args);
-    } else {
-        return { ...attributes.value.args };
     }
+    return { ...attributes.value.args };
 });
 
 const hasLabels = computed(() => props.labels !== undefined);
@@ -198,7 +197,7 @@ watch(
                 :dataset-id="args.history_dataset_id"
                 :embedded="name == 'history_dataset_embedded'" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
-            <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
+            <HistoryDatasetLink v-else-if="name == 'history_dataset_link' && args.history_dataset_id" :args="args" />
             <HistoryLink v-else-if="name == 'history_link'" :history-id="args.history_id" />
             <InstanceUrl
                 v-else-if="name == 'instance_access_link'"

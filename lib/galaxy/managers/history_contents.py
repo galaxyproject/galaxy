@@ -156,6 +156,41 @@ class HistoryContentsManager(base.SortableManager):
             "Unknown order_by", order_by=order_by_string, available=available
         )
 
+    def get_hda_by_hid(self, history_id, hid):
+        """Return the user-visible HDA at this HID in a history, or None.
+
+        Implicitly-converted HDAs share the original's HID but are
+        ``visible=False``; filtering by visibility yields the canonical
+        user-facing dataset. If no visible row matches (e.g. the user
+        hid the original), falls back to the row that has no row in
+        ``ImplicitlyConvertedDatasetAssociation`` claiming it as a child.
+        """
+        HDA = model.HistoryDatasetAssociation
+        ICDA = model.ImplicitlyConvertedDatasetAssociation
+        session = self._session()
+        stmt = (
+            select(HDA)
+            .where(HDA.history_id == history_id, HDA.hid == hid, HDA.visible == true())
+            .order_by(HDA.id.asc())
+        )
+        result = session.execute(stmt).scalars().first()
+        if result is not None:
+            return result
+        not_a_conversion = ~select(ICDA.id).where(ICDA.hda_id == HDA.id).exists()
+        stmt = select(HDA).where(HDA.history_id == history_id, HDA.hid == hid, not_a_conversion).order_by(HDA.id.asc())
+        return session.execute(stmt).scalars().first()
+
+    def get_hdca_by_hid(self, history_id, hid):
+        """Return the HDCA at this HID in a history, or None.
+
+        Collections have no implicit-conversion mechanism, so HID is
+        effectively unique among HDCAs in a history; ``first()`` defends
+        against any future schema surprises without raising.
+        """
+        HDCA = model.HistoryDatasetCollectionAssociation
+        stmt = select(HDCA).where(HDCA.history_id == history_id, HDCA.hid == hid).order_by(HDCA.id.asc())
+        return self._session().execute(stmt).scalars().first()
+
     # history specific methods
     def state_counts(self, history):
         """

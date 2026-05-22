@@ -49,7 +49,11 @@ def main(argv=None):
     args = _arg_parser().parse_args(argv)
     registry = Registry()
     registry.load_datatypes(root_dir=args.galaxy_root, config=args.datatypes_registry)
-    do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
+    do_fetch(
+        args.request,
+        working_directory=args.working_directory or os.getcwd(),
+        registry=registry,
+    )
 
 
 def do_fetch(

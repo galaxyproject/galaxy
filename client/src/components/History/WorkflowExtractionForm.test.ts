@@ -3,7 +3,12 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { extractWorkflowFromHistory, submitWorkflowExtraction, type WorkflowExtractionSummary } from "@/api/histories";
+import {
+    extractWorkflowByIds,
+    extractWorkflowFromHistory,
+    type WorkflowExtractionJob,
+    type WorkflowExtractionSummary,
+} from "@/api/histories";
 import { Toast } from "@/composables/toast";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
@@ -18,7 +23,7 @@ import WorkflowExtractionForm from "./WorkflowExtractionForm.vue";
 
 vi.mock("@/api/histories", () => ({
     extractWorkflowFromHistory: vi.fn(),
-    submitWorkflowExtraction: vi.fn(),
+    extractWorkflowByIds: vi.fn(),
 }));
 
 vi.mock("@/composables/toast", () => {
@@ -42,45 +47,50 @@ vi.mock("@/stores/historyStore", () => ({
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
-const TOOL_JOB = {
+const TOOL_JOB: WorkflowExtractionJob = {
     id: "job-tool-1",
     tool_id: "cat1",
     tool_name: "Concatenate",
     tool_version: "1.0",
-    step_type: "tool" as const,
+    step_type: "tool",
     checked: true,
     tool_version_warning: null,
-    outputs: [
-        { id: "ds-1", hid: 1, name: "output1", history_content_type: "dataset" as const, state: "ok", deleted: false },
-    ],
+    outputs: [{ id: "ds-1", hid: 1, name: "output1", history_content_type: "dataset", state: "ok", deleted: false }],
 };
 
-const INPUT_JOB = {
+const MAPPED_TOOL_JOB: WorkflowExtractionJob = {
+    ...TOOL_JOB,
+    id: "job-tool-2",
+    implicit_collection_jobs_id: "icj-1",
+    implicit_collection_jobs_size: 4,
+};
+
+const MAPPED_TOOL_JOB_2: WorkflowExtractionJob = {
+    ...MAPPED_TOOL_JOB,
+    id: "job-tool-3",
+};
+
+const INPUT_JOB: WorkflowExtractionJob = {
     id: null,
     tool_id: null,
     tool_name: "Input Dataset",
     tool_version: null,
-    step_type: "input_dataset" as const,
+    step_type: "input_dataset",
     checked: true,
     tool_version_warning: null,
-    outputs: [
-        {
-            id: "ds-2",
-            hid: 2,
-            name: "myfile.txt",
-            history_content_type: "dataset" as const,
-            state: "ok",
-            deleted: false,
-        },
-    ],
+    outputs: [{ id: "ds-2", hid: 2, name: "myfile.txt", history_content_type: "dataset", state: "ok", deleted: false }],
 };
 
-const SUMMARY_WITH_JOBS = { jobs: [TOOL_JOB, INPUT_JOB], warnings: [] } as unknown as WorkflowExtractionSummary;
-const SUMMARY_EMPTY = { jobs: [], warnings: [] } as unknown as WorkflowExtractionSummary;
-const SUMMARY_WITH_WARNINGS = {
-    jobs: [TOOL_JOB],
-    warnings: ["Tool version mismatch"],
-} as unknown as WorkflowExtractionSummary;
+function summary(jobs: WorkflowExtractionJob[], warnings: string[] = []): WorkflowExtractionSummary {
+    return { history_id: "history-1", jobs, warnings };
+}
+
+const SUMMARY_WITH_JOBS = summary([TOOL_JOB, INPUT_JOB]);
+const SUMMARY_WITH_MAPPED_JOB = summary([MAPPED_TOOL_JOB]);
+const SUMMARY_WITH_DUPLICATE_MAPPED_JOBS = summary([MAPPED_TOOL_JOB, MAPPED_TOOL_JOB_2]);
+const SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS = summary([TOOL_JOB, MAPPED_TOOL_JOB]);
+const SUMMARY_EMPTY = summary([]);
+const SUMMARY_WITH_WARNINGS = summary([TOOL_JOB], ["Tool version mismatch"]);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -226,18 +236,61 @@ describe("WorkflowExtractionForm", () => {
     describe("workflow submission", () => {
         beforeEach(() => {
             vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
-            vi.mocked(submitWorkflowExtraction).mockResolvedValue({ id: "new-workflow-id" });
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "new-workflow-id" });
         });
 
-        it("calls submitWorkflowExtraction with correct payload on button click", async () => {
+        it("calls extractWorkflowByIds with encoded-id payload on button click", async () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
-            expect(submitWorkflowExtraction).toHaveBeenCalledWith(
-                "history-1",
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
                 expect.objectContaining({
                     workflow_name: "Extracted WF",
                     job_ids: ["job-tool-1"],
+                    implicit_collection_jobs_ids: [],
+                    hda_ids: ["ds-2"],
+                    hdca_ids: [],
+                    dataset_names: ["myfile.txt"],
+                    dataset_collection_names: [],
+                }),
+            );
+        });
+
+        it("submits mapped tool job via implicit_collection_jobs_ids", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_MAPPED_JOB);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    job_ids: [],
+                    implicit_collection_jobs_ids: ["icj-1"],
+                }),
+            );
+        });
+
+        it("dedupes ICJ ids when two cards share an ICJ", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_DUPLICATE_MAPPED_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    job_ids: [],
+                    implicit_collection_jobs_ids: ["icj-1"],
+                }),
+            );
+        });
+
+        it("mixes plain and mapped job buckets correctly", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    job_ids: ["job-tool-1"],
+                    implicit_collection_jobs_ids: ["icj-1"],
                 }),
             );
         });
@@ -250,18 +303,46 @@ describe("WorkflowExtractionForm", () => {
         });
 
         it("shows error alert when submission fails", async () => {
-            vi.mocked(submitWorkflowExtraction).mockRejectedValue(new Error("Submit failed"));
+            vi.mocked(extractWorkflowByIds).mockRejectedValue(new Error("Submit failed"));
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
             expect(wrapper.find('[variant="danger"]').exists()).toBe(true);
         });
 
+        it("submission error keeps job list visible", async () => {
+            vi.mocked(extractWorkflowByIds).mockRejectedValue(new Error("Submit failed"));
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await clickCreateButton(wrapper);
+            expect(wrapper.find('[variant="danger"]').exists()).toBe(true);
+            expect(wrapper.findAllComponents(WorkflowExtractionCard)).toHaveLength(2);
+        });
+
+        it("submit shows submitting state without hiding list", async () => {
+            let resolveSubmission: (value: { id: string }) => void = () => {};
+            vi.mocked(extractWorkflowByIds).mockReturnValue(
+                new Promise((resolve) => {
+                    resolveSubmission = resolve;
+                }),
+            );
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            wrapper.findComponent(GButton).vm.$emit("click");
+            await wrapper.vm.$nextTick();
+            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.text()).toContain("Creating...");
+            expect(wrapper.findComponent(LoadingSpan).exists()).toBe(false);
+            expect(wrapper.findAllComponents(WorkflowExtractionCard)).toHaveLength(2);
+            resolveSubmission({ id: "new-workflow-id" });
+            await flushPromises();
+        });
+
         it("does not submit when button is disabled", async () => {
             const wrapper = await mountForm();
             // no name set — button stays disabled
             await clickCreateButton(wrapper);
-            expect(submitWorkflowExtraction).not.toHaveBeenCalled();
+            expect(extractWorkflowByIds).not.toHaveBeenCalled();
         });
     });
 });

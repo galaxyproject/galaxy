@@ -1,3 +1,4 @@
+import re
 from enum import Enum
 from typing import (
     List,
@@ -8,8 +9,10 @@ from typing import (
 from pydantic import (
     ConfigDict,
     Field,
+    model_validator,
     with_config,
 )
+from pydantic_core import PydanticCustomError
 from typing_extensions import (
     Annotated,
     Literal,
@@ -145,9 +148,50 @@ class YamlTemplateConfigFile(TemplateConfigFile):
     eval_engine: Literal["ecmascript"] = "ecmascript"
 
 
+# DOI: '10.<registrant>/<suffix>' per Crossref's published shape.
+DOI_RE = re.compile(r"^10\.\d{4,9}/.+$")
+# BibTeX entries open with '@<type>{' -- e.g. '@article{', '@inproceedings{'.
+BIBTEX_RE = re.compile(r"^@[a-zA-Z]+\s*\{", re.MULTILINE)
+
+
 class Citation(ToolSourceBaseModel):
     type: str
     content: str
+
+    @model_validator(mode="after")
+    def _check_citation_shape(self) -> "Citation":
+        content = (self.content or "").strip()
+        if not content:
+            raise PydanticCustomError(
+                "dynamic_tool.citation_empty",
+                "citation content must not be empty",
+            )
+        citation_type = (self.type or "").strip().lower()
+        if citation_type == "doi":
+            if not DOI_RE.match(content):
+                raise PydanticCustomError(
+                    "dynamic_tool.citation_doi_invalid",
+                    "declared as DOI but '{content}' does not match DOI shape (^10\\.\\d{{4,9}}/.+$)",
+                    {"content": content},
+                )
+            return self
+        if citation_type == "bibtex":
+            if not BIBTEX_RE.search(content):
+                raise PydanticCustomError(
+                    "dynamic_tool.citation_bibtex_invalid",
+                    "declared as bibtex but content does not start with '@<type>{{'",
+                )
+            return self
+        # Type wasn't explicitly doi/bibtex -- accept if the content shape is
+        # one of the two known forms. Lets a slightly mis-typed entry through
+        # instead of fighting models that emit type='reference' or similar.
+        if DOI_RE.match(content) or BIBTEX_RE.search(content):
+            return self
+        raise PydanticCustomError(
+            "dynamic_tool.citation_unrecognized",
+            "citation (type={ctype}) is neither a recognizable DOI nor a BibTeX entry",
+            {"ctype": repr(self.type)},
+        )
 
 
 class HelpContent(ToolSourceBaseModel):

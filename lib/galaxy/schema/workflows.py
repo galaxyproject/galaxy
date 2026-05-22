@@ -12,6 +12,7 @@ from pydantic import (
     AfterValidator,
     Field,
     field_validator,
+    model_validator,
     UUID4,
 )
 
@@ -391,6 +392,21 @@ class WorkflowExtractionJob(Model):
         title="Invalid",
         description="Reason this job is invalid for extraction.",
     )
+    implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        title="Implicit Collection Jobs ID",
+        description=(
+            "Encoded ID of the ImplicitCollectionJobs this job belongs to, "
+            "or null if the job is not part of a mapped/implicit collection. "
+            "Callers should submit mapped jobs via implicit_collection_jobs_ids "
+            "rather than job_ids in the extract-by-ids payload."
+        ),
+    )
+    implicit_collection_jobs_size: Optional[int] = Field(
+        None,
+        title="Implicit Collection Jobs Size",
+        description="Number of constituent jobs in the ICJ (only set when implicit_collection_jobs_id is non-null).",
+    )
 
 
 class WorkflowExtractionSummary(Model):
@@ -442,6 +458,54 @@ class WorkflowExtractionPayload(Model):
         title="Dataset Collection Names",
         description="Names for the input dataset collections, parallel to dataset_collection_hids.",
     )
+
+
+class WorkflowExtractionByIdsPayload(Model):
+    workflow_name: str = Field(
+        ...,
+        title="Workflow Name",
+        description="The name for the extracted workflow.",
+    )
+    job_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="Job IDs",
+        description="Decoded IDs of compatible tool jobs to include as workflow steps.",
+    )
+    hda_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="HDA IDs",
+        description="Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.",
+    )
+    hdca_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="HDCA IDs",
+        description="Decoded IDs of HistoryDatasetCollectionAssociations to treat as workflow inputs.",
+    )
+    implicit_collection_jobs_ids: list[DecodedDatabaseIdField] = Field(
+        default_factory=list,
+        title="Implicit Collection Jobs IDs",
+        description=(
+            "Decoded IDs of ImplicitCollectionJobs (map-over job groups) to include as mapped "
+            "workflow steps. Use this for steps that ran with a map/over instead of passing a "
+            "constituent job id in job_ids."
+        ),
+    )
+    dataset_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Names",
+        description="Names for the input datasets, parallel to hda_ids.",
+    )
+    dataset_collection_names: list[str] = Field(
+        default_factory=list,
+        title="Dataset Collection Names",
+        description="Names for the input dataset collections, parallel to hdca_ids.",
+    )
+
+    @model_validator(mode="after")
+    def _at_least_one_input(self):
+        if not (self.hda_ids or self.hdca_ids or self.job_ids or self.implicit_collection_jobs_ids):
+            raise ValueError("At least one of hda_ids, hdca_ids, job_ids, implicit_collection_jobs_ids required")
+        return self
 
 
 class WorkflowExtractionResult(Model):

@@ -1709,7 +1709,9 @@ class ShedTestCase(ShedApiTestCase):
                     ), f"The hard-coded Galaxy tool-data directory is missing for the {required_data_table_entry} entry."
                     assert os.path.exists(galaxy_tool_data_dir), "The Galaxy tool-data directory does not exist."
                     # Make sure the loc_file_name was correctly copied into the configured directory location.
-                    configured_file_location = os.path.join(self.tool_data_path, loc_file_name)
+                    # Shed-installed loc files now live under tool_data_path/shed/ to keep them
+                    # separate from admin-configured ones.
+                    configured_file_location = os.path.join(self.tool_data_path, "shed", loc_file_name)
                     assert os.path.isfile(
                         configured_file_location
                     ), f'The expected copied file "{configured_file_location}" is missing.'

@@ -86,6 +86,7 @@ def test_lift_status_lifted_for_drift_only():
 def test_lift_handles_nested_conditional_drift():
     value = {
         **BASE_TOOL,
+        "shell_command": "echo hello",
         "inputs": [
             {
                 "type": "conditional",

@@ -45,7 +45,9 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.managers.licenses import LicensesManager
-from galaxy.model import Job
+from galaxy.model import (
+    Job,
+)
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.tasks import GeneratePdfDownload

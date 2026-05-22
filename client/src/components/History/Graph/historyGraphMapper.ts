@@ -43,33 +43,38 @@ function computeNodeHeight(
     return headerHeight + portRows * PORT_ROW_HEIGHT + rule + BODY_PADDING + badgeRow;
 }
 
-/** User-facing type labels */
+/** User-facing labels keyed by node src */
 export const NODE_TYPE_LABELS: Record<string, string> = {
-    dataset: "Dataset",
-    collection: "Collection",
+    hda: "Dataset",
+    hdca: "Collection",
     tool_request: "Tool Execution",
 };
 
 const NODE_ICONS: Record<string, typeof faFile> = {
-    dataset: faFile,
-    collection: faLayerGroup,
+    hda: faFile,
+    hdca: faLayerGroup,
     tool_request: faWrench,
 };
 
 const NODE_CSS_CLASS: Record<string, string> = {
-    dataset: "node-dataset",
-    collection: "node-collection",
+    hda: "node-dataset",
+    hdca: "node-collection",
     tool_request: "node-tool-request",
 };
+
+/** Stable string key for the generic renderer, derived from the (src, id) ref. */
+function nodeKey(ref: { src: string; id: string }): string {
+    return `${ref.src}:${ref.id}`;
+}
 
 // ── Label resolution ──
 
 function resolveNodeLabel(node: ApiGraphNode): string {
     const hid = node.hid ? `${node.hid}: ` : "";
-    switch (node.type) {
-        case "dataset":
+    switch (node.src) {
+        case "hda":
             return `${hid}${node.name ?? node.extension ?? "Dataset"}`;
-        case "collection":
+        case "hdca":
             return `${hid}${node.name ?? node.collection_type ?? "Collection"}`;
         case "tool_request":
             return node.tool_name ?? shortenToolId(node.tool_id);
@@ -77,10 +82,10 @@ function resolveNodeLabel(node: ApiGraphNode): string {
 }
 
 function resolveNodeBadge(node: ApiGraphNode): string | null {
-    switch (node.type) {
-        case "dataset":
+    switch (node.src) {
+        case "hda":
             return node.extension ?? null;
-        case "collection":
+        case "hdca":
             return node.collection_type ?? null;
         case "tool_request":
             return null;
@@ -111,40 +116,43 @@ function isCollectionEdge(edge: ApiGraphEdge): boolean {
  * Returns nodes with dimensions, labels, icons, badges, and domain data.
  */
 export function mapNodes(apiNodes: ApiGraphNode[], apiEdges: ApiGraphEdge[]): GraphNode[] {
-    // Build a lookup for node labels by ID
+    // Build a lookup for node labels by renderer key
     const nodeLabels = new Map<string, string>();
     for (const node of apiNodes) {
-        nodeLabels.set(node.id, resolveNodeLabel(node));
+        nodeLabels.set(nodeKey(node), resolveNodeLabel(node));
     }
 
     // Build input/output port lists per node from edges
     const inputPorts = new Map<string, GraphNodePort[]>();
     const outputPorts = new Map<string, GraphNodePort[]>();
     for (const edge of apiEdges) {
-        const sourceLabel = nodeLabels.get(edge.source) ?? edge.source;
-        const targetLabel = nodeLabels.get(edge.target) ?? edge.target;
+        const sourceKey = nodeKey(edge.source);
+        const targetKey = nodeKey(edge.target);
+        const sourceLabel = nodeLabels.get(sourceKey) ?? sourceKey;
+        const targetLabel = nodeLabels.get(targetKey) ?? targetKey;
 
         // Target node gets an input port labeled by the source
-        if (!inputPorts.has(edge.target)) {
-            inputPorts.set(edge.target, []);
+        if (!inputPorts.has(targetKey)) {
+            inputPorts.set(targetKey, []);
         }
-        inputPorts.get(edge.target)!.push({ name: edge.source, label: sourceLabel });
+        inputPorts.get(targetKey)!.push({ name: sourceKey, label: sourceLabel });
 
         // Source node gets an output port labeled by the target
-        if (!outputPorts.has(edge.source)) {
-            outputPorts.set(edge.source, []);
+        if (!outputPorts.has(sourceKey)) {
+            outputPorts.set(sourceKey, []);
         }
-        outputPorts.get(edge.source)!.push({ name: edge.target, label: targetLabel });
+        outputPorts.get(sourceKey)!.push({ name: targetKey, label: targetLabel });
     }
 
     return apiNodes.map((node) => {
+        const key = nodeKey(node);
         // Only tool_request nodes show input/output port lists.
         // Dataset and collection nodes show state + badge in the body.
-        const isToolRequest = node.type === "tool_request";
-        const inputs = isToolRequest ? (inputPorts.get(node.id) ?? []) : [];
-        const outputs = isToolRequest ? (outputPorts.get(node.id) ?? []) : [];
-        const inputCount = inputPorts.get(node.id)?.length ?? 0;
-        const outputCount = outputPorts.get(node.id)?.length ?? 0;
+        const isToolRequest = node.src === "tool_request";
+        const inputs = isToolRequest ? (inputPorts.get(key) ?? []) : [];
+        const outputs = isToolRequest ? (outputPorts.get(key) ?? []) : [];
+        const inputCount = inputPorts.get(key)?.length ?? 0;
+        const outputCount = outputPorts.get(key)?.length ?? 0;
         const badge = resolveNodeBadge(node);
 
         // For datasets/collections, use state to determine icon.
@@ -157,14 +165,14 @@ export function mapNodes(apiNodes: ApiGraphNode[], apiEdges: ApiGraphEdge[]): Gr
         const stateKey = displayState as keyof typeof STATES | undefined;
         const stateRep: StateRepresentation | null =
             !isToolRequest && stateKey && stateKey in STATES ? STATES[stateKey] : null;
-        const icon = stateRep?.icon ?? NODE_ICONS[node.type] ?? faFile;
-        const cssClass = NODE_CSS_CLASS[node.type];
+        const icon = stateRep?.icon ?? NODE_ICONS[node.src] ?? faFile;
+        const cssClass = NODE_CSS_CLASS[node.src];
 
         // Data nodes always have a body (badge + state text)
         const hasBody = !isToolRequest;
-        const label = nodeLabels.get(node.id)!;
+        const label = nodeLabels.get(key)!;
         return {
-            id: node.id,
+            id: key,
             x: 0,
             y: 0,
             width: NODE_WIDTH,
@@ -176,10 +184,10 @@ export function mapNodes(apiNodes: ApiGraphNode[], apiEdges: ApiGraphEdge[]): Gr
             inputs,
             outputs,
             data: {
-                type: node.type,
-                typeLabel: NODE_TYPE_LABELS[node.type] ?? node.type,
-                /** Encoded ID without the type prefix (d/c/r) */
-                encodedId: node.id.slice(1),
+                src: node.src,
+                typeLabel: NODE_TYPE_LABELS[node.src] ?? node.src,
+                /** Encoded id of the underlying item (no prefix). */
+                itemId: node.id,
                 toolId: isToolRequest ? node.tool_id : null,
                 inputCount,
                 outputCount,
@@ -199,8 +207,8 @@ export function mapNodes(apiNodes: ApiGraphNode[], apiEdges: ApiGraphEdge[]): Gr
 export function mapEdges(apiEdges: ApiGraphEdge[]): GraphEdge[] {
     return apiEdges.map((edge, idx) => ({
         id: `e${idx}`,
-        source: edge.source,
-        target: edge.target,
+        source: nodeKey(edge.source),
+        target: nodeKey(edge.target),
         cssClass: isCollectionEdge(edge) ? "edge-collection" : "edge-dataset",
         isCollection: isCollectionEdge(edge),
         points: [],

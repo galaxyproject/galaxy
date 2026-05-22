@@ -13,6 +13,8 @@ const categoryDescriptionMap: Record<NotificationCategory, string> = {
     `,
     new_shared_item:
         "You will receive these notifications when someone shares an item with you i.e. a history, workflow, visualization, etc.",
+    storage_operation:
+        "You will receive these notifications when a bulk storage operation completes (including failed outcomes).",
 };
 
 interface NotificationsCategorySettingsProps {

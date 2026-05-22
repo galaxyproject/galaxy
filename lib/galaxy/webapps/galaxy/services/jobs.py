@@ -286,7 +286,6 @@ class JobsService(ServiceBase):
         )
         task_request = QueueJobs(
             user=trans.async_request_user,
-            history_id=target_history and target_history.id,
             tool_source=tool_source,
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,

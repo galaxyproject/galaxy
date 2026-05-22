@@ -193,6 +193,34 @@ class QueryRouterAgent(BaseGalaxyAgent):
             ops = _ops(ctx)
             return await anyio.to_thread.run_sync(ops.get_server_info)
 
+        @agent.tool
+        async def list_file_source_templates(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """List the catalog of remote data repository plugins Galaxy supports.
+
+            Use this when the user asks about uploading to, exporting to, or
+            connecting a remote repository (Omero, Dropbox, S3, Zenodo,
+            Invenio, Google Drive, etc.) -- the result confirms whether that
+            target is supported and surfaces its template id for the
+            configure-then-export flow. Returns plugin templates only; for
+            the user's already-configured connections use
+            ``list_user_file_sources``.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.list_file_source_templates)
+
+        @agent.tool
+        async def list_user_file_sources(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """List the remote-repository file source instances the user has configured.
+
+            Use this when the user asks "what file sources do I have set up?"
+            or needs to reference a specific configured connection (by name or
+            uuid) -- e.g. when picking an Omero instance to export to. Returns
+            only this user's instances. For the catalog of plugin templates
+            available to configure, use ``list_file_source_templates``.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.list_user_file_sources)
+
     def get_system_prompt(self) -> str:
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
         return prompt_path.read_text()

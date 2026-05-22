@@ -548,6 +548,41 @@ mapping:
           How many seconds between instances of short term storage being cleaned up in default
           Celery task configuration.
 
+      bulk_storage_operation_dataset_minimum_days_to_expiration:
+        type: int
+        required: false
+        default: 7
+        desc: |
+          Minimum remaining lifetime, in days, required before a dataset can be moved into an
+          object store with automatic expiration. This prevents moving data into a target store
+          where it would be close to expiring immediately. Defaults to 7 days.
+
+      bulk_storage_operation_completed_run_retention_days:
+        type: int
+        required: false
+        default: 30
+        desc: |
+          How long completed bulk dataset storage operation runs are kept in the database before
+          Galaxy prunes their run records. Snapshot cleanup is handled separately. Defaults to 30 days.
+
+      prune_expired_bulk_storage_operations_interval:
+        type: int
+        required: false
+        default: 86400
+        desc: |
+          How many seconds between attempts to prune expired bulk dataset storage operation
+          snapshots and old completed run records. Set to 0 to disable the periodic pruning task.
+          Defaults to every 24 hours.
+
+      recover_stale_bulk_storage_operation_runs_interval:
+        type: int
+        required: false
+        default: 3600
+        desc: |
+          How many seconds between attempts to recover bulk dataset storage operation runs that
+          were left pending or running after a worker stopped updating them.
+          Defaults to every hour.
+
       file_sources_config_file:
         type: str
         default: file_sources_conf.yml
@@ -4208,6 +4243,24 @@ mapping:
           Set static_responses to a YAML file path to replace all LLM calls with
           deterministic responses for testing:
           inference_services: { static_responses: test/integration/static_agents.yml }
+          Per-agent or default-block ``structured_output_override: true|false``
+          beats the model capability table -- see ``agent_model_capabilities_file``
+          for the table's location and contents.
+
+      agent_model_capabilities_file:
+        type: str
+        default: agent_model_capabilities.yml
+        path_resolves_to: config_dir
+        required: false
+        desc: |
+          YAML file with capability hints for agent inference models. Maps
+          fnmatch-style globs against model names to features such as
+          structured-output (tool-calling / JSON-mode) support. Galaxy ships a
+          sample populated with common model families; admins can drop a file
+          named ``agent_model_capabilities.yml`` in ``config_dir`` to override
+          the shipped table for private models. ``inference_services``
+          ``structured_output_override`` overrides this table for a specific
+          agent or default block.
 
       gtn_database_path:
         type: str

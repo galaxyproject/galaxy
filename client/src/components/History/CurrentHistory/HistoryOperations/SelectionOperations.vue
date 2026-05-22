@@ -42,7 +42,7 @@
                 <span v-localize>Change Database/Build</span>
             </b-dropdown-item>
             <b-dropdown-item
-                v-if="isConfigLoaded && config.enable_celery_tasks"
+                v-if="isCeleryEnabled"
                 data-description="change data type"
                 @click="showChangeDatatypeModal = true">
                 <span v-localize>Change data type</span>
@@ -52,6 +52,14 @@
             </b-dropdown-item>
             <b-dropdown-item data-description="remove tags" @click="showRemoveTagsModal = true">
                 <span v-localize>Remove tags</span>
+            </b-dropdown-item>
+            <b-dropdown-item
+                v-if="isCeleryEnabled && hasSelectableObjectStores"
+                data-description="storage operation"
+                :disabled="isAnonymous"
+                :title="storageOperationTitle"
+                @click="openStorageOperationModal">
+                <span v-localize>Manage Storage Location</span>
             </b-dropdown-item>
             <b-dropdown-divider v-if="showBuildOptions" />
             <b-dropdown-item v-if="showBuildOptions" data-description="auto build list" @click="listWizard(false)">
@@ -123,6 +131,14 @@
             <StatelessTags :key="showRemoveTagsModal" v-model="selectedTags" class="tags" />
             <GTip :tips="['Press Enter after typing each tag.']" />
         </GModal>
+        <StorageOperationWizardModal
+            :show.sync="showStorageOperationModal"
+            :history="history"
+            :filter-text="filterText"
+            :content-selection="contentSelection"
+            :is-query-selection="isQuerySelection"
+            :num-selected="numSelected"
+            @completed="onStorageOperationCompleted" />
         <CollectionCreatorIndex
             v-if="collectionModalType"
             :history-id="history.id"
@@ -157,7 +173,10 @@ import { StatelessTags } from "@/components/Tags";
 import { useConfig } from "@/composables/config";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useCollectionBuilderItemSelection } from "@/stores/collectionBuilderItemsStore";
+import { useObjectStoreStore } from "@/stores/objectStoreStore";
+import { useUserStore } from "@/stores/userStore";
 
+import StorageOperationWizardModal from "./StorageOperationWizardModal.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import GTip from "@/components/BaseComponents/GTip.vue";
 import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIndex.vue";
@@ -171,6 +190,7 @@ export default {
         GModal,
         GTip,
         SingleItemSelector,
+        StorageOperationWizardModal,
         StatelessTags,
     },
     props: {
@@ -185,12 +205,15 @@ export default {
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
         const { confirm } = useConfirmDialog();
+        const objectStoreStore = useObjectStoreStore();
+        const { isAnonymous } = useUserStore();
 
         // Modals for selection operations
         const showChangeDbKeyModal = ref(false);
         const showChangeDatatypeModal = ref(false);
         const showAddTagsModal = ref(false);
         const showRemoveTagsModal = ref(false);
+        const showStorageOperationModal = ref(false);
 
         const selectedDbKey = ref({ id: "?", text: "unspecified (?)" });
         const selectedDatatype = ref({ id: "auto", text: "Auto-detect" });
@@ -205,11 +228,14 @@ export default {
         return {
             config,
             confirm,
+            isAnonymous,
             isConfigLoaded,
+            objectStoreStore,
             showChangeDbKeyModal,
             showChangeDatatypeModal,
             showAddTagsModal,
             showRemoveTagsModal,
+            showStorageOperationModal,
             selectedDbKey,
             selectedDatatype,
             resetDbKey,
@@ -272,6 +298,13 @@ export default {
         noTagsSelected() {
             return this.selectedTags.length === 0;
         },
+        isCeleryEnabled() {
+            return this.isConfigLoaded && this.config.enable_celery_tasks;
+        },
+        hasSelectableObjectStores() {
+            const stores = this.objectStoreStore.selectableObjectStores;
+            return stores != null && stores.some((s) => s.object_store_id && !s.hidden);
+        },
         areAllSelectedPurged() {
             for (const item of this.contentSelection.values()) {
                 if (Object.prototype.hasOwnProperty.call(item, "purged") && !item["purged"]) {
@@ -317,6 +350,12 @@ export default {
         },
         isAnyDeletedStateAllowed() {
             return HistoryFilters.checkFilter(this.filterText, "deleted", "any");
+        },
+        storageOperationTitle() {
+            if (this.isAnonymous) {
+                return this.localize("Log in to") + " " + this.localize("Manage Storage Location");
+            }
+            return this.localize("Manage Storage Location");
         },
     },
     watch: {
@@ -389,6 +428,12 @@ export default {
         addTagsToSelected() {
             this.runOnSelection(addTagsToSelectedContent, { tags: this.selectedTags });
             this.selectedTags = [];
+        },
+        openStorageOperationModal() {
+            this.showStorageOperationModal = true;
+        },
+        onStorageOperationCompleted() {
+            this.$emit("update:show-selection", false);
         },
         removeTagsFromSelected() {
             this.runOnSelection(removeTagsFromSelectedContent, { tags: this.selectedTags });

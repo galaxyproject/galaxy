@@ -1,4 +1,5 @@
 import os
+import xml.etree.ElementTree as ET
 from collections import namedtuple
 
 from sqlalchemy import select
@@ -60,6 +61,29 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         repo = ("devteam", "fastqc", "e7b2202befea")
         self.install_repository(*repo)
         self.uninstall_repository(*repo)
+
+    def test_non_data_manager_install_lands_loc_files_under_shed_subdir(self):
+        """Non-Data-Manager repos install their .loc files under tool_data_path/shed/ (keeping them
+        separate from admin-configured loc files at the tool_data_path root and from anything
+        shipped via tool_data_table_conf.xml.sample). Any <table> entries written to
+        shed_tool_data_table_conf.xml have no <tool_shed_repository> sub-element."""
+        non_dm_repo = ("devteam", "bwa", "051eba708f43")
+        non_dm_loc_files = {"bwa_mem_index.loc"}
+        self.install_repository(*non_dm_repo)
+        shed_loc_dir = os.path.join(self._app.config.tool_data_path, "shed")
+        for loc_file in non_dm_loc_files:
+            shared_loc = os.path.join(shed_loc_dir, loc_file)
+            assert os.path.exists(shared_loc), f"Expected shared loc file at {shared_loc}"
+            # The loc file should NOT also be written at the tool_data_path root.
+            assert not os.path.exists(
+                os.path.join(self._app.config.tool_data_path, loc_file)
+            ), f"Shed loc file should not land at tool_data_path root: {loc_file}"
+        shed_conf = self._app.config.shed_tool_data_table_config
+        if os.path.exists(shed_conf):
+            for table_elem in ET.parse(shed_conf).getroot().findall("table"):
+                assert (
+                    table_elem.find("tool_shed_repository") is None
+                ), f"Table {table_elem.get('name')!r} should not have a <tool_shed_repository> sub-element"
 
     def test_repository_update(self):
         response = self._install_repository(revision=REVISION_4, version="0.0.3", allow_upgraded=True)[0]

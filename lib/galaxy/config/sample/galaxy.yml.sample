@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-#
+# 
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-#
+# 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-#
+# 
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-#
+# 
 #   https://galaxyproject.org/admin/config
-#
+# 
 # Config hackers are encouraged to check there before asking for help.
-#
+# 
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -741,6 +741,27 @@ galaxy:
   # How many seconds between instances of short term storage being
   # cleaned up in default Celery task configuration.
   #short_term_storage_cleanup_interval: 3600
+
+  # Minimum remaining lifetime, in days, required before a dataset can
+  # be moved into an object store with automatic expiration. This
+  # prevents moving data into a target store where it would be close to
+  # expiring immediately. Defaults to 7 days.
+  #bulk_storage_operation_dataset_minimum_days_to_expiration: 7
+
+  # How long completed bulk dataset storage operation runs are kept in
+  # the database before Galaxy prunes their run records. Snapshot
+  # cleanup is handled separately. Defaults to 30 days.
+  #bulk_storage_operation_completed_run_retention_days: 30
+
+  # How many seconds between attempts to prune expired bulk dataset
+  # storage operation snapshots and old completed run records. Set to 0
+  # to disable the periodic pruning task. Defaults to every 24 hours.
+  #prune_expired_bulk_storage_operations_interval: 86400
+
+  # How many seconds between attempts to recover bulk dataset storage
+  # operation runs that were left pending or running after a worker
+  # stopped updating them. Defaults to every hour.
+  #recover_stale_bulk_storage_operation_runs_interval: 3600
 
   # Configured FileSource plugins.
   # The value of this option will be resolved with respect to
@@ -3064,14 +3085,30 @@ galaxy:
   # jupyterlite: { model: gpt-4o } } Set static_responses to a YAML file
   # path to replace all LLM calls with deterministic responses for
   # testing: inference_services: { static_responses:
-  # test/integration/static_agents.yml }
+  # test/integration/static_agents.yml } Per-agent or default-block
+  # ``structured_output_override: true|false`` beats the model
+  # capability table -- see ``agent_model_capabilities_file`` for the
+  # table's location and contents.
   #inference_services: null
+
+  # YAML file with capability hints for agent inference models. Maps
+  # fnmatch-style globs against model names to features such as
+  # structured-output (tool-calling / JSON-mode) support. Galaxy ships a
+  # sample populated with common model families; admins can drop a file
+  # named ``agent_model_capabilities.yml`` in ``config_dir`` to override
+  # the shipped table for private models. ``inference_services``
+  # ``structured_output_override`` overrides this table for a specific
+  # agent or default block.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #agent_model_capabilities_file: agent_model_capabilities.yml
 
   # Path to the SQLite FTS5 database used by the GTN training agent.
   # Resolves against ``data_dir`` so admins can place it in a
   # mutable-data directory. The file is downloaded automatically on
   # first use from ``gtn_database_url`` if it does not exist.
-  # The default value is: gtn/gtn_search.db
+  # The value of this option will be resolved with respect to
+  # <data_dir>.
   #gtn_database_path: gtn/gtn_search.db
 
   # URL used to download the GTN search database when the local file at
@@ -3312,3 +3349,4 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
+

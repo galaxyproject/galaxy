@@ -22,6 +22,7 @@ from typing import (
     Union,
 )
 
+import defusedxml.ElementTree as ET
 import h5py
 import numpy as np
 import pysam
@@ -3219,6 +3220,57 @@ class Xlsx(Binary):
     file_ext = "xlsx"
     compressed = True
     display_behavior = "download"  # Office documents trigger downloads
+
+    MAX_WORKBOOK_XML_BYTES = 4 * 1024 * 1024
+    MAX_SHEET_NAMES = 1024
+    MAX_SHEET_NAME_LEN = 255
+
+    MetadataElement(
+        name="sheet_names",
+        default=[],
+        desc="Names of the sheets in the XLSX file",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    def set_meta(self, dataset, **kwd):
+        super().set_meta(dataset, **kwd)
+        dataset.metadata.sheet_names = self.get_xlsx_sheet_names(dataset.get_file_name())
+
+    def get_xlsx_sheet_names(self, file_path):
+        """Extract sheet names from the workbook part of an XLSX file.
+
+        Reads only ``xl/workbook.xml`` from the zip container, with bounds on
+        the part size, number of sheets, and individual name length so that a
+        crafted file cannot blow up memory or the metadata store.
+        """
+        sheet_names: list[str] = []
+        try:
+            with zipfile.ZipFile(file_path, "r") as zf:
+                info = zf.getinfo("xl/workbook.xml")
+                if info.file_size > self.MAX_WORKBOOK_XML_BYTES:
+                    log.warning(
+                        "xlsx workbook.xml too large (%d bytes); skipping sheet_names for %s",
+                        info.file_size,
+                        file_path,
+                    )
+                    return []
+                with zf.open(info) as f:
+                    root = ET.parse(f).getroot()
+            ns = {"ns": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+            sheets = root.find("ns:sheets", ns)
+            if sheets is not None:
+                for sheet in sheets.findall("ns:sheet", ns):
+                    name = sheet.attrib.get("name")
+                    if name:
+                        sheet_names.append(name[: self.MAX_SHEET_NAME_LEN])
+                    if len(sheet_names) >= self.MAX_SHEET_NAMES:
+                        break
+        except (OSError, KeyError, zipfile.BadZipFile, ET.ParseError) as e:
+            log.warning("Unable to read XLSX sheets from %s: %s", file_path, e)
+        return sheet_names
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.

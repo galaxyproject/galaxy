@@ -11,6 +11,7 @@ import { deleteContent, updateContentFields } from "@/components/History/model/q
 import { useSelectedItems } from "@/composables/selectedItems/selectedItems";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { useStorageOperationsStore } from "@/stores/storageOperationsStore";
 import { useUserStore } from "@/stores/userStore";
 import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 import { setItemDragstart } from "@/utils/setDrag";
@@ -76,6 +77,7 @@ const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistor
 
 const historyStore = useHistoryStore();
 const historyItemsStore = useHistoryItemsStore();
+const storageOperationsStore = useStorageOperationsStore();
 const { currentUser } = storeToRefs(useUserStore());
 
 const historyIdComputed = computed(() => props.history.id);
@@ -109,6 +111,10 @@ const isProcessing = computed(() => {
 
 const historyItems = computed(() => {
     return historyItemsStore.getHistoryItems(props.history.id, filterText.value);
+});
+
+const activeStorageRuns = computed(() => {
+    return storageOperationsStore.getActiveRuns(props.history.id);
 });
 
 const visibleHistoryItems = computed(() => {
@@ -453,6 +459,7 @@ const {
                     :history="history"
                     :editable="canEditHistory"
                     :is-multi-view-item="isMultiViewItem"
+                    :active-storage-runs="activeStorageRuns"
                     :show-selection="showSelection"
                     :expanded-count="expandedCount"
                     :has-matches="hasMatches(historyItems)"

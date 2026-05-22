@@ -1280,7 +1280,7 @@ class TestHistoryGraphApi(ApiTestCase, BaseHistories):
         body = self.dataset_populator.get_history_graph(history_id)
         assert len(body["nodes"]) == 2
         assert body["edges"] == []
-        assert all(n["type"] == "dataset" for n in body["nodes"])
+        assert all(n["src"] == "hda" for n in body["nodes"])
 
     def test_limit_caps_items_and_sets_truncation_flag(self):
         history_id = self.dataset_populator.new_history()
@@ -1293,19 +1293,19 @@ class TestHistoryGraphApi(ApiTestCase, BaseHistories):
     def test_seed_scope_returns_seed_centered_window(self):
         history_id = self.dataset_populator.new_history()
         dataset = self.dataset_populator.new_dataset(history_id, content="seed", wait=True)
-        seed_scope = f"d{dataset['id']}"
-        body = self.dataset_populator.get_history_graph(history_id, seed_scope=seed_scope, limit=5)
+        body = self.dataset_populator.get_history_graph(
+            history_id, seed_scope_src="hda", seed_scope_id=dataset["id"], limit=5
+        )
         assert body["truncated"]["scope_type"] == "seed_centered"
-        assert seed_scope in {n["id"] for n in body["nodes"]}
+        assert ("hda", dataset["id"]) in {(n["src"], n["id"]) for n in body["nodes"]}
 
     # ── query-parameter validation (API-layer regex and bounds) ──
 
     @pytest.mark.parametrize(
         "param,value",
         [
-            ("seed_scope", "xabc"),  # wrong prefix
-            ("seed_scope", "d"),  # prefix but empty body
-            ("seed", "z"),  # wrong prefix
+            ("seed_src", "bogus"),  # not a valid NodeSrc
+            ("seed_scope_src", "tool_request"),  # not allowed as a scope center
             ("limit", 5000),  # above max
             ("depth", 21),  # above max
         ],
@@ -1315,13 +1315,20 @@ class TestHistoryGraphApi(ApiTestCase, BaseHistories):
         response = self.dataset_populator.get_history_graph_raw(history_id, **{param: value})
         self._assert_status_code_is(response, 400)
 
+    def test_seed_src_without_seed_id_is_rejected(self):
+        history_id = self.dataset_populator.new_history()
+        response = self.dataset_populator.get_history_graph_raw(history_id, seed_src="hda")
+        self._assert_status_code_is(response, 400)
+
     # ── manager-level validation (after API regex passes) ──
 
     def test_seed_scope_not_in_target_history_is_rejected(self):
         source_history = self.dataset_populator.new_history()
         dataset = self.dataset_populator.new_dataset(source_history, content="a", wait=True)
         target_history = self.dataset_populator.new_history()
-        response = self.dataset_populator.get_history_graph_raw(target_history, seed_scope=f"d{dataset['id']}")
+        response = self.dataset_populator.get_history_graph_raw(
+            target_history, seed_scope_src="hda", seed_scope_id=dataset["id"]
+        )
         self._assert_status_code_is(response, 404)
 
     # ── auth ──

@@ -1025,6 +1025,161 @@ def get_mcp_app(gx_app):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.run_user_tool(history_id, tool_uuid, inputs)
 
+    # ==================== File sources (remote data repositories) ====================
+
+    @mcp.tool()
+    def list_file_source_templates(api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """List remote-repository plugin templates Galaxy can connect to.
+
+        Returns templates like Omero, Dropbox, S3, Zenodo, Invenio, Google
+        Drive -- the catalog of remote data sources/destinations a user can
+        configure. For the user's already-configured instances use
+        list_user_file_sources().
+        """
+        with _mcp_error_handler("list_file_source_templates"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_file_source_templates()
+
+    @mcp.tool()
+    def list_user_file_sources(api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """List the current user's configured remote-repository file source instances.
+
+        Each instance is an active connection (Omero server, Dropbox account,
+        S3 bucket, etc.) usable as both a data source and an export
+        destination. For the catalog of plugin templates use
+        list_file_source_templates().
+        """
+        with _mcp_error_handler("list_user_file_sources"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_user_file_sources()
+
+    # ==================== IWC ====================
+
+    @mcp.tool()
+    def search_iwc_workflows(query: str, api_key: str, ctx: MCPContext, limit: int = 10) -> dict[str, Any]:
+        """Find IWC (Intergalactic Workflows Commission) workflows matching a query or analysis intent.
+
+        IWC hosts curated, best-practice workflows for common bioinformatics
+        analyses. Ranks workflows by token overlap against name, description,
+        tags, readme, and constituent tool names. Works for both keyword
+        queries ("rnaseq") and natural-language intent
+        ("I have paired-end RNA-seq and want differential expression").
+
+        RECOMMENDED WORKFLOW:
+        1. Search for workflows matching your analysis need
+        2. Review the ranked results -- check step_count for complexity,
+           readme_summary for details, match_score for ranking confidence
+        3. Call get_iwc_workflow_details(trs_id) for full documentation
+        4. Import with import_workflow_from_iwc(trs_id)
+        5. Run with invoke_workflow()
+
+        Args:
+            query: Search query or analysis intent. Case-insensitive. Matches
+                against workflow name, description, tags, readme text, and the
+                names of tools the workflow uses. Examples:
+                - "rnaseq"
+                - "variant calling from whole exome sequencing"
+                - "assemble a bacterial genome from nanopore reads"
+            limit: Maximum number of results to return (default 10).
+
+        Returns:
+            Dict with 'query', 'workflows' (ranked, enriched entries), and
+            'count'. Each workflow entry includes:
+            - trsID: Unique identifier for importing
+            - name, description, tags, categories
+            - readme_summary: First ~300 chars of documentation
+            - step_count: Number of workflow steps (complexity indicator)
+            - authors: List of {name, orcid}
+            - tools_used: Tool names referenced by the workflow
+            - match_score: Token-overlap rank score
+
+        TIP: Be specific. "RNA-seq" matches many workflows, but "differential
+        expression RNA-seq human samples" ranks them more usefully.
+
+        NEXT STEPS:
+        - Get full details: get_iwc_workflow_details(trs_id)
+        - Import to Galaxy: import_workflow_from_iwc(trs_id)
+        """
+        with _mcp_error_handler("search_iwc_workflows"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.search_iwc_workflows(query, limit)
+
+    @mcp.tool()
+    def get_iwc_workflow_details(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """Get comprehensive details about a specific IWC workflow before importing.
+
+        Use this to examine a workflow's full documentation, inputs, and
+        complexity before deciding to import it into your Galaxy instance.
+
+        RECOMMENDED WORKFLOW:
+        1. Find candidates with search_iwc_workflows()
+        2. Call this function with the trsID to get full details
+        3. Review the readme and inputs to ensure it fits your needs
+        4. Import with import_workflow_from_iwc(trs_id)
+
+        Args:
+            trs_id: The TRS (Tool Registry Service) ID from search results.
+                Format: "#workflow/github.com/iwc-workflows/<name>/<branch>"
+                Example: "#workflow/github.com/iwc-workflows/rnaseq-pe/main"
+
+        Returns:
+            Dict with comprehensive workflow information:
+            - trsID, name, description, tags, categories
+            - readme: Full markdown documentation (the real docs)
+            - readme_summary: Truncated version for quick scanning
+            - step_count: Total number of workflow steps
+            - tools_used: Tool names referenced by the workflow
+            - authors: List of {name, orcid}
+
+        ERROR HANDLING:
+        - "not found": Check trsID spelling; use search_iwc_workflows() to find
+          valid IDs.
+
+        NEXT STEPS:
+        - Import workflow: import_workflow_from_iwc(trs_id)
+        - After import, run with invoke_workflow(workflow_id, inputs)
+        """
+        with _mcp_error_handler("get_iwc_workflow_details"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_iwc_workflow_details(trs_id)
+
+    @mcp.tool()
+    def import_workflow_from_iwc(trs_id: str, api_key: str, ctx: MCPContext) -> dict[str, Any]:
+        """Import an IWC workflow into the user's stored workflows.
+
+        The workflow is materialized through Galaxy's standard workflow-import
+        path (workflow_contents_manager.build_workflow_from_raw_description),
+        so it ends up as a private StoredWorkflow owned by the calling user --
+        the same shape any other imported workflow has.
+
+        RECOMMENDED WORKFLOW:
+        1. Find the workflow with search_iwc_workflows()
+        2. Inspect with get_iwc_workflow_details(trs_id) to confirm it's the right one
+        3. Import with this tool, then run with invoke_workflow()
+
+        Args:
+            trs_id: TRS ID of the workflow in the IWC manifest.
+                Format: "#workflow/github.com/iwc-workflows/<name>/<branch>"
+
+        Returns:
+            Dict with the imported workflow's id, name, original trsID, and
+            `missing_tools` -- a list of tool ids referenced by the workflow
+            that are not currently installed in this Galaxy. A non-empty
+            missing_tools list means the workflow imported but won't run
+            until an admin installs the missing tools.
+
+        ERROR HANDLING:
+        - "not found": trsID isn't in the IWC manifest. Use search_iwc_workflows().
+        - "no embedded definition": the manifest entry is malformed; report upstream.
+
+        NEXT STEPS:
+        - Run the workflow: invoke_workflow(workflow_id, history_id, inputs)
+        - Inspect inputs/outputs: get_workflow_details(workflow_id)
+        """
+        with _mcp_error_handler("import_workflow_from_iwc"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.import_workflow_from_iwc(trs_id)
+
     mcp_app = mcp.http_app(path="/")
     mcp_app.state.mcp_server = mcp
 

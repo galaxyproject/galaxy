@@ -16,10 +16,10 @@ Discover some of the most exciting new capabilities and improvements in Galaxy 2
 
 *Galaxy 26.0 brings artificial intelligence directly into the Galaxy experience, expanding how users explore data, discover tools, and troubleshoot analyses.*
 
-ChatGXY: Intelligent Assistance Inside Galaxy
----------------------------------------------
+GalaxyAI: Intelligent Assistance Inside Galaxy
+----------------------------------------------
 
-Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into the interface.
+Galaxy introduces **GalaxyAI**, a built in AI assistant integrated directly into the interface.
 
 - **Conversational help**. Ask questions about tools, workflows, results, or errors without leaving Galaxy.
 - **Error analysis guidance**. Receive contextual explanations and suggestions when jobs fail.
@@ -27,12 +27,12 @@ Galaxy introduces **ChatGXY**, a built in AI assistant integrated directly into 
 - **Training discovery**. Find relevant Galaxy Training Network tutorials directly from within Galaxy.
 - **Extensible architecture**. Built on a flexible agent framework designed to grow with additional specialized AI capabilities over time.
 
-ChatGXY provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
+GalaxyAI provides a conversational entry point to Galaxy's AI capabilities and lays the groundwork for connecting Galaxy users to an expanding set of intelligent capabilities.
 [`#21434 <https://github.com/galaxyproject/galaxy/pull/21434>`__]
 
 .. raw:: html
 
-   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/DQsiSbzMQgE?si=NMSpS2KyEO7AmWSM" title="Galaxy 26.0 - ChatGXY" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+   <iframe width="100%" height="360" style="margin-bottom: 1em;" src="https://www.youtube.com/embed/DQsiSbzMQgE?si=NMSpS2KyEO7AmWSM" title="Galaxy 26.0 - GalaxyAI" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 AI Assisted Notebooks with JupyterLite
 --------------------------------------

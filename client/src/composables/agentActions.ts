@@ -2,6 +2,7 @@
  * Composable for handling AI agent action suggestions in the UI
  */
 
+import axios from "axios";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 import { parse } from "yaml";
@@ -10,6 +11,8 @@ import { type DynamicUnprivilegedToolCreatePayload, GalaxyApi } from "@/api";
 import { useConfig } from "@/composables/config";
 import { useToast } from "@/composables/toast";
 import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 /* eslint-disable no-unused-vars */
 // Action types from backend - values are used in switch/case and icon maps
@@ -20,6 +23,9 @@ export enum ActionType {
     VIEW_EXTERNAL = "view_external",
     SAVE_TOOL = "save_tool",
     REFINE_QUERY = "refine_query",
+    APPLY_PAGE_EDIT = "apply_page_edit",
+    INSERT_PAGE_SECTION = "insert_page_section",
+    WORKFLOW_IMPORT = "workflow_import",
 }
 /* eslint-enable no-unused-vars */
 
@@ -38,6 +44,13 @@ export interface AgentResponse {
     suggestions: ActionSuggestion[];
     metadata: Record<string, any>;
     reasoning?: string;
+}
+
+export interface EditProposal {
+    mode: "full_replacement" | "section_patch";
+    content: string;
+    target_section_heading?: string;
+    new_section_content?: string;
 }
 
 export function useAgentActions() {
@@ -77,6 +90,10 @@ export function useAgentActions() {
 
                 case ActionType.DOCUMENTATION:
                     handleDocumentation(action);
+                    break;
+
+                case ActionType.WORKFLOW_IMPORT:
+                    await handleWorkflowImport(action);
                     break;
 
                 default:
@@ -180,6 +197,39 @@ export function useAgentActions() {
     }
 
     /**
+     * Handle WORKFLOW_IMPORT action - import an IWC workflow by trsID
+     *
+     * Goes through the shared TRS import route (POST /api/workflows with
+     * archive_source=trs_tool) so we share one import code path with the rest
+     * of Galaxy. IWC's catalog is hosted on Dockstore, hence trs_server.
+     * The legacy POST /api/workflows endpoint isn't in the OpenAPI schema,
+     * so this uses axios directly (same pattern as components/Workflow/services.js).
+     */
+    async function handleWorkflowImport(action: ActionSuggestion) {
+        const trsId = action.parameters.trs_id;
+        const name = action.parameters.name || "IWC workflow";
+
+        if (!trsId) {
+            toast.error("No trs_id provided for workflow import action");
+            return;
+        }
+
+        try {
+            const response = await axios.post(withPrefix("/api/workflows"), {
+                archive_source: "trs_tool",
+                trs_server: "dockstore",
+                trs_tool_id: trsId,
+                trs_version_id: "main",
+            });
+            const data = response.data;
+            toast.success(`Imported ${name} from IWC`);
+            router.push(`/workflows/edit?id=${data.id}`);
+        } catch (err) {
+            toast.error(`Failed to import ${name}: ${errorMessageAsString(err)}`);
+        }
+    }
+
+    /**
      * Handle DOCUMENTATION action - open tool documentation
      */
     function handleDocumentation(action: ActionSuggestion) {
@@ -213,6 +263,9 @@ export function useAgentActions() {
             [ActionType.CONTACT_SUPPORT]: "🆘",
             [ActionType.REFINE_QUERY]: "✏️",
             [ActionType.VIEW_EXTERNAL]: "🔗",
+            [ActionType.APPLY_PAGE_EDIT]: "📝",
+            [ActionType.INSERT_PAGE_SECTION]: "➕",
+            [ActionType.WORKFLOW_IMPORT]: "📥",
         };
         return icons[actionType] || "❓";
     }

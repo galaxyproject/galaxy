@@ -48,6 +48,7 @@
     "@fortawesome/free-regular-svg-icons": "^5.15.4",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
     "@fortawesome/vue-fontawesome": "^2.0.9",
+    "@galaxyproject/galaxy-api-client": "workspace:*",
     "@guolao/vue-monaco-editor": "^1.5.4",
     "@handsontable/vue": "^2.0.0",
     "@hirez_io/observer-spy": "^2.1.2",
@@ -73,6 +74,7 @@
     "date-fns": "^2.30.0",
     "decode-uri-component": "^0.2.1",
     "dexie": "^3.2.5",
+    "diff": "^8.0.3",
     "dom-to-image": "^2.6.0",
     "dompurify": "^3.0.6",
     "echarts": "^5.5.1",
@@ -143,6 +145,7 @@
     "yaml": "^2.6.1"
   },
   "scripts": {
+    "postinstall": "pnpm --filter @galaxyproject/galaxy-api-client run build",
     "develop": "NODE_ENV=development vite",
     "build": "NODE_ENV=development node scripts/build.mjs && vite build && pnpm run stage-build",
     "build-production": "NODE_ENV=production node scripts/build.mjs && vite build && pnpm run stage-build",

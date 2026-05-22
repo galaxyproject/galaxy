@@ -25,6 +25,7 @@ from galaxy.schema.generics import (
     PatchGenericPickle,
 )
 from galaxy.schema.schema import Model
+from galaxy.schema.storage_operations import StorageOperationRunState
 from galaxy.schema.types import (
     AbsoluteOrRelativeUrl,
     OffsetNaiveDatetime,
@@ -61,6 +62,7 @@ class PersonalNotificationCategory(str, Enum):
 
     message = "message"
     new_shared_item = "new_shared_item"
+    storage_operation = "storage_operation"
     # TODO: enable this and create content model when we have a hook for completed workflows
     # workflow_execution_completed = "workflow_execution_completed"
 
@@ -115,6 +117,27 @@ class NewSharedItemNotificationContent(Model):
     slug: str = Field(..., title="Slug", description="The slug of the shared item. Used for the link to the item.")
 
 
+class StorageOperationNotificationContent(MessageNotificationContentBase):
+    category: Literal[PersonalNotificationCategory.storage_operation] = PersonalNotificationCategory.storage_operation
+    history_id: EncodedDatabaseIdField = Field(..., title="History ID", description="The encoded history ID.")
+    run_id: EncodedDatabaseIdField = Field(..., title="Run ID", description="The encoded storage operation run ID.")
+    run_url: AbsoluteOrRelativeUrl = Field(
+        ...,
+        title="Run URL",
+        description="Absolute or relative URL to the storage operation run status view.",
+    )
+    mode: str = Field(..., title="Mode", description="Storage operation mode.")
+    state: StorageOperationRunState = Field(
+        ...,
+        title="State",
+        description="The current state of the storage operation run when this notification was generated.",
+    )
+    total_count: int = Field(..., title="Total Count", description="Total datasets in the run.")
+    succeeded_count: int = Field(default=0, title="Succeeded Count", description="Succeeded datasets count.")
+    failed_count: int = Field(default=0, title="Failed Count", description="Failed datasets count.")
+    skipped_count: int = Field(default=0, title="Skipped Count", description="Skipped datasets count.")
+
+
 NotificationContentField = Field(
     default=...,
     discriminator="category",
@@ -126,6 +149,7 @@ AnyUserNotificationContent = Annotated[
     Union[
         MessageNotificationContent,
         NewSharedItemNotificationContent,
+        StorageOperationNotificationContent,
     ],
     NotificationContentField,
 ]

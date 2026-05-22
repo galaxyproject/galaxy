@@ -12,6 +12,7 @@ from typing import (
 
 from sqlalchemy import select
 
+from galaxy.agents import iwc
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.tools import DynamicToolManager
@@ -69,6 +70,7 @@ class AgentOperationsManager:
         self._hda_manager: Optional[HDAManager] = None
         self._dataset_collections_service: Optional[Any] = None
         self._dynamic_tools_manager: Optional[Any] = None
+        self._file_source_instances_manager: Optional[Any] = None
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
@@ -161,6 +163,14 @@ class AgentOperationsManager:
         if self._dynamic_tools_manager is None:
             self._dynamic_tools_manager = self.app[DynamicToolManager]
         return self._dynamic_tools_manager
+
+    @property
+    def file_source_instances_manager(self):
+        if self._file_source_instances_manager is None:
+            from galaxy.managers.file_source_instances import FileSourceInstancesManager
+
+            self._file_source_instances_manager = self.app[FileSourceInstancesManager]
+        return self._file_source_instances_manager
 
     def connect(self) -> dict[str, Any]:
         config = self.app.config
@@ -868,6 +878,78 @@ class AgentOperationsManager:
             },
         }
 
+    # ==================== IWC ====================
+
+    def search_iwc_workflows(self, query: str, limit: int = 10) -> dict[str, Any]:
+        """Rank IWC manifest workflows by token overlap against name, description, tags, and tools."""
+        workflows = iwc.all_workflows(iwc.fetch_manifest())
+        results = iwc.search_workflows(workflows, query, limit=limit)
+        return {
+            "query": query,
+            "workflows": results,
+            "count": len(results),
+        }
+
+    def get_iwc_workflow_details(self, trs_id: str) -> dict[str, Any]:
+        """Return the full enriched entry for a single IWC workflow."""
+        workflows = iwc.all_workflows(iwc.fetch_manifest())
+        for wf in workflows:
+            if wf.get("trsID") == trs_id:
+                return iwc.enrich_workflow(wf, include_full_readme=True)
+        raise ValueError(
+            f"IWC workflow with trsID {trs_id!r} not found. Use search_iwc_workflows() to discover trsIDs."
+        )
+
+    def import_workflow_from_iwc(self, trs_id: str) -> dict[str, Any]:
+        """Import an IWC workflow into the user's stored workflows by TRS id.
+
+        IWC ships its catalog on Dockstore, so this delegates to the shared TRS
+        import pipeline (same one ``POST /api/workflows`` uses for
+        ``archive_source=trs_tool``) rather than building from the manifest's
+        embedded definition. That preserves de-dup by (trs_id, trs_version, user),
+        source-metadata recording, and the shared subworkflow-from-TRS resolution.
+        Tools that aren't installed locally are surfaced as ``missing_tools`` so
+        the agent can flag a workflow that imported but won't run yet.
+        """
+        if not trs_id:
+            raise ValueError("trs_id is required")
+        user = self.trans.user
+        if not user:
+            raise ValueError("User must be authenticated to import a workflow")
+
+        contents_manager = self.app.workflow_contents_manager
+        stored_workflow = contents_manager.get_or_create_workflow_from_trs(
+            self.trans,
+            trs_url=None,
+            trs_id=trs_id,
+            trs_version="main",
+            trs_server="dockstore",
+        )
+
+        missing_tools: list[str] = []
+        latest = stored_workflow.latest_workflow
+        if latest is not None:
+            toolbox = self.app.toolbox
+            seen: set[str] = set()
+            for tool in contents_manager.get_all_tools(latest):
+                tool_id = tool["tool_id"]
+                if tool_id in seen:
+                    continue
+                seen.add(tool_id)
+                if not toolbox.has_tool(
+                    tool_id,
+                    tool_version=tool.get("tool_version"),
+                    tool_uuid=tool.get("tool_uuid"),
+                ):
+                    missing_tools.append(tool_id)
+
+        return {
+            "id": self.trans.security.encode_id(stored_workflow.id),
+            "name": stored_workflow.name,
+            "trsID": trs_id,
+            "missing_tools": missing_tools,
+        }
+
     def get_user(self) -> dict[str, Any]:
         user = self.trans.user
 
@@ -947,3 +1029,35 @@ class AgentOperationsManager:
         }
         result = self.tools_service._create(self.trans, payload)
         return self._encode_ids_in_response(result)
+
+    # ==================== File sources (remote data repositories) ====================
+
+    def list_file_source_templates(self) -> dict[str, Any]:
+        """Return the catalog of file source plugin templates available to configure.
+
+        Each template corresponds to a remote data repository Galaxy can connect
+        to (Omero, Dropbox, S3, Zenodo, etc.). Templates are the catalog; the
+        user instantiates one to get a working file source. Hidden (deprecated)
+        templates are filtered out.
+        """
+        summaries = self.file_source_instances_manager.summaries
+        templates = [t.model_dump(mode="json") for t in summaries.root if not t.hidden]
+        return {
+            "templates": templates,
+            "count": len(templates),
+        }
+
+    def list_user_file_sources(self) -> dict[str, Any]:
+        """Return the file source instances configured by the current user.
+
+        These are the user's active connections to remote data repositories,
+        usable as both data sources and export destinations.
+        """
+        if not self.trans.user:
+            raise ValueError("User must be authenticated")
+        instances = self.file_source_instances_manager.index(self.trans)
+        file_sources = [i.model_dump(mode="json") for i in instances]
+        return {
+            "file_sources": file_sources,
+            "count": len(file_sources),
+        }
