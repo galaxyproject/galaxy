@@ -15,11 +15,16 @@ from pydantic import BaseModel
 
 from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parser.factory import get_tool_source
+from ._inline_tool import (
+    InlineToolInventoryEntry,
+    walk_inline_tools,
+)
 from .toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     parse_toolshed_tool_id,
     ToolShedGetToolInfo,
 )
+from .workflow_tools import load_workflow
 from .workflow_tree import (
     discover_workflows,
     load_workflow_safe,
@@ -35,6 +40,7 @@ class PopulateOptions(BaseModel):
     workflow_path: str
     tool_source: str = "shed"
     galaxy_url: Optional[str] = None
+    offline: bool = False
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "PopulateOptions":
@@ -133,6 +139,33 @@ class StructuralSchemaOptions(BaseModel):
         return cls(**{k: v for k, v in vars(args).items() if k in fields})
 
 
+class ListInlineToolsOptions(BaseModel):
+    workflow_path: str
+    json_output: bool = False
+    verbose: bool = False
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> "ListInlineToolsOptions":
+        kwargs = {"workflow_path": args.workflow_path, "verbose": args.verbose}
+        if "json" in vars(args):
+            kwargs["json_output"] = args.json
+        return cls(**kwargs)
+
+
+class EmbeddedSchemaOptions(BaseModel):
+    workflow_path: str
+    output_dir: str
+    verbose: bool = False
+
+    @classmethod
+    def from_namespace(cls, args: argparse.Namespace) -> "EmbeddedSchemaOptions":
+        return cls(
+            workflow_path=args.workflow_path,
+            output_dir=args.output_dir,
+            verbose=args.verbose,
+        )
+
+
 # -- Core cache operations --
 
 
@@ -187,59 +220,104 @@ def add_tool(tool_info: ToolShedGetToolInfo, tool_id: str, tool_version: Optiona
     return False
 
 
-def populate_cache(tool_info: ToolShedGetToolInfo, path: str, source: str = "auto"):
+def populate_cache(tool_info: ToolShedGetToolInfo, path: str, source: str = "auto", *, offline: bool = False):
     """Populate tool cache from a workflow file or directory (auto-detected).
 
-    Returns (ok_count, fail_count).
+    Returns (ok_count, fail_count). When ``offline=True`` ToolShed fetches
+    are skipped — only the inline-tool inventory is emitted.
     """
     if os.path.isdir(path):
-        return _populate_cache_for_tree(tool_info, path, source=source)
+        return _populate_cache_for_tree(tool_info, path, source=source, offline=offline)
     else:
-        return _populate_cache_for_workflow(tool_info, path, source=source)
+        return _populate_cache_for_workflow(tool_info, path, source=source, offline=offline)
 
 
-def _populate_cache_for_workflow(tool_info: ToolShedGetToolInfo, workflow_path: str, source: str = "auto"):
+def collect_inline_tools(workflow_path: str) -> list[InlineToolInventoryEntry]:
+    """Read a workflow file and return the inline-tool inventory.
+
+    Handles both native ``.ga`` (dict) and format2 (raw dict before
+    normalization). Subworkflows are recursed into via ``walk_inline_tools``.
+    """
+    workflow_dict = load_workflow(workflow_path)
+    return walk_inline_tools(workflow_dict, workflow_path=workflow_path)
+
+
+def _populate_cache_for_workflow(
+    tool_info: ToolShedGetToolInfo, workflow_path: str, source: str = "auto", *, offline: bool = False
+):
     workflow = ensure_native(workflow_path)
     tools = workflow.unique_tools
+    inline_tools = collect_inline_tools(workflow_path)
 
-    if not tools:
+    if not tools and not inline_tools:
         print("No tools found in workflow.")
         return 0, 0
 
-    print(f"Found {len(tools)} tool(s) in workflow:")
     ok, fail = 0, 0
-    for tool_id, tool_version in sorted(tools):
-        if add_tool(tool_info, tool_id, tool_version, source=source):
-            ok += 1
+    if tools:
+        if offline:
+            print(f"Found {len(tools)} ToolShed tool(s) in workflow (skipped — offline):")
+            for tool_id, tool_version in sorted(tools):
+                ver = tool_version or "?"
+                print(f"  {tool_id} {ver}")
         else:
-            fail += 1
+            print(f"Found {len(tools)} ToolShed tool(s) in workflow:")
+            for tool_id, tool_version in sorted(tools):
+                if add_tool(tool_info, tool_id, tool_version, source=source):
+                    ok += 1
+                else:
+                    fail += 1
+    _print_inline_inventory(inline_tools)
 
-    print(f"\nSummary: {ok} cached, {fail} failed")
+    suffix = " (offline — fetches skipped)" if offline and tools else ""
+    print(f"\nSummary: {ok} cached, {fail} failed, {len(inline_tools)} inline (skipped){suffix}")
     return ok, fail
 
 
-def _populate_cache_for_tree(tool_info: ToolShedGetToolInfo, root: str, source: str = "auto"):
+def _populate_cache_for_tree(tool_info: ToolShedGetToolInfo, root: str, source: str = "auto", *, offline: bool = False):
     workflows = discover_workflows(root)
     all_tools = set()
+    inline_tools: list[InlineToolInventoryEntry] = []
     for info in workflows:
         wf_dict = load_workflow_safe(info)
         if wf_dict is not None:
             all_tools.update(ensure_native(wf_dict).unique_tools)
+            inline_tools.extend(walk_inline_tools(wf_dict, workflow_path=info.path))
 
-    if not all_tools:
+    if not all_tools and not inline_tools:
         print(f"No tools found across {len(workflows)} workflow(s).")
         return 0, 0
 
-    print(f"Found {len(all_tools)} unique tool(s) across {len(workflows)} workflow(s):")
     ok, fail = 0, 0
-    for tool_id, tool_version in sorted(all_tools):
-        if add_tool(tool_info, tool_id, tool_version, source=source):
-            ok += 1
+    if all_tools:
+        if offline:
+            print(
+                f"Found {len(all_tools)} unique ToolShed tool(s) across {len(workflows)} workflow(s) "
+                "(skipped — offline)."
+            )
         else:
-            fail += 1
+            print(f"Found {len(all_tools)} unique ToolShed tool(s) across {len(workflows)} workflow(s):")
+            for tool_id, tool_version in sorted(all_tools):
+                if add_tool(tool_info, tool_id, tool_version, source=source):
+                    ok += 1
+                else:
+                    fail += 1
+    _print_inline_inventory(inline_tools)
 
-    print(f"\nSummary: {ok} cached, {fail} failed")
+    suffix = " (offline — fetches skipped)" if offline and all_tools else ""
+    print(f"\nSummary: {ok} cached, {fail} failed, {len(inline_tools)} inline (skipped){suffix}")
     return ok, fail
+
+
+def _print_inline_inventory(inline_tools: list[InlineToolInventoryEntry]) -> None:
+    if not inline_tools:
+        return
+    print(f"\nFound {len(inline_tools)} inline tool(s) (not cached — embedded in workflow):")
+    for entry in inline_tools:
+        path_part = f" [{entry.workflow_path}]" if entry.workflow_path else ""
+        id_part = entry.tool_id or "?"
+        ver_part = f" {entry.tool_version}" if entry.tool_version else ""
+        print(f"  step {entry.step_path}: {entry.inline_class} {id_part}{ver_part}{path_part}")
 
 
 # -- Subcommand entry points --
@@ -247,7 +325,7 @@ def _populate_cache_for_tree(tool_info: ToolShedGetToolInfo, root: str, source: 
 
 def run_populate(options: PopulateOptions):
     tool_info = build_tool_info(options.tool_source_cache_dir, galaxy_url=options.galaxy_url)
-    populate_cache(tool_info, options.workflow_path, source=options.tool_source)
+    populate_cache(tool_info, options.workflow_path, source=options.tool_source, offline=options.offline)
 
 
 def run_add(options: AddOptions):
@@ -402,6 +480,114 @@ def run_schema(options: SchemaOptions):
         print(f"Schema written to {options.output}")
     else:
         print(schema_str)
+
+
+def run_list_inline_tools(options: ListInlineToolsOptions) -> int:
+    """List inline tools embedded in a workflow.
+
+    Walks both native and format2 workflows (subworkflows included) and
+    surfaces ``GalaxyUserTool`` / ``GalaxyTool`` representations. Mirrors
+    the inventory ``populate-workflow`` prints, but returns it as a
+    structured dump suitable for piping into other tooling.
+    """
+    entries = collect_inline_tools(options.workflow_path)
+    if options.json_output:
+        print(json.dumps([e.model_dump() for e in entries], indent=2))
+        return 0
+    if not entries:
+        print("No inline tools found in workflow.")
+        return 0
+    print(f"{len(entries)} inline tool(s):")
+    for entry in entries:
+        id_part = entry.tool_id or "?"
+        ver_part = f" {entry.tool_version}" if entry.tool_version else ""
+        print(f"  step {entry.step_path}: {entry.inline_class} {id_part}{ver_part}")
+    return 0
+
+
+def run_embedded_schema(options: EmbeddedSchemaOptions) -> int:
+    """Walk a workflow and write per-step JSON Schemas for inline UDT steps.
+
+    Filename convention: ``<tool_id>.<version>.<step_id>.schema.json``.
+    Step id guarantees uniqueness when the same ``(tool_id, version)`` is
+    embedded twice. Admin ``class: GalaxyTool`` steps are skipped per the
+    plan's §3 non-goal — they don't have a stable pydantic gate yet.
+    """
+    from galaxy.tool_util.parameters.json import to_json_schema_string
+    from galaxy.tool_util.parameters.state import WorkflowStepToolState
+
+    from ._inline_tool import _parse_inline_tool
+
+    entries = collect_inline_tools(options.workflow_path)
+    udt_entries = [e for e in entries if e.inline_class == "GalaxyUserTool"]
+    if not udt_entries:
+        print("No GalaxyUserTool steps found in workflow.", file=sys.stderr)
+        return 0
+
+    os.makedirs(options.output_dir, exist_ok=True)
+    # Re-walk to recover the raw representation dicts (entries hold metadata only).
+    representations = _collect_inline_representations(options.workflow_path)
+
+    written = 0
+    for entry in udt_entries:
+        rep = representations.get(entry.step_path)
+        if rep is None:
+            continue
+        try:
+            parsed_tool = _parse_inline_tool(rep)
+        except Exception as exc:
+            print(f"Failed to parse inline tool at step {entry.step_path}: {exc}", file=sys.stderr)
+            continue
+        model = WorkflowStepToolState.parameter_model_for(list(parsed_tool.inputs))
+        schema_str = to_json_schema_string(model)
+
+        safe_id = (entry.tool_id or "tool").replace("/", "~")
+        version = entry.tool_version or "_default_"
+        filename = f"{safe_id}.{version}.{entry.step_path}.schema.json"
+        out_path = os.path.join(options.output_dir, filename)
+        with open(out_path, "w") as f:
+            f.write(schema_str)
+            f.write("\n")
+        written += 1
+
+    print(f"Wrote {written} per-step schema(s) to {options.output_dir}")
+    return 0
+
+
+def _collect_inline_representations(workflow_path: str) -> dict[str, dict]:
+    """Re-walk a workflow and map step_path → raw representation dict."""
+    workflow_dict = load_workflow(workflow_path)
+    out: dict[str, dict] = {}
+    _walk_representations(workflow_dict, prefix="", out=out)
+    return out
+
+
+def _walk_representations(workflow_dict: dict, *, prefix: str, out: dict[str, dict]) -> None:
+    if workflow_dict.get("class") == "GalaxyWorkflow":
+        steps = workflow_dict.get("steps", {})
+        if isinstance(steps, list):
+            step_items = [(str(i), s) for i, s in enumerate(steps)]
+        else:
+            step_items = list(steps.items())
+        for step_key, step_def in step_items:
+            label = f"{prefix}{step_key}" if prefix else str(step_key)
+            if not isinstance(step_def, dict):
+                continue
+            run = step_def.get("run")
+            if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
+                _walk_representations(run, prefix=f"{label}.", out=out)
+            elif isinstance(run, dict) and run.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+                out[label] = run
+        return
+    steps = workflow_dict.get("steps", {})
+    for step_index, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
+        label = f"{prefix}{step_index}" if prefix else str(step_index)
+        if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
+            _walk_representations(step_def["subworkflow"], prefix=f"{label}.", out=out)
+            continue
+        rep = step_def.get("tool_representation")
+        if isinstance(rep, dict) and rep.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+            out[label] = rep
 
 
 def run_structural_schema(options: StructuralSchemaOptions):

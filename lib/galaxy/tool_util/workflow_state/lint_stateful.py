@@ -170,6 +170,7 @@ def lint_single(
     training_topic: Optional[str] = None,
     strict_structure: bool = False,
     strict_encoding: bool = False,
+    offline: bool = False,
 ) -> SingleLintReport:
     """Lint a single workflow, return structured report.
 
@@ -203,6 +204,7 @@ def lint_single(
         tool_info,
         policy=policy,
         connections=connections,
+        offline=offline,
     )
 
     # Precheck failure — report structural results only, no state results
@@ -265,12 +267,13 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         training_topic=options.training_topic,
     )
 
-    # Phase 2: stateful validation
+    # Phase 2: stateful validation (also runs inline-source validation per step)
     results, precheck, conn_report = validate_workflow_cli(
         workflow_dict,
         tool_info,
         policy=policy,
         connections=options.connections,
+        offline=options.offline,
     )
 
     # Precheck failure — show structural results, note stateful was skipped
@@ -308,8 +311,26 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     exit_code = _combined_exit_code(lint_context, results, options.strict_state)
     if conn_report and not conn_report.valid:
         exit_code = max(exit_code, 1)
+    exit_code = max(exit_code, _inline_source_exit_code(results, options.strict_inline_source))
 
     return exit_code
+
+
+def _inline_source_exit_code(results: List[ValidationStepResult], strict_inline_source: bool) -> int:
+    """Compute incremental exit code from inline-source diagnostics.
+
+    Plan §7.3 ("Errors fail per existing strict-* axes"): both pydantic
+    validation errors *and* lint errors are gated by ``--strict-inline-source``.
+    Lint warnings never fail by default.
+    """
+    has_lint_errors = any(r.inline_source and r.inline_source.lint_errors for r in results)
+    has_validation_errors = any(r.inline_source and r.inline_source.validation_errors for r in results)
+    has_lint_warnings = any(r.inline_source and r.inline_source.lint_warnings for r in results)
+    if (has_lint_errors or has_validation_errors) and strict_inline_source:
+        return 1
+    if has_lint_warnings:
+        return EXIT_CODE_LINT_FAILED
+    return 0
 
 
 def _lint_context_exit_code(lint_context: LintContext) -> int:
@@ -346,11 +367,20 @@ def _combined_exit_code(
 def _format_lint_tree_text(report: LintTreeReport, summary_only: bool = False) -> str:
     """Render LintTreeReport as human-readable text."""
     s = report.summary
-    lines = [
-        f"Root: {report.root}",
+    inline = report.inline_source_summary
+    header = (
         f"Workflows: {len(report.results)} | "
         f"Lint: {s['lint_errors']} errors, {s['lint_warnings']} warnings | "
-        f"State: {s['state_ok']} OK, {s['state_fail']} FAIL, {s['state_skip']} SKIP",
+        f"State: {s['state_ok']} OK, {s['state_fail']} FAIL, {s['state_skip']} SKIP"
+    )
+    if any(inline[k] for k in ("invalid", "lint_errors", "lint_warnings", "unsupported")):
+        header += (
+            f" | Inline source: {inline['invalid']} INVALID, {inline['lint_errors']} LINT ERROR, "
+            f"{inline['lint_warnings']} LINT WARN, {inline['unsupported']} UNSUPPORTED"
+        )
+    lines = [
+        f"Root: {report.root}",
+        header,
         "",
     ]
     if not summary_only:
@@ -414,6 +444,7 @@ def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
             get_tool_info,
             policy=policy,
             connections=options.connections,
+            offline=options.offline,
         )
 
         if precheck and not precheck.can_process:
@@ -466,11 +497,14 @@ def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
 
     def compute_exit_code(report: LintTreeReport) -> int:
         s = report.summary
+        inline = report.inline_source_summary
         if s["lint_errors"] > 0 or s["state_fail"] > 0 or s["errors"] > 0:
+            return 1
+        if (inline["invalid"] > 0 or inline["lint_errors"] > 0) and options.strict_inline_source:
             return 1
         if s["state_skip"] > 0 and options.strict_state:
             return 2
-        if s["lint_warnings"] > 0:
+        if s["lint_warnings"] > 0 or inline["lint_warnings"] > 0:
             return EXIT_CODE_LINT_FAILED
         return 0
 

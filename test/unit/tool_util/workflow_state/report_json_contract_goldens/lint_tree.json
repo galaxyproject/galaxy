@@ -6,6 +6,12 @@
         {
           "category": "catA",
           "error": null,
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
           "lint_errors": 0,
           "lint_warnings": 2,
           "name": "wf_ok.ga",
@@ -13,6 +19,7 @@
           "results": [
             {
               "errors": [],
+              "inline_source": null,
               "status": "ok",
               "step": "1",
               "tool_id": "cat1",
@@ -29,6 +36,12 @@
         {
           "category": "catA",
           "error": null,
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
           "lint_errors": 1,
           "lint_warnings": 0,
           "name": "wf_fail.ga",
@@ -38,6 +51,7 @@
               "errors": [
                 "missing required key"
               ],
+              "inline_source": null,
               "status": "fail",
               "step": "1",
               "tool_id": "Grep1",
@@ -45,6 +59,7 @@
             },
             {
               "errors": [],
+              "inline_source": null,
               "status": "skip_tool_not_found",
               "step": "2",
               "tool_id": "missing_tool",
@@ -66,6 +81,7 @@
         {
           "category": "catB",
           "error": "lint exploded",
+          "inline_source_summary": null,
           "lint_errors": 0,
           "lint_warnings": 0,
           "name": "wf_err.ga",
@@ -77,6 +93,12 @@
       ]
     }
   ],
+  "inline_source_summary": {
+    "invalid": 0,
+    "lint_errors": 0,
+    "lint_warnings": 0,
+    "unsupported": 0
+  },
   "root": "/tmp/workflows",
   "summary": {
     "errors": 1,
@@ -91,6 +113,12 @@
     {
       "category": "catA",
       "error": null,
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
       "lint_errors": 0,
       "lint_warnings": 2,
       "name": "wf_ok.ga",
@@ -98,6 +126,7 @@
       "results": [
         {
           "errors": [],
+          "inline_source": null,
           "status": "ok",
           "step": "1",
           "tool_id": "cat1",
@@ -114,6 +143,12 @@
     {
       "category": "catA",
       "error": null,
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
       "lint_errors": 1,
       "lint_warnings": 0,
       "name": "wf_fail.ga",
@@ -123,6 +158,7 @@
           "errors": [
             "missing required key"
           ],
+          "inline_source": null,
           "status": "fail",
           "step": "1",
           "tool_id": "Grep1",
@@ -130,6 +166,7 @@
         },
         {
           "errors": [],
+          "inline_source": null,
           "status": "skip_tool_not_found",
           "step": "2",
           "tool_id": "missing_tool",
@@ -146,6 +183,7 @@
     {
       "category": "catB",
       "error": "lint exploded",
+      "inline_source_summary": null,
       "lint_errors": 0,
       "lint_warnings": 0,
       "name": "wf_err.ga",

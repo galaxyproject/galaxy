@@ -25,10 +25,12 @@ from typing import (
 from jsonschema import Draft202012Validator
 from typing_extensions import Literal
 
+from ._inline_tool import resolve_for_step
 from ._state_merge import inject_connections_into_state
 from ._types import GetToolInfo
 from ._util import (
     step_input_connections,
+    step_is_inline_tool,
     step_tool_state,
 )
 
@@ -118,16 +120,26 @@ def _build_tool_state_validator(
     representation: str = "workflow_step",
 ) -> Optional[Draft202012Validator]:
     """Build a JSON Schema validator for a tool's state."""
+    parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
+    if parsed_tool is None:
+        return None
+    return _build_tool_state_validator_from_parsed_tool(parsed_tool, representation=representation)
+
+
+def _build_tool_state_validator_from_parsed_tool(
+    parsed_tool, representation: str = "workflow_step"
+) -> Draft202012Validator:
+    """Build a JSON Schema validator from an already-resolved ParsedTool.
+
+    Lets inline-UDT callers reuse the parsed tool from ``resolve_for_step``
+    without round-tripping through a :class:`GetToolInfo` cache.
+    """
     from galaxy.tool_util.parameters.json import to_json_schema
     from galaxy.tool_util.parameters.state import (
         WorkflowStepLinkedToolState,
         WorkflowStepNativeToolState,
         WorkflowStepToolState,
     )
-
-    parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
-    if parsed_tool is None:
-        return None
 
     _state_cls_map = {
         "workflow_step": WorkflowStepToolState,
@@ -144,14 +156,36 @@ def _load_tool_state_validator_from_dir(
     tool_id: str,
     tool_version: Optional[str],
     schema_dir: str,
+    *,
+    step_path: Optional[str] = None,
 ) -> Optional[Draft202012Validator]:
     """Load a pre-exported tool state JSON Schema from a directory.
 
-    Directory layout: {schema_dir}/{safe_tool_id}/{version}.json
-    where safe_tool_id replaces '/' with '~' to match TRS ID convention.
+    Two naming schemes coexist on disk:
+
+    * **Per-step (inline)**: ``{schema_dir}/{safe_tool_id}.{version}.{step_path}.schema.json``.
+      Used by ``galaxy-tool-cache embedded-schema`` for inline UDT steps —
+      step path guarantees uniqueness when the same ``(tool_id, version)``
+      is embedded twice in the same workflow.
+    * **Cacheable**: ``{schema_dir}/{safe_tool_id}/{version}.json``. Used by
+      ``galaxy-tool-cache schema`` for ToolShed tools shared across
+      workflows.
+
+    Inline steps consult per-step first, then fall through to cacheable;
+    non-inline steps (``step_path=None``) only consult cacheable.
     """
     safe_id = tool_id.replace("/", "~")
     version = tool_version or "_default_"
+
+    # Per-step inline lookup (preferred for inline UDT steps).
+    if step_path is not None:
+        inline_path = os.path.join(schema_dir, f"{safe_id}.{version}.{step_path}.schema.json")
+        if os.path.exists(inline_path):
+            with open(inline_path) as f:
+                schema = json.load(f)
+            return Draft202012Validator(schema)
+
+    # Cacheable fallback.
     tool_dir = os.path.join(schema_dir, safe_id)
     path = os.path.join(tool_dir, f"{version}.json")
     if not os.path.exists(path):
@@ -205,7 +239,8 @@ def validate_workflow_json_schema(
             continue
 
         tool_id = step.get("tool_id")
-        if not tool_id:
+        is_inline = step_is_inline_tool(step)
+        if not tool_id and not is_inline:
             continue
 
         tool_version = step.get("tool_version")
@@ -221,21 +256,28 @@ def validate_workflow_json_schema(
             )
             continue
 
-        cache_key = f"{tool_id}@{tool_version}"
+        # Resolve through the inline-aware resolver. For format2, ``step``
+        # is a raw dict here; resolve_for_step's StepLike accepts it.
+        parsed_tool = None
+        if get_tool_info is not None:
+            parsed_tool = resolve_for_step(get_tool_info, step)
+
+        effective_tool_id = tool_id or (parsed_tool.id if parsed_tool else None)
+        effective_version = tool_version or (parsed_tool.version if parsed_tool else None)
+
+        cache_key = f"{effective_tool_id}@{effective_version}@{step_key if is_inline else '-'}"
         if cache_key not in _validator_cache:
             validator = None
-            if tool_schema_dir:
-                validator = _load_tool_state_validator_from_dir(tool_id, tool_version, tool_schema_dir)
-            if validator is None and get_tool_info is not None:
+            if tool_schema_dir and effective_tool_id is not None:
+                step_path = step_key if is_inline else None
+                validator = _load_tool_state_validator_from_dir(
+                    effective_tool_id, effective_version, tool_schema_dir, step_path=step_path
+                )
+            if validator is None and parsed_tool is not None:
                 try:
-                    validator = _build_tool_state_validator(
-                        tool_id,
-                        tool_version,
-                        get_tool_info,
-                        representation=representation,
-                    )
+                    validator = _build_tool_state_validator_from_parsed_tool(parsed_tool, representation=representation)
                 except Exception:
-                    log.debug(f"Failed to build validator for {tool_id}", exc_info=True)
+                    log.debug(f"Failed to build validator for {effective_tool_id}", exc_info=True)
             _validator_cache[cache_key] = validator
 
         validator = _validator_cache.get(cache_key)
@@ -243,7 +285,7 @@ def validate_workflow_json_schema(
             result.step_results.append(
                 JsonSchemaStepResult(
                     step=step_key,
-                    tool_id=tool_id,
+                    tool_id=effective_tool_id,
                     errors=[],
                     status="skip",
                 )
@@ -255,7 +297,7 @@ def validate_workflow_json_schema(
         result.step_results.append(
             JsonSchemaStepResult(
                 step=step_key,
-                tool_id=tool_id,
+                tool_id=effective_tool_id,
                 errors=step_errors,
                 status="fail" if step_errors else "ok",
             )
@@ -322,17 +364,13 @@ def validate_native_workflow_json_schema(
             continue
 
         tool_id = step_def.get("tool_id")
-        if not tool_id:
+        is_inline = step_is_inline_tool(step_def)
+        if not tool_id and not is_inline:
             continue
 
-        tool_version = step_def.get("tool_version")
-        cache_key = f"{tool_id}@{tool_version}"
-
-        # Resolve parsed tool (needed for connection injection)
-        if cache_key not in _parsed_tool_cache:
-            _parsed_tool_cache[cache_key] = get_tool_info.get_tool_info(tool_id, tool_version)
-        parsed_tool = _parsed_tool_cache[cache_key]
-
+        # Resolve parsed tool through the shared resolver — picks up inline
+        # UDTs locally without touching the network.
+        parsed_tool = resolve_for_step(get_tool_info, step_def)
         if parsed_tool is None:
             result.step_results.append(
                 JsonSchemaStepResult(
@@ -340,6 +378,13 @@ def validate_native_workflow_json_schema(
                 )
             )
             continue
+
+        # Inline UDT steps clear ``tool_id`` on export; use the parsed
+        # tool's id for cache key + diagnostics labelling.
+        effective_tool_id = tool_id or parsed_tool.id
+        tool_version = step_def.get("tool_version") or parsed_tool.version
+        cache_key = f"{effective_tool_id}@{tool_version}@{step_key if is_inline else '-'}"
+        _parsed_tool_cache[cache_key] = parsed_tool
 
         # Prepare state: decode → inject connections
         tool_state = step_tool_state(step_def)
@@ -349,7 +394,11 @@ def validate_native_workflow_json_schema(
         if scan.classification == ReplacementClassification.YES:
             result.step_results.append(
                 JsonSchemaStepResult(
-                    step=step_key, tool_id=tool_id, errors=[], status="skip", skip_reason="replacement_params"
+                    step=step_key,
+                    tool_id=effective_tool_id,
+                    errors=[],
+                    status="skip",
+                    skip_reason="replacement_params",
                 )
             )
             continue
@@ -363,19 +412,24 @@ def validate_native_workflow_json_schema(
         if cache_key not in _validator_cache:
             validator = None
             if tool_schema_dir:
-                validator = _load_tool_state_validator_from_dir(tool_id, tool_version, tool_schema_dir)
+                step_path = step_key if is_inline else None
+                validator = _load_tool_state_validator_from_dir(
+                    effective_tool_id, tool_version, tool_schema_dir, step_path=step_path
+                )
             if validator is None:
                 try:
-                    validator = _build_tool_state_validator(
-                        tool_id, tool_version, get_tool_info, representation="workflow_step_native"
+                    validator = _build_tool_state_validator_from_parsed_tool(
+                        parsed_tool, representation="workflow_step_native"
                     )
                 except Exception:
-                    log.debug(f"Failed to build native validator for {tool_id}", exc_info=True)
+                    log.debug(f"Failed to build native validator for {effective_tool_id}", exc_info=True)
             _validator_cache[cache_key] = validator
 
         validator = _validator_cache.get(cache_key)
         if validator is None:
-            result.step_results.append(JsonSchemaStepResult(step=step_key, tool_id=tool_id, errors=[], status="skip"))
+            result.step_results.append(
+                JsonSchemaStepResult(step=step_key, tool_id=effective_tool_id, errors=[], status="skip")
+            )
             continue
 
         errors = sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))
@@ -383,7 +437,7 @@ def validate_native_workflow_json_schema(
         result.step_results.append(
             JsonSchemaStepResult(
                 step=step_key,
-                tool_id=tool_id,
+                tool_id=effective_tool_id,
                 errors=step_errors,
                 status="fail" if step_errors else "ok",
             )

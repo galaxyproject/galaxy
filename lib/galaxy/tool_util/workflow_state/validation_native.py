@@ -8,6 +8,7 @@ from gxformat2.normalized import NormalizedNativeWorkflow
 
 from galaxy.tool_util.parameters import WorkflowStepNativeToolState
 from galaxy.tool_util_models import ParsedTool
+from ._inline_tool import resolve_for_step
 from ._state_merge import inject_connections_into_state
 from ._types import (
     GetToolInfo,
@@ -16,9 +17,7 @@ from ._types import (
 )
 from ._util import (
     step_input_connections,
-    step_tool_id,
     step_tool_state,
-    step_tool_version,
     StepLike,
 )
 from .legacy_parameters import (
@@ -63,11 +62,7 @@ def validate_step_native(step: StepLike, get_tool_info: GetToolInfo):
 
 
 def get_parsed_tool_for_native_step(step: StepLike, get_tool_info: GetToolInfo) -> Optional[ParsedTool]:
-    tool_id = step_tool_id(step)
-    if not tool_id:
-        return None
-    tool_version = step_tool_version(step)
-    return get_tool_info.get_tool_info(tool_id, tool_version)
+    return resolve_for_step(get_tool_info, step)
 
 
 def validate_workflow_native(

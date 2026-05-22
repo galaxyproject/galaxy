@@ -562,7 +562,7 @@ def roundtrip_native_step(
     if step.is_subworkflow_step:
         return _roundtrip_subworkflow_step(step, step_id, get_tool_info)
 
-    if not step.is_tool_step or not tool_id:
+    if not step.is_tool_step or (not tool_id and not step.tool_representation):
         return StepResult(step_id=step_id, tool_id=tool_id, success=True)
 
     try:

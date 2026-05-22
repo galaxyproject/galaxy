@@ -17,6 +17,7 @@ from galaxy.tool_util.parameters import (
     SelectParameterModel,
     ToolParameterT,
 )
+from ._inline_tool import resolve_for_step
 from ._types import (
     Format2StateDict,
     GetToolInfo,
@@ -288,11 +289,8 @@ def make_encode_tool_state(get_tool_info: GetToolInfo):
 
     def _encode(step: dict, state: dict) -> Optional[Dict[str, Any]]:
         tool_id = step.get("tool_id")
-        tool_version = step.get("tool_version")
-        if not tool_id:
-            return None
         try:
-            tool_info = get_tool_info.get_tool_info(tool_id, tool_version)
+            tool_info = resolve_for_step(get_tool_info, step)
             if tool_info is None:
                 return None
             return encode_state_to_native(tool_info, state)
