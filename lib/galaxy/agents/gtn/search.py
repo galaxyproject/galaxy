@@ -17,7 +17,6 @@ from typing import (
     Optional,
 )
 
-#from langchain_community.vectorstores import Chroma
 from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
@@ -123,13 +122,18 @@ class SearchResult:
 class VectorSearchDbResult:
     """Represents a search result from vector store db."""
 
-    type: str
+    id: str
+    title: str
     topic: str
     tutorial: str
-    page_content: str
     url: str
     score: float
     source: str
+    difficulty: str
+    time_estimation: str
+    description: str
+    snippet: str
+    content: str
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization.
@@ -138,16 +142,19 @@ class VectorSearchDbResult:
         construct get_tutorial_content calls, keeping token usage low.
         Includes ``score`` so the agent can gauge match quality.
         """
-        # Truncate page_content to reasonable length for LLM processing
-        
         return {
-            "type": self.type,
+            "id": self.id,
+            "title": self.title,
             "topic": self.topic,
             "tutorial": self.tutorial,
-            "page_content": self.page_content,
-            "score": round(self.score, 2),
             "url": self.url,
-            "source": self.source
+            "difficulty": self.difficulty,
+            "time_estimation": self.time_estimation,
+            "description": self.description,
+            "snippet": self.snippet,
+            "content": self.content,
+            "score": round(self.score, 2),
+            "source": self.source,
         }
 
 
@@ -444,25 +451,13 @@ class GTNSearchDB:
     def search_vector_db(
         self,
         query: str,
+        embeddings: OpenAIEmbeddings,
+        persist_dir: Path,
         collection_name: str = "gtn_tutorials",
         limit: int = 2,
         doc_type: Optional[str] = None,
     ) -> list[VectorSearchDbResult]:
         try:
-            # Initialize embeddings
-
-            embeddings = OpenAIEmbeddings(
-                base_url="https://api.deepinfra.com/v1/openai",
-                model="BAAI/bge-large-en-v1.5",
-                api_key="",
-                tiktoken_enabled=False,  # Disable tiktoken to avoid DNS issues with custom models
-                check_embedding_ctx_length=False  # Disable context length checking
-            )
-
-            GTN_VECTOR_CHROMADB_URL = "/home/anup/galaxycodes/galaxy/vector_search_agent/galaxy/lib/galaxy/agents/gtn/chroma_db_composite/"
-
-            persist_dir = GTN_VECTOR_CHROMADB_URL
-            
             # Check if the persist directory exists
             if not Path(persist_dir).exists():
                 log.warning(f"ChromaDB persist directory does not exist: {persist_dir}")
@@ -482,25 +477,36 @@ class GTNSearchDB:
             vector_results = []
 
             for i, (doc, score) in enumerate(results_with_scores, start=1):
+                source_id = doc.metadata.get("source")
+                parent_docs = vectorstore.get(where={"source": source_id})
+                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                parent_context_docs = ""
+                for d in parent_docs["documents"][:10]:
+                    parent_context_docs += d + " "
+
                 result = VectorSearchDbResult(
-                    type=doc.metadata.get("type"),
+                    id=doc.metadata.get("title"),
+                    title=doc.metadata.get("title"),
+                    description=f" {doc.metadata.get('topic')} {doc.metadata.get('title')} ",
                     topic=doc.metadata.get("topic"),
                     tutorial=doc.metadata.get("tutorial"),
-                    page_content=str(doc.page_content),
-                    score=score,
                     url=doc.metadata.get("url"),
-                    source=doc.metadata.get("data_source"),
+                    score=score,
+                    source=doc.metadata.get("source"),
+                    difficulty=doc.metadata.get("difficulty"),
+                    time_estimation=doc.metadata.get("time_estimation"),
+                    snippet=str(doc.page_content),
+                    content=parent_context_docs,
                 )
                 vector_results.append(result)
 
             log.info(f"Processed {len(vector_results)} vector DB search results")
-            for i, result in enumerate(vector_results[:3]):  # Log first 3 results
-                log.debug(f"Result {i+1}: score={result.score:.3f}, source={result.source}")
+            for i, result in enumerate(vector_results):
+                log.debug(f"Result {i+1}: score={result.score:.3f}, source={result.source}, title={result.title}")
 
             return vector_results
-            
         except Exception as e:
-            log.error(f"Vector DB search failed: {e}")
+            log.warning(f"Vector DB GTN search failed for query '{query}': {e}")
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:

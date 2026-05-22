@@ -32,8 +32,11 @@ from .base import (
     normalize_llm_text,
 )
 from .gtn import GTNSearchDB
+from langchain_openai import OpenAIEmbeddings
 
 log = logging.getLogger(__name__)
+
+GTN_TRAINING_BASE_URL = "https://training.galaxyproject.org/training-material"
 
 
 class GTNSearchResponse(BaseModel):
@@ -82,6 +85,51 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         )
 
         @agent.tool
+        async def search_gtn_tutorial_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            topic: Optional[str] = None,
+            difficulty: Optional[str] = None,
+            hands_on_only: bool = False,
+            limit: int = 2,
+        ) -> str:
+            """Search GTN tutorials using full-text search over titles, descriptions, and content."""
+            if not self.gtn_db:
+                return json.dumps({"error": "GTN database not available"})
+            try:
+                self.persist_dir = Path(
+                    getattr(self.deps.config, "vector_database_path", None)
+                )
+                embedding_base_url = (
+                    getattr(self.deps.config, "embedding_api_base_url", None)
+                )
+                embedding_model = getattr(self.deps.config, "embedding_model", None)
+                embedding_api_key = getattr(self.deps.config, "embedding_api_key", None) or ""
+
+                self.embeddings = OpenAIEmbeddings(
+                    base_url=embedding_base_url,
+                    model=embedding_model,
+                    api_key=embedding_api_key,
+                    tiktoken_enabled=False,  # Disable tiktoken to avoid DNS issues with custom models
+                    check_embedding_ctx_length=False  # Disable context length checking
+                )
+                results = self.gtn_db.search_vector_db(query=query, embeddings=self.embeddings, persist_dir=self.persist_dir, collection_name="gtn_tutorials", limit=limit)
+                log.info(f"GTN search found {len(results)} results, vector search found {len(results)} results for query: '{query}'")
+                log.info(f"Vector search results: {results}")
+                log.info(f"Vector search results (dict): {[r.to_dict() for r in results]}")
+                
+
+                return json.dumps(
+                    {
+                        "results": [r.to_dict() for r in results],
+                        "count": len(results)
+                    }
+                )
+            except (AttributeError, KeyError, TypeError) as e:
+                log.warning(f"GTN vector search failed: {e}")
+                return json.dumps({"error": str(e)})
+
+        @agent.tool
         async def search_gtn_tutorials(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
@@ -109,33 +157,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 )
             except Exception as e:
                 log.warning(f"GTN search failed: {e}")
-                return json.dumps({"error": str(e)})
-            
-        @agent.tool
-        async def search_gtn_tutorial_vectors(
-            ctx: RunContext[GalaxyAgentDependencies],
-            query: str,
-            topic: Optional[str] = None,
-            difficulty: Optional[str] = None,
-            hands_on_only: bool = False,
-            limit: int = 2,
-        ) -> str:
-            """Search GTN tutorials using full-text search over titles, descriptions, and content."""
-            if not self.gtn_db:
-                return json.dumps({"error": "GTN database not available"})
-            try:
-                results = self.gtn_db.search_vector_db(query=query, limit=limit)
-                log.info(f"GTN search found {len(results)} results, vector search found {len(results)} results for query: '{query}'")
-
-                return json.dumps(
-                    {
-                        #"results": [r.to_dict() for r in results],
-                        #"count": len(results),
-                        "tutorials": [r.to_dict() for r in results] 
-                    }
-                )
-            except (AttributeError, KeyError, TypeError) as e:
-                log.warning(f"GTN vector search failed: {e}")
                 return json.dumps({"error": str(e)})
 
         @agent.tool
@@ -223,6 +244,110 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
+        if not self.gtn_db:
+            return self._build_response(
+                content="GTN database is not available. Please ensure it's properly initialized.",
+                confidence=ConfidenceLevel.LOW,
+                method="error",
+                query=query,
+                error="gtn_database_unavailable",
+            )
+
+        try:
+            message_history = self._extract_message_history(context)
+            log.info(f"Context: {context}")
+            result = await self._run_with_retry(query, message_history=message_history)
+            log.info(f"LLM raw response: {result}")
+            usage = extract_usage_info(result)
+            if usage:
+                log.info(
+                    "GTN agent token usage: input=%s output=%s total=%s (query_len=%d)",
+                    usage.get("input_tokens", 0),
+                    usage.get("output_tokens", 0),
+                    usage.get("total_tokens", 0),
+                    len(query),
+                )
+
+            if self._supports_structured_output():
+                response_data = extract_structured_output(result, GTNSearchResponse, log)
+                if response_data is None:
+                    return self._build_response(
+                        content=extract_result_content(result),
+                        confidence=ConfidenceLevel.LOW,
+                        method="text_fallback",
+                        result=result,
+                        query=query,
+                        error="invalid_structured_output",
+                    )
+                log.info(f"Response data is not None, tutorials found: {response_data}")
+                used_fallback = False
+                if not response_data.tutorials and not response_data.faqs:
+                    log.info("Performing vector search")
+                    vector_tutorials = self._search_vector_tutorials_for_response(query)
+                    if vector_tutorials:
+                        log.info("Vector search successful, found tutorials to use in response")
+                        log.info("Found %d tutorials from vector search, using these results", len(vector_tutorials))
+                        log.info(f"Vector search tutorials: {vector_tutorials}")
+                        used_fallback = True
+                        response_data = GTNSearchResponse(
+                            tutorials=vector_tutorials,
+                            summary=response_data.summary
+                            or f"Found {len(vector_tutorials)} GTN tutorial matches from vector search.",
+                            learning_path=response_data.learning_path,
+                            prerequisites=response_data.prerequisites,
+                            total_time=response_data.total_time,
+                        )
+                if not response_data.tutorials and not response_data.faqs:
+                    log.info("No tutorials or FAQs in response, falling back to direct search")
+                    fallback_results = self.gtn_db.search(query, limit=5)
+                    if fallback_results:
+                        used_fallback = True
+                        response_data = GTNSearchResponse(
+                            tutorials=[r.to_dict() for r in fallback_results],
+                            summary=f"Found {len(fallback_results)} tutorials related to your query",
+                        )
+
+                return self._build_response(
+                    content=self._format_gtn_response(response_data),
+                    confidence=(
+                        ConfidenceLevel.HIGH
+                        if response_data.tutorials or response_data.faqs
+                        else ConfidenceLevel.MEDIUM
+                    ),
+                    method="structured_with_fallback" if used_fallback else "structured",
+                    result=result,
+                    query=query,
+                    suggestions=self._create_suggestions(response_data),
+                    agent_data={
+                        "tutorial_count": len(response_data.tutorials),
+                        "faq_count": len(response_data.faqs),
+                        "has_learning_path": bool(response_data.learning_path),
+                        "total_time": response_data.total_time,
+                    },
+                )
+
+            # Simple-text path for backends that don't support structured output.
+            response_text = extract_result_content(result)
+            parsed_result = self._parse_simple_response(response_text)
+            return self._build_response(
+                content=parsed_result.get("content", response_text),
+                confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                method="simple_text",
+                result=result,
+                query=query,
+                suggestions=parsed_result.get("suggestions", []),
+                agent_data={"tutorial_count": parsed_result.get("tutorial_count", 0)},
+            )
+
+        except (OSError, ValueError) as e:
+            log.error(f"GTN training agent error: {e}")
+            return self._get_error_response(str(e))
+
     @staticmethod
     def _result_messages(result: Any) -> list[Any]:
         """Return pydantic-ai run messages across supported result versions."""
@@ -281,11 +406,20 @@ class GTNTrainingAgent(BaseGalaxyAgent):
     @staticmethod
     def _vector_result_to_tutorial(result: dict[str, Any]) -> dict[str, Any]:
         tutorial = dict(result)
+        metadata = tutorial.get("metadata")
+        if isinstance(metadata, dict):
+            for key in ("title", "topic", "tutorial", "url", "difficulty", "time_estimation", "source"):
+                if not tutorial.get(key) and metadata.get(key):
+                    tutorial[key] = metadata[key]
+
         tutorial_slug = str(tutorial.get("tutorial") or "").strip()
         title = str(tutorial.get("title") or "").strip()
         if not title:
             title = tutorial_slug.replace("-", " ").title() if tutorial_slug else "GTN Tutorial"
         tutorial["title"] = title
+        url = GTNTrainingAgent._tutorial_external_url(tutorial)
+        if url:
+            tutorial["url"] = url
 
         if not tutorial.get("snippet"):
             page_content = str(tutorial.get("page_content") or "").strip()
@@ -322,10 +456,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         return tutorials
 
     def _search_vector_tutorials_for_response(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
-        if not self.gtn_db:
-            return []
         try:
-            results = self.gtn_db.search_vector_db(query=query, limit=limit)
+            results = self.gtn_db.search_vector_db(query=query, embeddings=self.embeddings, persist_dir=self.persist_dir, collection_name="gtn_tutorials", limit=limit)
         except (AttributeError, KeyError, TypeError, ValueError) as e:
             log.warning(f"GTN direct vector fallback failed: {e}")
             return []
@@ -337,114 +469,17 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 log.warning(f"Skipping invalid GTN vector fallback result: {e}")
         return tutorials
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
-        validation_error = self._validate_query(query)
-        if validation_error:
-            return self._validation_error_response(validation_error)
+    @staticmethod
+    def _tutorial_external_url(item: dict[str, Any]) -> Optional[str]:
+        url = item.get("url")
+        if isinstance(url, str) and url.strip() and url.strip() != "#":
+            return url.strip()
 
-        if not self.gtn_db:
-            return self._build_response(
-                content="GTN database is not available. Please ensure it's properly initialized.",
-                confidence=ConfidenceLevel.LOW,
-                method="error",
-                query=query,
-                error="gtn_database_unavailable",
-            )
-
-        try:
-            message_history = self._extract_message_history(context)
-            result = await self._run_with_retry(query, message_history=message_history)
-
-            usage = extract_usage_info(result)
-            if usage:
-                log.info(
-                    "GTN agent token usage: input=%s output=%s total=%s (query_len=%d)",
-                    usage.get("input_tokens", 0),
-                    usage.get("output_tokens", 0),
-                    usage.get("total_tokens", 0),
-                    len(query),
-                )
-
-            if self._supports_structured_output():
-                response_data = extract_structured_output(result, GTNSearchResponse, log)
-                log.info(f"Response data extracted: {response_data}")
-                if response_data is None:
-                    return self._build_response(
-                        content=extract_result_content(result),
-                        confidence=ConfidenceLevel.LOW,
-                        method="text_fallback",
-                        result=result,
-                        query=query,
-                        error="invalid_structured_output",
-                    )
-
-                used_fallback = False
-                if not response_data.tutorials and not response_data.faqs:
-                    vector_tutorials = self._tutorials_from_vector_payloads(
-                        self._extract_tool_payloads(result, "search_gtn_tutorial_vectors")
-                    )
-                    if not vector_tutorials:
-                        log.info("No vector tool payloads found in result messages, running direct vector fallback")
-                        vector_tutorials = self._search_vector_tutorials_for_response(query)
-                    if vector_tutorials:
-                        log.info("Using vector search tool results")
-                        log.info("Found %d tutorials from vector search, using these results", len(vector_tutorials))
-                        used_fallback = True
-                        response_data = GTNSearchResponse(
-                            tutorials=vector_tutorials,
-                            summary=response_data.summary
-                            or f"Found {len(vector_tutorials)} GTN tutorial matches from vector search.",
-                            learning_path=response_data.learning_path,
-                            prerequisites=response_data.prerequisites,
-                            total_time=response_data.total_time,
-                        )
-
-                if not response_data.tutorials and not response_data.faqs:
-                    log.info("No tutorials or FAQs in response, falling back to direct search")
-                    fallback_results = self.gtn_db.search(query, limit=5)
-                    if fallback_results:
-                        used_fallback = True
-                        response_data = GTNSearchResponse(
-                            tutorials=[r.to_dict() for r in fallback_results],
-                            summary=f"Found {len(fallback_results)} tutorials related to your query",
-                        )
-
-                log.info("Formatted GTN response with %d tutorials", len(response_data.tutorials))
-                return self._build_response(
-                    content=self._format_gtn_response(response_data),
-                    confidence=(
-                        ConfidenceLevel.HIGH
-                        if response_data.tutorials or response_data.faqs
-                        else ConfidenceLevel.MEDIUM
-                    ),
-                    method="structured_with_fallback" if used_fallback else "structured",
-                    result=result,
-                    query=query,
-                    suggestions=self._create_suggestions(response_data),
-                    agent_data={
-                        "tutorial_count": len(response_data.tutorials),
-                        "faq_count": len(response_data.faqs),
-                        "has_learning_path": bool(response_data.learning_path),
-                        "total_time": response_data.total_time,
-                    },
-                )
-
-            # Simple-text path for backends that don't support structured output.
-            response_text = extract_result_content(result)
-            parsed_result = self._parse_simple_response(response_text)
-            return self._build_response(
-                content=parsed_result.get("content", response_text),
-                confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
-                method="simple_text",
-                result=result,
-                query=query,
-                suggestions=parsed_result.get("suggestions", []),
-                agent_data={"tutorial_count": parsed_result.get("tutorial_count", 0)},
-            )
-
-        except (OSError, ValueError) as e:
-            log.error(f"GTN training agent error: {e}")
-            return self._get_error_response(str(e))
+        topic = str(item.get("topic") or "").strip().strip("/")
+        tutorial = str(item.get("tutorial") or "").strip().strip("/")
+        if topic and tutorial and topic != "Unknown":
+            return f"{GTN_TRAINING_BASE_URL}/topics/{topic.lower()}/tutorials/{tutorial}/tutorial.html"
+        return None
 
     def _format_gtn_response(self, response_data: GTNSearchResponse) -> str:
         parts: list[str] = []
@@ -458,7 +493,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = tutorial.get("topic", "Unknown")
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
-                url = tutorial.get("url", "#")
+                url = self._tutorial_external_url(tutorial)
                 snippet = tutorial.get("snippet", "")
 
                 parts.append(f"\n{i}. **{title}**")
@@ -470,7 +505,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Difficulty: {difficulty}")
                 if time_estimation and time_estimation != "Unknown":
                     parts.append(f"   - Time: {time_estimation}")
-                parts.append(f"   - Link: {url}")
+                if url:
+                    parts.append(f"   - Link: {url}")
 
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
@@ -478,7 +514,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 title = faq.get("title", "Untitled FAQ")
                 category = faq.get("category", "Unknown")
                 area = faq.get("area", "")
-                url = faq.get("url", "#")
+                url = self._tutorial_external_url(faq)
                 snippet = faq.get("snippet", "")
 
                 parts.append(f"\n{i}. **{title}**")
@@ -488,7 +524,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Category: {category}")
                 if area:
                     parts.append(f"   - Area: {area}")
-                parts.append(f"   - Link: {url}")
+                if url:
+                    parts.append(f"   - Link: {url}")
 
         if response_data.learning_path:
             parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")
@@ -508,7 +545,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for tutorial in response_data.tutorials[:3]:
             title = tutorial.get("title", "Untitled Tutorial")
-            url = tutorial.get("url", "#")
+            url = self._tutorial_external_url(tutorial)
+            if not url:
+                continue
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,
@@ -521,7 +560,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for faq in response_data.faqs[:3]:
             title = faq.get("title", "Untitled FAQ")
-            url = faq.get("url", "#")
+            url = self._tutorial_external_url(faq)
+            if not url:
+                continue
             suggestions.append(
                 ActionSuggestion(
                     action_type=ActionType.VIEW_EXTERNAL,

@@ -768,6 +768,48 @@ class TestAgentUnitMocked:
         agent.gtn_db.search.assert_not_called()
 
     @pytest.mark.asyncio
+    async def test_gtn_process_derives_url_for_vector_tool_results_without_url(self):
+        agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
+        agent.deps = self.deps
+        agent.gtn_db = MagicMock()
+
+        vector_payload = {
+            "tutorials": [
+                {
+                    "type": "tutorial",
+                    "topic": "statistics",
+                    "tutorial": "machine-learning",
+                    "title": "Machine Learning",
+                    "page_content": "Train and evaluate machine learning models in Galaxy.",
+                    "score": 0.25,
+                    "url": None,
+                    "source": "machine-learning.md",
+                }
+            ],
+            "count": 1,
+        }
+        tool_part = SimpleNamespace(
+            tool_name="search_gtn_tutorial_vectors",
+            content=json.dumps(vector_payload),
+        )
+        result = SimpleNamespace(
+            output=GTNSearchResponse(tutorials=[], faqs=[], summary="No matches."),
+            all_messages=lambda: [SimpleNamespace(parts=[tool_part])],
+        )
+        agent._run_with_retry = AsyncMock(return_value=result)
+
+        response = await agent.process("how can I do machine learning analysis ?")
+
+        expected_url = (
+            "https://training.galaxyproject.org/training-material/topics/statistics/"
+            "tutorials/machine-learning/tutorial.html"
+        )
+        assert "I encountered an error" not in response.content
+        assert expected_url in response.content
+        assert response.suggestions[0].parameters["url"] == expected_url
+        assert response.metadata["method"] == "structured_with_fallback"
+
+    @pytest.mark.asyncio
     async def test_gtn_process_runs_direct_vector_fallback_when_tool_payload_is_unavailable(self):
         agent = GTNTrainingAgent.__new__(GTNTrainingAgent)
         agent.deps = self.deps
