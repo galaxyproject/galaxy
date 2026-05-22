@@ -19,6 +19,7 @@ from ._inline_tool import (
     InlineToolInventoryEntry,
     walk_inline_tools,
 )
+from ._util import inline_class_from_run
 from .toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     parse_toolshed_tool_id,
@@ -576,7 +577,7 @@ def _walk_representations(workflow_dict: dict, *, prefix: str, out: dict[str, di
             run = step_def.get("run")
             if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
                 _walk_representations(run, prefix=f"{label}.", out=out)
-            elif isinstance(run, dict) and run.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+            elif inline_class_from_run(run) is not None:
                 out[label] = run
         return
     steps = workflow_dict.get("steps", {})
@@ -586,7 +587,7 @@ def _walk_representations(workflow_dict: dict, *, prefix: str, out: dict[str, di
             _walk_representations(step_def["subworkflow"], prefix=f"{label}.", out=out)
             continue
         rep = step_def.get("tool_representation")
-        if isinstance(rep, dict) and rep.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+        if inline_class_from_run(rep) is not None:
             out[label] = rep
 
 

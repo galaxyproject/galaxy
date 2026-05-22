@@ -12,7 +12,6 @@ from gxformat2.normalized import (
     NormalizedNativeStep,
     NormalizedWorkflowStep,
 )
-from gxformat2.normalized._format2 import GalaxyUserToolStub
 
 from ._types import NativeStepDict
 
@@ -20,6 +19,21 @@ StepLike = Union[NormalizedNativeStep, NativeStepDict, NormalizedWorkflowStep]
 
 InlineToolClass = Literal["GalaxyUserTool", "GalaxyTool"]
 _INLINE_CLASSES = ("GalaxyUserTool", "GalaxyTool")
+
+
+def inline_class_from_run(run: object) -> Optional[InlineToolClass]:
+    """If ``run`` is a raw dict with an inline tool ``class``, return it.
+
+    Helper for raw-dict probing paths (workflow inventory walkers, the
+    pre-normalization format2 cleaner). For ``NormalizedWorkflowStep``
+    instances, use the model's ``is_inline_tool_step`` /
+    ``inline_tool_representation`` properties instead.
+    """
+    if isinstance(run, dict):
+        class_ = run.get("class")
+        if class_ in _INLINE_CLASSES:
+            return cast(InlineToolClass, class_)
+    return None
 
 
 def step_tool_id(step: StepLike) -> Optional[str]:
@@ -40,12 +54,7 @@ def step_tool_representation(step: StepLike) -> Optional[dict]:
     if isinstance(step, NormalizedNativeStep):
         return step.tool_representation
     if isinstance(step, NormalizedWorkflowStep):
-        run = step.run
-        if isinstance(run, GalaxyUserToolStub):
-            return run.model_dump(by_alias=True, exclude_none=True)
-        if isinstance(run, dict) and run.get("class") in _INLINE_CLASSES:
-            return run
-        return None
+        return step.inline_tool_representation
     value = step.get("tool_representation")
     if value is not None:
         return cast(dict, value)

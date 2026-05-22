@@ -30,6 +30,7 @@ from galaxy.tool_util.parameters import (
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
 from ._inline_tool import resolve_for_step
+from ._util import inline_class_from_run
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
@@ -513,7 +514,8 @@ def clean_format2_state(
         # Inline user/admin tool — fall through to tool-step cleaning so
         # ``resolve_for_step`` can parse the embedded representation.
         run = step_dict.get("run")
-        if isinstance(run, dict) and run.get("class") not in ("GalaxyUserTool", "GalaxyTool"):
+        is_inline = inline_class_from_run(run) is not None
+        if isinstance(run, dict) and not is_inline:
             sub_result = clean_format2_state(
                 run, get_tool_info, policy=policy, skip_uuid=skip_uuid, prefix=f"{step_label}."
             )
@@ -521,7 +523,6 @@ def clean_format2_state(
             continue
 
         tool_id = step_dict.get("tool_id")
-        is_inline = isinstance(run, dict) and run.get("class") in ("GalaxyUserTool", "GalaxyTool")
         if not tool_id and not is_inline:
             continue
         tool_version: Optional[str] = step_dict.get("tool_version")
