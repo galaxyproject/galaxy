@@ -48,6 +48,35 @@ Workflows: {{ report.workflows | length }} | Steps: {{ s.ok }} OK, {{ s.fail }} 
 {% endfor %}
 
 {% endif %}
+{% set inline = report.inline_source_summary %}
+{% if inline.invalid or inline.lint_errors or inline.lint_warnings or inline.unsupported %}
+## Inline Source
+
+Totals: {{ inline.invalid }} INVALID, {{ inline.lint_errors }} LINT ERROR, {{ inline.lint_warnings }} LINT WARN, {{ inline.unsupported }} UNSUPPORTED
+
+{% for r in report.workflows %}
+{% if r.inline_source_summary and (r.inline_source_summary.invalid or r.inline_source_summary.lint_errors or r.inline_source_summary.lint_warnings or r.inline_source_summary.unsupported) %}
+### {{ r.path }}
+
+{% for sr in r.results %}
+{% if sr.inline_source and sr.inline_source.has_issues %}
+- Step {{ sr.step }} ({{ sr.tool_id or sr.inline_source.inline_class or '?' }}): {% if not sr.inline_source.supported %}UNSUPPORTED ({{ sr.inline_source.inline_class }}){% else %}{{ sr.inline_source.validation_errors | length }} invalid, {{ sr.inline_source.lint_errors | length }} lint error, {{ sr.inline_source.lint_warnings | length }} lint warning{% endif %}
+{% for err in sr.inline_source.validation_errors %}
+  - INVALID: {{ err }}
+{% endfor %}
+{% for err in sr.inline_source.lint_errors %}
+  - LINT ERROR: {{ err }}
+{% endfor %}
+{% for w in sr.inline_source.lint_warnings %}
+  - LINT WARN: {{ w }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+{% endif %}
+{% endfor %}
+
+{% endif %}
 {% for r in report.workflows | selectattr("connection_report") %}
 ## Connections: {{ r.path }}
 

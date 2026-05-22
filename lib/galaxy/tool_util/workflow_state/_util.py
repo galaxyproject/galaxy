@@ -3,25 +3,85 @@
 import json
 from typing import (
     cast,
+    Literal,
     Optional,
     Union,
 )
 
-from gxformat2.normalized import NormalizedNativeStep
+from gxformat2.normalized import (
+    NormalizedNativeStep,
+    NormalizedWorkflowStep,
+)
+from gxformat2.normalized._format2 import GalaxyUserToolStub
 
 from ._types import NativeStepDict
 
-StepLike = Union[NormalizedNativeStep, NativeStepDict]
+StepLike = Union[NormalizedNativeStep, NativeStepDict, NormalizedWorkflowStep]
+
+InlineToolClass = Literal["GalaxyUserTool", "GalaxyTool"]
+_INLINE_CLASSES = ("GalaxyUserTool", "GalaxyTool")
 
 
 def step_tool_id(step: StepLike) -> Optional[str]:
-    if isinstance(step, NormalizedNativeStep):
+    if isinstance(step, (NormalizedNativeStep, NormalizedWorkflowStep)):
         return step.tool_id
     return cast(Optional[str], step.get("tool_id"))
 
 
-def step_tool_version(step: StepLike) -> Optional[str]:
+def step_tool_representation(step: StepLike) -> Optional[dict]:
+    """Return the inline tool dict for a step, if any.
+
+    Native steps carry it under ``tool_representation`` (set by Galaxy's
+    workflow exporter when a ``dynamic_tool`` resolves on export). Format2
+    steps carry it under ``run`` as either a ``GalaxyUserToolStub`` or a raw
+    dict with ``class: GalaxyUserTool`` / ``GalaxyTool``. Returns ``None``
+    for ToolShed-resolved steps and any step without an embedded tool.
+    """
     if isinstance(step, NormalizedNativeStep):
+        return step.tool_representation
+    if isinstance(step, NormalizedWorkflowStep):
+        run = step.run
+        if isinstance(run, GalaxyUserToolStub):
+            return run.model_dump(by_alias=True, exclude_none=True)
+        if isinstance(run, dict) and run.get("class") in _INLINE_CLASSES:
+            return run
+        return None
+    value = step.get("tool_representation")
+    if value is not None:
+        return cast(dict, value)
+    run = step.get("run")
+    if isinstance(run, dict) and run.get("class") in _INLINE_CLASSES:
+        return run
+    return None
+
+
+def step_inline_tool_class(step: StepLike) -> Optional[InlineToolClass]:
+    """Return the ``class`` of an inline tool representation, or ``None``.
+
+    Only ``GalaxyUserTool`` and ``GalaxyTool`` are recognized — anything else
+    (including a missing ``tool_representation``) returns ``None``.
+    """
+    representation = step_tool_representation(step)
+    if not representation:
+        return None
+    class_ = representation.get("class")
+    if class_ in _INLINE_CLASSES:
+        return cast(InlineToolClass, class_)
+    return None
+
+
+def step_is_inline_tool(step: StepLike) -> bool:
+    """True iff the step carries an inline ``tool_representation`` we recognize.
+
+    Recognizes both ``class: GalaxyUserTool`` (in scope for workflow_state
+    validation) and ``class: GalaxyTool`` (admin dynamic tool — detected so
+    callers can emit an ``inline_source_unsupported`` diagnostic).
+    """
+    return step_inline_tool_class(step) is not None
+
+
+def step_tool_version(step: StepLike) -> Optional[str]:
+    if isinstance(step, (NormalizedNativeStep, NormalizedWorkflowStep)):
         return step.tool_version
     return cast(Optional[str], step.get("tool_version"))
 

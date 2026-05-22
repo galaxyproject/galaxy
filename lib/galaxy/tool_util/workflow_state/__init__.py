@@ -6,6 +6,13 @@ Galaxy's runtime. It is meant to provide utilities for reasonsing about tool sta
 context of workflows.
 """
 
+from ._inline_tool import (
+    InlineToolInventoryEntry,
+    InlineToolSourceResult,
+    resolve_for_step,
+    validate_inline_tool_source_for_step,
+    walk_inline_tools,
+)
 from ._types import (
     GetToolInfo,
     ToolInputs,
@@ -32,7 +39,12 @@ __all__ = (
     "export_single",
     "export_workflow_to_format2",
     "GetToolInfo",
+    "InlineToolInventoryEntry",
+    "InlineToolSourceResult",
     "lint_single",
+    "resolve_for_step",
+    "validate_inline_tool_source_for_step",
+    "walk_inline_tools",
     "roundtrip_single",
     "ToolInputs",
     "Format2State",

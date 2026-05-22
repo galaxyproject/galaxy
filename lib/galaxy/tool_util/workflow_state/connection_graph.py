@@ -39,8 +39,11 @@ from galaxy.tool_util_models.tool_outputs import (
 )
 from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.topsort import topsort
+from ._inline_tool import resolve_for_step
 from ._types import GetToolInfo
-from ._util import step_tool_state
+from ._util import (
+    step_tool_state,
+)
 from ._walker import _select_which_when_native
 
 log = logging.getLogger(__name__)
@@ -186,26 +189,30 @@ def _resolve_tool_step(
 
     inputs: Dict[str, ResolvedInput] = {}
     outputs: Dict[str, ResolvedOutput] = {}
+    parsed_tool = None
 
-    if step.tool_id:
-        try:
-            parsed_tool = get_tool_info.get_tool_info(step.tool_id, step.tool_version)
-            if parsed_tool:
-                tool_state = step_tool_state(step)
-                inputs = _collect_inputs(parsed_tool.inputs, tool_state)
-                outputs = _collect_outputs(parsed_tool.outputs)
-                _resolve_rules_collection_types(outputs, tool_state)
-        except (KeyError, ValueError) as e:
-            log.debug("Could not resolve tool %s: %s", step.tool_id, e)
-        except Exception:
-            log.warning("Unexpected error resolving tool %s", step.tool_id, exc_info=True)
+    try:
+        parsed_tool = resolve_for_step(get_tool_info, step)
+        if parsed_tool:
+            tool_state = step_tool_state(step)
+            inputs = _collect_inputs(parsed_tool.inputs, tool_state)
+            outputs = _collect_outputs(parsed_tool.outputs)
+            _resolve_rules_collection_types(outputs, tool_state)
+    except (KeyError, ValueError) as e:
+        log.debug("Could not resolve tool %s: %s", step.tool_id, e)
+    except Exception:
+        log.warning("Unexpected error resolving tool %s", step.tool_id, exc_info=True)
 
     if step.when and "when" in connections:
         inputs["when"] = ResolvedInput(name="when", state_path="when", type="boolean")
 
+    # For inline UDT steps the step's tool_id is typically None on export;
+    # fall back to the parsed tool's id so reports still label the step.
+    resolved_tool_id = step.tool_id or (parsed_tool.id if parsed_tool is not None else None)
+
     return ResolvedStep(
         step_id=step_id,
-        tool_id=step.tool_id,
+        tool_id=resolved_tool_id,
         step_type="tool",
         inputs=inputs,
         outputs=outputs,
