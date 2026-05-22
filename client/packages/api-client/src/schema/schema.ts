@@ -10770,7 +10770,7 @@ export interface components {
             name: string;
         };
         /**
-         * CustomBuildsCollection
+         * Custom builds collection
          * @description The custom builds associated with the user.
          */
         CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
@@ -11656,7 +11656,7 @@ export interface components {
             model_class: "DatasetHash";
         };
         /**
-         * DatasetInheritanceChain
+         * Dataset inheritance chain
          * @default []
          */
         DatasetInheritanceChain: components["schemas"]["DatasetInheritanceChainEntry"][];
@@ -11909,7 +11909,7 @@ export interface components {
             tool_id: string;
         };
         /**
-         * DatatypeConverterList
+         * List of data type converters
          * @default []
          */
         DatatypeConverterList: components["schemas"]["DatatypeConverter"][];
@@ -11994,7 +11994,7 @@ export interface components {
             visualization: string;
         };
         /**
-         * DatatypeVisualizationMappingsList
+         * List of datatype visualization mappings
          * @default []
          */
         DatatypeVisualizationMappingsList: components["schemas"]["DatatypeVisualizationMapping"][];
@@ -12012,7 +12012,7 @@ export interface components {
             datatypes_mapping: components["schemas"]["DatatypesMap"];
         };
         /**
-         * DatatypesEDAMDetailsDict
+         * Dict of EDAM details for formats
          * @default {}
          */
         DatatypesEDAMDetailsDict: {
@@ -13645,8 +13645,17 @@ export interface components {
             writable: boolean;
         };
         /**
-         * FilesSourcePluginList
+         * List of files source plugins
          * @default []
+         * @example {
+         *       "browsable": true,
+         *       "doc": "Galaxy's library import directory",
+         *       "id": "_import",
+         *       "label": "Library Import Directory",
+         *       "type": "gximport",
+         *       "uri_root": "gximport://",
+         *       "writable": false
+         *     }
          */
         FilesSourcePluginList: (
             | components["schemas"]["BrowsableFilesSourcePlugin"]
@@ -18585,7 +18594,7 @@ export interface components {
             value: string;
         };
         /**
-         * JobMetricCollection
+         * Job Metrics
          * @description Represents a collection of metrics associated with a Job.
          * @default []
          */
@@ -19806,7 +19815,7 @@ export interface components {
             synopsis?: string | null;
         };
         /**
-         * LibrarySummaryList
+         * List with summary information of Libraries.
          * @default []
          */
         LibrarySummaryList: components["schemas"]["LibrarySummary"][];
@@ -19905,14 +19914,14 @@ export interface components {
          */
         LinkDataOnly: "copy_files" | "link_to_files";
         /**
-         * ListJstreeResponse
+         * List of files
          * @deprecated
          * @description List of files in Jstree format.
          * @default []
          */
         ListJstreeResponse: unknown[];
         /**
-         * ListUriResponse
+         * List of remote entries
          * @description List of directories and files.
          * @default []
          */
@@ -21027,7 +21036,7 @@ export interface components {
             username: string;
         };
         /**
-         * PageSummaryList
+         * List with summary information of Pages.
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
@@ -21871,7 +21880,7 @@ export interface components {
             url: string;
         };
         /**
-         * QuotaSummaryList
+         * List with summary information of Quotas.
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
@@ -25339,7 +25348,7 @@ export interface components {
              */
             name: string;
         };
-        /** ToolDataEntryList */
+        /** A list with details on individual data tables. */
         ToolDataEntryList: components["schemas"]["ToolDataEntry"][];
         /** ToolDataField */
         ToolDataField: {
@@ -25928,7 +25937,7 @@ export interface components {
             title_default?: string | null;
         };
         /**
-         * TourList
+         * List of tours
          * @default []
          */
         TourList: components["schemas"]["Tour"][];
@@ -27871,7 +27880,7 @@ export interface components {
             [key: string]: unknown;
         };
         /**
-         * VisualizationSummaryList
+         * List with detailed information of Visualizations.
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
