@@ -36,6 +36,7 @@ from galaxy.tool_util_models import (
 
 from ._types import GetToolInfo
 from ._util import (
+    inline_class_from_run,
     step_inline_tool_class,
     step_is_inline_tool,
     step_tool_id,
@@ -228,7 +229,7 @@ def _walk_inline_tools_native(
             )
             continue
         rep = step_def.get("tool_representation")
-        if isinstance(rep, dict) and rep.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+        if inline_class_from_run(rep) is not None:
             entries.append(_entry_from_representation(rep, step_label, workflow_path))
     return entries
 
@@ -254,7 +255,7 @@ def _walk_inline_tools_format2(
         if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
             entries.extend(_walk_inline_tools_format2(run, prefix=f"{step_label}.", workflow_path=workflow_path))
             continue
-        if isinstance(run, dict) and run.get("class") in ("GalaxyUserTool", "GalaxyTool"):
+        if inline_class_from_run(run) is not None:
             entries.append(_entry_from_representation(run, step_label, workflow_path))
     return entries
 
