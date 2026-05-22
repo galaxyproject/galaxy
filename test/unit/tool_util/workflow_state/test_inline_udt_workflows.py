@@ -273,14 +273,9 @@ def test_udt_inside_format2_subworkflow_resolved():
         validate_workflow_format2(wf, _EmptyGetToolInfo())
 
 
-def test_format2_inline_subworkflow_still_validates_under_expand_false():
-    """Regression: the expand=False switch must not regress inline subworkflow recursion.
-
-    A format2 workflow with a nested ``run: {class: GalaxyWorkflow, ...}``
-    is normalized to ``NormalizedFormat2`` without expansion, so the
-    subworkflow recurse path in ``validate_workflow_format2`` still picks
-    it up.
-    """
+def test_format2_inline_subworkflow_containing_udt_validates():
+    """A format2 workflow with a nested ``run: {class: GalaxyWorkflow, ...}``
+    containing an inline UDT step validates without raising."""
     inner = {
         "class": "GalaxyWorkflow",
         "inputs": {"x": "data"},
