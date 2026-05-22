@@ -22,11 +22,18 @@
           "connection_report": null,
           "error": null,
           "failures": [],
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
           "name": "wf_ok.ga",
           "path": "catA/wf_ok.ga",
           "results": [
             {
               "errors": [],
+              "inline_source": null,
               "status": "ok",
               "step": "0",
               "tool_id": null,
@@ -34,6 +41,7 @@
             },
             {
               "errors": [],
+              "inline_source": null,
               "status": "ok",
               "step": "1",
               "tool_id": "cat1",
@@ -108,6 +116,12 @@
               "tool_id": "Grep1"
             }
           ],
+          "inline_source_summary": {
+            "invalid": 0,
+            "lint_errors": 0,
+            "lint_warnings": 0,
+            "unsupported": 0
+          },
           "name": "wf_fail.ga",
           "path": "catA/wf_fail.ga",
           "results": [
@@ -116,6 +130,7 @@
                 "unknown key: legacy_param",
                 "type mismatch: data vs collection"
               ],
+              "inline_source": null,
               "status": "fail",
               "step": "2",
               "tool_id": "Grep1",
@@ -123,6 +138,7 @@
             },
             {
               "errors": [],
+              "inline_source": null,
               "status": "skip_tool_not_found",
               "step": "3",
               "tool_id": "missing_tool",
@@ -146,6 +162,7 @@
           "connection_report": null,
           "error": "parse error: invalid yaml",
           "failures": null,
+          "inline_source_summary": null,
           "name": "wf_error.ga",
           "path": "catB/wf_error.ga",
           "results": [],
@@ -157,6 +174,7 @@
           "connection_report": null,
           "error": null,
           "failures": null,
+          "inline_source_summary": null,
           "name": "wf_legacy.ga",
           "path": "catB/wf_legacy.ga",
           "results": [],
@@ -166,6 +184,12 @@
       ]
     }
   ],
+  "inline_source_summary": {
+    "invalid": 0,
+    "lint_errors": 0,
+    "lint_warnings": 0,
+    "unsupported": 0
+  },
   "root": "/tmp/workflows",
   "summary": {
     "error": 1,
@@ -180,11 +204,18 @@
       "connection_report": null,
       "error": null,
       "failures": [],
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
       "name": "wf_ok.ga",
       "path": "catA/wf_ok.ga",
       "results": [
         {
           "errors": [],
+          "inline_source": null,
           "status": "ok",
           "step": "0",
           "tool_id": null,
@@ -192,6 +223,7 @@
         },
         {
           "errors": [],
+          "inline_source": null,
           "status": "ok",
           "step": "1",
           "tool_id": "cat1",
@@ -266,6 +298,12 @@
           "tool_id": "Grep1"
         }
       ],
+      "inline_source_summary": {
+        "invalid": 0,
+        "lint_errors": 0,
+        "lint_warnings": 0,
+        "unsupported": 0
+      },
       "name": "wf_fail.ga",
       "path": "catA/wf_fail.ga",
       "results": [
@@ -274,6 +312,7 @@
             "unknown key: legacy_param",
             "type mismatch: data vs collection"
           ],
+          "inline_source": null,
           "status": "fail",
           "step": "2",
           "tool_id": "Grep1",
@@ -281,6 +320,7 @@
         },
         {
           "errors": [],
+          "inline_source": null,
           "status": "skip_tool_not_found",
           "step": "3",
           "tool_id": "missing_tool",
@@ -299,6 +339,7 @@
       "connection_report": null,
       "error": "parse error: invalid yaml",
       "failures": null,
+      "inline_source_summary": null,
       "name": "wf_error.ga",
       "path": "catB/wf_error.ga",
       "results": [],
@@ -310,6 +351,7 @@
       "connection_report": null,
       "error": null,
       "failures": null,
+      "inline_source_summary": null,
       "name": "wf_legacy.ga",
       "path": "catB/wf_legacy.ga",
       "results": [],

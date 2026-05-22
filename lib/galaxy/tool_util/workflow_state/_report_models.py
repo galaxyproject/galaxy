@@ -21,12 +21,36 @@ from pydantic import (
     Field,
 )
 
+from ._inline_tool import InlineToolSourceResult
 from .precheck import SkipWorkflowReason
 
 StepStatus = Literal["ok", "fail", "skip_tool_not_found", "skip_replacement_params"]
 
 SKIP_STATUSES: frozenset = frozenset({"skip_tool_not_found", "skip_replacement_params"})
 ConnectionStatus = Literal["ok", "invalid", "skip"]
+
+
+def _tally_inline_source(step_results: list) -> Dict[str, int]:
+    """Cross-cut tally over a list of ``ValidationStepResult`` for inline-source diagnostics."""
+    n_invalid = n_lint_error = n_lint_warning = n_unsupported = 0
+    for sr in step_results:
+        inline = getattr(sr, "inline_source", None)
+        if not inline:
+            continue
+        if not inline.supported:
+            n_unsupported += 1
+        if inline.validation_errors:
+            n_invalid += 1
+        if inline.lint_errors:
+            n_lint_error += 1
+        if inline.lint_warnings:
+            n_lint_warning += 1
+    return {
+        "invalid": n_invalid,
+        "lint_errors": n_lint_error,
+        "lint_warnings": n_lint_warning,
+        "unsupported": n_unsupported,
+    }
 
 
 # -- Step-level results --
@@ -43,6 +67,7 @@ class StepResultBase(BaseModel):
 class ValidationStepResult(StepResultBase):
     status: StepStatus
     errors: List[str] = []
+    inline_source: Optional[InlineToolSourceResult] = None
 
 
 class CleanStepResult(StepResultBase):
@@ -111,6 +136,13 @@ class WorkflowValidationResult(WorkflowResultBase):
             for err in sr.errors:
                 out.append({"step": sr.step, "tool_id": sr.tool_id, "message": err})
         return out
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Optional[Dict[str, int]]:
+        if self.error or self.skipped_reason:
+            return None
+        return _tally_inline_source(self.step_results)
 
 
 class WorkflowCleanResult(WorkflowResultBase):
@@ -248,6 +280,17 @@ class TreeValidationReport(TreeReportBase):
             "skipped": skipped,
         }
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Dict[str, int]:
+        totals = {"invalid": 0, "lint_errors": 0, "lint_warnings": 0, "unsupported": 0}
+        for r in self.results:
+            if r.error or r.skipped_reason:
+                continue
+            for k, v in _tally_inline_source(r.step_results).items():
+                totals[k] += v
+        return totals
+
 
 class TreeCleanReport(TreeReportBase):
     results: List[WorkflowCleanResult] = Field(default=[], serialization_alias="workflows")
@@ -308,6 +351,11 @@ class SingleValidationReport(BaseModel):
             "skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
         }
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Dict[str, int]:
+        return _tally_inline_source(self.results)
+
 
 # -- Helpers for wrapping single-file results into tree reports --
 
@@ -354,6 +402,13 @@ class LintWorkflowResult(WorkflowResultBase):
             "skip": sum(1 for sr in self.step_results if sr.status in SKIP_STATUSES),
         }
 
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Optional[Dict[str, int]]:
+        if self.error or self.skipped_reason:
+            return None
+        return _tally_inline_source(self.step_results)
+
 
 class SingleLintReport(BaseModel):
     """JSON shape for single-file lint."""
@@ -377,6 +432,11 @@ class SingleLintReport(BaseModel):
             "state_fail": sum(1 for r in self.results if r.status == "fail"),
             "state_skip": sum(1 for r in self.results if r.status in SKIP_STATUSES),
         }
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Dict[str, int]:
+        return _tally_inline_source(self.results)
 
 
 class LintTreeReport(TreeReportBase):
@@ -418,6 +478,17 @@ class LintTreeReport(TreeReportBase):
             "errors": errors,
             "skipped": skipped,
         }
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def inline_source_summary(self) -> Dict[str, int]:
+        totals = {"invalid": 0, "lint_errors": 0, "lint_warnings": 0, "unsupported": 0}
+        for r in self.results:
+            if r.error or r.skipped_reason:
+                continue
+            for k, v in _tally_inline_source(r.step_results).items():
+                totals[k] += v
+        return totals
 
 
 def wrap_single_lint(

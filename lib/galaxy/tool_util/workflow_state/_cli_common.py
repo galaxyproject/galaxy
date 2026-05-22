@@ -97,15 +97,15 @@ def add_stale_key_args(parser, mode="validate"):
 
 
 def add_strict_args(parser):
-    """Add --strict and its three orthogonal sub-flags to any argparse parser.
+    """Add --strict and its four orthogonal sub-flags to any argparse parser.
 
-    --strict is shorthand for --strict-structure --strict-encoding --strict-state.
-    Sub-flags can also be set individually.
+    --strict is shorthand for --strict-structure --strict-encoding
+    --strict-state --strict-inline-source. Sub-flags can also be set individually.
     """
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="Shorthand for --strict-structure --strict-encoding --strict-state",
+        help="Shorthand for --strict-structure --strict-encoding --strict-state --strict-inline-source",
     )
     parser.add_argument(
         "--strict-structure",
@@ -121,6 +121,20 @@ def add_strict_args(parser):
         "--strict-state",
         action="store_true",
         help="Require every tool step's state to validate; no skips allowed",
+    )
+    parser.add_argument(
+        "--strict-inline-source",
+        action="store_true",
+        help="Promote inline tool_representation validation errors to failure exit code",
+    )
+
+
+def add_offline_arg(parser):
+    """Add --offline to disable network access (network linters, ToolShed fetches)."""
+    parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="Disable network access (skip EDAM/bio.tools linters, ToolShed fetches)",
     )
 
 
@@ -158,18 +172,20 @@ def setup_logging(verbose: bool):
 class StrictOptions(BaseModel):
     """Composable strict-mode flags shared across workflow_state CLIs.
 
-    --strict is shorthand that expands into all three sub-flags. Each sub-flag
+    --strict is shorthand that expands into all four sub-flags. Each sub-flag
     enforces an orthogonal invariant:
 
     - strict_structure: workflow dict validates against extra='forbid' models
     - strict_encoding: no JSON-string-where-dict-expected (tool_state/state/containers)
     - strict_state: every tool step resolves and validates; no skips allowed
+    - strict_inline_source: inline tool_representation pydantic errors fail
     """
 
     strict: bool = False
     strict_structure: bool = False
     strict_encoding: bool = False
     strict_state: bool = False
+    strict_inline_source: bool = False
 
     @model_validator(mode="after")
     def _expand_strict(self):
@@ -177,6 +193,7 @@ class StrictOptions(BaseModel):
             self.strict_structure = True
             self.strict_encoding = True
             self.strict_state = True
+            self.strict_inline_source = True
         return self
 
 
@@ -188,6 +205,7 @@ class ToolCacheOptions(BaseModel):
     verbose: bool = False
     populate_cache: bool = False
     tool_source: str = "auto"
+    offline: bool = False
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "ToolCacheOptions":
@@ -205,6 +223,7 @@ def build_base_parser(
     parser = argparse.ArgumentParser(prog=prog, description=description)
     add_common_args(parser)
     add_populate_args(parser)
+    add_offline_arg(parser)
     if stale_key_mode:
         add_stale_key_args(parser, mode=stale_key_mode)
     parser.add_argument("workflow_path", help=workflow_path_help)
@@ -219,6 +238,7 @@ def build_base_subparser_args(
     """Add shared positional + common args to a subparser (no prog/description)."""
     add_common_args(parser)
     add_populate_args(parser)
+    add_offline_arg(parser)
     if stale_key_mode:
         add_stale_key_args(parser, mode=stale_key_mode)
     parser.add_argument("workflow_path", help=workflow_path_help)

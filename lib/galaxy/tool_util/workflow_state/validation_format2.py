@@ -2,7 +2,6 @@ import copy
 from typing import (
     Dict,
     List,
-    Optional,
     Union,
 )
 
@@ -17,6 +16,7 @@ from galaxy.tool_util.parameters import (
     WorkflowStepLinkedToolState,
     WorkflowStepToolState,
 )
+from ._inline_tool import resolve_for_step
 from ._state_merge import inject_connections_into_state
 from ._types import (
     Format2WorkflowDict,
@@ -54,7 +54,13 @@ def validate_format2_state(
 
 
 def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFormat2], get_tool_info: GetToolInfo):
-    nf2 = ensure_format2(workflow, expand=True) if not isinstance(workflow, NormalizedFormat2) else workflow
+    # expand=False preserves ``GalaxyUserToolStub`` instances on ``step.run``;
+    # gxformat2's ``expanded_format2`` rewraps the run field through
+    # ``ExpandedWorkflowStep`` which drops UDT stubs as None. Inline
+    # subworkflows still arrive as ``NormalizedFormat2`` (handled below);
+    # ``@import``/URL subworkflow references would need expansion but are
+    # not part of the validation corpus today.
+    nf2 = ensure_format2(workflow, expand=False) if not isinstance(workflow, NormalizedFormat2) else workflow
     for step in nf2.steps:
         if step.is_subworkflow_step:
             if isinstance(step.run, NormalizedFormat2):
@@ -66,11 +72,7 @@ def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFor
 def validate_step_format2(step: NormalizedWorkflowStep, get_tool_info: GetToolInfo):
     if not step.is_tool_step:
         return
-    tool_id = step.tool_id
-    if not tool_id:
-        return
-    tool_version: Optional[str] = step.tool_version
-    parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
+    parsed_tool = resolve_for_step(get_tool_info, step)
     if parsed_tool is not None:
         validate_step_against(step, parsed_tool)
 

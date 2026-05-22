@@ -7,6 +7,10 @@ Supports both native .ga and format2 .gxwf.yml workflows.
 import logging
 import os
 import sys
+from typing import (
+    List,
+    Optional,
+)
 
 from ._cli_common import (
     setup_tool_info,
@@ -16,6 +20,10 @@ from ._cli_common import (
 from ._encoding import (
     check_strict_encoding as _check_strict_encoding,
     check_strict_structure as _check_strict_structure,
+)
+from ._inline_tool import (
+    resolve_for_step,
+    validate_inline_tool_source_for_step,
 )
 from ._report_models import (
     ConnectionValidationReport,
@@ -34,6 +42,7 @@ from ._tree_orchestrator import (
     TreeResult,
 )
 from ._types import GetToolInfo
+from ._util import step_is_inline_tool
 from .connection_validation import validate_connections_report
 from .precheck import (
     precheck_native_workflow,
@@ -98,6 +107,7 @@ def validate_workflow_cli(
     policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
+    offline: bool = False,
 ) -> tuple[list[ValidationStepResult], WorkflowPrecheck | None, ConnectionValidationReport | None]:
     """Validate all steps in a workflow, collecting per-step results.
 
@@ -106,6 +116,7 @@ def validate_workflow_cli(
     connection_report is non-None when connections=True.
 
     When clean=True, runs full clean_stale_state() on a copy before validating.
+    When offline=True, inline-source linting skips network linters (EDAM, bio.tools).
     """
     import copy
 
@@ -124,9 +135,9 @@ def validate_workflow_cli(
         precheck = precheck_native_workflow(workflow_dict, get_tool_info)
         if not precheck.can_process:
             return [], precheck, None
-        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy)
+        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy, offline=offline)
     else:
-        step_results = _validate_format2(workflow_dict, get_tool_info)
+        step_results = _validate_format2(workflow_dict, get_tool_info, offline=offline)
         precheck = None
 
     conn_report = None
@@ -147,6 +158,7 @@ def validate_single(
     tool_schema_dir: str | None = None,
     strict_structure: bool = False,
     strict_encoding: bool = False,
+    offline: bool = False,
 ) -> SingleValidationReport:
     """Validate a single workflow, return structured report.
 
@@ -195,6 +207,7 @@ def validate_single(
         policy=policy,
         connections=connections,
         clean=clean,
+        offline=offline,
     )
     skipped_reason = precheck.detail if precheck and not precheck.can_process else None
     return SingleValidationReport(
@@ -210,6 +223,7 @@ def _validate_native(
     get_tool_info: GetToolInfo,
     prefix: str = "",
     policy: StaleKeyPolicy | None = None,
+    offline: bool = False,
 ) -> list[ValidationStepResult]:
     if policy is None:
         policy = StaleKeyPolicy.for_validate([], [])
@@ -221,16 +235,45 @@ def _validate_native(
 
         if step_def.get("type") == "subworkflow" and "subworkflow" in step_def:
             sub_results = _validate_native(
-                step_def["subworkflow"], get_tool_info, prefix=f"{step_label}.", policy=policy
+                step_def["subworkflow"], get_tool_info, prefix=f"{step_label}.", policy=policy, offline=offline
             )
             results.extend(sub_results)
             continue
 
         tool_id = step_def.get("tool_id")
         tool_version = step_def.get("tool_version")
+        inline_source = validate_inline_tool_source_for_step(step_def, offline=offline)
 
-        if not tool_id:
+        if not tool_id and inline_source is None:
             continue
+
+        # Inline UDT step with no tool_id: surface unsupported / invalid as a
+        # standalone row so the diagnostic isn't lost.
+        if not tool_id and inline_source is not None:
+            if not inline_source.supported:
+                results.append(
+                    ValidationStepResult(
+                        step=step_label,
+                        tool_id=None,
+                        version=tool_version,
+                        status="skip_tool_not_found",
+                        errors=[f"Unsupported inline tool class: {inline_source.inline_class}"],
+                        inline_source=inline_source,
+                    )
+                )
+                continue
+            if inline_source.validation_errors:
+                results.append(
+                    ValidationStepResult(
+                        step=step_label,
+                        tool_id=None,
+                        version=tool_version,
+                        status="skip_tool_not_found",
+                        errors=["Inline tool_representation failed pydantic validation"],
+                        inline_source=inline_source,
+                    )
+                )
+                continue
 
         tool_state = step_def.get("tool_state")
         if not tool_state:
@@ -241,6 +284,7 @@ def _validate_native(
                     version=tool_version,
                     status="skip_tool_not_found",
                     errors=["No tool_state found"],
+                    inline_source=inline_source,
                 )
             )
             continue
@@ -255,6 +299,7 @@ def _validate_native(
                     version=tool_version,
                     status="skip_tool_not_found",
                     errors=[f"No tool definition: {e}"],
+                    inline_source=inline_source,
                 )
             )
             continue
@@ -267,9 +312,14 @@ def _validate_native(
                     version=tool_version,
                     status="skip_tool_not_found",
                     errors=["No tool definition"],
+                    inline_source=inline_source,
                 )
             )
             continue
+
+        # Fall back to the inline tool's id for labelling once resolved.
+        report_tool_id = tool_id or parsed_tool.id
+        report_version = tool_version or parsed_tool.version
 
         try:
             validate_native_step_against(step_def, parsed_tool)
@@ -277,10 +327,11 @@ def _validate_native(
             results.append(
                 ValidationStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=tool_version,
+                    tool_id=report_tool_id,
+                    version=report_version,
                     status="skip_replacement_params",
                     errors=[str(e)],
+                    inline_source=inline_source,
                 )
             )
             continue
@@ -288,10 +339,11 @@ def _validate_native(
             results.append(
                 ValidationStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=tool_version,
+                    tool_id=report_tool_id,
+                    version=report_version,
                     status="fail",
                     errors=[str(e)],
+                    inline_source=inline_source,
                 )
             )
             continue
@@ -305,39 +357,49 @@ def _validate_native(
             results.append(
                 ValidationStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=tool_version,
+                    tool_id=report_tool_id,
+                    version=report_version,
                     status="fail",
                     errors=errors,
+                    inline_source=inline_source,
                 )
             )
         else:
             results.append(
                 ValidationStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=tool_version,
+                    tool_id=report_tool_id,
+                    version=report_version,
                     status="ok",
+                    inline_source=inline_source,
                 )
             )
 
     return results
 
 
-def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "") -> list[ValidationStepResult]:
+def _validate_format2(
+    workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "", offline: bool = False
+) -> list[ValidationStepResult]:
     from gxformat2.normalized import (
         ensure_format2,
         NormalizedFormat2,
     )
 
     results: list[ValidationStepResult] = []
-    nf2 = ensure_format2(workflow_dict, expand=True)
+    # expand=False — see validation_format2.validate_workflow_format2 for why
+    # (gxformat2's expand pass drops GalaxyUserToolStub from step.run).
+    # Note: under prior ``expand=True``, the ``isinstance(step.run, NormalizedFormat2)``
+    # subworkflow-recursion branch below was unreachable (ExpandedWorkflowStep.run
+    # is ExpandedFormat2 | None) — this switch activates recursion for inline
+    # format2 subworkflows in addition to fixing the UDT case.
+    nf2 = ensure_format2(workflow_dict, expand=False)
     for i, step in enumerate(nf2.steps):
         step_label = f"{prefix}{i}" if prefix else str(i)
 
         if step.is_subworkflow_step:
             if isinstance(step.run, NormalizedFormat2):
-                sub_results = _validate_format2(step.run, get_tool_info, prefix=f"{step_label}.")
+                sub_results = _validate_format2(step.run, get_tool_info, prefix=f"{step_label}.", offline=offline)
                 results.extend(sub_results)
             continue
 
@@ -346,18 +408,55 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
 
         tool_id = step.tool_id
         tool_version = step.tool_version
+        inline_source = validate_inline_tool_source_for_step(step, offline=offline)
 
-        if not tool_id:
+        if not tool_id and inline_source is None:
             continue
+
+        if not tool_id and inline_source is not None:
+            if not inline_source.supported:
+                results.append(
+                    ValidationStepResult(
+                        step=step_label,
+                        tool_id=None,
+                        version=tool_version,
+                        status="skip_tool_not_found",
+                        errors=[f"Unsupported inline tool class: {inline_source.inline_class}"],
+                        inline_source=inline_source,
+                    )
+                )
+                continue
+            if inline_source.validation_errors:
+                results.append(
+                    ValidationStepResult(
+                        step=step_label,
+                        tool_id=None,
+                        version=tool_version,
+                        status="skip_tool_not_found",
+                        errors=["Inline tool_representation failed pydantic validation"],
+                        inline_source=inline_source,
+                    )
+                )
+                continue
 
         try:
             validate_step_format2(step, get_tool_info)
+            # If inline_source is set, prefer the parsed tool's id for labelling
+            # when the step itself carries no tool_id.
+            if not tool_id and step_is_inline_tool(step):
+                parsed = resolve_for_step(get_tool_info, step, offline=offline)
+                report_tool_id = parsed.id if parsed else tool_id
+                report_version = parsed.version if parsed else tool_version
+            else:
+                report_tool_id = tool_id
+                report_version = tool_version
             results.append(
                 ValidationStepResult(
                     step=step_label,
-                    tool_id=tool_id,
-                    version=tool_version,
+                    tool_id=report_tool_id,
+                    version=report_version,
                     status="ok",
+                    inline_source=inline_source,
                 )
             )
         except Exception as e:
@@ -370,6 +469,7 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
                         version=tool_version,
                         status="skip_tool_not_found",
                         errors=[error_str],
+                        inline_source=inline_source,
                     )
                 )
             else:
@@ -380,6 +480,7 @@ def _validate_format2(workflow_dict: dict, get_tool_info: GetToolInfo, prefix: s
                         version=tool_version,
                         status="fail",
                         errors=[error_str],
+                        inline_source=inline_source,
                     )
                 )
 
@@ -393,6 +494,7 @@ def _make_validate_process_one(
     strict_state: bool = False,
     strict_encoding: bool = False,
     strict_structure: bool = False,
+    offline: bool = False,
 ):
     """Build a process_one callback for validation tree runs."""
 
@@ -411,6 +513,7 @@ def _make_validate_process_one(
             policy=policy,
             connections=connections,
             clean=clean,
+            offline=offline,
         )
         if precheck and not precheck.can_process:
             if strict_state:
@@ -503,16 +606,74 @@ def format_text(results: list[ValidationStepResult], summary_only: bool = False)
                 reason = r.errors[0] if r.errors else "skipped"
                 lines.append(f"Step {r.step}: {tool_label} ... SKIP ({reason})")
 
+        inline_lines = _format_inline_source_text(results)
+        if inline_lines:
+            lines.append("--- Inline Source ---")
+            lines.extend(inline_lines)
+
         lines.append("---")
 
     lines.append(f"Summary: {ok} OK, {fail} FAIL, {skip} SKIP")
+    inline_summary = _summary_inline_source_text(results)
+    if inline_summary:
+        lines.append(inline_summary)
     return "\n".join(lines)
+
+
+def _format_inline_source_text(results: List[ValidationStepResult]) -> List[str]:
+    """Per-step inline-source diagnostics as text bullets."""
+    lines: List[str] = []
+    for r in results:
+        inline = r.inline_source
+        if inline is None or not inline.has_issues:
+            continue
+        tool_label = r.tool_id or inline.inline_class or "?"
+        header = f"Step {r.step}: {tool_label}"
+        if not inline.supported:
+            lines.append(f"{header} ... UNSUPPORTED (class: {inline.inline_class})")
+            continue
+        if inline.validation_errors:
+            lines.append(f"{header} ... INVALID")
+            for err in inline.validation_errors:
+                lines.append(f"  {err}")
+        if inline.lint_errors:
+            lines.append(f"{header} ... LINT ERROR")
+            for err in inline.lint_errors:
+                lines.append(f"  {err}")
+        if inline.lint_warnings:
+            lines.append(f"{header} ... LINT WARNING")
+            for w in inline.lint_warnings:
+                lines.append(f"  {w}")
+    return lines
+
+
+def _summary_inline_source_text(results: List[ValidationStepResult]) -> Optional[str]:
+    n_invalid = n_lint_err = n_lint_warn = n_unsupported = 0
+    for r in results:
+        inline = r.inline_source
+        if inline is None:
+            continue
+        if not inline.supported:
+            n_unsupported += 1
+        if inline.validation_errors:
+            n_invalid += 1
+        if inline.lint_errors:
+            n_lint_err += 1
+        if inline.lint_warnings:
+            n_lint_warn += 1
+    if not (n_invalid or n_lint_err or n_lint_warn or n_unsupported):
+        return None
+    return (
+        f"Inline source: {n_invalid} INVALID, {n_lint_err} LINT ERROR, "
+        f"{n_lint_warn} LINT WARN, {n_unsupported} UNSUPPORTED"
+    )
 
 
 def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -> str:
     """Render TreeValidationReport as human-readable text."""
     lines = []
     s = report.summary
+    inline = report.inline_source_summary
     total_wf = len(report.results)
     lines.append(f"Root: {report.root}")
     skipped_count = s["skipped"]
@@ -540,9 +701,17 @@ def format_tree_text(report: TreeValidationReport, summary_only: bool = False) -
                 if sr.status == "fail":
                     for err in sr.errors:
                         lines.append(f"    Step {sr.step} ({sr.tool_id}): {err}")
+                if sr.inline_source and sr.inline_source.has_issues:
+                    for line in _format_inline_source_text([sr]):
+                        lines.append(f"    {line}")
 
     lines.append("---")
     lines.append(f"Summary: {s['ok']} OK, {s['fail']} FAIL, {s['skip']} SKIP, {s['error']} ERROR{skipped_suffix}")
+    if any(inline[k] for k in ("invalid", "lint_errors", "lint_warnings", "unsupported")):
+        lines.append(
+            f"Inline source: {inline['invalid']} INVALID, {inline['lint_errors']} LINT ERROR, "
+            f"{inline['lint_warnings']} LINT WARN, {inline['unsupported']} UNSUPPORTED"
+        )
     return "\n".join(lines)
 
 
@@ -767,6 +936,7 @@ def run_validate(options: ValidateOptions) -> int:
         tool_schema_dir=options.tool_schema_dir,
         strict_structure=options.strict_structure,
         strict_encoding=options.strict_encoding,
+        offline=options.offline,
     )
 
     if report.encoding_errors:
@@ -820,6 +990,7 @@ def run_validate_tree(options: ValidateTreeOptions) -> int:
             strict_state=options.strict_state,
             strict_encoding=options.strict_encoding,
             strict_structure=options.strict_structure,
+            offline=options.offline,
         )
 
     from ._tree_orchestrator import run_tree
@@ -880,11 +1051,14 @@ def _emit_single_results(
     exit_code = 0
     has_failures = any(r.status == "fail" for r in results)
     has_skips = any(r.status in SKIP_STATUSES for r in results)
+    has_inline_source_errors = any(r.inline_source and r.inline_source.validation_errors for r in results)
     if has_failures:
         exit_code = 1
     elif has_skips and options.strict_state:
         exit_code = 2
     if conn_report and not conn_report.valid:
+        exit_code = max(exit_code, 1)
+    if has_inline_source_errors and options.strict_inline_source:
         exit_code = max(exit_code, 1)
     return exit_code
 
@@ -902,4 +1076,8 @@ def _compute_tree_exit_code(report: TreeValidationReport, options) -> int:
             if r.connection_report and not r.connection_report.valid:
                 exit_code = max(exit_code, 1)
                 break
+    if options.strict_inline_source:
+        inline = report.inline_source_summary
+        if inline["invalid"] > 0:
+            exit_code = max(exit_code, 1)
     return exit_code

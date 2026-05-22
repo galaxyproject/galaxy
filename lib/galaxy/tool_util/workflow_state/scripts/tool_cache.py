@@ -4,6 +4,7 @@ import argparse
 
 from .._cli_common import (
     add_common_args,
+    add_offline_arg,
     add_tool_source_arg,
     setup_logging,
 )
@@ -11,14 +12,18 @@ from ..cache import (
     AddLocalOptions,
     AddOptions,
     ClearOptions,
+    EmbeddedSchemaOptions,
     InfoOptions,
+    ListInlineToolsOptions,
     ListOptions,
     PopulateOptions,
     run_add,
     run_add_local,
     run_clear,
+    run_embedded_schema,
     run_info,
     run_list,
+    run_list_inline_tools,
     run_populate,
     run_schema,
     run_structural_schema,
@@ -40,6 +45,7 @@ def build_parser():
     p_pop = subparsers.add_parser("populate-workflow", help="Cache all tools in a workflow file or directory")
     p_pop.add_argument("workflow_path", help="Path to workflow file or directory (auto-detected)")
     add_tool_source_arg(p_pop)
+    add_offline_arg(p_pop)
 
     # add
     p_add = subparsers.add_parser("add", help="Cache a single tool")
@@ -81,6 +87,21 @@ def build_parser():
     )
     p_schema.add_argument("-o", "--output", help="Write schema to file instead of stdout")
 
+    # list-inline-tools
+    p_inline = subparsers.add_parser(
+        "list-inline-tools", help="Dump inline (GalaxyUserTool / GalaxyTool) inventory of a workflow"
+    )
+    p_inline.add_argument("workflow_path", help="Path to a workflow file")
+    p_inline.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # embedded-schema
+    p_embedded = subparsers.add_parser(
+        "embedded-schema",
+        help="Write per-step JSON Schemas for inline UDT steps in a workflow",
+    )
+    p_embedded.add_argument("workflow_path", help="Path to a workflow file")
+    p_embedded.add_argument("-o", "--output-dir", required=True, help="Directory to write per-step schema files into")
+
     # structural-schema
     p_structural = subparsers.add_parser("structural-schema", help="Export gxformat2 GalaxyWorkflow JSON Schema")
     p_structural.add_argument(
@@ -113,6 +134,10 @@ def main(argv=None):
         run_schema(SchemaOptions.from_namespace(args))
     elif args.command == "structural-schema":
         run_structural_schema(StructuralSchemaOptions.from_namespace(args))
+    elif args.command == "list-inline-tools":
+        run_list_inline_tools(ListInlineToolsOptions.from_namespace(args))
+    elif args.command == "embedded-schema":
+        run_embedded_schema(EmbeddedSchemaOptions.from_namespace(args))
 
 
 if __name__ == "__main__":
