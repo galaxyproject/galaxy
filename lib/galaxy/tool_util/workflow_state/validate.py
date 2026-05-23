@@ -39,6 +39,7 @@ from ._encoding import (
     check_strict_structure as _check_strict_structure,
 )
 from ._inline_tool import (
+    ensure_inline_resolver,
     resolve_for_step,
     validate_inline_tool_source_for_step,
 )
@@ -125,25 +126,31 @@ def validate_workflow_cli(
 
     from .clean import clean_stale_state
 
+    # Wrap once at the walk boundary so clean / precheck / validate /
+    # connections all share one InlineResolver and re-use per-step parses
+    # of ``tool_representation``. Idempotent — pre-wrapped resolvers are
+    # passed through unchanged.
+    resolver = ensure_inline_resolver(get_tool_info, offline=offline)
+
     fmt = _format(workflow_dict)
     if fmt == "native":
         if clean:
             workflow_dict = copy.deepcopy(workflow_dict)
             normalized = ensure_native(workflow_dict)
             clean_policy = StaleKeyPolicy.for_clean([], [])
-            clean_stale_state(normalized, workflow_dict, get_tool_info, policy=clean_policy)
+            clean_stale_state(normalized, workflow_dict, resolver, policy=clean_policy)
 
-        precheck = precheck_native_workflow(workflow_dict, get_tool_info)
+        precheck = precheck_native_workflow(workflow_dict, resolver)
         if not precheck.can_process:
             return [], precheck, None
-        step_results = _validate_native(workflow_dict, get_tool_info, policy=policy, offline=offline)
+        step_results = _validate_native(workflow_dict, resolver, policy=policy, offline=offline)
     else:
-        step_results = _validate_format2(workflow_dict, get_tool_info, offline=offline)
+        step_results = _validate_format2(workflow_dict, resolver, offline=offline)
         precheck = None
 
     conn_report = None
     if connections:
-        conn_report = validate_connections_report(workflow_dict, get_tool_info)
+        conn_report = validate_connections_report(workflow_dict, resolver)
 
     return step_results, precheck, conn_report
 
