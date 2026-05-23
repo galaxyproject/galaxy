@@ -136,25 +136,8 @@ def test_inline_udt_output_format_source_resolves_to_inline_input():
     assert out.format_source == "input1", f"format_source not propagated: {out}"
 
 
-def test_inline_udt_connection_diagnostic_attributed_to_consumer():
-    """A wrong-typed connection consuming an inline UDT output lands on the consumer step.
-
-    §9.4 deferred test — confirms the existing connection-validation attribution
-    policy (consumer carries the diagnostic) extends to inline UDT producers.
-    """
-    # Build a workflow where step 2 is a regular tool input expecting a
-    # collection but step 1 (inline UDT) produces a plain dataset. Since
-    # we don't have an in-process tool resolver for step 2, simulate by
-    # building the graph and checking the step-keyed attribution: the
-    # consumer step is the step that owns the input — that's how
-    # StepConnectionResult is keyed today.
-    wf = _native_with_inline_udt()
-    result = validate_connections(wf, _EmptyGetToolInfo())
-    # No type mismatches in this minimal workflow — but the data structure
-    # should still key all step results by the consuming step's id.
-    consumer_ids = {sr.step_id for sr in result.step_results}
-    # Step 1 owns the inline UDT input (input1 ← step 0/output).
-    assert "1" in consumer_ids, f"consumer step missing from connection results: {consumer_ids}"
+# Consumer-attribution lock for UDT producers is now covered behaviorally
+# by connection_workflows/fail_udt_dataset_to_collection_consumer.gxwf.yml.
 
 
 # -- §9.2 clean: tool_representation is read-only --------------------------------
