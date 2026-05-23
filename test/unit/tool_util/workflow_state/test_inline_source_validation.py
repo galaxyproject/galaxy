@@ -26,71 +26,19 @@ from galaxy.tool_util.workflow_state.validate import (
 )
 from galaxy.tool_util_models import ParsedTool
 
+from .inline_udt_fixtures import (
+    cat_udt_body,
+    load_format2_inline_udt as _format2_with_inline_udt,
+    load_native_inline_udt as _native_with_inline_udt,
+)
+
 
 class _EmptyGetToolInfo:
     def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
         return None
 
 
-CAT_UDT: dict = {
-    "class": "GalaxyUserTool",
-    "id": "cat_user_defined",
-    "name": "cat_user_defined",
-    "version": "0.1",
-    "container": "busybox",
-    "shell_command": "head -n '$(inputs.n_lines)' '$(inputs.input1.path)' > output.txt",
-    "inputs": [
-        {"name": "input1", "type": "data", "format": "txt"},
-        {"name": "n_lines", "type": "integer", "value": 10},
-    ],
-    "outputs": [{"name": "output1", "type": "data", "format": "txt", "from_work_dir": "output.txt"}],
-}
-
-
-def _native_with_inline_udt(representation: Optional[dict] = None) -> dict:
-    return {
-        "a_galaxy_workflow": "true",
-        "format-version": "0.1",
-        "name": "inline udt source test",
-        "steps": {
-            "0": {
-                "id": 0,
-                "type": "data_input",
-                "label": "the_input",
-                "tool_state": "{}",
-                "input_connections": {},
-                "inputs": [{"description": "", "name": "the_input"}],
-                "outputs": [],
-            },
-            "1": {
-                "id": 1,
-                "type": "tool",
-                "label": "the_udt",
-                "tool_id": None,
-                "tool_version": None,
-                "tool_representation": representation if representation is not None else deepcopy(CAT_UDT),
-                "tool_state": {"input1": {"__class__": "ConnectedValue"}, "n_lines": 10},
-                "input_connections": {"input1": {"id": 0, "output_name": "output"}},
-                "outputs": [],
-                "uuid": "00000000-0000-0000-0000-000000000001",
-            },
-        },
-    }
-
-
-def _format2_with_inline_udt(representation: Optional[dict] = None) -> dict:
-    return {
-        "class": "GalaxyWorkflow",
-        "inputs": {"the_input": "data"},
-        "outputs": {"final": {"outputSource": "the_udt/output1"}},
-        "steps": {
-            "the_udt": {
-                "run": representation if representation is not None else deepcopy(CAT_UDT),
-                "state": {},
-                "in": {"input1": "the_input"},
-            },
-        },
-    }
+CAT_UDT: dict = cat_udt_body()
 
 
 # -- Phase C: inline-source diagnostics attached to step results ---------------
@@ -113,7 +61,7 @@ def test_validate_surfaces_blank_version_lint_finding_native():
     """Blank version in inline tool surfaces in inline_source.lint_errors or validation_errors."""
     rep = deepcopy(CAT_UDT)
     rep["version"] = "   "
-    wf = _native_with_inline_udt(rep)
+    wf = _native_with_inline_udt(representation=rep)
     results, _, _ = validate_workflow_cli(wf, _EmptyGetToolInfo())
     udt_rows = [r for r in results if r.inline_source is not None]
     assert udt_rows
@@ -126,7 +74,7 @@ def test_validate_admin_class_unsupported_native():
     """class: GalaxyTool surfaces as inline_source.supported = False."""
     rep = deepcopy(CAT_UDT)
     rep["class"] = "GalaxyTool"
-    wf = _native_with_inline_udt(rep)
+    wf = _native_with_inline_udt(representation=rep)
     results, _, _ = validate_workflow_cli(wf, _EmptyGetToolInfo())
     udt_rows = [r for r in results if r.inline_source is not None]
     assert udt_rows
@@ -202,7 +150,7 @@ def test_lint_single_attaches_inline_source(tmp_path):
 
     rep = deepcopy(CAT_UDT)
     rep["version"] = "   "  # blank — pydantic violation
-    wf = _native_with_inline_udt(rep)
+    wf = _native_with_inline_udt(representation=rep)
     wf_path = tmp_path / "wf.ga"
     wf_path.write_text(json.dumps(wf))
 
@@ -360,7 +308,7 @@ def test_validate_single_strict_inline_source_exit_code(tmp_path):
 
     rep = deepcopy(CAT_UDT)
     rep["version"] = "   "
-    wf = _native_with_inline_udt(rep)
+    wf = _native_with_inline_udt(representation=rep)
     wf_path = tmp_path / "wf.ga"
     wf_path.write_text(json.dumps(wf))
 

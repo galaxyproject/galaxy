@@ -37,6 +37,26 @@ validate_format2_cat1_passes:
     - path: [steps, concat, tool_id]
       value: cat1
 
+# --- Inline user-defined tool (UDT) workflows ---
+
+validate_inline_udt_native_passes:
+  fixture: cat_udt_native.ga
+  operation: validate
+  assertions:
+    - path: [steps, "1", tool_representation, class]
+      value: GalaxyUserTool
+    - path: [steps, "1", tool_representation, id]
+      value: cat_user_defined
+
+validate_inline_udt_format2_passes:
+  fixture: cat_udt_format2.gxwf.yml
+  operation: validate
+  assertions:
+    - path: [steps, the_udt, run, class]
+      value: GalaxyUserTool
+    - path: [steps, the_udt, run, id]
+      value: cat_user_defined
+
 # --- IWC workflows (stale keys cause validation failures) ---
 
 validate_iwc_repeatmasking_stale_rejected:
