@@ -7,6 +7,8 @@ context of workflows.
 """
 
 from ._inline_tool import (
+    ensure_inline_resolver,
+    InlineResolver,
     InlineToolInventoryEntry,
     InlineToolSourceResult,
     resolve_for_step,
@@ -36,9 +38,11 @@ __all__ = (
     "clean_single",
     "ConversionValidationFailure",
     "convert_state_to_format2",
+    "ensure_inline_resolver",
     "export_single",
     "export_workflow_to_format2",
     "GetToolInfo",
+    "InlineResolver",
     "InlineToolInventoryEntry",
     "InlineToolSourceResult",
     "lint_single",

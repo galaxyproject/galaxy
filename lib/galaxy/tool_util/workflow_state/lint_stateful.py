@@ -34,6 +34,7 @@ from ._encoding import (
     check_strict_encoding as _check_strict_encoding,
     check_strict_structure as _check_strict_structure,
 )
+from ._inline_tool import ensure_inline_resolver
 from ._report_models import (
     LintTreeReport,
     LintWorkflowResult,
@@ -198,9 +199,12 @@ def lint_single(
         training_topic=training_topic,
     )
 
+    # One resolver for the full lint walk so per-step parses are shared
+    # with the validate phase below.
+    resolver = ensure_inline_resolver(tool_info, offline=offline)
     results, precheck, conn_report = validate_workflow_cli(
         workflow_dict,
-        tool_info,
+        resolver,
         policy=policy,
         connections=connections,
         offline=offline,
@@ -266,10 +270,12 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         training_topic=options.training_topic,
     )
 
-    # Phase 2: stateful validation (also runs inline-source validation per step)
+    # Phase 2: stateful validation (also runs inline-source validation per step).
+    # Resolver wraps tool_info once so all sub-walks share per-step parses.
+    resolver = ensure_inline_resolver(tool_info, offline=options.offline)
     results, precheck, conn_report = validate_workflow_cli(
         workflow_dict,
-        tool_info,
+        resolver,
         policy=policy,
         connections=options.connections,
         offline=options.offline,
@@ -440,9 +446,10 @@ def run_lint_stateful_tree(options: LintStatefulTreeOptions) -> int:
             training_topic=options.training_topic,
         )
 
+        resolver = ensure_inline_resolver(get_tool_info, offline=options.offline)
         step_results, precheck, conn_report = validate_workflow_cli(
             wf_dict,
-            get_tool_info,
+            resolver,
             policy=policy,
             connections=options.connections,
             offline=options.offline,

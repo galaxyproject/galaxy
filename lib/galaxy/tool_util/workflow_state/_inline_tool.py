@@ -148,29 +148,24 @@ def resolve_for_step(
 
     Order:
 
-    1. If the step carries an inline ``GalaxyUserTool`` representation,
+    1. If ``get_tool_info`` is an :class:`InlineResolver`, route through its
+       per-step cache (memoizes parsed ``tool_representation`` and any
+       remote ``GetToolInfo`` lookups for the lifetime of the resolver).
+    2. If the step carries an inline ``GalaxyUserTool`` representation,
        parse it locally and return immediately — no network.
-    2. If the inline class is anything else (``GalaxyTool`` admin dynamic
+    3. If the inline class is anything else (``GalaxyTool`` admin dynamic
        tools, unknown classes), return ``None`` so callers can surface an
        ``inline_source_unsupported`` diagnostic.
-    3. Otherwise fall back to the injected :class:`GetToolInfo` resolver.
+    4. Otherwise fall back to the injected :class:`GetToolInfo` resolver.
 
     ``offline`` is accepted for forward compatibility with the Phase C
     ``--offline`` plumbing; it does not affect parsing itself (the lint
     pipeline is the only network consumer and runs in
     :func:`_validate_inline_tool_source`).
     """
-    if step_is_inline_tool(step):
-        if step_inline_tool_class(step) != "GalaxyUserTool":
-            return None
-        representation = step_tool_representation(step)
-        if representation is None:
-            return None
-        return _parse_inline_tool(representation)
-    tool_id = step_tool_id(step)
-    if not tool_id:
-        return None
-    return get_tool_info.get_tool_info(tool_id, step_tool_version(step))
+    if isinstance(get_tool_info, InlineResolver):
+        return get_tool_info.resolve(step)
+    return _resolve_for_step_uncached(get_tool_info, step, offline=offline)
 
 
 class InlineToolInventoryEntry(BaseModel):
@@ -260,24 +255,88 @@ def _walk_inline_tools_format2(
     return entries
 
 
-class _ResolveCache:
-    """Per-invocation memoization layered over :func:`resolve_for_step`.
+class InlineResolver:
+    """Per-walk memoization layered over :func:`resolve_for_step`.
+
+    Wraps a :class:`GetToolInfo` resolver and caches per-step parse results
+    so repeated ``resolve_for_step`` calls on the same step object — common
+    when multiple validation phases walk the same workflow (clean, validate,
+    connections, labelling) — re-use one ``parse_tool(YamlToolSource(...))``
+    invocation.
+
+    Structurally satisfies :class:`GetToolInfo` itself by delegating
+    ``get_tool_info(tool_id, version)`` to the wrapped instance, so callers
+    can pass an :class:`InlineResolver` anywhere a :class:`GetToolInfo` is
+    expected. :func:`resolve_for_step` detects the wrapper and routes
+    through :meth:`resolve` automatically.
 
     Keyed by step identity (``id(step)``) — content-hash dedupe deferred
-    until profiling says it matters. Lifetime is bound to a single CLI
-    invocation; the original step objects are kept alive by the workflow
-    document the cache was built from.
+    until profiling says it matters. Lifetime is bound to a single workflow
+    walk; the original step objects are kept alive by the workflow document
+    the cache was built from.
     """
 
     def __init__(self, get_tool_info: GetToolInfo, *, offline: bool = False) -> None:
         self._get_tool_info = get_tool_info
         self._offline = offline
-        self._cache: dict = {}
+        self._step_cache: dict = {}
+
+    @property
+    def offline(self) -> bool:
+        return self._offline
+
+    @property
+    def inner(self) -> GetToolInfo:
+        """The wrapped :class:`GetToolInfo`. Useful when a caller needs to
+        bypass the cache (e.g. a downstream API that builds its own cache
+        keyed differently)."""
+        return self._get_tool_info
+
+    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+        """Delegate to the wrapped :class:`GetToolInfo` (no caching here —
+        the wrapped resolver is expected to cache by ``(tool_id, version)``
+        already; this method exists only to satisfy the Protocol)."""
+        return self._get_tool_info.get_tool_info(tool_id, tool_version)
 
     def resolve(self, step: StepLike) -> Optional[ParsedTool]:
         key = id(step)
-        if key in self._cache:
-            return self._cache[key]
-        parsed = resolve_for_step(self._get_tool_info, step, offline=self._offline)
-        self._cache[key] = parsed
+        if key in self._step_cache:
+            return self._step_cache[key]
+        parsed = _resolve_for_step_uncached(self._get_tool_info, step, offline=self._offline)
+        self._step_cache[key] = parsed
         return parsed
+
+
+def _resolve_for_step_uncached(
+    get_tool_info: GetToolInfo, step: StepLike, *, offline: bool = False
+) -> Optional[ParsedTool]:
+    """Internal: the un-memoized core of :func:`resolve_for_step`.
+
+    Split out so :meth:`InlineResolver.resolve` can avoid the
+    ``isinstance(get_tool_info, InlineResolver)`` short-circuit that would
+    otherwise recurse back into itself.
+    """
+    if step_is_inline_tool(step):
+        if step_inline_tool_class(step) != "GalaxyUserTool":
+            return None
+        representation = step_tool_representation(step)
+        if representation is None:
+            return None
+        return _parse_inline_tool(representation)
+    tool_id = step_tool_id(step)
+    if not tool_id:
+        return None
+    return get_tool_info.get_tool_info(tool_id, step_tool_version(step))
+
+
+def ensure_inline_resolver(get_tool_info: GetToolInfo, *, offline: bool = False) -> "InlineResolver":
+    """Wrap *get_tool_info* in an :class:`InlineResolver`, idempotently.
+
+    If *get_tool_info* is already an :class:`InlineResolver`, it is returned
+    unchanged (existing cache preserved). Otherwise a fresh resolver is
+    constructed. Use at the top of any walk that would benefit from
+    per-step parse memoization.
+    """
+    if isinstance(get_tool_info, InlineResolver):
+        return get_tool_info
+    return InlineResolver(get_tool_info, offline=offline)
