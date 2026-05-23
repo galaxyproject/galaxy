@@ -1,0 +1,12 @@
+- target: [valid]
+  value: false
+- target: [step_results, 0, resolved_outputs, 0, collection_type]
+  value: paired
+- target: [step_results, 1, tool_id]
+  value: list_only_udt
+- target: [step_results, 1, connections, 0, status]
+  value: "invalid"
+- target: [summary, ok]
+  value: 0
+- target: [summary, invalid]
+  value: 1

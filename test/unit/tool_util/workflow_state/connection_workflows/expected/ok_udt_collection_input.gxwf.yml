@@ -1,0 +1,16 @@
+- target: [valid]
+  value: true
+- target: [step_results, 0, step_type]
+  value: data_collection_input
+- target: [step_results, 0, resolved_outputs, 0, collection_type]
+  value: list
+- target: [step_results, 1, tool_id]
+  value: list_consumer_udt
+- target: [step_results, 1, connections, 0, target_input]
+  value: input_list
+- target: [step_results, 1, connections, 0, status]
+  value: "ok"
+- target: [summary, ok]
+  value: 1
+- target: [summary, invalid]
+  value: 0
