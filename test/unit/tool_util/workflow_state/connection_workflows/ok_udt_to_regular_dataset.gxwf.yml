@@ -1,0 +1,29 @@
+class: GalaxyWorkflow
+inputs:
+  data_in: data
+steps:
+  the_udt:
+    run:
+      class: GalaxyUserTool
+      id: cat_user_defined
+      name: cat_user_defined
+      version: '0.1'
+      container: busybox
+      shell_command: cat '$(inputs.input1.path)' > output.txt
+      inputs:
+        - name: input1
+          type: data
+          format: txt
+      outputs:
+        - name: output1
+          type: data
+          format: txt
+          from_work_dir: output.txt
+    state: {}
+    in:
+      input1: data_in
+  regular_consumer:
+    tool_id: gx_data
+    in:
+      parameter:
+        source: the_udt/output1
