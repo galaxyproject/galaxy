@@ -22,58 +22,18 @@ from galaxy.tool_util.workflow_state.validation_json_schema import (
 )
 from galaxy.tool_util_models import ParsedTool
 
+from .inline_udt_fixtures import (
+    cat_udt_body,
+    load_native_inline_udt as _native_with_inline_udt,
+)
+
 
 class _EmptyGetToolInfo:
     def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
         return None
 
 
-CAT_UDT: dict = {
-    "class": "GalaxyUserTool",
-    "id": "cat_user_defined",
-    "name": "cat_user_defined",
-    "version": "0.1",
-    "container": "busybox",
-    "shell_command": "head -n '$(inputs.n_lines)' '$(inputs.input1.path)' > output.txt",
-    "inputs": [
-        {"name": "input1", "type": "data", "format": "txt"},
-        {"name": "n_lines", "type": "integer", "value": 10},
-    ],
-    "outputs": [{"name": "output1", "type": "data", "format": "txt", "from_work_dir": "output.txt"}],
-}
-
-
-def _native_with_inline_udt(state: Optional[dict] = None) -> dict:
-    return {
-        "a_galaxy_workflow": "true",
-        "format-version": "0.1",
-        "name": "inline udt json-schema test",
-        "steps": {
-            "0": {
-                "id": 0,
-                "type": "data_input",
-                "label": "the_input",
-                "tool_state": "{}",
-                "input_connections": {},
-                "inputs": [{"description": "", "name": "the_input"}],
-                "outputs": [],
-            },
-            "1": {
-                "id": 1,
-                "type": "tool",
-                "label": "the_udt",
-                "tool_id": None,
-                "tool_version": None,
-                "tool_representation": deepcopy(CAT_UDT),
-                "tool_state": (
-                    state if state is not None else {"input1": {"__class__": "ConnectedValue"}, "n_lines": 10}
-                ),
-                "input_connections": {"input1": {"id": 0, "output_name": "output"}},
-                "outputs": [],
-                "uuid": "00000000-0000-0000-0000-000000000001",
-            },
-        },
-    }
+CAT_UDT: dict = cat_udt_body()
 
 
 # -- §9.7 JSON Schema backend inline awareness ----------------------------------
