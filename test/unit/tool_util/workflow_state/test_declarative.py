@@ -50,12 +50,16 @@ class _CombinedToolInfo:
 _tool_info = _CombinedToolInfo()
 
 
+INLINE_UDT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "inline_udt"))
+
+
 def _resolve_fixture_path(name: str) -> str:
     """Resolve a fixture name to a file path.
 
-    Tries: fixtures/ dir, framework test data, IWC cache, absolute path.
+    Tries: fixtures/ dir, framework test data, IWC cache, inline-UDT dir,
+    absolute path.
     """
-    for base in [FIXTURES_DIR, FRAMEWORK_WORKFLOWS_DIR]:
+    for base in [FIXTURES_DIR, FRAMEWORK_WORKFLOWS_DIR, INLINE_UDT_DIR]:
         candidate = os.path.join(base, name)
         if os.path.exists(candidate):
             return candidate
