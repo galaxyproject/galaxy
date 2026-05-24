@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faCopy, faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -16,6 +15,7 @@ import { errorMessageAsString } from "@/utils/simple-error.js";
 import HistoryPageList from "./HistoryPageList.vue";
 import PageDisplayOnly from "./PageDisplayOnly.vue";
 import PageEditorView from "./PageEditorView.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 
 const props = defineProps<{
     historyId: string;
@@ -174,19 +174,19 @@ function handleBack() {
           Render it here only for list view and display-only mode, otherwise the
           same store.error renders twice.
         -->
-        <BAlert
+        <GAlert
             v-if="store.error && (!pageId || displayOnly)"
             variant="danger"
             show
             dismissible
             @dismissed="store.error = null">
             {{ store.error }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="store.isLoadingList" variant="info" show>
+        <GAlert v-if="store.isLoadingList" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading {{ labels.entityNamePlural.toLowerCase() }}...
-        </BAlert>
+        </GAlert>
 
         <template v-else-if="!pageId">
             <HistoryPageList
@@ -212,10 +212,10 @@ function handleBack() {
             <PageEditorView :page-id="pageId" :history-id="historyId" :invocation-id="invocationId" />
         </template>
 
-        <BAlert v-else-if="store.isLoadingPage" variant="info" show>
+        <GAlert v-else-if="store.isLoadingPage" variant="info" show>
             <FontAwesomeIcon :icon="faSpinner" spin />
             Loading {{ labels.entityName.toLowerCase() }}...
-        </BAlert>
+        </GAlert>
     </div>
 </template>
 
