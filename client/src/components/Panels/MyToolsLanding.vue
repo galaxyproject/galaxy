@@ -6,7 +6,6 @@
  * no active search query, keeping all the My Tools-specific reactivity off
  * the default tool panel hot path.
  */
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import draggable from "vuedraggable";
@@ -29,6 +28,7 @@ import {
 } from "./panelViews";
 import { buildToolLabel, buildToolSection, getUniqueToolIdsInPanel } from "./utilities";
 
+import GAlert from "../BaseComponents/GAlert.vue";
 import GButton from "../BaseComponents/GButton.vue";
 import ToolItem from "./Common/Tool.vue";
 import ToolPanelLabel from "./Common/ToolPanelLabel.vue";
@@ -453,7 +453,7 @@ function onLabelToggle(labelId: string) {
             @toggle="onLabelToggle" />
         <div v-if="!favoritesCollapsed">
             <div v-if="showEmptyFavorites" class="tool-panel-empty">
-                <BAlert variant="info" show>
+                <GAlert variant="info" show>
                     <template v-if="!isAnonymous">
                         You haven't favorited any tools yet. Search the toolbox or use
                         <GButton
@@ -478,7 +478,7 @@ function onLabelToggle(labelId: string) {
                         </GButton>
                         to favorite tools and have them appear in this section.
                     </template>
-                </BAlert>
+                </GAlert>
             </div>
             <draggable
                 v-else

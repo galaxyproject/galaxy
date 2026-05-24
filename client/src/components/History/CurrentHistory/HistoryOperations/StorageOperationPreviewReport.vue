@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BListGroup, BListGroupItem } from "bootstrap-vue";
+import { BBadge, BListGroup, BListGroupItem } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { GalaxyApi } from "@/api";
@@ -11,6 +11,7 @@ import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { getIneligibleReasonDescription } from "@/utils/storageOperations";
 import { bytesToString } from "@/utils/utils";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import StorageQuotaImpactBar from "@/components/History/StorageOperations/StorageQuotaImpactBar.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
@@ -287,7 +288,7 @@ function getObjectStoreLabel(storeId: string) {
         </div>
 
         <!-- Warnings -->
-        <BAlert v-if="hasWarnings" show variant="warning" class="mb-0 py-2">
+        <GAlert v-if="hasWarnings" show variant="warning" class="mb-0 py-2">
             <div class="font-weight-bold small mb-1">Warnings</div>
             <div v-for="(warning, index) in preview.warnings" :key="index" class="small py-1">
                 {{ warning }}
@@ -296,6 +297,6 @@ function getObjectStoreLabel(storeId: string) {
                 All selected datasets are ineligible for transfer. Please review the reasons above and adjust your
                 selection or target storage location.
             </div>
-        </BAlert>
+        </GAlert>
     </div>
 </template>
