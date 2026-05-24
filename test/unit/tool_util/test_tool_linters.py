@@ -2675,6 +2675,7 @@ def test_required_files_literal_exist(lint_ctx):
         _write_file(tool_dir, "my_script.R", "# R script")
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert not lint_ctx.error_messages
+    assert "Required file [my_script.R] found" in lint_ctx.info_messages
 
 
 def test_required_files_literal_missing(lint_ctx):
@@ -2691,6 +2692,7 @@ def test_required_files_glob_match(lint_ctx):
         _write_file(tool_dir, "my_script.R", "# R script")
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert not lint_ctx.error_messages
+    assert "Required files pattern [*.R] (type glob) matches files" in lint_ctx.info_messages
 
 
 def test_required_files_glob_no_match(lint_ctx):
@@ -2700,3 +2702,24 @@ def test_required_files_glob_no_match(lint_ctx):
         _load_and_run_lint(lint_ctx, tool_path, required_files)
     assert "Required files pattern [*.py] (type glob) does not match any files" in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 1
+
+
+REQUIRED_FILES_LITERAL_SYMLINK = """
+<tool id="id" name="name">
+    <required_files>
+        <include path="my_script.R"/>
+    </required_files>
+</tool>
+"""
+
+
+def test_required_files_literal_symlinked_file(lint_ctx):
+    """Test that literal required files are found when symlinked from
+    outside the tool directory (e.g. planemo shed_lint realized repos)."""
+    with tempfile.TemporaryDirectory() as real_dir:
+        real_file = _write_file(real_dir, "my_script.R", "# R script")
+        with tempfile.TemporaryDirectory() as tool_dir:
+            tool_path = _write_file(tool_dir, "tool.xml", REQUIRED_FILES_LITERAL_SYMLINK)
+            os.symlink(real_file, os.path.join(tool_dir, "my_script.R"))
+            _load_and_run_lint(lint_ctx, tool_path, required_files)
+    assert not lint_ctx.error_messages

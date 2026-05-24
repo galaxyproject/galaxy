@@ -841,7 +841,7 @@ class RequiredFiles:
                         return True
             return False
 
-        excludes = self.excludes
+        excludes = list(self.excludes)
         if self.extend_default_excludes:
             excludes.append({"path": "tool-data", "path_type": "prefix"})
             excludes.append({"path": "test-data", "path_type": "prefix"})
@@ -851,7 +851,7 @@ class RequiredFiles:
         for dirpath, _, filenames in safe_walk(tool_directory):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
-                if matches(self.includes, rel_path) and not matches(self.excludes, rel_path):
+                if matches(self.includes, rel_path) and not matches(excludes, rel_path):
                     files.append(rel_path)
         return files
 
