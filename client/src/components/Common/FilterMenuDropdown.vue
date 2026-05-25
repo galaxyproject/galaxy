@@ -10,9 +10,9 @@ import type { FilterType, ValidFilter } from "@/utils/filtering";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GButton from "../BaseComponents/GButton.vue";
+import GModal from "../BaseComponents/GModal.vue";
 import GDropdown from "@/components/BaseComponents/GDropdown.vue";
 import GDropdownItem from "@/components/BaseComponents/GDropdownItem.vue";
-import GModal from "../BaseComponents/GModal.vue";
 import QuotaUsageBar from "@/components/User/DiskUsage/Quota/QuotaUsageBar.vue";
 
 type FilterValue = QuotaUsage | string | boolean | undefined;
