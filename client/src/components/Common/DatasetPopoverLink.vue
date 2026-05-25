@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { BPopover } from "bootstrap-vue";
 import { computed } from "vue";
 
 import { useDatasetStore } from "@/stores/datasetStore";
 import { useHistoryStore } from "@/stores/historyStore";
 import localize from "@/utils/localization";
 
+import GPopover from "@/components/BaseComponents/GPopover.vue";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -48,7 +48,7 @@ async function ensureDatasetDetails() {
             {{ datasetId }}
         </router-link>
 
-        <BPopover :target="targetId" triggers="hover focus" boundary="window" placement="right">
+        <GPopover :target="targetId" triggers="hover focus" boundary="window" placement="right">
             <div class="dataset-details-popover">
                 <div v-if="loading">
                     <LoadingSpan :message="localize('Loading dataset details')" />
@@ -60,7 +60,7 @@ async function ensureDatasetDetails() {
                     <DatasetInformation :dataset="details" />
                 </div>
             </div>
-        </BPopover>
+        </GPopover>
     </div>
 </template>
 

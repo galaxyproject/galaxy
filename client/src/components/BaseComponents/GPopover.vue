@@ -29,7 +29,7 @@ import {
 } from "@floating-ui/dom";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "focus";
+type TriggerType = "hover" | "click" | "click blur" | "hover focus" | "manual" | "manual hover" | "focus";
 
 const props = withDefaults(
     defineProps<{
@@ -228,7 +228,7 @@ const parsedTriggers = computed(() => {
     if (t.includes("blur")) {
         result.add("blur");
     }
-    if (t === "manual") {
+    if (t.includes("manual")) {
         result.add("manual");
     }
     return result;
