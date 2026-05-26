@@ -155,67 +155,43 @@ jobs:
             galaxy/galaxy-min:${{ matrix.branch }}-auto
             quay.io/galaxyproject/galaxy-min:${{ matrix.branch }}-auto
 
-  notify-dev-transitions:
-    name: Notify dev build state transitions
+  notify-dev-failure:
+    name: Notify nightly dev build failure
     runs-on: ubuntu-latest
     needs: [build-test-dev, publish-dev]
-    if: always()
+    if: always() && (needs.build-test-dev.result == 'failure' || needs.publish-dev.result == 'failure')
     steps:
-      - name: Determine current status
-        id: current
+      - name: Determine which job failed
+        id: failure-info
         run: |
-          # Job succeeds only if both build-test and publish succeed
-          if [[ "${{ needs.build-test-dev.result }}" == "success" && "${{ needs.publish-dev.result }}" == "success" ]]; then
-            echo "status=success" >> $GITHUB_OUTPUT
-          else
-            echo "status=failure" >> $GITHUB_OUTPUT
-            if [[ "${{ needs.build-test-dev.result }}" == "failure" ]]; then
-              echo "failed_job=Build or test" >> $GITHUB_OUTPUT
-            else
-              echo "failed_job=Publishing" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Get previous nightly run status
-        id: previous
-        run: |
-          previous_run=$(curl -s -H "Authorization: token ${{ github.token }}" \
-            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/cron_container_nightly.yml/runs?per_page=2" \
-            | jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1].conclusion // "none"')
-          echo "previous_status=$previous_run" >> $GITHUB_OUTPUT
-
-      - name: Check if should notify
-        id: notify
-        run: |
-          current="${{ steps.current.outputs.status }}"
-          previous="${{ steps.previous.outputs.previous_status }}"
-
-          if [[ "$current" == "failure" && "$previous" != "failure" ]]; then
-            echo "notify=true" >> $GITHUB_OUTPUT
-            echo "type=first_failure" >> $GITHUB_OUTPUT
-          elif [[ "$current" == "success" && "$previous" == "failure" ]]; then
-            echo "notify=true" >> $GITHUB_OUTPUT
-            echo "type=recovery" >> $GITHUB_OUTPUT
-          else
-            echo "notify=false" >> $GITHUB_OUTPUT
+          if [[ "${{ needs.build-test-dev.result }}" == "failure" ]]; then
+            echo "failed_job=Build or test" >> $GITHUB_OUTPUT
+          elif [[ "${{ needs.publish-dev.result }}" == "failure" ]]; then
+            echo "failed_job=Publishing" >> $GITHUB_OUTPUT
           fi
 
       - name: Send Slack notification
-        if: steps.notify.outputs.notify == 'true'
         uses: slackapi/slack-github-action@v3.0.1
         with:
           webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": "${{ steps.notify.outputs.type == 'recovery' && ':white_check_mark: *Galaxy Nightly Dev Build Recovered*' || ':x: *Galaxy Nightly Dev Build Failed*' }}",
+              "text": ":x: *Galaxy Nightly Dev Build Failed*",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": "${{ steps.notify.outputs.type == 'recovery' && ':white_check_mark: Galaxy Nightly Dev Build Recovered' || ':x: Galaxy Nightly Dev Build Failed' }}",
+                    "text": ":x: Galaxy Nightly Dev Build Failed",
                     "emoji": true
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "The Galaxy nightly development build has failed."
                   }
                 },
                 {
@@ -228,7 +204,11 @@ jobs:
                     {
                       "type": "mrkdwn",
                       "text": "*Version:*\n${{ needs.build-test-dev.outputs.galaxy_version }}"
-                    }${{ steps.notify.outputs.type == 'first_failure' && format(',{{"type": "mrkdwn", "text": "*Failed Job:*\\n{0}"}}', steps.current.outputs.failed_job) || '' }},
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
+                    },
                     {
                       "type": "mrkdwn",
                       "text": "*Trigger:*\nNightly cron"
