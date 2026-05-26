@@ -126,7 +126,7 @@ jobs:
       - name: publish client-api
         if: (github.event_name == 'workflow_dispatch' && inputs.release_type == 'release') || (github.event_name == 'release' && !github.event.release.prerelease)
         run: npm publish --provenance --access public
-        working-directory: 'client-api'
+        working-directory: 'client/packages/api-client'
 
   # Container publishing
   check-container-version:
