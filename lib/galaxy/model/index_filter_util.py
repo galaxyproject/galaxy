@@ -7,6 +7,7 @@ from typing import (
 from sqlalchemy import (
     and_,
     or_,
+    select,
 )
 from sqlalchemy.orm import (
     aliased,
@@ -68,3 +69,32 @@ def append_user_filter(query, model_class, term: FilteredTerm):
     query = query.outerjoin(model_class.user.of_type(alias))
     query = query.filter(text_column_filter(alias.username, term))
     return query
+
+
+def tag_exists_filter(association_model_class, fk_column, parent_id_column, term_text, quoted: bool = False):
+    """Correlated EXISTS subquery that matches any tag on the parent row against term_text.
+
+    Prefer this over adding a per-term outer join on the tag-association table: each
+    extra outer join multiplies rows (forcing an expensive DISTINCT) and in free-text
+    search N whitespace-separated terms produce N such joins.
+    """
+    return (
+        select(1)
+        .select_from(association_model_class)
+        .where(fk_column == parent_id_column)
+        .where(tag_filter(association_model_class, term_text, quoted))
+        .correlate_except(association_model_class)
+        .exists()
+    )
+
+
+def user_exists_filter(owner_id_column, term_text: str):
+    """Correlated EXISTS subquery that matches the owning user's username."""
+    return (
+        select(1)
+        .select_from(model.User)
+        .where(model.User.id == owner_id_column)
+        .where(model.User.username.ilike(f"%{term_text}%"))
+        .correlate_except(model.User)
+        .exists()
+    )

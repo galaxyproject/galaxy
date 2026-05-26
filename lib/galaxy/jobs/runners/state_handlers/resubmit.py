@@ -1,9 +1,9 @@
 import logging
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 from galaxy import model
 from galaxy.jobs.runners import JobState
+from galaxy.util import now
 from ._safe_eval import safe_eval
 
 if TYPE_CHECKING:
@@ -83,9 +83,21 @@ def _handle_resubmit_definitions(
             job_state.job_wrapper.job_destination.id,
         )
 
-        # Resolve dynamic if necessary, and cache the destination to prevent
-        # rerunning dynamic after resubmit
-        new_destination = job_state.job_wrapper.set_cached_job_destination(new_destination)
+        # Defer evaluation: do NOT call set_cached_job_destination here. The
+        # resubmit destination is persisted as the dynamic intent (e.g.
+        # "tpv_dispatcher", runner="dynamic") via set_job_destination below;
+        # __recover_job_wrapper(resubmit=True) will walk the chain afresh when
+        # the job is picked up from the queue. This is what enables multiple
+        # resubmits through chained dynamic destinations (refs galaxyproject/galaxy#7118,
+        # galaxyproject/galaxy#15208).
+        #
+        # Carry the prior attempt's destination_params forward so dynamic rules
+        # that branch on prior context (e.g. TPV reading job.destination_params
+        # to escalate memory across retries) keep working. The static
+        # dispatcher's params (function, rules_module, type, ...) take
+        # precedence on conflicts so the chain re-walk picks up the right rule.
+        prior_destination_params = (job_state.job_wrapper.get_job().destination_params or {}).copy()
+        new_destination.params = {**prior_destination_params, **new_destination.params}
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
         job = job_state.job_wrapper.get_job()
@@ -127,7 +139,7 @@ class _ExpressionContext:
         if self._lazy_context is None:
             runner_state = getattr(self._job_state, "runner_state", None) or JobState.runner_states.UNKNOWN_ERROR
             attempt = 1
-            now = datetime.utcnow()
+            current_time = now()
             last_running_state = None
             last_queued_state = None
             for state in self._job_state.job_wrapper.get_job().state_history:
@@ -141,9 +153,9 @@ class _ExpressionContext:
             seconds_running = 0
             seconds_since_queued = 0
             if last_running_state:
-                seconds_running = (now - last_running_state.create_time).total_seconds()
+                seconds_running = (current_time - last_running_state.create_time).total_seconds()
             if last_queued_state:
-                seconds_since_queued = (now - last_queued_state.create_time).total_seconds()
+                seconds_since_queued = (current_time - last_queued_state.create_time).total_seconds()
 
             self._lazy_context = {
                 "walltime_reached": runner_state == JobState.runner_states.WALLTIME_REACHED,

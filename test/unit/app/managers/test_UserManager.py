@@ -4,7 +4,6 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 
-from datetime import datetime
 from unittest.mock import patch
 
 from sqlalchemy import (
@@ -22,6 +21,7 @@ from galaxy.managers import (
     users,
 )
 from galaxy.security.passwords import check_password
+from galaxy.util import now
 from .base import BaseTestCase
 
 # =============================================================================
@@ -178,7 +178,7 @@ class TestUserManager(BaseTestCase):
         )
         assert check_password(default_password, user2.password)
         assert not check_password(changed_password, user2.password)
-        prt.expiration_time = datetime.utcnow()
+        prt.expiration_time = now()
         user, message = self.user_manager.change_password(
             self.trans, token=prt.token, password=default_password, confirm=default_password
         )

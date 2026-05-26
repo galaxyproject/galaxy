@@ -140,6 +140,19 @@ class FileNameInfoT(TypedDict):
 LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
 
 
+class DataTableColumnMismatch(Exception):
+    """Two data tables share a name but declare different columns."""
+
+    def __init__(self, table_name: str, existing_columns: Dict[str, int], incoming_columns: Dict[str, int]):
+        self.table_name = table_name
+        self.existing_columns = existing_columns
+        self.incoming_columns = incoming_columns
+        super().__init__(
+            f"Data table {table_name!r} is already registered with columns {existing_columns}, "
+            f"refusing to register conflicting columns {incoming_columns}."
+        )
+
+
 class ToolDataTable(Dictifiable):
     type_key: str
     data: List[List[str]]
@@ -516,6 +529,38 @@ class TabularToolDataTable(ToolDataTable):
     def get_version_fields(self):
         return (self._loaded_content_version, self.get_fields())
 
+    @staticmethod
+    def parse_column_spec_element(
+        config_element: Element,
+    ) -> Tuple[Dict[str, int], int, Dict[str, str]]:
+        """
+        Parse column definitions into ``(columns, largest_index, empty_field_values)``.
+        Does not mutate or assert — callers layer their own validation.
+        """
+        columns: Dict[str, int] = {}
+        empty_field_values: Dict[str, str] = {}
+        largest_index = 0
+        columns_elem = config_element.find("columns")
+        if columns_elem is not None:
+            column_names = util.xml_text(columns_elem)
+            for index, name in enumerate(n.strip() for n in column_names.split(",")):
+                columns[name] = index
+                largest_index = index
+        else:
+            for column_elem in config_element.findall("column"):
+                name = column_elem.get("name")
+                index_attr = column_elem.get("index")
+                if name is None or index_attr is None:
+                    continue
+                index = int(index_attr)
+                columns[name] = index
+                if index > largest_index:
+                    largest_index = index
+                empty_field_value = column_elem.get("empty_field_value", None)
+                if empty_field_value is not None:
+                    empty_field_values[name] = empty_field_value
+        return columns, largest_index, empty_field_values
+
     def parse_column_spec(self, config_element: Element) -> None:
         """
         Parse column definitions, which can either be a set of 'column' elements
@@ -525,30 +570,13 @@ class TabularToolDataTable(ToolDataTable):
 
         A column named 'value' is required.
         """
-        self.columns: Dict[str, int] = {}
-        if config_element.find("columns") is not None:
-            column_names = util.xml_text(config_element.find("columns"))
-            column_names = [n.strip() for n in column_names.split(",")]
-            for index, name in enumerate(column_names):
-                self.columns[name] = index
-                self.largest_index = index
-        else:
-            self.largest_index = 0
+        if config_element.find("columns") is None:
             for column_elem in config_element.findall("column"):
-                name = column_elem.get("name")
-                assert name is not None, "Required 'name' attribute missing from column def"
-                index_attr = column_elem.get("index")
-                assert index_attr is not None, "Required 'index' attribute missing from column def"
-                index = int(index_attr)
-                self.columns[name] = index
-                if index > self.largest_index:
-                    self.largest_index = index
-                empty_field_value = column_elem.get("empty_field_value", None)
-                if empty_field_value is not None:
-                    self.empty_field_values[name] = empty_field_value
+                assert column_elem.get("name") is not None, "Required 'name' attribute missing from column def"
+                assert column_elem.get("index") is not None, "Required 'index' attribute missing from column def"
+        self.columns, self.largest_index, parsed_empty_field_values = self.parse_column_spec_element(config_element)
+        self.empty_field_values.update(parsed_empty_field_values)
         assert "value" in self.columns, "Required 'value' column missing from column def"
-        if "name" not in self.columns:
-            self.columns["name"] = self.columns["value"]
 
     def extend_data_with(self, filename: str, errors: Optional[ErrorListT] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
@@ -654,6 +682,7 @@ class TabularToolDataTable(ToolDataTable):
                     source_repo_info_model = source.repo_info
                 source_repo_info = source_repo_info_model.model_dump() if source_repo_info_model else None
         filename = default
+        shared_fallback: Optional[str] = None
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
             if (not source_repo_info and not repo_info) or (
@@ -661,6 +690,14 @@ class TabularToolDataTable(ToolDataTable):
             ):
                 filename = name
                 break
+            if source_repo_info and not repo_info and shared_fallback is None:
+                # Loc file registered without repo_info (shared install) — use as fallback
+                # when a tool-shed source has no exact match. Preserves legacy behavior where
+                # a `<tool_shed_repository>`-tagged filename matches exactly.
+                shared_fallback = name
+        else:
+            if shared_fallback is not None:
+                filename = shared_fallback
         return filename
 
     def _add_entry(
@@ -731,6 +768,62 @@ class TabularToolDataTable(ToolDataTable):
                         raise
                 fields_collapsed = f"{self.separator.join(fields)}\n"
                 data_table_fh.write(fields_collapsed.encode("utf-8"))
+
+    def append_entries_with_attribution(
+        self,
+        entries: List[List[str]],
+        attribution: str,
+        allow_duplicates: bool = False,
+    ) -> int:
+        """Append ``entries`` to this table's loc file with an attribution comment line.
+
+        When ``allow_duplicates`` is False, dedupes entries by the ``value`` column
+        (the table's primary key) against existing in-memory rows and the pending
+        batch. Writes a single ``{comment_char} {attribution}`` line before the first
+        new row. No-op if no rows survive the dedup.
+        """
+        filename: Optional[str] = self.get_filename_for_source(None)
+        if filename is None:
+            for name in self.filenames:
+                filename = name
+                break
+        if filename is None:
+            raise MessageException(f"Unable to determine filename for appending entries to data table '{self.name}'.")
+        value_index = self.columns.get("value", 0)
+        existing_values: Optional[Set[str]] = None
+        if not allow_duplicates:
+            existing_values = {row[value_index] for row in self.data if value_index < len(row)}
+        new_rows: List[List[str]] = []
+        for entry in entries:
+            fields = self._replace_field_separators(list(entry))
+            if self.largest_index >= len(fields):
+                log.warning(
+                    "Skipping fields (%s) for data table '%s': only %d field(s) provided.",
+                    fields,
+                    self.name,
+                    len(fields),
+                )
+                continue
+            if existing_values is not None and fields[value_index] in existing_values:
+                continue
+            new_rows.append(fields)
+            if existing_values is not None:
+                existing_values.add(fields[value_index])
+        if not new_rows:
+            return self._loaded_content_version
+        with FileLock(filename):
+            if os.path.exists(filename) and os.stat(filename).st_size > 0:
+                with open(filename, "rb+") as fh:
+                    fh.seek(-1, 2)
+                    if fh.read(1) not in (b"\n", b"\r"):
+                        fh.write(b"\n")
+            with open(filename, "ab") as fh:
+                fh.write(f"{self.comment_char} {attribution}\n".encode())
+                for fields in new_rows:
+                    fh.write(f"{self.separator.join(fields)}\n".encode())
+        for fields in new_rows:
+            self.data.append(fields)
+        return self._update_version()
 
     def _locate_filename(self, tool_data_file_path, entry_source, bundle_mode):
         if tool_data_file_path is not None:
@@ -871,7 +964,7 @@ class TabularToolDataField(Dictifiable):
         rval = super().to_dict(view, value_mapper)
         rval["name"] = self.data["value"]
         rval["fields"] = self.data
-        rval["base_dir"] = (self.get_base_dir(),)
+        rval["base_dir"] = [self.get_base_dir()]
         rval["files"] = self.get_filesize_map(True)
         rval["fingerprint"] = self.get_fingerprint()
         return rval
@@ -964,6 +1057,18 @@ class ToolDataTableManager(Dictifiable):
 
     def get_tables(self) -> Dict[str, "ToolDataTable"]:
         return self.data_tables
+
+    def assert_data_table_consistency(
+        self,
+        candidate_name: str,
+        candidate_columns: Dict[str, int],
+    ) -> None:
+        """Raise if ``candidate_name`` is already registered with different columns."""
+        existing = self.data_tables.get(candidate_name)
+        if existing is not None:
+            existing_columns = getattr(existing, "columns", None)
+            if existing_columns is not None and existing_columns != candidate_columns:
+                raise DataTableColumnMismatch(candidate_name, existing_columns, candidate_columns)
 
     def to_dict(
         self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None

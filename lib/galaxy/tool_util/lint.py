@@ -62,6 +62,7 @@ from typing import (
 
 import galaxy.tool_util.linters
 from galaxy.tool_util.parser import get_tool_source
+from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.util import (
     Element,
     submodules,
@@ -69,6 +70,7 @@ from galaxy.util import (
 
 if TYPE_CHECKING:
     from galaxy.tool_util.parser.interface import ToolSource
+    from galaxy.tool_util_models import UserToolSource
 
 
 class LintLevel(IntEnum):
@@ -306,6 +308,33 @@ class LintContext:
         elif fail_level >= LintLevel.ERROR:
             lint_fail = found_errors
         return lint_fail
+
+
+# Linters that reach out to external services (bio.tools API, EDAM ontology).
+# Skipped when linting a UserToolSource during create/edit so the API call
+# doesn't hang or fail when those services are unreachable.
+NETWORK_LINTERS = ("BioToolsValid", "EDAMTermsValid")
+
+
+def lint_user_tool_source(user_tool_source: "UserToolSource") -> List[str]:
+    """Run the lint pipeline against a ``UserToolSource`` pydantic value.
+
+    Returns a list of formatted ``"<linter>: <message>"`` bullets at WARN
+    level or above, suitable for surfacing through ``format_validation_errors``-
+    style consumers (the agent's bullet list, an API 4xx body).
+
+    Network-touching linters (``NETWORK_LINTERS``) are skipped; callers
+    create/edit tools synchronously and should not block on third-party
+    services.
+    """
+    root_dict = user_tool_source.model_dump(by_alias=True, exclude_none=True)
+    tool_source = YamlToolSource(root_dict)
+    lint_context = get_lint_context_for_tool_source(tool_source, skip_types=list(NETWORK_LINTERS))
+    bullets: List[str] = []
+    for message in lint_context.error_messages + lint_context.warn_messages:
+        prefix = f"{message.linter}: " if message.linter else ""
+        bullets.append(f"{prefix}{message.message}")
+    return bullets
 
 
 def lint_tool_source(

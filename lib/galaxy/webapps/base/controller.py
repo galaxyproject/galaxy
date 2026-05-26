@@ -6,6 +6,7 @@ import logging
 from collections.abc import Callable
 from typing import (
     Any,
+    TYPE_CHECKING,
 )
 
 from webob.exc import (
@@ -58,6 +59,9 @@ from galaxy.web.form_builder import (
     PasswordField,
 )
 from galaxy.workflow.modules import WorkflowModuleInjector
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import StructuredApp
 
 log = logging.getLogger(__name__)
 
@@ -582,6 +586,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
     """Mixin for controllers that use StoredWorkflow objects."""
 
+    app: "StructuredApp"
     slug_builder = SlugBuilder()
 
     def get_stored_workflow(self, trans, id, check_ownership=True, check_accessible=False):
@@ -637,7 +642,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.commit()
         return imported_stored
 
-    def _workflow_to_dict(self, trans, stored):
+    def _workflow_to_dict(self, trans, stored: StoredWorkflow) -> dict[str, Any]:
         """
         Converts a workflow to a dict of attributes suitable for exporting.
         """

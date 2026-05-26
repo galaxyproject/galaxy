@@ -364,8 +364,8 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             self.dispatcher.recover(job, job_wrapper)
         pass
 
-    def __recover_job_wrapper(self, job: model.Job) -> JobWrapper:
-        # Already dispatched and running
+    def __recover_job_wrapper(self, job: model.Job, resubmit: bool = False) -> JobWrapper:
+        # Already dispatched and running, or being resubmitted
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
         # what's in the job config
@@ -383,7 +383,17 @@ class JobHandlerQueue(BaseJobHandlerQueue):
                 job.id,
                 job.destination_id,
             )
-        job_wrapper.job_runner_mapper.cached_job_destination = job_destination
+        if resubmit:
+            # On resubmit pickup, route through the mapper so dynamic
+            # destinations (including chains) are walked fresh. This is what
+            # allows multiple resubmits through dynamic destinations to work:
+            # the resubmit handler persisted the dynamic *intent* (e.g.
+            # "tpv_dispatcher" with runner="dynamic"); cache_job_destination
+            # forces re-evaluation through __determine_job_destination, which
+            # recurses on chained dynamic destinations.
+            job_wrapper.job_runner_mapper.cache_job_destination(job_destination)
+        else:
+            job_wrapper.job_runner_mapper.cached_job_destination = job_destination
         return job_wrapper
 
     def __monitor(self):
@@ -539,8 +549,9 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         # Check resubmit jobs first so that limits of new jobs will still be enforced
         for job in resubmit_jobs:
             log.debug("(%s) Job was resubmitted and is being dispatched immediately", job.id)
-            # Reassemble resubmit job destination from persisted value
-            jw = self.__recover_job_wrapper(job)
+            # Reassemble resubmit job destination from persisted value, walking
+            # any dynamic destination chain afresh.
+            jw = self.__recover_job_wrapper(job, resubmit=True)
             if jw.is_ready_for_resubmission(job):
                 self.increase_running_job_count(job.user_id, jw.job_destination.id)
                 self.dispatcher.put(jw)

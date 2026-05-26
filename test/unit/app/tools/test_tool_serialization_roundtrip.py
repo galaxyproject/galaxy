@@ -36,6 +36,23 @@ def test_repopulate_after_serialization_yaml():
     )
 
 
+def test_repopulate_applies_guid():
+    tool = simple_constructs_tool()
+    raw_tool_source, tool_source_class = tool.to_raw_tool_source()
+    guid = "toolshed.example.com/repos/owner/repo/simple_constructs_y/1.0"
+
+    app = mock_app_for_tool_support()
+    rebuilt = create_tool_from_representation(
+        app,
+        raw_tool_source,
+        tool.tool_dir,
+        tool_source_class,
+        guid=guid,
+    )
+    assert rebuilt.id == guid
+    assert rebuilt.old_id == "simple_constructs_y"
+
+
 def simple_constructs_tool() -> Tool:
     tool_path = functional_test_tool_path("simple_constructs.yml")
     tool_source = functional_test_tool_source("simple_constructs_y")

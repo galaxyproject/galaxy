@@ -2,6 +2,9 @@ export const MY_PANEL_VIEW_ID = "my_panel";
 export const MY_PANEL_VIEW_NAME = "My Tools";
 export const MY_PANEL_VIEW_DESCRIPTION = "Search all tools and view your favorite tools.";
 export const MY_PANEL_VIEW_TYPE = "favorites";
+export const FAVORITE_TAG_SECTION_PREFIX = "favorite_tag_";
+export const FAVORITE_EDAM_OPERATION_SECTION_PREFIX = "favorite_edam_operation_";
+export const FAVORITE_EDAM_TOPIC_SECTION_PREFIX = "favorite_edam_topic_";
 
 export const PANEL_LABEL_IDS = {
     FAVORITES_RESULTS_SECTION: "favorites_results",

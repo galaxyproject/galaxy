@@ -56,9 +56,10 @@ import type { PreparedUpload } from "@/components/Panels/Upload/types";
 import type { UploadRowModel } from "@/components/Upload/model";
 import type { SupportedCollectionType, UploadCollectionConfig } from "@/composables/upload/collectionTypes";
 import type { NewUploadItem } from "@/composables/upload/uploadItemTypes";
+import { uploadApiOptionDefaults } from "@/composables/upload/uploadOptionModel";
 import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
-import { isUrl } from "@/utils/url";
+import { isUrl, isValidUrl } from "@/utils/url";
 
 import { createTusUpload, type FileStream, type NamedBlob, type UploadableFile } from "./tusUpload";
 
@@ -127,6 +128,8 @@ interface UploadItemCommon {
     deferred: boolean;
     /** Optional hash values for verification */
     hashes?: FetchDatasetHash[];
+    /** Whether to auto-decompress the upload */
+    auto_decompress: boolean;
 }
 
 /** Upload item from a local file */
@@ -225,9 +228,7 @@ export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPaylo
 export const uploadItemDefaults = {
     dbkey: "?",
     ext: "auto",
-    space_to_tab: false,
-    to_posix_lines: true,
-    deferred: false,
+    ...uploadApiOptionDefaults,
 } as const;
 
 // ============================================================================
@@ -349,6 +350,7 @@ export function createFileUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -385,6 +387,7 @@ export function createPastedUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -410,12 +413,13 @@ export function createUrlUploadItem(
     historyId: string,
     options: Partial<Omit<UrlUploadItem, "src" | "url" | "historyId">> = {},
 ): UrlUploadItem {
+    const trimmedUrl = url.trim();
     // Extract filename from URL if not provided
-    const defaultName = url.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
+    const defaultName = trimmedUrl.split("/").pop()?.split("?")[0] || DEFAULT_FILE_NAME;
 
     return {
         src: "url",
-        url,
+        url: trimmedUrl,
         historyId,
         name: options.name ?? defaultName,
         size: options.size ?? 0,
@@ -425,6 +429,7 @@ export function createUrlUploadItem(
         to_posix_lines: options.to_posix_lines ?? uploadItemDefaults.to_posix_lines,
         deferred: options.deferred ?? uploadItemDefaults.deferred,
         hashes: options.hashes,
+        auto_decompress: options.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
     };
 }
 
@@ -449,6 +454,7 @@ export function toApiUploadItem(item: NewUploadItem): ApiUploadItem {
         to_posix_lines: item.toPosixLines,
         deferred: item.deferred,
         hashes: item.hashes,
+        auto_decompress: item.autoDecompress ?? true,
     };
 
     switch (item.uploadMode) {
@@ -510,7 +516,7 @@ export function parseContentToUploadItems(
     // If first line is a URL, treat all lines as URLs
     if (isUrl(firstLine)) {
         return lines.filter(Boolean).map((urlLine) => {
-            if (!isUrl(urlLine)) {
+            if (!isValidUrl(urlLine)) {
                 throw new Error(`Invalid URL: ${urlLine}`);
             }
             return createUrlUploadItem(urlLine, historyId, options);
@@ -536,7 +542,7 @@ function buildDataElement(item: ApiUploadItem): ApiDataElement {
         name: normalizeFileName(item.name),
         space_to_tab: item.space_to_tab,
         to_posix_lines: item.to_posix_lines,
-        auto_decompress: false,
+        auto_decompress: item.auto_decompress ?? uploadItemDefaults.auto_decompress ?? true,
         deferred: item.deferred,
     };
 
@@ -598,7 +604,7 @@ function validateItemContent(item: ApiUploadItem): void {
             if (!item.url || item.url.trim().length === 0) {
                 throw new Error(`No URL for upload item: ${item.name}`);
             }
-            if (!isUrl(item.url)) {
+            if (!isValidUrl(item.url)) {
                 throw new Error(`Invalid URL: ${item.url}`);
             }
             break;
@@ -674,7 +680,7 @@ export function buildUploadPayload(items: ApiUploadItem[], options: BuildPayload
         history_id: historyId,
         targets: [
             {
-                auto_decompress: false,
+                auto_decompress: true,
                 destination: { type: "hdas" },
                 elements,
             },

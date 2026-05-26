@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { refDebounced } from "@vueuse/core";
 import { computed, type ComputedRef, onMounted, type PropType, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
@@ -53,10 +54,21 @@ const props = defineProps({
 
 const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
+    (e: "search-change", query: string): void;
 }>();
 
 const filter = ref("");
 const filteredOptions = useFilterObjectArray(() => props.options, filter, ["label", ["value", "tags"]]);
+
+// Debounced upward emit so consumers (e.g. ``FormData`` paginating against the
+// backend) can refetch on typing without firing on every keystroke. The local
+// ``filter`` ref still updates immediately so ``filteredOptions`` provides
+// instant client-side narrowing within already-loaded options while the
+// backend round-trip is in flight.
+const debouncedFilter = refDebounced(filter, 300);
+watch(debouncedFilter, (value) => {
+    emit("search-change", value);
+});
 
 /**
  * When there are more options than this, push selected options to the end
@@ -258,6 +270,9 @@ function isSelected(item: SelectValue): boolean {
                     <FontAwesomeIcon v-if="isSelected(option.value)" :icon="faCheckSquare" />
                     <FontAwesomeIcon v-else :icon="faSquare" />
                 </div>
+            </template>
+            <template v-slot:afterList>
+                <slot name="after-list" />
             </template>
         </Multiselect>
         <slot v-else name="no-options">

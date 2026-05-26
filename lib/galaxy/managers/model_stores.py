@@ -267,7 +267,11 @@ class ModelStoreManager:
         uri: Optional[str] = None
         try:
             export_store = model.store.get_export_store_factory(
-                self._app, model_store_format, export_files=export_files, user_context=user_context
+                self._app,
+                model_store_format,
+                export_files=export_files,
+                user_context=user_context,
+                ignore_errors=request.ignore_errors,
             )(request.target_uri)
             with export_store:
                 history = self._history_manager.by_id(request.history_id)

@@ -1,5 +1,7 @@
+from functools import partial
 from typing import Optional
 
+import anyio
 from fastapi import (
     Body,
     Path,
@@ -9,6 +11,7 @@ from pydantic import (
     Field,
 )
 
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import import_data_bundle
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tool_data import ToolDataManager
@@ -23,7 +26,6 @@ from galaxy.tool_util.data._schema import (
     ToolDataItem,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
-from galaxy.webapps.galaxy.services.base import async_task_summary
 from . import (
     depends,
     DependsOnTrans,
@@ -117,7 +119,7 @@ class FastAPIToolData:
         field_name: str = ToolDataTableFieldName,
     ) -> ToolDataField:
         """Displays information about a data table field."""
-        return self.tool_data_manager.show_field(table_name, field_name)
+        return await anyio.to_thread.run_sync(partial(self.tool_data_manager.show_field, table_name, field_name))
 
     @router.get(
         "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",

@@ -281,6 +281,23 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``kombu_sqla_transport_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Time (in seconds) between attempts to delete fully-consumed rows
+    from the Kombu SQLAlchemy transport tables (``kombu_message``).
+    Only relevant when ``amqp_internal_connection`` uses a
+    ``sqlalchemy+*`` scheme (the default with an on-disk
+    control.sqlite); the SQLAlchemy transport has no built-in TTL, so
+    without this task the tables grow unbounded. The task no-ops on
+    non-SQLAlchemy brokers (RabbitMQ/Redis honor per-message
+    expiration natively). Set to 0 to disable the cleanup task.
+:Default: ``900``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``file_path``
 ~~~~~~~~~~~~~
@@ -723,6 +740,56 @@
 :Description:
     How many seconds between instances of short term storage being
     cleaned up in default Celery task configuration.
+:Default: ``3600``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bulk_storage_operation_dataset_minimum_days_to_expiration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Minimum remaining lifetime, in days, required before a dataset can
+    be moved into an object store with automatic expiration. This
+    prevents moving data into a target store where it would be close
+    to expiring immediately. Defaults to 7 days.
+:Default: ``7``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bulk_storage_operation_completed_run_retention_days``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How long completed bulk dataset storage operation runs are kept in
+    the database before Galaxy prunes their run records. Snapshot
+    cleanup is handled separately. Defaults to 30 days.
+:Default: ``30``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``prune_expired_bulk_storage_operations_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between attempts to prune expired bulk dataset
+    storage operation snapshots and old completed run records. Set to
+    0 to disable the periodic pruning task. Defaults to every 24
+    hours.
+:Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``recover_stale_bulk_storage_operation_runs_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How many seconds between attempts to recover bulk dataset storage
+    operation runs that were left pending or running after a worker
+    stopped updating them. Defaults to every hour.
 :Default: ``3600``
 :Type: int
 
@@ -3325,6 +3392,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_statsd_middleware``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default is true if statsd_host is set. Enable the statsd
+    middleware. If false and statsd_host is also set, only timing of
+    certain performance-critical backend tasks (e.g. the job handler
+    monitor loop time) data will be sent to statsd, but not web
+    request timing.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -3392,6 +3473,18 @@
     really. Do not set this in production environments.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``queue_metrics_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    How often (in seconds) the Celery beat task emits queue-depth,
+    SSE-connection, and WorkerProcess gauges. Only active when
+    statsd_host is set. Set to 0 to disable.
+:Default: ``15``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -5417,6 +5510,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_tool_requests``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Submit tool jobs through the asynchronous tool requests API
+    (`/api/jobs`) when available. The client falls back to the legacy
+    `/api/tools` endpoint when this is disabled, when Celery is not
+    enabled, or when the tool does not provide a typed parameter
+    schema.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~
 ``celery_conf``
 ~~~~~~~~~~~~~~~
@@ -5790,6 +5897,41 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``enable_sse_updates``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables real-time updates via Server-Sent Events (SSE), replacing
+    the history (3 s), entry-point (10 s) and notification (30 s)
+    polling loops with push events delivered over a single
+    ``/api/events/stream`` connection per browser tab. A background
+    monitor watches for history changes (via PostgreSQL LISTEN/NOTIFY,
+    or audit-table polling as a fallback for SQLite); entry-point
+    changes are dispatched directly from the code paths that mutate
+    them; in-app notifications and broadcasts are pushed when
+    ``enable_notification_system`` is also true. When disabled,
+    polling remains the source of updates for all three. See the admin
+    guide "Server-Sent Events for real-time updates" for the full
+    architecture, monitoring guidance and proxy configuration.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``history_audit_monitor_poll_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between history audit table polls when
+    using the polling fallback (SQLite or when PostgreSQL
+    LISTEN/NOTIFY is unavailable). Only used when enable_sse_updates
+    is true. Lower values mean faster updates but more database
+    queries. Recommended range: 1-5 seconds.
+:Default: ``2``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_notification_system``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -5801,6 +5943,9 @@
     finished, etc.
     The system allows notification scheduling and expiration, and
     users can opt-out of specific notification categories or channels.
+    Delivery is push-based via Server-Sent Events when
+    ``enable_sse_updates`` is also true, and falls back to 30-second
+    polling against ``/api/notifications/status`` otherwise.
     Admins can schedule and broadcast notifications that will be
     visible to all users, including special server-wide announcements
     such as scheduled maintenance, high load warnings, and event
@@ -5902,8 +6047,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Default value for use_temp_files for webdav plugins that don't
-    explicitly declare this.
+    Deprecated. This option is ignored by the fsspec-based WebDAV file
+    source.
 :Default: ``true``
 :Type: bool
 

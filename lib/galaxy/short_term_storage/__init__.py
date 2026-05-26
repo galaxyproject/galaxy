@@ -37,10 +37,10 @@ from galaxy.schema.schema import OptionalNumberT
 from galaxy.util import (
     directory_hash_id,
     is_uuid,
+    now,
     safe_makedirs,
 )
 
-now = datetime.utcnow
 DEFAULT_STORAGE_DURATION = 24 * 60 * 60  # store for a day by default
 
 

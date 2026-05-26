@@ -9,6 +9,7 @@ from galaxy import (
     exceptions as glx_exceptions,
     util,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.managers import api_keys
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -34,10 +35,7 @@ from galaxy.schema.schema import (
     UserModel,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
-    ServiceBase,
-)
+from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.roles import role_to_model
 
 if TYPE_CHECKING:

@@ -6,7 +6,7 @@ import logging
 import os
 
 import yaml
-from pydantic import parse_obj_as
+from pydantic import TypeAdapter
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.navigation.data import load_root_component
@@ -106,7 +106,7 @@ class ToursRegistryImpl:
                 "requirements": self.tours[k].get("requirements"),
             }
             tours.append(tourdata)
-        return parse_obj_as(TourList, tours)
+        return TypeAdapter(TourList).validate_python(tours)
 
     def tour_contents(self, tour_id):
         """Return tour contents."""

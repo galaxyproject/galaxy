@@ -1504,6 +1504,88 @@ class BaseDatasetPopulator(BasePopulator):
         get_storage_response = self._get(storage_url)
         return get_storage_response
 
+    def bulk_storage_operation_preview_raw(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> Response:
+        response = self._post(
+            f"histories/{history_id}/contents/bulk/storage/preview",
+            data=payload,
+            json=True,
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_preview(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> dict[str, Any]:
+        return self.bulk_storage_operation_preview_raw(history_id, payload, expected_status=expected_status).json()
+
+    def bulk_storage_operation_execute_raw(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> Response:
+        response = self._post(
+            f"histories/{history_id}/contents/bulk/storage/execute",
+            data=payload,
+            json=True,
+        )
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_execute(
+        self, history_id: str, payload: dict[str, Any], expected_status: int = 200
+    ) -> dict[str, Any]:
+        return self.bulk_storage_operation_execute_raw(history_id, payload, expected_status=expected_status).json()
+
+    def bulk_storage_operation_run_status_raw(
+        self, history_id: str, run_id: str, expected_status: int = 200
+    ) -> Response:
+        response = self._get(f"histories/{history_id}/contents/bulk/storage/runs/{run_id}")
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response
+
+    def bulk_storage_operation_run_status(
+        self, history_id: str, run_id: str, expected_status: int = 200
+    ) -> dict[str, Any]:
+        response = self.bulk_storage_operation_run_status_raw(history_id, run_id, expected_status=expected_status)
+        return response.json()
+
+    def bulk_storage_operation_run_items(
+        self,
+        history_id: str,
+        run_id: str,
+        expected_status: int = 200,
+        offset: int = 0,
+        limit: int = 50,
+        search: Optional[str] = None,
+    ) -> list[dict[str, Any]]:
+        query: dict[str, Any] = {
+            "offset": offset,
+            "limit": limit,
+        }
+        if search is not None:
+            query["search"] = search
+        response = self._get(f"histories/{history_id}/contents/bulk/storage/runs/{run_id}/items", data=query)
+        api_asserts.assert_status_code_is(response, expected_status)
+        return response.json()
+
+    def wait_for_bulk_storage_operation_run(
+        self,
+        history_id: str,
+        run_id: str,
+        include_items_on_terminal: bool = False,
+        search: Optional[str] = None,
+        timeout: timeout_type = DEFAULT_TIMEOUT,
+    ) -> dict[str, Any]:
+        def is_terminal():
+            run_data = self.bulk_storage_operation_run_status(history_id, run_id)
+            if run_data["run"]["state"] in ("completed", "failed"):
+                if include_items_on_terminal:
+                    run_data["items"] = self.bulk_storage_operation_run_items(history_id, run_id, search=search)
+                return run_data
+            return None
+
+        return wait_on(is_terminal, "bulk storage operation run completion", timeout=timeout)
+
     def get_roles(self) -> list:
         using_requirement("admin")
         roles_response = self._get("roles", admin=True)
@@ -1597,6 +1679,26 @@ class BaseDatasetPopulator(BasePopulator):
         try:
             yield
         finally:
+            self._delete(f"roles/{role['id']}", admin=True).raise_for_status()
+            self._post(f"roles/{role['id']}/purge", admin=True).raise_for_status()
+
+    @contextlib.contextmanager
+    def user_tool_execute_permissions_via_group(self):
+        # Grant USER_TOOL_EXECUTE indirectly: role has no direct user, group binds user to role.
+        role = self.create_role([], role_type="user_tool_execute")
+        group_payload = {
+            "name": self.get_random_name(prefix="testpop-utx-group"),
+            "user_ids": [self.user_id()],
+            "role_ids": [role["id"]],
+        }
+        group_response = self._post("groups", data=group_payload, admin=True, json=True)
+        assert group_response.status_code == 200
+        group = group_response.json()[0]
+        try:
+            yield
+        finally:
+            self._delete(f"groups/{group['id']}", admin=True).raise_for_status()
+            self._post(f"groups/{group['id']}/purge", admin=True).raise_for_status()
             self._delete(f"roles/{role['id']}", admin=True).raise_for_status()
             self._post(f"roles/{role['id']}/purge", admin=True).raise_for_status()
 
@@ -1842,6 +1944,14 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
+    def get_history_graph(self, history_id: str, **params: Any) -> dict[str, Any]:
+        response = self.get_history_graph_raw(history_id, **params)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
+    def get_history_graph_raw(self, history_id: str, **params: Any) -> Response:
+        return self._get(f"histories/{history_id}/graph", data=params or None)
+
     def wait_on_task(self, async_task_response: Response):
         response_json = async_task_response.json()
         return self.wait_on_task_object(response_json)
@@ -2004,6 +2114,115 @@ class BaseDatasetPopulator(BasePopulator):
             content_format=content_format,
         )
         return request
+
+    # --- History Page helpers (pages attached to histories) ---
+
+    def new_history_page_raw(
+        self,
+        history_id: str,
+        title: Optional[str] = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> Response:
+        payload: dict[str, Any] = {
+            "history_id": history_id,
+            "content": content,
+            "content_format": content_format,
+        }
+        if title:
+            payload["title"] = title
+        return self._post("pages", payload, json=True)
+
+    def new_history_page(
+        self,
+        history_id: str,
+        title: Optional[str] = None,
+        content: str = "",
+        content_format: str = "markdown",
+    ) -> dict[str, Any]:
+        response = self.new_history_page_raw(history_id, title=title, content=content, content_format=content_format)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_history_page(self, page_id: str) -> dict[str, Any]:
+        response = self._get(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def list_history_pages(self, history_id: str) -> list[dict[str, Any]]:
+        response = self._get("pages", data={"history_id": history_id, "show_own": True, "show_published": False})
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def update_history_page_raw(
+        self,
+        page_id: str,
+        content: str,
+        title: Optional[str] = None,
+        edit_source: Optional[str] = None,
+    ) -> Response:
+        payload: dict[str, Any] = {"content": content, "content_format": "markdown"}
+        if title:
+            payload["title"] = title
+        if edit_source:
+            payload["edit_source"] = edit_source
+        return self._put(f"pages/{page_id}", payload, json=True)
+
+    def update_history_page(
+        self,
+        page_id: str,
+        content: str,
+        title: Optional[str] = None,
+        edit_source: Optional[str] = None,
+    ) -> dict[str, Any]:
+        response = self.update_history_page_raw(page_id, content=content, title=title, edit_source=edit_source)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def delete_history_page(self, page_id: str) -> None:
+        response = self._delete(f"pages/{page_id}")
+        api_asserts.assert_status_code_is(response, 204)
+
+    def list_page_revisions(self, page_id: str) -> list[dict[str, Any]]:
+        response = self._get(f"pages/{page_id}/revisions")
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def revert_page_revision(self, page_id: str, revision_id: str) -> dict[str, Any]:
+        response = self._post(f"pages/{page_id}/revisions/{revision_id}/revert", json=True)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def send_page_chat_raw(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: Optional[str] = None,
+    ):
+        payload: dict[str, Any] = {"query": query, "page_id": page_id}
+        if exchange_id is not None:
+            payload["exchange_id"] = exchange_id
+        return self._post(f"chat?agent_type={agent_type}", payload, json=True)
+
+    def send_page_chat(
+        self,
+        page_id: str,
+        query: str,
+        agent_type: str = "page_assistant",
+        exchange_id: Optional[str] = None,
+    ) -> dict[str, Any]:
+        response = self.send_page_chat_raw(page_id, query, agent_type=agent_type, exchange_id=exchange_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def get_page_chat_history_raw(self, page_id: str):
+        return self._get(f"chat/page/{page_id}/history")
+
+    def get_page_chat_history(self, page_id: str) -> list[dict[str, Any]]:
+        response = self.get_page_chat_history_raw(page_id)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
 
     def export_history_to_uri_async(
         self, history_id: str, target_uri: str, model_store_format: str = "tgz", include_files: bool = True
@@ -2718,8 +2937,18 @@ class BaseWorkflowPopulator(BasePopulator):
         use_cached_job: bool = False,
         copy_inputs_to_history: bool = False,
         job_dir: Optional[str] = None,
+        test_data_format: Optional[Literal["cwl_style"]] = None,
     ):
-        """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
+        """High-level wrapper around workflow API, etc. to invoke format 2 workflows.
+
+        ``test_data_format="cwl_style"`` opts in to strict CWL-style semantics:
+        bare scalars in the ``job:`` dict are routed as literal params (int/text/
+        bool/select values for workflow inputs), and staging goes through
+        :func:`stage_inputs` unconditionally. Legacy ``type: File``/``raw``/
+        ``Directory`` dict forms are rejected at this layer so callers migrate
+        fixtures to ``class: File`` + ``path``/``location``/``contents``.
+        Default ``None`` preserves today's behavior for all existing callers.
+        """
         workflow_populator = self
         if client_convert is None:
             client_convert = not round_trip_format_conversion
@@ -2750,15 +2979,34 @@ class BaseWorkflowPopulator(BasePopulator):
         replacement_parameters = test_data_dict.pop("replacement_parameters", {})
         if history_id is None:
             history_id = self.dataset_populator.new_history()
-        if _uses_class_syntax(test_data_dict):
+        use_stage_inputs = test_data_format == "cwl_style" or _uses_class_syntax(test_data_dict)
+        if use_stage_inputs:
             # Copy because galactic_job_json() mutates the dict in-place
             job_copy = dict(test_data_dict)
-            # Extract raw parameters before staging — galactic_job_json
-            # doesn't understand type: raw and would misinterpret them
             raw_params = {}
             for k, v in list(job_copy.items()):
                 if isinstance(v, dict) and v.get("type") == "raw":
+                    if test_data_format == "cwl_style":
+                        raise ValueError(
+                            f"Legacy 'type: raw' form in job input '{k}' is not allowed with "
+                            "test_data_format='cwl_style'. Use a bare scalar value."
+                        )
                     raw_params[k] = v["value"]
+                    del job_copy[k]
+                elif test_data_format == "cwl_style" and isinstance(v, dict) and v.get("type") in ("File", "Directory"):
+                    raise ValueError(
+                        f"Legacy 'type: {v['type']}' form in job input '{k}' is not allowed with "
+                        "test_data_format='cwl_style'. Use 'class: File' + path/location/contents."
+                    )
+                elif test_data_format == "cwl_style" and not isinstance(v, (dict, list)):
+                    raw_params[k] = v
+                    del job_copy[k]
+                elif (
+                    test_data_format == "cwl_style"
+                    and isinstance(v, list)
+                    and not any(isinstance(x, (dict, list)) for x in v)
+                ):
+                    raw_params[k] = v
                     del job_copy[k]
             staged_job, datasets = stage_inputs(
                 self.dataset_populator.galaxy_interactor,

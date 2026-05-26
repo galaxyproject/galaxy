@@ -283,7 +283,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         change_datatype: bed
         set_columns:
@@ -690,6 +690,17 @@ steps:
             assert workflow_id_2 not in index_ids
             assert workflow_id_3 not in index_ids
 
+    def test_index_search_many_terms(self):
+        # Regression: a whitespace-rich search string used to add one outer join
+        # on stored_workflow_tag_association and one on galaxy_user per term,
+        # producing an unusably expensive query for long searches.
+        name = f"Copy of Genomic Assembly and analysis - RDH shared by user {uuid4()}"
+        workflow_id = self.workflow_populator.simple_workflow(name)
+        self.workflow_populator.set_tags(workflow_id, [f"manyterms-{uuid4()}"])
+        search = "Copy of Genomic Assembly and analysis - RDH shared by user"
+        index_ids = self.workflow_populator.index_ids(search=search)
+        assert workflow_id in index_ids
+
     def test_search_casing(self):
         name1, name2 = (
             self.dataset_populator.get_random_name().upper(),
@@ -1013,7 +1024,7 @@ steps:
   subworkflow:
     in:
       dataset: dataset
-    outputs:
+    out:
       output:
         outputSource: cat1/out_file1
     run:
@@ -1533,7 +1544,9 @@ steps:
             "trs_tool_id": "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow",
             "trs_version_id": "master",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        response = self._post("workflows", data=trs_payload)
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
@@ -1560,7 +1573,9 @@ steps:
             "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
             "versions/master",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        response = self._post("workflows", data=trs_payload)
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
         assert (
@@ -1593,7 +1608,9 @@ steps:
             "archive_source": "trs_tool",
             "trs_url": "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5",
         }
-        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        response = self._post("workflows", data=trs_payload)
+        response.raise_for_status()
+        workflow_id = response.json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "COVID-19: variation analysis reporting" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
@@ -3005,7 +3022,7 @@ steps:
 steps:
   empty_output:
     tool_id: empty_output
-    outputs:
+    out:
       out_file1:
         change_datatype: tabular
   column_param:
@@ -3028,7 +3045,7 @@ steps:
 steps:
   empty_output:
     tool_id: empty_output
-    outputs:
+    out:
       out_file1:
         change_datatype: tabular
   column_param_list:
@@ -3053,7 +3070,7 @@ steps:
 steps:
   empty_output:
     tool_id: empty_output
-    outputs:
+    out:
       out_file1:
         change_datatype: tabular
   column_param_list:
@@ -3772,7 +3789,7 @@ steps:
     in:
       some_collection: some_collection
       should_run: should_run
-    outputs:
+    out:
       inner_out: a_tool_step/out_file1
     when: $(inputs.should_run)
 outputs:
@@ -3832,7 +3849,7 @@ steps:
     in:
       some_file: some_file
       should_run: should_run
-    outputs:
+    out:
       inner_out: a_tool_step/out_file1
     when: $(inputs.should_run)
 outputs:
@@ -5807,7 +5824,7 @@ steps:
     tool_id: random_lines1
     in:
       input: text_input1
-    outputs:
+    out:
         out_file1:
           change_datatype: csv
 """,
@@ -5837,7 +5854,7 @@ steps:
     tool_id: collection_split_on_column
     in:
       input1: input
-    outputs:
+    out:
         split_output:
           change_datatype: csv
 outputs:
@@ -6155,11 +6172,6 @@ steps:
     tool_id: create_2
     state:
       sleep_time: 0
-    outputs:
-      out_file1:
-        rename: "my new name"
-      out_file2:
-        rename: "my other new name"
   first_cat1:
     tool_id: cat
     in:
@@ -6187,11 +6199,6 @@ steps:
     tool_id: create_2
     state:
       sleep_time: 0
-    outputs:
-      out_file1:
-        rename: "my new name"
-      out_file2:
-        rename: "my other new name"
 outputs:
   main_out:
     outputSource: create_2/does_not_exist
@@ -6278,6 +6285,109 @@ test_data:
         assert message["reason"] == "unexpected_failure"
         assert message["workflow_step_id"] == 2
         assert "Invalid new collection identifier" in message["details"]
+
+    @skip_without_tool("__RELABEL_FROM_FILE__")
+    def test_relabel_from_file_rejects_non_utf8_labels(self, history_id):
+        # Regression test: a non-UTF-8 labels file (for example UTF-16) should
+        # fail with a clear MessageException rather than crash on decode.
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    collection_type: list
+    type: collection
+  relabel_file:
+    type: data
+steps:
+  relabel:
+    tool_id: __RELABEL_FROM_FILE__
+    in:
+      input: input_collection
+      how|labels: relabel_file
+test_data:
+  input_collection:
+    collection_type: list
+    elements:
+      - identifier: A
+        content: "alpha"
+      - identifier: B
+        content: "beta"
+  relabel_file:
+    value: random-file
+    type: File
+        """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        assert invocation_details["state"] == "failed"
+        assert len(invocation_details["messages"]) == 1
+        message = invocation_details["messages"][0]
+        assert "UTF-8" in message["details"]
+
+    @skip_without_tool("__RELABEL_FROM_FILE__")
+    @skip_without_tool("job_properties")
+    @skip_without_tool("cat1")
+    def test_relabel_from_file_with_paused_labels_does_not_crash(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22520:
+        # a PAUSED HDA wired as the labels input to __RELABEL_FROM_FILE__ used to
+        # crash produce_outputs with FileNotFoundError.
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_c:
+    type: collection
+    collection_type: list
+steps:
+  failing_step:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  paused_labels:
+    tool_id: cat1
+    in:
+      input1: failing_step/out_file1
+  relabel:
+    tool_id: "__RELABEL_FROM_FILE__"
+    in:
+      input: input_c
+      how|labels: paused_labels/out_file1
+""",
+            test_data="""
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "A"
+""",
+            history_id=history_id,
+            wait=False,
+            assert_ok=False,
+        )
+        invocation_id = summary.invocation_id
+
+        def cat1_paused():
+            for j in self._history_jobs(history_id):
+                if j.get("tool_id") == "cat1" and j.get("state") == "paused":
+                    return True
+            return None
+
+        try:
+            wait_on(cat1_paused, "cat1 job to be paused after upstream failure")
+            # Give the scheduler a couple of iterations to attempt the relabel step.
+            time.sleep(3)
+
+            invocation = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation["state"] != "failed", f"Relabel step crashed on paused input; invocation: {invocation}"
+            relabel_jobs = [j for j in self._history_jobs(history_id) if j.get("tool_id") == "__RELABEL_FROM_FILE__"]
+            for rj in relabel_jobs:
+                assert rj["state"] != "error", f"Relabel produced an errored job: {rj}"
+        finally:
+            self.workflow_populator.cancel_invocation(invocation_id)
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over(self, history_id):
@@ -7460,7 +7570,7 @@ steps:
         cat1:
           in:
             input1: apply/output
-          outputs:
+          out:
             out_file1:
               rename: "#{inner_text_input} suffix"
         """,
@@ -7525,7 +7635,7 @@ steps:
     tool_id: cat1
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         hide: true
 """,
@@ -7871,7 +7981,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         rename: "my new name"
 """,
@@ -7912,7 +8022,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         rename: "#{input1} suffix"
 """,
@@ -7946,7 +8056,7 @@ steps:
   - tool_id: collection_creates_pair
     in:
       input1: input1
-    outputs:
+    out:
       paired_output:
         rename: "my new name"
 """,
@@ -7981,7 +8091,7 @@ steps:
       datasets:
       - id_cond:
           id_select: id
-    outputs:
+    out:
       output:
         hide: true
 """,
@@ -8016,7 +8126,7 @@ steps:
       datasets:
       - id_cond:
           id_select: id
-    outputs:
+    out:
       output:
         delete_intermediate_datasets: true
 """,
@@ -8054,7 +8164,7 @@ steps:
       datasets:
       - id_cond:
           id_select: idx
-    outputs:
+    out:
       output:
         change_datatype: txt
   - tool_id: __BUILD_LIST__
@@ -8104,7 +8214,7 @@ steps:
     tool_id: __EXTRACT_DATASET__
     in:
       input: build_list/output
-    outputs:
+    out:
       output:
         change_datatype: vcf_bgzip
 """,
@@ -8135,7 +8245,7 @@ steps:
       datasets:
       - id_cond:
           id_select: idx
-    outputs:
+    out:
       output:
         rename: "my new name"
 """,
@@ -8166,7 +8276,7 @@ steps:
     tool_id: create_2
     state:
       sleep_time: 0
-    outputs:
+    out:
       out_file1:
         rename: "my new name"
       out_file2:
@@ -8205,14 +8315,11 @@ steps:
       failbool: true
       input1:
         $link: input1
-    outputs:
-      out_file1:
-        rename: "cat1 out"
   cat:
     tool_id: cat
     in:
       input1: first_fail/out_file1
-    outputs:
+    out:
       out_file1:
         rename: "#{input1} suffix"
 """,
@@ -8260,7 +8367,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         rename: "#{input1} #{input1 | upper} suffix"
 """,
@@ -8294,7 +8401,7 @@ steps:
       queries:
         - input2:
             $link: input2
-    outputs:
+    out:
       out_file1:
         rename: "#{queries_0.input2| basename} suffix"
 """,
@@ -8333,7 +8440,7 @@ steps:
           $link: fastq_input
       reference:
         $link: fasta_input
-    outputs:
+    out:
       out_file1:
         rename: "#{fastq_input.fastq_input1 | basename} suffix"
 """,
@@ -8374,7 +8481,7 @@ steps:
           $link: fastq_input
       reference:
         $link: fasta_input
-    outputs:
+    out:
       out_file1:
         # The fully prefixed variant test in "test_run_rename_based_on_input_conditional" should be preferred,
         # but we don't want to break old workflow renaming actions
@@ -8412,7 +8519,7 @@ steps:
     state:
       input1:
         $link: input1
-    outputs:
+    out:
       paired_output:
         hide: true
 """,
@@ -8446,7 +8553,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         hide: true
 """,
@@ -8485,7 +8592,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         add_tags:
             - "name:treated1fb"
@@ -8533,7 +8640,7 @@ steps:
     tool_id: collection_creates_pair
     in:
       input1: input1
-    outputs:
+    out:
       paired_output:
         add_tags:
             - "name:foo"
@@ -8569,7 +8676,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         add_tags:
             - "name:foo"
@@ -8607,7 +8714,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         add_tags:
           - "name:foo"
@@ -8615,7 +8722,7 @@ steps:
     tool_id: collection_creates_pair
     in:
       input1: first_cat/out_file1
-    outputs:
+    out:
       paired_output:
         remove_tags:
           - "name:foo"
@@ -8658,7 +8765,7 @@ steps:
     tool_id: __EXTRACT_DATASET__
     in:
       input: input1
-    outputs:
+    out:
       output:
         add_tags:
           - "name:foo"
@@ -8789,7 +8896,7 @@ steps:
     tool_id: cat1
     in:
       input1: second_cat/out_file1
-    outputs:
+    out:
       out_file1:
         delete_intermediate_datasets: true
 """,
@@ -9947,6 +10054,56 @@ outer_input:
             assert update_response.status_code == 200, update_response.text
             workflow = self.workflow_populator.download_workflow(workflow_id)
             assert workflow["steps"]["0"]["tool_representation"]["class"] == "GalaxyUserTool"
+
+    def _build_user_defined_workflow_dict(self) -> dict[str, Any]:
+        return {
+            "a_galaxy_workflow": "true",
+            "name": "wf with embedded UDT",
+            "annotation": "",
+            "format-version": "0.1",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "tool",
+                    "name": "Embedded user tool",
+                    "tool_representation": TOOL_WITH_SHELL_COMMAND,
+                    "input_connections": {},
+                    "inputs": [],
+                    "outputs": [],
+                    "workflow_outputs": [],
+                    "post_job_actions": {},
+                    "tool_state": "{}",
+                    "label": None,
+                    "uuid": str(uuid4()),
+                },
+            },
+        }
+
+    def test_import_workflow_with_user_defined_tool_representation_requires_role(self):
+        # Non-admin without USER_TOOL_EXECUTE must not be able to import a
+        # workflow that embeds a GalaxyUserTool representation.
+        wf = self._build_user_defined_workflow_dict()
+        response = self._post("workflows", data={"workflow": json.dumps(wf)})
+        assert response.status_code == 403, response.text
+        assert "not allowed to run unprivileged tools" in response.text
+
+    def test_import_workflow_with_user_defined_tool_representation(self):
+        # Non-admin with USER_TOOL_EXECUTE can import a workflow that embeds a
+        # GalaxyUserTool representation; a private UDT is created in their account.
+        with self.dataset_populator.user_tool_execute_permissions():
+            wf = self._build_user_defined_workflow_dict()
+            response = self._post("workflows", data={"workflow": json.dumps(wf)})
+            assert response.status_code == 200, response.text
+            workflow_id = response.json()["id"]
+            downloaded = self.workflow_populator.download_workflow(workflow_id)
+            step_dict = downloaded["steps"]["0"]
+            assert step_dict["tool_representation"]["class"] == "GalaxyUserTool"
+
+            # The importer now owns a private UDT matching the embedded representation.
+            owned = self.dataset_populator.get_unprivileged_tools()
+            assert any(
+                t["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"] for t in owned
+            ), f"Expected an owned UDT after workflow import: {owned}"
 
     def _invoke_paused_workflow(self, history_id):
         workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")

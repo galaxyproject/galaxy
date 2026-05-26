@@ -2,10 +2,12 @@ import logging
 from datetime import datetime
 from typing import (
     Any,
+    Literal,
     Optional,
     Union,
 )
 
+from fastapi import Response
 from pydantic import BaseModel
 
 from galaxy.exceptions import (
@@ -29,7 +31,10 @@ from galaxy.schema.fields import (
 from galaxy.tool_util.parameters import input_models_for_tool_source
 from galaxy.tool_util.parameters.convert import cwl_runtime_model
 from galaxy.tool_util.parser.yaml import YamlToolSource
-from galaxy.tool_util_models import UserToolSource
+from galaxy.tool_util_models import (
+    lift_user_tool_source,
+    UserToolSource,
+)
 from galaxy.tool_util_models.dynamic_tool_models import (
     DynamicToolPayload,
     DynamicUnprivilegedToolCreatePayload,
@@ -48,6 +53,22 @@ router = Router(tags=["dynamic_tools"])
 DatabaseIdOrUUID = Union[DecodedDatabaseIdField, str]
 
 
+def _set_lift_headers(response: Response, status: str, errors: list[str]) -> None:
+    """Surface lift status as response headers so consumers can react without
+    parsing the response body. Headers are computed dynamically per request and
+    are intentionally not declared in the OpenAPI schema."""
+    if status == "ok" or not errors:
+        return
+    if status == "lifted":
+        compact = ",".join(errors)
+        response.headers["X-Galaxy-Deprecated-Fields"] = compact
+        response.headers["Warning"] = f'299 - "Some conventions are no longer valid; ignored on read: {compact}"'
+    elif status == "invalid":
+        compact = "; ".join(errors)
+        response.headers["X-Galaxy-Schema-Errors"] = compact
+        response.headers["Warning"] = f'299 - "Stored tool no longer satisfies schema: {compact}"'
+
+
 class UnprivilegedToolResponse(BaseModel):
     id: EncodedDatabaseIdField
     uuid: str
@@ -56,7 +77,32 @@ class UnprivilegedToolResponse(BaseModel):
     tool_id: Optional[str]
     tool_format: Optional[str]
     create_time: datetime
-    representation: UserToolSource
+    # Either a strict UserToolSource (status="ok" or "lifted") or the raw
+    # stored dict (status="invalid"). Consumers narrow on `representation_status`.
+    representation: Union[UserToolSource, dict[str, Any]]
+    representation_status: Literal["ok", "lifted", "invalid"] = "ok"
+    representation_errors: list[str] = []
+
+
+def _build_unprivileged_tool_response(d: dict[str, Any]) -> UnprivilegedToolResponse:
+    """Run the lift over the stored representation and assemble the response.
+    This is the single place where the lift result is unpacked, so the helper's
+    invariants (status='ok' → strict model, 'lifted' → strict model + dropped
+    paths, 'invalid' → raw dict + error summary) are enforced exactly once."""
+    raw_representation = d.get("representation") or {}
+    status, representation, errors = lift_user_tool_source(raw_representation)
+    return UnprivilegedToolResponse(
+        id=d["id"],
+        uuid=d["uuid"],
+        active=d["active"],
+        hidden=d["hidden"],
+        tool_id=d.get("tool_id"),
+        tool_format=d.get("tool_format"),
+        create_time=d["create_time"],
+        representation=representation,
+        representation_status=status,
+        representation_errors=errors,
+    )
 
 
 @router.cbv
@@ -66,17 +112,38 @@ class UnprivilegedToolsApi:
     dynamic_tools_manager: DynamicToolManager = depends(DynamicToolManager)
 
     @router.get("/api/unprivileged_tools", response_model_exclude_defaults=True)
-    def index(self, active: bool = True, trans: ProvidesUserContext = DependsOnTrans) -> list[UnprivilegedToolResponse]:
+    def index(
+        self,
+        response: Response,
+        active: bool = True,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[UnprivilegedToolResponse]:
         if not trans.user:
             return []
-        return [t.to_dict() for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)]
+        result = [
+            _build_unprivileged_tool_response(t.to_dict())
+            for t in self.dynamic_tools_manager.list_unprivileged_tools(trans.user, active=active)
+        ]
+        # Aggregate header: any tool with drift surfaces it on the index call.
+        worst = "ok"
+        aggregate: list[str] = []
+        for tool in result:
+            if tool.representation_status == "invalid":
+                worst = "invalid"
+            elif tool.representation_status == "lifted" and worst == "ok":
+                worst = "lifted"
+            aggregate.extend(tool.representation_errors)
+        _set_lift_headers(response, worst, aggregate)
+        return result
 
     @router.get("/api/unprivileged_tools/{uuid}", response_model_exclude_defaults=True)
-    def show(self, uuid: str, user: User = DependsOnUser) -> UnprivilegedToolResponse:
+    def show(self, response: Response, uuid: str, user: User = DependsOnUser) -> UnprivilegedToolResponse:
         dynamic_tool = self.dynamic_tools_manager.get_unprivileged_tool_by_uuid(user, uuid)
         if dynamic_tool is None:
             raise ObjectNotFound()
-        return UnprivilegedToolResponse(**dynamic_tool.to_dict())
+        tool = _build_unprivileged_tool_response(dynamic_tool.to_dict())
+        _set_lift_headers(response, tool.representation_status, tool.representation_errors)
+        return tool
 
     @router.post("/api/unprivileged_tools", response_model_exclude_defaults=True)
     def create(
@@ -86,7 +153,10 @@ class UnprivilegedToolsApi:
             user,
             payload,
         )
-        return UnprivilegedToolResponse(**dynamic_tool.to_dict())
+        # Just-created tools are validated through strict input, so the lift
+        # is a no-op here, but going through the same builder keeps behavior
+        # uniform.
+        return _build_unprivileged_tool_response(dynamic_tool.to_dict())
 
     @router.post("/api/unprivileged_tools/build")
     def build(

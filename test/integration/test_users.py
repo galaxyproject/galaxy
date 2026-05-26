@@ -1,3 +1,6 @@
+import json
+import os
+import re
 from typing import (
     ClassVar,
 )
@@ -91,3 +94,31 @@ class TestUnexposedUsersIntegration(UsersIntegrationCase):
     # And the current user has all fields, so no limited fields.
     expected_limited_user_keys = set()
     expected_regular_user_list_count = 1
+
+
+class TestAdminResendActivationEmail(integration_util.IntegrationTestCase):
+    email_directory: ClassVar[str]
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        cls.email_directory = cls._test_driver.mkdtemp()
+        config["user_activation_on"] = True
+        config["activation_grace_period"] = 3
+        config["email_from"] = "galaxy-noreply@example.com"
+        config["smtp_server"] = f"mock_emails_to_path://{cls.email_directory}/email.json"
+
+    def test_resend_activation_includes_qualified_link(self):
+        user = self._setup_user("resend-activation@test.gx")
+        response = self._post(f"users/{user['id']}/send_activation_email", admin=True)
+        self._assert_status_code_is_ok(response)
+
+        with open(os.path.join(self.email_directory, "email.json")) as f:
+            email = json.loads(f.read())
+        assert email["to"] == "resend-activation@test.gx"
+        assert email["subject"] == "Galaxy Account Activation"
+        match = re.search(r"(https?://[^/\s]+/user/activate\?[^\s]+)", email["body"])
+        assert match, f"No qualified activation link found in email body:\n{email['body']}"
+        link = match.group(1)
+        assert "activation_token=" in link
+        assert "email=" in link

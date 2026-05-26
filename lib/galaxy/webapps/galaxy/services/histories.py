@@ -19,11 +19,13 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import selectinload
 
 from galaxy import (
     exceptions as glx_exceptions,
     model,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import (
     import_model_store,
     prepare_history_download,
@@ -39,8 +41,14 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
+from galaxy.managers.history_graph import HistoryGraphManager
 from galaxy.managers.users import UserManager
-from galaxy.model import HistoryDatasetAssociation
+from galaxy.model import (
+    HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
+    ImplicitCollectionJobs,
+    ImplicitCollectionJobsJobAssociation,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
@@ -49,6 +57,11 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import HistoryIndexQueryPayload
+from galaxy.schema.history_graph import (
+    HistoryGraphResponse,
+    NodeRef,
+    NodeSrc,
+)
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -79,6 +92,7 @@ from galaxy.schema.tasks import (
 )
 from galaxy.schema.types import LatestLiteral
 from galaxy.schema.workflows import (
+    InvalidWorkflowExtractionJobReason,
     WorkflowExtractionJob,
     WorkflowExtractionOutput,
     WorkflowExtractionSummary,
@@ -87,7 +101,6 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util import restore_text
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ConsumesModelStores,
     model_store_storage_target,
     ServesExportStores,
@@ -126,6 +139,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         deserializer: HistoryDeserializer,
         citations_manager: CitationsManager,
         history_export_manager: HistoryExportManager,
+        history_graph_manager: HistoryGraphManager,
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
         notification_service: NotificationService,
@@ -137,6 +151,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.deserializer = deserializer
         self.citations_manager = citations_manager
         self.history_export_manager = history_export_manager
+        self.history_graph_manager = history_graph_manager
         self.filters = filters
         self.shareable_service = ShareableHistoryService(self.manager, self.serializer, notification_service)
         self.short_term_storage_allocator = short_term_storage_allocator
@@ -379,6 +394,54 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return self._serialize_history(trans, history, serialization_params)
 
+    def graph(
+        self,
+        trans: ProvidesHistoryContext,
+        history_id: DecodedDatabaseIdField,
+        limit: int = 500,
+        include_deleted: bool = False,
+        seed_src: Optional[NodeSrc] = None,
+        seed_id: Optional[str] = None,
+        direction: Literal["backward", "forward", "both"] = "both",
+        depth: int = 20,
+        seed_scope_src: Optional[Literal["hda", "hdca"]] = None,
+        seed_scope_id: Optional[str] = None,
+    ) -> HistoryGraphResponse:
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
+        seed = self._build_node_ref("seed", seed_src, seed_id)
+        seed_scope = self._build_node_ref("seed_scope", seed_scope_src, seed_scope_id)
+        seed_scope_hid = self._resolve_seed_scope_hid(trans, history.id, seed_scope) if seed_scope is not None else None
+        return self.history_graph_manager.build(
+            sa_session=trans.sa_session,
+            history_id=history.id,
+            limit=limit,
+            include_deleted=include_deleted,
+            seed=seed,
+            direction=direction,
+            depth=depth,
+            seed_scope_hid=seed_scope_hid,
+        )
+
+    @staticmethod
+    def _build_node_ref(param: str, src: Optional[str], id: Optional[str]) -> Optional[NodeRef]:
+        if src is None and id is None:
+            return None
+        if src is None or id is None:
+            raise glx_exceptions.RequestParameterInvalidException(
+                f"{param}_src and {param}_id must be provided together."
+            )
+        return NodeRef(src=src, id=id)
+
+    def _resolve_seed_scope_hid(self, trans: ProvidesHistoryContext, history_id: int, seed_scope: NodeRef) -> int:
+        db_id = self.security.decode_id(seed_scope.id)
+        model_class = HistoryDatasetAssociation if seed_scope.src == "hda" else HistoryDatasetCollectionAssociation
+        row = trans.sa_session.execute(
+            select(model_class.hid).where(model_class.id == db_id, model_class.history_id == history_id)
+        ).first()
+        if row is None or row.hid is None:
+            raise glx_exceptions.ObjectNotFound(f"seed_scope {seed_scope.src}:{seed_scope.id} not found in history.")
+        return row.hid
+
     def prepare_download(
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: StoreExportPayload
     ) -> AsyncFile:
@@ -395,7 +458,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             duration=short_term_storage_target.duration,
             user=trans.async_request_user,
             export_association_id=export_association.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = prepare_history_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
@@ -412,7 +475,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             user=trans.async_request_user,
             history_id=history.id,
             export_association_id=export_association.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = write_history_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         task_summary = async_task_summary(result)
@@ -765,6 +828,21 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     ) -> WorkflowExtractionSummary:
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         jobs, warnings = summarize(trans, history)
+        representative_job_ids = [job.id for job in jobs if isinstance(job, model.Job)]
+        icj_assoc_by_job_id = {}
+        if representative_job_ids:
+            stmt = (
+                select(ImplicitCollectionJobsJobAssociation)
+                .options(
+                    selectinload(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs).selectinload(
+                        ImplicitCollectionJobs.jobs
+                    )
+                )
+                .where(ImplicitCollectionJobsJobAssociation.job_id.in_(representative_job_ids))
+            )
+            icj_assoc_by_job_id = {
+                icj_assoc.job_id: icj_assoc for icj_assoc in trans.sa_session.scalars(stmt).unique().all()
+            }
 
         def serialize_output(content) -> WorkflowExtractionOutput:
             return WorkflowExtractionOutput.model_validate(
@@ -801,14 +879,37 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                         checked=checked,
                         tool_version_warning=None,
                         outputs=outputs,
+                        invalid=None,
                     )
                 )
             else:
-                tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
+                custom_tools_inaccessible = False
+                try:
+                    tool = trans.app.toolbox.tool_for_job(job, user=trans.user)
+                except glx_exceptions.InsufficientPermissionsException:
+                    tool = None
+                    custom_tools_inaccessible = True
                 if tool is None:
-                    # Tool missing
-                    continue
-                if not tool.is_workflow_compatible:
+                    # Tool missing or inaccessible
+                    invalid_reason = (
+                        InvalidWorkflowExtractionJobReason.CUSTOM_TOOL_INACCESSIBLE
+                        if custom_tools_inaccessible
+                        else InvalidWorkflowExtractionJobReason.TOOL_MISSING_OR_INACCESSIBLE
+                    )
+                    jobs_list.append(
+                        WorkflowExtractionJob(
+                            id=job.id,
+                            step_type="tool",
+                            tool_name=None,
+                            tool_id=job.tool_id,
+                            tool_version=job.tool_version,
+                            checked=False,
+                            tool_version_warning=None,
+                            outputs=outputs,
+                            invalid=invalid_reason,
+                        )
+                    )
+                elif not tool.is_workflow_compatible:
                     # Not a workflow step (e.g. upload, data fetch) — treat as input.
                     jobs_list.append(
                         WorkflowExtractionJob(
@@ -820,6 +921,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                             checked=checked,
                             tool_version_warning=None,
                             outputs=outputs,
+                            invalid=None,
                         )
                     )
                 else:
@@ -831,18 +933,25 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                         if tool.version != job.tool_version
                         else None
                     )
+                    icj_assoc = icj_assoc_by_job_id.get(job.id)
+                    implicit_collection_jobs = icj_assoc.implicit_collection_jobs if icj_assoc is not None else None
                     jobs_list.append(
-                        WorkflowExtractionJob.model_validate(
-                            {
-                                "id": job.id,
-                                "step_type": "tool",
-                                "tool_name": tool.name,
-                                "tool_id": job.tool_id,
-                                "tool_version": job.tool_version,
-                                "checked": checked,
-                                "tool_version_warning": tool_version_warning,
-                                "outputs": outputs,
-                            }
+                        WorkflowExtractionJob(
+                            id=job.id,
+                            step_type="tool",
+                            tool_name=tool.name,
+                            tool_id=job.tool_id,
+                            tool_version=job.tool_version,
+                            checked=checked,
+                            tool_version_warning=tool_version_warning,
+                            outputs=outputs,
+                            invalid=None,
+                            implicit_collection_jobs_id=(
+                                icj_assoc.implicit_collection_jobs_id if icj_assoc is not None else None
+                            ),
+                            implicit_collection_jobs_size=(
+                                len(implicit_collection_jobs.jobs) if implicit_collection_jobs is not None else None
+                            ),
                         )
                     )
 

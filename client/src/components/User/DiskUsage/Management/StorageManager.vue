@@ -2,6 +2,8 @@
 import { ref } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
 
@@ -25,6 +27,8 @@ const breadcrumbItems = [
 
 const { config } = useConfig();
 const { cleanupCategories } = useCleanupCategories();
+const quotaUsageStore = useQuotaUsageStore();
+const userStore = useUserStore();
 
 const currentOperation = ref<CleanupOperation>();
 const currentTotalItems = ref(0);
@@ -49,6 +53,8 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
         cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
         if (cleanupResult.value.hasUpdatedResults) {
             refreshOperationId.value = currentOperation.value.id.toString();
+            quotaUsageStore.requestRefreshDebounced();
+            userStore.refreshUser();
         }
     }
 }

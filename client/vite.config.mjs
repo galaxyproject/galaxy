@@ -6,7 +6,6 @@ import ViteYaml from "@modyfi/vite-plugin-yaml";
 import inject from "@rollup/plugin-inject";
 import vue from "@vitejs/plugin-vue2";
 import { defineConfig } from "vite";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 import { buildMetadataPlugin } from "./vite-plugin-build-metadata.js";
 import { galaxyDevServerPlugin } from "./vite-plugin-galaxy-dev-server.js";
@@ -47,10 +46,21 @@ function d3v3CompatPlugin() {
     };
 }
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
     // Use relative base so CSS asset references work with any proxy prefix.
     // The HTML script tags use url_for() which handles the prefix correctly.
     base: "./",
+    resolve:
+        command === "serve"
+            ? {
+                  // In dev, resolve @galaxyproject/* workspace packages directly to
+                  // source so edits trigger HMR without a rebuild. Production builds
+                  // use the packages' published dist/ via their package.json exports.
+                  alias: {
+                      "@galaxyproject/galaxy-api-client": resolve(__dirname, "packages/api-client/src/index.ts"),
+                  },
+              }
+            : {},
     define: {
         // Make jQuery available globally for plugins and legacy code
         global: "globalThis",
@@ -72,7 +82,6 @@ export default defineConfig({
                 },
             },
         }),
-        tsconfigPaths(), // TypeScript path resolution
         ViteYaml(), // YAML file support
         galaxyLegacyPlugin(), // Handle legacy module resolution
         buildMetadataPlugin(), // Generate build metadata (replaces DumpMetaPlugin)
@@ -87,8 +96,14 @@ export default defineConfig({
         }),
         galaxyDevServerPlugin(), // Transform proxied Galaxy HTML for HMR support
     ],
-    // resolve aliases are handled by galaxyLegacyPlugin
+    // Note: resolve.alias and resolve.extensions are set by galaxyLegacyPlugin
+    resolve: {
+        tsconfigPaths: true,
+    },
     css: {
+        lightningcss: {
+            errorRecovery: true,
+        },
         preprocessorOptions: {
             scss: {
                 quietDeps: true,
@@ -106,7 +121,7 @@ export default defineConfig({
         cssCodeSplit: false,
         // Generate sourcemaps when GXY_BUILD_SOURCEMAPS is set
         sourcemap: !!process.env.GXY_BUILD_SOURCEMAPS,
-        rollupOptions: {
+        rolldownOptions: {
             input: {
                 // Entry points that will be referenced in templates
                 // libs must be loaded first - it exposes globals (jQuery, bundleEntries, config)
@@ -159,26 +174,23 @@ export default defineConfig({
         format: "es",
     },
     optimizeDeps: {
-        // Use esbuild plugin to fix D3 v3's IIFE `this` binding during pre-bundling
-        esbuildOptions: {
+        // Use Rolldown plugin to fix D3 v3's IIFE `this` binding during pre-bundling
+        rolldownOptions: {
             plugins: [
                 {
-                    name: "d3v3-compat-esbuild",
-                    setup(build) {
-                        build.onLoad({ filter: /node_modules\/d3v3\/d3\.js$/ }, async (args) => {
-                            const fs = await import("node:fs");
-                            let contents = fs.readFileSync(args.path, "utf8");
-                            // D3 v3 is: !function() { ... }();
-                            // Change to: !function() { ... }.call(window);
+                    name: "d3v3-compat-rolldown",
+                    load(id) {
+                        if (id.includes("node_modules/d3v3/d3.js") || id.includes("node_modules\\d3v3\\d3.js")) {
+                            let contents = readFileSync(id, "utf8");
                             contents = contents.replace(
                                 /\}(\s*)\(\s*\)\s*;?\s*$/,
                                 "}.call(typeof window !== 'undefined' ? window : globalThis);",
                             );
-                            return { contents, loader: "js" };
-                        });
+                            return contents;
+                        }
                     },
                 },
             ],
         },
     },
-});
+}));

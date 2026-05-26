@@ -1,5 +1,25 @@
 import { isDefined, isValidNumber } from "@/utils/validation";
 
+/** Find a data/data_collection parameter in a tool form ``inputs`` tree by
+ * its full ``|``-separated dotted name. Reuses ``visitInputs`` (which already
+ * encodes Galaxy's path conventions: ``|`` for conditionals/sections and
+ * ``_${i}`` for repeat iterations) so the lookup matches the server-side
+ * ``populate_model.py`` path construction.
+ *
+ * @param{Array}  inputs       - Tool form inputs tree (e.g. formConfig.inputs).
+ * @param{String} targetName   - Full dotted name to find.
+ * @returns the matching parameter node, or ``null`` if not found.
+ */
+export function findInputByDottedName(inputs, targetName) {
+    let found = null;
+    visitInputs(inputs, (node, name) => {
+        if (!found && name === targetName && (node.type === "data" || node.type === "data_collection")) {
+            found = node;
+        }
+    });
+    return found;
+}
+
 /** Visits tool inputs.
  * @param{dict}   inputs    - Nested dictionary of input elements
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
@@ -194,8 +214,11 @@ function _convertValue(node, value) {
         return _convertDataValue(value, node.multiple);
     }
     if (node.type === "data_column") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         if (Array.isArray(value)) {
             return value.map((v) => (typeof v === "string" ? parseInt(v, 10) : v));
@@ -203,14 +226,20 @@ function _convertValue(node, value) {
         return typeof value === "string" ? parseInt(value, 10) : value;
     }
     if (node.type === "integer") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         return typeof value === "string" ? parseInt(value, 10) : value;
     }
     if (node.type === "float") {
-        if (value === null || value === undefined || value === "") {
-            return value;
+        if (value === undefined) {
+            return undefined;
+        }
+        if (value === null || value === "") {
+            return null;
         }
         return typeof value === "string" ? parseFloat(value) : value;
     }

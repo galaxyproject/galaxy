@@ -79,7 +79,8 @@ function isPathActive(path: RawLocation): boolean {
         }
 
         .breadcrumb-heading-header-beta {
-            color: #717273;
+            color: var(--color-grey-500);
+            white-space: nowrap;
         }
     }
 }

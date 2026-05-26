@@ -49,7 +49,7 @@ CANNOT_DETERMINE_TAP_ERROR_MESSAGE = (
 )
 VERBOSE = False
 RELAXED = False
-BREW_ARGS = []
+BREW_ARGS: List[str] = []
 
 
 class BrewContext:

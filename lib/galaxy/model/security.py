@@ -1,10 +1,7 @@
 import logging
 import socket
 import sqlite3
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 from typing import (
     Optional,
 )
@@ -57,7 +54,10 @@ from galaxy.security import (
     get_permitted_actions,
     RBACAgent,
 )
-from galaxy.util import listify
+from galaxy.util import (
+    listify,
+    now,
+)
 from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
@@ -1706,7 +1706,7 @@ class HostAgent(RBACAgent):
                     hdadaa.site,
                 )
                 return False  # remote addr is not in the server list
-            if (datetime.utcnow() - hdadaa.update_time) > timedelta(seconds=60):
+            if (now() - hdadaa.update_time) > timedelta(seconds=60):
                 log.debug(
                     "Denying access to private dataset with hda: %d.  Authorization was granted, but has expired.",
                     hda.id,
@@ -1725,7 +1725,7 @@ class HostAgent(RBACAgent):
         )
         hdadaa = self.sa_session.scalars(stmt).first()
         if hdadaa:
-            hdadaa.update_time = datetime.utcnow()
+            hdadaa.update_time = now()
         else:
             hdadaa = HistoryDatasetAssociationDisplayAtAuthorization(hda=hda, user=user, site=site)
         self.sa_session.add(hdadaa)

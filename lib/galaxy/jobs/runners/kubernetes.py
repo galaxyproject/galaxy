@@ -53,6 +53,7 @@ from galaxy.jobs.runners.util.pykube_util import (
     Service,
     service_object_dict,
 )
+from galaxy.util import now
 from galaxy.util.bytesize import ByteSize
 
 if TYPE_CHECKING:
@@ -748,7 +749,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
                             creation_time_str = k8s_job.obj["metadata"].get("creationTimestamp")
                             creation_time = datetime.strptime(creation_time_str, "%Y-%m-%dT%H:%M:%SZ")
-                            elapsed_seconds = (datetime.utcnow() - creation_time).total_seconds()
+                            elapsed_seconds = (now() - creation_time).total_seconds()
                             if elapsed_seconds > self.runner_params["k8s_unschedulable_walltime_limit"]:
                                 return self._handle_unschedulable_job(k8s_job, job_state)
                             else:

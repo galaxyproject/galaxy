@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faFolder, faGlobe, faPlus, faTimes, faUser } from "@fortawesome/free-solid-svg-icons";
+import { faFolder, faGlobe, faPlus, faTrash, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BFormInput, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -10,6 +10,8 @@ import type { BreadcrumbItem } from "@/components/Common";
 import type { TableField } from "@/components/Common/GTable.types";
 import { Model } from "@/components/FilesDialog/model";
 import { fileSourcePluginToItem, selectionToArray } from "@/components/FilesDialog/utilities";
+import { urlUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
 import { useFileSources } from "@/composables/fileSources";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
@@ -17,6 +19,7 @@ import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { useUrlTracker } from "@/composables/urlTracker";
@@ -69,6 +72,8 @@ const emit = defineEmits<{
 }>();
 
 const { advancedMode } = useUploadAdvancedMode();
+
+const optionVisibility = computed(() => urlUploadOptionVisibility(advancedMode.value));
 
 const router = useRouter();
 const filesSources = useFileSources();
@@ -186,6 +191,10 @@ const breadcrumbs = computed(() => {
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(remoteFileItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 const { isReadyToUpload } = useUploadReadyState(hasItems, collectionState);
 
@@ -480,7 +489,7 @@ const browserFields: TableField[] = [
 ];
 
 // File list table fields
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "name",
         label: "Name",
@@ -522,6 +531,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -531,7 +541,7 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
 function reset() {
     remoteFileItems.value = [];
@@ -835,41 +845,24 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <UploadTableOptionsHeader
-                            :all-space-to-tab="bulk.allSpaceToTab.value"
-                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                            :show-posix="advancedMode"
-                            :all-to-posix-lines="bulk.allToPosixLines.value"
-                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                            :show-deferred="true"
-                            :all-deferred="bulk.allDeferred.value"
-                            :deferred-indeterminate="bulk.deferredIndeterminate.value"
-                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines"
-                            @toggle-deferred="bulk.toggleAllDeferred" />
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <UploadTableOptionsCell
-                            :space-to-tab="item.spaceToTab"
-                            :show-posix="advancedMode"
-                            :to-posix-lines="item.toPosixLines"
-                            :show-deferred="true"
-                            :deferred="item.deferred"
-                            @updateSpaceToTab="item.spaceToTab = $event"
-                            @updateToPosixLines="item.toPosixLines = $event"
-                            @updateDeferred="item.deferred = $event" />
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                     </template>
 
                     <!-- Actions column -->
                     <template v-slot:cell(actions)="{ item }">
-                        <button
+                        <GButton
                             v-g-tooltip.hover
-                            class="btn btn-link text-danger remove-btn"
+                            class="remove-btn"
+                            outline
+                            transparent
                             title="Remove file from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
-                        </button>
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </GButton>
                     </template>
                 </GTable>
             </div>

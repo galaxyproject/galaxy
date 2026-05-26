@@ -21,14 +21,20 @@ backends:
    - id: files1
      type: azure_blob
 """
-FILES_SOURCES_DROPBOX = """
+FILES_SOURCES_CONFIG = """
 - type: webdav
 - type: dropbox
+- type: googledrive
 """
 JOB_CONF_YAML = """
 runners:
   runner1:
     load: job_runner_A
+"""
+JOB_CONF_HTCONDOR_YAML = """
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
 """
 VAULT_CONF_HASHICORP = """
 type: hashicorp
@@ -74,19 +80,21 @@ def test_azure_objectstore_nested_yaml():
 def test_fs_default():
     with _config_context() as cc:
         cds = cc.get_cond_deps()
-        assert not cds.check_fs_dropboxfs()
-        assert not cds.check_fs_webdavfs()
+        assert not cds.check_gdrive_fsspec()
+        assert not cds.check_dropboxdrivefs()
+        assert not cds.check_webdav4()
 
 
 def test_fs_configured():
     with _config_context() as cc:
-        file_sources_conf = cc.write_config("file_sources.yml", FILES_SOURCES_DROPBOX)
+        file_sources_conf = cc.write_config("file_sources.yml", FILES_SOURCES_CONFIG)
         config = {
             "file_sources_config_file": file_sources_conf,
         }
         cds = cc.get_cond_deps(config=config)
-        assert cds.check_fs_dropboxfs()
-        assert cds.check_fs_webdavfs()
+        assert cds.check_gdrive_fsspec()
+        assert cds.check_dropboxdrivefs()
+        assert cds.check_webdav4()
 
 
 def test_yaml_jobconf_runners():
@@ -99,6 +107,20 @@ def test_yaml_jobconf_runners():
         assert "job_runner_A" in cds.job_runners
 
 
+def test_htcondor_not_required_by_default():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert not cds.check_htcondor()
+
+
+def test_htcondor_required_when_runner_configured():
+    with _config_context() as cc:
+        job_conf_file = cc.write_config("job_conf.yml", JOB_CONF_HTCONDOR_YAML)
+        config = {"job_config_file": job_conf_file}
+        cds = cc.get_cond_deps(config=config)
+        assert cds.check_htcondor()
+
+
 def test_vault_hashicorp_configured():
     with _config_context() as cc:
         vault_conf = cc.write_config("vault_conf.yml", VAULT_CONF_HASHICORP)
@@ -107,6 +129,36 @@ def test_vault_hashicorp_configured():
         }
         cds = cc.get_cond_deps(config=config)
         assert cds.check_hvac()
+
+
+def test_pkce_default_disabled():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps()
+        assert cds.check_pkce() is False
+
+
+def test_pkce_enabled_when_enable_oidc():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"enable_oidc": True})
+        assert cds.check_pkce() is True
+
+
+def test_pkce_disabled_when_enable_oidc_off():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"enable_oidc": False})
+        assert cds.check_pkce() is False
+
+
+def test_pkce_enabled_via_auth_pipeline():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"oidc_auth_pipeline": ["galaxy.authnz.psa_authnz.verify"]})
+        assert cds.check_pkce() is True
+
+
+def test_pkce_enabled_via_auth_pipeline_extra():
+    with _config_context() as cc:
+        cds = cc.get_cond_deps(config={"oidc_auth_pipeline_extra": ["galaxy.authnz.psa_authnz.verify"]})
+        assert cds.check_pkce() is True
 
 
 @pytest.mark.parametrize(

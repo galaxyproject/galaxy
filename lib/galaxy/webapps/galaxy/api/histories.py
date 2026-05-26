@@ -22,6 +22,10 @@ from fastapi import (
     Response,
     status,
 )
+from pydantic import (
+    Discriminator,
+    Tag,
+)
 from pydantic.fields import Field
 from pydantic.main import BaseModel
 
@@ -43,6 +47,10 @@ from galaxy.schema.fields import (
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
     HistorySortByEnum,
+)
+from galaxy.schema.history_graph import (
+    HistoryGraphResponse,
+    NodeSrc,
 )
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -90,7 +98,7 @@ from galaxy.webapps.galaxy.api.common import (
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
-from galaxy.workflow.extract import extract_workflow
+from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from .common import HistoryIDPathParam
 
 log = logging.getLogger(__name__)
@@ -186,9 +194,23 @@ IndexExportsAcceptHeader = Annotated[
 ]
 
 
+def _index_exports_response_discriminator(value: Any) -> str:
+    return "tasks" if isinstance(value, ExportTaskListResponse) else "jobs"
+
+
+IndexExportsResponse = Annotated[
+    Union[
+        Annotated[JobExportHistoryArchiveListResponse, Tag("jobs")],
+        Annotated[ExportTaskListResponse, Tag("tasks")],
+    ],
+    Discriminator(_index_exports_response_discriminator),
+]
+
+
 @router.cbv
 class FastAPIHistories:
     service: HistoriesService = depends(HistoriesService)
+    workflows_service: WorkflowsService = depends(WorkflowsService)
 
     @router.get(
         "/api/histories",
@@ -339,6 +361,64 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> AnyHistoryView:
         return self.service.show(trans, serialization_params, history_id)
+
+    @router.get(
+        "/api/histories/{history_id}/graph",
+        summary="Returns a history-scoped structural graph.",
+    )
+    def graph(
+        self,
+        history_id: HistoryIDPathParam,
+        limit: int = Query(
+            default=500,
+            description="Maximum number of nodes. Applied at history scope.",
+            ge=1,
+            le=2000,
+        ),
+        include_deleted: bool = Query(
+            default=False,
+            description="Include deleted datasets and collections.",
+        ),
+        seed_src: Optional[NodeSrc] = Query(
+            default=None,
+            description="Optional: src of the node to focus the subgraph on. Provide with seed_id.",
+        ),
+        seed_id: Optional[str] = Query(
+            default=None,
+            description="Optional: encoded id of the node to focus the subgraph on. Provide with seed_src.",
+        ),
+        direction: Literal["backward", "forward", "both"] = Query(
+            default="both",
+            description="Direction for seed-based subgraph extraction.",
+        ),
+        depth: int = Query(
+            default=20,
+            description="Max depth for seed-based subgraph extraction.",
+            ge=1,
+            le=20,
+        ),
+        seed_scope_src: Optional[Literal["hda", "hdca"]] = Query(
+            default=None,
+            description="src of the item to center the selection window on. Required with seed_scope_id.",
+        ),
+        seed_scope_id: Optional[str] = Query(
+            default=None,
+            description="Center the selection window on this encoded id. Provide with seed_scope_src.",
+        ),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> HistoryGraphResponse:
+        return self.service.graph(
+            trans,
+            history_id,
+            limit=limit,
+            include_deleted=include_deleted,
+            seed_src=seed_src,
+            seed_id=seed_id,
+            direction=direction,
+            depth=depth,
+            seed_scope_src=seed_scope_src,
+            seed_scope_id=seed_scope_id,
+        )
 
     @router.post(
         "/api/histories/{history_id}/prepare_store_download",
@@ -551,7 +631,7 @@ class FastAPIHistories:
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         accept: IndexExportsAcceptHeader = "application/json",
-    ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
+    ) -> IndexExportsResponse:
         """
         By default the legacy job-based history exports (jeha) are returned.
 
@@ -821,16 +901,4 @@ class FastAPIHistories:
         Returns the ID of the newly created workflow.
         """
         history = self.service.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-
-        stored_workflow = extract_workflow(
-            trans,
-            user=trans.user,
-            history=history,
-            job_ids=payload.job_ids,
-            dataset_ids=payload.dataset_hids,
-            dataset_collection_ids=payload.dataset_collection_hids,
-            workflow_name=payload.workflow_name,
-            dataset_names=payload.dataset_names,
-            dataset_collection_names=payload.dataset_collection_names,
-        )
-        return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+        return self.workflows_service.extract_from_history(trans, history, payload)

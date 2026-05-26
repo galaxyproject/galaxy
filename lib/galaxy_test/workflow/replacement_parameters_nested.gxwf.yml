@@ -22,7 +22,7 @@ steps:
           tool_id: create_2
           state:
             sleep_time: 0
-          outputs:
+          out:
             out_file1:
               rename: "${replacemeinner} name"
             out_file2:

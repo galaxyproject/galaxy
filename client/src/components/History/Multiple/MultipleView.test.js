@@ -33,6 +33,10 @@ describe("MultipleView", () => {
         const fakeSummaries = getFakeHistorySummaries(count);
 
         server.use(
+            http.get("/api/object_stores", ({ response }) => {
+                return response(200).json([]);
+            }),
+
             http.get("/api/histories/{history_id}", ({ response, params }) => {
                 const { history_id } = params;
                 const summary = fakeSummaries.find((s) => s.id === history_id);

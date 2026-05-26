@@ -122,6 +122,17 @@ describe("formUtils", () => {
             const formEntry = templateVariableFormEntry(requiredIntVar, undefined);
             expect(formEntry.value).toBe(0);
         });
+        it("should render multiline string types as Galaxy textarea inputs", () => {
+            const multilineVariable: TemplateVariable = {
+                name: "private_key",
+                type: "string",
+                multiline: true,
+            };
+            const formEntry = templateVariableFormEntry(multilineVariable, "line1\nline2");
+            expect(formEntry.type).toBe("text");
+            expect(formEntry.area).toBe(true);
+            expect(formEntry.value).toBe("line1\nline2");
+        });
     });
 
     describe("templateVariableFormEntry optional field", () => {
@@ -183,6 +194,17 @@ describe("formUtils", () => {
             };
             const formEntry = templateSecretFormEntry(secretWithoutOptional);
             expect(formEntry.optional).toBe(false);
+        });
+
+        it("should render multiline secrets as textarea inputs", () => {
+            const multilineSecret: TemplateSecret = {
+                name: "private_key",
+                help: "PEM content",
+                multiline: true,
+            };
+            const formEntry = templateSecretFormEntry(multilineSecret);
+            expect(formEntry.type).toBe("text");
+            expect(formEntry.area).toBe(true);
         });
     });
 

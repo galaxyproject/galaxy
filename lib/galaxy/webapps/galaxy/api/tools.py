@@ -63,7 +63,10 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util.verify import ToolTestDescriptionDict
-from galaxy.tool_util_models import UserToolSource
+from galaxy.tool_util_models import (
+    lift_user_tool_source,
+    UserToolSource,
+)
 from galaxy.tools.evaluation import global_tool_errors
 from galaxy.tools.fetch.workbooks import (
     FetchWorkbookCollectionType,
@@ -74,6 +77,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
     memory_bound_hexdigest,
@@ -422,6 +426,14 @@ class FetchTools:
             inputs,
         )
 
+    @router.get(
+        "/api/tags/tool_tags",
+        operation_id="tags__tool_tags",
+        summary="Return the curated tool-id to tag-name mapping for currently-loaded tools.",
+    )
+    def tool_tags(self, trans: ProvidesHistoryContext = DependsOnTrans) -> dict[str, list[str]]:
+        return self.service.curated_tool_tags_by_id(trans)
+
 
 class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     """
@@ -557,8 +569,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
+        options_pagination = _parse_options_pagination(kwd.pop("options_pagination", None))
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
-        return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
+        return tool.to_json(trans, kwd.get("inputs", kwd), history=history, options_pagination=options_pagination)
 
     @web.require_admin
     @expose_api
@@ -878,7 +891,24 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         trans.response.headers["language"] = tool.tool_source.language
         if dynamic_tool := getattr(tool, "dynamic_tool", None):
             if dynamic_tool.value.get("class") == "GalaxyUserTool":
-                return UserToolSource(**dynamic_tool.value).model_dump_json(
+                status, lifted, errors = lift_user_tool_source(dynamic_tool.value)
+                if status == "lifted" and errors:
+                    compact = ",".join(errors)
+                    trans.response.headers["X-Galaxy-Deprecated-Fields"] = compact
+                    trans.response.headers["Warning"] = (
+                        f'299 - "Some conventions are no longer valid; ignored on read: {compact}"'
+                    )
+                elif status == "invalid":
+                    compact = "; ".join(errors)
+                    trans.response.headers["X-Galaxy-Schema-Errors"] = compact
+                    trans.response.headers["Warning"] = f'299 - "Stored tool no longer satisfies schema: {compact}"'
+                    # Return the raw stored value so callers can still inspect /
+                    # repair the YAML manually.
+                    import json
+
+                    return json.dumps(dynamic_tool.value)
+                assert isinstance(lifted, UserToolSource)
+                return lifted.model_dump_json(
                     by_alias=True,
                     exclude_defaults=True,
                     exclude_unset=True,
@@ -939,3 +969,21 @@ def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
             raise exceptions.RequestParameterInvalidException("Request payload must be a JSON object.")
         kwd = payload
     return kwd
+
+
+def _parse_options_pagination(value: Any) -> Optional[OptionsPaginationT]:
+    """Accept ``options_pagination`` as a dict (POST body) or JSON-encoded string
+    (GET query param). Returns ``None`` if not provided. Server-side clamps are
+    applied later in ``_normalize_pagination`` so individual entries don't need
+    to be validated here.
+    """
+    if value is None or value == "":
+        return None
+    if isinstance(value, str):
+        try:
+            value = loads(value)
+        except ValueError as e:
+            raise exceptions.RequestParameterInvalidException(f"options_pagination must be a JSON object: {e}")
+    if not isinstance(value, dict):
+        raise exceptions.RequestParameterInvalidException("options_pagination must be a JSON object.")
+    return value

@@ -15,7 +15,11 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <SaveChangesModal :nav-url.sync="navUrl" :show-modal.sync="showSaveChangesModal" @on-proceed="onNavigate" />
+        <SaveChangesModal
+            :append-version="saveChangesAppendVersion"
+            :nav-url="navUrl"
+            :show-modal.sync="showSaveChangesModal"
+            @on-proceed="onNavigate" />
         <GModal
             :show.sync="showSaveAsModal"
             confirm
@@ -39,6 +43,7 @@
             :default-activities="workflowActivities"
             :special-activities="specialWorkflowActivities"
             :exit-activity="exitWorkflowActivity"
+            :run-activity="runWorkflowActivity"
             activity-bar-id="workflow-editor"
             :show-admin="false"
             options-title="Options"
@@ -48,6 +53,8 @@
             initial-activity="workflow-editor-attributes"
             :options-icon="faCog"
             :hide-panel="reportActive"
+            :header-icon="faSitemap"
+            header-title="Editor"
             @activityClicked="onActivityClicked">
             <template v-slot:side-panel="{ isActiveSideBar }">
                 <ToolPanel v-if="isActiveSideBar('workflow-editor-tools')" workflow @onInsertTool="onInsertTool" />
@@ -116,12 +123,23 @@
                 ref="markdownEditor"
                 :markdown-text="report.markdown"
                 mode="report"
-                :title="'Workflow Report: ' + name"
+                :title="'Workflow Report Template: ' + name"
                 :labels="getLabels"
                 :steps="steps"
                 @insert="insertMarkdown"
                 @update="onReportUpdate">
                 <template v-slot:buttons>
+                    <GButton
+                        tooltip
+                        title="Generate AI GalaxyAI report based on the workflow and its expected results"
+                        variant="link"
+                        color="blue"
+                        transparent
+                        size="large"
+                        @click="generateAIReport">
+                        <FontAwesomeIcon :icon="faMagic" />
+                    </GButton>
+
                     <b-button
                         id="workflow-canvas-button"
                         v-g-tooltip.hover.bottom
@@ -181,14 +199,14 @@
                             variant="secondary"
                             :disabled="!undoRedoStore.hasUndo"
                             @click="undoRedoStore.undo()">
-                            <FontAwesomeIcon :icon="faArrowLeft" />
+                            <FontAwesomeIcon :icon="faUndo" />
                         </b-button>
                         <b-button
                             :title="undoRedoStore.redoText + ' (Ctrl + Shift + Z)'"
                             variant="secondary"
                             :disabled="!undoRedoStore.hasRedo"
                             @click="undoRedoStore.redo()">
-                            <FontAwesomeIcon :icon="faArrowRight" />
+                            <FontAwesomeIcon :icon="faRedo" />
                         </b-button>
                         <b-button
                             id="workflow-save-button"
@@ -247,7 +265,17 @@
 </template>
 
 <script>
-import { faArrowLeft, faArrowRight, faCog, faKey, faSave, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCog,
+    faKey,
+    faMagic,
+    faRedo,
+    faSave,
+    faSitemap,
+    faTimes,
+    faUndo,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { until, whenever } from "@vueuse/core";
 import { logicAnd, logicNot, logicOr } from "@vueuse/math";
@@ -255,6 +283,7 @@ import { BDropdown, BDropdownDivider, BDropdownItem, BDropdownText } from "boots
 import { storeToRefs } from "pinia";
 import Vue, { computed, nextTick, onUnmounted, ref, unref, watch } from "vue";
 
+import { generateAIReport } from "@/api/chat";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getWorkflowFull } from "@/components/Workflow/workflows.services";
 import { ConfirmDialog, useConfirmDialog } from "@/composables/confirmDialog";
@@ -297,6 +326,7 @@ import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import GForm from "@/components/BaseComponents/Form/GForm.vue";
 import GFormInput from "@/components/BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "@/components/BaseComponents/Form/GFormLabel.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import InputPanel from "@/components/Panels/InputPanel.vue";
@@ -330,6 +360,7 @@ export default {
         BDropdown,
         BDropdownText,
         BDropdownDivider,
+        GButton,
         GForm,
         GFormLabel,
         GFormInput,
@@ -610,9 +641,8 @@ export default {
         const isNewTempWorkflow = computed(() => !props.workflowId);
         const lintData = useLintData(id, steps, datatypesMapper, annotation, readme, license, creator);
 
-        const { specialWorkflowActivities, exitWorkflowActivity } = useSpecialWorkflowActivities(
+        const { specialWorkflowActivities, exitWorkflowActivity, runWorkflowActivity } = useSpecialWorkflowActivities(
             computed(() => ({
-                hasInvalidConnections: hasInvalidConnections.value,
                 lintData: lintData,
             })),
         );
@@ -716,6 +746,7 @@ export default {
             insertMarkdown,
             specialWorkflowActivities,
             exitWorkflowActivity,
+            runWorkflowActivity,
             isNewTempWorkflow,
             saveWorkflowTitle,
             confirm,
@@ -723,6 +754,7 @@ export default {
             workflowActivities,
             faKey,
             faWrench,
+            faSitemap,
             showDropdown: false,
             lintData,
             onHighlightRegion,
@@ -754,12 +786,14 @@ export default {
             graphOffset: { left: 0, top: 0, width: 0, height: 0 },
             debounceTimer: null,
             showSaveChangesModal: false,
+            saveChangesAppendVersion: false,
             navUrl: "",
-            faArrowLeft,
-            faArrowRight,
             faTimes,
             faCog,
+            faMagic,
             faSave,
+            faRedo,
+            faUndo,
         };
     },
     computed: {
@@ -994,13 +1028,8 @@ export default {
             }
         },
         async onActivityClicked(activityId) {
-            if (activityId === "save-and-exit") {
-                await this.saveOrCreate();
-                this.$router.push("/workflows/list");
-            }
-
             if (activityId === "exit") {
-                this.$router.push("/workflows/list");
+                this.onNavigate("/workflows/list");
             }
 
             if (activityId === "workflow-download") {
@@ -1094,6 +1123,38 @@ export default {
         onUpgrade() {
             this.onAttemptRefactor([{ action_type: "upgrade_all_steps" }]);
         },
+        async generateAIReport() {
+            if (this.hasChanges) {
+                Toast.error("Please save your workflow before generating the AI report.");
+                return;
+            }
+
+            if (!this.id || this.isNewTempWorkflow) {
+                Toast.error("Workflow must be saved before generating the AI report.");
+                return;
+            }
+
+            this.onWorkflowMessage("Generating AI Report", "progress");
+            try {
+                const { model, report, total_tokens } = await generateAIReport(this.id, this.version);
+                this.onReportUpdate(report);
+                Toast.success(
+                    `Report generated using ${model}${total_tokens ? `, total tokens used: ${total_tokens}` : ""}.`,
+                    "AI Report generated successfully.",
+                );
+                this.hideModal();
+            } catch (e) {
+                this.onWorkflowError(
+                    "Generating AI report failed",
+                    errorMessageAsString(e) || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    },
+                );
+            }
+        },
         onReportUpdate(markdown) {
             this.hasChanges = true;
             this.report.markdown = markdown;
@@ -1109,6 +1170,7 @@ export default {
             } else if (this.hasChanges && !forceSave && !ignoreChanges) {
                 // if there are changes, prompt user to save or discard or cancel
                 this.navUrl = url;
+                this.saveChangesAppendVersion = appendVersion;
                 this.showSaveChangesModal = true;
             } else if (forceSave) {
                 // when forceSave is true, save the workflow before navigating

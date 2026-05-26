@@ -2,6 +2,7 @@
 import { createPinia, PiniaVuePlugin } from "pinia";
 import Vue from "vue";
 
+import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
 import { initGalaxyInstance } from "@/app";
 import { initSentry } from "@/app/addons/sentry";
 import { initWebhooks } from "@/app/addons/webhooks";
@@ -13,12 +14,21 @@ import App from "./App.vue";
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
 
+// Attach the shared AbortController signal to every outgoing axios request
+// so we can cancel in-flight anonymous-cookie requests before login/register
+// navigates — otherwise their late ``Set-Cookie: galaxysession=<anon>`` can
+// clobber the authenticated cookie.
+installPendingRequestsInterceptor();
+
 window.addEventListener("load", async () => {
     // Create Galaxy object
     const Galaxy = await initGalaxyInstance();
 
     // Build router
     const router = getRouter(Galaxy);
+    // Keep router available on the global app object for legacy integrations
+    // such as webhooks that are injected outside of Vue component context.
+    Galaxy.router = router;
 
     // Initialize globals
     initSentry(Galaxy, router);

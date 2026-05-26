@@ -166,7 +166,23 @@ class TestDataToolParameter(BaseParameterTestCase):
 
     def stub_active_datasets(self, *hdas):
         self.test_history._active_datasets_and_roles = [h for h in hdas if not h.deleted]
-        self.test_history._active_visible_datasets_and_roles = [h for h in hdas if not h.deleted and h.visible]
+        visible = [h for h in hdas if not h.deleted and h.visible]
+        self.test_history._active_visible_datasets_and_roles = visible
+
+        # Stub the paginated query helper used by ``DataToolParameter.to_dict``.
+        # The fakes mock ``find_conversion_destination`` at the HDA level rather
+        # than at the datatypes-registry level, so we deliberately ignore the
+        # SQL ``extensions``/``valid_states`` filters here and return all
+        # visible HDAs — the matcher path then exercises the per-HDA mocked
+        # conversion logic. We sort by ``hid`` descending to mirror the real
+        # query's ordering (newest-first), which ``get_initial_value`` relies
+        # on to pick the most recent matching HDA.
+        visible_desc = sorted(visible, key=lambda h: h.hid, reverse=True)
+
+        def _paginated(*, extensions=None, valid_states=None, search=None, offset=0, limit=50):
+            return visible_desc[offset : offset + limit], len(visible_desc)
+
+        self.test_history.paginated_active_visible_datasets = _paginated  # type: ignore[method-assign]
 
     def _simple_field(self, **kwds):
         return self.param.to_dict(trans=self.trans, **kwds)

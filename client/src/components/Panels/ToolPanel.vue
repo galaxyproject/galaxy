@@ -128,6 +128,9 @@ initializePanel();
     :deep(.activity-panel-header) {
         margin-right: 1rem;
         margin-left: 1rem;
+        .activity-panel-header-top {
+            align-items: flex-start;
+        }
     }
 }
 </style>

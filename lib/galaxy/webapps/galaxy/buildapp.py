@@ -235,8 +235,8 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflow_landings/{uuid}")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
-    webapp.add_client_route("/chatgxy")
-    webapp.add_client_route("/chatgxy/{exchange_id}")
+    webapp.add_client_route("/galaxyai")
+    webapp.add_client_route("/galaxyai/{exchange_id}")
     webapp.add_client_route("/user")
     webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
@@ -276,6 +276,11 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/{history_id}/extract_workflow")
     webapp.add_client_route("/histories/{history_id}/archive")
     webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/{history_id}/graph")
+    webapp.add_client_route("/histories/{history_id}/pages")
+    webapp.add_client_route("/histories/{history_id}/pages/{page_id}")
+    webapp.add_client_route("/histories/{history_id}/storage/runs")
+    webapp.add_client_route("/histories/{history_id}/storage/runs/{path:.*?}")
     webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
@@ -1023,7 +1028,8 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # other middleware):
     app = wrap_if_allowed(app, stack, httpexceptions.make_middleware, name="paste.httpexceptions", args=(conf,))
     # Statsd request timing and profiling
-    if statsd_host := conf.get("statsd_host", None):
+    statsd_host = conf.get("statsd_host", None)
+    if statsd_host and conf.get("enable_statsd_middleware", statsd_host is not None):
         from galaxy.web.framework.middleware.statsd import StatsdMiddleware
 
         app = wrap_if_allowed(

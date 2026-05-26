@@ -63,7 +63,7 @@ class WebElementProtocol(Protocol):
         ...
 
     def is_selected(self) -> bool:
-        """Check if element is selected (for checkboxes, radio buttons, options)."""
+        """Check if a checkbox, radio, or option element is selected."""
         ...
 
     def submit(self) -> None:

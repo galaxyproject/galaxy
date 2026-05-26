@@ -609,12 +609,7 @@ class CollectionElementCollectionRequestUri(StrictModel):
         validation_alias=AliasChoices("identifier", "name"),
     )
     collection_type: StrictStr
-    elements: List[
-        Annotated[
-            Union["CollectionElementCollectionRequestUri", CollectionElementDataRequestUri],
-            Field(discriminator="class_"),
-        ]
-    ]
+    elements: List["CollectionRequestUriElement"]
 
     @model_validator(mode="before")
     @classmethod
@@ -628,14 +623,39 @@ class CollectionElementCollectionRequestUri(StrictModel):
         return data
 
 
+def _collection_element_discriminator(value: Any) -> Optional[str]:
+    if isinstance(value, dict):
+        return value.get("class") or value.get("class_")
+    return getattr(value, "class_", None)
+
+
+# A callable Discriminator avoids the PydanticJsonSchemaWarning emitted for
+# the recursive Field(discriminator="class_") on this self-referential union;
+# json_schema_extra restores the OpenAPI discriminator metadata.
+CollectionRequestUriElement = Annotated[
+    Union[
+        Annotated[CollectionElementCollectionRequestUri, Tag("Collection")],
+        Annotated[CollectionElementDataRequestUri, Tag("File")],
+    ],
+    Discriminator(_collection_element_discriminator),
+    Field(
+        json_schema_extra={
+            "discriminator": {
+                "propertyName": "class",
+                "mapping": {
+                    "Collection": "#/components/schemas/CollectionElementCollectionRequestUri",
+                    "File": "#/components/schemas/CollectionElementDataRequestUri",
+                },
+            }
+        }
+    ),
+]
+
+
 class DataRequestCollectionUri(StrictModel):
     class_: Literal["Collection"] = Field(..., alias="class")
     collection_type: str
-    elements: List[
-        Annotated[
-            Union[CollectionElementCollectionRequestUri, CollectionElementDataRequestUri], Field(discriminator="class_")
-        ]
-    ]
+    elements: List[CollectionRequestUriElement]
     deferred: StrictBool = False
     name: Optional[StrictStr] = None
     src: None = Field(None, exclude=True)
@@ -658,6 +678,7 @@ DataRequestLdda.model_rebuild()
 DataRequestDce.model_rebuild()
 DataRequestUri.model_rebuild()
 DataRequestHdca.model_rebuild()
+CollectionElementCollectionRequestUri.model_rebuild()
 DataRequestCollectionUri.model_rebuild()
 
 DataOrCollectionRequestAdapter: TypeAdapter[DataOrCollectionRequest] = TypeAdapter(DataOrCollectionRequest)
@@ -1113,11 +1134,14 @@ MultiDataRequestInternalDereferenced: Type = union_type(
 
 
 class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
+    model_config = ConfigDict(populate_by_name=True)
+
     parameter_type: Literal["gx_data"] = "gx_data"
     type: Literal["data"]
     extensions: Annotated[
         List[str],
         Field(
+            validation_alias=AliasChoices("extensions", "format"),
             description="Limit inputs to datasets with these extensions. Use 'data' to allow all input datasets.",
             examples=["txt", "tabular", "tiff"],
         ),
@@ -1125,6 +1149,13 @@ class DataParameterModel(BaseGalaxyToolParameterModelDefinition):
     multiple: Annotated[bool, Field(description="Allow multiple values to be selected.")] = False
     min: Optional[int] = None
     max: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_extensions_and_format(cls, data):
+        if isinstance(data, dict) and "extensions" in data and "format" in data:
+            raise ValueError("Specify either 'extensions' or 'format', not both")
+        return data
 
     def field_kwargs(self) -> Dict[str, Any]:
         kwargs = super().field_kwargs()
@@ -1341,11 +1372,23 @@ DataCollectionJobInternal: Type = Union[DataCollectionRequestInternal, AdaptedDa
 
 
 class DataCollectionParameterModel(BaseGalaxyToolParameterModelDefinition):
+    model_config = ConfigDict(populate_by_name=True)
+
     parameter_type: Literal["gx_data_collection"] = "gx_data_collection"
     type: Literal["data_collection"]
     collection_type: Optional[str] = None
-    extensions: List[str] = ["data"]
+    extensions: Annotated[
+        List[str],
+        Field(validation_alias=AliasChoices("extensions", "format")),
+    ] = ["data"]
     value: Optional[Dict[str, Any]]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_extensions_and_format(cls, data):
+        if isinstance(data, dict) and "extensions" in data and "format" in data:
+            raise ValueError("Specify either 'extensions' or 'format', not both")
+        return data
 
     def field_kwargs(self) -> Dict[str, Any]:
         kwargs = super().field_kwargs()

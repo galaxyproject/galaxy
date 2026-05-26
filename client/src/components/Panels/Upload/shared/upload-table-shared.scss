@@ -58,6 +58,22 @@
     }
 }
 
+.options-controls {
+    gap: 0.5rem;
+}
+
+.options-header,
+.options-cell {
+    :deep(.custom-control) {
+        margin-right: 0;
+        margin-bottom: 0;
+    }
+
+    :deep(.custom-control-label) {
+        white-space: nowrap;
+    }
+}
+
 // Remove button in actions column
 .remove-btn {
     width: 30px;

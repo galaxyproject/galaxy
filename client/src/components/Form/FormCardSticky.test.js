@@ -33,7 +33,8 @@ describe("FormCardSticky.vue", () => {
 
     it("renders error alert when errorMessage is present", () => {
         const wrapper = mountComponent({ errorMessage: "Something went wrong" });
-        expect(wrapper.findComponent({ name: "BAlert" }).exists()).toBe(true);
+        const alert = wrapper.find(".alert.alert-danger");
+        expect(alert.exists()).toBe(true);
         expect(wrapper.text()).toContain("Something went wrong");
     });
 

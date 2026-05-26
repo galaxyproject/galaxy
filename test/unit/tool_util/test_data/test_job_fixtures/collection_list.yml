@@ -1,0 +1,10 @@
+input:
+  class: Collection
+  collection_type: list
+  elements:
+    - identifier: el1
+      class: File
+      path: a.txt
+    - identifier: el2
+      class: File
+      path: b.txt

@@ -8,6 +8,7 @@ from typing import (
 
 from pydantic import (
     Field,
+    model_validator,
     RootModel,
 )
 
@@ -50,6 +51,7 @@ FileSourceTemplateType = Literal[
     "huggingface",
     "iiif",
     "omero",
+    "ssh",
 ]
 
 
@@ -165,6 +167,7 @@ class FtpFileSourceTemplateConfiguration(StrictModel):
     user: Optional[Union[str, TemplateExpansion]] = None
     passwd: Optional[Union[str, TemplateExpansion]] = None
     writable: Union[bool, TemplateExpansion] = False
+    tls: Union[bool, TemplateExpansion] = False
     template_start: Optional[str] = None
     template_end: Optional[str] = None
 
@@ -175,6 +178,35 @@ class FtpFileSourceConfiguration(StrictModel):
     port: int = 21
     user: Optional[str] = None
     passwd: Optional[str] = None
+    writable: bool = False
+    tls: bool = False
+
+
+class SshFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["ssh"]
+    host: Union[str, TemplateExpansion]
+    user: Optional[Union[str, TemplateExpansion]] = None
+    passwd: Optional[Union[str, TemplateExpansion]] = None
+    pkey: Optional[Union[str, TemplateExpansion]] = None
+    timeout: Union[int, TemplateExpansion] = 10
+    port: Union[int, TemplateExpansion] = 22
+    compress: Union[bool, TemplateExpansion] = False
+    path: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class SshFileSourceConfiguration(StrictModel):
+    type: Literal["ssh"]
+    host: str
+    user: Optional[str] = None
+    passwd: Optional[str] = None
+    pkey: Optional[str] = None
+    timeout: int = 10
+    port: int = 22
+    compress: bool = False
+    path: str
     writable: bool = False
 
 
@@ -234,9 +266,22 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
-class WebdavFileSourceTemplateConfiguration(StrictModel):
+class WebdavConfigMixin:
+    @model_validator(mode="before")
+    @classmethod
+    def ensure_base_url(cls, data: Any) -> Any:
+        # Accept the version-0 WebDAV template's `url` field as an alias of
+        # `base_url` so that v0 templates and any persisted v0 rendered configs
+        # continue to validate after the rename.
+        if isinstance(data, dict) and "base_url" not in data and "url" in data:
+            data = dict(data)
+            data["base_url"] = data.pop("url")
+        return data
+
+
+class WebdavFileSourceTemplateConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
-    url: Union[str, TemplateExpansion]
+    base_url: Union[str, TemplateExpansion]
     root: Union[str, TemplateExpansion]
     login: Union[str, TemplateExpansion]
     password: Union[str, TemplateExpansion]
@@ -245,9 +290,9 @@ class WebdavFileSourceTemplateConfiguration(StrictModel):
     template_end: Optional[str] = None
 
 
-class WebdavFileSourceConfiguration(StrictModel):
+class WebdavFileSourceConfiguration(WebdavConfigMixin, StrictModel):
     type: Literal["webdav"]
-    url: str
+    base_url: str
     root: str
     login: str
     password: str
@@ -406,6 +451,7 @@ FileSourceTemplateConfiguration = Annotated[
         HuggingFaceFileSourceTemplateConfiguration,
         IIIFFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
+        SshFileSourceTemplateConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -430,6 +476,7 @@ FileSourceConfiguration = Annotated[
         HuggingFaceFileSourceConfiguration,
         IIIFFileSourceConfiguration,
         OmeroFileSourceConfiguration,
+        SshFileSourceConfiguration,
     ],
     Field(discriminator="type"),
 ]
@@ -512,6 +559,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "huggingface": HuggingFaceFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
+    "ssh": SshFileSourceConfiguration,
 }
 
 

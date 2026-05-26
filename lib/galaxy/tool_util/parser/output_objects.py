@@ -472,7 +472,7 @@ class ToolOutputCollectionStructure:
         return collection_prototype
 
     def to_dict(self):
-        return self.to_model().dict()
+        return self.to_model().model_dump()
 
     def to_model(self) -> ToolOutputCollectionStructureModel:
         discover_datasets = []

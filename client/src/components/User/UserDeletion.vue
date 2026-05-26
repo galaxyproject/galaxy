@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
@@ -12,6 +11,7 @@ import { userLogoutClient } from "@/utils/logout";
 import GForm from "../BaseComponents/Form/GForm.vue";
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GFormLabel from "../BaseComponents/Form/GFormLabel.vue";
+import GAlert from "../BaseComponents/GAlert.vue";
 import GModal from "../BaseComponents/GModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 
@@ -80,18 +80,18 @@ async function handleSubmit() {
         :close-on-ok="false"
         @close="resetModal"
         @ok="handleSubmit">
-        <BAlert variant="danger" :show="showDeleteError">{{ deleteError }}</BAlert>
-        <BAlert variant="warning" show>
+        <GAlert variant="danger" :show="showDeleteError">{{ deleteError }}</GAlert>
+        <GAlert variant="warning" show>
             <b>
                 <FontAwesomeIcon :icon="faExclamationTriangle" />
                 This action cannot be undone. Your account will be PERMANENTLY deleted, along with the data contained in
                 it.
             </b>
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="deleting" variant="info" show>
+        <GAlert v-if="deleting" variant="info" show>
             <LoadingSpan message="Deleting user account" />
-        </BAlert>
+        </GAlert>
         <GForm v-else @submit.native.prevent>
             <GFormLabel
                 title="Enter your email address to confirm deletion"

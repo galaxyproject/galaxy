@@ -159,7 +159,8 @@ def is_in_state(state_dict, key, nested):
 
 
 def looks_like_flattened_repeat_key(key: str) -> bool:
-    return key.rsplit("_", 1)[-1].isdigit()
+    parts = key.rsplit("_", 1)
+    return len(parts) == 2 and parts[1].isdigit()
 
 
 def split_flattened_repeat_key(key: str) -> Tuple[str, int]:

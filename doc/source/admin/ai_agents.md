@@ -6,14 +6,14 @@ Galaxy includes a multi-agent AI system built on [pydantic-ai](https://github.co
 
 When AI is configured, Galaxy exposes two main user-facing features:
 
-- **ChatGXY**: A sidebar chat interface (visible in the Activity Bar) that routes user questions to specialized agents.
+- **GalaxyAI**: A sidebar chat interface (visible in the Activity Bar) that routes user questions to specialized agents.
 - **GalaxyWizard**: An error-analysis widget that appears on failed job pages to help users understand what went wrong.
 
 All AI configuration lives in `galaxy.yml` under the `galaxy:` section. There is no admin UI for toggling agents -- everything is controlled through configuration files.
 
 ## Minimum Required Configuration
 
-The recommended way to configure AI is through `inference_services`. Setting this value (or the deprecated `ai_api_key` / `ai_api_base_url`) is what activates the entire agent system. Without at least one of these, no agent code loads, the ChatGXY sidebar entry is hidden, and the GalaxyWizard error-analysis widget does not appear.
+The recommended way to configure AI is through `inference_services`. Setting this value (or the deprecated `ai_api_key` / `ai_api_base_url`) is what activates the entire agent system. Without at least one of these, no agent code loads, the GalaxyAI sidebar entry is hidden, and the GalaxyWizard error-analysis widget does not appear.
 
 ```yaml
 galaxy:
@@ -108,13 +108,13 @@ The `inference_services` dictionary allows fine-grained control over individual 
 
 Supported keys within each agent block:
 
-| Key            | Description                                                                             |
-| -------------- | --------------------------------------------------------------------------------------- |
-| `model`        | Model name with optional provider prefix (e.g. `gpt-4o`, `anthropic:claude-sonnet-4-5`) |
-| `api_key`      | API key override for this agent or default                                              |
-| `api_base_url` | Base URL override for this agent or default                                             |
-| `temperature`  | Sampling temperature (0.0 - 1.0)                                                        |
-| `max_tokens`   | Maximum tokens in the response                                                          |
+| Key            | Description                                                                                                 |
+| -------------- | ----------------------------------------------------------------------------------------------------------- |
+| `model`        | Model name with optional provider prefix (e.g. `gpt-4o`, `anthropic:claude-sonnet-4-5`)                     |
+| `api_key`      | API key override for this agent or default                                                                  |
+| `api_base_url` | Base URL override for this agent or default                                                                 |
+| `temperature`  | Sampling temperature (0.0 - 1.0)                                                                            |
+| `max_tokens`   | Maximum tokens in the response (default: 8192; 16384 for the history, orchestrator, and custom_tool agents) |
 
 ### Example: Per-Agent Overrides
 
@@ -130,11 +130,11 @@ galaxy:
         custom_tool:
             model: "openai:gpt-4o"
             temperature: 0.4
-            max_tokens: 2000
+            max_tokens: 16384
         error_analysis:
             model: "openai:gpt-4o"
             temperature: 0.2
-            max_tokens: 2000
+            max_tokens: 8192
 ```
 
 ### Example: Mixed Providers
@@ -200,6 +200,7 @@ Galaxy registers the following agent types:
 | `custom_tool`         | Generates custom Galaxy tools from natural language descriptions |
 | `orchestrator`        | Coordinates multi-step workflow tasks                            |
 | `tool_recommendation` | Recommends tools from the toolbox for a given task               |
+| `page_assistant`      | Assists with Galaxy page editing                                 |
 
 All registered agents are enabled when the AI system is active.
 
@@ -230,9 +231,9 @@ curl -s -H "x-api-key: YOUR_GALAXY_API_KEY" \
 
 You should see a list of enabled agents with their types. If AI is not configured, this endpoint returns an error indicating that the agent system is not available.
 
-### Check if ChatGXY Appears in the Sidebar
+### Check if GalaxyAI Appears in the Sidebar
 
-Log in to the Galaxy web interface. If AI is properly configured, a **ChatGXY** entry should appear in the Activity Bar on the left side of the screen. If it does not appear:
+Log in to the Galaxy web interface. If AI is properly configured, a **GalaxyAI** entry should appear in the Activity Bar on the left side of the screen. If it does not appear:
 
 1. Verify that `inference_services` is set in `galaxy.yml` (or the deprecated `ai_api_key` / `ai_api_base_url`).
 2. Check that Galaxy was restarted after the configuration change.
@@ -250,7 +251,7 @@ This should return `"llm_api_configured": true` when AI is active.
 
 ## Troubleshooting
 
-### ChatGXY does not appear in the sidebar
+### GalaxyAI does not appear in the sidebar
 
 - Confirm that `inference_services` is set in `galaxy.yml` under the `galaxy:` section (or the deprecated `ai_api_key` / `ai_api_base_url`).
 - Restart Galaxy after any configuration change.
@@ -302,10 +303,10 @@ galaxy:
             model: "openai:gpt-4o"
             api_key: "sk-..."
             temperature: 0.4
-            max_tokens: 2000
+            max_tokens: 16384
         error_analysis:
             model: "anthropic:claude-sonnet-4-5"
             api_key: "sk-ant-..."
             temperature: 0.2
-            max_tokens: 2000
+            max_tokens: 8192
 ```

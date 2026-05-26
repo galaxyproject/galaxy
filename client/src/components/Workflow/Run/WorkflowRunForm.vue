@@ -84,6 +84,7 @@
                 v-else
                 :model="step"
                 :validation-scroll-to="getValidationScrollTo(step.index)"
+                :history-id="currentHistoryId"
                 @onChange="onDefaultStepInputs"
                 @onValidation="onValidation" />
         </div>

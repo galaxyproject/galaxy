@@ -76,14 +76,20 @@
       <param name="input">
         <collection type="list:paired_or_unpaired">
           <element name="el1">
-            <collection type="paired">
+            <collection type="paired_or_unpaired">
               <element name="forward" value="simple_line.txt" />
               <element name="reverse" value="simple_line_alternative.txt" />
             </collection>
           </element>
-          <element name="el2" value="simple_line.txt">
+          <element name="el2">
+            <collection type="paired_or_unpaired">
+              <element name="unpaired" value="simple_line.txt" />
+            </collection>
           </element>
-          <element name="el3" value="simple_line_alternative.txt">
+          <element name="el3">
+            <collection type="paired_or_unpaired">
+              <element name="unpaired" value="simple_line_alternative.txt" />
+            </collection>
           </element>
         </collection>
       </param>

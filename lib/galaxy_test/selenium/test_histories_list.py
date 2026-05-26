@@ -65,12 +65,19 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
 
         self.select_history_card_operation("Unnamed history", '[id^="g-card-rename-history-"]')
 
-        # Rename the history
-        history_name_input = self.wait_for_selector(".ui-form-element input.ui-input")
-        history_name_input.clear()
+        # Rename the history using the RenameModal.
+        # Clear via JS + dispatch Vue-compatible input event so nameModel is updated to empty,
+        # then type the new name so each keystroke fires input events and updates nameModel.
+        history_name_input = self.wait_for_selector("#history-name-input")
+        self.execute_script(
+            "arguments[0].value = ''; arguments[0].dispatchEvent(new Event('input', {bubbles: true}));",
+            history_name_input,
+        )
         history_name_input.send_keys(self.history1_name)
 
-        self.wait_for_and_click_selector("button#submit")
+        self.wait_for_and_click_selector(".g-modal-confirm-buttons button:last-child")
+        # Wait for the rename API call to complete (modal closes in the finally block)
+        self.wait_for_selector_absent_or_hidden("#history-name-input")
 
         self.navigate_to_histories_page()
 
@@ -368,3 +375,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
     def create_history(self, name):
         self.home()
         self.history_panel_create_new_with_name(name)
+        # Wait for the panel label to reflect the new name, confirming the
+        # rename XHR has completed before any subsequent home() navigation
+        # that would otherwise cancel the still-in-flight request.
+        self.wait_for_selector(f'[data-description="name display"][title="{name}"]')

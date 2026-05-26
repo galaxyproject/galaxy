@@ -5,9 +5,7 @@
       class: File
       path: 2.tabular
       filetype: tabular
-    column:
-      value: [1, 2]
-      type: raw
+    column: [1, 2]
   outputs:
     output:
       class: File

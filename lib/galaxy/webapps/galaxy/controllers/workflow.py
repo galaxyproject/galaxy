@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 
 
 class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesItemRatings):
+    app: StructuredApp
     history_manager: HistoryManager = depends(HistoryManager)
     slug_builder = SlugBuilder()
 

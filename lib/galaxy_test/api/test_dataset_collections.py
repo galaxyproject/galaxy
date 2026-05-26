@@ -7,6 +7,7 @@ from urllib.parse import quote
 from galaxy.tool_util_models.sample_sheet import SampleSheetColumnDefinitions
 from galaxy.util import galaxy_root_path
 from galaxy_test.base.api_asserts import (
+    assert_error_message_contains,
     assert_has_key,
     assert_object_id_error,
     assert_status_code_is,
@@ -151,6 +152,30 @@ class TestDatasetCollectionsApi(ApiTestCase):
         assert dataset_collection["collection_type"] == "paired_or_unpaired"
         returned_collections = dataset_collection["elements"]
         assert len(returned_collections) == 1, dataset_collection
+
+    def test_create_list_paired_or_unpaired_rejects_raw_hda_child(self, history_id):
+        element_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents=[("el1", "hi")])
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=element_identifiers,
+            collection_type="list:paired_or_unpaired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, "sub-collection of type 'paired_or_unpaired'")
+
+    def test_create_list_paired_rejects_raw_hda_child(self, history_id):
+        element_identifiers = self.dataset_collection_populator.list_identifiers(history_id, contents=[("el1", "hi")])
+        payload = dict(
+            instance_type="history",
+            history_id=history_id,
+            element_identifiers=element_identifiers,
+            collection_type="list:paired",
+        )
+        create_response = self._post("dataset_collections", payload, json=True)
+        assert_status_code_is(create_response, 400)
+        assert_error_message_contains(create_response, "sub-collection of type 'paired'")
 
     def test_create_record(self, history_id):
         contents = [

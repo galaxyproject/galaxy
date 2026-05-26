@@ -34,6 +34,7 @@ export function mapToLocalFileUpload(item: LocalFileItem, targetHistoryId: strin
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: false,
         fileData: item.file,
     };
@@ -52,6 +53,7 @@ export function mapToPasteContentUpload(item: PasteContentItem, targetHistoryId:
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: false,
         content: item.content,
     };
@@ -70,8 +72,9 @@ export function mapToPasteUrlUpload(item: PasteUrlItem, targetHistoryId: string)
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: item.deferred,
-        url: item.url,
+        url: item.url.trim(),
     };
 }
 
@@ -88,6 +91,7 @@ export function mapToRemoteFileUpload(item: RemoteFileItem, targetHistoryId: str
         extension: item.extension,
         spaceToTab: item.spaceToTab,
         toPosixLines: item.toPosixLines,
+        autoDecompress: item.autoDecompress,
         deferred: item.deferred,
         url: item.url,
         hashes: item.hashes,
@@ -107,6 +111,7 @@ export function mapToLibraryDatasetUpload(item: LibraryDatasetItem, targetHistor
         extension: item.extension,
         spaceToTab: false, // Not applicable to library imports
         toPosixLines: false, // Not applicable to library imports
+        autoDecompress: false, // Not applicable to library imports
         libraryId: item.libraryId,
         folderId: item.folderId,
         lddaId: item.lddaId,
@@ -176,6 +181,7 @@ export function mapToCompositeFileUpload(item: CompositeFileItem, targetHistoryI
         extension: item.extension,
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: false,
         deferred: false,
         slots,
     };

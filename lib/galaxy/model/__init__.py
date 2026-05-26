@@ -165,7 +165,6 @@ from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
 )
-from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import USER_OBJECTS_SCHEME
 from galaxy.objectstore.templates import (
@@ -201,6 +200,7 @@ from galaxy.util import (
     enum_values,
     hex_to_lowercase_alphanum,
     listify,
+    now,
     ready_name_for_url,
     unicodify,
     unique_id,
@@ -417,11 +417,11 @@ def set_datatypes_registry(d_registry):
     _datatypes_registry = d_registry
 
 
-class HasTags:
+class HasTags(Dictifiable):
     dict_collection_visible_keys = ["tags"]
     dict_element_visible_keys = ["tags"]
 
-    def to_dict(self, *args, **kwargs):
+    def to_dict(self, *args, **kwargs) -> dict[str, Any]:
         rval = super().to_dict(*args, **kwargs)
         rval["tags"] = self.make_tag_string_list()
         return rval
@@ -461,6 +461,7 @@ class SerializationOptions:
         serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
         strip_metadata_files: Optional[bool] = None,
+        ignore_errors: Optional[bool] = False,
     ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
@@ -472,6 +473,10 @@ class SerializationOptions:
             # expect metadata tool to be rerun.
             strip_metadata_files = not for_edit
         self.strip_metadata_files = strip_metadata_files
+        # When True, serializers emit best-effort output for histories whose imports left
+        # unresolved references (orphan ImplicitCollectionJobsJobAssociation rows, null-id
+        # job param refs) instead of raising. Intended for background archival exports.
+        self.ignore_errors = ignore_errors
 
     def attach_identifier(self, id_encoder, obj, ret_val):
         if self.for_edit and obj.id:
@@ -494,12 +499,13 @@ class SerializationOptions:
             return obj.temp_id
 
     def get_identifier_for_id(self, id_encoder, obj_id):
-        if self.for_edit and obj_id:
-            return obj_id
-        elif obj_id:
-            return id_encoder.encode_id(obj_id, kind="model_export")
-        else:
+        if not obj_id:
+            if self.ignore_errors:
+                return obj_id
             raise NotImplementedError()
+        if self.for_edit:
+            return obj_id
+        return id_encoder.encode_id(obj_id, kind="model_export")
 
     def serialize_files(self, dataset, as_dict):
         if self.serialize_files_handler is not None:
@@ -2955,11 +2961,43 @@ class ImplicitCollectionJobs(Base, Serializable):
         )
         return session.execute(stmt)
 
+    @property
+    def representative_job(self) -> "Job":
+        """Lowest-order constituent job, used as the stand-in when this ICJ is
+        treated as a single mapped step. Ordered by association order_index
+        then job id so the choice is deterministic."""
+        return (
+            required_object_session(self)
+            .scalars(
+                select(Job)
+                .join(ImplicitCollectionJobsJobAssociation, ImplicitCollectionJobsJobAssociation.job_id == Job.id)
+                .where(ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id == self.id)
+                .order_by(ImplicitCollectionJobsJobAssociation.order_index, Job.id)
+                .limit(1)
+            )
+            .one()
+        )
+
+    @property
+    def output_dataset_collection_instances(self) -> list["HistoryDatasetCollectionAssociation"]:
+        """HDCAs produced by this implicit map (one per mapped tool output)."""
+        return list(
+            required_object_session(self).scalars(
+                select(HistoryDatasetCollectionAssociation).where(
+                    HistoryDatasetCollectionAssociation.implicit_collection_jobs_id == self.id
+                )
+            )
+        )
+
     def _serialize(self, id_encoder, serialization_options):
         rval = dict_for(
             self,
             populated_state=self.populated_state,
-            jobs=[serialization_options.get_identifier(id_encoder, j_a.job) for j_a in self.jobs],
+            jobs=[
+                serialization_options.get_identifier(id_encoder, j_a.job)
+                for j_a in self.jobs
+                if j_a.job is not None or not serialization_options.ignore_errors
+            ],
         )
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
@@ -3322,13 +3360,16 @@ class ChatExchange(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
     job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
+    page: Mapped[Optional["Page"]] = relationship()
 
-    def __init__(self, user, job_id=None, message=None, **kwargs):
+    def __init__(self, user, job_id=None, page_id=None, message=None, **kwargs):
         self.user = user
         self.job_id = job_id
+        self.page_id = page_id
         self.messages = []
         if message:
             self.add_message(message)
@@ -3498,7 +3539,7 @@ class HistoryAudit(Base):
             session.execute(q)
 
 
-class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
+class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateAndUpdateTime):
     __tablename__ = "history"
     __table_args__ = (Index("ix_history_slug", "slug", mysql_length=200),)
 
@@ -3596,6 +3637,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         viewonly=True,
     )
     tool_requests: Mapped[list["ToolRequest"]] = relationship(back_populates="history")
+    pages: Mapped[list["Page"]] = relationship(
+        foreign_keys="Page.history_id",
+        back_populates="history",
+    )
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -4035,6 +4080,157 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
             )
             self._active_visible_dataset_collections = required_object_session(self).scalars(stmt).unique().all()
         return self._active_visible_dataset_collections
+
+    def paginated_active_visible_datasets(
+        self,
+        *,
+        extensions: Optional[set[str]] = None,
+        valid_states: Optional[tuple[str, ...]] = None,
+        search: Optional[str] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> tuple[list["HistoryDatasetAssociation"], int]:
+        """Active, visible HDAs filtered by extension, dataset state, and an
+        optional ``search`` term, paginated.
+
+        Returns ``(rows, total)`` where ``total`` is the count under the same WHERE
+        clause. Used by data-tool-parameter ``to_dict`` to avoid loading the entire
+        history into memory. ``search`` matches case-insensitively against the
+        HDA name and (when numeric) against the hid.
+        """
+        filters = [
+            HistoryDatasetAssociation.history_id == self.id,
+            not_(HistoryDatasetAssociation.deleted),
+            HistoryDatasetAssociation.visible,
+        ]
+        if extensions is not None:
+            filters.append(HistoryDatasetAssociation.extension.in_(extensions))
+        if valid_states is not None:
+            filters.append(HistoryDatasetAssociation.dataset.has(Dataset.state.in_(valid_states)))
+        if search:
+            name_match = HistoryDatasetAssociation.name.ilike(f"%{search}%")
+            if search.isdigit():
+                filters.append(or_(name_match, HistoryDatasetAssociation.hid == int(search)))
+            else:
+                filters.append(name_match)
+        page_stmt = (
+            select(HistoryDatasetAssociation)
+            .where(*filters)
+            .order_by(HistoryDatasetAssociation.hid.desc())
+            .options(
+                joinedload(HistoryDatasetAssociation.dataset)
+                .joinedload(Dataset.actions)
+                .joinedload(DatasetPermissions.role),
+                joinedload(HistoryDatasetAssociation.tags),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        count_stmt = select(func.count(HistoryDatasetAssociation.id)).where(*filters)
+        session = required_object_session(self)
+        rows = list(session.scalars(page_stmt).unique().all())
+        total = session.scalar(count_stmt) or 0
+        return rows, total
+
+    @staticmethod
+    def _hdca_leaf_hda_descendants_cte(history_id):
+        """Recursive CTE: for every non-deleted HDCA in ``history_id``, walk
+        ``dataset_collection_element`` arbitrarily deep to enumerate every
+        leaf HDA. Columns: ``root_hdca_id``, ``hda_id``,
+        ``child_collection_id``. Used by depth-arbitrary HDCA filters (e.g.
+        extension match) — single source of truth for "walk all leaves of
+        the HDCAs in this history". Works on PostgreSQL and SQLite.
+        """
+        base = (
+            select(
+                HistoryDatasetCollectionAssociation.id.label("root_hdca_id"),
+                DatasetCollectionElement.hda_id.label("hda_id"),
+                DatasetCollectionElement.child_collection_id.label("child_collection_id"),
+            )
+            .select_from(HistoryDatasetCollectionAssociation)
+            .join(
+                DatasetCollectionElement,
+                DatasetCollectionElement.dataset_collection_id == HistoryDatasetCollectionAssociation.collection_id,
+            )
+            .where(
+                HistoryDatasetCollectionAssociation.history_id == history_id,
+                not_(HistoryDatasetCollectionAssociation.deleted),
+            )
+        )
+        cte = base.cte(name="hdca_leaf_hda_descendants", recursive=True)
+        dce_rec = aliased(DatasetCollectionElement)
+        cte = cte.union_all(
+            select(
+                cte.c.root_hdca_id,
+                dce_rec.hda_id,
+                dce_rec.child_collection_id,
+            )
+            .select_from(cte)
+            .join(dce_rec, dce_rec.dataset_collection_id == cte.c.child_collection_id)
+        )
+        return cte
+
+    @staticmethod
+    def _hdca_extensions_only_in_clause(extensions: set[str], history_id):
+        """Build a WHERE clause: True for HDCAs whose every leaf HDA's
+        extension is in ``extensions`` (mirrors
+        ``SummaryDatasetCollectionMatcher.hdca_match``). Walks arbitrary
+        depth via :py:meth:`_hdca_leaf_hda_descendants_cte`.
+        """
+        cte = History._hdca_leaf_hda_descendants_cte(history_id)
+        hda_check = aliased(HistoryDatasetAssociation)
+        bad_hdca_ids = (
+            select(cte.c.root_hdca_id)
+            .select_from(cte)
+            .join(hda_check, hda_check.id == cte.c.hda_id)
+            .where(hda_check.extension.notin_(extensions))
+        )
+        return HistoryDatasetCollectionAssociation.id.notin_(bad_hdca_ids)
+
+    def paginated_active_dataset_collections(
+        self,
+        *,
+        visible_only: bool = True,
+        search: Optional[str] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
+        """Active HDCAs paginated. Pass ``visible_only=False`` to include
+        hidden collections (matches the legacy ``active_dataset_collections``
+        semantics used by some tool-form paths). ``search`` matches
+        case-insensitively against the collection name and (when numeric)
+        against the hid. Extension filtering for collections is exposed via
+        the history-contents filter parser (see
+        :py:meth:`_hdca_extensions_only_in_clause`).
+        """
+        filters = [
+            HistoryDatasetCollectionAssociation.history_id == self.id,
+            not_(HistoryDatasetCollectionAssociation.deleted),
+        ]
+        if visible_only:
+            filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
+        if search:
+            name_match = HistoryDatasetCollectionAssociation.name.ilike(f"%{search}%")
+            if search.isdigit():
+                filters.append(or_(name_match, HistoryDatasetCollectionAssociation.hid == int(search)))
+            else:
+                filters.append(name_match)
+        page_stmt = (
+            select(HistoryDatasetCollectionAssociation)
+            .where(*filters)
+            .order_by(HistoryDatasetCollectionAssociation.hid.desc())
+            .options(
+                joinedload(HistoryDatasetCollectionAssociation.collection),
+                joinedload(HistoryDatasetCollectionAssociation.tags),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        count_stmt = select(func.count(HistoryDatasetCollectionAssociation.id)).where(*filters)
+        session = required_object_session(self)
+        rows = list(session.scalars(page_stmt).unique().all())
+        total = session.scalar(count_stmt) or 0
+        return rows, total
 
     @property
     def active_contents(self):
@@ -5865,7 +6061,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             rval["file_metadata"] = file_metadata
 
 
-class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
+class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasName, Serializable):
     """
     Resource class that creates a relation between a dataset and a user history.
     """
@@ -7820,7 +8016,6 @@ class HistoryDatasetCollectionAssociation(
     Base,
     DatasetCollectionInstance,
     HasTags,
-    Dictifiable,
     UsesAnnotations,
     Serializable,
 ):
@@ -8572,7 +8767,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
         self.history = history
 
 
-class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
+class StoredWorkflow(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     """
     StoredWorkflow represents the root node of a tree of objects that compose a workflow, including workflow revisions, steps, and subworkflows.
     It is responsible for the metadata associated with a workflow including owner, name, published, and create/update time.
@@ -8693,7 +8888,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         self.workflows = listify(workflow)
         self.hidden = hidden
 
-    def get_internal_version(self, version: Optional[int] = None):
+    def get_internal_version(self, version: Optional[int] = None) -> "Workflow":
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
@@ -8746,7 +8941,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpd
         rows_as_dict = dict(r for r in rows if r[0] is not None)  # type: ignore[arg-type, var-annotated]
         return InvocationsStateCounts(rows_as_dict)
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper=None) -> dict[str, Any]:
         rval = super().to_dict(view=view, value_mapper=value_mapper)
         rval["latest_workflow_uuid"] = (lambda uuid: str(uuid) if self.latest_workflow.uuid else None)(
             self.latest_workflow.uuid
@@ -10230,7 +10425,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def add_message(self, message: "InvocationMessageUnion"):
 
-        message_dict = message.dict(
+        message_dict = message.model_dump(
             exclude_unset=True,
             exclude={"history_id"},  # history_id comes in through workflow_invocation and isn't persisted in database
         )
@@ -11510,7 +11705,7 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         return instance
 
 
-class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
+class Page(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -11526,6 +11721,10 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
     importable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
     slug: Mapped[Optional[str]] = mapped_column(TEXT)
     published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    source_invocation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("workflow_invocation.id"), index=True, nullable=True
+    )
+    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user: Mapped["User"] = relationship()
     revisions: Mapped[list["PageRevision"]] = relationship(
         cascade="all, delete-orphan",
@@ -11548,6 +11747,14 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         back_populates="page",
     )
     users_shared_with: Mapped[list["PageUserShareAssociation"]] = relationship(back_populates="page")
+    source_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
+        foreign_keys=[source_invocation_id],
+        uselist=False,
+    )
+    history: Mapped[Optional["History"]] = relationship(
+        foreign_keys=[history_id],
+        uselist=False,
+    )
 
     # Set up proxy so that
     #   Page.users_shared_with
@@ -11567,6 +11774,8 @@ class Page(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
         "author_deleted",
         "create_time",
         "update_time",
+        "source_invocation_id",
+        "history_id",
     ]
 
     def to_dict(self, view="element"):
@@ -11607,9 +11816,10 @@ class PageRevision(Base, Dictifiable, RepresentById):
     title: Mapped[Optional[str]] = mapped_column(TEXT)
     content: Mapped[Optional[str]] = mapped_column(TEXT)
     content_format: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
+    edit_source: Mapped[Optional[str]] = mapped_column(TrimmedString(16), default=None)
     page: Mapped["Page"] = relationship(primaryjoin=(lambda: Page.id == PageRevision.page_id))
     DEFAULT_CONTENT_FORMAT = "html"
-    dict_element_visible_keys = ["id", "page_id", "title", "content", "content_format"]
+    dict_element_visible_keys = ["id", "page_id", "title", "content", "content_format", "edit_source"]
 
     def __init__(self):
         self.content_format = PageRevision.DEFAULT_CONTENT_FORMAT
@@ -11631,7 +11841,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page: Mapped["Page"] = relationship(back_populates="users_shared_with")
 
 
-class Visualization(Base, HasTags, Dictifiable, RepresentById, UsesCreateAndUpdateTime):
+class Visualization(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
@@ -12693,6 +12903,65 @@ class CeleryUserActiveTask(Base):
     task_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
     started_at: Mapped[datetime]
+
+
+class DatasetStorageOperationSnapshot(Base):
+    """Immutable snapshot of a resolved storage operation selection."""
+
+    __tablename__ = "dataset_storage_operation_snapshot"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    mode: Mapped[str] = mapped_column(String(32), index=True)
+    target_object_store_id: Mapped[str] = mapped_column(String(255))
+    resolved_dataset_ids: Mapped[list[int]] = mapped_column(JSONType)
+    eligible_dataset_ids: Mapped[list[int]] = mapped_column(JSONType)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(index=True)
+
+
+class DatasetStorageOperationRun(Base):
+    """Tracks one execution attempt for a storage operation snapshot."""
+
+    __tablename__ = "dataset_storage_operation_run"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    snapshot_id: Mapped[int] = mapped_column(
+        ForeignKey("dataset_storage_operation_snapshot.id", ondelete="CASCADE"), index=True
+    )
+    history_id: Mapped[int] = mapped_column(ForeignKey("history.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    mode: Mapped[str] = mapped_column(String(32), index=True)
+    target_object_store_id: Mapped[str] = mapped_column(String(255))
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    skip_ineligible: Mapped[bool] = mapped_column(Boolean, default=True)
+    notify_on_completion: Mapped[bool] = mapped_column(Boolean, default=True)
+    task_id: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), index=True)
+    total_count: Mapped[int] = mapped_column(default=0)
+    succeeded_count: Mapped[int] = mapped_column(default=0)
+    failed_count: Mapped[int] = mapped_column(default=0)
+    skipped_count: Mapped[int] = mapped_column(default=0)
+    total_bytes_processed: Mapped[int] = mapped_column(default=0)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
+
+
+class DatasetStorageOperationRunItem(Base):
+    """Per-dataset status for a storage operation run."""
+
+    __tablename__ = "dataset_storage_operation_run_item"
+    __table_args__ = (UniqueConstraint("run_id", "dataset_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[int] = mapped_column(ForeignKey("dataset_storage_operation_run.id", ondelete="CASCADE"), index=True)
+    dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id", ondelete="CASCADE"), index=True)
+    state: Mapped[str] = mapped_column(String(32), index=True)
+    reason_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    bytes_processed: Mapped[int] = mapped_column(default=0)
+    create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
 
 class UserCredentials(Base):

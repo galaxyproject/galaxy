@@ -81,17 +81,34 @@ describe("test helpers in tool searching utilities", () => {
             id: "__FILTER_FAILED_DATASETS__",
             help: "downstream",
             owner: "devteam",
+            tag: ["data cleanup", "collection_ops"],
         };
         const q = createWhooshQuery(settings);
 
         // OrGroup (at backend) on name, name_exact, description
         expect(q).toContain("name:(Filter) name_exact:(Filter) description:(Filter)");
         // AndGroup (explicit at frontend) on all other settings
-        expect(q).toContain("id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam)");
-        // Combined query results in:
-        expect(q).toEqual(
-            "(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND )",
+        expect(q).toContain(
+            'id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND tool_tags:("data cleanup") AND tool_tags:(collection_ops)',
         );
+    });
+
+    it("builds tag-only whoosh queries without an empty leading clause", async () => {
+        expect(createWhooshQuery({ tag: ["data cleanup"] })).toEqual('(tool_tags:("data cleanup"))');
+        expect(createWhooshQuery({ section: '"Get Data"' })).toEqual('(section:("Get Data"))');
+    });
+
+    it("lowercases tag clauses to match the Whoosh field analyzer", async () => {
+        // Whoosh indexes tool_tags lowercased; lowercase the search clause too.
+        expect(createWhooshQuery({ tag: ["Get Data"] })).toEqual('(tool_tags:("get data"))');
+        expect(createWhooshQuery({ tag: ["Collection_Ops"] })).toEqual("(tool_tags:(collection_ops))");
+    });
+
+    it("escapes backslashes and quotes in quoted tag clauses", async () => {
+        // A tag containing both a backslash and a double quote must be escaped
+        // so the resulting Whoosh phrase is well-formed (CodeQL: incomplete
+        // string escaping). Backslash must be escaped before the quote.
+        expect(createWhooshQuery({ tag: ['weird \\ "tag"'] })).toEqual('(tool_tags:("weird \\\\ \\"tag\\""))');
     });
 
     it("test tool search helper that searches for tools given keys", async () => {

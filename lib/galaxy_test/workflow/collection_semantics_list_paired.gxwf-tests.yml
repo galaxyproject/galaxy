@@ -10,7 +10,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired
           elements:
             - identifier: forward
               class: File

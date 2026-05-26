@@ -19,6 +19,7 @@ env:
   GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA: '1'
   GALAXY_CONFIG_SQLALCHEMY_WARN_20: '1'
   GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT: '1'
+  GALAXY_DEPENDENCIES_INSTALL_HTCONDOR: '1'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

@@ -63,6 +63,7 @@ from galaxy.model import (
     ToolRequest,
 )
 from galaxy.model.dataset_collections.matching import MatchingCollections
+from galaxy.model.dataset_collections.types.paired_or_unpaired import SINGLETON_IDENTIFIER
 from galaxy.model.dataset_collections.types.sample_sheet_workbook import _sample_sheet_to_list_collection_type
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.schema.credentials import CredentialsContext
@@ -75,6 +76,7 @@ from galaxy.tool_util.deps import (
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
 from galaxy.tool_util.fetcher import ToolLocationFetcher
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tool_util.loader import (
     imported_macro_paths,
     raw_tool_xml_tree,
@@ -190,12 +192,12 @@ from galaxy.tools.parameters.meta import (
     expand_meta_parameters,
     expand_meta_parameters_async,
 )
+from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
 from galaxy.util import (
     in_directory,
-    listify,
     Params,
     parse_xml_string,
     rst_to_html,
@@ -208,7 +210,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import get_fileobj_raw
 from galaxy.util.dictifiable import UsesDictVisibleKeys
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.form_builder import SelectField
 from galaxy.util.json import (
     safe_loads,
     swap_inf_nan,
@@ -469,10 +470,14 @@ def create_tool_from_source(app, tool_source: ToolSource, config_file: Optional[
 
 
 def create_tool_from_representation(
-    app, raw_tool_source: str, tool_dir: Optional[StrPath] = None, tool_source_class="XmlToolSource"
+    app,
+    raw_tool_source: str,
+    tool_dir: Optional[StrPath] = None,
+    tool_source_class="XmlToolSource",
+    guid: Optional[str] = None,
 ) -> "Tool":
     tool_source = get_tool_source(tool_source_class=tool_source_class, raw_tool_source=raw_tool_source)
-    return create_tool_from_source(app, tool_source=tool_source, tool_dir=tool_dir)
+    return create_tool_from_source(app, tool_source=tool_source, tool_dir=tool_dir, guid=guid)
 
 
 class NullToolTagManager(AbstractToolTagManager):
@@ -676,6 +681,12 @@ class ToolBox(AbstractToolBox):
             raise Exception(f"Unknown tool representation format [{tool_format}].")
         tool = create_tool_from_source(self.app, tool_source=tool_source, tool_dir=None, dynamic=True)
         tool.dynamic_tool = dynamic_tool
+        # Snapshot while the ORM row is session-attached; later reads would raise
+        # DetachedInstanceError.
+        tool.dynamic_tool_id = dynamic_tool.id
+        tool.dynamic_tool_uuid = dynamic_tool.uuid if isinstance(dynamic_tool.uuid, UUID) else None
+        tool.is_unprivileged_tool = not bool(dynamic_tool.public)
+        tool.dynamic_tool_active = bool(dynamic_tool.active)
         return tool
 
     def tool_for_job(
@@ -687,14 +698,15 @@ class ToolBox(AbstractToolBox):
         tool_version: Optional[str] = None,
     ) -> Optional["Tool"]:
         if (dynamic_tool := job.dynamic_tool) is not None:
-            if check_access:
-                if not user:
-                    return None
-                if not dynamic_tool.public:
-                    self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
+            if check_access and not dynamic_tool.public:
+                if user is None or dynamic_tool.uuid is None:
+                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                tool = self.get_unprivileged_tool(user, tool_uuid=dynamic_tool.uuid)
+                if tool is None:
+                    raise exceptions.ItemAccessibilityException("Tool not accessible.")
+                return tool
             return self.dynamic_tool_to_tool(dynamic_tool)
-        else:
-            return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
+        return self.get_tool(job.tool_id, tool_version=tool_version or job.tool_version, exact=exact)
 
     def create_dynamic_tool(self, dynamic_tool: "DynamicTool") -> "Tool":
         tool = self.dynamic_tool_to_tool(dynamic_tool)
@@ -705,33 +717,6 @@ class ToolBox(AbstractToolBox):
         if not tool.name:
             tool.name = tool.id
         return tool
-
-    def get_tool_components(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling
-        selection of a different version, the list of the tool's loaded versions, and the specified tool.
-        """
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which
-        # are now using only GALAXY_URL.
-        tool_ids = listify(tool_id)
-        for tool_id in tool_ids:
-            if tool_id.endswith("/"):
-                # Some data sources send back redirects ending with `/`, this takes care of that case
-                tool_id = tool_id[:-1]
-            if get_loaded_tools_by_lineage:
-                tools = self.get_loaded_tools_by_lineage(tool_id)
-            else:
-                tools = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=True)
-            if tools:
-                tool = self.get_tool(tool_id, tool_version=tool_version, get_all_versions=False)
-                assert tool
-                if len(tools) > 1:
-                    tool_version_select_field = self.__build_tool_version_select_field(tools, tool.id, set_selected)
-                break
-        return tool_version_select_field, tools, tool
 
     def _path_template_kwds(self):
         return {
@@ -781,20 +766,6 @@ class ToolBox(AbstractToolBox):
         session = self.app.model.context
         stored = session.get_one(StoredWorkflow, id)
         return stored.latest_workflow
-
-    def __build_tool_version_select_field(self, tools, tool_id, set_selected):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options: list[tuple[str, str]] = []
-        for tool in tools:
-            options.insert(0, (tool.version, tool.id))
-        select_field = SelectField(name="tool_id")
-        for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
-            if selected:
-                select_field.add_option(f"version {option_tup[0]}", option_tup[1], selected=True)
-            else:
-                select_field.add_option(f"version {option_tup[0]}", option_tup[1])
-        return select_field
 
 
 class DefaultToolState:
@@ -1088,6 +1059,12 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         self.rerun = False
         # This will be non-None for tools loaded from the database (DynamicTool objects).
         self.dynamic_tool: Optional[DynamicTool] = None
+        # Primitives snapshotted from DynamicTool so allow_user_access never
+        # touches a possibly-detached ORM row.
+        self.dynamic_tool_id: Optional[int] = None
+        self.dynamic_tool_uuid: Optional[UUID] = None
+        self.is_unprivileged_tool: bool = False
+        self.dynamic_tool_active: bool = True
         # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
@@ -1191,6 +1168,18 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             return []
 
     @property
+    def hidden_tool_versions(self):
+        if not self.lineage or not self.id:
+            return []
+        versions_by_id = self.app.toolbox._tool_versions_by_id.get(self.id, {})
+        hidden_versions = []
+        for version in self.lineage.tool_versions:
+            tool = versions_by_id.get(version)
+            if tool and tool.hidden:
+                hidden_versions.append(version)
+        return hidden_versions
+
+    @property
     def is_latest_version(self):
         tool_versions = self.tool_versions
         return not tool_versions or self.version == self.tool_versions[-1]
@@ -1239,7 +1228,14 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # seem to require Galaxy's Python.
         # FIXME: the (instantiated) tool class should emit this behavior, and not
         #        use inspection by string check
-        if self.tool_type not in ["default", "manage_data", "interactive", "data_source", "data_source_async"]:
+        if self.tool_type not in [
+            "default",
+            "manage_data",
+            "interactive",
+            "data_source",
+            "data_source_async",
+            "user_defined",
+        ]:
             return True
 
         if self.tool_type == "manage_data" and Version(str(self.profile)) < Version("18.09"):
@@ -1317,26 +1313,21 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
     def get_panel_section(self) -> Union[tuple[str, str], tuple[None, None]]:
         return self.app.toolbox.get_section_for_tool(self)
 
-    def allow_user_access(self, user, attempting_access=True):
+    def allow_user_access(self, user, attempting_access: bool = True) -> bool:
         """
         :returns: bool -- Whether the user is allowed to access the tool.
         """
         if self.require_login and user is None:
             return False
-        if self.dynamic_tool:
-            try:
-                is_public = self.dynamic_tool.public
-            except Exception:
-                # DynamicTool not bound to session, access was validated at load time
-                is_public = True
-            if not is_public:
-                if user is None:
-                    return False
-                try:
-                    self.app.dynamic_tool_manager.ensure_can_use_unprivileged_tool(user)
-                except Exception:
-                    return False
-        return True
+        if not self.is_unprivileged_tool:
+            return True
+        if user is None or not self.dynamic_tool_active or self.dynamic_tool_uuid is None:
+            return False
+        try:
+            owned = self.app.dynamic_tool_manager.get_unprivileged_tool_by_uuid(user, self.dynamic_tool_uuid)
+        except exceptions.InsufficientPermissionsException:
+            return False
+        return owned is not None
 
     def parse(self, tool_source: ToolSource, guid: Optional[str] = None, dynamic: bool = False) -> None:
         """
@@ -1556,19 +1547,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
 
         self.citations = self._parse_citations(tool_source)
         biotools_metadata_source = getattr(self.app, "biotools_metadata_source", None)
-        if biotools_metadata_source:
-            ontology_data = expand_ontology_data(
-                tool_source,
-                self.all_ids,
-                biotools_metadata_source,
-            )
-            self.xrefs = ontology_data.xrefs
-            self.edam_operations = ontology_data.edam_operations
-            self.edam_topics = ontology_data.edam_topics
-        else:
-            self.xrefs = []
-            self.edam_operations = None
-            self.edam_topics = None
+        ontology_data = expand_ontology_data(
+            tool_source,
+            self.all_ids,
+            biotools_metadata_source,
+        )
+        self.xrefs = ontology_data.xrefs
+        self.edam_operations = ontology_data.edam_operations
+        self.edam_topics = ontology_data.edam_topics
+        self.tool_tags = ontology_data.tool_tags
 
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
@@ -3021,6 +3008,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         tool_dict["hidden"] = self.hidden
         tool_dict["is_workflow_compatible"] = self.is_workflow_compatible
         tool_dict["xrefs"] = self.xrefs
+        tool_dict["versions"] = self.tool_versions
+        tool_dict["hidden_versions"] = self.hidden_tool_versions
 
         if self.dynamic_tool:
             tool_dict["uuid"] = str(self.dynamic_tool.uuid)
@@ -3055,6 +3044,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             tool_dict["inputs"] = [input.to_dict(trans) for input in self.inputs.values()]
             tool_dict["outputs"] = [output.to_dict(app=self.app) for output in self.outputs.values()]
 
+        tool_dict["has_parameters"] = self.parameters is not None
+
         tool_dict["panel_section_id"], tool_dict["panel_section_name"] = self.get_panel_section()
 
         tool_class = self.__class__
@@ -3085,9 +3076,14 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         job: Optional[Job] = None,
         workflow_building_mode=False,
         history: Optional[History] = None,
+        options_pagination: Optional[OptionsPaginationT] = None,
     ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
+
+        ``options_pagination`` is forwarded to data/data_collection parameters'
+        ``to_dict`` via :func:`populate_model`. Map keys are full dotted parameter
+        names (Galaxy ``|``-separated convention).
         """
         if kwd is None:
             kwd = {}
@@ -3137,7 +3133,13 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # create tool model
         tool_model = self.to_dict(request_context)
         tool_model["inputs"] = []
-        self.populate_model(request_context, self.inputs, state_inputs, tool_model["inputs"])
+        self.populate_model(
+            request_context,
+            self.inputs,
+            state_inputs,
+            tool_model["inputs"],
+            options_pagination=options_pagination,
+        )
         unset_dataset_matcher_factory(request_context)
 
         # create tool help
@@ -3174,6 +3176,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
                 "message": tool_message,
                 "warnings": tool_warnings,
                 "versions": self.tool_versions,
+                "hidden_versions": self.hidden_tool_versions,
                 "requirements": [{"name": r.name, "version": r.version} for r in self.requirements],
                 "credentials": [credential.to_dict() for credential in self.credentials] if self.credentials else [],
                 "errors": state_errors,
@@ -3193,7 +3196,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         )
         return swap_inf_nan(tool_model)
 
-    def populate_model(self, request_context, inputs, state_inputs, group_inputs, other_values=None):
+    def populate_model(
+        self,
+        request_context,
+        inputs,
+        state_inputs,
+        group_inputs,
+        other_values=None,
+        options_pagination: Optional[OptionsPaginationT] = None,
+    ):
         """
         Populates the tool model consumed by the client form builder.
         """
@@ -3203,6 +3214,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             state_inputs=state_inputs,
             group_inputs=group_inputs,
             other_values=other_values,
+            options_pagination=options_pagination,
         )
 
     def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: dict) -> None:
@@ -3275,9 +3287,8 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             return None
         message = ""
         try:
-            select_field, tools, tool = self.app.toolbox.get_tool_components(
-                tool_id, tool_version=tool_version, get_loaded_tools_by_lineage=False, set_selected=True
-            )
+            tools = self.app.toolbox.get_tool(tool_id, tool_version=tool_version, get_all_versions=True) or []
+            tool = self.app.toolbox.get_tool(tool_id, tool_version=tool_version) if tools else None
             if tool is None:
                 raise exceptions.MessageException(
                     f"This dataset was created by an obsolete tool ({tool_id}). Can't re-run."
@@ -3542,8 +3553,10 @@ class DataSourceTool(OutputParameterJSONTool):
         return True
 
     def _build_GALAXY_URL_parameter(self):
+        assert self.id, "Tool id must be set to build GALAXY_URL parameter for data_source tool"
         return ToolParameter.build(
-            self, XML(f'<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id={self.id}" />')
+            self,
+            XML(f'<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id={uri_safe_tool_id(self.id)}" />'),
         )
 
     def parse_inputs(self, tool_source):
@@ -3616,7 +3629,10 @@ class AsyncDataSourceTool(DataSourceTool):
     tool_type = "data_source_async"
 
     def _build_GALAXY_URL_parameter(self):
-        return ToolParameter.build(self, XML(f'<param name="GALAXY_URL" type="baseurl" value="/async/{self.id}" />'))
+        assert self.id, "Tool id must be set to build GALAXY_URL parameter for data_source_async tool"
+        return ToolParameter.build(
+            self, XML(f'<param name="GALAXY_URL" type="baseurl" value="/async/{uri_safe_tool_id(self.id)}" />')
+        )
 
 
 class DataDestinationTool(Tool):
@@ -3865,6 +3881,9 @@ class DatabaseOperationTool(Tool):
             if self.require_terminal_states and state in model.Dataset.non_ready_states:
                 raise ToolInputsNotReadyException("An input dataset is pending.")
 
+            if state == model.Dataset.states.PAUSED and not self.require_terminal_or_paused_states:
+                raise ToolInputsNotReadyException(f"Input '{input_key}' is paused; the file is not yet available.")
+
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
                     # TODO: frontend component should intercept and point to problematic input
@@ -3895,6 +3914,14 @@ class DatabaseOperationTool(Tool):
             if getattr(element_object, "history_content_type", None) == "dataset":
                 element_object.visible = datasets_visible
                 history.stage_addition(element_object)
+
+    @staticmethod
+    def _read_text_file_lines(path: str, size_hint: int = 10000000) -> list[str]:
+        try:
+            with open(path) as fh:
+                return fh.readlines(size_hint)
+        except UnicodeDecodeError:
+            raise exceptions.MessageException("Please provide the file as valid UTF-8.")
 
     def produce_outputs(self, trans: "ProvidesUserContext", out_data, output_collections, incoming, history, **kwds):
         return self._outputs_dict()
@@ -4093,14 +4120,26 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
 
         def _handle_unpaired(dce):
             element_identifier = dce.element_identifier
-            assert getattr(dce.element_object, "history_content_type", None) == "dataset"
-            copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
+            element_object = dce.element_object
+            # In list:paired_or_unpaired collections, unpaired elements are
+            # wrapped in a 1-element sub-collection. Unwrap to get the dataset.
+            if getattr(element_object, "elements", None):
+                inner_element = element_object.elements[0]
+                assert inner_element.element_identifier == SINGLETON_IDENTIFIER
+                element_object = inner_element.element_object
+            assert element_object.history_content_type == "dataset"
+            copied_value = element_object.copy(copy_tags=element_object.tags, flush=False)
             unpaired_dce_copies[element_identifier] = copied_value
             unpaired_dce_columns[element_identifier] = dce.columns
 
         def _handle_paired(dce):
             element_identifier = dce.element_identifier
             copied_value = dce.element_object.copy(flush=False)
+            # Normalize to 'paired' for list:paired output, since a
+            # list:paired_or_unpaired input may contain 2-element
+            # paired_or_unpaired sub-collections that are structurally
+            # equivalent to paired but carry the wider collection_type.
+            copied_value.collection_type = "paired"
             paired_dce_copies[element_identifier] = copied_value
             paired_datasets.append(copied_value.elements[0].element_object)
             paired_datasets.append(copied_value.elements[1].element_object)
@@ -4114,7 +4153,8 @@ class SplitPairedAndUnpairedTool(DatabaseOperationTool):
                 _handle_paired(element)
         elif collection_type == "list:paired_or_unpaired":
             for element in collection.elements:
-                if getattr(element.element_object, "history_content_type", None) == "dataset":
+                sub_collection = element.element_object
+                if len(sub_collection.elements) == 1:
                     _handle_unpaired(element)
                 else:
                     _handle_paired(element)
@@ -4507,9 +4547,9 @@ class SortTool(DatabaseOperationTool):
                 old_elements_dict = {}
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
+                sort_lines = self._read_text_file_lines(hda.get_file_name())
                 try:
-                    with open(hda.get_file_name()) as fh:
-                        sorted_elements = [old_elements_dict[line.strip()] for line in fh]
+                    sorted_elements = [old_elements_dict[line.strip()] for line in sort_lines]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
@@ -4711,8 +4751,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_rows[new_label] = columns
 
         new_labels_path = new_labels_dataset_assoc.get_file_name()
-        with open(new_labels_path) as fh:
-            new_labels = fh.readlines(1024 * 1000000)
+        new_labels = self._read_text_file_lines(new_labels_path)
         if strict and len(hdca.collection.elements) != len(new_labels):
             raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
         if how_type in ["tabular", "tabular_extended"]:
@@ -4868,8 +4907,7 @@ class TagFromFileTool(DatabaseOperationTool):
             new_elements[dce.element_identifier] = copied_value
 
         new_tags_path = new_tags_dataset_assoc.get_file_name()
-        with open(new_tags_path) as fh:
-            new_tags = fh.readlines(1024 * 1000000)
+        new_tags = self._read_text_file_lines(new_tags_path)
         # We have a tabular file, where the first column is an existing element identifier,
         # and the remaining columns represent new tags.
         source_new_tags = (line.strip().split("\t") for line in new_tags)
@@ -4900,8 +4938,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         discarded_rows = {}
 
         filtered_path = filter_dataset_assoc.get_file_name()
-        with open(filtered_path) as fh:
-            filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
+        filtered_identifiers = [i.strip() for i in self._read_text_file_lines(filtered_path)]
 
         # If filtered_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
         for dce in hdca.collection.elements:

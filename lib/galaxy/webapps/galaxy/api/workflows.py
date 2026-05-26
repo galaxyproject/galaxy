@@ -73,12 +73,14 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     ClaimLandingPayload,
     CreateWorkflowLandingRequestPayload,
+    InvocationIndexPayload,
     InvocationSortByEnum,
     InvocationsStateCounts,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    WorkflowIndexPayload,
     WorkflowJobMetric,
     WorkflowLandingRequest,
     WorkflowSortByEnum,
@@ -86,6 +88,8 @@ from galaxy.schema.schema import (
 from galaxy.schema.workflows import (
     InvokeWorkflowPayload,
     StoredWorkflowDetailed,
+    WorkflowExtractionByIdsPayload,
+    WorkflowExtractionResult,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -120,15 +124,11 @@ from galaxy.webapps.galaxy.services.base import (
     ServesExportStores,
 )
 from galaxy.webapps.galaxy.services.invocations import (
-    InvocationIndexPayload,
     InvocationsService,
     PrepareStoreDownloadPayload,
     WriteInvocationStoreToPayload,
 )
-from galaxy.webapps.galaxy.services.workflows import (
-    WorkflowIndexPayload,
-    WorkflowsService,
-)
+from galaxy.webapps.galaxy.services.workflows import WorkflowsService
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 
@@ -345,6 +345,11 @@ class WorkflowsAPIController(
         style = kwd.get("style", "export")
         download_format = kwd.get("format")
         version = kwd.get("version")
+        if version is not None:
+            try:
+                version = int(version)
+            except ValueError:
+                raise exceptions.RequestParameterInvalidException("Invalid version specified.")
         history = None
         if history_id := kwd.get("history_id"):
             history = self.history_manager.get_accessible(
@@ -1087,6 +1092,22 @@ class FastAPIWorkflows:
     ):
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/extract",
+        summary="Extract a workflow from selected jobs and history items by encoded IDs.",
+    )
+    def extract_by_ids(
+        self,
+        payload: WorkflowExtractionByIdsPayload = Body(...),
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> WorkflowExtractionResult:
+        """ID-based workflow extraction.
+
+        Per-item permission checks make this history-optional and allow
+        cross-history extraction.
+        """
+        return self.service.extract_by_ids(trans, payload)
 
     @router.post(
         "/api/workflows/{workflow_id}/invocations",

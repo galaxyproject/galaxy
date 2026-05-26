@@ -173,7 +173,7 @@ def test_has_text_n_success():
 def test_has_text_n_failure():
     """test has_text with n .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N, TEXT_DATA_HAS_TEXT)
-    assert "Expected 2+-0 occurences of 'test text' in output ('test text\n') found 1" in a
+    assert "Expected 2+-0 occurrences of 'test text' in output ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -186,7 +186,7 @@ def test_has_text_n_delta_success():
 def test_has_text_n_delta_failure():
     """test has_text with n and delta .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_DELTA, TEXT_DATA_HAS_TEXT)
-    assert "Expected 3+-1 occurences of 'test text' in output ('test text\n') found 1" in a
+    assert "Expected 3+-1 occurrences of 'test text' in output ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -199,7 +199,7 @@ def test_has_text_minmax_delta_success():
 def test_has_text_minmax_delta_failure():
     """test has_text with min max .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_MIN_MAX, TEXT_DATA_HAS_TEXT)
-    assert "Expected that the number of occurences of 'test text' in output is in [2:4] ('test text\n') found 1" in a
+    assert "Expected that the number of occurrences of 'test text' in output is in [2:4] ('test text\n') found 1" in a
     assert len(a) == 1
 
 
@@ -238,7 +238,7 @@ def test_has_text_negate_n_success():
 def test_has_text_negate_n_failure():
     """test has_text negate with n .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_NEGATE, TEXT_DATA_HAS_TEXT * 2)
-    assert "Did not expect 2+-0 occurences of 'test text' in output ('test text\ntest text\n') found 2" in a
+    assert "Did not expect 2+-0 occurrences of 'test text' in output ('test text\ntest text\n') found 2" in a
     assert len(a) == 1
 
 
@@ -251,7 +251,7 @@ def test_has_text_negate_n_delta_success():
 def test_has_text_negate_n_delta_failure():
     """test has_text negate with n and delta .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_N_DELTA_NEGATE, TEXT_DATA_HAS_TEXT * 2)
-    assert "Did not expect 3+-1 occurences of 'test text' in output ('test text\ntest text\n') found 2" in a
+    assert "Did not expect 3+-1 occurrences of 'test text' in output ('test text\ntest text\n') found 2" in a
     assert len(a) == 1
 
 
@@ -265,7 +265,7 @@ def test_has_text_negate_minmax_delta_failure():
     """test has_text negate with min max .. negative test"""
     a = run_assertions(TEXT_HAS_TEXT_ASSERTION_MIN_MAX_NEGATE, TEXT_DATA_HAS_TEXT * 2)
     assert (
-        "Did not expect that the number of occurences of 'test text' in output is in [2:4] ('test text\ntest text\n') found 2"
+        "Did not expect that the number of occurrences of 'test text' in output is in [2:4] ('test text\ntest text\n') found 2"
         in a
     )
     assert len(a) == 1
@@ -851,7 +851,7 @@ def test_xml_element_failure_due_to_minmax_in_combination_with_negate():
         ),
         VALID_XML,
     )
-    assert "Did not expect that the number of occurences of path './/more' in xml is in [1:3] found 3" in a
+    assert "Did not expect that the number of occurrences of path './/more' in xml is in [1:3] found 3" in a
     assert len(a) == 1
 
 

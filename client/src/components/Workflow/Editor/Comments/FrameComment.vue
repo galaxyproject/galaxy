@@ -7,10 +7,10 @@ import { BButton, BButtonGroup } from "bootstrap-vue";
 import purify from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
-import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
+import { AxisAlignedBoundingBox, type Rectangle } from "@/utils/geometry";
 
 import { LazyMoveMultipleAction } from "../Actions/workflowActions";
 import { brighterColors, darkenedColors } from "./colors";

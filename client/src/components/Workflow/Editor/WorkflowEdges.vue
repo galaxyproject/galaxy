@@ -5,8 +5,8 @@ import { computed, type Ref } from "vue";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { Connection, OutputTerminal } from "@/stores/workflowStoreTypes";
+import type { WorkflowTransform } from "@/utils/geometry";
 
-import type { WorkflowTransform } from "./modules/geometry";
 import type { OutputTerminals } from "./modules/terminals";
 
 import SVGConnection from "./SVGConnection.vue";

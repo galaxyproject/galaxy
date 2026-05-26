@@ -105,6 +105,11 @@
         "message": "Authentication failed, invalid credentials supplied."
     },
     {
+        "name": "FILE_SOURCE_CREDENTIAL_EXPIRED",
+        "code": 401002,
+        "message": "The OIDC credentials for this file source have expired."
+    },
+    {
         "name": "USER_NO_API_KEY",
         "code": 403001,
         "message": "Authentication required for this request"

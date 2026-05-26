@@ -2004,7 +2004,6 @@ class DeviceSourceMap:
         if object_store_id in self.backends:
             device_map = self.backends.get(object_store_id)
             if device_map:
-                print(device_map)
                 return device_map.get_device_id(object_store_id)
 
         return self.default_device_id

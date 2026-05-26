@@ -6,22 +6,31 @@ Uses pydantic-ai output functions to either:
 - Hand off to error_analysis for job debugging
 - Hand off to custom_tool for explicit tool creation requests
 - Hand off to tool_recommendation for tool discovery
+- Hand off to gtn_training for tutorial and learning requests
+
+Also exposes a small set of @agent.tool fast-path tools for read-only browsing
+queries (list histories/workflows, get user info, get a history summary) so the
+router can answer those directly without round-tripping through a specialist.
 """
 
 import json
 import logging
+from functools import partial
 from pathlib import Path
 from typing import (
     Any,
     Optional,
 )
 
+import anyio
 from pydantic import ValidationError
 from pydantic_ai import (
     Agent,
     RunContext,
 )
 
+from galaxy.agents.operations import AgentOperationsManager
+from galaxy.exceptions import MalformedId
 from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     AgentResponse,
@@ -38,6 +47,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
+    _handoff_context: Optional[dict[str, Any]] = None
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         model_name = self._get_agent_config("model", "")
@@ -55,8 +65,9 @@ class QueryRouterAgent(BaseGalaxyAgent):
         history_handoff = self._create_history_handoff()
         next_step_handoff = self._create_next_step_advisor_handoff()
         orchestrator_handoff = self._create_orchestrator_handoff()
+        gtn_handoff = self._create_gtn_training_handoff()
 
-        return Agent(
+        agent: Agent[GalaxyAgentDependencies, str] = Agent(
             self._get_model(),
             deps_type=GalaxyAgentDependencies,
             output_type=[
@@ -66,10 +77,150 @@ class QueryRouterAgent(BaseGalaxyAgent):
                 history_handoff,
                 next_step_handoff,
                 orchestrator_handoff,
+                gtn_handoff,
                 str,  # Default: answer directly
             ],
             system_prompt=self.get_system_prompt(),
         )
+
+        self._register_fast_path_tools(agent)
+        return agent
+
+    def _register_fast_path_tools(self, agent: Agent[GalaxyAgentDependencies, str]) -> None:
+        """Register stateless read-only tools that the router can use directly.
+
+        These are only for low-cost browsing queries that map to a single
+        AgentOperationsManager call. Anything that needs domain reasoning,
+        multi-step context building, or structured output should still hand
+        off to the appropriate specialist.
+        """
+
+        def _ops(ctx: RunContext[GalaxyAgentDependencies]) -> AgentOperationsManager:
+            return AgentOperationsManager(app=ctx.deps.trans.app, trans=ctx.deps.trans)
+
+        @agent.tool
+        async def list_histories(ctx: RunContext[GalaxyAgentDependencies], limit: int = 10) -> dict[str, Any]:
+            """List the user's Galaxy histories (most recently updated first).
+
+            Use this for browsing questions like "what histories do I have?" or
+            "list my recent histories". Returns id, name, and summary metadata.
+            For deeper analysis of a specific history, hand off to the history
+            specialist instead.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(partial(ops.list_histories, limit=limit))
+
+        @agent.tool
+        async def get_history_summary(ctx: RunContext[GalaxyAgentDependencies], history_id: str) -> dict[str, Any]:
+            """Get summary metadata for a single history (name, annotation, tags, counts).
+
+            Use this for direct lookups when the user already has a history id.
+            For interpretation of contents, methods sections, or workflow
+            reconstruction, hand off to the history specialist.
+            """
+            ops = _ops(ctx)
+            try:
+                return await anyio.to_thread.run_sync(partial(ops.get_history_details, history_id))
+            except MalformedId:
+                return {"error": f"Invalid history_id '{history_id}'. Use list_histories to find a valid id."}
+
+        @agent.tool
+        async def list_workflows(ctx: RunContext[GalaxyAgentDependencies], filter: str = "") -> dict[str, Any]:
+            """List the user's stored workflows, optionally filtered by a search string.
+
+            Use this for "what workflows do I have?" style questions. The
+            ``filter`` argument is passed to the workflow index search.
+            """
+            ops = _ops(ctx)
+            search = filter or None
+            return await anyio.to_thread.run_sync(partial(ops.list_workflows, search=search))
+
+        @agent.tool
+        async def search_workflows(
+            ctx: RunContext[GalaxyAgentDependencies], query: str, limit: int = 10
+        ) -> dict[str, Any]:
+            """Search the user's local/shared Galaxy workflows by name or description.
+
+            Use this for availability questions like "do I have an RNA-seq
+            workflow?" or "find workflows for variant calling". Searches only
+            local/shared workflows, not the public IWC catalog. For
+            recommendations ("which workflow should I use?"), hand off to the
+            tool/recommendation specialist instead.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(partial(ops.list_workflows, search=query, limit=limit))
+
+        @agent.tool
+        async def search_tools(ctx: RunContext[GalaxyAgentDependencies], query: str, limit: int = 10) -> dict[str, Any]:
+            """Search the installed Galaxy toolbox by name/description for availability.
+
+            Use this for "is FastQC installed?", "do we have BWA?", or "show me
+            tools matching 'trim adapters'". Returns matching tools as id, name,
+            description, version. For recommendations ("what tool should I use
+            for my analysis?"), hand off to the tool_recommendation specialist
+            instead.
+            """
+            ops = _ops(ctx)
+            result = await anyio.to_thread.run_sync(partial(ops.search_tools, query))
+            tools = result.get("tools", [])
+            effective_limit = max(1, min(limit, 50)) if limit and limit > 0 else 10
+            if len(tools) > effective_limit:
+                result = {
+                    **result,
+                    "tools": tools[:effective_limit],
+                    "count": effective_limit,
+                    "truncated": True,
+                }
+            return result
+
+        @agent.tool
+        async def get_user_info(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """Return the current authenticated user (id, email, username, admin flag).
+
+            Use this when the user asks "who am I?", "what's my username?", or
+            similar account-identity questions.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.get_user)
+
+        @agent.tool
+        async def get_server_info(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """Return Galaxy server metadata (version, brand, URL, capability flags).
+
+            Use this when the user asks "what version of Galaxy is this?",
+            "what's the server URL?", or about server-level capabilities like
+            quotas / user creation / dataset purging.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.get_server_info)
+
+        @agent.tool
+        async def list_file_source_templates(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """List the catalog of remote data repository plugins Galaxy supports.
+
+            Use this when the user asks about uploading to, exporting to, or
+            connecting a remote repository (Omero, Dropbox, S3, Zenodo,
+            Invenio, Google Drive, etc.) -- the result confirms whether that
+            target is supported and surfaces its template id for the
+            configure-then-export flow. Returns plugin templates only; for
+            the user's already-configured connections use
+            ``list_user_file_sources``.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.list_file_source_templates)
+
+        @agent.tool
+        async def list_user_file_sources(ctx: RunContext[GalaxyAgentDependencies]) -> dict[str, Any]:
+            """List the remote-repository file source instances the user has configured.
+
+            Use this when the user asks "what file sources do I have set up?"
+            or needs to reference a specific configured connection (by name or
+            uuid) -- e.g. when picking an Omero instance to export to. Returns
+            only this user's instances. For the catalog of plugin templates
+            available to configure, use ``list_file_source_templates``.
+            """
+            ops = _ops(ctx)
+            return await anyio.to_thread.run_sync(ops.list_user_file_sources)
 
     def get_system_prompt(self) -> str:
         prompt_path = Path(__file__).parent / "prompts" / "router.md"
@@ -108,7 +259,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
         log.info(f"Router handing off to {handoff_target}: '{input_text[:100]}...'")
         try:
             agent = ctx.deps.get_agent(agent_type, ctx.deps)
-            response = await agent.process(input_text)
+            handoff_context = self._handoff_context.copy() if self._handoff_context else {}
+            response = await agent.process(input_text, handoff_context)
             return self._serialize_handoff(response, handoff_target)
         except ValueError as e:
             log.warning(f"{handoff_target} handoff unavailable: {e}")
@@ -266,21 +418,45 @@ class QueryRouterAgent(BaseGalaxyAgent):
 
         return hand_off_to_orchestrator
 
+    def _create_gtn_training_handoff(self):
+        async def hand_off_to_gtn_training(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+        ) -> str:
+            """Route to GTN training agent for tutorial searches and learning guidance.
+
+            Use this when the user:
+            - Asks how to perform a specific type of analysis (RNA-seq, variant calling, etc.)
+            - Wants to learn how to use Galaxy or specific tools
+            - Is looking for tutorials, training materials, or learning resources
+            - Asks about best practices for an analysis workflow
+            - Wants step-by-step guidance for a bioinformatics task
+
+            Args:
+                query: The user's question about training, tutorials, or how to do analysis
+            """
+            return await self._execute_handoff(ctx, AgentType.GTN_TRAINING, query)
+
+        return hand_off_to_gtn_training
+
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
 
         try:
-            if context and context.get("conversation_history"):
-                log.info(f"Router: Conversation has {len(context['conversation_history'])} messages")
+            message_history = self._extract_message_history(context)
+            if message_history:
+                log.info(f"Router: passing {len(message_history)} prior messages as message_history")
             else:
-                log.info("Router: Processing query with no conversation history")
+                log.info("Router: processing query with no conversation history")
 
-            full_query = self._build_query_with_context(query, context)
-            log.info(f"Router: Full query length={len(full_query)} (original={len(query)})")
-
-            result = await self._run_with_retry(full_query)
+            previous_handoff_context = self._handoff_context
+            self._handoff_context = context.copy() if context else {}
+            try:
+                result = await self._run_with_retry(query, message_history=message_history)
+            finally:
+                self._handoff_context = previous_handoff_context
             content = extract_result_content(result)
 
             try:
@@ -310,27 +486,6 @@ class QueryRouterAgent(BaseGalaxyAgent):
         except (OSError, ValueError) as e:
             log.warning(f"Router agent error, using fallback: {e}")
             return self._handle_fallback(query, context, str(e))
-
-    def _build_query_with_context(self, query: str, context: Optional[dict[str, Any]]) -> str:
-        if not context or "conversation_history" not in context:
-            return query
-
-        history = context["conversation_history"]
-        if not history:
-            return query
-
-        max_history = 6
-        if len(history) > max_history:
-            log.debug(f"Router: Truncating conversation history from {len(history)} to {max_history} messages")
-
-        history_text = "Previous conversation:\n"
-        for msg in history[-max_history:]:
-            role = msg.get("role", "unknown")
-            content = msg.get("content", "")
-            history_text += f"{role}: {content}\n"
-        history_text += f"\nCurrent query: {query}"
-
-        return history_text
 
     def _handle_fallback(self, query: str, context: Optional[dict[str, Any]], error_msg: str) -> AgentResponse:
         query_lower = query.lower()
@@ -371,6 +526,8 @@ For job failures or errors: Explain what might have gone wrong and suggest solut
 For tool creation requests: Explain that you can help design Galaxy tools and provide guidance.
 
 For history analysis requests: Explain that you can help summarize their analysis, generate methods sections, or describe what was done in a history.
+
+For training/tutorial requests: Search the Galaxy Training Network for relevant tutorials.
 
 For off-topic questions: Politely explain you can only help with Galaxy and scientific analysis.
 

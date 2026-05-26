@@ -444,7 +444,7 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
 """)
@@ -465,7 +465,7 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
 """)
@@ -489,7 +489,7 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
 """)

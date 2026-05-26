@@ -12,15 +12,14 @@ import { BBadge, BButton } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
-import { getGalaxyInstance } from "@/app";
 import type { ItemUrls } from "@/components/History/Content/Dataset/index";
 import { updateContentFields } from "@/components/History/model/queries";
+import { useWindowAwareNavigation } from "@/composables/windowAwareNavigation";
 import { useEntryPointStore } from "@/stores/entryPointStore";
 import DATASET_STATES from "@/utils/datasetStates";
 import { clearDrag } from "@/utils/setDrag";
 
 import { getContentItemState, type State, STATES } from "./model/states";
-import type { RouterPushOptions } from "./router-push-options";
 
 import CollectionDescription from "./Collection/CollectionDescription.vue";
 import ContentExpirationIndicator from "./ContentExpirationIndicator.vue";
@@ -31,6 +30,7 @@ import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const router = useRouter();
 const route = useRoute();
+const { pushToFrameOrPage } = useWindowAwareNavigation();
 
 interface Props {
     id: number;
@@ -224,37 +224,22 @@ function onDisplay() {
         // there can be more than one entry point, choose the first
         const url = entryPointsForHda[0]?.target;
         window.open(url, "_blank");
-    } else {
-        const Galaxy = getGalaxyInstance();
-        const isWindowManagerActive = Galaxy.frame && Galaxy.frame.active;
-
-        // Build the display URL with displayOnly query param if needed
-        let displayUrl = itemUrls.value.display;
-        if (isWindowManagerActive && displayUrl) {
-            displayUrl += displayUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true";
-        }
-
-        // vue-router 4 supports a native force push with clean URLs,
-        // but we're using a __vkey__ bit as a workaround
-        // Only conditionally force to keep urls clean most of the time.
-        const hidInfo = props.item.hid ? `${props.item.hid}: ` : "";
-        if (route.path === itemUrls.value.display) {
-            const options: RouterPushOptions = {
-                force: true,
-                preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
-            };
-            // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(displayUrl, options);
-        } else if (displayUrl) {
-            const options: RouterPushOptions = {
-                preventWindowManager: !isWindowManagerActive,
-                title: isWindowManagerActive ? `${hidInfo} ${props.name}` : undefined,
-            };
-            // @ts-ignore - monkeypatched router, drop with migration.
-            router.push(displayUrl, options);
-        }
+        return;
     }
+    const inlineUrl = itemUrls.value.display;
+    if (!inlineUrl) {
+        return;
+    }
+    const framedUrl = inlineUrl + (inlineUrl.includes("?") ? "&displayOnly=true" : "?displayOnly=true");
+    const hidInfo = props.item.hid ? `${props.item.hid}: ` : "";
+    pushToFrameOrPage({
+        framedUrl,
+        inlineUrl,
+        title: `${hidInfo} ${props.name}`,
+        // Force a re-push (via the __vkey__ trick) only when we'd otherwise
+        // navigate to the URL we're already on, so the component re-renders.
+        force: route.path === inlineUrl,
+    });
 }
 
 function onDelete(recursive = false) {

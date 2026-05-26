@@ -3,7 +3,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faCaretLeft, faCheck, faFolder, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BLink, BPagination, BSpinner, BTable } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { type ItemsProvider, SELECTION_STATES, type SelectionState } from "@/components/SelectionDialog/selectionTypes";
@@ -14,6 +14,7 @@ import type { FieldEntry, SelectionItem } from "./selectionTypes";
 import GModal from "../BaseComponents/GModal.vue";
 import Heading from "../Common/Heading.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
@@ -262,9 +263,7 @@ defineExpose({
                     </template>
                 </BTable>
                 <div v-if="isBusy" class="text-center">
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
-                    <BSpinner small type="grow" />
+                    <LoadingSpan />
                 </div>
                 <div v-else-if="totalItems === 0">
                     <div v-if="filter">

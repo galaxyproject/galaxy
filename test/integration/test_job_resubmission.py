@@ -9,6 +9,9 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_RESUBMISSION_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_job_conf.yml")
 JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_default_job_conf.xml")
 JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_dynamic_job_conf.xml")
+JOB_RESUBMISSION_DYNAMIC_MULTIPLE_JOB_CONFIG_FILE = os.path.join(
+    SCRIPT_DIRECTORY, "resubmission_dynamic_multiple_job_conf.yml"
+)
 JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_small_memory_job_conf.xml")
 JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE = os.path.join(
     SCRIPT_DIRECTORY, "resubmission_small_memory_resubmission_to_large_job_conf.xml"
@@ -220,6 +223,39 @@ class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegrationTestCase
         config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
+        self._assert_job_passes()
+
+
+class TestJobResubmissionDynamicMultipleIntegration(_BaseResubmissionIntegrationTestCase):
+    """Verify resubmission through chained dynamic destinations more than once.
+
+    Three dynamic destinations form a chain: initial -> secondary -> tertiary.
+    Each link uses ``failure_runner`` and resubmits to the next link via its
+    ``resubmit.environment``; the last link routes to ``local`` (which passes).
+
+    Each rule also reads ``job.destination_params["chain_attempt"]`` set by
+    the prior link and asserts on its value, so the test simultaneously
+    verifies that:
+
+    1. Every resubmit re-walks the chain from the persisted dynamic intent
+       rather than reusing the cached resolved destination of the previous
+       attempt (chain re-walk).
+    2. Prior attempt's ``destination_params`` survive the resubmit handler
+       and are visible to the rule on the next pickup (params carry-forward).
+
+    A regression in either property surfaces as a ``JobMappingException``
+    raised inside the rule rather than a silently-wrong destination, so the
+    job fails the test instead of passing with the wrong behaviour.
+    """
+
+    framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_MULTIPLE_JOB_CONFIG_FILE
+
+    def test_chained_dynamic_resubmission_with_params_carry_forward(self):
         self._assert_job_passes()
 
 

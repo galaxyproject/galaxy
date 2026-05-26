@@ -1,0 +1,5 @@
+text_input: hello
+int_input: 42
+float_input: 3.14
+bool_input: true
+null_input: null

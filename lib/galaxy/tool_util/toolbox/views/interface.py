@@ -16,6 +16,7 @@ from ..panel import (
 
 class ToolPanelViewModelType(str, Enum):
     default_type = "default"
+    favorites = "favorites"
     generic = "generic"
     activity = "activity"
     ontology = "ontology"

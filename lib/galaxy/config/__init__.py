@@ -54,7 +54,7 @@ from galaxy.util.resources import (
     resource_path,
 )
 from galaxy.util.themes import flatten_theme
-from ..version import (
+from galaxy.version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
@@ -725,6 +725,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
 
     add_sample_file_to_defaults = {
+        "agent_model_capabilities_file",
         "build_sites_config_file",
         "datatypes_config_file",
         "tool_data_table_config_path",

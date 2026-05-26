@@ -53,7 +53,7 @@ class QuotaManager:
         return cast(DatabaseQuotaAgent, self.app.quota_agent)
 
     def create_quota(self, payload: dict, decode_id=None) -> tuple[model.Quota, str]:
-        params = CreateQuotaParams.parse_obj(payload)
+        params = CreateQuotaParams.model_validate(payload)
         create_amount = self._parse_amount(params.amount)
         stmt = select(Quota).where(Quota.name == params.name).limit(1)
         if self.sa_session.scalars(stmt).first():

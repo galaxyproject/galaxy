@@ -70,7 +70,10 @@ from galaxy.tool_util.parser.output_objects import (
     ToolOutput,
     ToolOutputCollection,
 )
-from galaxy.tool_util_models.dynamic_tool_models import DynamicToolCreatePayload
+from galaxy.tool_util_models.dynamic_tool_models import (
+    DynamicToolCreatePayload,
+    DynamicUnprivilegedToolCreatePayload,
+)
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
@@ -777,7 +780,7 @@ class SubWorkflowModule(WorkflowModule):
         return self._modules
 
     @property
-    def version_changes(self):
+    def version_changes(self) -> list[str]:
         version_changes = []
         for m in self.get_modules():
             if hasattr(m, "version_changes"):
@@ -2326,10 +2329,24 @@ class ToolModule(WorkflowModule):
         if tool_id is None and tool_uuid is None:
             tool_representation = d.get("tool_representation")
             if tool_representation:
-                create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
-                if not trans.user_is_admin:
-                    raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
-                dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
+                if tool_representation.get("class") == "GalaxyUserTool":
+                    # User-defined tool embedded in the workflow: create it as a
+                    # private UDT owned by the importing user. Requires
+                    # USER_TOOL_EXECUTE; create_unprivileged_tool raises
+                    # InsufficientPermissionsException otherwise.
+                    if trans.user is None:
+                        raise exceptions.InsufficientPermissionsException(
+                            "User is not allowed to run unprivileged tools"
+                        )
+                    unprivileged_request = DynamicUnprivilegedToolCreatePayload(representation=tool_representation)
+                    dynamic_tool = trans.app.dynamic_tool_manager.create_unprivileged_tool(
+                        trans.user, unprivileged_request
+                    )
+                else:
+                    if not trans.user_is_admin:
+                        raise exceptions.AdminRequiredException("Only admin users can create tools dynamically.")
+                    create_request = DynamicToolCreatePayload(src="representation", representation=tool_representation)
+                    dynamic_tool = trans.app.dynamic_tool_manager.create_tool(create_request)
                 tool_uuid = dynamic_tool.uuid
         if tool_id is None and tool_uuid is None:
             raise exceptions.RequestParameterInvalidException(f"No content id could be located for for step [{d}]")

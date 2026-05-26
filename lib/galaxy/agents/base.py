@@ -3,14 +3,22 @@ Base classes for Galaxy AI agents.
 """
 
 import asyncio
+import fnmatch
 import logging
+import os
 import random
 from abc import (
     ABC,
     abstractmethod,
 )
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import (
+    Callable,
+    Sequence,
+)
+from dataclasses import (
+    dataclass,
+    field,
+)
 from typing import (
     Any,
     Literal,
@@ -18,6 +26,8 @@ from typing import (
     TYPE_CHECKING,
     Union,
 )
+
+import yaml
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import User
@@ -37,6 +47,14 @@ if TYPE_CHECKING:
 
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelRequest,
+    ModelResponse,
+    SystemPromptPart,
+    TextPart,
+    UserPromptPart,
+)
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.settings import ModelSettings
@@ -66,10 +84,88 @@ log = logging.getLogger(__name__)
 # Literal inlines enum values in JSON schema, avoiding $defs that vLLM can't handle
 ConfidenceLiteral = Literal["low", "medium", "high"]
 
+MAX_HISTORY_MESSAGES = 40
+"""Cap on prior messages passed as pydantic-ai ``message_history`` to bound token load."""
+
+TOOL_HELPER_HISTORY_MESSAGES = 8
+"""Tighter history cap for sub-agents invoked from inside a ``@agent.tool`` call."""
+
+# Hardcoded fallback if the capability YAML can't be located. Mirrors the
+# previous behaviour (deepseek -> no structured output, everything else yes).
+_DEFAULT_MODEL_CAPABILITIES: dict[str, Any] = {
+    "model_capabilities": [
+        {"pattern": "deepseek*", "structured_output": False},
+    ],
+    "default": {"structured_output": True},
+}
+
+_model_capabilities_cache: dict[str, dict[str, Any]] = {}
+
+
+def _load_model_capabilities(path: Optional[str], force_reload: bool = False) -> dict[str, Any]:
+    """Return the parsed model-capabilities table for ``path``, falling back to defaults on any failure."""
+    if not isinstance(path, str) or not path:
+        return _DEFAULT_MODEL_CAPABILITIES
+
+    if not force_reload and path in _model_capabilities_cache:
+        return _model_capabilities_cache[path]
+
+    if not os.path.exists(path):
+        log.warning("Model capabilities file not found at %s; using built-in defaults.", path)
+        _model_capabilities_cache[path] = _DEFAULT_MODEL_CAPABILITIES
+        return _DEFAULT_MODEL_CAPABILITIES
+
+    try:
+        with open(path) as fh:
+            parsed = yaml.safe_load(fh) or {}
+    except (OSError, yaml.YAMLError) as exc:
+        log.warning("Could not parse model capabilities at %s: %s; using built-in defaults.", path, exc)
+        _model_capabilities_cache[path] = _DEFAULT_MODEL_CAPABILITIES
+        return _DEFAULT_MODEL_CAPABILITIES
+
+    if not isinstance(parsed, dict):
+        log.warning("Ignoring model capabilities at %s: not a mapping; using built-in defaults.", path)
+        _model_capabilities_cache[path] = _DEFAULT_MODEL_CAPABILITIES
+        return _DEFAULT_MODEL_CAPABILITIES
+
+    _model_capabilities_cache[path] = parsed
+    return parsed
+
+
+def _capability_for_model(model_name: str, capability: str, table: dict[str, Any]) -> Optional[bool]:
+    """Look up `capability` for `model_name` against the parsed table.
+
+    Strips any `provider:` prefix before matching. Returns None when neither
+    a pattern nor a default entry covers the capability -- callers decide
+    what to do with that.
+    """
+    if not model_name:
+        return None
+
+    bare_name = model_name.split(":", 1)[1] if ":" in model_name else model_name
+    bare_name = bare_name.lower()
+
+    for entry in table.get("model_capabilities", []) or []:
+        if not isinstance(entry, dict):
+            continue
+        pattern = entry.get("pattern")
+        if not pattern:
+            continue
+        if fnmatch.fnmatch(bare_name, pattern.lower()):
+            if capability in entry:
+                return bool(entry[capability])
+
+    default_block = table.get("default") or {}
+    if isinstance(default_block, dict) and capability in default_block:
+        return bool(default_block[capability])
+    return None
+
+
 __all__ = [
     "ActionSuggestion",
     "ActionType",
     "AgentResponse",
+    "AgentRunState",
     "AgentType",
     "BaseGalaxyAgent",
     "ConfidenceLevel",
@@ -78,9 +174,64 @@ __all__ = [
     "extract_structured_output",
     "extract_usage_info",
     "GalaxyAgentDependencies",
+    "MAX_HISTORY_MESSAGES",
     "normalize_llm_text",
     "SimpleGalaxyAgent",
+    "TOOL_HELPER_HISTORY_MESSAGES",
+    "truncate_message_history",
 ]
+
+
+def truncate_message_history(history: list[ModelMessage], limit: int = MAX_HISTORY_MESSAGES) -> list[ModelMessage]:
+    """Cap conversation history at ``limit`` recent messages, preserving the first one.
+
+    Keeps ``history[0]`` -- typically the user's original request, which anchors
+    intent across long conversations -- and the most recent ``limit`` messages.
+    """
+    if len(history) <= limit:
+        return history
+    log.info(
+        "Truncating conversation history from %d to %d messages (first + last %d)",
+        len(history),
+        limit + 1,
+        limit,
+    )
+    return [history[0]] + history[-limit:]
+
+
+def _coerce_message_history(history: Sequence[Any]) -> list[ModelMessage]:
+    """Normalize API-formatted and legacy role/content chat history."""
+    messages: list[ModelMessage] = []
+    skipped = 0
+
+    for item in history:
+        if isinstance(item, (ModelRequest, ModelResponse)):
+            messages.append(item)
+            continue
+
+        if not isinstance(item, dict):
+            skipped += 1
+            continue
+
+        role = str(item.get("role", "")).lower()
+        content = item.get("content")
+        if content is None:
+            skipped += 1
+            continue
+
+        if role == "assistant":
+            messages.append(ModelResponse(parts=[TextPart(content=str(content))]))
+        elif role == "user":
+            messages.append(ModelRequest(parts=[UserPromptPart(content=str(content))]))
+        elif role == "system":
+            messages.append(ModelRequest(parts=[SystemPromptPart(content=str(content))]))
+        else:
+            skipped += 1
+
+    if skipped:
+        log.warning("Ignored %d unsupported conversation_history message(s)", skipped)
+
+    return messages
 
 
 def extract_result_content(result: Any) -> str:
@@ -151,6 +302,9 @@ class AgentType:
     ORCHESTRATOR = "orchestrator"
     TOOL_RECOMMENDATION = "tool_recommendation"
     HISTORY = "history"
+    GTN_TRAINING = "gtn_training"
+    PAGE_ASSISTANT = "page_assistant"
+    WORKFLOW_REPORT = "workflow_report"
 
 
 # For API responses, use galaxy.schema.agents.AgentResponse
@@ -178,6 +332,24 @@ class AgentResponse:
 
 
 @dataclass
+class AgentRunState:
+    """Per-invocation state shared across sequential multi-agent flows.
+
+    The orchestrator creates a fresh instance per user query and attaches it
+    to each agent's context. Sequential agents read prior agents' responses
+    from here instead of parsing them out of a text-concatenated prompt.
+    """
+
+    prior_responses: dict[str, "AgentResponse"] = field(default_factory=dict)
+
+    def get_prior(self, agent_type: str) -> Optional["AgentResponse"]:
+        return self.prior_responses.get(agent_type)
+
+    def record(self, agent_type: str, response: "AgentResponse") -> None:
+        self.prior_responses[agent_type] = response
+
+
+@dataclass
 class GalaxyAgentDependencies:
     """Dependencies passed to Galaxy agents via dependency injection."""
 
@@ -199,6 +371,11 @@ class BaseGalaxyAgent(ABC):
 
     agent_type: str
     agent: Agent[GalaxyAgentDependencies, Any]
+    _INTERNAL_CONTEXT_KEYS = frozenset({"run_state"})
+
+    # Fallback when no max_tokens is configured. 8k leaves headroom on every
+    # backend we currently support (smallest is Qwen3-32B at 32k context).
+    DEFAULT_MAX_TOKENS = 8192
 
     def __init__(self, deps: GalaxyAgentDependencies):
         self.deps = deps
@@ -259,15 +436,56 @@ class BaseGalaxyAgent(ABC):
             return self._validation_error_response(validation_error)
 
         try:
-            full_prompt = self._prepare_prompt(query, context or {})
-            result = await self._run_with_retry(full_prompt)
-            return self._format_response(result, query, context or {})
+            ctx = context or {}
+            message_history = self._extract_message_history(ctx)
+            full_prompt = self._prepare_prompt(query, self._strip_history_from_context(ctx))
+            result = await self._run_with_retry(full_prompt, message_history=message_history)
+            return self._format_response(result, query, ctx)
 
         except (UnexpectedModelBehavior, OSError, ValueError) as e:
             log.warning(f"Error in {self.agent_type} agent: {e}")
             return self._get_fallback_response(query, str(e))
 
-    async def _run_with_retry(self, prompt: str, max_retries: int = 3, base_delay: float = 1.0):
+    @staticmethod
+    def _extract_message_history(
+        context: Optional[dict[str, Any]],
+        limit: int = MAX_HISTORY_MESSAGES,
+    ) -> Optional[list[ModelMessage]]:
+        """Pull ``conversation_history`` out of context, normalize it, and truncate it.
+
+        Returns None when history is missing/empty so callers can pass it
+        straight to ``agent.run(..., message_history=...)`` without branching.
+        """
+        if not context:
+            return None
+        history = context.get("conversation_history")
+        if not history:
+            return None
+        if isinstance(history, (str, bytes)) or not isinstance(history, Sequence):
+            log.warning("Ignoring unsupported conversation_history value of type %s", type(history).__name__)
+            return None
+        messages = _coerce_message_history(history)
+        if not messages:
+            return None
+        return truncate_message_history(messages, limit=limit)
+
+    @staticmethod
+    def _strip_history_from_context(context: dict[str, Any]) -> dict[str, Any]:
+        """Drop ``conversation_history`` before rendering context as text.
+
+        ``_prepare_prompt`` stringifies whatever's in the context dict; the raw
+        ``ModelMessage`` repr is noise once we're passing the history through
+        the structured ``message_history`` channel.
+        """
+        return {k: v for k, v in context.items() if k != "conversation_history"}
+
+    async def _run_with_retry(
+        self,
+        prompt: str,
+        max_retries: int = 3,
+        base_delay: float = 1.0,
+        message_history: Optional[list[ModelMessage]] = None,
+    ):
         """Run the agent with exponential backoff for retryable errors."""
         last_exception = None
 
@@ -278,7 +496,12 @@ class BaseGalaxyAgent(ABC):
 
         for attempt in range(max_retries + 1):
             try:
-                return await self.agent.run(prompt, deps=self.deps, model_settings=model_settings)
+                return await self.agent.run(
+                    prompt,
+                    deps=self.deps,
+                    model_settings=model_settings,
+                    message_history=message_history,
+                )
 
             except Exception as e:
                 last_exception = e
@@ -315,15 +538,101 @@ class BaseGalaxyAgent(ABC):
 
         raise last_exception or Exception("Max retries exhausted")
 
+    @staticmethod
+    def _sanitize_context_value(value: Any, max_length: int = 200) -> str:
+        """Sanitize a user-supplied context field value for safe prompt inclusion."""
+        s = str(value).replace("\n", " ").replace("\r", " ").strip()
+        if len(s) > max_length:
+            s = s[:max_length]
+        return s
+
+    def _format_interface_context(self, ctx: dict[str, Any]) -> str:
+        ctx_type = ctx.get("contextType")
+        if not ctx_type:
+            return ""
+
+        _s = self._sanitize_context_value
+
+        if ctx_type == "tool":
+            name = _s(ctx.get("toolName", ctx.get("toolId", "unknown")))
+            tool_id = _s(ctx.get("toolId", ""))
+            version = ctx.get("toolVersion")
+            version_str = f", version {_s(version)}" if version else ""
+            return f'The user is viewing the tool form for "{name}" ({tool_id}{version_str}).'
+
+        if ctx_type == "dataset":
+            dataset_id = _s(ctx.get("datasetId", "unknown"))
+            name = _s(ctx.get("datasetName", dataset_id))
+            ext = ctx.get("extension")
+            ext_str = f" ({_s(ext)} format)" if ext else ""
+            return f'The user is viewing dataset "{name}"{ext_str}.'
+
+        if ctx_type == "workflow_editor":
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
+            return f'The user is editing workflow "{name}".'
+
+        if ctx_type == "workflow_run":
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
+            return f'The user is running workflow "{name}".'
+
+        if ctx_type == "job":
+            job_id = _s(ctx.get("jobId", "unknown"))
+            job_tool_id = ctx.get("toolId")
+            tool_str = f" (tool: {_s(job_tool_id)})" if job_tool_id else ""
+            return f"The user is viewing job {job_id}{tool_str}."
+
+        return f"The user is viewing: {_s(ctx_type)}"
+
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         prompt_parts = [query]
 
         if context:
-            context_str = "\n".join([f"{k}: {v}" for k, v in context.items() if v])
+            interface_ctx = context.get("interface_context")
+            if interface_ctx and isinstance(interface_ctx, dict):
+                description = self._format_interface_context(interface_ctx)
+                if description:
+                    prompt_parts.insert(0, f"[Active interface context: {description}]\n")
+
+            entities = context.get("entities")
+            if entities and isinstance(entities, dict):
+                entity_desc = self._format_entity_context(entities)
+                if entity_desc:
+                    prompt_parts.insert(0, f"{entity_desc}\n")
+
+            skip_keys = self._INTERNAL_CONTEXT_KEYS | {"interface_context", "conversation_history", "entities"}
+            context_str = "\n".join([f"{k}: {v}" for k, v in context.items() if v and k not in skip_keys])
             if context_str:
                 prompt_parts.insert(0, f"Context:\n{context_str}\n")
 
         return "\n".join(prompt_parts)
+
+    @staticmethod
+    def _format_entity_context(entities: dict[str, Any]) -> str:
+        """Format entity references from @mentions into readable text."""
+        _s = BaseGalaxyAgent._sanitize_context_value
+        lines: list[str] = []
+        for ds in entities.get("datasets", []):
+            parts = [f"Dataset #{_s(ds.get('hid', '?'))}"]
+            name = ds.get("name")
+            if name:
+                parts.append(f'"{_s(name)}"')
+            details = []
+            if ds.get("extension"):
+                details.append(_s(ds["extension"]))
+            if ds.get("state"):
+                details.append(_s(ds["state"]))
+            if details:
+                parts.append(f"({', '.join(details)})")
+            lines.append(f"- {' '.join(parts)}")
+        for hist in entities.get("histories", []):
+            label = "Current history" if hist.get("identifier") == "current" else "History"
+            name = _s(hist.get("name", ""))
+            lines.append(f'- {label}: "{name}"')
+        if not lines:
+            return ""
+        return "Referenced entities:\n" + "\n".join(lines)
 
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Convert pydantic-ai result to AgentResponse. Subclasses can override."""
@@ -443,13 +752,24 @@ class BaseGalaxyAgent(ABC):
     def _supports_structured_output(self) -> bool:
         """Check if current model supports structured output (tool calling/JSON mode).
 
-        Assumes support by default, excluding known-failing models.
+        Resolution order:
+          1. Agent-specific ``structured_output_override`` in inference_services
+          2. Global ``default.structured_output_override`` in inference_services
+          3. Glob match in the capability table at ``config.agent_model_capabilities_file``
+             (Galaxy resolves this to the admin override in ``config_dir`` if present,
+             otherwise the shipped sample under ``sample_config_dir``)
+          4. The capability table's ``default`` block (true if absent)
         """
-        model_name = self._get_agent_config("model", "").lower()
+        override = self._get_agent_config("structured_output_override")
+        if override is not None:
+            return bool(override)
 
-        # TODO: revisit this list as model support improves
-        unsupported = ["deepseek"]
-        return not any(m in model_name for m in unsupported)
+        model_name = self._get_agent_config("model", "")
+        capabilities_path = getattr(self.deps.config, "agent_model_capabilities_file", None)
+        capability = _capability_for_model(model_name, "structured_output", _load_model_capabilities(capabilities_path))
+        if capability is None:
+            return True
+        return capability
 
     def _requires_structured_output(self) -> bool:
         """Override in agents that require structured output to function."""
@@ -534,7 +854,7 @@ class BaseGalaxyAgent(ABC):
         return self._get_agent_config("temperature", 0.7)
 
     def _get_max_tokens(self) -> int:
-        return self._get_agent_config("max_tokens", 2000)
+        return self._get_agent_config("max_tokens", self.DEFAULT_MAX_TOKENS)
 
     async def _call_agent_from_tool(
         self,
@@ -551,16 +871,7 @@ class BaseGalaxyAgent(ABC):
 
             target_agent = ctx.deps.get_agent(agent_type, ctx.deps)
 
-            full_query = query
-            if context and "conversation_history" in context:
-                history = context["conversation_history"]
-                if history and len(history) > 0:
-                    history_text = "Previous conversation:\n"
-                    for msg in history[-4:]:
-                        role = msg.get("role", "unknown")
-                        content = msg.get("content", "")[:200]
-                        history_text += f"{role}: {content}\n"
-                    full_query = f"{history_text}\nCurrent request: {query}"
+            message_history = self._extract_message_history(context, limit=TOOL_HELPER_HISTORY_MESSAGES)
 
             target_model_settings = {
                 "temperature": target_agent._get_temperature(),
@@ -568,10 +879,11 @@ class BaseGalaxyAgent(ABC):
             }
 
             result = await target_agent.agent.run(
-                full_query,
+                query,
                 deps=ctx.deps,
                 usage=usage or ctx.usage,
                 model_settings=target_model_settings,
+                message_history=message_history,
             )
 
             response_data = extract_result_content(result)

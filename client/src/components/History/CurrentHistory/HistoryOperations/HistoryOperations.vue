@@ -3,11 +3,13 @@ import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { HistorySummaryExtended } from "@/api";
+import type { StorageRun } from "@/stores/storageOperationsStore";
 import localize from "@/utils/localization";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 import DefaultOperations from "@/components/History/CurrentHistory/HistoryOperations/DefaultOperations.vue";
+import HistoryStorageOperationsIndicator from "@/components/History/CurrentHistory/HistoryOperations/HistoryStorageOperationsIndicator.vue";
 
 interface Props {
     history: HistorySummaryExtended;
@@ -16,6 +18,7 @@ interface Props {
     expandedCount: number;
     showSelection: boolean;
     isMultiViewItem: boolean;
+    activeStorageRuns: StorageRun[];
 }
 
 const props = defineProps<Props>();
@@ -61,15 +64,22 @@ function onUpdateOperationStatus(updateTime: number) {
                 </GButton>
             </GButtonGroup>
 
-            <GButtonGroup v-show="showSelection">
-                <slot name="selection-operations" />
-            </GButtonGroup>
+            <div class="d-flex align-items-center">
+                <GButtonGroup v-show="showSelection">
+                    <slot name="selection-operations" />
+                </GButtonGroup>
 
-            <DefaultOperations
-                v-if="!isMultiViewItem"
-                v-show="!showSelection"
-                :history="history"
-                @update:operation-running="onUpdateOperationStatus" />
+                <HistoryStorageOperationsIndicator
+                    :history-id="history.id"
+                    :show-selection="showSelection"
+                    :active-storage-run-count="activeStorageRuns.length" />
+
+                <DefaultOperations
+                    v-if="!isMultiViewItem"
+                    v-show="!showSelection"
+                    :history="history"
+                    @update:operation-running="onUpdateOperationStatus" />
+            </div>
         </nav>
         <nav v-else-if="isMultiViewItem" class="content-operations bg-secondary">
             <GButton

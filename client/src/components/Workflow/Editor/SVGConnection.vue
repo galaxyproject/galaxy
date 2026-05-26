@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { curveBasis, line } from "d3";
 import { computed, type PropType } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import type { Connection } from "@/stores/workflowStoreTypes";
+import { curveBasisPath } from "@/utils/connectionPath";
 
 const props = defineProps({
     id: String,
@@ -24,8 +24,6 @@ const props = defineProps({
 });
 
 const ribbonMargin = 4;
-
-const curve = line().curve(curveBasis);
 
 const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 
@@ -165,7 +163,7 @@ const paths = computed(() => {
         }
     });
 
-    return lines.map((l) => curve(l)!);
+    return lines.map((l) => curveBasisPath(l));
 });
 
 const lineWidth = computed(() => {

@@ -1,13 +1,21 @@
 <script setup lang="ts">
 import { faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
-import { faExclamationTriangle, faExternalLinkAlt, faPencilAlt, faWrench } from "@fortawesome/free-solid-svg-icons";
+import {
+    faBan,
+    faExclamationTriangle,
+    faInfoCircle,
+    faLayerGroup,
+    faPencilAlt,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
-import type { WorkflowExtractionJob } from "@/api/histories";
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
 
-import { isWorkflowExtractionInput, type WorkflowExtractionInput } from "./types";
+import { isMappedTool, isWorkflowExtractionInput, type WorkflowExtractionRow } from "./types";
 
+import DisplayedItem from "../Content/DisplayedItem.vue";
 import GCard from "@/components/Common/GCard.vue";
 import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
@@ -34,31 +42,64 @@ const STEP_TYPE_META: Record<
     },
 };
 
+function mappedBadge(size: number | null | undefined): CardBadge {
+    return {
+        id: "mapped-tool",
+        label: typeof size === "number" ? `Mapped over ${size} items` : "Mapped",
+        icon: faLayerGroup,
+        title: "This row represents a mapped tool step backed by an implicit collection job.",
+        class: "unselectable",
+        variant: "info",
+    };
+}
+
 const props = defineProps<{
-    job: WorkflowExtractionInput | WorkflowExtractionJob;
+    job: WorkflowExtractionRow;
 }>();
 
 const emit = defineEmits<{
     (e: "rename"): void;
     (e: "select"): void;
+    (e: "view-job", jobId: string): void;
 }>();
 
 const badges = computed<CardBadge[]>(() => {
     const badges: CardBadge[] = [];
     const meta = STEP_TYPE_META[props.job.step_type];
     if (props.job.step_type === "tool") {
-        if (props.job.id) {
+        if (props.job.id && props.job.invalid !== "custom_tool_inaccessible") {
             badges.push({
                 id: "view-job-details",
                 label: "View Job",
-                icon: faExternalLinkAlt,
+                icon: faInfoCircle,
                 title: "View details for the job that ran this tool",
                 handler: () => {
-                    window.open(`/jobs/${props.job.id}/view`, "_blank");
+                    emit("view-job", props.job.id!);
                 },
                 variant: "info",
             });
         }
+
+        if (props.job.invalid === "custom_tool_inaccessible") {
+            badges.push({
+                id: "custom-tool-inaccessible",
+                label: "Custom Tool Inaccessible",
+                icon: faBan,
+                title: "This history item was produced by a User Defined Tool that is not accessible for you. Hence, this step cannot be included in the workflow.",
+                class: "unselectable",
+                variant: "danger",
+            });
+        } else if (props.job.invalid === "tool_missing_or_inaccessible") {
+            badges.push({
+                id: "tool-missing-or-inaccessible",
+                label: "Tool Missing or Inaccessible",
+                icon: faExclamationTriangle,
+                title: "This history item was produced by a tool that is either missing or inaccessible for you. Hence, this step cannot be included in the workflow.",
+                class: "unselectable",
+                variant: "danger",
+            });
+        }
+
         if (props.job.tool_version_warning) {
             badges.push({
                 id: "tool-version-warning",
@@ -68,6 +109,9 @@ const badges = computed<CardBadge[]>(() => {
                 class: "unselectable",
                 variant: "warning",
             });
+        }
+        if (isMappedTool(props.job)) {
+            badges.push(mappedBadge(props.job.implicit_collection_jobs_size));
         }
     } else {
         badges.push(INPUT_IS_RENAMABLE_BADGE);
@@ -90,8 +134,13 @@ const titleIcon = computed<TitleIcon>(() => {
 
 <template>
     <GCard
+        :class="{ disabled: Boolean(props.job.invalid) }"
         :badges="badges"
-        :title="isWorkflowExtractionInput(props.job) ? props.job.newName : props.job.tool_name || 'Unnamed Step'"
+        :title="
+            isWorkflowExtractionInput(props.job)
+                ? props.job.newName
+                : props.job.tool_name || props.job.tool_id || 'Unnamed Step'
+        "
         :title-icon="titleIcon"
         :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
         selectable
@@ -100,12 +149,30 @@ const titleIcon = computed<TitleIcon>(() => {
         dim-when-unselected
         @rename="emit('rename')"
         @select="emit('select')">
-        <template v-if="props.job.outputs?.length" v-slot:description>
-            <div v-for="(output, outputIndex) in props.job.outputs" :key="outputIndex">
-                <GenericHistoryItem
-                    :item-id="output.id"
-                    :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
-            </div>
+        <template v-slot:select>
+            <FontAwesomeIcon
+                v-if="Boolean(props.job.invalid)"
+                :icon="faExclamationTriangle"
+                class="text-danger mr-1"
+                fixed-width />
+        </template>
+        <template v-slot:description>
+            <template v-if="props.job.outputs?.length">
+                <div v-for="(output, outputIndex) in props.job.outputs" :key="outputIndex">
+                    <DisplayedItem
+                        v-if="props.job.invalid === 'custom_tool_inaccessible'"
+                        :item-id="output.id"
+                        :deleted="output.deleted"
+                        :hid="output.hid"
+                        :history-content-type="output.history_content_type"
+                        :name="output.name"
+                        :state="output.state" />
+                    <GenericHistoryItem
+                        v-else
+                        :item-id="output.id"
+                        :item-src="output.history_content_type === 'dataset' ? 'hda' : 'hdca'" />
+                </div>
+            </template>
         </template>
     </GCard>
 </template>

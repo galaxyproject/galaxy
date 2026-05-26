@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
-import type { Rectangle } from "@/components/Workflow/Editor/modules/geometry";
+import type { Rectangle } from "@/utils/geometry";
 import { wait } from "@/utils/utils";
 
 const bounds = ref<Rectangle>({ x: 0, y: 0, width: 0, height: 0 });

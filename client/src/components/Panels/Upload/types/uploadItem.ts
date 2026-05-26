@@ -15,6 +15,7 @@ export interface BaseUploadItem {
     dbkey: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
+    autoDecompress: boolean;
 }
 
 /**

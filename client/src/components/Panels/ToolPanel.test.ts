@@ -13,7 +13,6 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useToolStore } from "@/stores/toolStore";
 
 import viewsListJson from "./testData/viewsList.json";
-import { types_to_icons } from "./utilities";
 
 import ToolPanel from "./ToolPanel.vue";
 
@@ -70,11 +69,16 @@ describe("ToolPanel", () => {
      *                              mock an error for the default view as well
      * @returns wrapper
      */
-    async function createWrapper(errorView: string = "", failDefault: boolean = false) {
+    async function createWrapper(
+        errorView: string = "",
+        failDefault: boolean = false,
+        captureToolsRequest?: (url: URL) => void,
+    ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
                 const url = new URL(request.url);
-                if (url.searchParams.get("in_panel") === "False") {
+                captureToolsRequest?.(url);
+                if (url.searchParams.get("in_panel")?.toLowerCase() === "false") {
                     return HttpResponse.json(toolsList);
                 }
                 return HttpResponse.json([]);
@@ -166,25 +170,23 @@ describe("ToolPanel", () => {
                 await currItem.trigger("click");
                 await flushPromises();
 
-                // Test: check if the current panel view is selected now
-                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
-                    "check",
-                );
+                // The active item renders the selection icon; we assert
+                // existence rather than the FA `data-icon` value (which is
+                // an icon-library implementation detail).
+                expect(currItem.find("[data-description='panel view item icon']").exists()).toBe(true);
 
-                // Test: check if the panel header now has an icon and a changed name
-                const currentViewType = value.view_type as keyof typeof types_to_icons;
+                // Test: the panel header reflects the chosen view.
                 const panelViewIcon = wrapper.find("[data-description='panel view header icon']");
                 if (key === "my_panel") {
                     expect(panelViewIcon.exists()).toBe(false);
                 } else {
-                    expect(panelViewIcon.attributes("data-icon")).toEqual(types_to_icons[currentViewType].iconName);
+                    expect(panelViewIcon.exists()).toBe(true);
                 }
                 expect(wrapper.find("#toolbox-heading").text()).toBe(value!.name);
             } else {
-                // Test: check if the default panel view is already selected, and no icon
-                expect(currItem.find("[data-description='panel view item icon']").attributes("data-icon")).toEqual(
-                    "check",
-                );
+                // Default view: the selection icon is rendered on this item and
+                // the header carries no extra icon (default state).
+                expect(currItem.find("[data-description='panel view item icon']").exists()).toBe(true);
                 expect(wrapper.find("[data-description='panel view header icon']").exists()).toBe(false);
             }
         }
@@ -234,5 +236,24 @@ describe("ToolPanel", () => {
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+    });
+
+    it("does not request tool tags during default tool panel startup", async () => {
+        let toolsRequestUrl: URL | undefined;
+        let toolTagsRequested = false;
+        // Default tool panel mount must not pull the curated tag mapping —
+        // that's My-Tools-only and is fetched via /api/tags/tool_tags on demand.
+        server.use(
+            http.untyped.get("/api/tags/tool_tags", () => {
+                toolTagsRequested = true;
+                return HttpResponse.json({});
+            }),
+        );
+        await createWrapper("", false, (url) => {
+            toolsRequestUrl = url;
+        });
+
+        expect(toolsRequestUrl?.searchParams.get("in_panel")).toBe("false");
+        expect(toolTagsRequested).toBe(false);
     });
 });

@@ -190,6 +190,14 @@ Some of these options deserve explanation:
 4-12 workers should be able to handle hundreds if not thousands of requests per second.
 * `extra_args`: You can specify additional arguments to pass to gunicorn here.
 
+```{note}
+If you have enabled [Server-Sent Events for real-time updates](sse_updates.md), every connected browser tab holds an
+open connection to one Gunicorn worker for the lifetime of the tab. Gravity configures Gunicorn with the
+``uvicorn.workers.UvicornWorker`` async worker by default, so a single worker process can hold thousands of idle SSE
+connections without blocking — the limit you actually need to watch is memory headroom and the per-process
+file-descriptor ulimit, not the worker count.
+```
+
 Note that the performance option values given above are just examples and should be tuned per your specific needs.
 However, as given, they are a good place to start.
 

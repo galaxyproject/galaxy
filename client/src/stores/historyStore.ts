@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { computed, del, ref, set } from "vue";
+import { computed, del, ref, set, watch } from "vue";
 
 import {
     type AnyHistory,
@@ -15,7 +15,10 @@ import type { ArchivedHistoryDetailed } from "@/api/histories.archived";
 import { getGalaxyInstance } from "@/app";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
+import { useSSE } from "@/composables/useNotificationSSE";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { useConfigStore } from "@/stores/configurationStore";
+import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 import {
     createAndSelectNewHistory,
     getCurrentHistoryFromServer,
@@ -30,6 +33,7 @@ import { sortByObjectProp } from "@/utils/sorting";
 import {
     ACTIVE_POLLING_INTERVAL,
     INACTIVE_POLLING_INTERVAL,
+    refreshHistoryFromPush as refreshHistoryFromPushSuppliedApp,
     watchHistory as watchHistorySuppliedApp,
 } from "@/watch/watchHistory";
 
@@ -48,6 +52,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     const storedHistories = ref<{ [key: string]: AnyHistory }>({});
     const historyLoadErrors = ref<{ [key: string]: Error }>({});
     const changingCurrentHistory = ref(false);
+    const knownHistorySizes = new Map<string, number>();
 
     const histories = computed(() => {
         return Object.values(storedHistories.value)
@@ -148,6 +153,12 @@ export const useHistoryStore = defineStore("historyStore", () => {
         } else {
             set(storedHistories.value, history.id, history);
         }
+    }
+
+    function didHistorySizeChange(history: { id: string; size: number }) {
+        const previousHistorySize = knownHistorySizes.get(history.id);
+        knownHistorySizes.set(history.id, history.size);
+        return previousHistorySize !== history.size;
     }
 
     function setHistories(histories: AnyHistory[]) {
@@ -391,13 +402,117 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return watchHistorySuppliedApp(app);
     }
 
-    const { startWatchingResource: startWatchingHistory, isWatchingResource: isWatchingHistory } = useResourceWatcher(
-        watchHistory,
-        {
-            shortPollingInterval: ACTIVE_POLLING_INTERVAL,
-            longPollingInterval: INACTIVE_POLLING_INTERVAL,
-        },
+    // SSE-driven history updates: when we receive a history_update event,
+    // immediately trigger a refresh of the current history
+    const SSE_HISTORY_EVENT_TYPES = ["history_update"] as const;
+    const { connect: sseHistoryConnect, disconnect: sseHistoryDisconnect } = useSSE(
+        handleHistorySSEEvent,
+        SSE_HISTORY_EVENT_TYPES,
     );
+    let stopHistoryPolling: (() => void) | null = null;
+    let stopIsWatchingWatcher: (() => void) | null = null;
+
+    function handleHistorySSEEvent(event: MessageEvent) {
+        try {
+            const data = JSON.parse(event.data);
+            const changedHistoryIds: string[] = data.history_ids ?? [];
+            if (!changedHistoryIds.length) {
+                return;
+            }
+            const currentId = currentHistoryId.value;
+            if (currentId && changedHistoryIds.includes(currentId)) {
+                // SSE is itself the signal that the history changed — force the
+                // refresh so the update_time short-circuit in watchHistoryOnce
+                // can't suppress the contents fetch.
+                const app = getGalaxyInstance();
+                refreshHistoryFromPushSuppliedApp(app).catch((err) =>
+                    console.error("Error refreshing current history from SSE push:", err),
+                );
+            }
+            // Also refresh other tracked histories (e.g. visible in the
+            // multi-history view). Skip ids not in storedHistories — there's
+            // no rendered panel for them, so refetching wastes a request.
+            const itemsStore = useHistoryItemsStore();
+            for (const id of changedHistoryIds) {
+                if (id === currentId) {
+                    continue;
+                }
+                if (!storedHistories.value[id]) {
+                    continue;
+                }
+                const filterText = storedFilterTexts.value[id] ?? "";
+                updateContentStats(id).catch((err) =>
+                    console.error(`Error updating content stats for history ${id}:`, err),
+                );
+                itemsStore
+                    .fetchHistoryItems(id, filterText, 0)
+                    .catch((err) => console.error(`Error fetching items for history ${id}:`, err));
+            }
+        } catch (e) {
+            console.error("Error handling history SSE event:", e);
+        }
+    }
+
+    // Choose between SSE and polling based on the server config flag
+    // `enable_sse_updates`. SSE success at the socket level is not a
+    // reliable proxy: the `/api/events/stream` endpoint accepts connections
+    // even when the HistoryAuditMonitor is disabled, so relying on the
+    // EventSource `connected` state would silently stop polling without any
+    // events ever arriving.
+    //
+    // `useResourceWatcher` is instantiated lazily because it registers a
+    // `visibilitychange` listener that calls `startWatchingResourceIfNeeded`
+    // every time the tab regains focus — in SSE mode that would re-start
+    // polling we explicitly don't want.
+    const isWatchingHistory = ref(false);
+    let watchingInitialized = false;
+    function startWatchingHistoryWithSSE() {
+        if (watchingInitialized) {
+            return;
+        }
+        watchingInitialized = true;
+
+        const configStore = useConfigStore();
+        const decide = () => {
+            if (configStore.config?.enable_sse_updates) {
+                // SSE delivers incremental updates only; the store still needs
+                // a baseline fetch so the history panel isn't empty until the
+                // first change arrives.
+                watchHistory().catch((err) => console.warn("Initial history load failed", err));
+                sseHistoryConnect();
+            } else {
+                // The resource watcher fires its handler once immediately and
+                // then re-schedules on the polling interval, which covers the
+                // initial load as well as ongoing updates.
+                const { startWatchingResource, stopWatchingResource, isWatchingResource } = useResourceWatcher(
+                    watchHistory,
+                    {
+                        shortPollingInterval: ACTIVE_POLLING_INTERVAL,
+                        longPollingInterval: INACTIVE_POLLING_INTERVAL,
+                    },
+                );
+                stopHistoryPolling = stopWatchingResource;
+                stopIsWatchingWatcher = watch(isWatchingResource, (v) => (isWatchingHistory.value = v), {
+                    immediate: true,
+                });
+                startWatchingResource();
+            }
+        };
+
+        if (configStore.isLoaded) {
+            decide();
+        } else {
+            const stop = watch(
+                () => configStore.isLoaded,
+                (loaded) => {
+                    if (loaded) {
+                        stop();
+                        decide();
+                    }
+                },
+            );
+        }
+    }
 
     async function loadHistoryById(historyId: string) {
         if (!isLoadingHistory.has(historyId)) {
@@ -496,6 +611,23 @@ export const useHistoryStore = defineStore("historyStore", () => {
         return contentStats;
     }
 
+    // Closes SSE and stops polling so the watcher can't emit a trailing
+    // anonymous-cookie request that would overwrite the authenticated
+    // ``galaxysession`` cookie set by the login/register response.
+    function stopWatchingHistory() {
+        sseHistoryDisconnect();
+        if (stopHistoryPolling) {
+            stopHistoryPolling();
+            stopHistoryPolling = null;
+        }
+        if (stopIsWatchingWatcher) {
+            stopIsWatchingWatcher();
+            stopIsWatchingWatcher = null;
+        }
+        isWatchingHistory.value = false;
+        watchingInitialized = false;
+    }
+
     return {
         histories,
         changingCurrentHistory,
@@ -511,6 +643,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         setCurrentHistoryId,
         setFilterText,
         setHistory,
+        didHistorySizeChange,
         setHistories,
         pinHistory,
         unpinHistories,
@@ -524,7 +657,8 @@ export const useHistoryStore = defineStore("historyStore", () => {
         restoreHistory,
         restoreHistories,
         handleTotalCountChange,
-        startWatchingHistory,
+        startWatchingHistory: startWatchingHistoryWithSSE,
+        stopWatchingHistory,
         isWatchingHistory,
         loadCurrentHistory,
         loadCurrentHistoryId,

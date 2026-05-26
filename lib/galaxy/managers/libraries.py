@@ -27,7 +27,10 @@ from galaxy.model.db.library import (
     get_library_ids,
     get_library_permissions_by_role,
 )
-from galaxy.model.db.role import get_private_role_user_emails_dict
+from galaxy.model.db.role import (
+    get_private_role_user_emails_dict,
+    role_name_id_pairs,
+)
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -278,21 +281,12 @@ class LibraryManager:
         add_roles = self.get_add_roles(trans, library)
         all_role_ids = {r.id for r in access_roles | modify_roles | manage_roles | add_roles}
         private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=all_role_ids)
-
-        def make_tuples(roles: set):
-            tuples = []
-            for role in roles:
-                # use role name for non-private roles, and user.email from private rules
-                displayed_name = private_role_emails.get(role.id, role.name)
-                role_tuple = (displayed_name, trans.security.encode_id(role.id))
-                tuples.append(role_tuple)
-            return tuples
-
+        encode_id = trans.security.encode_id
         return dict(
-            access_library_role_list=make_tuples(access_roles),
-            modify_library_role_list=make_tuples(modify_roles),
-            manage_library_role_list=make_tuples(manage_roles),
-            add_library_item_role_list=make_tuples(add_roles),
+            access_library_role_list=role_name_id_pairs(access_roles, private_role_emails, encode_id),
+            modify_library_role_list=role_name_id_pairs(modify_roles, private_role_emails, encode_id),
+            manage_library_role_list=role_name_id_pairs(manage_roles, private_role_emails, encode_id),
+            add_library_item_role_list=role_name_id_pairs(add_roles, private_role_emails, encode_id),
         )
 
     def get_access_roles(self, trans, library: Library) -> set[Role]:

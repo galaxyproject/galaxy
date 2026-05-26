@@ -13,6 +13,7 @@ export interface BulkUploadItem {
     dbkey: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
+    autoDecompress: boolean;
     deferred?: boolean;
 }
 
@@ -27,11 +28,13 @@ export interface BulkUploadOperations {
     // "All" computed states
     allSpaceToTab: ComputedRef<boolean>;
     allToPosixLines: ComputedRef<boolean>;
+    allAutoDecompress: ComputedRef<boolean>;
     allDeferred: ComputedRef<boolean>;
 
     // Indeterminate states for checkboxes
     spaceToTabIndeterminate: ComputedRef<boolean>;
     toPosixLinesIndeterminate: ComputedRef<boolean>;
+    autoDecompressIndeterminate: ComputedRef<boolean>;
     deferredIndeterminate: ComputedRef<boolean>;
 
     // Extension warning functions
@@ -45,7 +48,36 @@ export interface BulkUploadOperations {
     // Toggle functions for checkboxes
     toggleAllSpaceToTab: () => void;
     toggleAllToPosixLines: () => void;
+    toggleAllAutoDecompress: () => void;
     toggleAllDeferred: () => void;
+}
+
+interface BooleanBulkOptionConfig<T extends BulkUploadItem> {
+    isEnabled: (item: T) => boolean;
+    setValue: (item: T, value: boolean) => void;
+}
+
+function createBooleanBulkOptionState<T extends BulkUploadItem>(items: Ref<T[]>, config: BooleanBulkOptionConfig<T>) {
+    const allEnabled = computed(() => {
+        return items.value.length > 0 && items.value.every((item) => config.isEnabled(item));
+    });
+
+    const indeterminate = computed(() => {
+        return items.value.length > 0 && items.value.some((item) => config.isEnabled(item)) && !allEnabled.value;
+    });
+
+    function toggleAll() {
+        const newValue = !allEnabled.value;
+        items.value.forEach((item) => {
+            config.setValue(item, newValue);
+        });
+    }
+
+    return {
+        allEnabled,
+        indeterminate,
+        toggleAll,
+    };
 }
 
 /**
@@ -77,60 +109,45 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
     const bulkExtension = ref<string>("");
     const bulkDbKey = ref<string>("");
 
-    /**
-     * Computed property that returns true if all items have spaceToTab enabled.
-     */
-    const allSpaceToTab = computed(() => {
-        return items.value.length > 0 && items.value.every((item) => item.spaceToTab === true);
+    const spaceToTabState = createBooleanBulkOptionState(items, {
+        isEnabled: (item) => item.spaceToTab === true,
+        setValue: (item, value) => {
+            item.spaceToTab = value;
+        },
     });
 
-    /**
-     * Computed property that returns true if all items have toPosixLines enabled.
-     */
-    const allToPosixLines = computed(() => {
-        return items.value.length > 0 && items.value.every((item) => item.toPosixLines === true);
+    const toPosixLinesState = createBooleanBulkOptionState(items, {
+        isEnabled: (item) => item.toPosixLines === true,
+        setValue: (item, value) => {
+            item.toPosixLines = value;
+        },
     });
 
-    /**
-     * Computed property that returns true if all items have deferred enabled.
-     * Only relevant when supportDeferred option is true.
-     */
-    const allDeferred = computed(() => {
-        return items.value.length > 0 && items.value.every((item) => item.deferred === true);
+    const autoDecompressState = createBooleanBulkOptionState(items, {
+        isEnabled: (item) => item.autoDecompress === true,
+        setValue: (item, value) => {
+            item.autoDecompress = value;
+        },
     });
 
-    /**
-     * Computed property for checkbox indeterminate state (some but not all checked).
-     */
-    const spaceToTabIndeterminate = computed(() => {
-        return (
-            items.value.length > 0 &&
-            items.value.some((item) => item.spaceToTab === true) &&
-            !items.value.every((item) => item.spaceToTab === true)
-        );
+    const deferredState = createBooleanBulkOptionState(items, {
+        isEnabled: (item) => item.deferred === true,
+        setValue: (item, value) => {
+            if (item.deferred !== undefined) {
+                item.deferred = value;
+            }
+        },
     });
 
-    /**
-     * Computed property for checkbox indeterminate state (some but not all checked).
-     */
-    const toPosixLinesIndeterminate = computed(() => {
-        return (
-            items.value.length > 0 &&
-            items.value.some((item) => item.toPosixLines === true) &&
-            !items.value.every((item) => item.toPosixLines === true)
-        );
-    });
+    const allSpaceToTab = spaceToTabState.allEnabled;
+    const allToPosixLines = toPosixLinesState.allEnabled;
+    const allAutoDecompress = autoDecompressState.allEnabled;
+    const allDeferred = deferredState.allEnabled;
 
-    /**
-     * Computed property for checkbox indeterminate state (some but not all checked).
-     */
-    const deferredIndeterminate = computed(() => {
-        return (
-            items.value.length > 0 &&
-            items.value.some((item) => item.deferred === true) &&
-            !items.value.every((item) => item.deferred === true)
-        );
-    });
+    const spaceToTabIndeterminate = spaceToTabState.indeterminate;
+    const toPosixLinesIndeterminate = toPosixLinesState.indeterminate;
+    const autoDecompressIndeterminate = autoDecompressState.indeterminate;
+    const deferredIndeterminate = deferredState.indeterminate;
 
     /**
      * Sets the extension/type for all items in the list.
@@ -164,41 +181,10 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
         });
     }
 
-    /**
-     * Toggles the spaceToTab setting for all items.
-     * If all are currently enabled, disables all; otherwise enables all.
-     */
-    function toggleAllSpaceToTab() {
-        const newValue = !allSpaceToTab.value;
-        items.value.forEach((item) => {
-            item.spaceToTab = newValue;
-        });
-    }
-
-    /**
-     * Toggles the toPosixLines setting for all items.
-     * If all are currently enabled, disables all; otherwise enables all.
-     */
-    function toggleAllToPosixLines() {
-        const newValue = !allToPosixLines.value;
-        items.value.forEach((item) => {
-            item.toPosixLines = newValue;
-        });
-    }
-
-    /**
-     * Toggles the deferred setting for all items.
-     * If all are currently enabled, disables all; otherwise enables all.
-     * Only relevant when supportDeferred option is true.
-     */
-    function toggleAllDeferred() {
-        const newValue = !allDeferred.value;
-        items.value.forEach((item) => {
-            if (item.deferred !== undefined) {
-                item.deferred = newValue;
-            }
-        });
-    }
+    const toggleAllSpaceToTab = spaceToTabState.toggleAll;
+    const toggleAllToPosixLines = toPosixLinesState.toggleAll;
+    const toggleAllAutoDecompress = autoDecompressState.toggleAll;
+    const toggleAllDeferred = deferredState.toggleAll;
 
     /**
      * Gets the upload warning for a specific extension ID.
@@ -227,9 +213,11 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
         bulkDbKey,
         allSpaceToTab,
         allToPosixLines,
+        allAutoDecompress,
         allDeferred,
         spaceToTabIndeterminate,
         toPosixLinesIndeterminate,
+        autoDecompressIndeterminate,
         deferredIndeterminate,
         getExtensionWarning,
         bulkExtensionWarning,
@@ -237,6 +225,7 @@ export function useBulkUploadOperations<T extends BulkUploadItem>(
         setAllDbKeys,
         toggleAllSpaceToTab,
         toggleAllToPosixLines,
+        toggleAllAutoDecompress,
         toggleAllDeferred,
     };
 }

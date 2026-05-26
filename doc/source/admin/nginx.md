@@ -233,6 +233,17 @@ previous section:
 
 ## Advanced Configuration Topics
 
+### Server-Sent Events (real-time updates)
+
+Galaxy can push history, entry-point and notification updates to the browser
+via a long-lived Server-Sent Events stream at ``/api/events/stream``. nginx
+will buffer that response by default, which breaks the stream — either rely
+on the ``X-Accel-Buffering: no`` header Galaxy already sets, or add an
+explicit ``location /api/events/stream`` block that disables buffering and
+raises the read/send timeouts. The full configuration block, monitoring
+guidance, and the architecture overview live in
+[Server-Sent Events for real-time updates](sse_updates.md#configuring-nginx).
+
 ### Sending Files With Nginx
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.

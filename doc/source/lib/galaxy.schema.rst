@@ -41,6 +41,14 @@ galaxy.schema.schema module
    :undoc-members:
    :show-inheritance:
 
+galaxy.schema.storage\_operations module
+----------------------------------------
+
+.. automodule:: galaxy.schema.storage_operations
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.schema.tasks module
 --------------------------
 

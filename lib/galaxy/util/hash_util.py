@@ -63,6 +63,18 @@ HASH_NAME_MAP: Dict[HashFunctionNameEnum, HashFunctionT] = {
 HASH_NAMES: List[HashFunctionNameEnum] = list(HASH_NAME_MAP.keys())
 
 
+def as_hash_function_name(hash_name: str) -> Optional[HashFunctionNames]:
+    """Convert a hash name string to a HashFunctionName.
+
+    Considering possible aliases and returning None if the name is not recognized."""
+    hash_name = hash_name.upper()
+    if hash_name in HASH_NAME_ALIAS:
+        hash_name = HASH_NAME_ALIAS[hash_name]
+    if hash_name not in HASH_NAMES:
+        return None
+    return HashFunctionNameEnum(hash_name).value
+
+
 def memory_bound_hexdigest(
     hash_func: Optional[HashFunctionT] = None,
     hash_func_name: Optional[HashFunctionNameEnum] = None,

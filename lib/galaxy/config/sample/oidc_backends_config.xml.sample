@@ -28,6 +28,9 @@ _______________
 
 - require_create_confirmation:            A boolean value that decides whether a NewUserConfirmation page shows up.
 
+- require_session_refresh:                A boolean value that decides whether failed token refresh requires the
+                                          user to reauthenticate with this provider.
+
 
 IMPORTANT NOTES
 _______________

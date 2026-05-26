@@ -83,10 +83,12 @@ function revertToOriginal() {
     <component
         :is="props.component || 'label'"
         v-else
+        v-g-tooltip.onoverflow
         role="button"
         for="click-to-edit-input"
         class="click-to-edit-label text-break"
         tabindex="0"
+        :title="computedValue || title"
         @keyup.enter="editable = true"
         @click.stop="editable = true">
         <span v-if="computedValue">{{ computedValue }}</span>

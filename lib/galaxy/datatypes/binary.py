@@ -22,6 +22,7 @@ from typing import (
     Union,
 )
 
+import defusedxml.ElementTree as ET
 import h5py
 import numpy as np
 import pysam
@@ -771,33 +772,38 @@ class BamNative(CompressedArchive, _BamOrSam):
                 with pysam.AlignmentFile(dataset.get_file_name(), "rb", check_sq=False) as bamfile:
                     if ck_size is None:
                         ck_size = 300  # 300 lines
-                    if offset == 0:
-                        offset = bamfile.tell()
-                        ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
+                    if offset < bamfile.tell():
+                        # interpret an offset before the first alignment start as the index of
+                        # the header line at which the chunk should start
+                        header_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
+                        ck_lines = header_lines[offset : offset + ck_size]
+                        offset += len(ck_lines)
+                        if offset >= len(header_lines):
+                            # consumed the entire header, now jump forward to the first alignment
+                            offset = bamfile.tell()
                     else:
-                        bamfile.seek(offset)
                         ck_lines = []
-                    for line_number, alignment in enumerate(bamfile, len(ck_lines)):
-                        # return only Header lines if 'header_line_count' exceeds 'ck_size'
-                        # FIXME: Can be problematic if bam has million lines of header
-                        if line_number >= ck_size:
-                            break
+                    if len(ck_lines) < ck_size:
+                        bamfile.seek(offset)
+                        for line_number, alignment in enumerate(bamfile, len(ck_lines)):
+                            if line_number >= ck_size:
+                                break
 
-                        offset = bamfile.tell()
-                        bamline = alignment.to_string()
-                        # With multiple tags, Galaxy would display each as a separate column
-                        # because the 'to_string()' function uses tabs also between tags.
-                        # Below code will turn these extra tabs into spaces.
-                        n_tabs = bamline.count("\t")
-                        if n_tabs > 11:
-                            bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
-                            bamline = f"{bamline} {' '.join(extra_tags)}"
-                        ck_lines.append(bamline)
-                    else:
-                        # Nothing to enumerate; we've either offset to the end
-                        # of the bamfile, or there is no data. (possible with
-                        # header-only bams)
-                        offset = -1
+                            offset = bamfile.tell()
+                            bamline = alignment.to_string()
+                            # With multiple tags, Galaxy would display each as a separate column
+                            # because the 'to_string()' function uses tabs also between tags.
+                            # Below code will turn these extra tabs into spaces.
+                            n_tabs = bamline.count("\t")
+                            if n_tabs > 11:
+                                bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
+                                bamline = f"{bamline} {' '.join(extra_tags)}"
+                            ck_lines.append(bamline)
+                        else:
+                            # Nothing to enumerate; we've either offset to the end
+                            # of the bamfile, or there is no data. (possible with
+                            # header-only bams)
+                            offset = -1
                     ck_data = "\n".join(ck_lines)
             except Exception as e:
                 offset = -1
@@ -3214,6 +3220,57 @@ class Xlsx(Binary):
     file_ext = "xlsx"
     compressed = True
     display_behavior = "download"  # Office documents trigger downloads
+
+    MAX_WORKBOOK_XML_BYTES = 4 * 1024 * 1024
+    MAX_SHEET_NAMES = 1024
+    MAX_SHEET_NAME_LEN = 255
+
+    MetadataElement(
+        name="sheet_names",
+        default=[],
+        desc="Names of the sheets in the XLSX file",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+    )
+
+    def set_meta(self, dataset, **kwd):
+        super().set_meta(dataset, **kwd)
+        dataset.metadata.sheet_names = self.get_xlsx_sheet_names(dataset.get_file_name())
+
+    def get_xlsx_sheet_names(self, file_path):
+        """Extract sheet names from the workbook part of an XLSX file.
+
+        Reads only ``xl/workbook.xml`` from the zip container, with bounds on
+        the part size, number of sheets, and individual name length so that a
+        crafted file cannot blow up memory or the metadata store.
+        """
+        sheet_names: list[str] = []
+        try:
+            with zipfile.ZipFile(file_path, "r") as zf:
+                info = zf.getinfo("xl/workbook.xml")
+                if info.file_size > self.MAX_WORKBOOK_XML_BYTES:
+                    log.warning(
+                        "xlsx workbook.xml too large (%d bytes); skipping sheet_names for %s",
+                        info.file_size,
+                        file_path,
+                    )
+                    return []
+                with zf.open(info) as f:
+                    root = ET.parse(f).getroot()
+            ns = {"ns": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+            sheets = root.find("ns:sheets", ns)
+            if sheets is not None:
+                for sheet in sheets.findall("ns:sheet", ns):
+                    name = sheet.attrib.get("name")
+                    if name:
+                        sheet_names.append(name[: self.MAX_SHEET_NAME_LEN])
+                    if len(sheet_names) >= self.MAX_SHEET_NAMES:
+                        break
+        except (OSError, KeyError, zipfile.BadZipFile, ET.ParseError) as e:
+            log.warning("Unable to read XLSX sheets from %s: %s", file_path, e)
+        return sheet_names
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.

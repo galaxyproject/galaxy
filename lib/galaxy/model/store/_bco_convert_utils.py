@@ -1,5 +1,3 @@
-import urllib.parse
-
 from galaxy.model import (
     Workflow,
     WorkflowStep,
@@ -8,6 +6,7 @@ from galaxy.schema.bco import (
     ExecutionDomainUri,
     SoftwarePrerequisite,
 )
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 
 
 class SoftwarePrerequisiteTracker:
@@ -25,12 +24,12 @@ class SoftwarePrerequisiteTracker:
         tool_version = step.tool_version
         assert tool_id
         self._recorded_tools.add(tool_id)
-        uri_safe_tool_id = urllib.parse.quote(tool_id)
+        safe_tool_id = uri_safe_tool_id(tool_id)
         if "repos/" in tool_id:
             # tool shed tool - give them a link...
-            uri = f"https://{uri_safe_tool_id}"
+            uri = f"https://{safe_tool_id}"
         else:
-            uri = f"gxstocktools://galaxyproject.org/{uri_safe_tool_id}"
+            uri = f"gxstocktools://galaxyproject.org/{safe_tool_id}"
 
         access_time = None  # used to be uuid - but Pydanic validation... rightfully... disallows this
         software_prerequisite = SoftwarePrerequisite(

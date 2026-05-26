@@ -48,6 +48,7 @@ from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import expression
 from typing_extensions import Protocol
 
+from galaxy import model
 from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import (
     MalformedContents,
@@ -122,7 +123,6 @@ from ..item_attrs import (
     add_item_annotation,
     get_item_annotation_str,
 )
-from ... import model
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
@@ -1968,6 +1968,7 @@ class DirectoryModelExportStore(ModelExportStore):
         strip_metadata_files: bool = True,
         serialize_jobs: bool = True,
         user_context=None,
+        ignore_errors: Optional[bool] = False,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -2004,6 +2005,7 @@ class DirectoryModelExportStore(ModelExportStore):
             serialize_dataset_objects=serialize_dataset_objects,
             strip_metadata_files=strip_metadata_files,
             serialize_files_handler=self,
+            ignore_errors=ignore_errors,
         )
         self.export_files = export_files
         self.included_datasets: dict[model.DatasetInstance, tuple[model.DatasetInstance, bool]] = {}
@@ -2577,7 +2579,7 @@ class DirectoryModelExportStore(ModelExportStore):
             if not self.app:
                 raise Exception(f"Missing self.app in {self}.")
             self.app.workflow_contents_manager.store_workflow_artifacts(
-                workflows_directory, workflow_key, workflow, user=history.user, history=history
+                workflows_directory, workflow_key, workflow, history=history, user=history.user
             )
             invocations_attrs.append(invocation_attrs)
 
@@ -3046,6 +3048,7 @@ def get_export_store_factory(
     export_files=None,
     bco_export_options: Optional[BcoExportOptions] = None,
     user_context=None,
+    ignore_errors: Optional[bool] = False,
 ) -> Callable[[StrPath], FileSourceModelExportStore]:
     export_store_class: type[FileSourceModelExportStore]
     export_store_class_kwds = {
@@ -3053,6 +3056,7 @@ def get_export_store_factory(
         "export_files": export_files,
         "serialize_dataset_objects": False,
         "user_context": user_context,
+        "ignore_errors": ignore_errors,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
@@ -3088,7 +3092,7 @@ def get_export_dataset_filename(name: str, ext: str, encoded_id: str, conversion
     """
     Builds a filename for a dataset using its name an extension.
     """
-    base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)
+    base = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in name)[:150]
     if not conversion_key:
         return f"{base}_{encoded_id}.{ext}"
     else:

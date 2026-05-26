@@ -68,9 +68,10 @@ const toolPanelHeader = computed(() => {
     }
 });
 
-const headingClass = computed(() =>
-    currentPanelView.value !== "default" && !isFavoritesView.value ? "font-italic" : "",
-);
+const headingClass = computed<Record<string, boolean>>(() => ({
+    "font-italic": currentPanelView.value !== "default" && !isFavoritesView.value,
+    "text-left": true,
+}));
 const showPanelIcon = computed(() => !!panelIcon.value && !loading.value);
 
 const groupedPanelViews = computed(() => {
@@ -136,10 +137,10 @@ async function updatePanelView(panel: Panel) {
         <template v-slot:button-content>
             <span class="sr-only">View all tool panel configurations</span>
             <div class="d-flex panel-view-selector justify-content-between flex-gapx-1">
-                <div>
+                <div class="d-flex flex-gapx-1">
                     <FontAwesomeIcon
                         v-if="showPanelIcon && !isFavoritesView"
-                        class="mr-1"
+                        class="mr-1 mt-1"
                         :icon="panelIcon"
                         data-description="panel view header icon" />
                     <Heading id="toolbox-heading" :class="headingClass" h2 inline size="sm">

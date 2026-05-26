@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.decorators import (
@@ -296,6 +298,104 @@ class TestUsersApi(ApiTestCase):
         url = self._api_url(f"users/{user['id']}/favorites/workflows/1as5das5das56d465")
         delete_response = self._delete(url, admin=True)
         self._assert_status_code_is(delete_response, 400)
+
+    @requires_admin
+    @requires_new_user
+    @skip_without_tool("Remove beginning1")
+    def test_favorites_whitespace_tool_id(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        tool_id = "Remove beginning1"
+
+        add_url = self._api_url(f"users/{user['id']}/favorites/tools")
+        add_response = self._put(add_url, data={"object_id": tool_id}, admin=True, json=True)
+        self._assert_status_code_is_ok(add_response)
+        assert add_response.json()["tools"] == [tool_id]
+
+        remove_url = self._api_url(f"users/{user['id']}/favorites/tools/{tool_id}")
+        remove_response = self._delete(remove_url, admin=True)
+        self._assert_status_code_is_ok(remove_response)
+        assert remove_response.json()["tools"] == []
+
+    @requires_admin
+    @requires_new_user
+    @skip_without_tool("cat1")
+    @skip_without_tool("__ZIP_COLLECTION__")
+    def test_favorite_tags(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+
+        tool_favorites_url = self._api_url(f"users/{user['id']}/favorites/tools")
+        tool_response = self._put(tool_favorites_url, data={"object_id": "cat1"}, admin=True, json=True)
+        self._assert_status_code_is_ok(tool_response)
+        assert tool_response.json()["tools"] == ["cat1"]
+        assert tool_response.json()["tags"] == []
+
+        tag_name = "Collection Operations"
+        tag_favorites_url = self._api_url(f"users/{user['id']}/favorites/tags")
+        tag_response = self._put(tag_favorites_url, data={"object_id": tag_name}, admin=True, json=True)
+        self._assert_status_code_is_ok(tag_response)
+        assert tag_response.json()["tools"] == ["cat1"]
+        assert tag_response.json()["tags"] == [tag_name]
+
+        remove_tag_url = self._api_url(f"users/{user['id']}/favorites/tags/{quote(tag_name)}")
+        remove_tag_response = self._delete(remove_tag_url, admin=True)
+        self._assert_status_code_is_ok(remove_tag_response)
+        assert remove_tag_response.json()["tools"] == ["cat1"]
+        assert remove_tag_response.json()["tags"] == []
+
+    @requires_admin
+    @requires_new_user
+    @skip_without_tool("cat1")
+    def test_reorder_favorites(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+
+        tool_favorites_url = self._api_url(f"users/{user['id']}/favorites/tools")
+        tool_response = self._put(tool_favorites_url, data={"object_id": "cat1"}, admin=True, json=True)
+        self._assert_status_code_is_ok(tool_response)
+
+        tag_name = "Collection Operations"
+        tag_favorites_url = self._api_url(f"users/{user['id']}/favorites/tags")
+        tag_response = self._put(tag_favorites_url, data={"object_id": tag_name}, admin=True, json=True)
+        self._assert_status_code_is_ok(tag_response)
+
+        order_url = self._api_url(f"users/{user['id']}/favorites/order")
+        reorder_response = self._put(
+            order_url,
+            data={
+                "order": [
+                    {"object_type": "tags", "object_id": tag_name},
+                    {"object_type": "tools", "object_id": "cat1"},
+                ]
+            },
+            admin=True,
+            json=True,
+        )
+        self._assert_status_code_is_ok(reorder_response)
+        assert reorder_response.json()["order"] == [
+            {"object_type": "tags", "object_id": tag_name},
+            {"object_type": "tools", "object_id": "cat1"},
+        ]
+        assert reorder_response.json()["tools"] == ["cat1"]
+        assert reorder_response.json()["tags"] == [tag_name]
+
+    @requires_admin
+    @requires_new_user
+    def test_favorite_edam_operations(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        operations_panel = self._get("tool_panels/ontology:edam_operations", admin=True).json()
+        operation_id = next(
+            (item["id"] for item in operations_panel.values() if item.get("model_class") == "ToolSection"), None
+        )
+        assert operation_id is not None
+
+        operation_favorites_url = self._api_url(f"users/{user['id']}/favorites/edam_operations")
+        operation_response = self._put(operation_favorites_url, data={"object_id": operation_id}, admin=True, json=True)
+        self._assert_status_code_is_ok(operation_response)
+        assert operation_response.json()["edam_operations"] == [operation_id]
+
+        remove_operation_url = self._api_url(f"users/{user['id']}/favorites/edam_operations/{operation_id}")
+        remove_operation_response = self._delete(remove_operation_url, admin=True)
+        self._assert_status_code_is_ok(remove_operation_response)
+        assert remove_operation_response.json()["edam_operations"] == []
 
     @skip_without_tool("cat1")
     def test_search_favorites(self):

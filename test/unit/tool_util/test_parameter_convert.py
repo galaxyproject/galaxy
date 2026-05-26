@@ -121,6 +121,14 @@ def test_multi_data():
     assert encoded_state.input_state["parameter"][1]["id"] == EXAMPLE_ID_2_ENCODED
 
 
+def test_encode_optional_data_collection_none():
+    tool_source = tool_source_for("parameters/gx_data_collection_optional")
+    bundle = input_models_for_tool_source(tool_source)
+    internal_state = RequestInternalToolState({"parameter": None})
+    encoded_state = encode(internal_state, bundle, _fake_encode)
+    assert encoded_state.input_state["parameter"] is None
+
+
 def test_landing_encode_data():
     tool_source = tool_source_for("parameters/gx_data")
     bundle = input_models_for_tool_source(tool_source)

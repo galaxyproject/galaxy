@@ -4,10 +4,7 @@ Object Store plugin for the Microsoft Azure Block Blob Storage system
 
 import logging
 import os
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 
 try:
     from azure.common import AzureHttpError
@@ -19,6 +16,7 @@ try:
 except ImportError:
     BlobServiceClient = None  # type: ignore[assignment,unused-ignore,misc]
 
+from galaxy.util import now
 from ._caching_base import CachingConcreteObjectStore
 from .caching import (
     enable_cache_monitor,
@@ -325,7 +323,7 @@ class AzureBlobObjectStore(CachingConcreteObjectStore):
                     container_name=self.container_name,
                     blob_name=rel_path,
                     permission=BlobSasPermissions(read=True),
-                    expiry=datetime.utcnow() + timedelta(hours=1),
+                    expiry=now() + timedelta(hours=1),
                 )
                 return f"{url}?{token}"
             except AzureHttpError:

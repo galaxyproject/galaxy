@@ -51,6 +51,19 @@ TEST_PATH_2_CONVERTED = TESTCASE_DIRECTORY / "2.txt"
 DEFAULT_OBJECT_STORE_BY = "id"
 
 
+def test_get_export_dataset_filename_truncates_long_name():
+    long_name = "https___example.com_" + "a" * 2000 + ".fastq.gz"
+    filename = store.get_export_dataset_filename(long_name, "fastqsanger.gz", "abcdef1234567890", conversion_key=None)
+    assert len(filename.encode("utf-8")) <= 255
+    assert filename.endswith("_abcdef1234567890.fastqsanger.gz")
+
+    filename_conv = store.get_export_dataset_filename(
+        long_name, "bam", "abcdef1234567890", conversion_key="0123456789abcdef"
+    )
+    assert len(filename_conv.encode("utf-8")) <= 255
+    assert filename_conv.endswith("_abcdef1234567890_conversion_0123456789abcdef.bam")
+
+
 def test_import_export_history():
     """Test a simple job import/export after decompressing an archive (like history import/export tool)."""
     app = _mock_app()
@@ -774,6 +787,70 @@ def test_import_traceback_handling():
     with pytest.raises(store.FileTracebackException) as exc:
         _perform_import_from_directory(temp_directory, app, u, import_history)
     assert exc.value.traceback == traceback_message
+
+
+def test_export_history_with_orphan_icjja(tmp_path):
+    """Orphan ImplicitCollectionJobsJobAssociation rows (job_id NULL) are
+    persisted by the import path when an ICJ references a job key not in
+    object_import_tracker.jobs_by_key. The next export crashes in
+    get_identifier(j_a.job=None); ignore_errors skips the orphan."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+
+    icj = model.ImplicitCollectionJobs()
+    linked = model.ImplicitCollectionJobsJobAssociation()
+    linked.order_index = 0
+    linked.implicit_collection_jobs = icj
+    linked.job = j
+    to_orphan = model.ImplicitCollectionJobsJobAssociation()
+    to_orphan.order_index = 1
+    to_orphan.implicit_collection_jobs = icj
+    to_orphan.job = j
+    app.add_and_commit(icj, linked, to_orphan)
+
+    # Mimic the post-import state: drop the FK so the row becomes an orphan.
+    to_orphan.job = None  # type: ignore[assignment]
+    app.commit()
+
+    with pytest.raises(AttributeError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    imported_icj = imported_job.implicit_collection_jobs_association.implicit_collection_jobs
+    assert len(imported_icj.jobs) == 1
+
+
+def test_export_history_with_null_param_id(tmp_path):
+    """Job params shaped {"src": "hda"|"hdca"|"dce", "id": null} are persisted
+    by the import path at model/store/__init__.py:1860-1888 when a referenced
+    HDA/HDCA/DCE can't be resolved. Strict export raises in
+    get_identifier_for_id; ignore_errors passes the null through.
+
+    Reproducing the on-disk state directly: the only producer is the import
+    path itself, so deleting the referenced HDA wouldn't null the persisted
+    param JSON."""
+    app = _mock_app()
+    u, h, _d1, _d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="input1", value=json.dumps({"src": "hda", "id": None}))]
+    app.commit()
+
+    with pytest.raises(NotImplementedError):
+        with store.TarModelExportStore(str(tmp_path / "strict.tgz"), app=app, export_files="copy") as export_store:
+            export_store.export_history(h)
+
+    tolerant_archive = str(tmp_path / "tolerant.tgz")
+    with store.TarModelExportStore(tolerant_archive, app=app, export_files="copy", ignore_errors=True) as export_store:
+        export_store.export_history(h)
+
+    imported_history = import_archive(tolerant_archive, app, u)
+    imported_job = imported_history.datasets[1].creating_job
+    assert json.loads(imported_job.raw_param_dict()["input1"]) == {"src": "hda", "id": None}
 
 
 def test_import_export_edit_datasets():

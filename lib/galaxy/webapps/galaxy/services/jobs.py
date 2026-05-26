@@ -16,6 +16,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import queue_jobs
 from galaxy.managers import hdas
 from galaxy.managers.base import security_check
@@ -60,7 +61,6 @@ from galaxy.tool_util.parameters import (
     ToolParameterBundleModel,
 )
 from galaxy.webapps.galaxy.services.base import (
-    async_task_summary,
     ServiceBase,
 )
 from .tools import validate_tool_for_running
@@ -282,10 +282,10 @@ class JobsService(ServiceBase):
             raw_tool_source=tool_source_model.source,
             tool_dir=tool.tool_dir,
             tool_source_class=tool_source_model.source_class,
+            tool_id=tool.id,
         )
         task_request = QueueJobs(
             user=trans.async_request_user,
-            history_id=target_history and target_history.id,
             tool_source=tool_source,
             tool_request_id=tool_request_id,
             use_cached_jobs=job_request.use_cached_jobs or False,

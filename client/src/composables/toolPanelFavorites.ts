@@ -21,6 +21,10 @@ export function useToolPanelFavorites(localToolsById: Ref<Record<string, Tool>>)
 
     // Derived favorites data
     const favoriteToolIds = computed(() => currentFavorites.value.tools || []);
+    const favoriteTags = computed(() => currentFavorites.value.tags || []);
+    const favoriteEdamOperations = computed(() => currentFavorites.value.edam_operations || []);
+    const favoriteEdamTopics = computed(() => currentFavorites.value.edam_topics || []);
+    const favoriteOrder = computed(() => currentFavorites.value.order || []);
     const favoriteToolIdSet = computed(() => new Set(favoriteToolIds.value));
     const favoriteToolIdsInPanel = computed(() =>
         favoriteToolIds.value.filter((toolId) => !!localToolsById.value[toolId]),
@@ -42,6 +46,10 @@ export function useToolPanelFavorites(localToolsById: Ref<Record<string, Tool>>)
         toggleRecent,
         // Favorites
         favoriteToolIds,
+        favoriteTags,
+        favoriteEdamOperations,
+        favoriteEdamTopics,
+        favoriteOrder,
         favoriteToolIdSet,
         favoriteToolIdsInPanel,
         // Recent tools

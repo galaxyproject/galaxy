@@ -6,7 +6,7 @@ from typing import (
 )
 from uuid import uuid4
 
-from galaxy.model.orm.now import now
+from galaxy.util import now
 
 TEST_SOURCE_URI = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/2.bed"
 TEST_SOURCE_URI_SIMPLE_LINE = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/simple_line.txt"

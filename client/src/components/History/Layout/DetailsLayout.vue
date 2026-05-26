@@ -3,7 +3,7 @@ import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import l from "@/utils/localization";
@@ -41,8 +41,6 @@ const userStore = useUserStore();
 const { isAnonymous } = storeToRefs(userStore);
 
 const nameRef = ref<HTMLInputElement | null>(null);
-const clickToEditRef = ref<InstanceType<typeof ClickToEdit> | null>(null);
-const clickToEditClamped = ref(false);
 
 const editing = ref(false);
 const textSelected = ref(false);
@@ -107,19 +105,6 @@ function onToggle() {
     }
 }
 
-function checkClickToEditClamped() {
-    const el = clickToEditRef.value?.$el;
-    if (el) {
-        clickToEditClamped.value = el.scrollHeight > el.clientHeight;
-    }
-}
-
-onMounted(checkClickToEditClamped);
-watch(
-    () => props.name,
-    () => nextTick(checkClickToEditClamped),
-);
-
 function selectText() {
     if (!textSelected.value) {
         nameRef.value?.select();
@@ -137,11 +122,8 @@ function selectText() {
             <template v-if="!summarized && !editing">
                 <ClickToEdit
                     v-if="renameable"
-                    ref="clickToEditRef"
                     v-model="clickToEditName"
-                    v-g-tooltip.hover="clickToEditClamped ? name : ''"
                     component="h3"
-                    title="..."
                     data-description="name display"
                     no-save-on-blur
                     class="name-display my-2 w-100" />
@@ -194,7 +176,7 @@ function selectText() {
                 v-if="tags"
                 :class="{
                     'mt-2': !summarized,
-                    tags: ['both', 'tags'].includes(summarized),
+                    tags: ['both', 'tags'].includes(summarized || ''),
                     hidden: summarized === 'hidden',
                 }"
                 :value="tags"

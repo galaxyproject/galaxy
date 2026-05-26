@@ -52,10 +52,19 @@ class ConfigurationError(Exception):
     pass
 
 
+# Ensure the module logger has at least one handler to avoid "no handlers could
+# be found" warnings when the registry is used outside of a configured Galaxy
+# app. This is done at import time (once) rather than per-instance to avoid
+# progressive accumulation of NullHandlers on long-lived test processes that
+# instantiate ``Registry`` repeatedly (see test/integration driver).
+_module_log = logging.getLogger(__name__)
+if not any(isinstance(h, logging.NullHandler) for h in _module_log.handlers):
+    _module_log.addHandler(logging.NullHandler())
+
+
 class Registry:
     def __init__(self, config=None):
-        self.log = logging.getLogger(__name__)
-        self.log.addHandler(logging.NullHandler())
+        self.log = _module_log
 
         edam_ontology_path = config.get("edam_toolbox_ontology_path", None) if config is not None else None
 

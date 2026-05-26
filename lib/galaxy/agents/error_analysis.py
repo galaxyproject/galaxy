@@ -20,6 +20,7 @@ from .base import (
     ActionSuggestion,
     ActionType,
     AgentResponse,
+    AgentRunState,
     AgentType,
     BaseGalaxyAgent,
     ConfidenceLiteral,
@@ -108,10 +109,15 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
         try:
             log.info(f"ErrorAnalysis: Received query (length={len(query)})")
             log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
-            if "Previous analysis" in query:
-                log.info("ErrorAnalysis: Query contains previous analysis context")
 
             enhanced_query = query
+            run_state = context.get("run_state") if context else None
+            if isinstance(run_state, AgentRunState):
+                prior = run_state.get_prior(AgentType.HISTORY)
+                if prior is not None:
+                    log.info("ErrorAnalysis: Found prior history analysis in run_state")
+                    enhanced_query += f"\n\nContext from history analysis:\n{prior.content}"
+
             if context and context.get("job_id"):
                 job_details = await self.get_job_details(context["job_id"])
                 if "error" not in job_details:

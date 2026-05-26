@@ -1,7 +1,7 @@
 """Integration tests for Hashicorp Vault token renewal using a real Vault Docker container.
 
-Requires Docker to be available. The test starts a hashicorp/vault container in dev mode,
-creates a renewable token, and verifies the renewal logic works end-to-end.
+Requires Docker to be available. The test starts a hashicorp/vault container in dev mode
+(Vault 2.0+), creates a renewable token, and verifies the renewal logic works end-to-end.
 """
 
 import os
@@ -11,7 +11,9 @@ import threading
 import time
 
 import requests
+from celery.beat import Service as BeatService
 
+from galaxy.celery import celery_app
 from galaxy.security.vault import (
     _unwrap_vault,
     HashicorpVault,
@@ -27,7 +29,7 @@ from galaxy_test.driver.integration_util import (
 
 VAULT_DEV_ROOT_TOKEN = "vault-integration-test-token"
 VAULT_PORT = 18200
-VAULT_IMAGE = "hashicorp/vault"
+VAULT_IMAGE = "hashicorp/vault:2.0"
 CREDENTIALS_TOOL = "secret_tool"
 CREDENTIALS_VARIABLES = [{"name": "server", "value": "http://localhost:8080"}]
 CREDENTIALS_SECRETS = [{"name": "username", "value": "user"}, {"name": "password", "value": "pass"}]
@@ -89,19 +91,40 @@ def _start_vault_container(container_name):
         docker_rm(container_name)
     except subprocess.CalledProcessError:
         pass
+    # Pre-pull so wait_ready only covers container boot, not a ~180 MB cold pull.
+    subprocess.check_call(["docker", "pull", VAULT_IMAGE])
+    # Pass dev-mode settings via env vars consumed by the image's
+    # docker-entrypoint.sh. Passing them as CLI flags causes the entrypoint to
+    # inject empty `-dev-root-token-id=` / `-dev-listen-address=` duplicates
+    # ahead of our values, which Vault 2.0 handles less forgivingly than 1.x.
+    # SKIP_SETCAP=1 disables the entrypoint's `setcap cap_ipc_lock=+ep`, which
+    # aborts the container (under `set -e`) when the image's default non-root
+    # `vault` user lacks CAP_SETFCAP. mlock is irrelevant in dev mode.
     docker_run(
         VAULT_IMAGE,
         container_name,
         "server",
         "-dev",
-        f"-dev-root-token-id={VAULT_DEV_ROOT_TOKEN}",
-        "-dev-listen-address=0.0.0.0:8200",
         ports=[(VAULT_PORT, 8200)],
-        env_vars={"VAULT_ADDR": "http://0.0.0.0:8200"},
+        env_vars={
+            "VAULT_DEV_ROOT_TOKEN_ID": VAULT_DEV_ROOT_TOKEN,
+            "VAULT_DEV_LISTEN_ADDRESS": "0.0.0.0:8200",
+            "SKIP_SETCAP": "1",
+        },
     )
     vault_addr = f"http://127.0.0.1:{VAULT_PORT}"
     client = VaultClient(vault_addr, VAULT_DEV_ROOT_TOKEN)
-    client.wait_ready()
+    try:
+        client.wait_ready()
+    except Exception:
+        # Dump container logs so the reason (image pull, bind failure, crash)
+        # is visible when the health check doesn't come up.
+        try:
+            logs = subprocess.check_output(["docker", "logs", container_name], stderr=subprocess.STDOUT, text=True)
+            print(f"=== docker logs {container_name} ===\n{logs}\n=== end logs ===")
+        except subprocess.CalledProcessError as log_err:
+            print(f"Could not fetch docker logs for {container_name}: {log_err}")
+        raise
     client.create_policy(
         "galaxy",
         r'path "secret/*" { capabilities = ["create","read","update","delete","list"] }',
@@ -170,18 +193,21 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
 
     @classmethod
     def _start_beat(cls):
-        from celery.beat import Service as BeatService
-
-        from galaxy.celery import celery_app
-
         module_name = celery_app.trim_module_name("galaxy.celery.tasks")
+        task_name = f"{module_name}.renew_vault_token"
         schedule = dict(celery_app.conf.beat_schedule or {})
         schedule["renew-vault-token"] = {
-            "task": f"{module_name}.renew_vault_token",
+            "task": task_name,
             "schedule": cls.RENEWAL_INTERVAL,
         }
         celery_app.conf.beat_schedule = schedule
         celery_app.conf.task_always_eager = True
+        # Under task_always_eager, Celery validates the no-arg Beat invocation
+        # against the task's `(vault: Vault)` signature before our galaxy_task
+        # wrapper can inject `vault` from the DI container, and aborts with
+        # SchedulingError. Real workers deserialize args from AMQP and skip
+        # this check, so the typing assertion is test-only noise.
+        celery_app.tasks[task_name].typing = False
 
         cls._beat_service = BeatService(celery_app, max_interval=cls.RENEWAL_INTERVAL)
         cls._beat_thread = threading.Thread(target=cls._beat_service.start, daemon=True)
@@ -194,8 +220,6 @@ class TestHashicorpVaultRenewalGalaxyIntegration(integration_util.IntegrationTes
             cls._beat_service.stop()
         if cls._beat_thread:
             cls._beat_thread.join(timeout=5)
-        from galaxy.celery import celery_app
-
         celery_app.conf.task_always_eager = False
 
     # ---- helpers -------------------------------------------------------------

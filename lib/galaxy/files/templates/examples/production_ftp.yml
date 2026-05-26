@@ -41,3 +41,58 @@
       help: |
         Password to connect to FTP server with. Leave this blank to connect
         to the server anonymously (if allowed by target server).
+
+- id: ftp
+  version: 1
+  name: FTP Server
+  description: |
+    Setup connections to FTP and FTPS servers to download and upload files.
+    Enable TLS to secure the connection with encryption (FTPS).
+  configuration:
+    type: ftp
+    host: "{{ variables.host }}"
+    user: "{{ variables.user }}"
+    port: "{{ variables.port }}"
+    passwd: "{{ secrets.password }}"
+    writable: "{{ variables.writable }}"
+    tls: "{{ variables.tls }}"
+  variables:
+    host:
+      label: FTP Host
+      type: string
+      help: Host of FTP Server to connect to.
+    user:
+      label: FTP User
+      type: string
+      optional: true
+      help: |
+        Username to connect with. Leave this blank to connect to the server
+        anonymously (if allowed by target server).
+    writable:
+      label: Writable?
+      type: boolean
+      optional: true
+      default: false
+      help: Is this an FTP server you have permission to write to?
+    port:
+      label: FTP Port
+      type: integer
+      help: Port used to connect to the FTP server.
+      optional: true
+      default: 21
+    tls:
+      label: Use TLS (FTPS)?
+      type: boolean
+      optional: true
+      default: false
+      help: |
+        Enable TLS encryption for the FTP connection (FTPS). When enabled,
+        the connection will be secured using explicit TLS. If your server
+        uses implicit FTPS, you may also need to change the port to 990.
+  secrets:
+    password:
+      label: FTP Password
+      optional: true
+      help: |
+        Password to connect to FTP server with. Leave this blank to connect
+        to the server anonymously (if allowed by target server).

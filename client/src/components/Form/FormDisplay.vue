@@ -18,7 +18,9 @@
         :sync-with-graph="syncWithGraph"
         :steps-not-matching-request="stepsNotMatchingRequest"
         @stop-flagging="emit('stop-flagging')"
-        @update:active-node-id="updateActiveNode" />
+        @update:active-node-id="updateActiveNode"
+        @load-more="emit('load-more', $event)"
+        @search-change="emit('search-change', $event)" />
 </template>
 
 <script setup lang="ts">
@@ -78,6 +80,8 @@ const emit = defineEmits<{
     (e: "onValidation", validation: [string, string] | null): void;
     (e: "stop-flagging"): void;
     (e: "update:active-node-id", id: number): void;
+    (e: "load-more", payload: { name: string; src: string; offset: number; limit: number; search?: string }): void;
+    (e: "search-change", payload: { name: string; src: string; query: string; limit: number }): void;
 }>();
 
 const {

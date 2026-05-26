@@ -7,7 +7,6 @@ import logging
 import random
 import string
 import time
-from datetime import datetime
 from typing import (
     Any,
     Optional,
@@ -56,6 +55,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
+from galaxy.util import now
 from galaxy.util.hash_util import new_secure_hash_v2
 
 log = logging.getLogger(__name__)
@@ -472,13 +472,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, "Please provide a token or a user and password."
         if token:
             token_result = trans.sa_session.get(self.app.model.PasswordResetToken, token)
-            if not token_result or not token_result.expiration_time > datetime.utcnow():
+            if not token_result or not token_result.expiration_time > now():
                 return None, "Invalid or expired password reset token, please request a new one."
             user = token_result.user
             message = self.__set_password(trans, user, password, confirm)
             if message:
                 return None, message
-            token_result.expiration_time = datetime.utcnow()
+            token_result.expiration_time = now()
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
@@ -548,7 +548,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         template_context = {
             "name": escape(username),
             "user_email": escape(email),
-            "date": datetime.utcnow().strftime("%D"),
+            "date": now().strftime("%D"),
             "hostname": trans.request.host,
             "activation_url": activation_link,
             "terms_url": self.app.config.terms_url,

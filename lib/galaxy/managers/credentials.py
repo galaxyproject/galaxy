@@ -15,7 +15,6 @@ from galaxy.model import (
     User,
     UserCredentials,
 )
-from galaxy.model.orm.now import now
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.credentials import (
     CredentialsContextResponse,
@@ -29,6 +28,7 @@ from galaxy.security.vault import (
     Vault,
 )
 from galaxy.tool_util.deps.requirements import CredentialsRequirement
+from galaxy.util import now
 
 log = logging.getLogger(__name__)
 

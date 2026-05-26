@@ -8,7 +8,9 @@ from markupsafe import escape
 
 import galaxy.util
 from galaxy import web
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import HistoryDatasetAssociation
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tools import DataSourceTool
 from galaxy.web import (
     error,
@@ -37,11 +39,18 @@ class ToolRunner(BaseUIController):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
-    def __get_tool(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        tool_version_select_field, tools, tool = self.get_toolbox().get_tool_components(
-            tool_id, tool_version, get_loaded_tools_by_lineage, set_selected
-        )
-        return tool
+    def __get_tool(self, tool_id, tool_version=None):
+        # webob's params.mixed() returns a list when a form/query key is repeated
+        # (some data sources redirect back with tool_id duplicated); accept that
+        # case only when every value agrees.
+        if isinstance(tool_id, list):
+            unique_ids = set(tool_id)
+            if len(unique_ids) != 1:
+                raise RequestParameterInvalidException(f"Conflicting tool_id values supplied: {tool_id!r}")
+            tool_id = unique_ids.pop()
+        # Some data sources send back redirects ending with `/`, this takes care of that case
+        tool_id = tool_id.rstrip("/")
+        return self.get_toolbox().get_tool(tool_id, tool_version=tool_version)
 
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
@@ -74,7 +83,7 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         # FIXME: Tool class should define behavior
         if tool.tool_type in ["default", "interactivetool"]:
-            return trans.response.send_redirect(url_for(f"/?tool_id={tool_id}"))
+            return trans.response.send_redirect(url_for(f"/?tool_id={uri_safe_tool_id(tool_id)}"))
 
         # execute tool without displaying form
         # (used for datasource tools, but note that data_source_async tools

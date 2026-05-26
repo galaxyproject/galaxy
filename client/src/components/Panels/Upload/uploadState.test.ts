@@ -20,6 +20,7 @@ function makePastedItem(name = "file.txt", content = "hello world"): NewUploadIt
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
     };
 }

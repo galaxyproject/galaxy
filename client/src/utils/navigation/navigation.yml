@@ -158,7 +158,7 @@ confirm_dialog:
     _: '#galaxy-confirm-dialog'
     message: '[data-description="confirm dialog message"]'
     ok_button: '[data-description="confirm dialog ok"]'
-    cancel_button: '[data-description="confirm dialog cancel"]' 
+    cancel_button: '[data-description="confirm dialog cancel"]'
 
 dataset_view:
   selectors:
@@ -340,6 +340,7 @@ history_panel:
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
     options_extract_workflow: '[data-description="extract workflow"]'
+    page_button: '[data-description="history page button"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
@@ -428,7 +429,7 @@ tools_list:
     tool_card: '#g-card-content-${tool_id}'
     version_button: '#tools-list-${tool_id}'
     favorite_tool_button: '#g-card-action-favorite-tool-${tool_id}'
-    toggle_help: '#g-card-description-${tool_id} .g-link.g-unselectable'
+    toggle_help: '#g-card-content-${tool_id} [data-description="tools list toggle tool help"]'
     tool_help: '#g-card-content-${tool_id} [data-description="tools list tool help"]'
     open_tool_button: '#g-card-action-open-tool-${tool_id}'
 
@@ -601,13 +602,16 @@ pages:
     activity: '#activity-pages'
     create: '#page-create:not([aria-disabled])'
     export: '.markdown-pdf-export'
+    markdown_wrapper: '.markdown-wrapper'
     slug_input: '#page-slug'
     submit: '#page-submit'
     title_input: '#page-title'
 
   editor:
     selectors:
-      save: '#save-button'
+      save:
+        type: data-description
+        selector: 'page save button'
       embed_dataset: '.toolTitle .title-link[data-tool-id="history_dataset_embedded"]'
       embed_workflow_display: '.toolTitle .title-link[data-tool-id="workflow_display"]'
       history_link: '.toolTitle .title-link[data-tool-id="history_link"]'
@@ -622,6 +626,125 @@ pages:
   view:
     selectors:
       history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
+
+  history:
+    selectors:
+      _:
+        type: data-description
+        selector: 'history page view'
+      list:
+        type: data-description
+        selector: 'history page list'
+      create_button:
+        type: data-description
+        selector: 'create page button'
+      empty_state:
+        type: data-description
+        selector: 'page empty state'
+      toolbar:
+        type: data-description
+        selector: 'page editor toolbar'
+      toolbar_title: '[data-description="page editor title"] > span'
+      manage_button:
+        type: data-description
+        selector: 'page manage button'
+      save_button:
+        type: data-description
+        selector: 'page save button'
+      unsaved_indicator:
+        type: data-description
+        selector: 'page unsaved indicator'
+      editor:
+        type: data-description
+        selector: 'page editor view'
+      markdown_editor: '.markdown-textarea'
+      item:
+        type: data-description
+        selector: 'page item'
+      item_title:
+        type: data-description
+        selector: 'page title'
+      rendered_view:
+        type: data-description
+        selector: 'page rendered view'
+      revisions_button:
+        type: data-description
+        selector: 'page revisions button'
+      revision_list:
+        type: data-description
+        selector: 'page revision list'
+      revision_item:
+        type: data-description
+        selector: 'revision item'
+      restore_revision_button:
+        type: data-description
+        selector: 'restore revision button'
+      revision_view:
+        type: data-description
+        selector: 'page revision view'
+      revision_back_button:
+        type: data-description
+        selector: 'revision back button'
+      revision_restore_button:
+        type: data-description
+        selector: 'revision restore button'
+      view_button:
+        type: data-description
+        selector: 'page view button'
+      display_toolbar:
+        type: data-description
+        selector: 'page display toolbar'
+      preview_button:
+        type: data-description
+        selector: 'page preview button'
+      edit_button:
+        type: data-description
+        selector: 'page edit button'
+      toolbar_title_input: '[data-description="page editor title"] input'
+      back_button:
+        type: data-description
+        selector: 'page back button'
+      permissions_button:
+        type: data-description
+        selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
+      chat_panel:
+        type: data-description
+        selector: 'page chat panel'
+      chat_input: '.page-chat-panel #chat-input'
+      chat_send_button: '.page-chat-panel .send-button'
+      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
+      chat_query_cell: '.page-chat-panel .entry-query .query-text'
+      chat_response_content: '.page-chat-panel .entry-response .response-content'
+      chat_new_conversation:
+        type: data-description
+        selector: 'new conversation button'
+      chat_history_button:
+        type: data-description
+        selector: 'chat history button'
+      chat_history_sidebar:
+        type: data-description
+        selector: 'page chat history list'
+      revision_compare_current_button:
+        type: data-description
+        selector: 'revision compare current button'
+      revision_compare_previous_button:
+        type: data-description
+        selector: 'revision compare previous button'
+      revision_preview_button_mode:
+        type: data-description
+        selector: 'revision preview button'
+      revision_diff_view:
+        type: data-description
+        selector: 'revision diff view'
+      revision_no_changes:
+        type: data-description
+        selector: 'revision no changes'
 
 login:
   selectors:
@@ -640,15 +763,15 @@ registration:
 
 window_manager:
   selectors:
-    _: '.winbox'
-    title: '.winbox .wb-title'
-    close_button: '.winbox .wb-close'
-    header: '.winbox .wb-header'
-    body: '.winbox .wb-body'
-    iframe: '.winbox iframe'
-    focused: '.winbox.focus'
-    focused_title: '.winbox.focus .wb-title'
-    focus_overlay: '.winbox .iframe-focus-overlay'
+    _: '.window-manager-window'
+    title: '.window-manager-window .window-manager-window-title'
+    close_button: '.window-manager-window .window-manager-window-close'
+    header: '.window-manager-window .window-manager-window-header'
+    body: '.window-manager-window .window-manager-window-body'
+    iframe: '.window-manager-window iframe'
+    focused: '.window-manager-window.focused'
+    focused_title: '.window-manager-window.focused .window-manager-window-title'
+    focus_overlay: '.window-manager-window .iframe-focus-overlay'
 
 tool_form:
   selectors:
@@ -658,6 +781,7 @@ tool_form:
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
     parameter_error: 'div.ui-form-element[id="form-element-${parameter}"] .ui-form-error-text'
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
+    parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
     parameter_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
@@ -665,8 +789,6 @@ tool_form:
     parameter_data_input_collection: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Dataset collection"]'
     parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
-
-    parameter_checkbox_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="checkbox"]'
     parameter_color_input: 'div.ui-form-element[id="form-element-${parameter}"] input[type="color"]'
     parameter_text_input: 'div.ui-form-element[id="form-element-${parameter}"] input'
     parameter_form_selection: 'div.ui-form-element[id="form-element-${parameter}"] .form-selection'
@@ -1071,9 +1193,12 @@ workflow_extract:
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
     tool_card: '[data-step-type="tool"]'
+    mapped_tool_card: '[data-step-kind="mapped-tool"]'
     tool_card_checkbox: '[data-step-type="tool"] input[id^="g-card-select-"]'
     tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
     card_checkbox_by_job_id: '[data-job-id="${job_id}"] input[id^="g-card-select-"]'
+    card_by_icj_id: '[data-icj-id="${icj_id}"]'
+    mapped_badge: '[id^="g-card-badge-mapped-tool-"]'
     all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
 
 invocations:
@@ -1427,8 +1552,8 @@ beta_upload:
     paste_content_row_toggle_button: '[data-test-id="paste-content-toggle-${row}"]'
     paste_content_row_textarea: '[data-test-id="paste-content-textarea-${row}"]'
     row_remove_button: '[data-test-id="upload-row-${row}-remove"]'
-    paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] input[type="checkbox"]'
-    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] label'
+    paste_links_row_deferred_checkbox: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"]'
+    paste_links_row_deferred_label: '.url-table tbody tr:nth-child(${row}) [data-test-id="deferred-toggle"] + label'
     # Target-history selectors (TargetHistorySelector inside UploadMethodView)
     target_history_change_link: '.target-history-banner .change-history-link'
     history_selector_modal: '.g-dialog'
@@ -1447,7 +1572,7 @@ beta_upload:
     # Remote-files selectors
     remote_files_browser_label: '[data-test-id="remote-files-browser-label"][data-label="${label}"]'
     remote_files_select_all: '[data-test-id="remote-files-select-all"] .custom-control-label'
-    remote_files_item_checkbox: 
+    remote_files_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "remote-files-browser-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     remote_files_add_selected: '[data-test-id="remote-files-add-selected"]'
@@ -1455,7 +1580,7 @@ beta_upload:
     data_library_library_label: '[data-test-id="data-library-browser-library-label"][data-label="${label}"]'
     data_library_item_label: '[data-test-id="data-library-browser-item-label"][data-label="${label}"]'
     data_library_select_all: '[data-test-id="data-library-select-all"] input[type="checkbox"]'
-    data_library_item_checkbox: 
+    data_library_item_checkbox:
       type: xpath
       selector: '//span[contains(@data-test-id, "data-library-browser-item-label") and normalize-space()="${label}"]/ancestor::*[contains(@class, "media") or contains(@class, "row") or contains(@role, "row")]//input[@type="checkbox"]'
     data_library_add_selected: '[data-test-id="data-library-add-selected"]'
@@ -1511,13 +1636,13 @@ job_details:
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
 
-chatgxy:
+galaxyai:
   selectors:
-    activity: '#activity-chatgxy'
-    _: '.chatgxy-container'
-    header: '.chatgxy-header'
-    new_chat_button: '.chatgxy-header .btn-outline-primary'
-    delete_chat_button: '.chatgxy-header .btn-outline-danger'
+    activity: '#activity-galaxyai'
+    _: '.galaxyai-container'
+    header: '.galaxyai-header'
+    new_chat_button: '.galaxyai-header .btn-outline-primary'
+    delete_chat_button: '.galaxyai-header .btn-outline-danger'
     messages: '.chat-messages'
     input: '#chat-input'
     send_button: '.send-button'
@@ -1534,7 +1659,7 @@ chatgxy:
 
   history_panel:
     selectors:
-      _: '.activity-panel[data-description="ChatGXY"]'
+      _: '.activity-panel[data-description="GalaxyAI"]'
       toggle_selection_mode: 'button[title="Select chats to delete"]'
       cancel_selection: 'button[title="Cancel selection"]'
       history_item: '[data-description="sidebar item"]'

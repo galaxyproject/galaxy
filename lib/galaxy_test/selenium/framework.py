@@ -3,6 +3,7 @@
 import datetime
 import errno
 import json
+import logging
 import os
 import traceback
 import unittest
@@ -75,6 +76,8 @@ try:
     from galaxy_test.driver.driver_util import GalaxyTestDriver
 except ImportError:
     GalaxyTestDriver = None  # type: ignore[assignment, misc, unused-ignore]
+
+logger = logging.getLogger(__name__)
 
 
 def _load_config_file() -> None:
@@ -420,6 +423,32 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         axe_results = self.axe_eval()
         assert_baseline_accessible(axe_results)
 
+    def playwright_drag_item_above(self, source_locator, target_locator):
+        """Drag ``source_locator`` so it is dropped immediately above ``target_locator``.
+
+        Playwright's ``drag_to`` jumps the cursor and is fooled by drop zones
+        that activate only after a sustained mouse-move. Hand-rolled mouse
+        moves (with intermediate steps and a small initial nudge) are reliable
+        for HTML5-DnD targets used across the tool-panel UIs.
+        """
+        source_locator.scroll_into_view_if_needed()
+        target_locator.scroll_into_view_if_needed()
+        source_box = source_locator.bounding_box()
+        target_box = target_locator.bounding_box()
+        assert source_box is not None, "source element has no bounding box (off-screen?)"
+        assert target_box is not None, "target element has no bounding box (off-screen?)"
+
+        source_x = source_box["x"] + (source_box["width"] / 2)
+        source_y = source_box["y"] + (source_box["height"] / 2)
+        target_x = target_box["x"] + (target_box["width"] / 2)
+        target_y = target_box["y"] + min(8, target_box["height"] / 4)
+
+        self.page.mouse.move(source_x, source_y)
+        self.page.mouse.down()
+        self.page.mouse.move(source_x, source_y + 12, steps=4)
+        self.page.mouse.move(target_x, target_y, steps=20)
+        self.page.mouse.up()
+
     def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
         # then when being accessed by local API calls.
@@ -433,10 +462,22 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
-            self._setup_interactor()
-            self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
-        self._try_setup_with_driver()
+        # Once the driver is allocated, any subsequent failure must still
+        # tear it down: pytest does not call tearDown when setUp raises, so
+        # without this the Playwright asyncio loop would stay registered as
+        # "running" on the main thread and cascade every subsequent test's
+        # setUp with "Sync API inside the asyncio loop".
+        try:
+            if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+                self._setup_interactor()
+                self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+            self._try_setup_with_driver()
+        except Exception:
+            try:
+                self.tear_down_driver()
+            except Exception:
+                logger.exception("Error tearing down driver after setup_selenium failure")
+            raise
 
     def _try_setup_with_driver(self):
         try:

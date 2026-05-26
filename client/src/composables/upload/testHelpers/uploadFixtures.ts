@@ -18,6 +18,7 @@ export function makePastedItem(overrides: Partial<PastedContentUploadItem> = {})
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
         ...overrides,
     };
@@ -34,6 +35,7 @@ export function makeUrlItem(overrides: Partial<UrlUploadItem> = {}): UrlUploadIt
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
         ...overrides,
     };
@@ -50,6 +52,7 @@ export function makeRemoteFilesItem(overrides: Partial<RemoteFileUploadItem> = {
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
         ...overrides,
     };
@@ -65,6 +68,7 @@ export function makeLibraryItem(overrides: Partial<LibraryDatasetUploadItem> = {
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: false,
         deferred: false,
         libraryId: "lib_1",
         folderId: "folder_1",
@@ -85,6 +89,7 @@ export function makeLocalFileItem(overrides: Partial<LocalFileUploadItem> = {}):
         extension: "auto",
         spaceToTab: false,
         toPosixLines: false,
+        autoDecompress: true,
         deferred: false,
         fileData: file,
         ...overrides,

@@ -210,9 +210,9 @@ $graph:
     def test_pause(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-  test_input:
-    type: input
   first_cat:
     tool_id: cat1
     state:

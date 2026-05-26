@@ -80,7 +80,7 @@ steps:
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
       postclick: true
 
-    - element: "#winbox-1"
+    - element: ".window-manager-window"
       intro: "However while using the Window Manager, the dataset will be shown as resizable window."
 
     - title: "Done."

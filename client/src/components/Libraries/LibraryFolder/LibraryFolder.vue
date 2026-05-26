@@ -40,8 +40,7 @@
             @row-select="onRowSelect">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
-                    <BSpinner class="align-middle" />
-                    <strong>Loading...</strong>
+                    <LoadingSpan classes="align-middle" />
                 </div>
                 <div v-else class="empty-folder-message">
                     This folder is either empty or you do not have proper access permissions to see the contents. If you
@@ -228,9 +227,7 @@
             <BRow align-v="center" class="justify-content-md-center">
                 <BCol md="auto">
                     <div v-if="isBusy">
-                        <BSpinner small type="grow" />
-                        <BSpinner small type="grow" />
-                        <BSpinner small type="grow" />
+                        <LoadingSpan />
                     </div>
                     <BPagination
                         v-else
@@ -276,7 +273,7 @@ import {
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow, BSpinner } from "bootstrap-vue";
+import { BButton, BCol, BContainer, BFormInput, BLink, BPagination, BRow } from "bootstrap-vue";
 import purify from "dompurify";
 import linkifyHtml from "linkify-html";
 import { mapState } from "pinia";
@@ -293,6 +290,7 @@ import { fields } from "./table-fields";
 
 import FolderTopBar from "./TopToolbar/FolderTopBar.vue";
 import GTable from "@/components/Common/GTable.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 function initialFolderState() {
@@ -315,10 +313,10 @@ export default {
         BLink,
         BPagination,
         BRow,
-        BSpinner,
         FolderTopBar,
         FontAwesomeIcon,
         GTable,
+        LoadingSpan,
         UtcDate,
     },
     beforeRouteUpdate(to, from, next) {

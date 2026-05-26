@@ -700,7 +700,7 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
-    it("accepts sample_sheet -> list connection (canMatch)", () => {
+    it("accepts sample_sheet -> list connection (accepts)", () => {
         const collectionOut = terminals["sample_sheet input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
@@ -716,7 +716,7 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
     });
-    it("accepts sample_sheet:paired -> list:paired connection (canMatch)", () => {
+    it("accepts sample_sheet:paired -> list:paired connection (accepts)", () => {
         const collectionOut = terminals["sample_sheet:paired input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["list:paired collection input"]!["input1"] as InputCollectionTerminal;
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
@@ -740,7 +740,7 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "sample_sheet", isCollection: true, rank: 1 });
     });
-    it("accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (canMatch)", () => {
+    it("accepts sample_sheet:paired_or_unpaired -> list:paired_or_unpaired connection (accepts)", () => {
         const collectionOut = terminals["sample_sheet:paired_or_unpaired input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["list:paired_or_unpaired collection input"]!["f1"] as InputTerminal;
         expect(dataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);

@@ -8,7 +8,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired_or_unpaired
           elements:
             - identifier: forward
               class: File
@@ -36,7 +35,6 @@
       elements:
         - identifier: el1
           class: Collection
-          type: paired_or_unpaired
           elements:
             - identifier: forward
               class: File
@@ -63,7 +61,6 @@
       elements:
         - identifier: outer1
           class: Collection
-          type: list
           elements:
             - identifier: el1
               class: File
@@ -73,7 +70,6 @@
               contents: "data from outer1 el2"
         - identifier: outer2
           class: Collection
-          type: list
           elements:
             - identifier: el1
               class: File

@@ -3,9 +3,10 @@ export default {
     // ----------------------------------------------------------------------------- masthead
     "Analyze Data": "Daten analysieren",
     Workflow: "Arbeitsablauf",
-    "Shared Data": "Gemeinsame Daten",
+    "Shared Data": "Geteilte Daten",
     "Data Libraries": "Datenbibliotheken",
-    Histories: "Geschichten",
+    Histories: "Verläufe",
+    "Delete History": "Verlauf löschen",
     Workflows: "Workflows",
     Visualizations: "Visualisierungen",
     Pages: "Seiten",
@@ -19,97 +20,124 @@ export default {
     "Mailing Lists": "Mailinglisten",
     Videos: "Videos",
     "Community Hub": "Community Hub",
-    "How to Cite Galaxy": "Wie man Galaxie zitiert",
+    "How to Cite Galaxy": "Wie zitiere ich Galaxy?",
     User: "Benutzer",
     Login: "Anmeldung",
+    "Log in to": "Anmelden, um",
     Register: "Neu registrieren",
     "Log in or Register": "Einloggen oder Registrieren",
     "Signed in as": "Angemeldet als",
-    Preferences: "Präferenzen",
+    Preferences: "Einstellungen",
     "Custom Builds": "Custom Builds",
     Logout: "Ausloggen",
-    "Saved Histories": "Gespeicherte Geschichten",
-    "Saved Datasets": "Gespeicherte Datasets",
+    "Saved Histories": "Gespeicherte Verläufe",
+    "Saved Datasets": "Gespeicherte Datensätze",
     "Saved Pages": "Gespeicherte Seiten",
     //Tooltip
-    "Account and saved data": "Konto und gespeicherte Daten",
-    "Account registration or login": "Konto Registrierung oder Login",
+    "Account and saved data": "Nutzerkonto und gespeicherte Daten",
+    "Account registration or login": "Registrierung oder Anmeldung",
     "Support, contact, and community": "Unterstützung, Kontakt und Community",
-    "Administer this Galaxy": "Verwalte diese Galaxie",
+    "Administer this Galaxy": "Verwalte diese Galaxy-Instanz",
     "Visualize datasets": "Visualisieren von Datensätzen",
     "Access published resources": "Zugriff auf veröffentlichte Ressourcen",
-    "Chain tools into workflows": "Kettenwerkzeuge in Workflows",
-    "Analysis home view": "Analyse home view",
+    "Chain tools into workflows": "Verknüpfe Tools zu Workflows",
     // ---------------------------------------------------------------------------- histories
     // ---- history/options-menu
-    "History Lists": "History Lists",
+    "History Options": "Verlaufsoptionen",
+    "Fetching histories from server": "Verläufe werden vom Server abgerufen",
+    "You have {{ totalHistoryCount }} histories.": "{{ totalHistoryCount }} Verläufe verfügbar.",
+    "Manage History": "Verlauf verwalten",
+    "Open History Multiview": "Verlauf-Mehrfachansicht öffnen",
+    "Show Histories Side-by-Side": "Verläufe nebeneinander anzeigen",
     // Saved histories is defined above.
     // "Saved Histories":
     //     false,
-    "Histories Shared with Me": "Geschichten mit mir geteilt",
-    "Current History": "Aktuelle Geschichte",
-    "Create New": "Erstelle neu",
-    "Copy History": "Geschichte kopieren",
+    "Histories Shared with Me": "Mit mir geteilte Verläufe",
+    "This history has been": "Dieser Verlauf ist",
+    "Some actions might not be available.": "Einige Aktionen sind möglicherweise nicht verfügbar.",
+    "Resume all Paused Jobs in this History": "Alle pausierten Jobs in diesem Verlauf fortsetzen",
+    "Current History": "Aktueller Verlauf",
+    "Create New": "Neu erstellen",
+    "Copy History to a New History": "Verlauf in einen neuen Verlauf kopieren",
+    "Copy History": "Verlauf kopieren",
     "Share or Publish": "Teilen oder veröffentlichen",
     "Show Structure": "Struktur anzeigen",
     "Extract Workflow": "Workflow extrahieren",
     // Delete is defined elsewhere, but is also in this menu.
     // "Delete":
     //     false,
-    "Delete Permanently": "Dauerhaft löschen",
+    "Delete Permanently": "Endgültig löschen",
     "Dataset Actions": "Datensatzaktionen",
     "Copy Datasets": "Datensätze kopieren",
-    "Dataset Security": "Datensatz Sicherheit",
-    "Resume Paused Jobs": "Fortsetzen pausierte Jobs",
-    "Collapse Expanded Datasets": "Collapse Expanded Datasets",
-    "Unhide Hidden Datasets": "Hidden Datasets verstecken",
-    "Delete Hidden Datasets": "Hidden Datasets löschen",
-    "Purge Deleted Datasets": "Gelöschte Datasets löschen",
+    "Copy Datasets to Another History": "Datensätze in einen anderen Verlauf kopieren",
+    "Dataset Security": "Datensatzsicherheit",
+    "Resume Paused Jobs": "Pausierte Jobs fortsetzen",
+    "Unhide Hidden Datasets": "Versteckte Datensätze einblenden",
+    "Delete Hidden Datasets": "Versteckte Datensätze als gelöscht markieren",
+    "Purge Deleted Datasets": "Als gelöscht markierte Datensätze endgültig löschen",
     Downloads: "Downloads",
-    "Export Tool Citations": "Export Tool Zitate",
-    "Export History to File": "Export History to File",
+    "Export Tool Citations": "Tool-Zitationen exportieren",
+    "Export Tool References": "Tool-Referenzen exportieren",
+    "Export references for all Tools used in this History":
+        "Referenzen für alle in diesem Verlauf verwendeten Tools exportieren",
+    "Export and Download History as a File": "Verlauf als Datei exportieren und herunterladen",
+    "Export History to File": "Verlauf in Datei exportieren",
     "Other Actions": "Andere Aktionen",
     "Import from File": "Import aus Datei",
     Webhooks: "Webhooks",
+    "Permanently Delete History": "Verlauf endgültig löschen",
+    "Permanently Delete History?": "Verlauf endgültig löschen?",
+    "Delete History?": "Verlauf als gelöscht markieren?",
+    "Archive this History": "Diesen Verlauf archivieren",
+    "Archive History": "Verlauf archivieren",
+    "Convert History to Workflow": "Verlauf in Workflow umwandeln",
+    "Display Workflow Invocations": "Workflow-Aufrufe anzeigen",
+    "Show Invocations": "Aufrufe anzeigen",
+    "Share, Publish, or Set Permissions for this History":
+        "Diesen Verlauf teilen, veröffentlichen oder Berechtigungen festlegen",
+    "Share & Manage Access": "Teilen und Zugriff verwalten",
+    "Do you also want to permanently delete the history": "Soll der Verlauf auch endgültig gelöscht werden",
+    "Yes, permanently delete this history.": "Ja, diesen Verlauf endgültig löschen.",
+
     // ---- history-model
     // ---- history-view
-    "This history is empty": "Diese Geschichte ist leer",
+    "This history is empty": "Dieser Verlauf ist leer",
     "No matching datasets found": "Keine passenden Datensätze gefunden",
     "An error occurred while getting updates from the server":
-        "Ein Fehler ist aufgetreten beim Aktualisieren vom Server",
+        "Beim Abruf von Aktualisierungen vom Server ist ein Fehler aufgetreten",
     "Please contact a Galaxy administrator if the problem persists":
-        "Bitte wenden Sie sich an einen Galaxy-Administrator, wenn das Problem weiterhin besteht",
+        "Bitte wenden Sie sich an einen Galaxy-Administrator, wenn das Problem bestehen bleibt",
     //TODO:
     //"An error was encountered while <% where %>" :
     //false,
-    "search datasets": "Suchdatensätze",
-    "You are currently viewing a deleted history!": "Du siehst derzeit einen gelöschten Verlauf!",
-    "You are over your disk quota": "Du bist über dein Festplatten-Kontingent",
+    "search datasets": "Datensätze suchen",
+    "You are currently viewing a deleted history!": "Dies ist ein gelöschter Verlauf!",
+    "You are over your disk quota": "Das Speicherkontingent ist überschritten",
     "Tool execution is on hold until your disk usage drops below your allocated quota":
-        "Tool-Ausführung ist in der Warteschleife, bis Ihre Datenträgerverwendung unter Ihrem zugeteilten Kontingent fällt",
+        "Tool-Ausführungen sind pausiert, bis die Speichernutzung unter das zugeteilte Speicherkontingent fällt.",
     All: "Alle",
     None: "Keiner",
-    "For all selected": "Für alle ausgewählt",
+    "For all selected": "Für alles Ausgewählte",
     // ---- history-view-edit
-    "Edit history tags": "Geschichte bearbeiten",
-    "Edit history annotation": "Historie bearbeiten",
-    "Click to rename history": "Klicken Sie hier, um den Verlauf umzubenennen",
+    "Edit history tags": "Verlauf-Tags bearbeiten",
+    "Edit history annotation": "Verlaufsnotiz bearbeiten",
+    "Click to rename history": "Zum Umbenennen des Verlaufs hier klicken",
     // multi operations
-    "Operations on multiple datasets": "Operationen auf mehreren Datensätzen",
+    "Operations on multiple datasets": "Aktionen auf mehrere Datensätze anwenden",
     "Hide datasets": "Datensätze ausblenden",
-    "Unhide datasets": "Datasets einblenden",
-    "Delete datasets": "Datensätze löschen",
-    "Undelete datasets": "Undelete-Datasets",
-    "Permanently delete datasets": "Datensätze dauerhaft löschen",
+    "Unhide datasets": "Datensätze einblenden",
+    "Delete datasets": "Datensätze als gelöscht markieren",
+    "Undelete datasets": "Als gelöscht markierte Datensätze wiederherstellen",
+    "Permanently delete datasets": "Datensätze endgültig löschen",
     "This will permanently remove the data in your datasets. Are you sure?":
-        "Das wird endgültig die Daten in deinen Datasets entfernen. Bist du sicher?",
+        "Die zugrundeliegenden Daten werden durch diese Aktion unwiderruflich gelöscht. Wirklich fortfahren?",
     // ---- history-view-annotated
-    Dataset: "Dataset",
+    Dataset: "Datensatz",
     Annotation: "Annotation",
     // ---- history-view-edit-current
     "This history is empty. Click 'Get Data' on the left tool menu to start":
-        "Diese Geschichte ist leer. Klicken Sie auf 'Get Data' im linken Tool-Menü, um",
-    "You must be logged in to create histories": "Du musst eingeloggt sein, um Geschichten zu schaffen",
+        "Dieser Verlauf ist leer. Zum Starten 'Get Data' im linken Tool-Menü auswählen.",
+    "You must be logged in to create histories": "Anmeldung zum Erstellen von Verläufen erforderlich",
     //TODO:
     //"You can <% loadYourOwn %> or <% externalSource %>" :
     //false,
@@ -126,17 +154,18 @@ export default {
 
     // ---------------------------------------------------------------------------- datasets
     // ---- hda-model
-    "Unable to purge dataset": "Dataset kann nicht gelöscht werden",
+    "Unable to purge dataset": "Das endgültige Löschen des Datensatzes ist fehlgeschlagen",
     // ---- hda-base
     // display button
-    "Cannot display datasets removed from disk": "Datasets können nicht von der Festplatte entfernt werden",
+    "Cannot display datasets removed from disk":
+        "Bereits endgültig gelöschte Datensätze können nicht mehr dargestellt werden",
     "This dataset must finish uploading before it can be viewed":
-        "Dieser Datensatz muss das Hochladen beenden, bevor es angezeigt werden kann",
-    "This dataset is not yet viewable": "Dieser Datensatz ist noch nicht sichtbar",
+        "Dieser Datensatz muss erst vollständig hochgeladen werden, bevor er angezeigt werden kann",
+    "This dataset is not yet viewable": "Dieser Datensatz kann noch nicht angezeigt werden",
     "View data": "Daten anzeigen",
     // download button
     Download: "Herunterladen",
-    "Download dataset": "Dataset herunterladen",
+    "Download dataset": "Datensatz herunterladen",
     "Additional files": "Zusätzliche Dateien",
     // info/show_params
     "View details": "Details anzeigen",
@@ -145,31 +174,31 @@ export default {
     "This is a new dataset and not all of its data are available yet":
         "Dies ist ein neuer Datensatz und nicht alle seine Daten sind noch verfügbar",
     // state: noPermission
-    "You do not have permission to view this dataset": "Sie haben keine Berechtigung, diesen Datensatz anzuzeigen",
+    "You do not have permission to view this dataset": "Keine Berechtigung zum Anzeigen dieses Datensatzes",
     // state: discarded
     "The job creating this dataset was cancelled before completion":
         "Der Job, der diesen Datensatz erstellt hat, wurde vor der Fertigstellung abgebrochen",
     // state: queued
-    "This job is waiting to run": "Dieser Job wartet darauf, zu rennen",
+    "This job is waiting to run": "Dieser Job wartet darauf, ausgeführt zu werden",
     // state: upload
-    "This dataset is currently uploading": "Dieser Datensatz lädt derzeit",
+    "This dataset is currently uploading": "Dieser Datensatz wird derzeit hochgeladen",
     // state: setting_metadata
     "Metadata is being auto-detected": "Metadaten werden automatisch erkannt",
     // state: running
     "This job is currently running": "Dieser Job läuft derzeit",
     // state: paused
     'This job is paused. Use the "Resume Paused Jobs" in the history menu to resume':
-        'Dieser Job wird pausiert. Verwenden Sie die "Resume Paused Jobs " im Verlaufsmenü, um',
+        'Dieser Job ist pausiert. Zum Fortsetzen "Resume Paused Jobs" im Verlaufsmenü auswählen.',
     // state: error
     "An error occurred with this dataset": "Ein Fehler ist mit diesem Datensatz aufgetreten",
     // state: empty
     "No data": "Keine Daten",
     // state: failed_metadata
     "An error occurred setting the metadata for this dataset":
-        "Ein Fehler ist aufgetreten Einstellung der Metadaten für diese Datenmenge",
+        "Beim Festlegen der Metadaten für diesen Datensatz ist ein Fehler aufgetreten",
     // ajax error prefix
     "There was an error getting the data for this dataset":
-        "Es gab einen Fehler, der die Daten für diesen Datensatz bekam",
+        "Beim Abrufen der Daten für diesen Datensatz ist ein Fehler aufgetreten",
     // purged'd/del'd msg
     "This dataset has been deleted and removed from disk":
         "Dieser Datensatz wurde gelöscht und von der Festplatte entfernt",
@@ -180,25 +209,25 @@ export default {
     // ---- hda-edit
     "Edit attributes": "Attribute bearbeiten",
     "Cannot edit attributes of datasets removed from disk":
-        "Kann keine Attribute von Datasets aus dem Datenträger entfernen",
-    "Undelete dataset to edit attributes": "Undelete-Dataset zum Bearbeiten von Attributen",
+        "Attribute von Datensätzen, die von der Festplatte entfernt wurden, können nicht bearbeitet werden",
+    "Undelete dataset to edit attributes": "Zum Bearbeiten von Attributen den Datensatz wiederherstellen",
     "This dataset must finish uploading before it can be edited":
-        "Dieser Datensatz muss das Hochladen beenden, bevor es bearbeitet werden kann",
+        "Dieser Datensatz muss erst vollständig hochgeladen werden, bevor er bearbeitet werden kann",
     "This dataset is not yet editable": "Dieser Datensatz ist noch nicht bearbeitbar",
     Delete: "Löschen",
-    "Dataset is already deleted": "Dataset ist bereits gelöscht",
+    "Dataset is already deleted": "Datensatz ist bereits gelöscht",
     "View or report this error": "Diesen Fehler anzeigen oder melden",
-    "Run this job again": "Führen Sie diesen Job wieder",
+    "Run this job again": "Job erneut ausführen",
     Visualize: "Visualisieren",
-    "Visualize in": "Visualize in",
-    "Undelete it": "Untelete it",
-    "Permanently remove it from disk": "Permanent aus der Scheibe entfernen",
-    "Unhide it": "Ausblenden",
-    "You may be able to": "Sie können in der Lage sein",
+    "Visualize in": "Visualisieren in",
+    "Undelete it": "Wiederherstellen",
+    "Permanently remove it from disk": "Endgültig von der Festplatte entfernen",
+    "Unhide it": "Einblenden",
+    "You may be able to": "Mögliche Lösung:",
     "set it manually or retry auto-detection": "Manuell einstellen oder Auto-Erkennung wiederholen",
     "Edit dataset tags": "Dataset-Tags bearbeiten",
     "Edit dataset annotation": "Datensatz-Annotation bearbeiten",
     // ---------------------------------------------------------------------------- misc. MVC
-    Tags: "Variablen",
+    Tags: "Tags",
     "Edit annotation": "Anmerkung bearbeiten",
 };

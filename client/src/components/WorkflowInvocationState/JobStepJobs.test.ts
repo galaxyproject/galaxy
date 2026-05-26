@@ -13,6 +13,10 @@ import TEST_JOBS_JSON from "./test/json/jobs.json";
 
 import JobStepJobs from "./JobStepJobs.vue";
 
+vi.mock("vue-router/composables", () => ({
+    useRoute: vi.fn(() => ({})),
+}));
+
 const localVue = getLocalVue();
 
 const { server, http } = useServerMock();

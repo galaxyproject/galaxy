@@ -1,3 +1,27 @@
+"""Collection type descriptions and the compatibility algebra.
+
+Three operations on collection types, each answering a distinct question:
+
+- ``accepts(other)``: asymmetric direct-edge check. True iff an output
+  collection of type ``other`` can be connected to an input slot whose
+  declared type is ``self``. Used at workflow-editor edge validation.
+  Convention: ``input_type.accepts(output_type)``.
+- ``compatible(other)``: symmetric sibling-matching check. True iff two
+  collection types match such that they could drive a common map-over
+  over sibling inputs of one tool. Used where neither side is the input
+  and order of arrival must not change the answer.
+- ``can_map_over(other)``: asymmetric nesting check. True iff ``self`` has
+  proper subcollections of type ``other`` — i.e. ``self`` can be mapped
+  over to feed a slot expecting ``other``. Convention:
+  ``output_type.can_map_over(input_type)``.
+
+The TypeScript equivalents live in
+``client/src/components/Workflow/Editor/modules/collectionTypeDescription.ts``
+and must stay in sync (``accepts`` / ``compatible`` / ``canMapOver``). See
+``types/collection_semantics.yml`` "Type Compatibility Algebra" for the
+lattice diagram and worked examples.
+"""
+
 import re
 from typing import (
     Optional,
@@ -65,7 +89,7 @@ class CollectionTypeDescription:
         if hasattr(subcollection_type, "collection_type"):
             subcollection_type = subcollection_type.collection_type
 
-        if not self.has_subcollections_of_type(subcollection_type):
+        if not self.can_map_over(subcollection_type):
             raise ValueError(f"Cannot compute effective subcollection type of {subcollection_type} over {self}")
 
         if subcollection_type == "single_datasets":
@@ -101,17 +125,30 @@ class CollectionTypeDescription:
 
         return self.collection_type[: -(len(subcollection_type) + 1)]
 
-    def has_subcollections_of_type(self, other_collection_type) -> bool:
-        """Take in another type (either flat string or another
-        CollectionTypeDescription) and determine if this collection contains
-        subcollections matching that type.
+    def can_map_over(self, other_collection_type) -> bool:
+        """Asymmetric nesting check: can this collection be mapped over to
+        feed an input requiring ``other_collection_type``?
 
-        The way this is used in map/reduce it seems to make the most sense
-        for this to return True if these subtypes are proper (i.e. a type
-        is not considered to have subcollections of its own type).
+        Convention: ``output.can_map_over(input)``. True iff ``self`` has
+        proper subcollections matching ``other`` — a type is not considered
+        to map over itself (that's a direct edge, handled by ``accepts``).
+
+        Mirrors TypeScript ``CollectionTypeDescription.canMapOver``. Naming
+        kept parallel across languages because both encode the same
+        operational question at workflow-editor connection time.
         """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
+        # sample_sheet asymmetry: a sample_sheet input can only be fed by a
+        # sample_sheet output (a plain-list output lacks the column metadata
+        # the input expects). ``self`` is the output being mapped over;
+        # ``other`` is the input collection type. Check before normalization
+        # (which equates sample_sheet and list).
+        # Duplicates the asymmetry encoded in ``accepts`` — load-bearing for
+        # ``multiply`` / ``effective_collection_type`` map-over arithmetic.
+        # Removing this guard is a separate refactor; see follow-up issue.
+        if other_collection_type.startswith("sample_sheet") and not self.collection_type.startswith("sample_sheet"):
+            return False
         collection_type = _normalize_collection_type(self.collection_type)
         other_collection_type = _normalize_collection_type(other_collection_type)
         if collection_type == other_collection_type:
@@ -138,14 +175,24 @@ class CollectionTypeDescription:
             return True
         return False
 
-    def is_subcollection_of_type(self, other_collection_type):
-        if not hasattr(other_collection_type, "collection_type"):
-            other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
-        return other_collection_type.has_subcollections_of_type(self)
+    def accepts(self, other_collection_type) -> bool:
+        """Asymmetric direct-edge check: does an input slot of type ``self``
+        accept an output of type ``other_collection_type``?
 
-    def can_match_type(self, other_collection_type) -> bool:
+        Convention: ``input_type.accepts(output_type)``. Used at
+        workflow-editor edge validation. For sibling-matching (where
+        neither side is the input slot), use ``compatible`` instead.
+
+        See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
+        """
         if hasattr(other_collection_type, "collection_type"):
             other_collection_type = other_collection_type.collection_type
+        # sample_sheet asymmetry: a sample_sheet input is only satisfied by a
+        # sample_sheet output — a plain-list output lacks the column metadata
+        # the sample_sheet input expects. Check before normalization (which
+        # otherwise equates the two).
+        if self.collection_type.startswith("sample_sheet") and not other_collection_type.startswith("sample_sheet"):
+            return False
         collection_type = _normalize_collection_type(self.collection_type)
         other_collection_type = _normalize_collection_type(other_collection_type)
         if other_collection_type == collection_type:
@@ -161,8 +208,24 @@ class CollectionTypeDescription:
             if other_collection_type == as_paired_list:
                 return True
 
-        # can we push this to the type registry somehow?
         return False
+
+    def compatible(self, other_collection_type) -> bool:
+        """Symmetric sibling-matching check: do ``self`` and ``other`` match
+        such that they could drive a common map-over over sibling inputs of
+        a single tool?
+
+        Implemented as ``self.accepts(other) or other.accepts(self)``. Used
+        at sibling-matching sites (Python ``Tree.compatible_shape`` at
+        runtime; TS ``mappingConstraints`` at connection time) where
+        neither side is the input slot and order of arrival should not
+        change the answer.
+
+        See ``types/collection_semantics.yml`` "Type Compatibility Algebra".
+        """
+        if not hasattr(other_collection_type, "collection_type"):
+            other_collection_type = self.collection_type_description_factory.for_collection_type(other_collection_type)
+        return self.accepts(other_collection_type) or other_collection_type.accepts(self)
 
     def subcollection_type_description(self):
         if not self.__has_subcollections:

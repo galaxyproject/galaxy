@@ -21,13 +21,11 @@ fastmcp>=2.13.0
 redis>=5.3.0,<6
 
 # For file sources plugins
-fs.webdavfs>=0.4.2  # type: webdav
-# webdavclient3 on the develop branch contains an important fix for username-based authentification containing the '@' symbol
-webdavclient3 @ git+https://github.com/ezhov-evgeny/webdav-client-python-3@98c23d1abd15efc3db9cfc756429f00041578bc2
-fs.dropboxfs>=1.0.3  # type: dropbox
+webdav4[fsspec]  # type: webdav
+dropboxdrivefs>=1.4.1  # type: dropbox
 fs.sshfs  # type: ssh
 fs.anvilfs # type: anvil
-fs.googledrivefs # type: googledrive
+gdrive_fsspec # type: googledrive
 gcsfs # type: googlecloudstorage
 fs.onedatarestfs==21.2.5.2 # type: onedata, depends on onedatafilerestclient
 fs-basespace # type: basespace
@@ -75,6 +73,9 @@ weasyprint>=61.2
 # This dependency is ignored on python >= 3.9 and should be removed when deprecating
 # support for python 3.8.
 pydyf<0.11; python_version<"3.9"
+
+# HTCondor runner — install via `pip install htcondor`; this package provides the `htcondor2` module
+htcondor
 
 # AWS Batch runner
 boto3

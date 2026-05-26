@@ -147,8 +147,7 @@ class HashicorpVault(Vault):
             response = self.client.secrets.kv.read_secret_version(path=key)
             return response["data"]["data"].get("value")
         except hvac.exceptions.InvalidPath:
-            log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
-            return None
+            return self._read_legacy_and_migrate(key)
         except hvac.exceptions.Forbidden:
             log.error(
                 "Permission denied reading secret at key: %s. "
@@ -156,6 +155,25 @@ class HashicorpVault(Vault):
                 key,
             )
             return None
+
+    def _read_legacy_and_migrate(self, key: str) -> Optional[str]:
+        # Galaxy <= 26.0 emitted a leading slash in Vault paths, which hvac's
+        # format_url turned into a double-slash KV v2 key. Vault 1.x accepted
+        # it silently; Vault 2.0 rejects it. Fall back to reading the legacy
+        # form and rewrite under the canonical key so the secret survives the
+        # Galaxy upgrade. This fallback can be removed after a deprecation
+        # window once operators have migrated.
+        legacy = f"/{key}"
+        try:
+            response = self.client.secrets.kv.read_secret_version(path=legacy)
+        except (hvac.exceptions.InvalidPath, hvac.exceptions.InvalidRequest):
+            log.exception(f"Failed to read secret from Hashicorp Vault at key: {key}")
+            return None
+        value = response["data"]["data"].get("value")
+        if value is not None:
+            log.warning("Migrating legacy non-canonical Vault secret to canonical path: %s", key)
+            self.client.secrets.kv.v2.create_or_update_secret(path=key, secret={"value": value})
+        return value
 
     def write_secret(self, key: str, value: str) -> None:
         try:
@@ -284,13 +302,22 @@ class VaultKeyPrefixWrapper(Vault):
 
     def __init__(self, vault: Vault, prefix: str):
         self.vault = vault
-        self.prefix = prefix.strip("/")
+        # Strip conventional outer slashes so admins can write `/galaxy`,
+        # `galaxy`, or `/galaxy/` interchangeably in config. Reject anything
+        # that would still produce a non-canonical Vault path after stripping.
+        stripped = prefix.strip("/")
+        if not stripped or VAULT_KEY_INVALID_REGEX.search(stripped):
+            raise InvalidVaultConfigException(
+                f"Vault path_prefix {prefix!r} is invalid: must be non-empty and must not contain "
+                "double slashes or whitespace adjacent to a slash."
+            )
+        self.prefix = stripped
 
     def read_secret(self, key: str) -> Optional[str]:
-        return self.vault.read_secret(f"/{self.prefix}/{key}")
+        return self.vault.read_secret(f"{self.prefix}/{key}")
 
     def write_secret(self, key: str, value: str) -> None:
-        return self.vault.write_secret(f"/{self.prefix}/{key}", value)
+        return self.vault.write_secret(f"{self.prefix}/{key}", value)
 
     def list_secrets(self, key: str) -> list[str]:
         raise NotImplementedError()

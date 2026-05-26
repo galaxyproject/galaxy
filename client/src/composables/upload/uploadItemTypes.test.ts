@@ -48,6 +48,7 @@ describe("validateUploadItem", () => {
             extension: "auto",
             spaceToTab: false,
             toPosixLines: false,
+            autoDecompress: true,
             deferred: false,
         };
         expect(validateUploadItem(item)).toMatch(/No file selected/);
@@ -64,6 +65,7 @@ describe("validateUploadItem", () => {
             extension: "auto",
             spaceToTab: false,
             toPosixLines: false,
+            autoDecompress: true,
             deferred: false,
             fileData: emptyFile,
         };

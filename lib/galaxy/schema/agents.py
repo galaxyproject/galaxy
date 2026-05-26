@@ -31,6 +31,7 @@ class ActionType(str, Enum):
     CONTACT_SUPPORT = "contact_support"
     VIEW_EXTERNAL = "view_external"
     DOCUMENTATION = "documentation"
+    WORKFLOW_IMPORT = "workflow_import"
 
 
 class ActionSuggestion(BaseModel):
@@ -54,6 +55,9 @@ class ActionSuggestion(BaseModel):
         elif self.action_type == ActionType.VIEW_EXTERNAL:
             if not self.parameters.get("url"):
                 raise ValueError("VIEW_EXTERNAL requires 'url' parameter")
+        elif self.action_type == ActionType.WORKFLOW_IMPORT:
+            if not self.parameters.get("trs_id"):
+                raise ValueError("WORKFLOW_IMPORT requires 'trs_id' parameter")
         return self
 
 
@@ -233,3 +237,11 @@ class SystemStatus(BaseModel):
     agent_statuses: list[AgentStatus] = Field(description="Status of each agent")
     system_health: str = Field(description="Overall system health")
     last_check: str = Field(description="Last health check timestamp")
+
+
+class WorkflowReportResponse(BaseModel):
+    """Response from the workflow report generation agent."""
+
+    report: str = Field(description="Generated markdown report for the workflow")
+    total_tokens: Optional[int] = Field(default=None, description="Total tokens consumed by the generation")
+    model: Optional[str] = Field(default=None, description="LLM model used to generate the report")

@@ -89,9 +89,12 @@
                             :per-page="perPage"
                             aria-controls="tabular-dataset-table" />
                     </div>
-                    <pre v-else :class="{ 'embedded-dataset': !expanded, 'embedded-dataset-expanded': expanded }">
-                        <code class="word-wrap-normal">{{ dataContent.item_data }}</code>
-                    </pre>
+                    <pre
+                        v-else
+                        :class="{
+                            'embedded-dataset': !expanded,
+                            'embedded-dataset-expanded': expanded,
+                        }"><code class="word-wrap-normal">{{ dataContent.item_data }}</code></pre>
                 </div>
                 <div v-else>No content found.</div>
 

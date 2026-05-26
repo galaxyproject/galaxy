@@ -24,7 +24,6 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 
 // galaxy sub-components
 @import "reports";
-@import "windows.scss";
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
@@ -156,6 +155,12 @@ $galaxy-state-bg: (
     "paused": $state-info-bg,
     "skipped": $state-default-bg,
     "uninitialized": $gray-200,
+    // Some `JobState`s:
+    "resubmitted": $state-default-bg,
+    "failed": $state-danger-bg,
+    "deleting": darken($state-default-bg, 30%),
+    "stop": $state-default-border,
+    "stopped": darken($state-default-bg, 30%),
 );
 
 // Replace all occurrences of $search in $string with $replace.

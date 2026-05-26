@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCheck, faCloud, faEdit, faExclamation, faLaptop, faLink, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faCloud, faEdit, faExclamation, faLaptop, faLink, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BDropdown, BDropdownItem, BFormInput, BFormTextarea } from "bootstrap-vue";
 import { computed, ref } from "vue";
@@ -253,7 +253,7 @@ const display = computed(() => {
                 title="Clear this slot"
                 class="flex-shrink-0"
                 @click="clearSlot">
-                <FontAwesomeIcon :icon="faTimes" fixed-width />
+                <FontAwesomeIcon :icon="faTrash" fixed-width />
             </GButton>
             <!-- Spacer to keep layout stable when no clear button -->
             <span v-else class="slot-clear-placeholder" />

@@ -19,6 +19,7 @@ export interface SelectOption {
 
 const emit = defineEmits<{
     (e: "input", value: any): void;
+    (e: "search-change", query: string): void;
 }>();
 
 const props = defineProps({
@@ -45,6 +46,15 @@ const props = defineProps({
     multiple: {
         type: Boolean,
         default: false,
+    },
+    /**
+     * Forwarded to ``FormSelectMany`` when the parent paginates options
+     * server-side, so the column-select header reflects the backend's full
+     * count of available items rather than just the locally-loaded slice.
+     */
+    totalEstimate: {
+        type: Number as PropType<number | null>,
+        default: null,
     },
 });
 
@@ -122,10 +132,28 @@ defineExpose({
     <div class="form-selection">
         <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
         <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
-        <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
-        <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions">
+        <FormSelectMany
+            v-else-if="displayMany"
+            v-model="currentValue"
+            :options="currentOptions"
+            :total-estimate="totalEstimate"
+            @search-change="(q) => $emit('search-change', q)">
+            <template v-slot:after-list>
+                <slot name="after-list" />
+            </template>
+        </FormSelectMany>
+        <FormSelect
+            v-else
+            v-model="currentValue"
+            :multiple="multiple"
+            :optional="optional"
+            :options="currentOptions"
+            @search-change="(q) => $emit('search-change', q)">
             <template v-slot:no-options>
                 <slot name="no-options" />
+            </template>
+            <template v-slot:after-list>
+                <slot name="after-list" />
             </template>
         </FormSelect>
 

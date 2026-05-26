@@ -216,6 +216,208 @@ If you need to add additional parameters to your condor submission, you can do s
 </destinations>
 ```
 
+### HTCondor (htcondor2 API)
+
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM using the
+[htcondor2](https://pypi.org/project/htcondor/) Python bindings (v2 API). Unlike the
+legacy Condor runner, which shells out to CLI tools, this runner communicates entirely
+through the Python API for submitting, monitoring, and removing jobs. Install the
+package with `pip install htcondor` (or obtain it from your HTCondor installation).
+
+#### Architecture
+
+The `htcondor2` Python library is a C extension that reads its HTCondor
+configuration — collector address, authentication method, and security tokens —
+**at import time, not at call time**. Setting `CONDOR_CONFIG` after the module has
+already been imported has no effect. In a long-running Galaxy server process the
+library is therefore permanently bound to whatever configuration was active when it
+was first imported.
+
+This constraint drives the two-client design:
+
+- **In-process client** — used when no `htcondor_config` destination parameter is
+  set. `htcondor2` runs directly inside the Galaxy server process and uses whichever
+  `CONDOR_CONFIG` (or `$CONDOR_CONFIG` environment variable) was present at startup.
+  This covers the common case where the Galaxy server host is already a submit node
+  — i.e. HTCondor is configured system-wide and Galaxy can reach the local schedd
+  without any extra configuration.
+
+- **Subprocess client** — used when an `htcondor_config` destination parameter is
+  set. Because the Galaxy process has already imported `htcondor2` against its own
+  configuration, a separate Python helper process is spawned with `CONDOR_CONFIG`
+  set to the per-destination file *before* `htcondor2` is imported inside that
+  process. This isolates each pool's collector address and authentication tokens
+  entirely from the main Galaxy process and from every other pool. One long-lived
+  helper subprocess is shared across all destinations that reference the **same**
+  config file (keyed on the resolved absolute path), so multiple schedds within
+  the same pool share a single helper. Jobs targeting a second, independent pool
+  that has its own config file get their own helper subprocess.
+
+The practical rule is: to submit to a **remote or non-default pool**, set
+`htcondor_config` to a file that points `htcondor2` at the right collector and
+carries the pool's authentication tokens. To submit to the **local pool** (Galaxy
+host is already a submit node), omit `htcondor_config` and the in-process path is
+used automatically.
+
+Multiple independent pools are fully supported: give each destination its own
+`htcondor_config` file and the runner will maintain one helper subprocess per file.
+
+#### Destination parameters
+
+The following parameters are recognised by the runner and are **not** forwarded to the
+condor submit description. All others (e.g. `request_cpus`, `request_memory`,
+`universe`) are passed through verbatim.
+
+| Parameter | Description |
+|-----------|-------------|
+| `htcondor_collector` | Collector address (e.g. `collector.example.org:9618`). When set, the runner queries this collector for a schedd rather than using the default from `CONDOR_CONFIG`. |
+| `htcondor_schedd` | Name of a specific schedd to target (e.g. `schedd@submit.example.org`). When omitted, the first schedd returned by the collector is used. |
+| `htcondor_config` | Path to an alternative `condor_config` file. Triggers the subprocess client so Galaxy's own HTCondor environment is unaffected. Useful when submitting to multiple independent pools. |
+| `request_walltime` | Maximum wall-clock time for the job. Accepts plain seconds (`3600`), `HH:MM:SS` (`1:00:00`), `MM:SS`, or SLURM-compatible `D-HH:MM:SS` (`1-0:00:00`). The runner injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. When the limit is reached HTCondor holds the job with `HoldReasonCode=16`, which Galaxy reports as `walltime_reached` — enabling automatic resubmission to a longer-running destination. Ignored if the destination already sets a `periodic_hold` expression directly. |
+| `max_held_count` | Maximum number of *unresolved* `JOB_HELD` events tolerated before the job is permanently failed (default: `3`). The counter increments each time HTCondor places the job on hold with an unclassified reason code (memory and wall-time holds fail immediately regardless of this setting). A `JOB_RELEASED` event resets the counter to zero, because a release means the hold resolved and the job can make forward progress again — only consecutive holds that are never released indicate a genuinely stuck job. Once the threshold is reached the job fails with `runner_state=UNKNOWN_ERROR`, which the resubmission framework can act on. Set to `1` to fail immediately on the first unresolved hold, raise the value for pools that use automated hold/release policies, or set to `0` to disable hold escalation entirely. |
+
+#### Basic configuration
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor
+  environments:
+    htcondor:
+      runner: htcondor
+      request_cpus: 1
+      request_memory: 4096M
+      # Wall-clock time limit: seconds, HH:MM:SS, or D-HH:MM:SS.
+      request_walltime: "24:00:00"
+      # Fail after this many distinct hold events (default 3). Raise if your
+      # workflow expects periodic holds followed by automatic releases.
+      max_held_count: 3
+```
+
+For remote pools, supply the collector/schedd and an alternative config file:
+
+```yaml
+execution:
+  environments:
+    htcondor_remote:
+      runner: htcondor
+      htcondor_collector: "collector.example.org:9618"
+      htcondor_schedd: "schedd@submit.example.org"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+```
+
+The equivalent XML form is also supported:
+
+```xml
+<plugins>
+    <plugin id="htcondor" type="runner" load="galaxy.jobs.runners.htcondor:HTCondorJobRunner"/>
+</plugins>
+<destinations>
+    <destination id="htcondor" runner="htcondor">
+        <param id="request_cpus">4</param>
+        <param id="request_memory">4096M</param>
+        <param id="request_walltime">24:00:00</param>
+    </destination>
+</destinations>
+```
+
+#### Walltime and Advanced Hold Expressions
+
+`request_walltime` is a convenience parameter that covers the most common case: limiting a job by elapsed wall-clock time. Internally it injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. HTCondor evaluates this expression every `PERIODIC_EXPR_INTERVAL` (default 60 s); when it becomes true the job is placed on hold with `HoldReasonCode=16`, which Galaxy maps to `walltime_reached`.
+
+For more complex policies you can set `periodic_hold` directly. HTCondor ClassAd expressions can combine any job attribute, so a single expression can enforce multiple resource limits at once:
+
+```yaml
+execution:
+  environments:
+    htcondor_gpu:
+      runner: htcondor
+      request_gpus: 1
+      request_memory: 16384M
+      # Hold the job if it exceeds 2 hours wall-clock time OR if its resident
+      # set size exceeds 16 GB (16777216 KB).  A user-supplied periodic_hold
+      # takes precedence over request_walltime — the runner will not overwrite it.
+      periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+```
+
+When `periodic_hold` is set directly, `request_walltime` is ignored for that destination.
+
+#### Multiple Independent Pools
+
+To submit jobs to two separate HTCondor pools, give each destination its own
+`htcondor_config` file. The runner creates one helper subprocess per file and
+routes jobs accordingly:
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor_pool_a
+  environments:
+    htcondor_pool_a:
+      runner: htcondor
+      htcondor_collector: "collector-a.example.org:9618"
+      htcondor_config: "/etc/condor/pool_a_config"
+      request_memory: 4096M
+    htcondor_pool_b:
+      runner: htcondor
+      htcondor_collector: "collector-b.example.org:9618"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+
+tools:
+  - id: memory_intensive_tool
+    environment: htcondor_pool_b
+```
+
+Each config file must point `htcondor2` at the right collector and carry the
+pool's authentication tokens (e.g. an IDTOKEN written to the directory referenced
+by `SEC_TOKEN_DIRECTORY`).
+
+#### Testing with htcondor/mini (Docker)
+
+The test suite in `test/integration/test_htcondor_runner.py` contains two tiers:
+
+**Automated Docker tests (`TestHTCondorContainerJob`)**
+
+Requires only Docker and the `htcondor2` Python package. The test class starts two
+`htcondor/mini` all-in-one containers automatically, each running a full HTCondor
+stack (master, schedd, collector, negotiator, and startd). It authenticates via
+IDTOKENS generated inside each container, submits real Galaxy jobs to both pools,
+and verifies via `condor_history` that each job reached the correct cluster.
+No manual setup is needed.
+
+```bash
+pip install htcondor
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+Override the Docker image if needed:
+
+```bash
+GALAXY_TEST_HTCONDOR_IMAGE=htcondor/mini:23-el9 \
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+**Unit-style tests (fake htcondor2 stub)**
+
+No HTCondor installation required. A lightweight stub at
+`test/integration/htcondor_fake/htcondor2.py` mirrors the real htcondor2 API and
+records every submit/remove call. These cover job lifecycle transitions, multi-pool
+helper isolation, crash recovery, and cancellation:
+
+```bash
+python -m pytest test/integration/test_htcondor_runner.py -k "not Container" -v
+```
+
 ### Pulsar
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.

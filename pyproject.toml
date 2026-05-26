@@ -1,6 +1,6 @@
 [project]
 name = "galaxy"
-version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version.py
+version = "0.1.0"  # Not the real version, which is instead defined in lib/galaxy/version/__init__.py
 description = "Galaxy is an open, web-based platform for accessible, reproducible, and transparent computational research."
 authors = [
     {name = "Galaxy Contributors"},
@@ -43,7 +43,7 @@ dependencies = [
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.2.0",  # Python 3.14 support
     "gunicorn!=25.1.0",  # https://github.com/benoitc/gunicorn/discussions/3509
-    "gxformat2>=0.23.0",
+    "gxformat2>=0.23.0,!=0.25.0,!=0.26.0",  # https://github.com/galaxyproject/gxformat2/issues/204
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
@@ -122,12 +122,14 @@ Repository = "https://github.com/galaxyproject/galaxy"
 
 [dependency-groups]
 test = [
+    "aiocop",
     "ase>=3.18.1",
     "axe-selenium-python",
     "boto3",
     "cwltest>=2.5.20240906231108",  # Python 3.13 support
     "fluent-logger",
     "gcsfs",
+    "htcondor ; sys_platform == 'linux'",
     "hvac",
     "lxml!=4.2.2",
     "onedatafilerestclient==21.2.5.2",
@@ -175,6 +177,7 @@ typecheck = [
     "pydantic>=2.7.4",  # for pydantic.mypy plugin
     "types-bleach",
     "types-boto",
+    "types-cachetools",
     "types-contextvars",
     "types-dataclasses",
     "types-docutils",
@@ -206,6 +209,7 @@ exclude = [
     "lib/tool_shed/test/test_data/repos"
 ]
 src = ["lib"]
+namespace-packages = ["lib/galaxy"]
 
 [tool.ruff.lint]
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),

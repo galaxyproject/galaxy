@@ -646,7 +646,7 @@ steps:
 inputs: []
 steps:
   - tool_id: multiple_versions
-    tool_version: 0.1
+    tool_version: "0.1"
     label: multiple_versions
     state:
       foo: bar
@@ -780,7 +780,7 @@ inputs: []
 steps:
   - tool_id: create_2
     label: create_2
-    outputs:
+    out:
       out_file1:
         change_datatype: bam
   - tool_id: metadata_bam
@@ -807,7 +807,7 @@ steps:
         steps:
           - tool_id: create_2
             label: create_2
-            outputs:
+            out:
               out_file1:
                 change_datatype: bam
         outputs:
@@ -906,7 +906,7 @@ inputs:
     collection_type: "list"
 steps:
   - tool_id: multiple_versions
-    tool_version: 0.1
+    tool_version: "0.1"
     label: multiple_versions
     state:
       foo: bar

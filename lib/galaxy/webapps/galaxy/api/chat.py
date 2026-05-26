@@ -22,22 +22,30 @@ from fastapi import (
 from pydantic import Field
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.exceptions import ConfigurationError
+from galaxy.exceptions import (
+    ConfigurationError,
+    MessageException,
+    ObjectNotFound,
+)
 from galaxy.managers.agents import AgentService
 from galaxy.managers.chat import ChatManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
-from galaxy.schema.agents import AgentResponse
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    encode_id,
+from galaxy.schema.agents import (
+    AgentResponse,
+    WorkflowReportResponse,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ChatExchangeBatchDeletePayload,
+    ChatHistoryItemResponse,
     ChatPayload,
     ChatResponse,
 )
+from galaxy.util.json import safe_loads
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -47,16 +55,25 @@ from galaxy.webapps.galaxy.api import (
 
 # Import agent system
 try:
-    from galaxy.agents import GalaxyAgentDependencies
+    from galaxy.agents import (
+        AgentType,
+        GalaxyAgentDependencies,
+        WorkflowReportAgent,
+    )
 
     HAS_AGENTS = True
 except ImportError:
     HAS_AGENTS = False
+    AgentType = None  # type: ignore[assignment,misc,unused-ignore]
     GalaxyAgentDependencies = None  # type: ignore[assignment,misc,unused-ignore]
+    WorkflowReportAgent = None  # type: ignore[assignment,misc,unused-ignore]
 
 # Import pydantic-ai components (required dependency)
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import (
+    ModelHTTPError,
+    UnexpectedModelBehavior,
+)
 
 # Keep OpenAI as a fallback option
 try:
@@ -100,6 +117,7 @@ class ChatAPI:
     chat_manager: ChatManager = depends(ChatManager)
     job_manager: JobManager = depends(JobManager)
     agent_service: AgentService = depends(AgentService)
+    workflow_manager: WorkflowsManager = depends(WorkflowsManager)
 
     @router.post("/api/chat", unstable=True)
     async def query(
@@ -116,7 +134,7 @@ class ChatAPI:
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> ChatResponse:
-        """ChatGXY endpoint - handles both job-based and general chat queries
+        """GalaxyAI endpoint - handles both job-based and general chat queries
 
         Backwards compatible with both formats:
         1. Old format: job_id in query params + payload body with query/context
@@ -126,7 +144,6 @@ class ChatAPI:
         """
         start_time = time.time()
 
-        # Initialize response structure
         result: dict[str, Any] = {
             "response": "",
             "error_code": 0,
@@ -135,17 +152,19 @@ class ChatAPI:
             "processing_time": None,
         }
 
-        # Determine query source - either from payload (job-based) or query param (general)
         regenerate = False
         if payload and payload.query:
-            # Old format: payload body with query and context string
             query_text = payload.query
-            # Context from payload is a string (e.g., "tool_error"), convert to dict for agent system
             context_str = payload.context if hasattr(payload, "context") else None
-            query_context = {"context_type": context_str} if context_str else {}
+            query_context: dict[str, Any] = {}
+            if context_str:
+                parsed = safe_loads(context_str)
+                if isinstance(parsed, dict):
+                    query_context = {"interface_context": parsed}
+                else:
+                    query_context = {"context_type": context_str}
             regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
         elif query:
-            # New format: query parameters (context not supported in this path)
             query_text = query
             query_context = {}
         else:
@@ -155,7 +174,6 @@ class ChatAPI:
 
         job = None
         if job_id:
-            # Job-based chat - check for existing responses (unless regenerate requested)
             job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
             if job and not regenerate:
                 existing_response = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
@@ -167,56 +185,77 @@ class ChatAPI:
                         exchange_id=existing_response.id,
                     )
 
-        # Check if we're continuing an existing conversation (do this ONCE at the beginning)
         exchange_id = None
         if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
 
-        # Use new agent system if available, otherwise fallback to legacy
+        page_id = None
+        page_obj = None
+        if payload is not None and hasattr(payload, "page_id") and payload.page_id:
+            page_id = payload.page_id
+            # Access-check outside the try below so 403s propagate instead of
+            # being masked as 500.
+            page_obj = self.chat_manager.get_accessible_page(trans, page_id)
+
         try:
             if HAS_AGENTS:
-                # Build context with conversation history
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
 
-                # If we have an exchange_id, ALWAYS load conversation history from database (source of truth)
+                # Export page content (encodes IDs) so the agent sees the same
+                # text the editor has -- hashes and proposals match the client.
+                if page_id:
+                    if page_obj:
+                        full_context["history_id"] = page_obj.history_id
+                        if not full_context.get("history_id"):
+                            session_history = getattr(trans, "history", None)
+                            if session_history:
+                                full_context["history_id"] = session_history.id
+                                full_context["history_is_session"] = True
+                        if page_obj.latest_revision_id:
+                            rev = page_obj.latest_revision
+                            if rev and rev.content:
+                                exported, _, _ = ready_galaxy_markdown_for_export(trans, rev.content)
+                                full_context["page_content"] = exported
+                            else:
+                                full_context["page_content"] = ""
+                        else:
+                            full_context["page_content"] = ""
+
+                # DB is the source of truth for history; use structured pydantic-ai
+                # format so the router passes it as ``message_history`` rather than
+                # flattening into a text blob.
                 if exchange_id:
                     db_history = await anyio.to_thread.run_sync(
-                        partial(self.chat_manager.get_chat_history, trans, exchange_id, format_for_pydantic_ai=False)
+                        partial(self.chat_manager.get_chat_history, trans, exchange_id, format_for_pydantic_ai=True)
                     )
                     if db_history:
                         full_context["conversation_history"] = db_history
                     else:
-                        # No history found for this exchange, start fresh
                         full_context["conversation_history"] = []
                 else:
-                    # New conversation - no history needed
                     full_context["conversation_history"] = []
 
-                # Get full agent response with metadata
+                if payload and payload.entity_context:
+                    full_context["entities"] = payload.entity_context.model_dump(exclude_none=True)
+
                 agent_response = await self._get_agent_response_full(
                     query_text, agent_type, trans, user, job, full_context
                 )
                 result["response"] = agent_response.content
                 result["agent_response"] = agent_response
             else:
-                # Fallback to legacy implementation
                 self._ensure_ai_configured()
-                # For legacy, use context_type from query_context if it exists
                 context_type = query_context.get("context_type") if isinstance(query_context, dict) else None
                 answer = await self._get_ai_response(query_text, trans, context_type)
                 result["response"] = answer
 
-            # Save chat exchange to database
             if job:
-                # Job-based chat
                 exchange = await anyio.to_thread.run_sync(
                     partial(self.chat_manager.create, trans, job.id, str(result["response"]))
                 )
                 result["exchange_id"] = exchange.id
             elif trans.user:
-                # Use the exchange_id we already extracted at the beginning
                 if exchange_id:
-                    # Add to existing conversation
                     agent_resp = result.get("agent_response")
                     conversation_data = {
                         "query": query_text,
@@ -229,9 +268,17 @@ class ChatAPI:
                         partial(self.chat_manager.add_message, trans, exchange_id, message_content)
                     )
                     result["exchange_id"] = exchange_id
+                elif page_id:
+                    agent_resp = result.get("agent_response")
+                    storable_result = {
+                        "response": result.get("response", ""),
+                        "agent_response": agent_resp.model_dump() if agent_resp else None,
+                    }
+                    exchange = self.chat_manager.create_page_chat(
+                        trans, page_id, query_text, storable_result, agent_type
+                    )
+                    result["exchange_id"] = exchange.id
                 else:
-                    # Create new exchange for first message
-                    # Serialize agent_response for JSON storage
                     agent_resp = result.get("agent_response")
                     storable_result = {
                         "response": result.get("response", ""),
@@ -260,40 +307,25 @@ class ChatAPI:
         limit: int = Query(default=50, description="Maximum number of chats to return"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> list[dict[str, Any]]:
+    ) -> list[ChatHistoryItemResponse]:
         """Get user's chat history."""
         exchanges = self.chat_manager.get_user_chat_history(trans, limit=limit, include_job_chats=False)
+        return self._format_exchange_history(exchanges)
 
-        # Format exchanges for frontend
-        history = []
+    @router.get("/api/chat/page/{page_id}/history", unstable=True)
+    def get_page_chat_history(
+        self,
+        page_id: DecodedDatabaseIdField,
+        limit: int = Query(default=50, description="Maximum number of chats to return"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> list[ChatHistoryItemResponse]:
+        """Get chat history scoped to a page."""
+        if not user:
+            return []
 
-        for exchange in exchanges:
-            # For now, still return just the first message of each exchange for compatibility
-            # TODO: Eventually return full conversation threads
-            if exchange.messages:
-                message = exchange.messages[0]  # Get first message
-                try:
-                    # Parse JSON content
-                    data = json.loads(message.message)
-                    history.append(
-                        {
-                            "id": encode_id(exchange.id),
-                            "query": data.get("query", ""),
-                            "response": data.get("response", ""),
-                            "agent_type": data.get("agent_type", "unknown"),
-                            "agent_response": data.get(
-                                "agent_response"
-                            ),  # Include full agent response with suggestions
-                            "timestamp": message.create_time.isoformat() if message.create_time else None,
-                            "feedback": message.feedback,
-                            "message_count": len(exchange.messages),  # Add count to show it's a conversation
-                        }
-                    )
-                except (json.JSONDecodeError, AttributeError):
-                    # Fallback for non-JSON messages (legacy job-based chats)
-                    pass
-
-        return history
+        exchanges = self.chat_manager.get_page_chat_history(trans, page_id, limit=limit)
+        return self._format_exchange_history(exchanges)
 
     @router.delete("/api/chat/history", unstable=True)
     def clear_chat_history(
@@ -362,6 +394,49 @@ class ChatAPI:
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
         return chat_response.messages[0].feedback
 
+    @router.get("/api/chat/{workflow_id}/generate_report", unstable=True)
+    async def generate_report(
+        self,
+        workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
+        version: Optional[int] = Query(None, description="Version of the workflow"),
+        instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> WorkflowReportResponse:
+        """Generate a report for the specified workflow."""
+        if not HAS_AGENTS:
+            raise ConfigurationError("AI agent system is not available.")
+        assert WorkflowReportAgent is not None
+
+        stored = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
+        if not stored:
+            raise ObjectNotFound("Workflow not found.")
+
+        workflow = stored.get_internal_version(version) if version is not None else stored.latest_workflow
+
+        deps = self.agent_service.create_dependencies(trans, user)
+        agent = WorkflowReportAgent(deps)
+
+        try:
+            response = await agent.generate_workflow_report(workflow)
+        except ModelHTTPError as e:
+            body_msg = e.body.get("message", str(e)) if isinstance(e.body, dict) else str(e)
+            raise MessageException(f"AI model error ({e.status_code}): {body_msg}")
+        except UnexpectedModelBehavior as e:
+            raise MessageException(f"AI model returned an unexpected response: {e}")
+        except Exception as e:
+            raise MessageException(f"Failed to generate workflow report: {e}")
+
+        if response.metadata.get("validation_error"):
+            raise MessageException(response.content)
+        if response.metadata.get("error"):
+            raise MessageException(response.metadata.get("error"))
+        return WorkflowReportResponse(
+            report=response.content,
+            total_tokens=response.metadata.get("total_tokens"),
+            model=response.metadata.get("model"),
+        )
+
     @router.put("/api/chat/exchange/{exchange_id}/feedback", unstable=True)
     def set_exchange_feedback(
         self,
@@ -427,6 +502,33 @@ class ChatAPI:
                 )
 
         return messages
+
+    def _format_exchange_history(self, exchanges) -> list[ChatHistoryItemResponse]:
+        """Convert a list of ChatExchange ORM objects into API response models."""
+        history: list[ChatHistoryItemResponse] = []
+        for exchange in exchanges:
+            if not exchange.messages:
+                continue
+            message = exchange.messages[0]
+            try:
+                data = json.loads(message.message)
+                agent_response_raw = data.get("agent_response")
+                agent_response = AgentResponse(**agent_response_raw) if agent_response_raw else None
+                history.append(
+                    ChatHistoryItemResponse(
+                        id=exchange.id,
+                        query=data.get("query", ""),
+                        response=data.get("response", ""),
+                        agent_type=data.get("agent_type", "unknown"),
+                        agent_response=agent_response,
+                        timestamp=message.create_time.isoformat() if message.create_time else None,
+                        feedback=message.feedback,
+                        message_count=len(exchange.messages),
+                    )
+                )
+            except (json.JSONDecodeError, AttributeError):
+                log.debug("Skipping malformed chat exchange %s", exchange.id)
+        return history
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

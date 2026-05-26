@@ -2,7 +2,7 @@
 import { faBars, faCog, faDatabase, faSave, faTable } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { BAlert, BSpinner } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
@@ -255,7 +255,7 @@ async function saveAttrs() {
 
                 <DbKeyProvider v-slot="{ item, loading }">
                     <div v-if="loading">
-                        <BSpinner label="Loading Database/Builds..." />
+                        <LoadingSpan message="Loading Database/Builds" />
                     </div>
                     <div v-else>
                         <DatabaseEditTab

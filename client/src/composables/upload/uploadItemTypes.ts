@@ -20,6 +20,7 @@ interface UploadItemCommon {
     extension: string;
     spaceToTab: boolean;
     toPosixLines: boolean;
+    autoDecompress: boolean;
     deferred: boolean;
     hashes?: FetchDatasetHash[];
 }

@@ -4,12 +4,10 @@
     ChangeDatatypeAction should not corrupt it.
   job:
     input_data:
-      type: File
-      value: 1.bed
-      file_type: bed
-    when:
-      type: raw
-      value: false
+      class: File
+      path: 1.bed
+      filetype: bed
+    when: false
   outputs:
     picked:
       class: File

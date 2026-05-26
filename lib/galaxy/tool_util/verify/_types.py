@@ -15,10 +15,12 @@ from typing_extensions import (
 )
 
 from galaxy.tool_util.parser.interface import (
-    AssertionList,
-    DirectCredential,
     TestSourceTestOutputColllection,
     ToolSourceTestOutputs,
+)
+from galaxy.tool_util_models.testing_types import (
+    AssertionList,
+    DirectCredential,
 )
 
 # legacy inputs for working with POST /api/tools

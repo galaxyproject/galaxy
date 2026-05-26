@@ -26,6 +26,7 @@ from galaxy.files.models import (
     FilesSourceRuntimeContext,
     RemoteDirectory,
     RemoteFile,
+    RemoteFileHash,
 )
 from galaxy.files.sources import DEFAULT_PAGE_LIMIT
 from galaxy.files.sources._defaults import DEFAULT_SCHEME
@@ -42,6 +43,7 @@ from galaxy.util import (
     requests,
     stream_to_open_named_file,
 )
+from galaxy.util.hash_util import as_hash_function_name
 
 AccessStatus = Literal["public", "restricted"]
 
@@ -483,9 +485,24 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                         ctime=entry["created"],
                         uri=uri,
                         path=path,
+                        hashes=self._get_file_hashes(entry),
                     )
                 )
         return rval
+
+    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+        """Get optional file hashes provided by InvenioRDM for the RemoteFile entry."""
+        # InvenioRDM may provide an optional "checksum" field with the file hash.
+        checksum = info.get("checksum")
+        if checksum and isinstance(checksum, str):
+            # InvenioRDM's checksum field is a string in the format "<hash_function>:<hash_value>", e.g. "md5:1B2M2Y8AsgTpgAmY7PhCfg=="
+            parts = checksum.split(":", 1)
+            if len(parts) == 2:
+                hash_function, hash_value = parts
+                hash_function_name = as_hash_function_name(hash_function)
+                if hash_function_name:
+                    return [RemoteFileHash(hash_function=hash_function_name, hash_value=hash_value)]
+        return None
 
     def _get_creator_from_public_name(self, public_name: Optional[str] = None) -> Creator:
         given_name = "Anonymous"

@@ -19,7 +19,6 @@ interface Props {
     filterable?: boolean;
     publishedView?: boolean;
     editorView?: boolean;
-    compact?: boolean;
     currentWorkflowId?: string;
     selectedWorkflowIds?: SelectedWorkflow[];
     itemRefs?: Record<string, Ref<InstanceType<typeof WorkflowCard> | null>>;
@@ -33,7 +32,6 @@ const props = withDefaults(defineProps<Props>(), {
     filterable: true,
     publishedView: false,
     editorView: false,
-    compact: false,
     currentWorkflowId: "",
     selectedWorkflowIds: () => [],
     itemRefs: () => ({}),
@@ -107,7 +105,6 @@ const workflowPublished = ref<InstanceType<typeof WorkflowPublished>>();
             :filterable="props.filterable"
             :published-view="props.publishedView"
             :editor-view="props.editorView"
-            :compact="props.compact"
             :current="workflow.id === props.currentWorkflowId"
             :clickable="props.clickable"
             :highlighted="props.rangeSelectAnchor?.id === workflow.id"

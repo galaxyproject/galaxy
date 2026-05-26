@@ -2,6 +2,9 @@ from typing import (
     Any,
 )
 
+import pytest
+
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters.wrapped import (
     nested_key_to_path,
     process_key,
@@ -57,6 +60,11 @@ class TestProcessKey:
             "directory_content": [],
         }
         assert nested_dict == expected_dict
+
+    def test_process_key_rejects_all_digit_segment(self):
+        nested_dict: dict[str, Any] = {}
+        with pytest.raises(RequestParameterInvalidException):
+            process_key("files|0|filetype", "fastq", nested_dict)
 
 
 class TestParameterParsing(BaseParameterTestCase):

@@ -18,14 +18,17 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
+export type FilterValue = string | string[] | undefined;
+
 export interface FilterSettings {
-    [key: string]: string | undefined;
+    [key: string]: FilterValue;
     name?: string;
     section?: string;
     ontology?: string;
     id?: string;
     owner?: string;
     help?: string;
+    tag?: string[];
 }
 
 export interface Panel {
@@ -47,6 +50,7 @@ export interface Tool {
     labels: string[];
     edam_operations: string[];
     edam_topics: string[];
+    tool_tags?: string[];
     hidden: "" | boolean;
     is_workflow_compatible: boolean;
     xrefs: string[];
@@ -96,11 +100,9 @@ export type ToolHelpData = {
     summary?: string;
 };
 
-const MY_PANEL_VIEW_SECTION_ID = "favorites";
-
 const MY_PANEL_VIEW: Panel = {
     id: MY_PANEL_VIEW_ID,
-    model_class: "StaticToolPanelView",
+    model_class: "MyToolsToolPanelView",
     name: MY_PANEL_VIEW_NAME,
     description: MY_PANEL_VIEW_DESCRIPTION,
     view_type: MY_PANEL_VIEW_TYPE,
@@ -113,6 +115,7 @@ export const useToolStore = defineStore("toolStore", () => {
     const loading = ref(false);
     const panels = ref<Record<string, Panel>>({});
     const searchWorker = ref<Worker | undefined>(undefined);
+    const toolTagsLoaded = ref(false);
     const toolsById = shallowRef<Record<string, Tool>>({});
     const toolResults = ref<Record<string, string[]>>({});
     const toolSections = ref<Record<string, Record<string, ToolPanelItem>>>({});
@@ -209,17 +212,6 @@ export const useToolStore = defineStore("toolStore", () => {
         if (!panelView || toolSections.value[panelView]) {
             return;
         }
-        if (panelView === MY_PANEL_VIEW_ID) {
-            saveToolSections(panelView, {
-                [MY_PANEL_VIEW_SECTION_ID]: {
-                    model_class: "ToolSection",
-                    id: MY_PANEL_VIEW_SECTION_ID,
-                    name: "Favorites",
-                    tools: [],
-                },
-            });
-            return;
-        }
         try {
             loading.value = true;
             const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
@@ -268,15 +260,42 @@ export const useToolStore = defineStore("toolStore", () => {
                 }
             }
 
-            // Fetch all tools by IDs if not already fetched
+            // Fetch all tools by IDs if not already fetched.
             if (Object.keys(toolsById.value).length === 0) {
-                const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=False`);
+                const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { in_panel: false } });
                 saveAllTools(data as Tool[]);
             }
         } catch (e) {
             rethrowSimple(e);
         } finally {
             loading.value = false;
+        }
+    }
+
+    /**
+     * Fetch the curated `{tool_id: [tag, ...]}` mapping from `/api/tags/tool_tags`
+     * and merge it into `toolsById`. Idempotent: subsequent calls are no-ops
+     * once the mapping has been loaded for the current toolbox.
+     *
+     * Kept separate from `fetchTools` so the bulk `/api/tools` payload doesn't
+     * carry per-tool `tool_tags` — the mapping is only consumed by the My
+     * Tools panel, while every tool-list consumer pays the bandwidth cost.
+     */
+    async function fetchToolTagsMapping() {
+        if (toolTagsLoaded.value) {
+            return;
+        }
+        try {
+            const { data } = await axios.get(`${getAppRoot()}api/tags/tool_tags`);
+            const mapping = (data ?? {}) as Record<string, string[]>;
+            const merged: Record<string, Tool> = {};
+            for (const [id, tool] of Object.entries(toolsById.value)) {
+                merged[id] = { ...tool, tool_tags: mapping[id] ?? tool.tool_tags ?? [] };
+            }
+            toolsById.value = merged;
+            toolTagsLoaded.value = true;
+        } catch (e) {
+            rethrowSimple(e);
         }
     }
 
@@ -331,6 +350,9 @@ export const useToolStore = defineStore("toolStore", () => {
             },
             {} as Record<string, Tool>,
         );
+        // The bulk /api/tools payload doesn't carry tool_tags; reset the loaded
+        // flag so the next mount of the My Tools panel re-fetches the mapping.
+        toolTagsLoaded.value = false;
     }
 
     function saveToolSections(panelView: string, newPanel: { [id: string]: ToolPanelItem }) {
@@ -367,6 +389,7 @@ export const useToolStore = defineStore("toolStore", () => {
         fetchPanels,
         fetchToolForId,
         fetchTools,
+        fetchToolTagsMapping,
         getLinkById,
         getTargetById,
         helpDataCached,
@@ -385,6 +408,7 @@ export const useToolStore = defineStore("toolStore", () => {
         searchWorker,
         sectionDatalist,
         setPanel,
+        toolTagsLoaded,
         toolsById,
         toolSections,
     };

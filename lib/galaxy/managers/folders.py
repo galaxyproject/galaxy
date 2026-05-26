@@ -47,7 +47,10 @@ from galaxy.model import (
     LibraryFolder,
     LibraryFolderPermissions,
 )
-from galaxy.model.db.role import get_private_role_user_emails_dict
+from galaxy.model.db.role import (
+    get_private_role_user_emails_dict,
+    role_name_id_pairs,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
@@ -324,20 +327,11 @@ class FolderManager:
         )
         all_role_ids = {r.id for r in modify_roles | manage_roles | add_roles}
         private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=all_role_ids)
-
-        def make_tuples(roles: set):
-            tuples = []
-            for role in roles:
-                # use role name for non-private roles, and user.email from private rules
-                displayed_name = private_role_emails.get(role.id, role.name)
-                role_tuple = (displayed_name, trans.security.encode_id(role.id))
-                tuples.append(role_tuple)
-            return tuples
-
+        encode_id = trans.security.encode_id
         return dict(
-            modify_folder_role_list=make_tuples(modify_roles),
-            manage_folder_role_list=make_tuples(manage_roles),
-            add_library_item_role_list=make_tuples(add_roles),
+            modify_folder_role_list=role_name_id_pairs(modify_roles, private_role_emails, encode_id),
+            manage_folder_role_list=role_name_id_pairs(manage_roles, private_role_emails, encode_id),
+            add_library_item_role_list=role_name_id_pairs(add_roles, private_role_emails, encode_id),
         )
 
     def can_add_item(self, trans, folder):

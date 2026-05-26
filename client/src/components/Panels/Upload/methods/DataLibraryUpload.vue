@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faFile, faFolder, faLock, faPlus, faShieldAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BFormCheckbox, BPagination } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
@@ -911,12 +911,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                         <GButton
                             v-g-tooltip.hover
                             class="remove-btn"
-                            color="red"
                             outline
                             transparent
                             title="Remove dataset from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
+                            <FontAwesomeIcon :icon="faTrash" />
                         </GButton>
                     </template>
                 </GTable>

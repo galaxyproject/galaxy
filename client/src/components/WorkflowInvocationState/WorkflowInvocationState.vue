@@ -5,7 +5,6 @@ import {
     faExclamation,
     faSpinner,
     faSquare,
-    faTimes,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BBadge, BNav, BNavItem } from "bootstrap-vue";
@@ -450,17 +449,6 @@ async function onCancel() {
                 <BBadge v-if="isPolling" v-g-tooltip.hover title="Polling for updates" variant="link">
                     <FontAwesomeIcon :icon="faSpinner" spin />
                 </BBadge>
-                <GButton
-                    v-if="!invocationAndJobTerminal"
-                    tooltip
-                    class="my-1"
-                    title="Cancel scheduling of workflow invocation"
-                    data-description="cancel invocation button"
-                    size="small"
-                    @click="onCancel">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                    Cancel Workflow
-                </GButton>
             </div>
         </BNav>
 
@@ -559,6 +547,7 @@ async function onCancel() {
         transform 0.25s ease;
 }
 
+// TODO(vue3): rename .header-collapse-enter to .header-collapse-enter-from
 .header-collapse-enter,
 .header-collapse-leave-to {
     max-height: 0;
@@ -581,7 +570,6 @@ async function onCancel() {
     // progress bar shrinks to fit divs on either side
     flex-grow: 1;
     flex-shrink: 1;
-    max-width: 50%;
 
     .steps-progress,
     .jobs-progress {

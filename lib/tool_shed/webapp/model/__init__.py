@@ -24,8 +24,10 @@ from sqlalchemy import (
     DateTime,
     desc,
     ForeignKey,
+    func,
     Integer,
     not_,
+    select,
     String,
     Table,
     text,
@@ -33,6 +35,7 @@ from sqlalchemy import (
     true,
     UniqueConstraint,
 )
+from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -47,10 +50,12 @@ from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
 )
-from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.security.validate_user_input import validate_password_str
-from galaxy.util import unique_id
+from galaxy.util import (
+    now,
+    unique_id,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
@@ -438,11 +443,24 @@ class Repository(Base, Dictifiable):
         self.name = self.name or "Unnamed repository"
         self.user = user
 
-    @property
+    @hybrid.hybrid_property
     def last_updated_time(self):
         if downloadable_revisions := self.downloadable_revisions:
             return downloadable_revisions[0].create_time
         return self.create_time
+
+    @last_updated_time.expression  # type: ignore[no-redef]
+    def last_updated_time(cls):
+        last_revision_create_time = (
+            select(RepositoryMetadata.create_time)
+            .where(RepositoryMetadata.repository_id == cls.id)
+            .where(RepositoryMetadata.downloadable == true())
+            .order_by(RepositoryMetadata.update_time.desc())
+            .limit(1)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+        return func.coalesce(last_revision_create_time, cls.create_time)
 
     @property
     def hg_repo(self):
@@ -688,14 +706,26 @@ class Tag(Base):
 
 
 class RepositoryMetadata(Dictifiable):
-    update_time: Mapped[DateTime]
+    # Annotations only — runtime attributes are installed by
+    # mapper_registry.map_imperatively below.
+    id: Mapped[Optional[int]]
+    create_time: Mapped[Optional[datetime]]
+    update_time: Mapped[Optional[datetime]]
     repository_id: Mapped[Optional[int]]
     changeset_revision: Mapped[Optional[str]]
-    downloadable: Mapped[bool]
+    numeric_revision: Mapped[Optional[int]]
+    metadata: Mapped[Any]
+    tool_versions: Mapped[Any]
+    malicious: Mapped[Optional[bool]]
+    downloadable: Mapped[Optional[bool]]
+    missing_test_components: Mapped[Optional[bool]]
+    has_repository_dependencies: Mapped[Optional[bool]]
+    includes_datatypes: Mapped[Optional[bool]]
+    includes_tools: Mapped[Optional[bool]]
+    includes_tool_dependencies: Mapped[Optional[bool]]
+    includes_workflows: Mapped[Optional[bool]]
     repository: Mapped["Repository"]
 
-    # Once the class has been mapped, all Column items in this table will be available
-    # as instrumented class attributes on RepositoryMetadata.
     table = Table(
         "repository_metadata",
         mapper_registry.metadata,

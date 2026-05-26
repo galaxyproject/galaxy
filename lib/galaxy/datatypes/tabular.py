@@ -165,6 +165,10 @@ class TabularData(Text):
                         cursor = f.read(1)
             except UnicodeDecodeError:
                 raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+            except EOFError:
+                raise InvalidFileFormatError(
+                    "Dataset appears to be a truncated or corrupt compressed file, cannot display."
+                )
             last_read = f.tell()
         return ck_data, last_read
 

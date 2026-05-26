@@ -19,6 +19,6 @@ steps:
     in:
       input1:
         source: required_input
-    outputs:
+    out:
       out_file1:
         rename: "prefix_${optional_text}_suffix"

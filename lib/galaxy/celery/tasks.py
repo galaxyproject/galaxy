@@ -9,13 +9,19 @@ from typing import (
     Any,
     Optional,
 )
+from urllib.parse import urlparse
 
+from celery import current_task
+from lagom.exceptions import UnresolvableType
 from sqlalchemy import (
     and_,
+    create_engine,
     delete,
     exists,
     false,
+    or_,
     select,
+    text,
     update,
 )
 
@@ -30,6 +36,7 @@ from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dataset_storage_operations import DatasetStorageOperationManager
 from galaxy.managers.datasets import (
     DatasetAssociationManager,
     DatasetManager,
@@ -40,19 +47,23 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.queue_metrics import emit_queue_metrics
+from galaxy.managers.sse import SSEConnectionManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.managers.workflow_completion import WorkflowCompletionManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model import (
+    DatasetStorageOperationRun,
+    DatasetStorageOperationSnapshot,
     Job,
     User,
 )
-from galaxy.model.orm.now import now
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.objectstore import BaseObjectStore
 from galaxy.objectstore.caching import check_caches
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.notifications import NotificationCreateRequest
+from galaxy.schema.storage_operations import StorageOperationRunState
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -79,7 +90,10 @@ from galaxy.short_term_storage import ShortTermStorageMonitor
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    now,
+)
 from galaxy.util.custom_logging import get_logger
 from galaxy.workflow.completion_hooks import WorkflowCompletionHookRegistry
 
@@ -92,9 +106,14 @@ def cached_create_tool_from_representation(
     raw_tool_source: str,
     tool_source_class: TOOL_SOURCE_CLASS,
     tool_dir: Optional[str] = None,
+    tool_id: Optional[str] = None,
 ):
     return create_tool_from_representation(
-        app=app, raw_tool_source=raw_tool_source, tool_dir=tool_dir, tool_source_class=tool_source_class
+        app=app,
+        raw_tool_source=raw_tool_source,
+        tool_dir=tool_dir,
+        tool_source_class=tool_source_class,
+        guid=tool_id,
     )
 
 
@@ -295,6 +314,83 @@ def set_metadata(
     sa_session.commit()
 
 
+@galaxy_task(action="execute bulk storage move run")
+def bulk_move_storage(
+    sa_session: galaxy_scoped_session,
+    dataset_manager: DatasetManager,
+    notification_manager: NotificationManager,
+    app: MinimalManagerApp,
+    run_db_id: int,
+    task_user_id: int,
+    notify_on_completion: Optional[bool] = None,
+):
+    run = sa_session.get(DatasetStorageOperationRun, run_db_id)
+    if run is None:
+        log.error(f"Bulk storage move run not found: {run_db_id}")
+        return
+
+    current_task_id = getattr(getattr(current_task, "request", None), "id", None)
+    if current_task_id is not None:
+        if run.task_id is None:
+            # Claim ownership for the first worker execution in case run.task_id was not yet persisted.
+            run.task_id = str(current_task_id)
+            sa_session.add(run)
+            sa_session.commit()
+        elif str(run.task_id) != str(current_task_id):
+            log.info(
+                "Skipping bulk storage run %s because task ownership moved from %s to %s",
+                run.id,
+                current_task_id,
+                run.task_id,
+            )
+            return
+
+    if run.state in (StorageOperationRunState.completed.value, StorageOperationRunState.failed.value):
+        log.info("Skipping bulk storage run %s because it is already terminal (%s)", run.id, run.state)
+        return
+
+    user = sa_session.get(User, task_user_id)
+    if user is None:
+        log.error("Bulk storage run %s user %s not found; marking run as failed", run.id, task_user_id)
+        run.state = StorageOperationRunState.failed.value
+        run.failed_count = run.total_count or 0
+        sa_session.add(run)
+        sa_session.commit()
+        return
+
+    snapshot = sa_session.get(DatasetStorageOperationSnapshot, run.snapshot_id)
+    storage_operation_manager = DatasetStorageOperationManager(app.object_store, app.config)
+    executor = storage_operation_manager.create_run_executor(
+        sa_session=sa_session,
+        dataset_manager=dataset_manager,
+        app=app,
+        run=run,
+        user=user,
+        current_task_id=current_task_id,
+    )
+    execution_result = executor.execute_run(snapshot)
+
+    if execution_result.state not in (StorageOperationRunState.completed, StorageOperationRunState.failed):
+        return
+
+    run_notify_on_completion = notify_on_completion
+    if run_notify_on_completion is None:
+        run_notify_on_completion = run.notify_on_completion
+
+    if not run_notify_on_completion:
+        return
+
+    try:
+        notification_manager.send_storage_operation_notification(
+            user_id=user.id,
+            run=run,
+            execution_result=execution_result,
+            encode_id=app.security.encode_id,
+        )
+    except Exception:
+        log.exception("Failed to send storage operation notification for run %s", run.id)
+
+
 def _get_dataset_manager(
     hda_manager: HDAManager, ldda_manager: LDDAManager, model_class: str = "HistoryDatasetAssociation"
 ) -> DatasetAssociationManager:
@@ -441,6 +537,7 @@ def queue_jobs(request: QueueJobs, app: MinimalManagerApp, job_submitter: JobSub
         raw_tool_source=raw_tool_source,
         tool_dir=request.tool_source.tool_dir,
         tool_source_class=tool_source_class,
+        tool_id=request.tool_source.tool_id,
     )
 
     job_submitter.queue_jobs(
@@ -585,6 +682,38 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
     model.HistoryAudit.prune(sa_session)
 
 
+@galaxy_task(action="cleaning up Kombu SQLAlchemy transport")
+def prune_kombu_sqla_transport(config: GalaxyAppConfiguration):
+    """Delete fully-consumed rows from the Kombu SQLAlchemy transport tables.
+
+    Kombu's SQLAlchemy transport marks consumed messages with ``visible=0`` but
+    never deletes them — without this task the control-queue tables grow
+    without bound on the default on-disk sqlite broker. On AMQP / Redis the
+    broker has native TTL, so this task is a no-op.
+    """
+    broker_url = config.amqp_internal_connection
+    if not broker_url:
+        log.debug("kombu cleanup: no broker URL configured, skipping")
+        return
+    scheme = urlparse(broker_url).scheme
+    if not scheme.startswith("sqlalchemy"):
+        log.debug("kombu cleanup: broker scheme %s is not sqlalchemy, skipping", scheme)
+        return
+
+    # Kombu's SQLA transport URL is ``sqlalchemy+<dialect>://...``. Strip the
+    # ``sqlalchemy+`` prefix to get an engine URL we can hand to SQLAlchemy.
+    sa_url = broker_url[len("sqlalchemy+") :] if broker_url.startswith("sqlalchemy+") else broker_url
+    engine = create_engine(sa_url)
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text("DELETE FROM kombu_message WHERE visible IS FALSE"))
+            log.info("kombu cleanup: deleted %s consumed messages", result.rowcount)
+    except Exception:
+        log.exception("kombu cleanup: failed to prune kombu_message")
+    finally:
+        engine.dispose()
+
+
 @galaxy_task(action="clean up short term storage")
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
@@ -598,6 +727,23 @@ def cleanup_expired_notifications(notification_manager: NotificationManager):
     log.info(
         f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
     )
+
+
+@galaxy_task(action="prune expired bulk storage operations")
+def prune_expired_bulk_storage_operations(
+    sa_session: galaxy_scoped_session,
+    object_store: BaseObjectStore,
+    config: GalaxyAppConfiguration,
+):
+    storage_operation_manager = DatasetStorageOperationManager(object_store, config)
+    deleted_run_count = storage_operation_manager.prune_completed_runs(sa_session)
+    deleted_snapshot_count = storage_operation_manager.prune_expired_snapshots(sa_session)
+    if deleted_run_count or deleted_snapshot_count:
+        log.info(
+            "Pruned %s completed storage operation runs and %s expired storage operation snapshots",
+            deleted_run_count,
+            deleted_snapshot_count,
+        )
 
 
 @galaxy_task(action="prune object store cache directories")
@@ -620,6 +766,28 @@ def dispatch_pending_notifications(notification_manager: NotificationManager):
     """Dispatch pending notifications."""
     if count := notification_manager.dispatch_pending_notifications_via_channels():
         log.info(f"Successfully dispatched {count} notifications.")
+
+
+@galaxy_task(action="emit queue and SSE observability metrics")
+def emit_queue_metrics_task(app: MinimalManagerApp):
+    """Sample control-queue depth, SSE connection count, and worker rows → statsd.
+
+    Resolves the narrow collaborators ``emit_queue_metrics`` needs from the app
+    container and passes them in — keeps the emitter module free of
+    ``StructuredApp`` service-locator lookups.
+    """
+    try:
+        sse_manager: Optional[SSEConnectionManager] = app[SSEConnectionManager]
+    except UnresolvableType:
+        sse_manager = None
+
+    emit_queue_metrics(
+        statsd_client=app.execution_timer_factory.galaxy_statsd_client,
+        connection=app.amqp_internal_connection_obj,
+        application_stack=app.application_stack,
+        model=app.model,
+        sse_manager=sse_manager,
+    )
 
 
 @galaxy_task(action="clean up job working directories")
@@ -735,3 +903,60 @@ def cleanup_stale_concurrency_slots(
         )
         session.commit()
         log.info(f"Cleaned up {len(stale_task_ids)} stale concurrency tracking rows")
+
+
+@galaxy_task(action="recover stale storage operation runs")
+def recover_stale_bulk_storage_operation_runs(
+    session: galaxy_scoped_session,
+    stale_threshold_minutes: int = 30,
+):
+    threshold = datetime.datetime.now() - datetime.timedelta(minutes=stale_threshold_minutes)
+
+    stale_runs = (
+        session.execute(
+            select(DatasetStorageOperationRun).where(
+                or_(
+                    DatasetStorageOperationRun.state == StorageOperationRunState.pending.value,
+                    DatasetStorageOperationRun.state == StorageOperationRunState.running.value,
+                ),
+                DatasetStorageOperationRun.update_time < threshold,
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    if not stale_runs:
+        return
+
+    try:
+        active_response = celery_app.control.inspect().active() or {}
+    except Exception:
+        log.warning("Failed to inspect active tasks on workers; skipping stale storage operation recovery")
+        return
+
+    active_task_ids = {task["id"] for tasks in active_response.values() for task in tasks}
+    recovered_count = 0
+
+    for run in stale_runs:
+        run_task_id = str(run.task_id) if run.task_id is not None else None
+        if run_task_id is not None and run_task_id in active_task_ids:
+            continue
+
+        try:
+            task_result = bulk_move_storage.delay(
+                run_db_id=run.id,
+                task_user_id=run.user_id,
+                notify_on_completion=run.notify_on_completion,
+            )
+            run.state = StorageOperationRunState.pending.value
+            run.task_id = str(task_result.id)
+            session.add(run)
+            session.commit()
+            recovered_count += 1
+        except Exception:
+            session.rollback()
+            log.exception("Failed to redispatch stale storage operation run %s", run.id)
+
+    if recovered_count:
+        log.info("Redispatched %s stale storage operation runs", recovered_count)

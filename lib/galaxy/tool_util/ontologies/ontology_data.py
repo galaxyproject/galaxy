@@ -1,4 +1,6 @@
+import logging
 from collections import defaultdict
+from functools import lru_cache
 from typing import (
     cast,
     Dict,
@@ -8,10 +10,14 @@ from typing import (
     Tuple,
 )
 
+import yaml
+
 from galaxy.tool_util.biotools import BiotoolsMetadataSource
 from galaxy.tool_util.parser import ToolSource
 from galaxy.tool_util_models.tool_source import XrefDict
 from galaxy.util.resources import resource_string
+
+log = logging.getLogger(__name__)
 
 
 def _multi_dict_mapping(content: str) -> Dict[str, List[str]]:
@@ -31,24 +37,87 @@ def _read_ontology_data_text(filename: str) -> str:
 BIOTOOLS_MAPPING_FILENAME = "biotools_mappings.tsv"
 EDAM_OPERATION_MAPPING_FILENAME = "edam_operation_mappings.tsv"
 EDAM_TOPIC_MAPPING_FILENAME = "edam_topic_mappings.tsv"
+TOOL_TAG_MAPPING_FILENAME = "tool_tag_mappings.yml"
 
-BIOTOOLS_MAPPING_CONTENT = _read_ontology_data_text(BIOTOOLS_MAPPING_FILENAME)
-BIOTOOLS_MAPPING: Dict[str, List[str]] = defaultdict(list)
-for line in BIOTOOLS_MAPPING_CONTENT.splitlines():
-    if not line.startswith("#"):
-        tool_id, xref = line.split("\t")
-        BIOTOOLS_MAPPING[tool_id].append(xref)
-EDAM_OPERATION_MAPPING_CONTENT = _read_ontology_data_text(EDAM_OPERATION_MAPPING_FILENAME)
-EDAM_OPERATION_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_OPERATION_MAPPING_CONTENT)
 
-EDAM_TOPIC_MAPPING_CONTENT = _read_ontology_data_text(EDAM_TOPIC_MAPPING_FILENAME)
-EDAM_TOPIC_MAPPING: Dict[str, List[str]] = _multi_dict_mapping(EDAM_TOPIC_MAPPING_CONTENT)
+@lru_cache(maxsize=1)
+def _biotools_mapping() -> Dict[str, List[str]]:
+    mapping: Dict[str, List[str]] = defaultdict(list)
+    for line in _read_ontology_data_text(BIOTOOLS_MAPPING_FILENAME).splitlines():
+        if not line.startswith("#"):
+            tool_id, xref = line.split("\t")
+            mapping[tool_id].append(xref)
+    return mapping
+
+
+@lru_cache(maxsize=1)
+def _edam_operation_mapping() -> Dict[str, List[str]]:
+    return _multi_dict_mapping(_read_ontology_data_text(EDAM_OPERATION_MAPPING_FILENAME))
+
+
+@lru_cache(maxsize=1)
+def _edam_topic_mapping() -> Dict[str, List[str]]:
+    return _multi_dict_mapping(_read_ontology_data_text(EDAM_TOPIC_MAPPING_FILENAME))
+
+
+def _load_tool_tag_mapping(content: str) -> Dict[str, List[str]]:
+    raw = cast(
+        Dict[str, List[str]],
+        (yaml.safe_load(content) or {}).get("tool_tags", {}),
+    )
+    # `Tool.all_ids` is built from lowercased tool ids (see `Tool.parse` in
+    # `lib/galaxy/tools/__init__.py`, around the `self_ids = [self.id.lower()]`
+    # block), so the curated mapping must use lowercase keys to be looked up
+    # successfully. Normalize at load time so admin-supplied YAML files don't
+    # have to worry about case.
+    return {tool_id.lower(): tags for tool_id, tags in raw.items()}
+
+
+_TOOL_TAG_MAPPING_OVERRIDE: Optional[Dict[str, List[str]]] = None
+
+
+def _tool_tag_mapping() -> Dict[str, List[str]]:
+    if _TOOL_TAG_MAPPING_OVERRIDE is not None:
+        return _TOOL_TAG_MAPPING_OVERRIDE
+    return _bundled_tool_tag_mapping()
+
+
+@lru_cache(maxsize=1)
+def _bundled_tool_tag_mapping() -> Dict[str, List[str]]:
+    return _load_tool_tag_mapping(_read_ontology_data_text(TOOL_TAG_MAPPING_FILENAME))
+
+
+def configure_tool_tag_mapping(file_path: Optional[str]) -> None:
+    """Replace the in-memory curated tool → tag mapping.
+
+    Galaxy calls this once at startup with the value of the
+    ``tool_tag_mappings_file`` config option. If ``file_path`` is empty or
+    ``None``, the bundled minimal mapping (see ``tool_tag_mappings.yml``) is
+    retained. Missing or unreadable files are logged and the in-memory
+    mapping is left untouched so a typo in ``galaxy.yml`` doesn't take down
+    tool loading.
+    """
+    if not file_path:
+        return
+    try:
+        with open(file_path, encoding="utf-8") as fh:
+            new_mapping = _load_tool_tag_mapping(fh.read())
+    except OSError:
+        # Surface the failure but keep the bundled fallback active.
+        log.warning(
+            "Could not read tool_tag_mappings_file %s; falling back to bundled mapping.",
+            file_path,
+        )
+        return
+    global _TOOL_TAG_MAPPING_OVERRIDE
+    _TOOL_TAG_MAPPING_OVERRIDE = new_mapping
 
 
 class OntologyData(NamedTuple):
     xrefs: List[XrefDict]
     edam_operations: Optional[List[str]]
     edam_topics: Optional[List[str]]
+    tool_tags: List[str]
 
 
 def biotools_reference(xrefs):
@@ -59,10 +128,23 @@ def biotools_reference(xrefs):
 
 
 def legacy_biotools_external_reference(all_ids: List[str]) -> List[str]:
+    biotools_mapping = _biotools_mapping()
     for tool_id in all_ids:
-        if tool_id in BIOTOOLS_MAPPING:
-            return BIOTOOLS_MAPPING[tool_id]
+        if tool_id in biotools_mapping:
+            return biotools_mapping[tool_id]
     return []
+
+
+def curated_tool_tags(all_ids: List[str]) -> List[str]:
+    mapping = _tool_tag_mapping()
+    seen = set()
+    tags: List[str] = []
+    for tool_id in all_ids:
+        for tag in mapping.get(tool_id, []):
+            if tag not in seen:
+                seen.add(tag)
+                tags.append(tag)
+    return tags
 
 
 def expand_ontology_data(
@@ -78,14 +160,16 @@ def expand_ontology_data(
     edam_operations = tool_source.parse_edam_operations()
     edam_topics = tool_source.parse_edam_topics()
 
+    edam_operation_mapping = _edam_operation_mapping()
     for tool_id in all_ids:
-        if tool_id in EDAM_OPERATION_MAPPING:
-            edam_operations = EDAM_OPERATION_MAPPING[tool_id]
+        if tool_id in edam_operation_mapping:
+            edam_operations = edam_operation_mapping[tool_id]
             break
 
+    edam_topic_mapping = _edam_topic_mapping()
     for tool_id in all_ids:
-        if tool_id in EDAM_TOPIC_MAPPING:
-            edam_topics = EDAM_TOPIC_MAPPING[tool_id]
+        if tool_id in edam_topic_mapping:
+            edam_topics = edam_topic_mapping[tool_id]
             break
 
     has_missing_data = len(edam_operations) == 0 or len(edam_topics) == 0
@@ -104,4 +188,5 @@ def expand_ontology_data(
         xrefs,
         edam_operations,
         edam_topics,
+        curated_tool_tags(all_ids),
     )

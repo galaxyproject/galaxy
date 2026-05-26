@@ -9,8 +9,6 @@ from typing import (
 from uuid import UUID
 
 from sqlalchemy import (
-    exists,
-    false,
     select,
     sql,
     true,
@@ -28,6 +26,7 @@ from galaxy.model import (
     UserDynamicToolAssociation,
 )
 from galaxy.tool_util.cwl import tool_proxy
+from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util.parser.yaml import YamlToolSource
 from galaxy.tool_util.toolbox import AbstractToolBox
 from galaxy.tool_util_models.dynamic_tool_models import (
@@ -82,15 +81,7 @@ class DynamicToolManager(ModelManager[DynamicTool]):
     model_class = DynamicTool
 
     def ensure_can_use_unprivileged_tool(self, user: model.User):
-        stmt = select(
-            exists().where(
-                model.UserRoleAssociation.user_id == user.id,
-                model.UserRoleAssociation.role_id == model.Role.id,
-                model.Role.type == model.Role.types.USER_TOOL_EXECUTE,
-                model.Role.deleted == false(),
-            )
-        )
-        if not self.session().execute(stmt).scalar():
+        if not any(role.type == model.Role.types.USER_TOOL_EXECUTE and not role.deleted for role in user.all_roles()):
             raise exceptions.InsufficientPermissionsException("User is not allowed to run unprivileged tools")
 
     def get_tool_by_id_or_uuid(self, id_or_uuid: Union[int, str]) -> Union[DynamicTool, None]:
@@ -151,7 +142,12 @@ class DynamicToolManager(ModelManager[DynamicTool]):
             if not tool_format:
                 raise exceptions.ObjectAttributeMissingException("Current tool representations require 'class'.")
 
-        if tool_format in ("GalaxyTool", "GalaxyUserTool"):
+        if tool_format == "GalaxyUserTool":
+            raise exceptions.RequestParameterInvalidException(
+                "GalaxyUserTool is reserved for user-defined tools created via "
+                "/api/unprivileged_tools; use GalaxyTool for admin-installed dynamic tools."
+            )
+        if tool_format == "GalaxyTool":
             tool_id = representation.get("id")
             if not tool_id:
                 tool_id = str(uuid)
@@ -194,6 +190,9 @@ class DynamicToolManager(ModelManager[DynamicTool]):
                 "Set 'enable_beta_tool_formats' in Galaxy config to create dynamic tools."
             )
         self.ensure_can_use_unprivileged_tool(user)
+        lint_errors = lint_user_tool_source(tool_payload.representation)
+        if lint_errors:
+            raise exceptions.RequestParameterInvalidException("Tool failed lint checks: " + "; ".join(lint_errors))
         dynamic_tool = self.create(
             tool_format=tool_payload.representation.class_,
             tool_id=tool_payload.representation.id,

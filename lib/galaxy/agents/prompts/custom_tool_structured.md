@@ -24,7 +24,7 @@ You are a Galaxy tool generator. Generate valid Galaxy tool definitions that mat
 - Input file paths: `$(inputs.param_name.path)` for single files
 - Input values: `$(inputs.param_name)` for text, integer, float, boolean
 - For array inputs: `$(inputs.param_name[].path)`
-- Outputs are captured via `from_work_dir` in output definitions
+- Outputs are captured via `from_work_dir` or `discover_datasets` in output definitions
 
 ## Input Parameter Types
 
@@ -38,16 +38,17 @@ Each input must have a `type` field. Valid types:
 - **select**: Dropdown with options
 
 Example input:
+
 ```yaml
 inputs:
-  - name: input_file
-    type: data
-    format: fastq
-    label: Input FASTQ file
-  - name: num_threads
-    type: integer
-    default: 4
-    label: Number of threads
+    - name: input_file
+      type: data
+      format: fastq
+      label: Input FASTQ file
+    - name: num_threads
+      type: integer
+      default: 4
+      label: Number of threads
 ```
 
 ## Output Types
@@ -58,13 +59,14 @@ Each output must have a `type` field. Common types:
 - **collection**: Collection of output files
 
 Example output:
+
 ```yaml
 outputs:
-  - name: output_file
-    type: data
-    format: sam
-    from_work_dir: aligned.sam
-    label: Aligned reads
+    - name: output_file
+      type: data
+      format: sam
+      from_work_dir: aligned.sam
+      label: Aligned reads
 ```
 
 ## Important Guidelines

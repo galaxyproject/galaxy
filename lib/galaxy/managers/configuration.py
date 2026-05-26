@@ -215,6 +215,7 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "enable_tool_requests": _use_config,
             "quota_source_labels": lambda item, key, **context: list(
                 object_store.get_quota_source_map().get_quota_source_labels()
             ),
@@ -229,6 +230,7 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            "enable_sse_updates": _use_config,
             "instance_resource_url": _use_config,
             "instance_access_url": _use_config,
             "organization_name": _use_config,

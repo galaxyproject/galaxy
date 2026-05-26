@@ -103,8 +103,8 @@ export function useWorkflowActivities(
         {
             title: "Report",
             id: "workflow-editor-report",
-            description: "Edit the report for this workflow.",
-            tooltip: "Edit workflow report",
+            description: "Edit the report template for this workflow.",
+            tooltip: "Edit workflow report template",
             icon: faEdit,
             panel: true,
             visible: true,
@@ -122,16 +122,6 @@ export function useWorkflowActivities(
             optional: true,
             indicator: undoStackLength.value,
             indicatorVariant: "primary",
-        },
-        {
-            title: "Run",
-            id: "workflow-run",
-            description: "Run this workflow with specific parameters.",
-            tooltip: "Run workflow",
-            icon: faPlay,
-            visible: true,
-            click: true,
-            optional: true,
         },
         {
             description: "Save this workflow.",
@@ -198,33 +188,14 @@ export function useWorkflowActivities(
             click: true,
             optional: true,
         },
-        {
-            description: "Exit the workflow editor and return to the start screen.",
-            icon: faSignOutAlt,
-            id: "exit",
-            title: "Exit",
-            tooltip: "Exit workflow editor",
-            visible: false,
-            click: true,
-            optional: true,
-        },
     ]);
 }
 
 interface SpecialActivityOptions {
-    hasInvalidConnections: boolean;
     lintData: LintData;
 }
 
 export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions>) {
-    const saveHover = computed(() => {
-        if (options.value.hasInvalidConnections) {
-            return "Workflow has invalid connections, review and remove invalid connections";
-        } else {
-            return "Save this workflow, then exit the workflow editor";
-        }
-    });
-
     /** Indicator for best practices activity
      * @returns
      * - `number`: count of critical issues remaining
@@ -281,19 +252,32 @@ export function useSpecialWorkflowActivities(options: Ref<SpecialActivityOptions
         },
     ]);
 
-    const exitWorkflowActivity = computed<Activity>(() => ({
-        description: "",
-        icon: faSave,
-        id: "save-and-exit",
-        title: "Save + Exit",
-        tooltip: saveHover.value,
+    const runWorkflowActivity: Activity = {
+        title: "Run",
+        id: "workflow-run",
+        description: "Run this workflow with specific parameters.",
+        tooltip: "Run workflow",
+        icon: faPlay,
+        visible: true,
+        click: true,
+        optional: true,
+    };
+
+    const exitWorkflowActivity: Activity = {
+        description:
+            "Exit the workflow editor and return to your Galaxy. If you have unsaved changes you will be prompted to save or discard them.",
+        icon: faSignOutAlt,
+        id: "exit",
+        title: "Exit",
+        tooltip: "Exit workflow editor",
         visible: false,
         click: true,
-        mutable: false,
-    }));
+        optional: true,
+    };
 
     return {
         specialWorkflowActivities,
         exitWorkflowActivity,
+        runWorkflowActivity,
     };
 }

@@ -21,7 +21,7 @@ export function galaxyLegacyPlugin() {
                     include: ["store", "jquery-migrate"],
 
                     // Fix CommonJS global references
-                    esbuildOptions: {
+                    rolldownOptions: {
                         define: {
                             global: "globalThis",
                         },

@@ -974,5 +974,5 @@ def test_map_over_dce_on_non_multiple_data_param(
     execute = required_tool.execute().with_inputs(inputs)
     execute.assert_has_n_jobs(2).assert_creates_n_implicit_collections(1)
     output_collection = execute.assert_creates_implicit_collection(0)
-    output_collection.assert_has_dataset_element("test0").with_contents_stripped("123")
-    output_collection.assert_has_dataset_element("test1").with_contents_stripped("456")
+    output_collection.assert_has_dataset_element("forward").with_contents_stripped("123")
+    output_collection.assert_has_dataset_element("reverse").with_contents_stripped("456")

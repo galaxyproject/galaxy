@@ -513,6 +513,23 @@ describe("FormData", () => {
         expect(wrapper.emitted()!.input![2]![0]).toEqual(null);
     });
 
+    it("renders pinned entries alongside paged options", async () => {
+        // Pinned entries are forced-include items the server returned because
+        // they're selected but landed outside the current page window. The
+        // dropdown must show them so the user can see what's pre-selected.
+        const wrapper = createTarget({
+            value: { values: [{ id: "hdaPinned", src: "hda" }] },
+            options: { hda: defaultOptions.hda },
+            pinned: {
+                hda: [{ id: "hdaPinned", hid: 999, name: "OldDataset", src: "hda", keep: true, tags: [] }],
+            },
+        });
+        await wrapper.vm.$nextTick();
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(1);
+        expect(selectedValues.at(0).text()).toContain("999: OldDataset");
+    });
+
     it("tagging filter", async () => {
         const wrapper_0 = createTarget({
             tag: "tag1",

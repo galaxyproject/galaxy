@@ -131,16 +131,15 @@ class ConditionalDependencies:
         except OSError:
             pass
 
-        # Parse oidc_backends_config_file specifically for PKCE support.
-        self.pkce_support = False
-        oidc_backend_conf_xml = self.config_object.oidc_backends_config_file
-        try:
-            for pkce_support_element in parse_xml(oidc_backend_conf_xml).iterfind("./provider/pkce_support"):
-                if pkce_support_element.text == "true":
-                    self.pkce_support = True
-                    break
-        except OSError:
-            pass
+        # Install pkce whenever OIDC is in use. PKCE can be toggled per-provider
+        # in oidc_backends_config.xml at runtime, so tying the install decision
+        # to any top-level OIDC signal avoids rebuilding the venv when
+        # pkce_support is flipped (issue #22502).
+        self.oidc_active = (
+            asbool(self.config.get("enable_oidc", False))
+            or bool(self.config.get("oidc_auth_pipeline"))
+            or bool(self.config.get("oidc_auth_pipeline_extra"))
+        )
 
         # Parse error report config
         error_report_yml = self.config_object.error_report_file
@@ -222,6 +221,12 @@ class ConditionalDependencies:
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
 
+    def check_htcondor(self):
+        return (
+            "galaxy.jobs.runners.htcondor:HTCondorJobRunner" in self.job_runners
+            or os.environ.get("GALAXY_DEPENDENCIES_INSTALL_HTCONDOR") == "1"
+        )
+
     def check_boto3_python(self):
         return "galaxy.jobs.runners.aws:AWSBatchJobRunner" in self.job_runners
 
@@ -255,15 +260,11 @@ class ConditionalDependencies:
     def check_python_irodsclient(self):
         return "irods" in self.object_stores
 
-    def check_fs_dropboxfs(self):
+    def check_dropboxdrivefs(self):
         return "dropbox" in self.file_sources
 
-    def check_fs_webdavfs(self):
+    def check_webdav4(self):
         return "webdav" in self.file_sources
-
-    def check_webdavclient3(self):
-        # fs.webdavfs dependency for which we need an unreleased version
-        return self.check_fs_webdavfs()
 
     def check_fs_anvilfs(self):
         # pyfilesystem plugin access to terra on anvil
@@ -272,7 +273,7 @@ class ConditionalDependencies:
     def check_fs_sshfs(self):
         return "ssh" in self.file_sources
 
-    def check_fs_googledrivefs(self):
+    def check_gdrive_fsspec(self):
         return "googledrive" in self.file_sources
 
     def check_gcsfs(self):
@@ -329,7 +330,7 @@ class ConditionalDependencies:
         return "hashicorp" == self.vault_type
 
     def check_pkce(self):
-        return self.pkce_support
+        return self.oidc_active
 
     def check_rucio_clients(self):
         return "rucio" in self.object_stores

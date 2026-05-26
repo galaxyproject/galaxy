@@ -207,6 +207,18 @@ class ToolsService(ServiceBase):
         self.toolbox_search = toolbox_search
         self.history_manager = history_manager
 
+    def curated_tool_tags_by_id(self, trans: ProvidesUserContext) -> dict[str, list[str]]:
+        """Return {tool_id: [tag, ...]} for currently-loaded tools that carry curated tags.
+
+        Sidecar for the My Tools panel; keeps `tool_tags` out of the bulk /api/tools
+        payload (and out of its cache key).
+        """
+        mapping: dict[str, list[str]] = {}
+        for _, tool in trans.app.toolbox.tools():
+            if tool.tool_tags:
+                mapping[tool.id] = list(tool.tool_tags)
+        return mapping
+
     def file_landing_to_tool_landing(
         self,
         trans: ProvidesUserContext,

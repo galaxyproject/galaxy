@@ -211,7 +211,7 @@ jobs:
       - name: Get the current Galaxy version
         id: version
         run: |
-          version=$(python3 -c "import lib.galaxy.version; print(lib.galaxy.version.VERSION)")
+          version=$(PYTHONPATH=lib python3 -c "from galaxy.version import VERSION; print(VERSION)")
           echo "version=$version" >> $GITHUB_OUTPUT
       - name: Build args
         id: buildargs
@@ -573,8 +573,8 @@ jobs:
             echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
           fi
 
-      - name: Send Slack notification for release failure
-        uses: slackapi/slack-github-action@v3.0.1
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v3.0.3
         with:
           webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
           webhook-type: incoming-webhook

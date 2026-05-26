@@ -168,6 +168,15 @@ class TestTestParsing(TestCase):
         test_dicts = self._parse_tests()
         self._verify_each(test_dicts[1].to_dict(), BIGWIG_TO_WIG_EXPECTATIONS)
 
+    def test_harmonize_bare_ftype_output_check(self):
+        if in_packages():
+            skip("tool not available when running from packages")
+        tool_path = os.path.join(galaxy_directory(), "lib", "galaxy", "tools", "harmonize_two_collections_list.xml")
+        self._init_tool_for_path(tool_path)
+        test_dicts = [td.to_dict() for td in self._parse_tests()]
+        for td in test_dicts:
+            assert not td.get("exception"), f"Test failed to parse: {td.get('exception')}"
+
     def _verify_each(self, target_dict: dict, expectations: List[Any]):
         exception = target_dict.get("exception")
         assert not exception, f"Test failed to generate with exception {exception}"

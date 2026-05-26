@@ -4,8 +4,8 @@ import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FreehandWorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { vecSubtract } from "@/utils/geometry";
 
-import { vecSubtract } from "../modules/geometry";
 import { colors } from "./colors";
 
 const props = defineProps<{

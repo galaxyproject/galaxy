@@ -25,11 +25,18 @@ const expectedOptions = [
     "Archive History",
     "Extract Workflow",
     "Show Invocations",
+    "Show History Graph",
     "Share & Manage Access",
 ];
 
 // options enabled for logged-out users
-const anonymousOptions = ["Resume Paused Jobs", "Delete History", "Export Tool References", "Export History to File"];
+const anonymousOptions = [
+    "Resume Paused Jobs",
+    "Delete History",
+    "Export Tool References",
+    "Export History to File",
+    "Show History Graph",
+];
 
 // options disabled for logged-out users
 const anonymousDisabledOptions = expectedOptions.filter((option) => !anonymousOptions.includes(option));
@@ -133,7 +140,7 @@ describe("History Navigation", () => {
         const { wrapper } = await createWrapper({ history: deletedHistory }, getFakeRegisteredUser());
         const modal = wrapper.findComponent(GModal);
         expect(modal.props("title")).toBe("Permanently Delete History?");
-        expect(modal.props("okText")).toBe("Permanently Delete");
+        expect(modal.props("okText")).toBe("Delete Permanently");
     });
 
     it("purge checkbox is not disabled for an active history", async () => {

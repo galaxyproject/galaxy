@@ -11,12 +11,24 @@ For deterministic tests without LLM, see test_static_agent_backend.py.
     pytest test/integration/test_agents.py -v
 """
 
+import asyncio
 import logging
 import os
 
+import pytest
+from fastmcp import (
+    Client,
+    FastMCP,
+)
+from fastmcp.exceptions import ToolError
+
+from galaxy.agents.operations import AgentOperationsManager
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.util.unittest_utils import pytestmark_live_llm
+from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy_test.base.populators import (
     DatasetPopulator,
+    TOOL_WITH_SHELL_COMMAND,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_util import IntegrationTestCase
@@ -180,9 +192,6 @@ class TestAgentOperationsManagerEncoding(AgentIntegrationTestCase):
     """
 
     def _make_ops(self):
-        from galaxy.agents.operations import AgentOperationsManager
-        from galaxy.managers.context import ProvidesUserContext
-
         class MinimalTrans(ProvidesUserContext):
             def __init__(self, app):
                 self._app = app
@@ -282,10 +291,9 @@ class TestMCPServerSmoke(IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["enable_mcp_server"] = True
+        config["enable_beta_tool_formats"] = True
 
     def _get_mcp_server(self):
-        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
-
         http_app = get_mcp_app(self._app)
         return http_app.state.mcp_server
 
@@ -293,9 +301,14 @@ class TestMCPServerSmoke(IntegrationTestCase):
         _, api_key = self._setup_user_get_key("mcp_test_user@test.com")
         return api_key
 
-    def _run_async(self, coro):
-        import asyncio
+    def _setup_udt_user(self, email: str):
+        """Create a user, grant USER_TOOL_EXECUTE, return (user, api_key)."""
+        user, api_key = self._setup_user_get_key(email)
+        populator = DatasetPopulator(self.galaxy_interactor)
+        populator.create_role([user["id"]], role_type="user_tool_execute")
+        return user, api_key
 
+    def _run_async(self, coro):
         loop = asyncio.new_event_loop()
         try:
             return loop.run_until_complete(coro)
@@ -304,15 +317,11 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
     def test_mcp_server_initializes(self):
         """MCP server creates a FastMCP instance when enabled."""
-        from fastmcp import FastMCP
-
         mcp_server = self._get_mcp_server()
         assert isinstance(mcp_server, FastMCP)
 
     def test_mcp_tools_registered(self):
         """MCP server advertises all expected tools."""
-        from fastmcp import Client
-
         mcp_server = self._get_mcp_server()
 
         async def _list():
@@ -333,13 +342,18 @@ class TestMCPServerSmoke(IntegrationTestCase):
             "upload_file_from_url",
             "invoke_workflow",
             "get_job_status",
+            "list_user_tools",
+            "create_user_tool",
+            "delete_user_tool",
+            "run_user_tool",
+            "search_iwc_workflows",
+            "get_iwc_workflow_details",
+            "import_workflow_from_iwc",
         }
         assert expected.issubset(tool_names), f"Missing tools: {expected - tool_names}"
 
     def test_mcp_connect_with_valid_key(self):
         """connect() succeeds with a valid API key and returns user + server info."""
-        from fastmcp import Client
-
         mcp_server = self._get_mcp_server()
         api_key = self._get_api_key()
 
@@ -355,10 +369,6 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
     def test_mcp_connect_with_invalid_key(self):
         """connect() rejects an invalid API key."""
-        import pytest
-        from fastmcp import Client
-        from fastmcp.exceptions import ToolError
-
         mcp_server = self._get_mcp_server()
 
         async def _connect():
@@ -370,8 +380,6 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
     def test_mcp_list_histories(self):
         """list_histories() returns a valid response."""
-        from fastmcp import Client
-
         mcp_server = self._get_mcp_server()
         api_key = self._get_api_key()
 
@@ -386,8 +394,6 @@ class TestMCPServerSmoke(IntegrationTestCase):
 
     def test_mcp_search_tools(self):
         """search_tools() executes and returns a well-formed response."""
-        from fastmcp import Client
-
         mcp_server = self._get_mcp_server()
         api_key = self._get_api_key()
 
@@ -402,3 +408,158 @@ class TestMCPServerSmoke(IntegrationTestCase):
         assert "query" in data
         assert "count" in data
         assert isinstance(data["tools"], list)
+
+    def test_mcp_list_user_tools_empty(self):
+        """list_user_tools() returns an empty list for a user with the role and no UDTs."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_list_user@test.com")
+
+        async def _list():
+            async with Client(mcp_server) as client:
+                return await client.call_tool("list_user_tools", {"api_key": api_key})
+
+        result = self._run_async(_list())
+        assert not result.is_error, result
+        data = result.data
+        assert data["tools"] == []
+        assert data["count"] == 0
+
+    def test_mcp_create_user_tool(self):
+        """create_user_tool() persists a UDT and returns its uuid."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_create_user@test.com")
+
+        async def _create():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+
+        result = self._run_async(_create())
+        assert not result.is_error, result
+        data = result.data
+        assert "uuid" in data
+        assert data["representation"]["name"] == TOOL_WITH_SHELL_COMMAND["name"]
+
+    def test_mcp_delete_user_tool(self):
+        """delete_user_tool() deactivates a UDT so list_user_tools no longer returns it."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_delete_user@test.com")
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                create = await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+                uuid = create.data["uuid"]
+                await client.call_tool("delete_user_tool", {"api_key": api_key, "uuid": uuid})
+                listed = await client.call_tool("list_user_tools", {"api_key": api_key})
+                deleted_run = await client.call_tool(
+                    "run_user_tool",
+                    {
+                        "api_key": api_key,
+                        "history_id": history_id,
+                        "tool_uuid": uuid,
+                        "inputs": {},
+                    },
+                    raise_on_error=False,
+                )
+                return uuid, listed, deleted_run
+
+        uuid, listed, deleted_run = self._run_async(_flow())
+        uuids_after = {t["uuid"] for t in listed.data["tools"]}
+        assert uuid not in uuids_after
+        assert deleted_run.is_error
+        assert "deactivated" in deleted_run.content[0].text
+
+    def test_mcp_run_user_tool(self):
+        """run_user_tool() executes a UDT against an HDA input and produces an output."""
+        mcp_server = self._get_mcp_server()
+        _, api_key = self._setup_udt_user("udt_run_user@test.com")
+
+        populator = DatasetPopulator(self._get_interactor(api_key=api_key))
+        history_id = populator.new_history()
+        dataset = populator.new_dataset(history_id=history_id, content="abc")
+
+        async def _flow():
+            async with Client(mcp_server) as client:
+                create = await client.call_tool(
+                    "create_user_tool",
+                    {"api_key": api_key, "representation": TOOL_WITH_SHELL_COMMAND},
+                )
+                uuid = create.data["uuid"]
+                return await client.call_tool(
+                    "run_user_tool",
+                    {
+                        "api_key": api_key,
+                        "history_id": history_id,
+                        "tool_uuid": uuid,
+                        "inputs": {"input": {"src": "hda", "id": dataset["id"]}},
+                    },
+                )
+
+        result = self._run_async(_flow())
+        assert not result.is_error, result
+        data = result.data
+        assert data["jobs"][0]["tool_id"] == TOOL_WITH_SHELL_COMMAND["id"]
+        assert data["jobs"][0]["history_id"] == history_id
+        assert data["outputs"][0]["output_name"] == "output"
+        populator.wait_for_history(history_id, assert_ok=True)
+        output = populator.get_history_dataset_content(history_id)
+        assert output == "abc\n"
+
+    def test_mcp_import_workflow_from_iwc(self):
+        """import_workflow_from_iwc() imports a StoredWorkflow via the shared TRS pipeline."""
+        import json
+        from unittest.mock import patch
+
+        from fastmcp import Client
+
+        mcp_server = self._get_mcp_server()
+        api_key = self._get_api_key()
+
+        # Minimal valid Galaxy workflow definition, served as a Dockstore TRS descriptor.
+        definition = {
+            "a_galaxy_workflow": "true",
+            "format-version": "0.1",
+            "name": "IWC smoke test workflow",
+            "steps": {
+                "0": {
+                    "id": 0,
+                    "type": "data_input",
+                    "label": "input",
+                    "inputs": [],
+                    "outputs": [],
+                    "tool_state": "{}",
+                    "input_connections": {},
+                    "annotation": "",
+                    "position": {"left": 0, "top": 0},
+                }
+            },
+            "tags": [],
+            "annotation": "",
+        }
+        trs_id = "#workflow/github.com/iwc-workflows/smoke/main"
+
+        async def _import():
+            async with Client(mcp_server) as client:
+                return await client.call_tool(
+                    "import_workflow_from_iwc",
+                    {"api_key": api_key, "trs_id": trs_id},
+                )
+
+        # The TRS proxy fetches the workflow descriptor over HTTP; mock that so we
+        # don't actually hit Dockstore from CI.
+        with patch("galaxy.workflow.trs_proxy.requests.get") as mock_get:
+            mock_get.return_value.ok = True
+            mock_get.return_value.json.return_value = {"content": json.dumps(definition)}
+            result = self._run_async(_import())
+
+        assert not result.is_error, result
+        data = result.data
+        assert "id" in data
+        assert data["trsID"] == trs_id

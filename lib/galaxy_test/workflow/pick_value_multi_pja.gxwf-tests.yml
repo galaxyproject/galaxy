@@ -2,12 +2,10 @@
     Test multiple PJAs on pick_value: change datatype, rename, and add tag.
   job:
     input_data:
-      type: File
-      value: 1.bed
-      file_type: bed
-    when:
-      type: raw
-      value: true
+      class: File
+      path: 1.bed
+      filetype: bed
+    when: true
   outputs:
     picked:
       class: File

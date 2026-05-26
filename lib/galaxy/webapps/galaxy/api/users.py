@@ -32,6 +32,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.favorites import FavoritesManager
 from galaxy.model import (
     Dataset,
     FormDefinition,
@@ -56,6 +57,7 @@ from galaxy.schema.schema import (
     FavoriteObject,
     FavoriteObjectsSummary,
     FavoriteObjectType,
+    FavoriteOrderPayload,
     FlexibleUserIdType,
     MaybeLimitedUserModel,
     RemoteUserCreationPayload,
@@ -121,6 +123,7 @@ ObjectIDPathParam: str = Path(
     title="Object ID",
     description="The ID of an object the user wants to remove from favorites",
 )
+FavoriteOrderBody: FavoriteOrderPayload = Body(...)
 CustomBuildKeyPathParam: str = Path(
     default=...,
     title="Custom build key",
@@ -154,6 +157,7 @@ AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
+    favorites_manager: FavoritesManager = depends(FavoritesManager)
 
     @router.put(
         "/api/users/current/recalculate_disk_usage",
@@ -394,16 +398,22 @@ class FastAPIUsers:
         object_id: str = ObjectIDPathParam,
     ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            favorite_tools = favorites.get("tools", [])
-            if object_id in favorite_tools:
-                del favorite_tools[favorite_tools.index(object_id)]
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                trans.sa_session.commit()
-            else:
-                raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
+        favorites = self.favorites_manager.remove(trans, user, object_type, object_id)
+        return FavoriteObjectsSummary.model_validate(favorites)
+
+    @router.put(
+        "/api/users/{user_id}/favorites/order",
+        name="set_favorite_order",
+        summary="Persist the order of the user's favorites",
+    )
+    def set_favorite_order(
+        self,
+        user_id: UserIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: FavoriteOrderPayload = FavoriteOrderBody,
+    ) -> FavoriteObjectsSummary:
+        user = self.service.get_user(trans, user_id)
+        favorites = self.favorites_manager.set_order(trans, user, payload)
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(
@@ -419,20 +429,7 @@ class FastAPIUsers:
         payload: FavoriteObject = FavoriteObjectBody,
     ) -> FavoriteObjectsSummary:
         user = self.service.get_user(trans, user_id)
-        favorites = json.loads(user.preferences["favorites"]) if "favorites" in user.preferences else {}
-        if object_type.value == "tools":
-            tool_id = payload.object_id
-            tool = trans.app.toolbox.get_tool(tool_id)
-            if not tool:
-                raise exceptions.ObjectNotFound(f"Could not find tool with id '{tool_id}'.")
-            if not tool.allow_user_access(user):
-                raise exceptions.AuthenticationFailed(f"Access denied for tool with id '{tool_id}'.")
-            favorite_tools = favorites.get("tools", [])
-            if tool_id not in favorite_tools:
-                favorite_tools.append(tool_id)
-                favorites["tools"] = favorite_tools
-                user.preferences["favorites"] = json.dumps(favorites)
-                trans.sa_session.commit()
+        favorites = self.favorites_manager.add(trans, user, object_type, payload.object_id)
         return FavoriteObjectsSummary.model_validate(favorites)
 
     @router.put(

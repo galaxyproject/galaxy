@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, watch } from "vue";
 
-import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import type { AnyStorageDescription } from "./types";
 
@@ -22,14 +22,22 @@ const isPrivate = computed(() => props.storageInfo.private);
 const badges = computed(() => props.storageInfo.badges);
 const userDefined = computed(() => props.storageInfo.object_store_id?.startsWith("user_objects://"));
 
-const quotaUsageProvider = ref(null);
+const quotaUsageStore = useQuotaUsageStore();
+const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+const isLoadingUsage = computed(() => Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]));
+const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
 
-watch(props, async () => {
-    if (quotaUsageProvider.value) {
-        // @ts-ignore
-        quotaUsageProvider.value.update({ quotaSourceLabel: quotaSourceLabel.value });
-    }
-});
+watch(
+    () => [props.storageInfo.quota?.enabled, quotaSourceLabel.value] as const,
+    ([enabled, sourceLabel]) => {
+        if (!enabled) {
+            return;
+        }
+
+        void quotaUsageStore.loadQuotaUsageForSource(sourceLabel, true);
+    },
+    { immediate: true },
+);
 
 defineExpose({
     isPrivate,
@@ -59,14 +67,10 @@ export default {
             >.
         </div>
         <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
-        <QuotaSourceUsageProvider
-            v-if="storageInfo.quota && storageInfo.quota.enabled"
-            ref="quotaUsageProvider"
-            v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
-            :quota-source-label="quotaSourceLabel">
+        <div v-if="storageInfo.quota && storageInfo.quota.enabled">
             <b-spinner v-if="isLoadingUsage" />
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
-        </QuotaSourceUsageProvider>
+        </div>
         <div v-else>Galaxy has no quota configured for this storage.</div>
         <ConfigurationMarkdown
             v-if="storageInfo.description"

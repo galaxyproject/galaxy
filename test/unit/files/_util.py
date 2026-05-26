@@ -15,6 +15,7 @@ from galaxy.files.plugins import FileSourcePluginsConfig
 
 TEST_USERNAME = "alice"
 TEST_EMAIL = "alice@galaxyproject.org"
+TEST_OIDC_ACCESS_TOKENS = {"oidc": "test-oidc-token"}
 
 
 def serialize_and_recover(file_sources_o: ConfiguredFileSources, user_context: OptionalUserContext = None):
@@ -93,6 +94,7 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
         group_names=group_names or set(),
         is_admin=is_admin,
         file_sources=file_sources,
+        oidc_access_tokens=TEST_OIDC_ACCESS_TOKENS,
     )
     return user_context
 
@@ -176,14 +178,14 @@ def assert_can_write_and_read_to_conf(conf: dict):
     file_source_id = conf["id"]
     file_sources = configured_file_sources([conf])
     test_uri = f"gxfiles://{file_source_id}/{test_filename}"
-    actual_uri = write_from(
+    write_from(
         file_sources,
         test_uri,
         test_contents,
     )
     assert_realizes_contains(
         file_sources,
-        actual_uri,
+        test_uri,
         test_contents,
     )
 

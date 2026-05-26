@@ -9,6 +9,7 @@ from errno import ENOENT
 from typing import (
     Any,
     Dict,
+    FrozenSet,
     List,
     Optional,
     Tuple,
@@ -55,6 +56,11 @@ from .parser import (
 from .views.edam import (
     EdamPanelMode,
     EdamToolPanelView,
+)
+from .views.favorites import (
+    MY_TOOLS_PANEL_SECTION_ID,
+    MY_TOOLS_PANEL_VIEW_ID,
+    MyToolsToolPanelView,
 )
 from .views.interface import (
     ToolBoxRegistry,
@@ -194,9 +200,16 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         self._tool_versions_by_id: Dict[str, Dict[Union[str, None], Tool]] = {}
         self._tools_by_old_id: Dict[str, List[Tool]] = {}
         self._workflows_by_id: Dict[str, Workflow] = {}
-        # Cache for tool's to_dict calls specific to toolbox. Invalidates on toolbox reload.
+        # Cache for tool's to_dict calls specific to toolbox. Invalidated on toolbox reload
+        # and whenever a single tool is reloaded/removed (see _invalidate_tool_caches).
         self._tool_to_dict_cache: Dict[str, Dict[str, Any]] = {}
         self._tool_to_dict_cache_admin: Dict[str, Dict[str, Any]] = {}
+        # Lazily-built sets of curated/edam ids drawn from the loaded tools, used to
+        # validate favorite-tag / favorite-EDAM additions in O(1) rather than walking
+        # the full tool list per request.
+        self._curated_tool_tags: Optional[FrozenSet[str]] = None
+        self._tool_edam_operations: Optional[FrozenSet[str]] = None
+        self._tool_edam_topics: Optional[FrozenSet[str]] = None
         # In-memory dictionary that defines the layout of the tool panel.
         self._tool_panel = ToolPanelElements()
         self._index = 0
@@ -244,6 +257,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
 
         tool_panel_views_list: List[ToolPanelView] = [
             DefaultToolPanelView(),
+            MyToolsToolPanelView(),
         ]
 
         for edam_view in listify(self.app.config.edam_panel_views):
@@ -416,6 +430,9 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
             return None
 
         tool = self.create_dynamic_tool(dynamic_tool)
+        if dynamic_tool.tool_format == "GalaxyUserTool":
+            # UDTs are resolved per-request via DynamicToolManager; never cache.
+            return tool
         self.register_tool(tool)
         assert isinstance(dynamic_tool.uuid, UUID)
         self._tools_by_uuid[dynamic_tool.uuid] = tool
@@ -1271,11 +1288,60 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 self._tools_by_id[tool_id] = tool
         else:
             self._tools_by_id[tool_id] = tool
+        # Always drop stale caches: callers re-register on reload (same id, new
+        # object) and may also mutate `tool_tags` / `edam_*` on the existing
+        # tool before re-registering. Invalidating unconditionally keeps the
+        # to_dict + curated-id-set caches consistent with the live tool.
+        self._invalidate_tool_caches(tool_id)
         old_id = tool.old_id
         if old_id:
             if old_id not in self._tools_by_old_id:
                 self._tools_by_old_id[old_id] = []
             self._tools_by_old_id[old_id].append(tool)
+
+    def _invalidate_tool_caches(self, tool_id: Optional[str] = None) -> None:
+        """Drop cached `to_dict` payloads and curated/EDAM id sets.
+
+        Called whenever a tool is registered, reloaded, or removed so callers don't
+        observe stale `tool_tags` / `edam_*` data through the toolbox payload caches.
+        """
+        if tool_id is None:
+            self._tool_to_dict_cache.clear()
+            self._tool_to_dict_cache_admin.clear()
+        else:
+            self._tool_to_dict_cache.pop(tool_id, None)
+            self._tool_to_dict_cache_admin.pop(tool_id, None)
+        self._curated_tool_tags = None
+        self._tool_edam_operations = None
+        self._tool_edam_topics = None
+
+    def _collect_tool_attribute_set(self, attribute: str) -> FrozenSet[str]:
+        values: set = set()
+        for _, tool in self.tools():
+            attr_values = getattr(tool, attribute, None) or ()
+            values.update(value for value in attr_values if isinstance(value, str) and value)
+        return frozenset(values)
+
+    @property
+    def curated_tool_tags(self) -> FrozenSet[str]:
+        """Set of curated tag names known to the loaded tools (lazy, cached)."""
+        if self._curated_tool_tags is None:
+            self._curated_tool_tags = self._collect_tool_attribute_set("tool_tags")
+        return self._curated_tool_tags
+
+    @property
+    def tool_edam_operations(self) -> FrozenSet[str]:
+        """Set of EDAM operation ids referenced by loaded tools (lazy, cached)."""
+        if self._tool_edam_operations is None:
+            self._tool_edam_operations = self._collect_tool_attribute_set("edam_operations")
+        return self._tool_edam_operations
+
+    @property
+    def tool_edam_topics(self) -> FrozenSet[str]:
+        """Set of EDAM topic ids referenced by loaded tools (lazy, cached)."""
+        if self._tool_edam_topics is None:
+            self._tool_edam_topics = self._collect_tool_attribute_set("edam_topics")
+        return self._tool_edam_topics
 
     def package_tool(self, trans, tool_id):
         """
@@ -1337,6 +1403,7 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         else:
             tool = self._tools_by_id[tool_id]
             del self._tools_by_id[tool_id]
+            self._invalidate_tool_caches(tool_id)
             if tool.old_id:
                 self._tools_by_old_id[tool.old_id].remove(tool)
             tool_cache: Optional[ToolCache] = getattr(self.app, "tool_cache", None)
@@ -1390,6 +1457,17 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         filter_method = self._build_filter_method(trans)
         tool_panel_view = self._tool_panel_view_rendered[view]
         for _, item_type, elt in tool_panel_view.panel_items_iter():
+            # The My Tools view's Favorites section is intentionally empty
+            # server-side — its tools are rendered client-side from the user's
+            # preferences. `_filter_for_panel` prunes empty sections, so yield
+            # this one verbatim and let the client populate it.
+            if (
+                view == MY_TOOLS_PANEL_VIEW_ID
+                and item_type == panel_item_types.SECTION
+                and getattr(elt, "id", None) == MY_TOOLS_PANEL_SECTION_ID
+            ):
+                yield elt
+                continue
             elt = filter_method(elt, item_type)
             if elt:
                 yield elt
@@ -1418,7 +1496,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return to_dict
 
     def to_dict(
-        self, trans, in_panel: bool = True, tool_help: bool = False, view: Optional[str] = None, **kwds
+        self,
+        trans,
+        in_panel: bool = True,
+        tool_help: bool = False,
+        view: Optional[str] = None,
+        **kwds,
     ) -> List[Dict[str, Any]]:
         """
         Create a dictionary representation of the toolbox.

@@ -1,7 +1,18 @@
-import { faEdit, faEye, faPen, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faEdit,
+    faExternalLinkAlt,
+    faEye,
+    faPen,
+    faPlus,
+    faShareAlt,
+    faTrash,
+    faTrashRestore,
+} from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
 import { GalaxyApi } from "@/api";
+import { getGalaxyInstance } from "@/app";
+import { GRID_LABELS } from "@/components/Page/constants";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -20,12 +31,13 @@ type PageEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
+    const typeFilteredSearch = search ? `type:standalone ${search}` : "type:standalone";
     const { response, data, error } = await GalaxyApi().GET("/api/pages", {
         params: {
             query: {
                 limit,
                 offset,
-                search,
+                search: typeFilteredSearch,
                 sort_by: sort_by as SortKeyLiteral,
                 sort_desc,
                 show_published: false,
@@ -74,6 +86,21 @@ const fields: FieldArray = [
                 },
             },
             {
+                title: "View in Window",
+                icon: faExternalLinkAlt,
+                condition: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    return !data.deleted && !!Galaxy?.frame?.active;
+                },
+                handler: (data: PageEntry) => {
+                    const Galaxy = getGalaxyInstance();
+                    Galaxy?.frame?.add({
+                        url: `/published/page?id=${data.id}&embed=true`,
+                        title: GRID_LABELS.windowTitle(data.title),
+                    });
+                },
+            },
+            {
                 title: "Edit Attributes",
                 icon: faEdit,
                 condition: (data: PageEntry) => !data.deleted,
@@ -102,7 +129,7 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: PageEntry) => !data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to delete the selected page?`))) {
+                    if (confirm(_l(GRID_LABELS.deleteConfirm))) {
                         const { error } = await GalaxyApi().DELETE("/api/pages/{id}", {
                             params: {
                                 path: { id: String(data.id) },
@@ -128,7 +155,7 @@ const fields: FieldArray = [
                 icon: faTrashRestore,
                 condition: (data: PageEntry) => !!data.deleted,
                 handler: async (data: PageEntry) => {
-                    if (confirm(_l(`Are you sure that you want to restore the selected page?`))) {
+                    if (confirm(_l(GRID_LABELS.restoreConfirm))) {
                         const { error } = await GalaxyApi().PUT("/api/pages/{id}/undelete", {
                             params: {
                                 path: { id: String(data.id) },
@@ -206,11 +233,11 @@ const gridConfig: GridConfig = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Pages",
+    plural: GRID_LABELS.gridPlural,
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Saved Pages",
+    title: GRID_LABELS.savedTitle,
 };
 
 export default gridConfig;

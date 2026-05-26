@@ -1,8 +1,8 @@
 def collate_table(path: str) -> list:
     with open(path) as f:
         contents = f.read()
-    first_options = []
-    second_options = []
+    first_options: list[dict[str, str | bool | list[str]]] = []
+    second_options: list[dict[str, str | bool | list[str]]] = []
     values = [
         {"name": "First Column", "value": "first", "selected": False, "options": first_options},
         {"name": "Second Column", "value": "second", "selected": False, "options": second_options},

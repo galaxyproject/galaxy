@@ -182,7 +182,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         :returns:   element view of new dataset collection
         """
         # TODO: Error handling...
-        create_params = api_payload_to_create_params(payload.dict(exclude_unset=True, by_alias=True))
+        create_params = api_payload_to_create_params(payload.model_dump(exclude_unset=True, by_alias=True))
         if payload.instance_type == "history":
             if payload.history_id is None:
                 raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")

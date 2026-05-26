@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { faChevronDown, faChevronRight, faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronRight, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
+import { localUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
 import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
 import { useCollectionCreation } from "@/composables/upload/collectionCreation";
 import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
 import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
 import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
 import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
 import { useUploadStaging } from "@/composables/upload/useUploadStaging";
 import { buildPreparedUpload } from "@/utils/upload";
@@ -56,6 +59,8 @@ const emit = defineEmits<{
 
 const { advancedMode } = useUploadAdvancedMode();
 
+const optionVisibility = computed(() => localUploadOptionVisibility(advancedMode.value));
+
 const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
 
 const tableContainerRef = ref<HTMLElement | null>(null);
@@ -89,6 +94,10 @@ const hasItems = computed(() => pasteItems.value.some((item) => item.content.tri
 const { isNameValid, restoreOriginalName } = useUploadItemValidation();
 
 const bulk = useBulkUploadOperations(pasteItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
 
 const { isReadyToUpload } = useUploadReadyState(hasItems, collectionState);
 
@@ -214,7 +223,7 @@ function toggleAllExpanded() {
 }
 
 // Table configuration
-const tableFields: TableField[] = [
+const tableFields = computed<TableField[]>(() => [
     {
         key: "expand",
         label: "",
@@ -261,6 +270,7 @@ const tableFields: TableField[] = [
         key: "options",
         label: "Upload Settings",
         sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
         align: "center",
     },
     {
@@ -270,7 +280,7 @@ const tableFields: TableField[] = [
         width: "50px",
         align: "center",
     },
-];
+]);
 
 onMounted(() => {
     nextTick(() => {
@@ -420,23 +430,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
 
                     <!-- Options column with bulk checkboxes -->
                     <template v-slot:head(options)>
-                        <UploadTableOptionsHeader
-                            :all-space-to-tab="bulk.allSpaceToTab.value"
-                            :space-to-tab-indeterminate="bulk.spaceToTabIndeterminate.value"
-                            :show-posix="advancedMode"
-                            :all-to-posix-lines="bulk.allToPosixLines.value"
-                            :to-posix-lines-indeterminate="bulk.toPosixLinesIndeterminate.value"
-                            @toggle-space-to-tab="bulk.toggleAllSpaceToTab"
-                            @toggle-to-posix-lines="bulk.toggleAllToPosixLines" />
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
                     </template>
 
                     <template v-slot:cell(options)="{ item }">
-                        <UploadTableOptionsCell
-                            :space-to-tab="item.spaceToTab"
-                            :show-posix="advancedMode"
-                            :to-posix-lines="item.toPosixLines"
-                            @updateSpaceToTab="item.spaceToTab = $event"
-                            @updateToPosixLines="item.toPosixLines = $event" />
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
                     </template>
 
                     <!-- Actions column -->
@@ -445,12 +443,11 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
                             v-g-tooltip.hover
                             class="remove-btn"
                             :data-test-id="`upload-row-${index + 1}-remove`"
-                            color="red"
                             outline
                             transparent
                             title="Remove dataset from list"
                             @click="removeItem(item.id)">
-                            <FontAwesomeIcon :icon="faTimes" />
+                            <FontAwesomeIcon :icon="faTrash" />
                         </GButton>
                     </template>
 

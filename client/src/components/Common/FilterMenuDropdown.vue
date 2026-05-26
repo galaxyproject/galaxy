@@ -4,9 +4,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BDropdown, BDropdownItem, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
+import type { QuotaUsage } from "@/api/users";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import type { FilterType, ValidFilter } from "@/utils/filtering";
-import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
 import GModal from "../BaseComponents/GModal.vue";
@@ -77,25 +77,22 @@ function onHelp(_: string, value: string) {
 }
 
 // Quota Source refs and operations
-const quotaUsages = ref<QuotaUsage[]>([]);
-const errorMessage = ref<string>();
-async function loadQuotaUsages() {
-    try {
-        quotaUsages.value = await fetchCurrentUserQuotaUsages();
+const quotaUsageStore = useQuotaUsageStore();
+const quotaUsages = computed<QuotaUsage[]>(() => quotaUsageStore.quotaUsages ?? []);
 
-        // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
-        if (propValue.value && typeof propValue.value === "string") {
-            localValue.value = quotaUsages.value.find(
-                (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
-            );
-        }
-    } catch (e) {
-        errorMessage.value = errorMessageAsString(e);
+async function loadQuotaUsages() {
+    await quotaUsageStore.loadQuotaUsages();
+
+    // if the propValue is a string, find the corresponding QuotaUsage object and update the localValue
+    if (propValue.value && typeof propValue.value === "string") {
+        localValue.value = quotaUsages.value.find(
+            (quotaUsage) => props.filter.handler.converter!(quotaUsage) === propValue.value,
+        );
     }
 }
 
 const hasMultipleQuotaSources = computed<boolean>(() => {
-    return !!(quotaUsages.value && quotaUsages.value.length > 1);
+    return quotaUsages.value.length > 1;
 });
 
 onMounted(async () => {

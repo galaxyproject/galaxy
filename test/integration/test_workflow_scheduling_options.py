@@ -8,6 +8,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING
 from galaxy_test.driver import integration_util
 
 
@@ -62,23 +63,7 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
     def test_collection_explicit_and_implicit(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow("""
-class: GalaxyWorkflow
-steps:
-  - type: input_collection
-  - tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: 0
-  - tool_id: collection_paired_test
-    state:
-      f1:
-        $link: 1/paired_output
-  - tool_id: cat_list
-    state:
-      input1:
-        $link: 2/out1
-""")
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING)
         with self.dataset_populator.test_history() as history_id:
             fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]

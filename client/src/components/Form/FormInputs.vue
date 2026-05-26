@@ -24,7 +24,9 @@
                             v-if="conditionalMatch(input, caseId)"
                             v-bind="$props"
                             :inputs="caseDetails.inputs"
-                            :prefix="getPrefix(input.name)" />
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </div>
                 </div>
             </div>
@@ -47,7 +49,12 @@
                         <div v-if="input.help" class="my-2" data-description="section help">
                             {{ localize(input.help) }}
                         </div>
-                        <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
+                        <FormNode
+                            v-bind="$props"
+                            :inputs="input.inputs"
+                            :prefix="getPrefix(input.name)"
+                            @load-more="$emit('load-more', $event)"
+                            @search-change="$emit('search-change', $event)" />
                     </template>
                 </FormCard>
             </div>
@@ -70,7 +77,9 @@
                 :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
                 :workflow-run="workflowRun"
-                @change="onChange">
+                @change="onChange"
+                @load-more="$emit('load-more', $event)"
+                @search-change="$emit('search-change', $event)">
                 <template v-slot:workflow-run-form-title-badges>
                     <FormInputMismatchBadge v-if="valMismatches(input.name)" @stop-flagging="$emit('stop-flagging')" />
                 </template>

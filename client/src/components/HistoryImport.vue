@@ -4,14 +4,14 @@
             Import {{ identifierText === "invocation" ? "an" : "a" }} {{ identifierText }} from an archive
         </h1>
 
-        <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
                 :header="`${identifierTextCapitalized} import job ended in error`"
                 :job="jobError" />
-        </b-alert>
+        </GAlert>
 
         <div v-if="initializing">
             <LoadingSpan message="Loading server configuration." />
@@ -62,14 +62,14 @@
                 </b-form-group>
 
                 <b-form-group v-if="importType === 'externalUrl'" :label="urlLabel">
-                    <b-alert v-if="showImportUrlWarning" variant="warning" show>
+                    <GAlert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
                         <ExternalLink
                             href="https://training.galaxyproject.org/training-material/faqs/galaxy/histories_transfer_entire_histories_from_one_galaxy_server_to_another.html">
                             Read more on the GTN
                         </ExternalLink>
-                    </b-alert>
+                    </GAlert>
 
                     <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
@@ -103,6 +103,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { capitalizeFirstLetter } from "@/utils/strings";
 
+import GAlert from "./BaseComponents/GAlert.vue";
 import GButton from "./BaseComponents/GButton.vue";
 import ExternalLink from "./ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -113,7 +114,16 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, ImportSuccess, JobError, LoadingSpan, ExternalLink, GButton },
+    components: {
+        FilesInput,
+        FontAwesomeIcon,
+        ImportSuccess,
+        JobError,
+        LoadingSpan,
+        ExternalLink,
+        GAlert,
+        GButton,
+    },
     props: {
         invocationImport: {
             type: Boolean,

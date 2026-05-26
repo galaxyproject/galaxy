@@ -119,6 +119,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     history_manager: HistoryManager
     job_metrics: JobMetrics
     vault: Optional[Vault] = None
+    execution_timer_factory: Any
     stop: bool
     is_webapp: bool = True
 
@@ -159,7 +160,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self.config)
         self.user_manager = UserManager(cast(BasicSharedApp, self))
-        self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
+        self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer, galaxy_statsd_client=None)
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
         self.biotools_metadata_source = None

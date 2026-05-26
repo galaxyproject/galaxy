@@ -30,6 +30,12 @@ runners:
     load: galaxy.jobs.runners.cli:ShellJobRunner
   condor:
     load: galaxy.jobs.runners.condor:CondorJobRunner
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    # Optional connection overrides for a remote schedd/collector.
+    #htcondor_collector: "collector.example.org:9618"
+    #htcondor_schedd: "schedd@collector.example.org"
+    #htcondor_config: /etc/condor/condor_config
   slurm:
     load: galaxy.jobs.runners.slurm:SlurmJobRunner
   dynamic:
@@ -1044,6 +1050,41 @@ execution:
       # Galaxy's configured container resolution strategy and a default container can be
       # specified here with docker_default_container_id for instance.
       #universe: docker
+
+    htcondor:
+      runner: htcondor
+
+      # Identical to the condor runner configuration, but uses the htcondor2
+      # Python bindings. Requires the htcondor2 module to be installed in
+      # Galaxy's virtualenv.
+      # Optional per-destination HTCondor connection overrides (not passed to submit):
+      #htcondor_collector: "collector.example.org:9618"
+      #htcondor_schedd: "schedd@collector.example.org"
+      #htcondor_config: /etc/condor/condor_config
+
+      # Resource requests forwarded verbatim to the condor submit description:
+      #request_cpus: 4
+      #request_memory: 8192M
+      #request_gpus: 1
+
+      # Wall-clock time limit. Accepts seconds, HH:MM:SS, or D-HH:MM:SS.
+      # Injects periodic_hold = (JobDurationSeconds >= N) into the submit
+      # description. Galaxy reports the resulting hold as walltime_reached,
+      # enabling automatic resubmission to a longer-running destination.
+      #request_walltime: "24:00:00"
+
+      # Advanced: set periodic_hold directly as a raw HTCondor ClassAd
+      # expression for multi-condition policies. HTCondor evaluates it every
+      # PERIODIC_EXPR_INTERVAL (default 60 s); when true the job is held with
+      # HoldReasonCode=16 (walltime_reached). Takes precedence over
+      # request_walltime — the runner will not inject its own periodic_hold
+      # when this key is present.
+      # Example: hold if wall-clock exceeds 2 h OR resident memory > 16 GB:
+      #periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+
+      # Maximum distinct JOB_HELD events before the job is permanently failed
+      # (default 3, set to 0 to disable hold escalation entirely).
+      #max_held_count: 3
 
     # Job Re-submission
     # Jobs can be re-submitted for various reasons (to the same destination or others,

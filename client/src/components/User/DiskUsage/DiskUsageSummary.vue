@@ -5,9 +5,9 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { type AsyncTaskResultSummary, GalaxyApi } from "@/api";
-import { fetchCurrentUserQuotaUsages, type QuotaUsage } from "@/api/users";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
@@ -17,9 +17,10 @@ import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSumma
 const { config, isConfigLoaded } = useConfig(true);
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
+const quotaUsageStore = useQuotaUsageStore();
 const { isRunning: isRecalculateTaskRunning, waitForTask } = useTaskMonitor();
 
-const quotaUsages = ref<QuotaUsage[]>();
+const quotaUsages = computed(() => quotaUsageStore?.quotaUsages);
 const errorMessage = ref<string>();
 const isRecalculating = ref<boolean>(false);
 
@@ -39,9 +40,8 @@ watch(
     (newValue, oldValue) => {
         // Make sure we reload the user and the quota usages when the recalculation is done
         if (oldValue && !newValue) {
-            const includeHistories = false;
-            userStore.loadUser(includeHistories);
-            loadQuotaUsages();
+            userStore.refreshUser();
+            quotaUsageStore.applyRecalculationCompletedRefresh();
         }
     },
 );
@@ -76,17 +76,12 @@ async function onRefresh() {
     }
 }
 
-async function loadQuotaUsages() {
+onMounted(async () => {
     try {
-        const currentUserQuotaUsages = await fetchCurrentUserQuotaUsages();
-        quotaUsages.value = currentUserQuotaUsages;
+        await quotaUsageStore.loadQuotaUsages();
     } catch (error) {
         errorMessage.value = errorMessageAsString(error);
     }
-}
-
-onMounted(async () => {
-    await loadQuotaUsages();
 });
 </script>
 <template>

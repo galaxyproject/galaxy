@@ -13,7 +13,7 @@ class TestWindowManagerPersistence(SeleniumTestCase):
 
     def setUp(self):
         super().setUp()
-        self.execute_script("localStorage.removeItem('galaxy-scratchbook-windows');")
+        self.execute_script("localStorage.removeItem('galaxy-window-manager-windows');")
 
     @selenium_test
     @managed_history

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { IconDefinition } from "font-awesome-6";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 import type { UserConcreteObjectStoreModel } from "@/api";
 import type { FileSourceTemplateSummary } from "@/api/fileSources";
 import type { ObjectStoreTemplateSummary } from "@/api/objectStores.templates";
 import type { CardAction } from "@/components/Common/GCard.types";
-import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
 
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GCard from "@/components/Common/GCard.vue";
@@ -69,11 +69,32 @@ const buttonTooltip = computed(() => {
 });
 const quotaSourceLabel = computed(() => {
     if ("quota" in props.sourceOption && props.sourceOption.quota.enabled) {
-        return props.sourceOption.quota.source;
+        return props.sourceOption.quota.source ?? null;
     }
 
-    return "";
+    return null;
 });
+const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+
+const quotaUsageStore = useQuotaUsageStore();
+
+const isLoadingUsage = computed(() => Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]));
+const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
+
+watch(
+    () => {
+        const hasQuota = "quota" in props.sourceOption && props.sourceOption.quota.enabled;
+        return [hasQuota, quotaSourceLabel.value] as const;
+    },
+    ([hasQuota, sourceLabel]) => {
+        if (!hasQuota) {
+            return;
+        }
+
+        void quotaUsageStore.loadQuotaUsageForSource(sourceLabel, true);
+    },
+    { immediate: true },
+);
 
 const primaryActions = computed<CardAction[]>(() => [
     {
@@ -118,14 +139,10 @@ const primaryActions = computed<CardAction[]>(() => [
         </template>
 
         <template v-if="'quota' in props.sourceOption && props.sourceOption.quota.enabled" v-slot:tags>
-            <QuotaSourceUsageProvider
-                ref="quotaUsageProvider"
-                v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
-                class="w-100"
-                :quota-source-label="quotaSourceLabel">
+            <div class="w-100">
                 <LoadingSpan v-if="isLoadingUsage" message="Loading usage" />
                 <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
-            </QuotaSourceUsageProvider>
+            </div>
         </template>
     </GCard>
 </template>

@@ -3,15 +3,11 @@
     pick collects both into a list, rename PJA sets collection name.
   job:
     input_data:
-      type: File
-      value: 1.bed
-      file_type: bed
-    when_a:
-      type: raw
-      value: true
-    when_b:
-      type: raw
-      value: true
+      class: File
+      path: 1.bed
+      filetype: bed
+    when_a: true
+    when_b: true
   outputs:
     picked:
       class: Collection
@@ -22,15 +18,11 @@
     non-null output and applies the rename PJA.
   job:
     input_data:
-      type: File
-      value: 1.bed
-      file_type: bed
-    when_a:
-      type: raw
-      value: true
-    when_b:
-      type: raw
-      value: false
+      class: File
+      path: 1.bed
+      filetype: bed
+    when_a: true
+    when_b: false
   outputs:
     picked:
       class: Collection

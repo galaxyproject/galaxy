@@ -221,11 +221,11 @@ describe("UploadQueue", () => {
             history_id: "historyId",
             targets: [
                 {
-                    auto_decompress: false,
+                    auto_decompress: true,
                     destination: { type: "hdas" },
                     elements: [
                         {
-                            auto_decompress: false,
+                            auto_decompress: true,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -236,7 +236,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.0",
                         },
                         {
-                            auto_decompress: false,
+                            auto_decompress: true,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",
@@ -247,7 +247,7 @@ describe("UploadQueue", () => {
                             url: "http://test.me.1",
                         },
                         {
-                            auto_decompress: false,
+                            auto_decompress: true,
                             dbkey: "?",
                             deferred: true,
                             ext: "auto",

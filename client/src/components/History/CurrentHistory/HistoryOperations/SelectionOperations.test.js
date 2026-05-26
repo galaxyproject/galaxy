@@ -15,6 +15,12 @@ vi.mock("@/composables/confirmDialog", () => ({
     }),
 }));
 
+vi.mock("@/stores/objectStoreStore", () => ({
+    useObjectStoreStore: () => ({
+        selectableObjectStores: [{ object_store_id: "other", name: "Other Store" }],
+    }),
+}));
+
 const localVue = getLocalVue();
 
 const { server, http } = useServerMock();
@@ -22,7 +28,6 @@ const { server, http } = useServerMock();
 const FAKE_HISTORY_ID = "fake_history_id";
 const FAKE_HISTORY = { id: FAKE_HISTORY_ID, update_time: new Date() };
 const BULK_SUCCESS_RESPONSE = { success_count: 1, errors: [] };
-
 const NO_TASKS_CONFIG = {
     enable_celery_tasks: false,
 };
@@ -326,6 +331,18 @@ describe("History Selection Operations", () => {
                 expect(errorEvent).toHaveProperty("result");
                 expect(errorEvent.result).toEqual(BULK_ERROR_RESPONSE);
             });
+
+            it("should hide the selection when a storage operation completes", async () => {
+                const wizardModal = wrapper.findComponent({ name: "StorageOperationWizardModal" });
+
+                expect(wrapper.emitted("update:show-selection")).toBeFalsy();
+
+                wizardModal.vm.$emit("completed");
+                await flushPromises();
+
+                expect(wrapper.emitted("update:show-selection")).toBeTruthy();
+                expect(wrapper.emitted("update:show-selection").at(-1)).toEqual([false]);
+            });
         });
     });
 
@@ -338,6 +355,11 @@ describe("History Selection Operations", () => {
         describe("Dropdown Menu", () => {
             it("should hide `Change data type` option", async () => {
                 const option = '[data-description="change data type"]';
+                expect(wrapper.find(option).exists()).toBe(false);
+            });
+
+            it("should hide `Manage Storage Location` option", async () => {
+                const option = '[data-description="storage operation"]';
                 expect(wrapper.find(option).exists()).toBe(false);
             });
         });

@@ -28,6 +28,7 @@ class HistoryAgent(BaseGalaxyAgent):
     """Agent for understanding and answering questions about Galaxy histories."""
 
     agent_type = AgentType.HISTORY
+    DEFAULT_MAX_TOKENS = 16384
 
     def __init__(self, deps: GalaxyAgentDependencies):
         super().__init__(deps)

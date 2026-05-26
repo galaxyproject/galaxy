@@ -201,6 +201,8 @@ def process_key(incoming_key: str, incoming_value: Any, d: dict[str, Any]):
     else:
         # Section / Conditional
         input_name = key_parts[0]
+        if not input_name or input_name.isdigit():
+            raise RequestParameterInvalidException(f"Parameter '{incoming_key}' has an invalid key structure.")
         subdict = d.get(input_name, {})
         if not isinstance(subdict, dict):
             raise RequestParameterInvalidException(f"Parameter '{incoming_key}' received conflicting value.")

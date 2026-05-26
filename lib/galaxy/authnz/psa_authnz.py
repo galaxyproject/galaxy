@@ -21,7 +21,10 @@ from social_core.utils import (
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 
-from galaxy import exceptions as galaxy_exceptions
+from galaxy import (
+    exceptions as galaxy_exceptions,
+)
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import MalformedContents
 from galaxy.managers import users as user_managers
 from galaxy.model import (
@@ -44,7 +47,6 @@ from .oidc_utils import (
     is_oidc_backend,
     verify_oidc_response,
 )
-from ..config import GalaxyAppConfiguration
 
 if TYPE_CHECKING:
     from social_core.backends.oauth import BaseOAuth2
@@ -53,6 +55,19 @@ if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesAppContext
 
 log = logging.getLogger(__name__)
+
+
+def locate_token_expiration(extra_data):
+    expires = extra_data.get("expires", None) or extra_data.get("expires_in", None)
+    if expires:
+        return expires
+
+    refresh_token = extra_data.get("refresh_token")
+    if refresh_token and isinstance(refresh_token, dict):
+        return refresh_token.get("expires", None) or refresh_token.get("expires_in", None)
+
+    return None
+
 
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
@@ -291,17 +306,7 @@ class PSAAuthnz(IdentityProvider):
         return False
 
     def _try_to_locate_refresh_token_expiration(self, extra_data):
-        # Try to get expiration from top-level keys
-        expires = extra_data.get("expires", None) or extra_data.get("expires_in", None)
-        if expires:
-            return expires
-
-        # Try to get expiration from refresh_token if it's a dict
-        refresh_token = extra_data.get("refresh_token")
-        if refresh_token and isinstance(refresh_token, dict):
-            return refresh_token.get("expires", None) or refresh_token.get("expires_in", None)
-
-        return None
+        return locate_token_expiration(extra_data)
 
     def authenticate(self, trans, idphint=None) -> "HttpResponseProtocol":
         on_the_fly_config(trans.sa_session)
@@ -798,7 +803,6 @@ def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> N
             NotificationVariant,
             PersonalNotificationCategory,
         )
-        from galaxy.webapps.galaxy.services.notifications import NotificationService
 
         labels: dict[str, str] = {
             "email": "email address",
@@ -819,7 +823,7 @@ def _send_oidc_profile_update_notification(trans, user, updates: list[str]) -> N
             ),
             galaxy_url=None,
         )
-        NotificationService(trans.app.notification_manager).send_notification_internal(request, force_sync=True)
+        trans.app.notification_manager.send_notification_internal(request, force_sync=True)
     except Exception as exc:
         log.warning("OIDC profile update notification failed for user %s: %s", user.id, exc)
 

@@ -33,7 +33,7 @@ jobs:
           path: 'galaxy root'
           persist-credentials: false
       - name: Install miniforge  # use this job to test using Python from a conda environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           activate-environment: ''

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
 import { ref } from "vue";
 
 import { type ConfirmDialogOptions, DEFAULT_CONFIRM_OPTIONS } from "@/composables/confirmDialog";
 
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
 import GModal from "@/components/BaseComponents/GModal.vue";
 
@@ -50,9 +50,9 @@ defineExpose({ confirm });
         size="small"
         :title="currentOptions.title"
         @close="handleResponse(null)">
-        <BAlert class="mb-0" data-description="confirm dialog message" variant="info" show>
+        <GAlert class="mb-0" data-description="confirm dialog message" variant="info" show>
             {{ message }}
-        </BAlert>
+        </GAlert>
         <template v-slot:footer>
             <div class="confirm-dialog-button-container">
                 <GButton data-description="confirm dialog cancel" @click="handleResponse(false)">

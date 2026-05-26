@@ -52,7 +52,6 @@ class FileSourcePluginsConfig(BaseModel):
     ftp_upload_dir: Optional[str] = None
     ftp_upload_purge: bool = True
     tmp_dir: Optional[str] = None
-    webdav_use_temp_files: Optional[bool] = None
     listings_expiry_time: Optional[int] = None
 
     @staticmethod
@@ -67,7 +66,6 @@ class FileSourcePluginsConfig(BaseModel):
         kwds["ftp_upload_dir"] = config.ftp_upload_dir
         kwds["ftp_upload_purge"] = config.ftp_upload_purge
         kwds["tmp_dir"] = config.file_source_temp_dir
-        kwds["webdav_use_temp_files"] = config.file_source_webdav_use_temp_files
         kwds["listings_expiry_time"] = config.file_source_listings_expiry_time
 
         return FileSourcePluginsConfig(**kwds)
@@ -81,7 +79,6 @@ class FileSourcePluginsConfig(BaseModel):
             "ftp_upload_dir": self.ftp_upload_dir,
             "ftp_upload_purge": self.ftp_upload_purge,
             "tmp_dir": self.tmp_dir,
-            "webdav_use_temp_files": self.webdav_use_temp_files,
             "listings_expiry_time": self.listings_expiry_time,
         }
 
@@ -96,7 +93,6 @@ class FileSourcePluginsConfig(BaseModel):
             ftp_upload_purge=as_dict["ftp_upload_purge"],
             # Always provided for new jobs, remove in 25.0
             tmp_dir=as_dict.get("tmp_dir"),
-            webdav_use_temp_files=as_dict.get("webdav_use_temp_files"),
             listings_expiry_time=as_dict.get("listings_expiry_time"),
         )
 
@@ -204,6 +200,25 @@ class FilesSourceProperties(StrictModel):
                 " This is a boolean expression that can be evaluated by the server."
                 " It can be a simple group name or a complex expression."
                 " For example, 'group1 and (group2 or group3)' will allow access if the user belongs to group1 and either group2 or group3."
+            ),
+        ),
+    ] = None
+    oidc_auth_provider: Annotated[
+        Optional[str],
+        Field(
+            None,
+            title="OIDC authorization provider",
+            description=("Specify an OIDC provider key to inject the access token as a Bearer Authorization header."),
+        ),
+    ] = None
+    auth_expires_at: Annotated[
+        Optional[str],
+        Field(
+            title="Auth expires at",
+            description=(
+                "ISO-format UTC datetime at which the OIDC access token used by this source expires."
+                " Set at serialisation time for sources that resolve an Authorization header from"
+                " the user's OIDC credentials."
             ),
         ),
     ] = None

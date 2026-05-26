@@ -9,7 +9,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     to_basic_markdown,
 )
-from galaxy.model.orm.now import now
+from galaxy.util import now
 from .base import BaseTestCase
 
 

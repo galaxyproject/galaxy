@@ -64,7 +64,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
         :returns:   a dictified description of the container dependency, with attribute
                     ``dependency_type: None`` if no match was found.
         """
-        kwds["session"] = requests.session()
+        kwds["session"] = requests.Session()
         return self._view.resolve(index=index, **kwds)
 
     @expose_api
@@ -84,7 +84,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
         :rtype:     list
         :returns:   list of items returned from resolve()
         """
-        kwds["session"] = requests.session()
+        kwds["session"] = requests.Session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api
@@ -103,7 +103,7 @@ class ContainerResolutionAPIController(BaseGalaxyAPIController):
         """
         kwds.update(payload)
         kwds["install"] = True
-        kwds["session"] = requests.session()
+        kwds["session"] = requests.Session()
         return self._view.resolve_toolbox(**kwds)
 
     @expose_api

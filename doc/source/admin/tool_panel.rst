@@ -233,3 +233,46 @@ new tool panel without referencing the original sections at all.
       items:
       - type: tool
         id: count_list
+
+Curated tool tags
+-----------------
+
+Galaxy 26.1 introduces curated tool *tags* alongside EDAM operations and
+topics. Curated tags map a tool id to one or more user-friendly labels (e.g.
+``Get Data``, ``Statistics``) and feed three pieces of UI: the
+``tag:`` autocompletion in the tool panel and the *Discover Tools* page,
+section-style display of favorite tags in the *My Tools* panel, and the
+``tool_tags`` Whoosh index field used for full-text search.
+
+The mapping file is selected via the ``tool_tag_mappings_file`` config
+option (default: an empty mapping). Admins who want curated tags can
+generate a snapshot from any Galaxy server's ``/api/tools`` payload using
+the helper script:
+
+.. code-block:: console
+
+    $ python scripts/extract_tool_sections_from_api.py \
+        --api-url https://your-galaxy.example.org/api/tools/ \
+        --output config/tool_tag_mappings.yml
+
+After changing the file, restart Galaxy and rebuild the tool search
+index (delete the directory pointed to by ``tool_search_index_dir`` or
+trigger an *Admin → Reload tool data*) so the new ``tool_tags`` field
+is populated.
+
+Search syntax
+~~~~~~~~~~~~~
+
+In addition to free-text and ``ontology:"operation_…"`` queries, the
+following structured filters are now accepted in the tool search bar:
+
+- ``tag:"Get Data"`` — match tools carrying the curated tag *Get Data*.
+  Multi-word tags must be quoted.
+- ``ontology:"topic_3173"`` — match tools annotated with that EDAM topic
+  or operation.
+- Combinations: ``ontology:"operation_0224" tag:"Get Data" upload``.
+
+Old ``/tools/list?section=…`` URLs continue to work: the ``section``
+query parameter is folded into the new ``tag`` filter, so existing
+bookmarks stay valid as long as a matching tag exists. The
+``section`` parameter is otherwise deprecated.

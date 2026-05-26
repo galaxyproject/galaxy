@@ -22,10 +22,17 @@ const inputValue = computed({
     },
 });
 
+function focus() {
+    inputElement.value?.focus();
+}
+
+function getInputElement() {
+    return inputElement.value;
+}
+
 defineExpose({
-    focus() {
-        inputElement.value?.focus();
-    },
+    focus,
+    getInputElement,
 });
 </script>
 

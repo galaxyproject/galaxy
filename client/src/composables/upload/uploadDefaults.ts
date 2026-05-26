@@ -6,6 +6,7 @@
 import { computed } from "vue";
 
 import type { BaseUploadItem } from "@/components/Panels/Upload/types/uploadItem";
+import { uploadOptionDefaults } from "@/composables/upload/uploadOptionModel";
 import { useUploadConfigurations } from "@/composables/uploadConfigurations";
 
 export function useUploadDefaults(formats?: string[]) {
@@ -22,8 +23,9 @@ export function useUploadDefaults(formats?: string[]) {
         return {
             extension: defaultExtension.value,
             dbkey: defaultDbKey.value,
-            spaceToTab: false,
-            toPosixLines: false,
+            spaceToTab: uploadOptionDefaults.spaceToTab,
+            toPosixLines: uploadOptionDefaults.toPosixLines,
+            autoDecompress: uploadOptionDefaults.autoDecompress,
         };
     }
 

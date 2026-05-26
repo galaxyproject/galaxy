@@ -40,7 +40,7 @@ export type State =
     | "new_populated_state"
     | "inaccessible";
 
-interface StateRepresentation {
+export interface StateRepresentation {
     status: "success" | "warning" | "info" | "danger" | "secondary";
     text?: string;
     displayName?: string;
