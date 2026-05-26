@@ -119,7 +119,7 @@ class SearchResult:
 
 
 @dataclass
-class VectorSearchDbResult:
+class GTNVectorSearchResults:
     """Represents a search result from vector store db."""
 
     id: str
@@ -155,6 +155,51 @@ class VectorSearchDbResult:
             "content": self.content,
             "score": round(self.score, 2),
             "source": self.source,
+        }
+
+
+@dataclass
+class WorkflowVectorSearchResults:
+    """Represents a search result from vector store db."""
+
+    source: str
+    categories: str
+    content_type: str
+    workflow_id: str
+    collections: str
+    doi: str
+    updated: str
+    path: str
+    url: str
+    workflow_name: str
+    topic: str
+    data_source: str
+    score: float
+    snippet: str
+    content: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization.
+
+        Returns the workflow metadata fields provided by the IWC vector store.
+        Includes ``score`` so the agent can gauge match quality.
+        """
+        return {
+            "source": self.source,
+            "categories": self.categories,
+            "content_type": self.content_type,
+            "workflow_id": self.workflow_id,
+            "collections": self.collections,
+            "doi": self.doi,
+            "updated": self.updated,
+            "path": self.path,
+            "url": self.url,
+            "workflow_name": self.workflow_name,
+            "topic": self.topic,
+            "data_source": self.data_source,
+            "snippet": self.snippet,
+            "content": self.content,
+            "score": round(self.score, 2),
         }
 
 
@@ -448,7 +493,7 @@ class GTNSearchDB:
             log.warning(f"FAQ search failed for query '{query}': {e}")
             return []
         
-    def search_vector_db(
+    def search_gtn_vector_db(
         self,
         query: str,
         embeddings: OpenAIEmbeddings,
@@ -456,7 +501,7 @@ class GTNSearchDB:
         collection_name: str = "gtn_tutorials",
         limit: int = 2,
         doc_type: Optional[str] = None,
-    ) -> list[VectorSearchDbResult]:
+    ) -> list[GTNVectorSearchResults]:
         try:
             # Check if the persist directory exists
             if not Path(persist_dir).exists():
@@ -484,7 +529,7 @@ class GTNSearchDB:
                 for d in parent_docs["documents"][:10]:
                     parent_context_docs += d + " "
 
-                result = VectorSearchDbResult(
+                result = GTNVectorSearchResults(
                     id=doc.metadata.get("title"),
                     title=doc.metadata.get("title"),
                     description=f" {doc.metadata.get('topic')} {doc.metadata.get('title')} ",
@@ -507,6 +552,72 @@ class GTNSearchDB:
             return vector_results
         except Exception as e:
             log.warning(f"Vector DB GTN search failed for query '{query}': {e}")
+            return []
+
+    def search_workflow_vector_db(
+        self,
+        query: str,
+        embeddings: OpenAIEmbeddings,
+        persist_dir: Path,
+        collection_name: str = "iwc_workflows",
+        limit: int = 2,
+    ) -> list[WorkflowVectorSearchResults]:
+        try:
+            # Check if the persist directory exists
+            if not Path(persist_dir).exists():
+                log.warning(f"ChromaDB persist directory does not exist: {persist_dir}")
+                return []
+
+            vectorstore = Chroma(
+                persist_directory=persist_dir,
+                collection_name=collection_name,
+                embedding_function=embeddings
+            )
+
+            # Use similarity_search_with_score to get relevance scores
+            results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
+
+            log.info(f"Found {len(results_with_scores)} similar workflows")
+
+            vector_results = []
+
+            for i, (doc, score) in enumerate(results_with_scores, start=1):
+                source_id = doc.metadata.get("source")
+                parent_docs = vectorstore.get(where={"source": source_id})
+                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                parent_context_docs = ""
+                for d in parent_docs["documents"][:10]:
+                    parent_context_docs += d + " "
+
+                result = WorkflowVectorSearchResults(
+                    source=doc.metadata.get("source", ""),
+                    categories=doc.metadata.get("categories", ""),
+                    content_type=doc.metadata.get("content_type", ""),
+                    workflow_id=doc.metadata.get("workflow_id", ""),
+                    collections=doc.metadata.get("collections", ""),
+                    doi=doc.metadata.get("doi", ""),
+                    updated=doc.metadata.get("updated", ""),
+                    path=doc.metadata.get("path", ""),
+                    url=doc.metadata.get("url", ""),
+                    workflow_name=doc.metadata.get("workflow_name", ""),
+                    topic=doc.metadata.get("topic", ""),
+                    data_source=doc.metadata.get("data_source", ""),
+                    score=score,
+                    snippet=str(doc.page_content),
+                    content=parent_context_docs,
+                )
+                vector_results.append(result)
+
+            log.info(f"Processed {len(vector_results)} workflow vector DB search results")
+            for i, result in enumerate(vector_results):
+                log.debug(
+                    f"Result {i+1}: score={result.score:.3f}, source={result.source}, "
+                    f"workflow_name={result.workflow_name}"
+                )
+
+            return vector_results
+        except Exception as e:
+            log.warning(f"Vector DB workflow search failed for query '{query}': {e}")
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
