@@ -10,6 +10,7 @@ const DEFAULT_WIDTH = 300;
 interface Props {
     collapsible?: boolean;
     side?: "left" | "right";
+    panelId?: string;
     minWidth?: number;
     maxWidth?: number;
     reactiveWidth?: number;
@@ -17,6 +18,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
     collapsible: true,
     side: "right",
+    panelId: undefined,
     minWidth: 200,
     maxWidth: 800,
     reactiveWidth: undefined,
@@ -24,6 +26,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "update:reactive-width", width: number): void;
+    (e: "close"): void;
 }>();
 
 const localPanelWidth = ref(DEFAULT_WIDTH);
@@ -89,7 +92,7 @@ defineExpose({
 <template>
     <div
         v-if="show"
-        :id="side"
+        :id="panelId ?? side"
         ref="root"
         class="flex-panel"
         :class="{ ...sideClasses }"
@@ -107,7 +110,10 @@ defineExpose({
             class="collapse-button open"
             :class="{ ...sideClasses, show: showToggle }"
             title="Close panel"
-            @click="show = false"
+            @click="
+                show = false;
+                emit('close');
+            "
             @mouseenter="hoverToggle = true"
             @focusin="hoverToggle = true"
             @mouseout="hoverToggle = false"

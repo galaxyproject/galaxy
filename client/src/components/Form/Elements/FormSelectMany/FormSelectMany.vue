@@ -3,7 +3,7 @@ import { faLongArrowAltLeft, faLongArrowAltRight, faTimes } from "@fortawesome/f
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import { BFormInput } from "bootstrap-vue";
-import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef } from "vue";
+import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef, watch } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
@@ -42,13 +42,31 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    /**
+     * When the parent paginates options server-side and only ``options`` is a
+     * partial slice, ``totalEstimate`` carries the backend's full count so the
+     * "Unselected (N)" header reflects what the user can actually load — not
+     * just what's currently in memory.
+     */
+    totalEstimate: {
+        type: Number as PropType<number | null>,
+        default: null,
+    },
 });
 
 const emit = defineEmits<{
     (e: "input", value: Array<SelectValue>): void;
+    (e: "search-change", query: string): void;
 }>();
 
 const searchValue = ref("");
+
+// BFormInput already debounces ``searchValue`` (see ``:debounce="300"`` below),
+// so a watch on it gives us the same debounced upward emit FormSelect does —
+// callers can refetch options against the backend without firing per-keystroke.
+watch(searchValue, (value) => {
+    emit("search-change", value);
+});
 const useRegex = ref(false);
 const caseSensitive = ref(false);
 const localSelectionOrder = computed(() => props.maintainSelectionOrder);
@@ -282,7 +300,15 @@ const deselectText = computed(() => {
 
 const unselectedCount = computed(() => {
     if (searchValue.value === "") {
-        return `${props.options.length - selected.value.length}`;
+        // Use ``totalEstimate`` when paginated server-side so the header counts
+        // backend-known items, not just locally-loaded ones. Fall back to the
+        // larger of the two to absorb any pinned-and-counted oddities.
+        const localTotal = props.options.length;
+        const total =
+            props.totalEstimate !== null && props.totalEstimate !== undefined
+                ? Math.max(props.totalEstimate, localTotal)
+                : localTotal;
+        return `${Math.max(0, total - selected.value.length)}`;
     } else {
         let countString = `${unselectedOptionsFiltered.value.length}`;
         if (moreUnselected.value) {
@@ -386,6 +412,7 @@ const selectedCount = computed(() => {
                     Limited to {{ unselectedDisplayCount }} options.
                     <button class="show-more-button" @click="unselectedDisplayCount += 500">Show more</button>
                 </span>
+                <slot name="after-list" />
             </div>
             <div class="selection-heading px-2">
                 <span>

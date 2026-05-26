@@ -174,8 +174,9 @@ class Repeat(Group):
         rval = []
         for i in range(self.default):
             rval_dict = {"__index__": i}
+            child_context = ExpressionContext(rval_dict, context)
             for input in self.inputs.values():
-                rval_dict[input.name] = input.get_initial_value(trans, context)
+                rval_dict[input.name] = input.get_initial_value(trans, child_context)
             rval.append(rval_dict)
         return rval
 

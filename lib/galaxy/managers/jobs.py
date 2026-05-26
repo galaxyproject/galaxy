@@ -190,9 +190,10 @@ def safe_aliased(model_class: type[T], name: str) -> type[T]:
 
 
 class JobManager:
-    def __init__(self, app: StructuredApp):
+    def __init__(self, app: StructuredApp, history_manager: HistoryManager):
         self.app = app
         self.dataset_manager = DatasetManager(app)
+        self.history_manager = history_manager
 
     def index_query(self, trans: ProvidesUserContext, payload: JobIndexQueryPayload) -> sqlalchemy.engine.ScalarResult:
         """The caller is responsible for security checks on the resulting job if
@@ -364,14 +365,25 @@ class JobManager:
         elif trans.galaxy_session:
             belongs_to_user = job.session_id == trans.galaxy_session.id
         if not trans.user_is_admin and not belongs_to_user:
-            # Check access granted via output datasets.
-            if not job.output_datasets:
-                raise ItemAccessibilityException("Job has no output datasets.")
-            for data_assoc in job.output_datasets:
-                if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
-                    raise ItemAccessibilityException("You are not allowed to rerun this job.")
+            if not self._user_can_access_job(job, trans.user):
+                raise ItemAccessibilityException("You are not allowed to access this job.")
         trans.sa_session.refresh(job)
         return job
+
+    def _user_can_access_job(self, job: Job, user: Optional[User]) -> bool:
+        has_outputs = bool(job.output_datasets) or bool(job.output_dataset_collection_instances)
+        if has_outputs:
+            datasets_ok = all(
+                self.dataset_manager.is_accessible(da.dataset.dataset, user) for da in job.output_datasets
+            )
+            collections_ok = all(
+                self.dataset_manager.is_accessible(hda.dataset, user)
+                for hdca_assoc in job.output_dataset_collection_instances
+                for hda in hdca_assoc.dataset_collection_instance.dataset_instances
+            )
+            if datasets_ok and collections_ok:
+                return True
+        return job.history is not None and self.history_manager.is_accessible(job.history, user)
 
     def get_job_console_output(
         self, trans, job, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0

@@ -12,6 +12,7 @@ from .framework import (
 
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
+    framework_tool_and_types = True
 
     @pytest.mark.skip("Skipping UCSC table direct1 data source test, chromedriver fails captcha")
     @selenium_test
@@ -38,3 +39,20 @@ class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(1, allowed_force_refreshes=2)
         # Make sure we're still logged in (xref https://github.com/galaxyproject/galaxy/issues/11374)
         self.components.masthead.logged_in_only.wait_for_visible()
+
+    @selenium_test
+    @managed_history
+    def test_tool_runner_redirects_to_spa(self):
+        """Data source tools redirect back to the Galaxy SPA after handing off control to the controller.
+
+        Regression test for https://github.com/galaxyproject/galaxy/issues/22671: the new tab opened
+        by an external data source app used to hit `/tool_runner?tool_id=...` and then JS-redirect
+        back to `/`. After the mako removal the new tab was stranded on a static "ok" page; the
+        controller now sends a 302 to `/?notification=tool-submitted` and the SPA surfaces a toast.
+        """
+        self.get("tool_runner?tool_id=test_data_source")
+        # If the redirect is broken we land on a static page with no masthead.
+        self.wait_for_masthead()
+        # Confirm the SPA queued a toast from the notification query param.
+        self.wait_for_selector_visible(".b-toast")
+        self.screenshot("tool_runner_redirect_toast")

@@ -47,6 +47,7 @@ class QueryRouterAgent(BaseGalaxyAgent):
     """Router that answers queries directly or delegates to specialist agents."""
 
     agent_type = AgentType.ROUTER
+    _handoff_context: Optional[dict[str, Any]] = None
 
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         model_name = self._get_agent_config("model", "")
@@ -258,7 +259,8 @@ class QueryRouterAgent(BaseGalaxyAgent):
         log.info(f"Router handing off to {handoff_target}: '{input_text[:100]}...'")
         try:
             agent = ctx.deps.get_agent(agent_type, ctx.deps)
-            response = await agent.process(input_text)
+            handoff_context = self._handoff_context.copy() if self._handoff_context else {}
+            response = await agent.process(input_text, handoff_context)
             return self._serialize_handoff(response, handoff_target)
         except ValueError as e:
             log.warning(f"{handoff_target} handoff unavailable: {e}")
@@ -449,7 +451,12 @@ class QueryRouterAgent(BaseGalaxyAgent):
             else:
                 log.info("Router: processing query with no conversation history")
 
-            result = await self._run_with_retry(query, message_history=message_history)
+            previous_handoff_context = self._handoff_context
+            self._handoff_context = context.copy() if context else {}
+            try:
+                result = await self._run_with_retry(query, message_history=message_history)
+            finally:
+                self._handoff_context = previous_handoff_context
             content = extract_result_content(result)
 
             try:

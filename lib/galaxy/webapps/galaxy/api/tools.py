@@ -77,6 +77,7 @@ from galaxy.tools.fetch.workbooks import (
     ParsedFetchWorkbook,
     ParseFetchWorkbook,
 )
+from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.util.hash_util import (
     HashFunctionNameEnum,
     memory_bound_hexdigest,
@@ -568,8 +569,9 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
+        options_pagination = _parse_options_pagination(kwd.pop("options_pagination", None))
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user, tool_uuid=tool_uuid)
-        return tool.to_json(trans, kwd.get("inputs", kwd), history=history)
+        return tool.to_json(trans, kwd.get("inputs", kwd), history=history, options_pagination=options_pagination)
 
     @web.require_admin
     @expose_api
@@ -967,3 +969,21 @@ def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
             raise exceptions.RequestParameterInvalidException("Request payload must be a JSON object.")
         kwd = payload
     return kwd
+
+
+def _parse_options_pagination(value: Any) -> Optional[OptionsPaginationT]:
+    """Accept ``options_pagination`` as a dict (POST body) or JSON-encoded string
+    (GET query param). Returns ``None`` if not provided. Server-side clamps are
+    applied later in ``_normalize_pagination`` so individual entries don't need
+    to be validated here.
+    """
+    if value is None or value == "":
+        return None
+    if isinstance(value, str):
+        try:
+            value = loads(value)
+        except ValueError as e:
+            raise exceptions.RequestParameterInvalidException(f"options_pagination must be a JSON object: {e}")
+    if not isinstance(value, dict):
+        raise exceptions.RequestParameterInvalidException("options_pagination must be a JSON object.")
+    return value

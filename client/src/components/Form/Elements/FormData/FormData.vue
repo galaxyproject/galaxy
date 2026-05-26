@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useIntersectionObserver } from "@vueuse/core";
 import { BAlert, BFormCheckbox } from "bootstrap-vue";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 
@@ -57,12 +58,22 @@ type SelectOption = {
     value: DataOption | null;
 };
 
+type OptionsMetaEntry = {
+    offset: number;
+    limit: number;
+    total_estimate?: number;
+    has_more: boolean;
+};
+
 const props = withDefaults(
     defineProps<{
         loading?: boolean;
         multiple?: boolean;
         optional?: boolean;
         options: Record<string, Array<DataOption>>;
+        pinned?: Record<string, Array<DataOption>>;
+        optionsMeta?: Record<string, OptionsMetaEntry>;
+        name?: string;
         value?: {
             values: Array<DataOption>;
         };
@@ -87,13 +98,22 @@ const props = withDefaults(
         tag: undefined,
         userDefinedTitle: undefined,
         extendedCollectionType: () => ({}) as ExtendedCollectionType,
+        pinned: () => ({}) as Record<string, Array<DataOption>>,
+        optionsMeta: () => ({}) as Record<string, OptionsMetaEntry>,
+        name: undefined,
     },
 );
 
 const eventStore = useEventStore();
 const { datatypesMapper } = useDatatypesMapper();
 
-const $emit = defineEmits(["input", "alert", "focus"]);
+const $emit = defineEmits(["input", "alert", "focus", "load-more", "search-change"]);
+
+/** Active backend search query for this parameter. Updated when the user types
+ * in the dropdown's search box (debounced upstream by ``FormSelect``). Sent in
+ * both ``search-change`` (replace-merge) and subsequent ``load-more``
+ * (append-merge) payloads so the server keeps filtering as the user paginates. */
+const searchQuery = ref("");
 
 // Determines wether values should be processed as linked or unlinked
 const currentLinked = ref(true);
@@ -197,8 +217,12 @@ const formattedOptions = computed(() => {
     keepOptionsUpdate.value;
 
     if (currentSource.value && currentSource.value in props.options) {
-        // Map incoming values to available options
-        const options = props.options[currentSource.value] || [];
+        // Map incoming values to available options. Pinned entries are
+        // forced-include items returned by the server (selected values that
+        // landed outside the current page window, or rerun inputs that no
+        // longer exist in the active history). Treat them as keep-options.
+        const pinnedForSource = (props.pinned && props.pinned[currentSource.value]) || [];
+        const options = [...pinnedForSource, ...(props.options[currentSource.value] || [])];
         const result: Array<SelectOption> = [];
         options.forEach((option) => {
             const newOption = {
@@ -215,10 +239,11 @@ const formattedOptions = computed(() => {
                 }
             }
         });
-        // Add keep-options from other sources
+        // Add keep-options from other sources (page + pinned).
         const otherSources = [SOURCE.COLLECTION_ELEMENT, SOURCE.LIBRARY_DATASET];
         for (const otherSource of otherSources) {
-            const otherOptions = props.options[otherSource];
+            const pinnedForOther = (props.pinned && props.pinned[otherSource]) || [];
+            const otherOptions = [...pinnedForOther, ...(props.options[otherSource] || [])];
             if (Array.isArray(otherOptions)) {
                 otherOptions.forEach((option) => {
                     const keepKey = `${option.id}_${option.src}`;
@@ -264,6 +289,81 @@ const formattedOptions = computed(() => {
  * Provides placeholder label for select field
  */
 const placeholder = computed(() => getSourceLabel(currentSource.value));
+
+/**
+ * Visible-source ``has_more`` flag — drives the "Load more" sentinel rendered
+ * inside the dropdown when the server reports the page is incomplete.
+ */
+const hasMoreInCurrentSource = computed(() => {
+    if (!currentSource.value || !props.optionsMeta) {
+        return false;
+    }
+    const meta = props.optionsMeta[currentSource.value];
+    return Boolean(meta && meta.has_more);
+});
+
+/**
+ * Total count of options for the current source — used to label the sentinel
+ * and to compute the next page offset.
+ */
+const currentSourceLoadedCount = computed(() => {
+    if (!currentSource.value) {
+        return 0;
+    }
+    return (props.options[currentSource.value] || []).length;
+});
+
+const currentSourceTotalEstimate = computed(() => {
+    if (!currentSource.value || !props.optionsMeta) {
+        return null;
+    }
+    return props.optionsMeta[currentSource.value]?.total_estimate ?? null;
+});
+
+function onLoadMore() {
+    if (!props.name || !currentSource.value) {
+        return;
+    }
+    const src = currentSource.value;
+    const limit = props.optionsMeta?.[src]?.limit ?? 50;
+    $emit("load-more", {
+        name: props.name,
+        src,
+        offset: currentSourceLoadedCount.value,
+        limit,
+        search: searchQuery.value || undefined,
+    });
+}
+
+/** Forward the dropdown's typed search to the parent so it can refetch the
+ * options list against the backend (filtered by name/hid). Always emits — the
+ * parent treats an empty query as "reset to default page 0". */
+function onSearchChange(query: string) {
+    if (!props.name || !currentSource.value) {
+        return;
+    }
+    searchQuery.value = query;
+    const src = currentSource.value;
+    const limit = props.optionsMeta?.[src]?.limit ?? 50;
+    $emit("search-change", {
+        name: props.name,
+        src,
+        query,
+        limit,
+    });
+}
+
+/** Sentinel rendered inside the multiselect's ``after-list`` slot — when it
+ * scrolls into view and ``has_more`` is still true, fetch the next page.
+ * The observer only fires on intersection-state changes, so each scroll-into-
+ * view triggers at most one load-more for the current offset.
+ */
+const loadMoreSentinel = ref<HTMLElement | null>(null);
+useIntersectionObserver(loadMoreSentinel, ([entry]) => {
+    if (entry?.isIntersecting && hasMoreInCurrentSource.value && !props.loading) {
+        onLoadMore();
+    }
+});
 
 /**
  * Provides the array of available variants associated with a specific form data type
@@ -935,8 +1035,11 @@ const matchedValues = computed(() => {
     if (props.value && props.value.values.length > 0) {
         props.value.values.forEach((entry) => {
             if ("src" in entry && entry.src) {
-                const options = props.options[entry.src] || [];
-                const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+                const pageOptions = props.options[entry.src] || [];
+                const pinnedOptions = (props.pinned && props.pinned[entry.src]) || [];
+                const option =
+                    pageOptions.find((v) => v.id === entry.id && v.src === entry.src) ||
+                    pinnedOptions.find((v) => v.id === entry.id && v.src === entry.src);
                 if (option) {
                     const accepted = !props.tag || option.tags?.includes(props.tag);
                     if (accepted) {
@@ -1035,7 +1138,8 @@ const noOptionsWarningMessage = computed(() => {
                     :multiple="currentVariant.multiple"
                     :optional="currentVariant.multiple || optional"
                     :options="formattedOptions"
-                    :placeholder="`Select a ${placeholder}`">
+                    :placeholder="`Select a ${placeholder}`"
+                    @search-change="onSearchChange">
                     <template v-slot:no-options>
                         <BAlert
                             :class="props.workflowRun && 'py-0 my-0 d-flex w-100 h-100 align-items-center'"
@@ -1044,6 +1148,14 @@ const noOptionsWarningMessage = computed(() => {
                             {{ noOptionsWarningMessage }}
                         </BAlert>
                     </template>
+                    <template v-if="hasMoreInCurrentSource" v-slot:after-list>
+                        <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">
+                            <small v-if="currentSourceTotalEstimate">
+                                Loading more… ({{ currentSourceLoadedCount }} of {{ currentSourceTotalEstimate }})
+                            </small>
+                            <small v-else>Loading more…</small>
+                        </div>
+                    </template>
                 </FormSelect>
                 <FormSelection
                     v-else-if="currentVariant?.multiple"
@@ -1051,12 +1163,22 @@ const noOptionsWarningMessage = computed(() => {
                     v-model="currentValue"
                     class="w-100"
                     :data="formattedOptions"
+                    :total-estimate="currentSourceTotalEstimate"
                     optional
-                    multiple>
+                    multiple
+                    @search-change="onSearchChange">
                     <template v-slot:no-options>
                         <BAlert class="py-2 my-0" variant="warning" show>
                             {{ noOptionsWarningMessage }}
                         </BAlert>
+                    </template>
+                    <template v-if="hasMoreInCurrentSource" v-slot:after-list>
+                        <div ref="loadMoreSentinel" class="form-data-load-more-sentinel text-muted text-center py-2">
+                            <small v-if="currentSourceTotalEstimate">
+                                Loading more… ({{ currentSourceLoadedCount }} of {{ currentSourceTotalEstimate }})
+                            </small>
+                            <small v-else>Loading more…</small>
+                        </div>
                     </template>
                 </FormSelection>
             </div>

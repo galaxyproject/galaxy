@@ -8518,6 +8518,13 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ChatEntityContext */
+        ChatEntityContext: {
+            /** Datasets */
+            datasets?: components["schemas"]["EntityReference"][];
+            /** Histories */
+            histories?: components["schemas"]["EntityReference"][];
+        };
         /** ChatExchangeBatchDeletePayload */
         ChatExchangeBatchDeletePayload: {
             /**
@@ -8596,6 +8603,11 @@ export interface components {
              * @default
              */
             context: string | null;
+            /**
+             * Entity Context
+             * @description Structured entity references resolved from @mentions in the query.
+             */
+            entity_context?: components["schemas"]["ChatEntityContext"] | null;
             /**
              * Exchange ID
              * @description The ID of an existing chat exchange to continue.
@@ -12385,6 +12397,36 @@ export interface components {
              */
             src: components["schemas"]["DataItemSourceType"];
         };
+        /** EntityReference */
+        EntityReference: {
+            /** Extension */
+            extension?: string | null;
+            /** HID */
+            hid?: number | null;
+            /**
+             * Entity ID
+             * @description The resolved encoded ID of the entity.
+             */
+            id?: string | null;
+            /**
+             * Identifier
+             * @description The identifier as typed by the user (HID number or name).
+             */
+            identifier: string;
+            /**
+             * Name
+             * @description The display name of the entity.
+             * @default
+             */
+            name: string;
+            /** State */
+            state?: string | null;
+            /**
+             * Entity Type
+             * @description The type of entity being referenced (e.g. 'dataset', 'history').
+             */
+            type: string;
+        };
         /** ExitCodeJobMessage */
         ExitCodeJobMessage: {
             /** Code Desc */
@@ -15997,6 +16039,19 @@ export interface components {
         };
         /** IncomingToolOutputCollection */
         IncomingToolOutputCollection: {
+            /** Collection Type */
+            collection_type?: string | null;
+            /** Collection Type From Rules */
+            collection_type_from_rules?: string | null;
+            /** Collection Type Source */
+            collection_type_source?: string | null;
+            /** Discover Datasets */
+            discover_datasets?:
+                | (
+                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
+                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
+                  )[]
+                | null;
             /**
              * Hidden
              * @description If true, the output will not be shown in the history.
@@ -16012,7 +16067,8 @@ export interface components {
              * @description Parameter name. Used when referencing parameter in workflows.
              */
             name?: string | null;
-            structure: components["schemas"]["ToolOutputCollectionStructure"];
+            /** Structured Like */
+            structured_like?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -24145,24 +24201,6 @@ export interface components {
              * @enum {string}
              */
             type: "boolean";
-        };
-        /** ToolOutputCollectionStructure */
-        ToolOutputCollectionStructure: {
-            /** Collection Type */
-            collection_type?: string | null;
-            /** Collection Type From Rules */
-            collection_type_from_rules?: string | null;
-            /** Collection Type Source */
-            collection_type_source?: string | null;
-            /** Discover Datasets */
-            discover_datasets?:
-                | (
-                      | components["schemas"]["FilePatternDatasetCollectionDescription"]
-                      | components["schemas"]["ToolProvidedMetadataDatasetCollection"]
-                  )[]
-                | null;
-            /** Structured Like */
-            structured_like?: string | null;
         };
         /** ToolOutputFloat */
         ToolOutputFloat: {

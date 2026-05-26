@@ -130,6 +130,33 @@ def test_cannot_create_tool_modules_for_missing_tools():
     assert not module.tool
 
 
+def test_tool_version_latest_resolves_toolshed_guid():
+    # Toolshed GUIDs embed the version as the last segment. When tool_version="latest"
+    # is requested (as the WF editor does on insert), from_dict should strip the version
+    # from the GUID and resolve to the latest installed version via the versionless key.
+    trans = MockTrans()
+    old_guid = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.68+galaxy1"
+    versionless_guid = "toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc"
+    latest_tool = __mock_tool(
+        id="toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy1", version="0.74+galaxy1"
+    )
+    trans.app.toolbox.tools[versionless_guid] = latest_tool
+    module = modules.module_factory.from_dict(trans, {"type": "tool", "content_id": old_guid, "tool_version": "latest"})
+    assert module.tool is not None
+    assert module.tool.version == "0.74+galaxy1"
+
+
+def test_tool_version_latest_resolves_builtin_tool():
+    # Built-in tool IDs have no version segment; remove_version_from_guid returns None
+    # so the ID is unchanged. tool_version="latest" should still resolve correctly.
+    trans = MockTrans()
+    latest_tool = __mock_tool(id="cat1", version="2.0")
+    trans.app.toolbox.tools["cat1"] = latest_tool
+    module = modules.module_factory.from_dict(trans, {"type": "tool", "content_id": "cat1", "tool_version": "latest"})
+    assert module.tool is not None
+    assert module.tool.version == "2.0"
+
+
 def test_updated_tool_version():
     trans = MockTrans()
     mock_tool = __mock_tool(id="cat1", version="0.9")

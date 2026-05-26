@@ -192,6 +192,7 @@ from galaxy.tools.parameters.meta import (
     expand_meta_parameters,
     expand_meta_parameters_async,
 )
+from galaxy.tools.parameters.pagination import OptionsPaginationT
 from galaxy.tools.parameters.populate_model import populate_model
 from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.tools.parameters.wrapped_json import json_wrap
@@ -3075,9 +3076,14 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         job: Optional[Job] = None,
         workflow_building_mode=False,
         history: Optional[History] = None,
+        options_pagination: Optional[OptionsPaginationT] = None,
     ):
         """
         Recursively creates a tool dictionary containing repeats, dynamic options and updated states.
+
+        ``options_pagination`` is forwarded to data/data_collection parameters'
+        ``to_dict`` via :func:`populate_model`. Map keys are full dotted parameter
+        names (Galaxy ``|``-separated convention).
         """
         if kwd is None:
             kwd = {}
@@ -3127,7 +3133,13 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         # create tool model
         tool_model = self.to_dict(request_context)
         tool_model["inputs"] = []
-        self.populate_model(request_context, self.inputs, state_inputs, tool_model["inputs"])
+        self.populate_model(
+            request_context,
+            self.inputs,
+            state_inputs,
+            tool_model["inputs"],
+            options_pagination=options_pagination,
+        )
         unset_dataset_matcher_factory(request_context)
 
         # create tool help
@@ -3184,7 +3196,15 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
         )
         return swap_inf_nan(tool_model)
 
-    def populate_model(self, request_context, inputs, state_inputs, group_inputs, other_values=None):
+    def populate_model(
+        self,
+        request_context,
+        inputs,
+        state_inputs,
+        group_inputs,
+        other_values=None,
+        options_pagination: Optional[OptionsPaginationT] = None,
+    ):
         """
         Populates the tool model consumed by the client form builder.
         """
@@ -3194,6 +3214,7 @@ class Tool(UsesDictVisibleKeys, MaybeToolParameterBundle):
             state_inputs=state_inputs,
             group_inputs=group_inputs,
             other_values=other_values,
+            options_pagination=options_pagination,
         )
 
     def _map_source_to_history(self, trans: WorkRequestContext, tool_inputs: "ToolInputsT", params: dict) -> None:

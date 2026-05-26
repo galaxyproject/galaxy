@@ -109,3 +109,20 @@ def test_serialization_user():
 
     res = list_root(file_sources, "gxfiles://test1", recursive=True, user_context=None)
     assert find_file_a(res)
+
+
+@skip_if_no_webdav
+def test_url_preserved_in_serialization():
+    # Regression test: 'url' is in COMMON_FILE_SOURCE_PROP_NAMES and was excluded from
+    # _serialize_config, causing WebDAVFS to be initialized with url=None, which led to
+    # AttributeError: 'NoneType' object has no attribute 'rstrip' when fetching files.
+    file_sources = configured_file_sources(FILE_SOURCES_CONF)
+    fs = file_source_as_webdav(file_sources._file_sources[0])
+
+    serialized = fs.to_dict(for_serialization=True)
+    assert "url" in serialized, "WebDAV url must be preserved in serialized form for job runner reconstruction"
+    assert serialized["url"] == "http://127.0.0.1:7083"
+
+    recovered = serialize_and_recover(file_sources)
+    recovered_fs = file_source_as_webdav(recovered._file_sources[0])
+    assert recovered_fs._get_runtime_context().config.url == "http://127.0.0.1:7083"

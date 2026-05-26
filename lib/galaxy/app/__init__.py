@@ -878,7 +878,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         self._register_singleton(AgentRegistry, agent_registry)
         self._register_singleton(
             AgentService,
-            AgentService(self.config, JobQueryManager(self), agent_registry),
+            AgentService(self.config, JobQueryManager(self, self.history_manager), agent_registry),
         )
 
         self.dependency_resolvers_view = self._register_singleton(

@@ -388,6 +388,54 @@ steps:
         assert show_jobs_response.json()["external_id"] is not None
         assert show_jobs_response.json()["command_line"] is not None
 
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_show_collection_only_job_public(self, history_id):
+        # Regression test for https://github.com/galaxyproject/galaxy/issues/22602.
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        for element in hdca["elements"]:
+            response = self.dataset_populator.make_dataset_public_raw(history_id, element["object"]["id"])
+            assert_status_code_is_ok(response)
+        with self._different_user(anon=True):
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 200)
+            assert show_jobs_response.json()["id"] == job_id
+
+    @skip_without_tool("collection_creates_pair")
+    @requires_new_history
+    def test_show_collection_only_job_private_denied(self, history_id):
+        job_id, hdca_id = self._run_collection_only_job(history_id)
+        hdca = self.dataset_populator.get_history_collection_details(history_id, content_id=hdca_id)
+        for element in hdca["elements"]:
+            self.dataset_populator.make_private(history_id, element["object"]["id"])
+        with self._different_user():
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 403)
+
+    @requires_new_history
+    def test_show_job_accessible_via_public_history(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs_response = self._get("jobs", data={"history_id": history_id})
+        job_id = jobs_response.json()[0]["id"]
+        self.dataset_populator.make_public(history_id)
+        with self._different_user():
+            show_jobs_response = self._get(f"jobs/{job_id}")
+            self._assert_status_code_is(show_jobs_response, 200)
+            assert show_jobs_response.json()["id"] == job_id
+
+    def _run_collection_only_job(self, history_id):
+        input_id = self.dataset_populator.new_dataset(history_id, content="a\nb\nc\nd\n", wait=True)["id"]
+        run_response = self.dataset_populator.run_tool(
+            tool_id="collection_creates_pair",
+            inputs={"input1": {"src": "hda", "id": input_id}},
+            history_id=history_id,
+        )
+        job_id = run_response["jobs"][0]["id"]
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        hdca_id = run_response["output_collections"][0]["id"]
+        return job_id, hdca_id
+
     def _run_detect_errors(self, history_id, inputs):
         payload = self.dataset_populator.run_tool_payload(
             tool_id="detect_errors_aggressive",

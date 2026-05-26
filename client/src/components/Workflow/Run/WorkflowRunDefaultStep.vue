@@ -22,6 +22,8 @@
                     :collapsed-enable-icon="faEdit"
                     collapsed-disable-text="Undo"
                     :collapsed-disable-icon="faUndo"
+                    @load-more="onLoadMore"
+                    @search-change="onSearchChange"
                     @onChange="onChange"
                     @onValidation="onValidation" />
             </template>
@@ -32,9 +34,10 @@
 <script>
 import { faEdit, faKey, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { debounce } from "lodash";
 import { mapState } from "pinia";
 
-import { visitInputs } from "@/components/Form/utilities";
+import { findInputByDottedName, visitInputs } from "@/components/Form/utilities";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useHistoryItemsStore } from "@/stores/historyItemsStore";
 
@@ -113,6 +116,14 @@ export default {
             this.onHistoryChange();
         },
     },
+    created() {
+        // Debounce the per-keystroke options refetch so rapid typing in the
+        // dropdown search box coalesces into a single backend round trip.
+        this.onSearchChange = debounce(this.onSearchChange, 400);
+    },
+    beforeDestroy() {
+        this.onSearchChange.cancel?.();
+    },
     methods: {
         onCreateIndex() {
             this.modelIndex = {};
@@ -148,6 +159,76 @@ export default {
         },
         onValidation(validation) {
             this.$emit("onValidation", this.model.index, validation);
+        },
+        /**
+         * Lazy-load the next page of options for a paginated data parameter
+         * dropdown. Mirrors ``ToolForm.vue:onLoadMore`` but routes through
+         * ``getTool`` since the workflow run form fetches per-step tool data
+         * via ``Workflow/Run/services.js``. Append-merges the new options into
+         * the matching parameter so already-loaded items stay visible.
+         */
+        onLoadMore({ name, src, offset, limit, search }) {
+            const spec = { offset, limit };
+            if (search) {
+                spec.search = search;
+            }
+            const optionsPagination = { [name]: { [src]: spec } };
+            getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
+                (newModel) => {
+                    const target = findInputByDottedName(this.modelInputs, name);
+                    const incoming = findInputByDottedName(newModel.inputs, name);
+                    if (!target || !incoming) {
+                        return;
+                    }
+                    const existing = (target.options && target.options[src]) || [];
+                    const newOptions = (incoming.options && incoming.options[src]) || [];
+                    const seen = new Set(existing.map((o) => `${o.id}_${o.src}`));
+                    const appended = existing.concat(newOptions.filter((o) => !seen.has(`${o.id}_${o.src}`)));
+                    target.options = { ...target.options, [src]: appended };
+                    if (incoming.options_meta && incoming.options_meta[src]) {
+                        target.options_meta = {
+                            ...(target.options_meta || {}),
+                            [src]: incoming.options_meta[src],
+                        };
+                    }
+                    this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
+                },
+                (errorText) => {
+                    this.errorText = errorText;
+                },
+            );
+        },
+        /**
+         * Refetch the parameter's options filtered by the typed search query
+         * and **replace** (not append) the local options/meta — we want the
+         * narrowed list, not a union with whatever was previously loaded.
+         */
+        onSearchChange({ name, src, query, limit }) {
+            const spec = { offset: 0, limit };
+            if (query) {
+                spec.search = query;
+            }
+            const optionsPagination = { [name]: { [src]: spec } };
+            getTool(this.model.id, this.model.version, this.modelData, this.historyId, optionsPagination).then(
+                (newModel) => {
+                    const target = findInputByDottedName(this.modelInputs, name);
+                    const incoming = findInputByDottedName(newModel.inputs, name);
+                    if (!target || !incoming) {
+                        return;
+                    }
+                    target.options = { ...target.options, [src]: incoming.options?.[src] || [] };
+                    if (incoming.options_meta && incoming.options_meta[src]) {
+                        target.options_meta = {
+                            ...(target.options_meta || {}),
+                            [src]: incoming.options_meta[src],
+                        };
+                    }
+                    this.modelInputs = JSON.parse(JSON.stringify(this.modelInputs));
+                },
+                (errorText) => {
+                    this.errorText = errorText;
+                },
+            );
         },
     },
 };

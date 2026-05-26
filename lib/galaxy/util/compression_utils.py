@@ -267,8 +267,11 @@ class CompressedFile:
                 filename = self.getname(zipped_file)
                 absolute_filepath = os.path.join(extraction_path, filename)
                 external_attributes = self.archive.getinfo(filename).external_attr
-                # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
-                unix_permissions = external_attributes >> 16
+                # Mask to 0o0777: strip SUID/SGID/sticky from untrusted archive
+                # no control over who can trigger can be:
+                # galaxy user or runner with privileged account through quay.io/biocontainers/galaxy-util
+                # any authenticated user can reach this via CONVERTER_archive_to_directory.
+                unix_permissions = (external_attributes >> 16) & 0o0777
                 if unix_permissions != 0:
                     if os.path.exists(absolute_filepath):
                         os.chmod(absolute_filepath, unix_permissions)

@@ -233,9 +233,9 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
                         "(otherwise its bytes will never be claimed from the working directory)"
                     )
             elif isinstance(output, IncomingToolOutputCollection):
-                if not output.structure.discover_datasets:
+                if not output.discover_datasets:
                     errors.append(
-                        f"output collection '{output.name}' must set 'structure.discover_datasets' "
+                        f"output collection '{output.name}' must set 'discover_datasets' "
                         "(otherwise no elements will be claimed from the working directory)"
                     )
         if errors:

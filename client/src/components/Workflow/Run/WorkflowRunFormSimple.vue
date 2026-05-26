@@ -26,7 +26,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { invokeWorkflow } from "./services";
+import { invokeWorkflow, searchHistoryContents } from "./services";
 
 import WorkflowAnnotation from "../WorkflowAnnotation.vue";
 import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
@@ -133,8 +133,23 @@ const computedActiveNodeId = computed<number | undefined>(() => {
     return undefined;
 });
 
-const formInputs = computed(() => {
-    const inputs = [] as any[];
+// Build the form inputs once into a stable ref so paginated mutations
+// (``onLoadMore`` / ``onSearchChange`` set ``input.options`` / ``options_meta``
+// on the matching step-input object below) don't rebuild the array. Vue's
+// ``v-for`` in the child ``FormDisplay`` then doesn't unmount the dropdown's
+// ``<input>`` element across paginated refreshes — important for selenium
+// tests like ``test_workflow_rerun`` that ``select_set_value`` against the
+// dropdown (type → wait UX_RENDER → send Enter on the same element ref).
+//
+// ``stepInputByIndex`` maps ``step.step_index`` (as string) to the live
+// step-input object inside ``formInputs.value`` so the paginated-fetch
+// handlers can locate and mutate it in O(1) without walking the array.
+const formInputs = ref<any[]>([]);
+const stepInputByIndex = new Map<string, any>();
+
+function buildFormInputs() {
+    const inputs: any[] = [];
+    stepInputByIndex.clear();
     // Add workflow parameters.
     Object.values(props.model.wpInputs).forEach((input) => {
         const inputCopy = Object.assign({}, input) as any;
@@ -180,9 +195,18 @@ const formInputs = computed(() => {
                         if (stepType === "data_input" || stepType === "data_collection_input") {
                             // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
                             //       does not provide an object with `values` property.
-                            stepAsInput.value = {
-                                values: !Array.isArray(value) ? [value] : value,
-                            };
+                            // Optional data inputs left empty on the original run come back as `null` (or
+                            // arrays containing `null`). Filter those out so we don't poison FormData with
+                            // `{values: [null]}`, which crashes its `onMounted` hook on `"src" in null` and
+                            // leaves the bad wrapper in formData to be sent to the server.
+                            const valuesArray = (Array.isArray(value) ? value : [value]).filter(
+                                (v) => v !== null && v !== undefined,
+                            );
+                            if (valuesArray.length > 0) {
+                                stepAsInput.value = {
+                                    values: valuesArray,
+                                };
+                            }
                         } else {
                             stepAsInput.value = value;
                         }
@@ -195,11 +219,15 @@ const formInputs = computed(() => {
             // disable collection mapping...
             stepAsInput.flavor = "module";
             inputs.push(stepAsInput);
+            stepInputByIndex.set(String(step.step_index), stepAsInput);
             inputTypes.value[stepName] = stepType;
         }
     });
-    return inputs;
-});
+    formInputs.value = inputs;
+}
+
+buildFormInputs();
+watch(() => [props.model, props.requestState], buildFormInputs);
 
 /**
  * Returns the list of steps that do not match the workflow rerun `props.requestState`.
@@ -287,6 +315,93 @@ function onChange(data: any) {
     formData.value = data;
 }
 
+function shapeContentsRow(row: any) {
+    const src = row.history_content_type === "dataset_collection" ? "hdca" : "hda";
+    return {
+        id: row.id,
+        src,
+        name: row.name,
+        hid: row.hid,
+        keep: false,
+        tags: row.tags || [],
+    };
+}
+
+async function fetchStepOptions(
+    name: string,
+    src: string,
+    payload: { offset?: number; limit?: number; search?: string } = {},
+    mode: "append" | "replace" = "append",
+) {
+    // Locate the live step-input object inside ``formInputs.value`` and
+    // mutate it in place — ``formInputs`` is a stable ref built once, so
+    // mutating ``input.options`` / ``input.options_meta`` doesn't rebuild
+    // the array and doesn't unmount the dropdown's ``<input>`` element.
+    // (``stepAsInput`` is a local copy built in ``buildFormInputs``; this
+    // is not prop mutation.)
+    const input = stepInputByIndex.get(String(name));
+    if (!input) {
+        return;
+    }
+    const type = src === "hdca" ? "dataset_collection" : "dataset";
+    const extensions = (input.acceptable_extensions || []) as string[];
+    const limit = payload.limit || 50;
+    const offset = payload.offset || 0;
+    try {
+        const rows = await searchHistoryContents(props.model.historyId, {
+            extensions,
+            type,
+            search: payload.search,
+            offset,
+            limit,
+        });
+        const shaped = (rows || []).map(shapeContentsRow);
+        let merged: any[];
+        if (mode === "replace") {
+            merged = shaped;
+        } else {
+            const seen = new Set<string>();
+            const base = (input.options?.[src] as any[]) || [];
+            merged = [...base, ...shaped].filter((item) => {
+                const k = `${item.id}_${item.src}`;
+                if (seen.has(k)) {
+                    return false;
+                }
+                seen.add(k);
+                return true;
+            });
+        }
+        input.options = { ...(input.options || {}), [src]: merged };
+        input.options_meta = {
+            ...(input.options_meta || {}),
+            [src]: { offset, limit, has_more: shaped.length === limit },
+        };
+    } catch (e) {
+        // intentionally silent — paging failures don't block the rest of the form
+        console.warn("history-contents pagination failed", e);
+    }
+}
+
+function onLoadMore({
+    name,
+    src,
+    offset,
+    limit,
+    search,
+}: {
+    name: string;
+    src: string;
+    offset: number;
+    limit: number;
+    search?: string;
+}) {
+    fetchStepOptions(name, src, { offset, limit, search }, "append");
+}
+
+function onSearchChange({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) {
+    fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query }, "replace");
+}
+
 function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
     if (intermediate) {
         preferredIntermediateObjectStoreId.value = objectStoreId;
@@ -340,6 +455,14 @@ async function onExecute() {
         if (inputType == "replacement_parameter") {
             replacementParams[inputName] = value;
         } else if (inputType && isWorkflowInput(inputType as Step["type"])) {
+            // Unset optional `data` / `data_collection` inputs surface here as `null`
+            // (FormData.vue's createValue returns null for `undefined`). Omit them so
+            // the server-side workflow scheduler sees a missing key rather than `None`,
+            // matching the working API submission shape and the rerun-branch filter above.
+            const isData = inputType === "data_input" || inputType === "data_collection_input";
+            if (isData && (value === null || value === undefined)) {
+                continue;
+            }
             inputs[inputName] = value;
         }
     }
@@ -616,6 +739,8 @@ onBeforeMount(() => {
                             :steps-not-matching-request="stepsNotMatchingRequest"
                             @onChange="onChange"
                             @onValidation="onValidation"
+                            @load-more="onLoadMore"
+                            @search-change="onSearchChange"
                             @stop-flagging="checkInputMatching = false"
                             @update:active-node-id="updateActiveNodeId" />
                     </GOverlay>

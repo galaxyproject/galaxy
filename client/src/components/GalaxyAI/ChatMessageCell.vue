@@ -1,13 +1,36 @@
 <script setup lang="ts">
-import { faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
+import { faDatabase, faHistory, faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
 import type { ChatMessage } from "./chatTypes";
 
 import ActionCard from "./ActionCard.vue";
+
+const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
+
+type Segment = { kind: "text"; value: string } | { kind: "mention"; entityType: EntityType; identifier: string };
+
+function parseSegments(text: string): Segment[] {
+    const segments: Segment[] = [];
+    let lastIndex = 0;
+    for (const match of text.matchAll(MENTION_RE)) {
+        const [full, type, identifier] = match;
+        const start = match.index ?? 0;
+        if (start > lastIndex) {
+            segments.push({ kind: "text", value: text.slice(lastIndex, start) });
+        }
+        segments.push({ kind: "mention", entityType: type as EntityType, identifier: identifier! });
+        lastIndex = start + full.length;
+    }
+    if (lastIndex < text.length) {
+        segments.push({ kind: "text", value: text.slice(lastIndex) });
+    }
+    return segments;
+}
 
 const props = defineProps<{
     message: ChatMessage;
@@ -35,7 +58,21 @@ const emit = defineEmits<{
 
         <!-- User query -->
         <template v-else-if="props.message.role === 'user'">
-            <div class="query-text">{{ props.message.content }}</div>
+            <div class="query-text">
+                <template v-for="(segment, i) in parseSegments(props.message.content)">
+                    <span v-if="segment.kind === 'text'" :key="`t-${i}`">{{ segment.value }}</span>
+                    <span
+                        v-else
+                        :key="`m-${i}`"
+                        class="entity-ref"
+                        :title="`${segment.entityType} ${segment.identifier}`">
+                        <FontAwesomeIcon
+                            :icon="segment.entityType === 'dataset' ? faDatabase : faHistory"
+                            class="entity-ref-icon"
+                            fixed-width />@{{ segment.entityType }}:{{ segment.identifier }}
+                    </span>
+                </template>
+            </div>
         </template>
 
         <!-- Assistant response -->
@@ -340,5 +377,22 @@ const emit = defineEmits<{
     .exchange-entry {
         animation: none;
     }
+}
+
+.entity-ref {
+    display: inline;
+    background: rgba($brand-primary, 0.1);
+    color: $brand-primary;
+    padding: 0.1rem 0.35rem;
+    border-radius: $border-radius-base;
+    font-family: $font-family-monospace;
+    font-size: 0.88em;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.entity-ref-icon {
+    font-size: 0.75em;
+    margin-right: 0.2rem;
 }
 </style>

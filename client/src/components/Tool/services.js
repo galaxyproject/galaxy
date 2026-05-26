@@ -3,7 +3,7 @@ import axios from "axios";
 import { getAppRoot } from "@/onload/loadConfig";
 import { rethrowSimple } from "@/utils/simple-error";
 
-export async function updateToolFormData(tool_id, tool_uuid, tool_version, history_id, inputs) {
+export async function updateToolFormData(tool_id, tool_uuid, tool_version, history_id, inputs, optionsPagination) {
     const current_state = {
         tool_id: tool_id,
         tool_uuid: tool_uuid,
@@ -11,6 +11,9 @@ export async function updateToolFormData(tool_id, tool_uuid, tool_version, histo
         inputs: inputs,
         history_id: history_id,
     };
+    if (optionsPagination) {
+        current_state.options_pagination = optionsPagination;
+    }
     const url = `${getAppRoot()}api/tools/${tool_id || tool_uuid}/build`;
     try {
         const { data } = await axios.post(url, current_state);

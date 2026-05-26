@@ -131,7 +131,7 @@
                 <template v-slot:buttons>
                     <GButton
                         tooltip
-                        title="Generate AI ChatGXY report based on the workflow and its expected results"
+                        title="Generate AI GalaxyAI report based on the workflow and its expected results"
                         variant="link"
                         color="blue"
                         transparent
@@ -1252,7 +1252,17 @@ export default {
             const stepData = action.getNewStepData();
 
             const response = await getModule(
-                { name, type, content_id: contentId, tool_state: state, tool_uuid: toolUuid },
+                {
+                    name,
+                    type,
+                    content_id: contentId,
+                    tool_state: state,
+                    tool_uuid: toolUuid,
+                    // Request the latest version, mirroring what `routeToTool` does with `&version=latest`.
+                    // Without this, toolshed tools whose GUID includes the version would resolve to
+                    // that specific (possibly old) version rather than the latest.
+                    tool_version: type === "tool" && !toolUuid ? "latest" : undefined,
+                },
                 stepData.id,
                 this.stateStore.setLoadingState,
             );
@@ -1264,6 +1274,10 @@ export default {
                 inputs: response.inputs,
                 outputs: response.outputs,
                 config_form: response.config_form,
+                // Use the resolved content_id and tool_version from the response which
+                // references the latest tool version, rather than what comes from the GUID
+                content_id: response.content_id || stepData.content_id,
+                tool_version: response.tool_version || stepData.tool_version,
             };
 
             this.stepStore.updateStep(updatedStep);

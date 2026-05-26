@@ -294,6 +294,62 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         assert latest_hda["hid"] == 3
         assert latest_hda["name"] == "Select first on dataset 1"
 
+    @selenium_test
+    def test_data_options_paginated_smoke(self):
+        """Tool form opens responsively with a large history and the dropdown
+        is bounded — proves the build endpoint paginates and the client handles
+        the response without trying to render every HDA."""
+        history_id = self.current_history_id()
+        # Seed the history with 60 datasets in a single fetch request so the
+        # default 50-per-page cap kicks in.
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        self.home()
+        self.tool_open("cat1")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+        # Open the multiselect so its options render in the DOM.
+        trigger = select_field.find_element(By.CSS_SELECTOR, ".multiselect__select")
+        trigger.click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        options = select_field.find_elements(By.CSS_SELECTOR, "[role='option']")
+        # 60 datasets uploaded but the default page size is 50, so the dropdown
+        # must contain exactly 50 — anything less would indicate client-side
+        # under-rendering, anything more would mean pagination is broken.
+        assert (
+            len(options) == 50
+        ), f"Expected dropdown to render exactly 50 options (default page size), got {len(options)}"
+
+    @selenium_test
+    def test_data_options_pinned_via_rerun(self):
+        """A dataset selected as a tool input but living deep in history (past
+        the first page window) must still appear in the rerun form's dropdown
+        via the ``pinned`` mechanism — otherwise the user couldn't see what was
+        previously selected."""
+        history_id = self.current_history_id()
+        # Upload the to-be-pinned dataset first so it gets the lowest hid and
+        # ends up far below the page window once we add the bulk uploads.
+        first_hda = self.dataset_populator.fetch_hda(history_id, {"src": "pasted", "paste_content": "pinned"})
+        self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+        run_response = self.dataset_populator.run_tool(
+            "cat1",
+            inputs={"input1": {"src": "hda", "id": first_hda["id"]}},
+            history_id=history_id,
+        )
+        output_hid = run_response["outputs"][0]["hid"]
+        self.dataset_populator.wait_for_history(history_id)
+        self.home()
+        self.hda_click_primary_action_button(output_hid, "rerun")
+        select_field = self.components.tool_form.parameter_data_select(parameter="input1").wait_for_visible()
+
+        @retry_assertion_during_transitions
+        def assert_pinned_value_selected():
+            selected = select_field.find_element(By.CSS_SELECTOR, ".multiselect__single")
+            text = selected.text
+            assert text.startswith(
+                f"{first_hda['hid']}: "
+            ), f"Expected rerun form to display the pinned input '{first_hda['hid']}: ...', got '{text}'"
+
+        assert_pinned_value_selected()
+
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_bibtex_rendering(self):

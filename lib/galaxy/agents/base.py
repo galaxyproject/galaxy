@@ -85,19 +85,10 @@ log = logging.getLogger(__name__)
 ConfidenceLiteral = Literal["low", "medium", "high"]
 
 MAX_HISTORY_MESSAGES = 40
-"""Cap on prior messages passed as pydantic-ai ``message_history``.
-
-~20 turn-pairs; tool-heavy turns produce 3-5 messages each. Bounds total token
-load while preserving enough recent context to keep multi-turn conversations
-coherent.
-"""
+"""Cap on prior messages passed as pydantic-ai ``message_history`` to bound token load."""
 
 TOOL_HELPER_HISTORY_MESSAGES = 8
-"""Tighter cap when a sub-agent is invoked from inside a `@agent.tool` call.
-
-Tool-context turns burn token budget faster (tool call + tool return +
-follow-up), so we hand the sub-agent a smaller window.
-"""
+"""Tighter history cap for sub-agents invoked from inside a ``@agent.tool`` call."""
 
 # Hardcoded fallback if the capability YAML can't be located. Mirrors the
 # previous behaviour (deepseek -> no structured output, everything else yes).
@@ -112,15 +103,7 @@ _model_capabilities_cache: dict[str, dict[str, Any]] = {}
 
 
 def _load_model_capabilities(path: Optional[str], force_reload: bool = False) -> dict[str, Any]:
-    """Return the parsed model-capabilities table for ``path``.
-
-    ``path`` should come from ``config.agent_model_capabilities_file``, which
-    Galaxy resolves at startup (admin override in ``config_dir`` if present,
-    otherwise the shipped sample under ``sample_config_dir``). Falls back to a
-    sane hardcoded default when the input is missing, not a string, or points
-    at a file we can't parse -- we'd rather keep agents working than block on
-    a misconfigured deployment.
-    """
+    """Return the parsed model-capabilities table for ``path``, falling back to defaults on any failure."""
     if not isinstance(path, str) or not path:
         return _DEFAULT_MODEL_CAPABILITIES
 
@@ -555,17 +538,101 @@ class BaseGalaxyAgent(ABC):
 
         raise last_exception or Exception("Max retries exhausted")
 
+    @staticmethod
+    def _sanitize_context_value(value: Any, max_length: int = 200) -> str:
+        """Sanitize a user-supplied context field value for safe prompt inclusion."""
+        s = str(value).replace("\n", " ").replace("\r", " ").strip()
+        if len(s) > max_length:
+            s = s[:max_length]
+        return s
+
+    def _format_interface_context(self, ctx: dict[str, Any]) -> str:
+        ctx_type = ctx.get("contextType")
+        if not ctx_type:
+            return ""
+
+        _s = self._sanitize_context_value
+
+        if ctx_type == "tool":
+            name = _s(ctx.get("toolName", ctx.get("toolId", "unknown")))
+            tool_id = _s(ctx.get("toolId", ""))
+            version = ctx.get("toolVersion")
+            version_str = f", version {_s(version)}" if version else ""
+            return f'The user is viewing the tool form for "{name}" ({tool_id}{version_str}).'
+
+        if ctx_type == "dataset":
+            dataset_id = _s(ctx.get("datasetId", "unknown"))
+            name = _s(ctx.get("datasetName", dataset_id))
+            ext = ctx.get("extension")
+            ext_str = f" ({_s(ext)} format)" if ext else ""
+            return f'The user is viewing dataset "{name}"{ext_str}.'
+
+        if ctx_type == "workflow_editor":
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
+            return f'The user is editing workflow "{name}".'
+
+        if ctx_type == "workflow_run":
+            wf_id = _s(ctx.get("workflowId", "unknown"))
+            name = _s(ctx.get("workflowName", wf_id))
+            return f'The user is running workflow "{name}".'
+
+        if ctx_type == "job":
+            job_id = _s(ctx.get("jobId", "unknown"))
+            job_tool_id = ctx.get("toolId")
+            tool_str = f" (tool: {_s(job_tool_id)})" if job_tool_id else ""
+            return f"The user is viewing job {job_id}{tool_str}."
+
+        return f"The user is viewing: {_s(ctx_type)}"
+
     def _prepare_prompt(self, query: str, context: dict[str, Any]) -> str:
         prompt_parts = [query]
 
         if context:
-            context_str = "\n".join(
-                [f"{k}: {v}" for k, v in context.items() if v and k not in self._INTERNAL_CONTEXT_KEYS]
-            )
+            interface_ctx = context.get("interface_context")
+            if interface_ctx and isinstance(interface_ctx, dict):
+                description = self._format_interface_context(interface_ctx)
+                if description:
+                    prompt_parts.insert(0, f"[Active interface context: {description}]\n")
+
+            entities = context.get("entities")
+            if entities and isinstance(entities, dict):
+                entity_desc = self._format_entity_context(entities)
+                if entity_desc:
+                    prompt_parts.insert(0, f"{entity_desc}\n")
+
+            skip_keys = self._INTERNAL_CONTEXT_KEYS | {"interface_context", "conversation_history", "entities"}
+            context_str = "\n".join([f"{k}: {v}" for k, v in context.items() if v and k not in skip_keys])
             if context_str:
                 prompt_parts.insert(0, f"Context:\n{context_str}\n")
 
         return "\n".join(prompt_parts)
+
+    @staticmethod
+    def _format_entity_context(entities: dict[str, Any]) -> str:
+        """Format entity references from @mentions into readable text."""
+        _s = BaseGalaxyAgent._sanitize_context_value
+        lines: list[str] = []
+        for ds in entities.get("datasets", []):
+            parts = [f"Dataset #{_s(ds.get('hid', '?'))}"]
+            name = ds.get("name")
+            if name:
+                parts.append(f'"{_s(name)}"')
+            details = []
+            if ds.get("extension"):
+                details.append(_s(ds["extension"]))
+            if ds.get("state"):
+                details.append(_s(ds["state"]))
+            if details:
+                parts.append(f"({', '.join(details)})")
+            lines.append(f"- {' '.join(parts)}")
+        for hist in entities.get("histories", []):
+            label = "Current history" if hist.get("identifier") == "current" else "History"
+            name = _s(hist.get("name", ""))
+            lines.append(f'- {label}: "{name}"')
+        if not lines:
+            return ""
+        return "Referenced entities:\n" + "\n".join(lines)
 
     def _format_response(self, result: Any, query: str, context: dict[str, Any]) -> AgentResponse:
         """Convert pydantic-ai result to AgentResponse. Subclasses can override."""

@@ -13,6 +13,10 @@ import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
 import RulesDisplay from "@/components/RulesDisplay/RulesDisplay.vue";
 
 const props = defineProps({
+    id: {
+        type: String,
+        default: undefined,
+    },
     value: {
         type: Object,
     },
@@ -72,7 +76,7 @@ function onCancel() {
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <GButton title="Edit Rules" @click="onEdit">
+        <GButton :id="props.id" title="Edit Rules" @click="onEdit">
             <FontAwesomeIcon :icon="faEdit" />
             <span>Edit</span>
         </GButton>

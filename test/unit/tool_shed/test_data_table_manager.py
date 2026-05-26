@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from galaxy.tool_shed.tools.data_table_manager import (
+    _parse_table_columns,
     DataTableColumnMismatch,
     ShedToolDataTableManager,
 )
@@ -269,11 +270,10 @@ def test_merge_skipped_for_non_tabular_table_types(tmp_path):
     existing.append_entries_with_attribution.assert_not_called()
 
 
-def test_parse_table_columns_aliases_name_to_value():
-    from galaxy.tool_shed.tools.data_table_manager import _parse_table_columns
-
+def test_parse_table_columns_matches_parse_column_spec():
+    """Ensure the dict matches what a registered TabularToolDataTable exposes."""
     elem = Element("table")
     cols = SubElement(elem, "columns")
     cols.text = "value, path"
     parsed = _parse_table_columns(elem)
-    assert parsed == {"value": 0, "path": 1, "name": 0}
+    assert parsed == {"value": 0, "path": 1}

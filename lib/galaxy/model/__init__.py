@@ -4081,6 +4081,157 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
             self._active_visible_dataset_collections = required_object_session(self).scalars(stmt).unique().all()
         return self._active_visible_dataset_collections
 
+    def paginated_active_visible_datasets(
+        self,
+        *,
+        extensions: Optional[set[str]] = None,
+        valid_states: Optional[tuple[str, ...]] = None,
+        search: Optional[str] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> tuple[list["HistoryDatasetAssociation"], int]:
+        """Active, visible HDAs filtered by extension, dataset state, and an
+        optional ``search`` term, paginated.
+
+        Returns ``(rows, total)`` where ``total`` is the count under the same WHERE
+        clause. Used by data-tool-parameter ``to_dict`` to avoid loading the entire
+        history into memory. ``search`` matches case-insensitively against the
+        HDA name and (when numeric) against the hid.
+        """
+        filters = [
+            HistoryDatasetAssociation.history_id == self.id,
+            not_(HistoryDatasetAssociation.deleted),
+            HistoryDatasetAssociation.visible,
+        ]
+        if extensions is not None:
+            filters.append(HistoryDatasetAssociation.extension.in_(extensions))
+        if valid_states is not None:
+            filters.append(HistoryDatasetAssociation.dataset.has(Dataset.state.in_(valid_states)))
+        if search:
+            name_match = HistoryDatasetAssociation.name.ilike(f"%{search}%")
+            if search.isdigit():
+                filters.append(or_(name_match, HistoryDatasetAssociation.hid == int(search)))
+            else:
+                filters.append(name_match)
+        page_stmt = (
+            select(HistoryDatasetAssociation)
+            .where(*filters)
+            .order_by(HistoryDatasetAssociation.hid.desc())
+            .options(
+                joinedload(HistoryDatasetAssociation.dataset)
+                .joinedload(Dataset.actions)
+                .joinedload(DatasetPermissions.role),
+                joinedload(HistoryDatasetAssociation.tags),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        count_stmt = select(func.count(HistoryDatasetAssociation.id)).where(*filters)
+        session = required_object_session(self)
+        rows = list(session.scalars(page_stmt).unique().all())
+        total = session.scalar(count_stmt) or 0
+        return rows, total
+
+    @staticmethod
+    def _hdca_leaf_hda_descendants_cte(history_id):
+        """Recursive CTE: for every non-deleted HDCA in ``history_id``, walk
+        ``dataset_collection_element`` arbitrarily deep to enumerate every
+        leaf HDA. Columns: ``root_hdca_id``, ``hda_id``,
+        ``child_collection_id``. Used by depth-arbitrary HDCA filters (e.g.
+        extension match) — single source of truth for "walk all leaves of
+        the HDCAs in this history". Works on PostgreSQL and SQLite.
+        """
+        base = (
+            select(
+                HistoryDatasetCollectionAssociation.id.label("root_hdca_id"),
+                DatasetCollectionElement.hda_id.label("hda_id"),
+                DatasetCollectionElement.child_collection_id.label("child_collection_id"),
+            )
+            .select_from(HistoryDatasetCollectionAssociation)
+            .join(
+                DatasetCollectionElement,
+                DatasetCollectionElement.dataset_collection_id == HistoryDatasetCollectionAssociation.collection_id,
+            )
+            .where(
+                HistoryDatasetCollectionAssociation.history_id == history_id,
+                not_(HistoryDatasetCollectionAssociation.deleted),
+            )
+        )
+        cte = base.cte(name="hdca_leaf_hda_descendants", recursive=True)
+        dce_rec = aliased(DatasetCollectionElement)
+        cte = cte.union_all(
+            select(
+                cte.c.root_hdca_id,
+                dce_rec.hda_id,
+                dce_rec.child_collection_id,
+            )
+            .select_from(cte)
+            .join(dce_rec, dce_rec.dataset_collection_id == cte.c.child_collection_id)
+        )
+        return cte
+
+    @staticmethod
+    def _hdca_extensions_only_in_clause(extensions: set[str], history_id):
+        """Build a WHERE clause: True for HDCAs whose every leaf HDA's
+        extension is in ``extensions`` (mirrors
+        ``SummaryDatasetCollectionMatcher.hdca_match``). Walks arbitrary
+        depth via :py:meth:`_hdca_leaf_hda_descendants_cte`.
+        """
+        cte = History._hdca_leaf_hda_descendants_cte(history_id)
+        hda_check = aliased(HistoryDatasetAssociation)
+        bad_hdca_ids = (
+            select(cte.c.root_hdca_id)
+            .select_from(cte)
+            .join(hda_check, hda_check.id == cte.c.hda_id)
+            .where(hda_check.extension.notin_(extensions))
+        )
+        return HistoryDatasetCollectionAssociation.id.notin_(bad_hdca_ids)
+
+    def paginated_active_dataset_collections(
+        self,
+        *,
+        visible_only: bool = True,
+        search: Optional[str] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
+        """Active HDCAs paginated. Pass ``visible_only=False`` to include
+        hidden collections (matches the legacy ``active_dataset_collections``
+        semantics used by some tool-form paths). ``search`` matches
+        case-insensitively against the collection name and (when numeric)
+        against the hid. Extension filtering for collections is exposed via
+        the history-contents filter parser (see
+        :py:meth:`_hdca_extensions_only_in_clause`).
+        """
+        filters = [
+            HistoryDatasetCollectionAssociation.history_id == self.id,
+            not_(HistoryDatasetCollectionAssociation.deleted),
+        ]
+        if visible_only:
+            filters.append(HistoryDatasetCollectionAssociation.visible.is_(True))
+        if search:
+            name_match = HistoryDatasetCollectionAssociation.name.ilike(f"%{search}%")
+            if search.isdigit():
+                filters.append(or_(name_match, HistoryDatasetCollectionAssociation.hid == int(search)))
+            else:
+                filters.append(name_match)
+        page_stmt = (
+            select(HistoryDatasetCollectionAssociation)
+            .where(*filters)
+            .order_by(HistoryDatasetCollectionAssociation.hid.desc())
+            .options(
+                joinedload(HistoryDatasetCollectionAssociation.collection),
+                joinedload(HistoryDatasetCollectionAssociation.tags),
+            )
+            .limit(limit)
+            .offset(offset)
+        )
+        count_stmt = select(func.count(HistoryDatasetCollectionAssociation.id)).where(*filters)
+        session = required_object_session(self)
+        rows = list(session.scalars(page_stmt).unique().all())
+        total = session.scalar(count_stmt) or 0
+        return rows, total
+
     @property
     def active_contents(self):
         """Return all active contents ordered by hid."""

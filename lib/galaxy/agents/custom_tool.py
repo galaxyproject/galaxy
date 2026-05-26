@@ -111,7 +111,7 @@ class CustomToolAgent(BaseGalaxyAgent):
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
         """Create agent with UserToolSource as the output type.
 
-        Sets output_retries=0 because the agent's explicit reflection loop
+        Sets retries=0 because the agent's explicit reflection loop
         owns the validation retry (to provide a better prompt).
         """
         return Agent(
@@ -119,7 +119,7 @@ class CustomToolAgent(BaseGalaxyAgent):
             deps_type=GalaxyAgentDependencies,
             output_type=UserToolSource,
             system_prompt=self.get_system_prompt(),
-            output_retries=0,
+            retries=0,
         )
 
     def get_system_prompt(self) -> str:

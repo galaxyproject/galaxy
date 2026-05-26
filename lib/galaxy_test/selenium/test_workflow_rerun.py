@@ -1,4 +1,7 @@
-from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
+from galaxy_test.base.workflow_fixtures import (
+    WORKFLOW_OPTIONAL_TRUE_INPUT_DATA,
+    WORKFLOW_SIMPLE_CAT_TWICE,
+)
 from .framework import (
     managed_history,
     retry_assertion_during_transitions,
@@ -133,6 +136,46 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
         invocations.invocation_tab(label="Inputs").wait_for_and_click()
         self._assert_input_table_has_parameter("bool_param", "true")
         self.screenshot("workflow_rerun_boolean_inputs_tab")
+
+    @selenium_test
+    @managed_history
+    def test_workflow_rerun_with_unset_optional_data_input(self):
+        """Regression test for workflow rerun crashing when an optional data_input was left empty.
+
+        When a workflow has an optional ``data_input`` step that the user did
+        not provide on the original run, ``WorkflowInvocationRequestModel.inputs``
+        returns ``null`` for that step. WorkflowRunFormSimple.vue used to wrap
+        the value as ``{values: [null]}`` regardless, which crashed the
+        ``FormData`` mounted hook on ``"src" in null``. Because the mounted
+        hook never completed, the bad wrapper survived in formData and was
+        sent to the server, which rejected it with a ``DataOrCollectionRequest``
+        union ValidationError ("Extra inputs are not permitted in 'values'").
+        Reported on a "1 or 2 haplotypes" workflow where the second haplotype
+        was left empty.
+        """
+        invocations = self.components.invocations
+
+        # Upload one HDA so the history isn't empty (the workflow form needs a
+        # current history); the optional input is intentionally left unselected.
+        self.perform_upload(self.get_filename("1.fasta"))
+        self.wait_for_history()
+        self.workflow_run_open_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_DATA)
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=2, expand=True)
+
+        # Submitting lands us on the new invocation page; click rerun directly.
+        invocations.state_details.wait_for_visible()
+        invocations.workflow_rerun_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+        # Submit the rerun without touching anything. Pre-fix this raises a
+        # "Workflow submission failed: ... 'values' not permitted ..." toast
+        # because formData carries the poisoned `{values: [null]}` wrapper.
+        self.workflow_run_submit()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.workflow_run_wait_for_ok(hid=3, expand=True)
+        self.screenshot("workflow_rerun_unset_optional_data_input_submitted")
 
     @retry_assertion_during_transitions
     def _assert_input_table_has_parameter(self, label: str, value: str):

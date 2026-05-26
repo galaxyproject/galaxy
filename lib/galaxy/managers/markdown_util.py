@@ -143,7 +143,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         hda_manager = trans.app.hda_manager
         history_manager = trans.app.history_manager
         workflow_manager = trans.app.workflow_manager
-        job_manager = JobManager(trans.app)
+        job_manager = JobManager(trans.app, history_manager)
         collection_manager = trans.app.dataset_collection_manager
 
         def _remap(container, line):

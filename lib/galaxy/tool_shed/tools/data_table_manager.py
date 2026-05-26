@@ -30,10 +30,12 @@ RequiredAppT = Union["BasicSharedApp", InstallationTarget]
 
 
 def _parse_table_columns(table_elem: Element) -> dict[str, int]:
-    """Parse a ``<table>`` element's column spec into a name->index mapping."""
+    """Parse a ``<table>`` element's column spec into a name->index mapping.
+
+    Mirrors ``TabularToolDataTable.parse_column_spec`` so the dict matches what an
+    already-registered table exposes on ``.columns`` — no implicit ``name`` alias.
+    """
     columns, _, _ = TabularToolDataTable.parse_column_spec_element(table_elem)
-    if "value" in columns and "name" not in columns:
-        columns["name"] = columns["value"]
     return columns
 
 

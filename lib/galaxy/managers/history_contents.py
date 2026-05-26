@@ -7,6 +7,7 @@ import json
 import logging
 from typing import (
     Any,
+    Optional,
 )
 
 from sqlalchemy import (
@@ -601,29 +602,40 @@ class HistoryContentsFilters(
 ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
+    # Threaded from ``parse_query_filters_with_relations`` so the depth-arbitrary
+    # ``extension`` HDCA clause can scope its recursive CTE to the current
+    # history. ``None`` means the filter is being parsed outside a history
+    # scope (e.g. ``/api/datasets``); in that case the HDCA branch of the
+    # extension filter degrades to a no-op (HDA filter still applies).
+    _current_history_id: Optional[int] = None
 
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""
-        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
-        if query_filters.q and query_filters.qv and has_related_q:
-            qv_index = query_filters.q.index(has_related_q[0])
-            qv_hid = query_filters.qv[qv_index]
+        prev_history_id = self._current_history_id
+        self._current_history_id = history_id
+        try:
+            has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
+            if query_filters.q and query_filters.qv and has_related_q:
+                qv_index = query_filters.q.index(has_related_q[0])
+                qv_hid = query_filters.qv[qv_index]
 
-            # Type check whether hid is int
-            if not qv_hid.isdigit():
-                raise glx_exceptions.RequestParameterInvalidException(
-                    "unparsable value for related filter",
-                    column="related",
-                    operation="eq",
-                    value=qv_hid,
-                    ValueError="invalid type in filter",
+                # Type check whether hid is int
+                if not qv_hid.isdigit():
+                    raise glx_exceptions.RequestParameterInvalidException(
+                        "unparsable value for related filter",
+                        column="related",
+                        operation="eq",
+                        value=qv_hid,
+                        ValueError="invalid type in filter",
+                    )
+
+                query_filters_with_relations = self.get_query_filters_with_relations(
+                    query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
                 )
-
-            query_filters_with_relations = self.get_query_filters_with_relations(
-                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
-            )
-            return super().parse_query_filters(query_filters_with_relations)
-        return super().parse_query_filters(query_filters)
+                return super().parse_query_filters(query_filters_with_relations)
+            return super().parse_query_filters(query_filters)
+        finally:
+            self._current_history_id = prev_history_id
 
     def _parse_orm_filter(self, attr, op, val):
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
@@ -699,6 +711,39 @@ class HistoryContentsFilters(
 
                 raise_filter_err(attr, op, val, "bad op in filter")
 
+        if attr == "extension" and op in ("eq", "in"):
+            # Apply different filter expressions to the HDA and HDCA branches
+            # of the union: HDAs filter by their own ``extension`` column,
+            # while HDCAs go through the depth-arbitrary recursive-CTE clause
+            # built by ``History._hdca_extensions_only_in_clause`` (a
+            # collection matches only when every leaf HDA extension is in the
+            # set, mirroring ``SummaryDatasetCollectionMatcher.hdca_match``).
+            # The CTE needs the current history_id; ``parse_query_filters_with_relations``
+            # stashes it on ``self``. When parsed without a history scope
+            # (e.g. ``/api/datasets``), the HDCA branch degrades to a no-op
+            # — HDA filtering still applies, which covers the documented
+            # behavior of ``/api/datasets``. Other ops (``like``) fall through
+            # to the base parser's standard column filter (HDCAs are excluded
+            # there because the union's HDCA branch has ``extension=null()``).
+            if op == "eq":
+                extensions = {val}
+            else:
+                extensions = {e for e in val.split(",") if e}
+            if not extensions:
+                raise_filter_err(attr, op, val, "empty extension list")
+            history_id = self._current_history_id
+
+            def extension_filter(component_class):
+                if component_class is model.HistoryDatasetAssociation:
+                    return model.HistoryDatasetAssociation.extension.in_(extensions)
+                if component_class is model.HistoryDatasetCollectionAssociation:
+                    if history_id is None:
+                        return true()
+                    return model.History._hdca_extensions_only_in_clause(extensions, history_id)
+                return None
+
+            return self.parsed_filter(filter_type="orm_function", filter=extension_filter)
+
         if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
@@ -754,6 +799,10 @@ class HistoryContentsFilters(
                 # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
                 "name": {"op": ("eq", "contains", "like")},
                 "state": {"op": ("eq", "in")},
+                # ``eq`` / ``in`` are handled specially in ``_parse_orm_filter``
+                # so the HDCA branch can use a depth-arbitrary recursive CTE;
+                # ``like`` falls through to the base parser's column filter.
+                "extension": {"op": ("eq", "like", "in"), "val": {"in": lambda v: v.split(",")}},
                 "object_store_id": {"op": ("eq", "in")},
                 "quota_source_label": {"op": ("eq")},
                 "visible": {"op": ("eq"), "val": parse_bool},

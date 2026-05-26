@@ -10,6 +10,8 @@
 <script>
 import decodeUriComponent from "decode-uri-component";
 
+import { Toast } from "@/composables/toast";
+
 import ToolForm from "@/components/Tool/ToolForm.vue";
 import WorkflowRun from "@/components/Workflow/Run/WorkflowRun.vue";
 import CenterFrame from "@/entry/analysis/modules/CenterFrame.vue";
@@ -77,6 +79,19 @@ export default {
                 simpleFormUseJobCache,
             };
         },
+    },
+    mounted() {
+        // Data source tools redirect back to the SPA after a server-side
+        // import; surface a toast and strip the param so a reload doesn't
+        // re-fire it.
+        if (this.query.notification === "tool-submitted") {
+            this.$nextTick(() => {
+                Toast.info("Check your history panel for progress.", "Data import queued");
+            });
+            const newQuery = { ...this.$route.query };
+            delete newQuery.notification;
+            this.$router.replace({ query: newQuery });
+        }
     },
 };
 </script>

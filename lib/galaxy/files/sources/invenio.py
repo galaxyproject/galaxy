@@ -269,10 +269,12 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         """Gets the records in the repository and returns the total count of records."""
         params: dict[str, Any] = {}
         request_url = self.records_url
+        if self.plugin.get_authorization_token(context) or write_intent:
+            # Authenticated users should browse only their own records.
+            request_url = self.user_records_url
         if write_intent:
             # Only draft records owned by the user can be written to.
             params["is_published"] = "false"
-            request_url = self.user_records_url
         size, page = self._to_size_page(limit, offset)
         params["size"] = size
         params["page"] = page
@@ -297,7 +299,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         writeable: bool,
         query: Optional[str] = None,
     ) -> list[RemoteFile]:
-        conditionally_draft = "/draft" if writeable else ""
+        conditionally_draft = "/draft" if writeable or self._is_draft_record(container_id, context) else ""
         request_url = f"{self.records_url}/{container_id}{conditionally_draft}/files"
         response_data = self._get_response(context, request_url)
         return self._get_record_files_from_response(container_id, response_data)

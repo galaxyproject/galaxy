@@ -17,6 +17,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.hash_util import hmac_new
+from galaxy.web import url_for
 from galaxy.webapps.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)
@@ -230,6 +231,6 @@ class ASync(BaseUIController):
 
             trans.sa_session.commit()
 
-        return trans.show_ok_message(
-            "A job has been successfully added to the queue. You can check the status of queued jobs in the History panel."
-        )
+        # Return the user to the Galaxy SPA; the frontend surfaces a toast
+        # based on the `notification` query parameter.
+        return trans.response.send_redirect(url_for("/?notification=tool-submitted"))

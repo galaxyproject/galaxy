@@ -2226,6 +2226,7 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
     def tool_parameter_div(self, expanded_parameter_id):
         return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
+    @retry_during_transitions
     def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
         edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")

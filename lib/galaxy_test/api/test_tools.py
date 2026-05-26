@@ -6,6 +6,7 @@ import zipfile
 from io import BytesIO
 from typing import (
     Any,
+    Literal,
     Optional,
 )
 from uuid import uuid4
@@ -370,6 +371,326 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 "index": "hg19_value",
             }
             self._run("dbkey_filter_collection_input", history_id, inputs, assert_ok=True)
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_default_page(self):
+        """Default response caps `data` parameter options at 50 per src and
+        emits ``options_meta`` so the client can detect more pages exist."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            response = self.dataset_populator._post(f"tools/cat1/build?history_id={history_id}")
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 50
+            meta = input_param["options_meta"]["hda"]
+            assert meta["offset"] == 0
+            assert meta["limit"] == 50
+            assert meta["total_estimate"] == 60
+            assert meta["has_more"] is True
+            assert input_param["pinned"] == {"dce": [], "ldda": [], "hda": [], "hdca": []}
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_pagination_offset(self):
+        """``options_pagination`` returns the requested slice."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"offset": 50, "limit": 50}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 10
+            meta = input_param["options_meta"]["hda"]
+            assert meta["offset"] == 50
+            assert meta["has_more"] is False
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_limit_clamped(self):
+        """Server clamps requested ``limit`` to 500."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 5)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"limit": 10000}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            meta = input_param["options_meta"]["hda"]
+            assert meta["limit"] == 500
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_pinned_outside_page(self):
+        """Selected HDA outside the page window appears in ``pinned``."""
+        with self.dataset_populator.test_history() as history_id:
+            # Upload first HDA on its own so it gets the lowest hid (and lands
+            # outside the default page window once we add the bulk uploads).
+            first_hda = self.dataset_populator.fetch_hda(history_id, {"src": "pasted", "paste_content": "first"})
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "inputs": {"input1": {"src": "hda", "id": first_hda["id"]}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert input_param["options_meta"]["hda"]["has_more"] is True
+            page_ids = {entry["id"] for entry in input_param["options"]["hda"]}
+            assert first_hda["id"] not in page_ids
+            pinned_ids = {entry["id"] for entry in input_param["pinned"]["hda"]}
+            assert first_hda["id"] in pinned_ids
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_search_by_name(self):
+        """``options_pagination[...].search`` filters HDAs by name (ilike)
+        before pagination, so users can find datasets outside the default page
+        window by typing into the dropdown."""
+        sentinel = "unique-zebra-xyz"
+        with self.dataset_populator.test_history() as history_id:
+            # 60 distinct "Sample N" HDAs plus one sentinel name that shares
+            # no substring with the others. Searching for the sentinel proves
+            # ilike is actually filtering (rather than passing everything
+            # through).
+            self.dataset_populator.fetch_hdas(
+                history_id,
+                [{"src": "pasted", "paste_content": "x", "name": f"Sample {i}"} for i in range(60)],
+            )
+            self.dataset_populator.fetch_hdas(
+                history_id,
+                [{"src": "pasted", "paste_content": "x", "name": sentinel}],
+            )
+
+            # Sentinel: exactly one match, with the expected name.
+            response = self.dataset_populator._post(
+                "tools/cat1/build",
+                data={
+                    "history_id": history_id,
+                    "options_pagination": {"input1": {"hda": {"search": "zebra"}}},
+                },
+                json=True,
+            )
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            returned = input_param["options"]["hda"]
+            assert len(returned) == 1, returned
+            assert returned[0]["name"] == sentinel
+            assert input_param["options_meta"]["hda"]["total_estimate"] == 1
+
+            # Broad term ("Sample") matches all 60 Sample HDAs — exceeds the
+            # default 50-page so we get a partial page with has_more=True.
+            response = self.dataset_populator._post(
+                "tools/cat1/build",
+                data={
+                    "history_id": history_id,
+                    "options_pagination": {"input1": {"hda": {"search": "Sample"}}},
+                },
+                json=True,
+            )
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            assert len(input_param["options"]["hda"]) == 50
+            assert input_param["options_meta"]["hda"]["has_more"] is True
+            assert all("Sample" in entry["name"] for entry in input_param["options"]["hda"])
+
+    @skip_without_tool("cat1")
+    def test_build_data_options_search_by_hid(self):
+        """A numeric ``search`` value also matches the HDA's hid, so typing
+        ``1`` surfaces hid=1 even when it's outside the default page window."""
+        with self.dataset_populator.test_history() as history_id:
+            self.dataset_populator.fetch_hdas(history_id, [{"src": "pasted", "paste_content": "x"}] * 60)
+            payload = {
+                "history_id": history_id,
+                "options_pagination": {"input1": {"hda": {"search": "1"}}},
+            }
+            response = self.dataset_populator._post("tools/cat1/build", data=payload, json=True)
+            response.raise_for_status()
+            build = response.json()
+            input_param = next(i for i in build["inputs"] if i["name"] == "input1")
+            returned_hids = {entry["hid"] for entry in input_param["options"]["hda"]}
+            # hid=1 is the oldest dataset; with 60 items the default page would
+            # not include it. Search by "1" must surface it.
+            assert 1 in returned_hids, returned_hids
+
+    def _create_hdca(
+        self,
+        history_id: str,
+        kind: Literal["pair", "list_of_pairs", "list", "list_of_list"],
+        hidden: bool = False,
+    ) -> dict[str, Any]:
+        """Create an HDCA of ``kind`` and return its dict (with ``id``/``hid``).
+
+        ``kind`` ∈ ``"pair"`` (paired), ``"list_of_pairs"`` (list:paired),
+        ``"list"`` (plain list of two items), ``"list_of_list"`` (list:list).
+        With ``hidden=True``, hides the HDCA after creation."""
+        p = self.dataset_collection_populator
+        if kind == "pair":
+            hdca = p.create_pair_in_history(history_id, wait=True).json()["outputs"][0]
+        elif kind == "list_of_pairs":
+            hdca = p.create_list_of_pairs_in_history(history_id, wait=True).json()["outputs"][0]
+        elif kind == "list":
+            hdca = p.create_list_in_history(history_id, contents=["a", "b"], wait=True).json()["outputs"][0]
+        elif kind == "list_of_list":
+            # ``create_list_of_list_in_history`` returns the final nested-create
+            # response whose body IS the HDCA, not the populator ``outputs[0]``
+            # envelope used by the other helpers.
+            hdca = p.create_list_of_list_in_history(history_id, wait=True).json()
+        else:
+            raise ValueError(f"unknown HDCA kind: {kind!r}")
+        if hidden:
+            self.dataset_populator.hide_dataset_collection(hdca["id"])
+        return hdca
+
+    def _build_tool_param(
+        self,
+        tool_id: str,
+        history_id: str,
+        *,
+        options_pagination: Optional[dict[str, Any]] = None,
+        param_name: str = "f1",
+    ) -> dict[str, Any]:
+        """POST ``tools/{tool_id}/build`` and return the named input dict."""
+        payload: dict[str, Any] = {"history_id": history_id}
+        if options_pagination is not None:
+            payload["options_pagination"] = options_pagination
+        response = self.dataset_populator._post(f"tools/{tool_id}/build", data=payload, json=True)
+        response.raise_for_status()
+        return next(i for i in response.json()["inputs"] if i["name"] == param_name)
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_interleaves_direct_and_multirun_by_hid(self):
+        """Direct matches (``paired`` collections) and multirun matches
+        (``list:paired`` collections that can be mapped over to feed a paired
+        param) must be returned merged in HID-desc order — the legacy
+        pre-pagination behavior was to ``sorted([direct + multirun], reverse=True)``.
+        Multirun entries must carry a ``map_over_type`` while direct entries
+        must not."""
+        with self.dataset_populator.test_history() as history_id:
+            # Alternate paired (direct) and list:paired (multirun) so the
+            # expected HID order interleaves both kinds. Build order = HID
+            # ascending; the dropdown returns HID descending.
+            kinds = []
+            for _ in range(4):
+                kinds.append(("direct", self._create_hdca(history_id, "pair")["id"]))
+                kinds.append(("multirun", self._create_hdca(history_id, "list_of_pairs")["id"]))
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"limit": 100}}}
+            )
+            returned = f1["options"]["hdca"]
+            assert len(returned) == len(kinds), returned
+
+            # Returned HIDs are strictly descending.
+            hids = [entry["hid"] for entry in returned]
+            assert hids == sorted(hids, reverse=True), hids
+
+            # Direct/multirun interleave exactly matches the construction order.
+            for (expected_kind, expected_id), entry in zip(reversed(kinds), returned):
+                assert entry["id"] == expected_id, (entry, expected_id)
+                if expected_kind == "direct":
+                    assert "map_over_type" not in entry, entry
+                else:
+                    assert entry.get("map_over_type") == "paired", entry
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_pagination_preserves_interleaved_order(self):
+        """Pagination must return contiguous slices of the same merged
+        HID-desc ordering: page 0 + page 1 reconstruct the unpaginated list
+        without losing or reshuffling either kind across the page boundary."""
+        with self.dataset_populator.test_history() as history_id:
+            for _ in range(3):
+                self._create_hdca(history_id, "pair")
+                self._create_hdca(history_id, "list_of_pairs")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            full = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"limit": 100}}}
+            )["options"]["hdca"]
+            assert len(full) == 6, full
+
+            page0 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"offset": 0, "limit": 3}}}
+            )
+            page1 = self._build_tool_param(
+                "collection_paired_test", history_id, options_pagination={"f1": {"hdca": {"offset": 3, "limit": 3}}}
+            )
+
+            assert page0["options_meta"]["hdca"]["has_more"] is True
+            assert page0["options_meta"]["hdca"]["total_estimate"] == 6
+            assert page1["options_meta"]["hdca"]["has_more"] is False
+
+            paginated_ids = [e["id"] for e in page0["options"]["hdca"] + page1["options"]["hdca"]]
+            full_ids = [e["id"] for e in full]
+            assert paginated_ids == full_ids, (paginated_ids, full_ids)
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_hidden_direct_match_included(self):
+        """A hidden ``paired`` collection still appears under direct match
+        — preserves legacy ``active_dataset_collections`` semantics (which
+        included hidden) for the direct-match path."""
+        with self.dataset_populator.test_history() as history_id:
+            hidden_pair = self._create_hdca(history_id, "pair", hidden=True)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            assert hidden_pair["id"] in {e["id"] for e in f1["options"]["hdca"]}
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_hidden_multirun_excluded(self):
+        """A hidden ``list:paired`` collection must NOT appear as a multirun
+        match — preserves legacy ``active_visible_dataset_collections``
+        semantics (visible-only) for the subcollection-mapping path."""
+        with self.dataset_populator.test_history() as history_id:
+            hidden_lop = self._create_hdca(history_id, "list_of_pairs", hidden=True)
+            visible_pair = self._create_hdca(history_id, "pair")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            returned_ids = {e["id"] for e in f1["options"]["hdca"]}
+            assert hidden_lop["id"] not in returned_ids, returned_ids
+            assert visible_pair["id"] in returned_ids, returned_ids
+
+    @skip_without_tool("collection_list_or_nested_list_input")
+    def test_build_collection_options_multi_typed_emits_direct_and_multirun(self):
+        """Pinned against release_26.0 (pre-pagination): a parameter that
+        accepts multiple collection types (``list,list:list``) given a single
+        ``list:list`` HDCA must emit **two** dropdown entries with the same
+        HID — one direct (no ``map_over_type``) and one multirun
+        (``map_over_type="list"``) — because ``direct_match`` and
+        ``can_map_over`` are not mutually exclusive across the CTD list.
+        """
+        with self.dataset_populator.test_history() as history_id:
+            ll = self._create_hdca(history_id, "list_of_list")
+            f1 = self._build_tool_param("collection_list_or_nested_list_input", history_id)
+            matching = [e for e in f1["options"]["hdca"] if e["id"] == ll["id"]]
+            assert len(matching) == 2, matching
+            assert all(e["hid"] == ll["hid"] for e in matching), matching
+            direct = [e for e in matching if "map_over_type" not in e]
+            multirun = [e for e in matching if "map_over_type" in e]
+            assert len(direct) == 1 and len(multirun) == 1, matching
+            assert multirun[0]["map_over_type"] == "list", multirun[0]
+
+    @skip_without_tool("collection_paired_test")
+    def test_build_collection_options_unmappable_excluded(self):
+        """A plain ``list`` collection neither directly matches a ``paired``
+        param nor can be mapped over to one, so it must not appear."""
+        with self.dataset_populator.test_history() as history_id:
+            plain_list = self._create_hdca(history_id, "list")
+            pair = self._create_hdca(history_id, "pair")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            f1 = self._build_tool_param("collection_paired_test", history_id)
+            returned_ids = {e["id"] for e in f1["options"]["hdca"]}
+            assert plain_list["id"] not in returned_ids, returned_ids
+            assert pair["id"] in returned_ids, returned_ids
 
     @skip_without_tool("cheetah_problem_unbound_var_input")
     def test_legacy_biotools_xref_injection(self):
@@ -3688,6 +4009,52 @@ class TestToolsApi(ApiTestCase, TestsTools):
         with self._different_user(email=user_email):
             with self.dataset_populator.test_history() as other_history_id:
                 yield other_history_id
+
+
+class TestDataManagerToolsApi(ApiTestCase, TestsTools):
+    """API tests that need the test case to act as an admin (e.g. data managers)."""
+
+    require_admin_user = True
+    dataset_populator: DatasetPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+
+    def test_build_does_not_leak_hda_from_user_bundle(self):
+        # Regression for https://github.com/galaxyproject/galaxy/issues/22674
+        # When the user already has a ``data_manager_json`` bundle in their
+        # history for a tool data table, ``DynamicOptions.get_user_options``
+        # builds a synthetic option row from it. A 2025-02-18 refactor
+        # (172ef05f269) prepended the bundle's HDA to that row, shifting every
+        # declared column index by one and leaking the raw HDA into the
+        # option's ``value`` field. ``/api/tools/{id}/build`` then 500s with
+        #   TypeError: Object of type HistoryDatasetAssociation is not JSON serializable
+        # Reproduce by producing a real bundle (data_manager_mode=bundle), then
+        # loading the same tool's form.
+        history_id = self.dataset_populator.new_history()
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id="data_manager_select",
+            inputs={"index": "hg19_value"},
+            data_manager_mode="bundle",
+            history_id=history_id,
+        )
+        create_response = self.dataset_populator._post("tools", data=payload)
+        create_response.raise_for_status()
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        dataset = self.dataset_populator.get_history_dataset_details(history_id)
+        assert dataset["extension"] == "data_manager_json"
+
+        build = self.dataset_populator.build_tool_state("data_manager_select", history_id, inputs={})
+        index_input = next(i for i in build["inputs"] if i["name"] == "index")
+        option_names = [option[0] for option in index_input["options"]]
+        # On-disk fasta_indexes.loc entries...
+        assert "hg19_name" in option_names
+        # ...plus the synthetic option contributed by the user's bundle. Before
+        # the fix the bundle's HDA was wired into ``value`` instead of
+        # ``dataset`` and JSON encoding crashed before this assertion ran.
+        assert "regression_name" in option_names
 
 
 def dataset_to_param(dataset):

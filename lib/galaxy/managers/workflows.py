@@ -1172,7 +1172,18 @@ class WorkflowContentsManager(UsesAnnotations):
                 ]
             else:
                 inputs = step.module.get_runtime_inputs(step, connections=step.output_connections)
-                step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
+                input_dicts = []
+                for input in inputs.values():
+                    input_dict = input.to_dict(trans)
+                    # Frontend paginates ``data`` / ``data_collection`` workflow
+                    # input dropdowns directly against ``/api/histories/{id}/contents``;
+                    # ship the precomputed accept-set (formats ∪ implicit-conversion
+                    # sources) so the client can pass ``q=extension-in&qv=…``.
+                    if isinstance(input, (DataToolParameter, DataCollectionToolParameter)):
+                        accepted = input._acceptable_extensions()
+                        input_dict["acceptable_extensions"] = sorted(accepted) if accepted else []
+                    input_dicts.append(input_dict)
+                step_model = {"inputs": input_dicts}
             step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_informal_replacement_parameters(step)
             step_model["step_type"] = step.type

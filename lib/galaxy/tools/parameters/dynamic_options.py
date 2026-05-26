@@ -873,8 +873,6 @@ class DynamicOptions:
                 by_dbkey.update(table_entries)
             for data_table_entry in by_dbkey.values():
                 field_entry = []
-                if hda := data_table_entry.get("__hda__"):
-                    field_entry.append(hda)
                 missing_columns = False
                 for column_key in self.tool_data_table.columns.keys():
                     if column_key not in data_table_entry:
@@ -885,6 +883,13 @@ class DynamicOptions:
                         break
                     field_entry.append(data_table_entry[column_key])
                 if not missing_columns:
+                    # The HDA must be appended after the columns: get_options()
+                    # reads it from ``fields[-1]`` and indexes the other columns
+                    # by their declared positions. Prepending shifts every
+                    # column by one and leaks the HDA into the option ``value``
+                    # (#22674).
+                    if hda := data_table_entry.get("__hda__"):
+                        field_entry.append(hda)
                     fields.append(field_entry)
         return fields
 

@@ -45,6 +45,7 @@ from galaxy.schema.schema import (
     ChatPayload,
     ChatResponse,
 )
+from galaxy.util.json import safe_loads
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -143,7 +144,6 @@ class ChatAPI:
         """
         start_time = time.time()
 
-        # Initialize response structure
         result: dict[str, Any] = {
             "response": "",
             "error_code": 0,
@@ -152,17 +152,19 @@ class ChatAPI:
             "processing_time": None,
         }
 
-        # Determine query source - either from payload (job-based) or query param (general)
         regenerate = False
         if payload and payload.query:
-            # Old format: payload body with query and context string
             query_text = payload.query
-            # Context from payload is a string (e.g., "tool_error"), convert to dict for agent system
             context_str = payload.context if hasattr(payload, "context") else None
-            query_context = {"context_type": context_str} if context_str else {}
+            query_context: dict[str, Any] = {}
+            if context_str:
+                parsed = safe_loads(context_str)
+                if isinstance(parsed, dict):
+                    query_context = {"interface_context": parsed}
+                else:
+                    query_context = {"context_type": context_str}
             regenerate = bool(payload.regenerate) if hasattr(payload, "regenerate") else False
         elif query:
-            # New format: query parameters (context not supported in this path)
             query_text = query
             query_context = {}
         else:
@@ -172,7 +174,6 @@ class ChatAPI:
 
         job = None
         if job_id:
-            # Job-based chat - check for existing responses (unless regenerate requested)
             job = await anyio.to_thread.run_sync(partial(self.job_manager.get_accessible_job, trans, job_id))
             if job and not regenerate:
                 existing_response = await anyio.to_thread.run_sync(partial(self.chat_manager.get, trans, job.id))
@@ -184,12 +185,10 @@ class ChatAPI:
                         exchange_id=existing_response.id,
                     )
 
-        # Check if we're continuing an existing conversation (do this ONCE at the beginning)
         exchange_id = None
         if payload is not None and hasattr(payload, "exchange_id") and payload.exchange_id:
             exchange_id = payload.exchange_id
 
-        # Check for page scope and populate agent context
         page_id = None
         page_obj = None
         if payload is not None and hasattr(payload, "page_id") and payload.page_id:
@@ -198,19 +197,15 @@ class ChatAPI:
             # being masked as 500.
             page_obj = self.chat_manager.get_accessible_page(trans, page_id)
 
-        # Use new agent system if available, otherwise fallback to legacy
         try:
             if HAS_AGENTS:
-                # Build context with conversation history
                 full_context: dict[str, Any] = query_context.copy() if query_context else {}
 
-                # If page-scoped, look up history_id + content for agent.
-                # Content is exported (IDs encoded) so the agent sees the same
-                # text the editor has — hashes and proposals match the client.
+                # Export page content (encodes IDs) so the agent sees the same
+                # text the editor has -- hashes and proposals match the client.
                 if page_id:
                     if page_obj:
                         full_context["history_id"] = page_obj.history_id
-                        # Fallback to session history for standalone pages
                         if not full_context.get("history_id"):
                             session_history = getattr(trans, "history", None)
                             if session_history:
@@ -226,9 +221,9 @@ class ChatAPI:
                         else:
                             full_context["page_content"] = ""
 
-                # If we have an exchange_id, ALWAYS load conversation history from database (source of truth).
-                # Use structured pydantic-ai message format so the router can pass it through as
-                # ``message_history`` rather than flattening it into a text blob.
+                # DB is the source of truth for history; use structured pydantic-ai
+                # format so the router passes it as ``message_history`` rather than
+                # flattening into a text blob.
                 if exchange_id:
                     db_history = await anyio.to_thread.run_sync(
                         partial(self.chat_manager.get_chat_history, trans, exchange_id, format_for_pydantic_ai=True)
@@ -236,37 +231,31 @@ class ChatAPI:
                     if db_history:
                         full_context["conversation_history"] = db_history
                     else:
-                        # No history found for this exchange, start fresh
                         full_context["conversation_history"] = []
                 else:
-                    # New conversation - no history needed
                     full_context["conversation_history"] = []
 
-                # Get full agent response with metadata
+                if payload and payload.entity_context:
+                    full_context["entities"] = payload.entity_context.model_dump(exclude_none=True)
+
                 agent_response = await self._get_agent_response_full(
                     query_text, agent_type, trans, user, job, full_context
                 )
                 result["response"] = agent_response.content
                 result["agent_response"] = agent_response
             else:
-                # Fallback to legacy implementation
                 self._ensure_ai_configured()
-                # For legacy, use context_type from query_context if it exists
                 context_type = query_context.get("context_type") if isinstance(query_context, dict) else None
                 answer = await self._get_ai_response(query_text, trans, context_type)
                 result["response"] = answer
 
-            # Save chat exchange to database
             if job:
-                # Job-based chat
                 exchange = await anyio.to_thread.run_sync(
                     partial(self.chat_manager.create, trans, job.id, str(result["response"]))
                 )
                 result["exchange_id"] = exchange.id
             elif trans.user:
-                # Use the exchange_id we already extracted at the beginning
                 if exchange_id:
-                    # Add to existing conversation
                     agent_resp = result.get("agent_response")
                     conversation_data = {
                         "query": query_text,
@@ -280,7 +269,6 @@ class ChatAPI:
                     )
                     result["exchange_id"] = exchange_id
                 elif page_id:
-                    # Page-scoped chat
                     agent_resp = result.get("agent_response")
                     storable_result = {
                         "response": result.get("response", ""),
@@ -291,8 +279,6 @@ class ChatAPI:
                     )
                     result["exchange_id"] = exchange.id
                 else:
-                    # Create new exchange for first message
-                    # Serialize agent_response for JSON storage
                     agent_resp = result.get("agent_response")
                     storable_result = {
                         "response": result.get("response", ""),
