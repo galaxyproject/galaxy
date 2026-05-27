@@ -101,6 +101,25 @@ GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
 
+
+def _remote_failure_message(base_message: str, full_status: Union[dict[str, Any], None]) -> str:
+    """Augment a remote-failure message with whatever diagnostics the remote
+    status carries, so operators see *why* a Pulsar job failed instead of only
+    the generic ``base_message``. No-op when no detail is available (e.g. the
+    polling path, which only fetches a status string)."""
+    if not full_status:
+        return base_message
+    parts = [base_message]
+    returncode = full_status.get("returncode")
+    if returncode not in (None, ""):
+        parts.append(f"Remote exit code: {returncode}.")
+    stderr = (full_status.get("stderr") or "").strip()
+    if stderr:
+        # Tail only — full stderr is also attached to the dataset separately.
+        parts.append(f"Remote stderr (tail): {stderr[-1024:]}")
+    return " ".join(parts)
+
+
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
 
 # Is there a good way to infer some default for this? Can only use
@@ -381,9 +400,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return None
         if pulsar_status in ["failed", "lost"]:
             if pulsar_status == "failed":
-                message = FAILED_REMOTE_ERROR
+                message = _remote_failure_message(FAILED_REMOTE_ERROR, full_status)
             else:
-                message = LOST_REMOTE_ERROR
+                message = _remote_failure_message(LOST_REMOTE_ERROR, full_status)
             if not job_state.job_wrapper.get_job().finished:
                 self.fail_job(job_state, message=message, full_status=full_status)
             return None
