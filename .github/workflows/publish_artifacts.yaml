@@ -139,17 +139,38 @@ jobs:
         working-directory: 'client/packages/api-client'
 
   # Container publishing
-  build-test-container:
-    name: Build and test release container
+  get-version:
+    name: Extract version from tag
+    runs-on: ubuntu-latest
     needs: [check-permissions]
     if: |
       github.repository_owner == 'galaxyproject' &&
       (github.event_name == 'release' ||
        (github.event_name == 'workflow_dispatch' && !cancelled() && !failure()))
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+      tag: ${{ steps.extract.outputs.tag }}
+    steps:
+      - name: Extract version and tag
+        id: extract
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.release_tag }}"
+          else
+            tag="${{ github.event.release.tag_name }}"
+          fi
+          version=${tag#v}  # Remove 'v' prefix if present
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+          echo "Tag: $tag, Version: $version"
+
+  build-test-container:
+    name: Build and test release container
+    needs: [get-version]
     uses: ./.github/workflows/container_build_test.yml
     with:
-      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.event.release.tag_name }}
-      image_tag: ${{ github.event_name == 'workflow_dispatch' && (inputs.release_tag | sub('^v', '')) || (github.event.release.tag_name | sub('^v', '')) }}
+      ref: ${{ needs.get-version.outputs.tag }}
+      image_tag: ${{ needs.get-version.outputs.version }}
 
   publish-container:
     name: Publish release container
