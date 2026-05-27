@@ -65,19 +65,46 @@ jobs:
         with:
           context: .
           file: .k8s_ci.Dockerfile
-          load: true  # Load into local Docker daemon for testing
+          load: true  # Load into local Docker daemon
+          outputs: type=docker,dest=/tmp/galaxy-image.tar  # ALSO save to artifact
           build-args: |
             GIT_COMMIT=${{ steps.buildargs.outputs.gitcommit }}
             BUILD_DATE=${{ steps.buildargs.outputs.builddate }}
             IMAGE_TAG=${{ inputs.image_tag }}
           tags: |
             galaxy/galaxy-min:${{ inputs.image_tag }}
+          cache-from: |
+            type=gha,scope=galaxy-container
+            type=registry,ref=quay.io/galaxyproject/galaxy-min:dev
+          cache-to: type=gha,scope=galaxy-container,mode=max
+
+      - name: Compress and upload image artifact
+        run: |
+          echo "Build completed at: $(date -Iseconds)"
+          echo "Original image size: $(du -h /tmp/galaxy-image.tar | cut -f1)"
+
+          gzip /tmp/galaxy-image.tar
+          echo "Compressed size: $(du -h /tmp/galaxy-image.tar.gz | cut -f1)"
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: galaxy-image-${{ inputs.image_tag }}
+          path: /tmp/galaxy-image.tar.gz
+          retention-days: 1
+          compression-level: 0  # Already compressed
 
   smoke-test:
     name: Smoke test container
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Download and decompress image artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: galaxy-image-${{ inputs.image_tag }}
+          path: /tmp
+
       - name: Start k8s locally
         uses: jupyterhub/action-k3s-helm@v4
         with:
@@ -87,10 +114,8 @@ jobs:
 
       - name: Import image into k3s
         run: |
-          # Save the image to a tar file
-          docker save galaxy/galaxy-min:${{ inputs.image_tag }} > /tmp/galaxy-image.tar
-
-          # Import into k3s
+          # Decompress and import the pre-built image
+          gunzip /tmp/galaxy-image.tar.gz
           sudo k3s ctr images import /tmp/galaxy-image.tar
 
           # Verify the image is available
@@ -131,24 +156,30 @@ jobs:
       - name: Debug deployment on failure
         if: failure()
         run: |
-          echo "=== Deployment failed, gathering debug information ==="
+          echo "=== DEBUGGING CONTAINER DEPLOYMENT FAILURE ==="
+          echo "Image: galaxy/galaxy-min:${{ inputs.image_tag }}"
+          echo "Built from: ${{ needs.build.outputs.commit_sha }}"
+          echo "Galaxy version: ${{ needs.build.outputs.version }}"
+          echo
 
-          echo "=== All pods in galaxy namespace ==="
+          echo "=== KUBERNETES STATE ==="
           kubectl get pods -n galaxy -o wide
-
-          echo "=== All pods in galaxy-deps namespace ==="
           kubectl get pods -n galaxy-deps -o wide
+          kubectl get pvc -n galaxy 2>/dev/null || echo "No PVCs"
+          kubectl get svc -n galaxy
+          echo
 
-          echo "=== Recent events in galaxy namespace ==="
-          kubectl get events -n galaxy --sort-by='.lastTimestamp' | tail -50
+          echo "=== RECENT EVENTS ==="
+          kubectl get events -n galaxy --sort-by='.lastTimestamp' | tail -30
+          kubectl get events -n galaxy-deps --sort-by='.lastTimestamp' | tail -20
+          echo
 
-          echo "=== Recent events in galaxy-deps namespace ==="
-          kubectl get events -n galaxy-deps --sort-by='.lastTimestamp' | tail -50
-
-          echo "=== Describe failed pods in galaxy namespace ==="
+          echo "=== FAILED PODS DETAILS ==="
           for pod in $(kubectl get pods -n galaxy --field-selector=status.phase!=Running,status.phase!=Succeeded -o name 2>/dev/null); do
-            echo "--- Describing $pod ---"
-            kubectl describe -n galaxy $pod
+            echo "--- $pod ---"
+            kubectl describe -n galaxy "$pod" | head -50
+            kubectl logs -n galaxy "$pod" --tail=20 2>/dev/null || echo "No logs available"
+            echo
           done
 
       - name: Verify Galaxy API
