@@ -1,7 +1,10 @@
 import json
 import tempfile
 from types import SimpleNamespace
-from typing import Any, cast
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.tabular import (

@@ -602,7 +602,9 @@ class Tabular(TabularData):
                 else:
                     column_types[i] = first_line_column_types[i]
         # Set the discovered metadata values for the dataset
-        use_column_names = requested_skip is None and self.use_column_names(column_names, "\n".join(header_sample_lines))
+        use_column_names = requested_skip is None and self.use_column_names(
+            column_names, "\n".join(header_sample_lines)
+        )
         if use_column_names:
             if comment_lines is not None:
                 comment_lines += 1
