@@ -269,22 +269,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
-    @staticmethod
-    def _looks_like_workflow_query(query: str) -> bool:
-        query_lower = query.lower()
-        return any(
-            term in query_lower
-            for term in (
-                "workflow",
-                "workflows",
-                "pipeline",
-                "pipelines",
-                "importable",
-                "end-to-end",
-                "end to end",
-            )
-        )
-
     def _vector_search_dependencies(self) -> tuple[OpenAIEmbeddings, Path]:
         persist_dir = Path(getattr(self.deps.config, "vector_database_path", None))
         embedding_base_url = getattr(self.deps.config, "embedding_api_base_url", None)
@@ -345,63 +329,38 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     )
                 log.info(f"Response data is not None, tutorials found: {response_data}")
                 used_fallback = False
-                tutorial_payloads = self._extract_tool_payloads(result, "search_gtn_tutorial_vectors")
-                tutorial_results = self._tutorials_from_vector_payloads(tutorial_payloads)
-                if tutorial_results:
-                    log.info("Vector search tutorial payloads found, adding to response")
-                    log.info(f"Tutorial results from vector payloads: {tutorial_results}")
-                    existing_tutorial_keys = {
-                        str(tutorial.get("topic") or "") + "/" + str(tutorial.get("tutorial") or "")
-                        for tutorial in response_data.tutorials
-                    }
-                    response_data.tutorials.extend(
-                        tutorial
-                        for tutorial in tutorial_results
-                        if str(tutorial.get("topic") or "") + "/" + str(tutorial.get("tutorial") or "")
-                        not in existing_tutorial_keys
-                    )
-                workflow_payloads = self._extract_tool_payloads(result, "search_gtn_workflow_vectors")
-                workflow_results = self._workflows_from_vector_payloads(workflow_payloads)
-                if workflow_results:
-                    existing_workflow_keys = {
-                        str(workflow.get("url") or workflow.get("workflow_id") or workflow.get("name") or "")
-                        for workflow in response_data.workflows
-                    }
-                    response_data.workflows.extend(
-                        workflow
-                        for workflow in workflow_results
-                        if str(workflow.get("url") or workflow.get("workflow_id") or workflow.get("name") or "")
-                        not in existing_workflow_keys
-                    )
-
                 if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
                     log.info("Performing vector search")
-                    vector_tutorials = self._search_vector_tutorials_for_response(query)
-                    if vector_tutorials:
+                    tutorials_vec_fallback_results = self.gtn_db.search_gtn_vector_db(
+                        query=query,
+                        embeddings=self.embeddings,
+                        persist_dir=self.persist_dir,
+                        collection_name="gtn_tutorials",
+                        limit=5,
+                    )
+                    log.info("Performing workflow vector search")
+                    workflow_vec_fallback_results = self.gtn_db.search_workflow_vector_db(
+                        query=query,
+                        embeddings=self.embeddings,
+                        persist_dir=self.persist_dir,
+                        collection_name="iwc_workflows",
+                        limit=5,
+                    )
+                    if tutorials_vec_fallback_results:
                         log.info("Vector search successful, found tutorials to use in response")
-                        log.info("Found %d tutorials from vector search, using these results", len(vector_tutorials))
-                        log.info(f"Vector search tutorials: {vector_tutorials}")
+                        log.info("Found %d tutorials from vector search, using these results", len(tutorials_vec_fallback_results))
+                        log.info(f"Vector search tutorials: {tutorials_vec_fallback_results}")
                         used_fallback = True
                         response_data = GTNSearchResponse(
-                            tutorials=vector_tutorials,
+                            tutorials=[r.to_dict() for r in tutorials_vec_fallback_results],
                             summary=response_data.summary
-                            or f"Found {len(vector_tutorials)} GTN tutorial matches from vector search.",
+                            or f"Found {len(tutorials_vec_fallback_results)} GTN tutorial matches from vector search.",
                             learning_path=response_data.learning_path,
                             prerequisites=response_data.prerequisites,
                             total_time=response_data.total_time,
                         )
-                should_search_workflows = (
-                    not response_data.workflows
-                    and (self._looks_like_workflow_query(query) or not response_data.tutorials and not response_data.faqs)
-                )
-                if should_search_workflows:
-                    log.info("Performing workflow vector search")
-                    vector_workflows = self._search_vector_workflows_for_response(query)
-                    if vector_workflows:
-                        used_fallback = True
-                        response_data.workflows.extend(vector_workflows)
-                        if not response_data.summary:
-                            response_data.summary = f"Found {len(vector_workflows)} workflow matches from vector search."
+                        if workflow_vec_fallback_results:
+                            response_data.workflows.extend(wf_res.to_dict() for wf_res in workflow_vec_fallback_results)
                 if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
                     log.info("No tutorials or FAQs in response, falling back to direct search")
                     fallback_results = self.gtn_db.search(query, limit=5)
@@ -449,223 +408,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             log.error(f"GTN training agent error: {e}")
             return self._get_error_response(str(e))
 
-    @staticmethod
-    def _result_messages(result: Any) -> list[Any]:
-        """Return pydantic-ai run messages across supported result versions."""
-        for attr_name in ("all_messages", "new_messages"):
-            messages = getattr(result, attr_name, None)
-            if not messages:
-                continue
-            try:
-                collected = list(messages()) if callable(messages) else list(messages)
-            except (TypeError, ValueError):
-                continue
-            if collected:
-                return collected
-        return []
-
-    @staticmethod
-    def _json_payload(value: Any) -> Optional[dict[str, Any]]:
-        if isinstance(value, dict):
-            return value
-        if not isinstance(value, str):
-            return None
-        try:
-            parsed = json.loads(value)
-        except json.JSONDecodeError:
-            return None
-        return parsed if isinstance(parsed, dict) else None
-
-    @classmethod
-    def _extract_tool_payloads(cls, result: Any, tool_name: str) -> list[dict[str, Any]]:
-        payloads: list[dict[str, Any]] = []
-        for message in cls._result_messages(result):
-            for part in getattr(message, "parts", []) or []:
-                part_tool_name = getattr(part, "tool_name", None)
-                if part_tool_name is None and hasattr(part, "model_dump"):
-                    try:
-                        part_tool_name = part.model_dump().get("tool_name")
-                    except (AttributeError, TypeError, ValueError):
-                        part_tool_name = None
-                if part_tool_name != tool_name:
-                    continue
-                for attr_name in ("content", "return_value"):
-                    payload = cls._json_payload(getattr(part, attr_name, None))
-                    if payload:
-                        payloads.append(payload)
-                if hasattr(part, "model_dump"):
-                    try:
-                        dumped = part.model_dump()
-                    except (AttributeError, TypeError, ValueError):
-                        dumped = {}
-                    for key in ("content", "return_value"):
-                        payload = cls._json_payload(dumped.get(key))
-                        if payload:
-                            payloads.append(payload)
-        return payloads
-
-    @staticmethod
-    def _vector_result_to_tutorial(result: dict[str, Any]) -> dict[str, Any]:
-        tutorial = dict(result)
-        metadata = tutorial.get("metadata")
-        if isinstance(metadata, dict):
-            for key in ("title", "topic", "tutorial", "url", "difficulty", "time_estimation", "source"):
-                if not tutorial.get(key) and metadata.get(key):
-                    tutorial[key] = metadata[key]
-
-        tutorial_slug = str(tutorial.get("tutorial") or "").strip()
-        title = str(tutorial.get("title") or "").strip()
-        if not title:
-            title = tutorial_slug.replace("-", " ").title() if tutorial_slug else "GTN Tutorial"
-        tutorial["title"] = title
-        url = GTNTrainingAgent._tutorial_external_url(tutorial)
-        if url:
-            tutorial["url"] = url
-
-        if not tutorial.get("snippet"):
-            page_content = str(tutorial.get("content") or "").strip()
-            if page_content:
-                tutorial["snippet"] = page_content
-        tutorial.setdefault("difficulty", "Unknown")
-        tutorial.setdefault("time_estimation", "Unknown")
-        tutorial.setdefault("result_type", "tutorial")
-        return tutorial
-
-    @classmethod
-    def _tutorials_from_vector_payloads(cls, payloads: list[dict[str, Any]], limit: int = 5) -> list[dict[str, Any]]:
-        tutorials: list[dict[str, Any]] = []
-        seen: set[tuple[str, str, str]] = set()
-        for payload in payloads:
-            raw_results = payload.get("tutorials") or payload.get("results") or []
-            if not isinstance(raw_results, list):
-                continue
-            for raw_result in raw_results:
-                if not isinstance(raw_result, dict):
-                    continue
-                tutorial = cls._vector_result_to_tutorial(raw_result)
-                key = (
-                    str(tutorial.get("topic") or ""),
-                    str(tutorial.get("tutorial") or ""),
-                    str(tutorial.get("url") or ""),
-                )
-                if key in seen:
-                    continue
-                seen.add(key)
-                tutorials.append(tutorial)
-                if len(tutorials) >= limit:
-                    return tutorials
-        return tutorials
-
-    @staticmethod
-    def _workflow_result_to_response(result: dict[str, Any]) -> dict[str, Any]:
-        workflow = dict(result)
-        metadata = workflow.get("metadata")
-        if isinstance(metadata, dict):
-            for key in (
-                "workflow_name",
-                "name",
-                "title",
-                "url",
-                "topic",
-                "source",
-                "workflow_id",
-                "data_source",
-                "doi",
-                "updated",
-                "path",
-                "categories",
-                "collections",
-                "content_type",
-            ):
-                if not workflow.get(key) and metadata.get(key):
-                    workflow[key] = metadata[key]
-
-        workflow_name = str(
-            workflow.get("workflow_name")
-            or workflow.get("name")
-            or workflow.get("title")
-            or workflow.get("workflow_id")
-            or ""
-        ).strip()
-        workflow["workflow_name"] = workflow_name or "Untitled Workflow"
-        workflow.setdefault("title", workflow["workflow_name"])
-
-        if not workflow.get("snippet"):
-            page_content = str(workflow.get("page_content") or workflow.get("content") or "").strip()
-            if page_content:
-                workflow["snippet"] = page_content
-
-        workflow.setdefault("result_type", "workflow")
-        return workflow
-
-    @classmethod
-    def _workflows_from_vector_payloads(cls, payloads: list[dict[str, Any]], limit: int = 5) -> list[dict[str, Any]]:
-        workflows: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for payload in payloads:
-            raw_results = payload.get("workflows") or payload.get("results") or []
-            if not isinstance(raw_results, list):
-                continue
-            for raw_result in raw_results:
-                if not isinstance(raw_result, dict):
-                    continue
-                workflow = cls._workflow_result_to_response(raw_result)
-                key = str(
-                    workflow.get("url")
-                    or workflow.get("workflow_id")
-                    or workflow.get("source")
-                    or workflow.get("workflow_name")
-                    or ""
-                )
-                if key in seen:
-                    continue
-                seen.add(key)
-                workflows.append(workflow)
-                if len(workflows) >= limit:
-                    return workflows
-        return workflows
-
-    def _search_vector_tutorials_for_response(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
-        try:
-            results = self.gtn_db.search_gtn_vector_db(query=query, embeddings=self.embeddings, persist_dir=self.persist_dir, collection_name="gtn_tutorials", limit=limit)
-        except (AttributeError, KeyError, TypeError, ValueError) as e:
-            log.warning(f"GTN direct vector fallback failed: {e}")
-            return []
-        tutorials = []
-        for result in results:
-            try:
-                tutorials.append(self._vector_result_to_tutorial(result.to_dict()))
-            except (AttributeError, TypeError, ValueError) as e:
-                log.warning(f"Skipping invalid GTN vector fallback result: {e}")
-        return tutorials
-    
-    def _search_vector_workflows_for_response(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
-        try:
-            results = self.gtn_db.search_workflow_vector_db(query=query, embeddings=self.embeddings, persist_dir=self.persist_dir, collection_name="iwc_workflows", limit=limit)
-        except (AttributeError, KeyError, TypeError, ValueError) as e:
-            log.warning(f"GTN workflow vector fallback failed: {e}")
-            return []
-        workflows = []
-        for result in results:
-            try:
-                workflow_dict = result.to_dict()
-                workflow_dict["result_type"] = "workflow"
-                workflows.append(workflow_dict)
-            except (AttributeError, TypeError, ValueError) as e:
-                log.warning(f"Skipping invalid GTN workflow vector fallback result: {e}")
-        return workflows
-
-    @staticmethod
-    def _tutorial_external_url(item: dict[str, Any]) -> Optional[str]:
-        url = item.get("url")
-        if isinstance(url, str) and url.strip() and url.strip() != "#":
-            return url.strip()
-
-        topic = str(item.get("topic") or "").strip().strip("/")
-        tutorial = str(item.get("tutorial") or "").strip().strip("/")
-        if topic and tutorial and topic != "Unknown":
-            return f"{GTN_TRAINING_BASE_URL}/topics/{topic.lower()}/tutorials/{tutorial}/tutorial.html"
-        return None
 
     def _format_gtn_response(self, response_data: GTNSearchResponse) -> str:
         parts: list[str] = []
@@ -679,8 +421,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = tutorial.get("topic", "Unknown")
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
-                url = self._tutorial_external_url(tutorial)
+                url = tutorial.get("url", "Unknown")
                 snippet = tutorial.get("snippet", "")
+                summary = (
+                    tutorial.get("summary") 
+                    or tutorial.get("description")
+                    or None
+                )
 
                 parts.append(f"\n{i}. **{title}**")
                 if snippet:
@@ -693,6 +440,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Time: {time_estimation}")
                 if url:
                     parts.append(f"   - Link: {url}")
+                if summary:
+                    parts.append(f"   - Summary: {summary}")
 
         if response_data.workflows:
             parts.append("\n**Relevant Workflows:**")
@@ -704,8 +453,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     or "Untitled Workflow"
                 )
                 topic = workflow.get("topic", "Unknown")
-                url = workflow.get("url")
+                url = workflow.get("url", "Unknown")
                 content = workflow.get("content", "")
+                summary = (
+                    workflow.get("summary") 
+                    or workflow.get("description")
+                    or None
+                )
 
                 parts.append(f"\n{i}. **{title}**")
                 if content:
@@ -714,6 +468,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     parts.append(f"   - Topic: {topic}")
                 if url:
                     parts.append(f"   - Link: {url}")
+                if summary:
+                    parts.append(f"   - Summary: {summary}")
 
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
@@ -721,7 +477,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 title = faq.get("title", "Untitled FAQ")
                 category = faq.get("category", "Unknown")
                 area = faq.get("area", "")
-                url = self._tutorial_external_url(faq)
+                url = faq.get("url", "Unknown")
                 snippet = faq.get("snippet", "")
 
                 parts.append(f"\n{i}. **{title}**")
@@ -752,7 +508,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for tutorial in response_data.tutorials[:3]:
             title = tutorial.get("title", "Untitled Tutorial")
-            url = self._tutorial_external_url(tutorial)
+            url = tutorial.get("url", "Unknown")
             if not url:
                 continue
             suggestions.append(
@@ -767,7 +523,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         for faq in response_data.faqs[:3]:
             title = faq.get("title", "Untitled FAQ")
-            url = self._tutorial_external_url(faq)
+            url = faq.get("url", "Unknown")
             if not url:
                 continue
             suggestions.append(
@@ -788,7 +544,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 or workflow.get("workflow_id")
                 or "Untitled Workflow"
             )
-            url = workflow.get("url")
+            url = workflow.get("url", "Unknown")
             if not url:
                 continue
             suggestions.append(
