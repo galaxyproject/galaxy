@@ -155,16 +155,52 @@ class TabularData(Text):
             return False
 
     def get_chunk(
-        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+        self, trans: "ProvidesAppContext", dataset: DatasetProtocol, offset: int = 0, ck_size: int | None = None
     ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self.data_line_offset,
+                "data_line_offset": self._get_data_line_offset(dataset, offset),
             }
         )
+
+    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
+        if offset:
+            return 0
+        data_line_offset = self.data_line_offset
+        try:
+            column_names = dataset.metadata.column_names
+            comment_lines = dataset.metadata.comment_lines
+        except AttributeError:
+            return data_line_offset
+        if not column_names:
+            return data_line_offset
+        if comment_lines is None:
+            return self._get_column_name_line_offset(dataset, column_names)
+        try:
+            return max(data_line_offset, int(comment_lines))
+        except (TypeError, ValueError):
+            return data_line_offset
+
+    def _get_column_name_line_offset(self, dataset: DatasetProtocol, column_names: list[str]) -> int:
+        try:
+            delimiter = dataset.metadata.delimiter
+        except AttributeError:
+            delimiter = "\t"
+        try:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
+                for i, line in enumerate(dataset_fh):
+                    line = line.rstrip("\r\n")
+                    if not line or line.startswith("#"):
+                        continue
+                    if line.split(delimiter)[: len(column_names)] == column_names:
+                        return max(self.data_line_offset, i + 1)
+                    return self.data_line_offset
+        except Exception:
+            pass
+        return max(self.data_line_offset, 1)
 
     def _read_chunk(self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -264,7 +300,7 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
-            column_headers = [None] * columns
+            column_headers: list[str | None] = [None] * columns
 
             # fill in empty headers with data from column_names
             assert column_names is not None
@@ -310,8 +346,9 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
+            data_line_offset = self._get_data_line_offset(dataset)
             for i, line in enumerate(peek.splitlines()):
-                if i >= self.data_line_offset:
+                if i >= data_line_offset:
                     if line.startswith(tuple(skipchars)):
                         out.append(f'<tr><td colspan="100%">{escape(line)}</td></tr>')
                     elif line:
@@ -402,7 +439,20 @@ class Tabular(TabularData):
     file_ext = "tabular"
 
     def get_column_names(self, first_line: str) -> list[str] | None:
-        return None
+        column_names = first_line.split("\t")
+        if len(column_names) < 2 or not any(column_name.strip() for column_name in column_names):
+            return None
+        return column_names
+
+    def use_column_names(self, column_names: list[str] | None, header_sample: str) -> bool:
+        if not column_names:
+            return False
+        if len(header_sample.splitlines()) < 2:
+            return False
+        try:
+            return csv.Sniffer().has_header(header_sample)
+        except csv.Error:
+            return False
 
     def make_html_peek_header(self, dataset: DatasetProtocol, *args, **kwargs) -> str:
         # Only generic tabular loses generated headers; subclasses may define real column labels.
@@ -421,19 +471,13 @@ class Tabular(TabularData):
         **kwd,
     ) -> None:
         """
-        Tries to determine the number of columns as well as those columns that
-        contain numerical values in the dataset.  A skip parameter is used
-        because various tabular data types reuse this function, and their data
-        type classes are responsible to determine how many invalid comment
-        lines should be skipped. Using None for skip will cause skip to be
-        zero, but the first line will be processed as a header. A
-        max_data_lines parameter is used because various tabular data types
-        reuse this function, and their data type classes are responsible to
-        determine how many data lines should be processed to ensure that the
-        non-optional metadata parameters are properly set; if used, optional
-        metadata parameters will be set to None, unless the entire file has
-        already been read. Using None for max_data_lines will process all data
-        lines.
+        Determine tabular metadata including column count, column types, line
+        counts, and optional column names. Subclasses can pass ``skip`` when
+        they know how many leading lines are not data. When ``skip`` is
+        ``None``, this generic datatype may treat the first non-comment line as
+        a header. ``max_data_lines`` limits how many data lines are inspected;
+        when the limit is reached before EOF, optional line-count metadata is
+        cleared because the full counts are unknown.
 
         Items of interest:
 
@@ -510,6 +554,8 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
+        header_sample_lines: list[str] = []
+        header_candidate_seen = False
         column_types: list = []
         first_line_column_types = []
         if dataset.has_data():
@@ -518,12 +564,17 @@ class Tabular(TabularData):
                 i = 0
                 for line in iter(dataset_fh.readline, ""):
                     line = line.rstrip("\r\n")
-                    if i == 0:
-                        column_names = self.get_column_names(first_line=line)
-                    if i < skip or not line or line.startswith("#"):
+                    skipped_or_comment = i < skip or not line or line.startswith("#")
+                    if skipped_or_comment:
                         # We'll call blank lines comments
                         comment_lines += 1
                     else:
+                        first_data_line = not header_candidate_seen
+                        if first_data_line:
+                            header_candidate_seen = True
+                            column_names = self.get_column_names(first_line=line)
+                        if len(header_sample_lines) < 21:
+                            header_sample_lines.append(line)
                         data_lines += 1
                         if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
                             fields = line.split("\t")
@@ -535,12 +586,10 @@ class Tabular(TabularData):
                                 column_type = guess_column_type(field)
                                 if type_overrules_type(column_type, column_types[field_count]):
                                     column_types[field_count] = column_type
-                        if i == 0 and requested_skip is None:
-                            # This is our first line, people seem to like to upload files that have a header line, but do not
-                            # start with '#' (i.e. all column types would then most likely be detected as str).  We will assume
-                            # that the first line is always a header (this was previous behavior - it was always skipped).  When
-                            # the requested skip is None, we only use the data from the first line if we have no other data for
-                            # a column.  This is far from perfect, as
+                        if first_data_line and requested_skip is None:
+                            # The first non-comment line may be a header. Use its type guesses only as fallbacks once
+                            # header detection has had later rows to compare against.
+                            # This is far from perfect, as
                             # 1,2,3	1.1	2.2	qwerty
                             # 0	0		1,2,3
                             # will be detected as
@@ -573,13 +622,21 @@ class Tabular(TabularData):
                 else:
                     column_types[i] = first_line_column_types[i]
         # Set the discovered metadata values for the dataset
+        use_column_names = requested_skip is None and self.use_column_names(column_names, "\n".join(header_sample_lines))
+        if use_column_names:
+            if comment_lines is not None:
+                comment_lines += 1
+            if data_lines is not None:
+                data_lines -= 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len(column_types)
         dataset.metadata.delimiter = "\t"
-        if column_names is not None:
+        if use_column_names:
             dataset.metadata.column_names = column_names
+        elif hasattr(dataset.metadata, "column_names"):
+            dataset.metadata.column_names = []
 
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> FileObjType | str:
         return open(dataset.get_file_name(), "rb")
@@ -600,6 +657,9 @@ class SraManifest(Tabular):
 
     def get_column_names(self, first_line: str) -> list[str] | None:
         return first_line.strip().split("\t")
+
+    def use_column_names(self, column_names: list[str] | None, header_sample: str) -> bool:
+        return bool(column_names)
 
 
 class Taxonomy(Tabular):
@@ -1403,38 +1463,38 @@ class BaseCSV(TabularData):
     delimiter = ","
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
+    sniff_headerless = False
 
     def sniff(self, filename: str) -> bool:
-        """Return True if if recognizes dialect and header."""
+        """Return True if if recognizes dialect and an optional header."""
+        consistent_width = True
         # check the dialect works
         with open(filename, newline="") as f:
             reader = csv.reader(f, self.dialect)
             # Check we can read header and get columns
-            header_row = next(reader)
+            try:
+                header_row = next(reader)
+            except StopIteration:
+                return False
             if len(header_row) < 2:
                 # No columns so not separated by this dialect.
                 return False
 
-            # Check that there is a second row as it is used by set_meta and
-            # that all rows can be read
-            if self.strict_width:
-                num_columns = len(header_row)
-                found_second_line = False
-                for data_row in reader:
-                    found_second_line = True
-                    # All columns must be the same length
-                    if num_columns != len(data_row):
-                        return False
-                if not found_second_line:
-                    return False
-            else:
-                data_row = next(reader)
-                if len(data_row) < 2:
+            num_columns = len(header_row)
+            found_second_line = False
+            for data_row in reader:
+                if not found_second_line and len(data_row) < 2:
                     # No columns so not separated by this dialect.
                     return False
-                # ignore the length in the rest
-                for _ in reader:
-                    pass
+                found_second_line = True
+                # All columns must be the same length for strict datatypes and
+                # for headerless CSV sniffing.
+                if num_columns != len(data_row):
+                    if self.strict_width:
+                        return False
+                    consistent_width = False
+            if not found_second_line:
+                return False
 
         # Optional: Check Python's csv comes up with a similar dialect
         with open(filename) as f:
@@ -1452,9 +1512,13 @@ class BaseCSV(TabularData):
         # Note: No way around Python's csv calling Sniffer.sniff again.
         # Note: Without checking the dialect returned by sniff
         #       this test may be checking the wrong dialect.
-        if not csv.Sniffer().has_header(big_peek):
+        return self.has_header(big_peek) or (self.sniff_headerless and consistent_width)
+
+    def has_header(self, sample: str) -> bool:
+        try:
+            return csv.Sniffer().has_header(sample)
+        except csv.Error:
             return False
-        return True
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
@@ -1463,11 +1527,18 @@ class BaseCSV(TabularData):
         data_lines = 0
         if dataset.has_data():
             with open(dataset.get_file_name(), newline="") as csvfile:
+                sample = csvfile.read(self.big_peek_size)
+                csvfile.seek(0)
+                has_header = self.has_header(sample)
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
-                    header_row = next(reader)
-                    data_row = next(reader)
+                    first_row = next(reader)
+                    if has_header:
+                        header_row = first_row
+                        data_row = next(reader)
+                    else:
+                        data_row = first_row
                     # Count records, not physical lines inside quoted fields.
                     data_lines = 1
                     for _ in reader:
@@ -1500,6 +1571,7 @@ class CSV(BaseCSV):
     file_ext = "csv"
     dialect = csv.excel  # This is the default
     strict_width = False  # Previous csv type did not check column width
+    sniff_headerless = True
 
 
 @build_sniff_from_prefix
@@ -1646,7 +1718,7 @@ class ConnectivityTable(Tabular):
         return False
 
     def get_chunk(
-        self, trans: "ProvidesAppContext", dataset: HasFileName, offset: int = 0, ck_size: int | None = None
+        self, trans: "ProvidesAppContext", dataset: DatasetProtocol, offset: int = 0, ck_size: int | None = None
     ) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
@@ -1664,7 +1736,7 @@ class ConnectivityTable(Tabular):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self.data_line_offset,
+                "data_line_offset": self._get_data_line_offset(dataset, offset),
             }
         )
 
