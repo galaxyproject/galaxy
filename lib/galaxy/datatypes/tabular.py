@@ -533,6 +533,7 @@ class Tabular(TabularData):
 
         data_lines = 0
         comment_lines = 0
+        existing_column_names = getattr(dataset.metadata, "column_names", None)
         column_names = None
         header_sample_lines: list[str] = []
         header_candidate_seen = False
@@ -617,6 +618,8 @@ class Tabular(TabularData):
         dataset.metadata.delimiter = "\t"
         if use_column_names:
             dataset.metadata.column_names = column_names
+        elif existing_column_names:
+            dataset.metadata.column_names = existing_column_names
         elif hasattr(dataset.metadata, "column_names"):
             dataset.metadata.column_names = []
 

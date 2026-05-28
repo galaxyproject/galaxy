@@ -108,11 +108,26 @@ def test_single_row_numeric_tabular_set_meta_does_not_promote_first_row_to_heade
         assert not hasattr(dataset.metadata, "column_names")
 
 
-def test_tabular_set_meta_clears_stale_column_names_for_headerless_data():
+def test_tabular_set_meta_preserves_existing_column_names_for_headerless_data():
+    contents = "32.5\t1\t4.3\n19.3\t1\t3.8\n"
+    with tempfile.NamedTemporaryFile(mode="w") as test_file:
+        test_file.write(contents)
+        test_file.flush()
+        dataset = MockDataset(id=1)
+        dataset.set_file_name(test_file.name)
+        metadata = cast(Any, dataset.metadata)
+        metadata.column_names = ["First", "2.tabular"]
+        Tabular().set_meta(_dataset_protocol(dataset))
+        assert dataset.metadata.data_lines == 2
+        assert dataset.metadata.comment_lines == 0
+        assert dataset.metadata.column_names == ["First", "2.tabular"]
+
+
+def test_tabular_set_meta_replaces_existing_column_names_when_header_is_detected():
     with tempfile.NamedTemporaryFile(mode="w") as header_file, tempfile.NamedTemporaryFile(mode="w") as data_file:
         header_file.write("name\tvalue\nA\t1\nB\t2\n")
         header_file.flush()
-        data_file.write("32.5\t1\t4.3\n19.3\t1\t3.8\n")
+        data_file.write("sample\tcount\nC\t3\nD\t4\n")
         data_file.flush()
         dataset = MockDataset(id=1)
         dataset.set_file_name(header_file.name)
@@ -122,8 +137,8 @@ def test_tabular_set_meta_clears_stale_column_names_for_headerless_data():
         dataset.set_file_name(data_file.name)
         datatype.set_meta(_dataset_protocol(dataset))
         assert dataset.metadata.data_lines == 2
-        assert dataset.metadata.comment_lines == 0
-        assert dataset.metadata.column_names == []
+        assert dataset.metadata.comment_lines == 1
+        assert dataset.metadata.column_names == ["sample", "count"]
 
 
 def test_tabular_set_meta_does_not_use_comment_line_as_column_names():
