@@ -1002,6 +1002,21 @@ class Msp(Text):
 
     file_ext = "msp"
 
+    identity_keys = frozenset(
+        {
+            "spectrum_id",
+            "accession",
+            "db#",
+            "spectrumid",
+            "title",
+            "record title",
+            "compound_name",
+            "ch$name",
+            "name",
+        }
+    )
+    num_peaks_keys = frozenset({"num_peaks", "pk$num_peak", "num peaks"})
+
     MetadataElement(
         name="spectra_count",
         default=0,
@@ -1013,6 +1028,7 @@ class Msp(Text):
 
     @staticmethod
     def next_line_starts_with(contents: IO, prefix: str) -> bool:
+        """Helper function to check if the next line starts with a given prefix."""
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 
@@ -1020,28 +1036,37 @@ class Msp(Text):
         """Determines whether the file is a NIST MSP output file."""
         contents = file_prefix.string_io()
         in_block = False
+        has_identity = False
         has_num_peaks = False
 
         for line in contents:
-            lower_line = line.lower()
-            if lower_line.startswith("name:"):
-                if in_block and has_num_peaks:
+            stripped = line.strip()
+            if not stripped:
+                if in_block and has_identity and has_num_peaks:
                     return True
-                in_block = True
+                in_block = False
+                has_identity = False
                 has_num_peaks = False
                 continue
-            if in_block and lower_line.startswith("num peaks:"):
+            key = stripped.split(":", 1)[0].strip().lower()
+            if key in self.identity_keys:
+                in_block = True
+                has_identity = True
+                continue
+            if in_block and key in self.num_peaks_keys:
                 has_num_peaks = True
 
-        return in_block and has_num_peaks
-    
+        return in_block and has_identity and has_num_peaks
+
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        """Set the metadata elements."""
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         if not dataset.has_data():
             return
         dataset.metadata.spectra_count = self._count_spectra(dataset.get_file_name())
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
             count = dataset.metadata.spectra_count
@@ -1053,10 +1078,11 @@ class Msp(Text):
 
     def _count_spectra(self, path: str) -> int:
         count = 0
-        with open(path) as handle:
+        with open(path, 'r', encoding='utf-8') as handle:
             for line in handle:
-                lower_line = line.lower()
-                if lower_line.startswith("num peaks:"):
+                stripped = line.strip()
+                lower_line = stripped.split(":", 1)[0].strip().lower()
+                if lower_line in self.num_peaks_keys:
                     count += 1
         return count
 
