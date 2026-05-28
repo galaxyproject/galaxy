@@ -38,12 +38,13 @@ When a search returns a clear match (top score well above threshold, title/topic
 
 1. **Read** the vector search results produced by `search_gtn_tutorial_vectors` tool calling.
 2. **Synthesize** a step-by-step answer using the above vector search results.
+3. **Respond** with the step-by-step answer systhesized above.
 3. **Cite** the tutorials you used with their GTN URLs and the highly-matched workflows you found.
 
 ## Response shape
 
 - **Answer first** -- the synthesized step-by-step or the direct FAQ answer.
-- **Sources** -- a short list of "Relevant Tutorials" (or "Relevant FAQs") with 1-3 links. Never more. If you show snippets, summarise them.
+- **Sources** -- a short list of "Relevant Tutorials" or "Relevant FAQs" or "Relevant Workflows" with 2 links for each. Never more. If you show snippets, summarise them.
 - **(Optional) Learning path** -- only if the question is about learning progression.
 - **(Optional) Workflows** -- only if the question is about workflows.
 - **On a weak match** -- a short acknowledgement plus topic/landing page link(s). No fake synthesis.

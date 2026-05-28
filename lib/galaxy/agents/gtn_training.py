@@ -345,6 +345,21 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     )
                 log.info(f"Response data is not None, tutorials found: {response_data}")
                 used_fallback = False
+                tutorial_payloads = self._extract_tool_payloads(result, "search_gtn_tutorial_vectors")
+                tutorial_results = self._tutorials_from_vector_payloads(tutorial_payloads)
+                if tutorial_results:
+                    log.info("Vector search tutorial payloads found, adding to response")
+                    log.info(f"Tutorial results from vector payloads: {tutorial_results}")
+                    existing_tutorial_keys = {
+                        str(tutorial.get("topic") or "") + "/" + str(tutorial.get("tutorial") or "")
+                        for tutorial in response_data.tutorials
+                    }
+                    response_data.tutorials.extend(
+                        tutorial
+                        for tutorial in tutorial_results
+                        if str(tutorial.get("topic") or "") + "/" + str(tutorial.get("tutorial") or "")
+                        not in existing_tutorial_keys
+                    )
                 workflow_payloads = self._extract_tool_payloads(result, "search_gtn_workflow_vectors")
                 workflow_results = self._workflows_from_vector_payloads(workflow_payloads)
                 if workflow_results:
@@ -508,9 +523,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             tutorial["url"] = url
 
         if not tutorial.get("snippet"):
-            page_content = str(tutorial.get("page_content") or "").strip()
+            page_content = str(tutorial.get("content") or "").strip()
             if page_content:
-                tutorial["snippet"] = page_content[:10000]
+                tutorial["snippet"] = page_content
         tutorial.setdefault("difficulty", "Unknown")
         tutorial.setdefault("time_estimation", "Unknown")
         tutorial.setdefault("result_type", "tutorial")
@@ -578,7 +593,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if not workflow.get("snippet"):
             page_content = str(workflow.get("page_content") or workflow.get("content") or "").strip()
             if page_content:
-                workflow["snippet"] = page_content[:10000]
+                workflow["snippet"] = page_content
 
         workflow.setdefault("result_type", "workflow")
         return workflow
@@ -686,24 +701,17 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     workflow.get("workflow_name")
                     or workflow.get("name")
                     or workflow.get("title")
-                    or workflow.get("workflow_id")
                     or "Untitled Workflow"
                 )
                 topic = workflow.get("topic", "Unknown")
                 url = workflow.get("url")
-                snippet = workflow.get("snippet", "")
-                data_source = workflow.get("data_source", "")
-                doi = workflow.get("doi", "")
+                content = workflow.get("content", "")
 
                 parts.append(f"\n{i}. **{title}**")
-                if snippet:
-                    parts.append(f"   {snippet}")
+                if content:
+                    parts.append(f"   - Summary: {content}")
                 if topic and topic != "Unknown":
                     parts.append(f"   - Topic: {topic}")
-                if data_source:
-                    parts.append(f"   - Source: {data_source}")
-                if doi:
-                    parts.append(f"   - DOI: {doi}")
                 if url:
                     parts.append(f"   - Link: {url}")
 
