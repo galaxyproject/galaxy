@@ -162,6 +162,31 @@ class _StubJob:
         self.user = user
 
 
+class _StubJobWrapperForState:
+    """Minimal job-wrapper double for ``get_client_from_state``.
+
+    The base ``get_client_from_state`` reads only ``.job_id``; ``get_job()`` is
+    here so this also exercises the (pre-cleanup) BYOC override that called
+    ``job_wrapper.get_job().user`` — letting the new tests serve as a
+    regression net across the override's deletion."""
+
+    def __init__(self, job_id: int, job: "_StubJob") -> None:
+        self.job_id = job_id
+        self._job = job
+
+    def get_job(self) -> "_StubJob":
+        return self._job
+
+
+class _StubAsyncJobState:
+    """Stand-in for ``AsynchronousJobState`` covering only what the
+    finish/check path reads: ``.job_destination.params`` and ``.job_wrapper``."""
+
+    def __init__(self, destination_params: dict[str, Any], job_wrapper: "_StubJobWrapperForState") -> None:
+        self.job_destination = _StubJobDestination(destination_params)
+        self.job_wrapper = job_wrapper
+
+
 class _FakeClientManager:
     """A recording fake for pulsar.client.manager.ClientManagerInterface.
 
@@ -671,3 +696,60 @@ def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
     # it as ``Authorization: Bearer …`` — see pulsar's
     # ``FileActionMapper.use_bearer_auth`` handling.
     assert client_kwds["destination_params"].get("use_bearer_auth") is True
+
+
+def test_get_client_from_state_reuses_cached_client_manager(vault_with_token):
+    """finish_job / check_watched_item resolve the client for an
+    already-submitted job. They must reuse the per-tenant client manager cached
+    at submit time — not build a second one. Pins the behavior so deleting the
+    BYOC ``get_client_from_state`` override is provably safe."""
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+    runner.app.security = _StubSecurity()  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
+    job_obj = _StubJob(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
+    params = {"compute_resource_id": 42}
+
+    # Submit-time: materialise (and cache) the per-tenant client manager.
+    runner.get_client(params, 99)
+    assert len(factory.created) == 1
+    cached_cm = factory.created[0]
+
+    # Finish/check-time: resolve the client again from the persisted state.
+    job_state = _StubAsyncJobState(params, _StubJobWrapperForState(job_id=99, job=job_obj))
+    runner.get_client_from_state(job_state)  # type: ignore[arg-type]
+
+    # No second manager built — the cached one was reused...
+    assert len(factory.created) == 1
+    # ...and the finish-path get_client landed on that same manager.
+    assert len(cached_cm.get_client_calls) == 2
+    second_call = cached_cm.get_client_calls[1]
+    assert second_call["job_id"] == "99"
+    assert second_call["destination_params"].get("use_bearer_auth") is True
+
+
+def test_get_client_from_state_cold_cache_builds_tenant_manager(vault_with_token):
+    """Galaxy-restart-then-finish: the registry is empty when finish runs first.
+    ``get_client_from_state`` must still materialise the per-tenant client
+    manager (reading the tenant's vault token) rather than fall back to a shared
+    one — on the bypass-``__init__`` test runner there is no ``self.client_manager``,
+    so a regression would surface as AttributeError."""
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+    runner.app.security = _StubSecurity()  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
+    job_obj = _StubJob(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
+
+    job_state = _StubAsyncJobState({"compute_resource_id": 42}, _StubJobWrapperForState(job_id=99, job=job_obj))
+    runner.get_client_from_state(job_state)  # type: ignore[arg-type]
+
+    assert len(factory.created) == 1
+    assert f"user/{user.id}/compute_resource/42/relay_refresh_token" in vault.reads
