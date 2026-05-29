@@ -1,15 +1,10 @@
 """Subprocess lifecycle helpers for the BYOC tool-execution integration test.
 
-The full e2e stack (Keycloak via docker-compose, pulsar-relay as a Python
-subprocess, the Pulsar daemon as another Python subprocess) was previously
-inlined as a stack of ``_bring_up_*`` ClassMethods on the test class.
-Lifting them into module-level helpers means:
-
-* Bring-up + teardown is callable from places other than the test class
-  (e.g. ad-hoc smoke scripts).
-* The test class shrinks back to what it actually does: drive BYOC bootstrap,
-  submit a tool, assert.
-* Each helper is independently exercisable.
+Module-level helpers that bring up and tear down the full e2e stack (Keycloak
+via docker, pulsar-relay as a Python subprocess, the Pulsar daemon as another
+Python subprocess), so the test class itself stays focused on driving BYOC
+bootstrap, submitting a tool, and asserting. Each helper is independently
+callable (e.g. from ad-hoc smoke scripts).
 
 These helpers do NOT use context managers because the test class needs to
 hold each handle across multiple lifecycle methods (``_prepare_galaxy``,
