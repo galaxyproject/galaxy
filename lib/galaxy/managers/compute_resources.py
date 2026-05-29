@@ -93,6 +93,16 @@ RATE_LIMIT_WINDOW = timedelta(hours=1)
 #: job_status_update; consumer of the other two).
 RELAY_TOPIC_PREFIXES = ("job_setup", "job_kill", "job_status_update")
 
+#: Prefix for Galaxy-minted ``manager_name`` values. A readable marker that
+#: the name is Galaxy-generated (vs. an operator-chosen pulsar manager name).
+MANAGER_NAME_PREFIX = "cr-"
+
+#: Attempts to draw a collision-free ``manager_name`` before giving up. With
+#: 16 random bytes a single draw effectively never collides; the loop is purely
+#: defensive so a freak collision raises a clean domain error, not the DB's
+#: ``IntegrityError`` at flush.
+MANAGER_NAME_MAX_ATTEMPTS = 5
+
 #: Topic stem Pulsar publishes its capability snapshot to (post-namespace,
 #: per the publisher's `__make_capabilities_topic_name` convention in
 #: pulsar/messaging/bind_relay.py). The full topic on the wire is
@@ -256,7 +266,7 @@ class RegistrationTokenExpired(ComputeResourceError):
 
 class RelayVerificationFailed(ComputeResourceError):
     """The relay rejected the supplied refresh token, or its access token's
-    ``sub`` claim does not match ``manager_name``."""
+    ``sub`` claim no longer matches the resource's registered ``relay_user_id``."""
 
 
 class RegistrationRateLimited(ComputeResourceError):
@@ -531,6 +541,36 @@ class ComputeResourceManager:
             return None
         return claims.get("sub")
 
+    def _generate_manager_name(self) -> str:
+        """Mint a globally unique ``manager_name``.
+
+        Draws a random label and confirms it's free (no row anywhere holds it,
+        regardless of status) so retained disabled/deleted rows never block a
+        fresh registration. The DB ``unique`` constraint remains the final
+        backstop against a concurrent-registration race.
+        """
+        for _ in range(MANAGER_NAME_MAX_ATTEMPTS):
+            candidate = f"{MANAGER_NAME_PREFIX}{secrets.token_hex(16)}"
+            taken = self.session.scalar(select(ComputeResource.id).where(ComputeResource.manager_name == candidate))
+            if taken is None:
+                return candidate
+        raise ComputeResourceError("could not allocate a unique manager_name")
+
+    def assert_relay_identity(self, resource: ComputeResource, access_token: str) -> None:
+        """Refuse to act if ``access_token`` resolves to a different relay user
+        than the one this resource was registered with.
+
+        Guards against a vault refresh token drifting (bug or tampering) to a
+        different relay identity, which would otherwise silently retarget the
+        resource's job topics to a Pulsar Galaxy never authorised.
+        """
+        sub = self._decode_sub(access_token)
+        if sub != resource.relay_user_id:
+            raise RelayVerificationFailed(
+                f"relay token identity {sub!r} does not match the resource's "
+                f"registered identity {resource.relay_user_id!r}"
+            )
+
     def _redeem_registration_token(self, token_value: str) -> ComputeResourceRegistration:
         # ``token`` is the unique-indexed secret column, not the PK — look it up
         # via select() rather than session.get().
@@ -555,7 +595,6 @@ class ComputeResourceManager:
         bootstrap_token: str,
         refresh_token: str,
         relay_url: str,
-        manager_name: str,
         relay_topic_prefix: Optional[str] = None,
     ) -> ComputeResource:
         """Redeem a registration token and persist a compute resource for that user.
@@ -563,8 +602,14 @@ class ComputeResourceManager:
         Validates the supplied ``refresh_token`` by round-tripping it through
         the relay's ``/auth/token/refresh`` — this both proves the token is
         live *and* yields the rotated token that we actually store in vault.
-        Asserts ``sub == manager_name`` so a user can't redirect another
-        relay user's topics into their Galaxy account.
+
+        Galaxy mints the ``manager_name`` itself (a fresh, globally unique
+        token-namespace label) rather than deriving it from the relay ``sub``:
+        a re-registration of the same daemon therefore gets a brand-new name
+        and never collides with the retained prior row. The relay ``sub`` is
+        recorded as ``relay_user_id`` instead, and re-checked before each
+        dispatch (see :meth:`assert_relay_identity`) so the resource stays
+        bound to the relay identity it was registered with.
 
         If the admin has pinned a relay URL via ``compute_resource_relay_url``,
         refuse any other ``relay_url`` — otherwise a user could bind their
@@ -599,10 +644,11 @@ class ComputeResourceManager:
         sub = self._decode_sub(access_token)
         if sub is None:
             raise RelayVerificationFailed("relay access token has no sub claim")
-        if sub != manager_name:
-            raise RelayVerificationFailed(
-                f"refresh_token's sub claim {sub!r} does not match manager_name {manager_name!r}"
-            )
+
+        # Galaxy owns the manager_name: mint a fresh, unique label rather than
+        # reusing the (stable) relay sub. This is what lets the same daemon
+        # re-register without colliding on the retained prior row.
+        manager_name = self._generate_manager_name()
 
         # Pin the three job topics for this manager to the BYOC user's
         # ownership before we commit anything to our own DB / vault. Any
@@ -627,6 +673,7 @@ class ComputeResourceManager:
         resource = ComputeResource(
             user_id=user.id,
             manager_name=manager_name,
+            relay_user_id=sub,
             relay_url=relay_url,
             relay_topic_prefix=relay_topic_prefix,
             status=STATUS_ACTIVE,

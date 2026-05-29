@@ -7,9 +7,10 @@ Three flows live here:
    runs on the Pulsar host.
 2. ``POST /api/compute_resources/registrations/complete`` — host-side callback.
    The bootstrap_token authenticates the call; the body carries the relay
-   refresh token + manager_name (= relay user ``sub``) from the device-flow
-   login. We round-trip the refresh token against the relay to validate it
-   and pull the rotated value into the vault.
+   refresh token from the device-flow login. We round-trip the refresh token
+   against the relay to validate it, pull the rotated value into the vault, and
+   mint the resource's ``manager_name`` (returned in the response for the user
+   to configure their Pulsar with).
 3. ``GET/DELETE /api/compute_resources[/{id}]`` — list/inspect/disable the
    resources owned by the requesting user.
 
