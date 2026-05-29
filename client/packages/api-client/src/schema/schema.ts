@@ -9200,7 +9200,7 @@ export interface components {
             last_seen_time?: string | null;
             /**
              * Manager Name
-             * @description Globally unique relay user identifier; equals the JWT ``sub`` claim from the device-flow login and is used as the Pulsar manager name (relay topics are ``job_setup_<manager_name>`` etc.).
+             * @description Galaxy-minted, globally unique topic-namespace label for this resource. The user configures their Pulsar daemon with it; relay topics are ``job_setup_<manager_name>`` etc.
              */
             manager_name: string;
             /**
@@ -21241,11 +21241,6 @@ export interface components {
              * @description The token from RegistrationTicket.
              */
             bootstrap_token: string;
-            /**
-             * Manager Name
-             * @description Relay user identifier (``sub`` claim); becomes the compute resource's manager name. Validated against the access token decoded from a refresh of ``refresh_token``.
-             */
-            manager_name: string;
             /**
              * Refresh Token
              * @description Relay refresh token earmarked for Galaxy (the secondary token from the device-flow pair). Stored in the user's vault and rotated by the compute-resource runner.
