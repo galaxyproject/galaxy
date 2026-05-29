@@ -10,8 +10,7 @@ Registration-command artefacts (relay URL, one-liner) are composed by the
 manager — this service just maps the manager's result onto the response
 schema.
 
-Matches the pattern used by ``galaxy.webapps.galaxy.services.credentials``
-and other recently-introduced services.
+Matches the pattern used by ``galaxy.webapps.galaxy.services.credentials``.
 """
 
 from __future__ import annotations
