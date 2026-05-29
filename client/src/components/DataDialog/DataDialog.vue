@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge } from "bootstrap-vue";
 import { onMounted, type Ref, ref, watch } from "vue";
 import Vue from "vue";
 
 import type { TableField } from "@/components/Common/GTable.types";
 import type { DataOption } from "@/components/Form/Elements/FormData/types";
 import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useUrlTracker } from "@/composables/urlTracker";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -54,7 +52,6 @@ const emit = defineEmits<{
     (e: "onUpload"): void;
 }>();
 
-const { openGlobalUploadModal } = useGlobalUploadModal();
 const { openUploadModal } = useUploadMethodModal();
 
 const errorMessage = ref("");

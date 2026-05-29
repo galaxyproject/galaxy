@@ -54,6 +54,7 @@ function applyConfigDefaults(config?: UploadModalConfig): UploadModalConfig {
         targetHistoryId: config?.targetHistoryId,
         title: config?.title,
         hideTips: config?.hideTips ?? false,
+        immediateFiles: config?.immediateFiles,
     };
 }
 

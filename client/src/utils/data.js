@@ -1,4 +1,4 @@
-import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useHistoryStore } from "@/stores/historyStore";
 import { appendVueComponent } from "@/utils/mountVueComponent";
 import { buildLegacyPayload, submitUpload } from "@/utils/upload";
@@ -17,8 +17,15 @@ export async function dialog(galaxy, callback, options = {}) {
         history: historyId,
     });
     if (options.new) {
-        const { openGlobalUploadModal } = useGlobalUploadModal();
-        openGlobalUploadModal(options);
+        const { openUploadModal } = useUploadMethodModal();
+        const result = await openUploadModal({
+            formats: options.uploadModalFormats,
+            multiple: options.multiple,
+            hideTips: true,
+        });
+        if (!result.cancelled) {
+            callback(result.toDataOptions());
+        }
     } else {
         appendVueComponent(DataDialog, options);
     }
