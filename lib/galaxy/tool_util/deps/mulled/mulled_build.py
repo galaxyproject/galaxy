@@ -17,6 +17,7 @@ import stat
 import string
 import subprocess
 import sys
+import platform as _platform_module
 from sys import platform as _platform
 from typing import (
     Any,
@@ -76,7 +77,7 @@ DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
-INVOLUCRO_VERSION = "1.1.2"
+INVOLUCRO_VERSION = "1.2.0"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
@@ -99,10 +100,20 @@ From: %(base_image)s
 
 
 def involucro_link():
+    repo = "https://github.com/involucro/involucro/releases/download"
     if IS_OS_X:
-        url = f"https://github.com/mvdbeek/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro.darwin"
+        url = f"{repo}/v{INVOLUCRO_VERSION}/involucro.darwin"
     else:
-        url = f"https://github.com/involucro/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro"
+        machine = _platform_module.machine()
+        arch_map = {
+            "x86_64": "involucro.linux-amd64",
+            "amd64": "involucro.linux-amd64",
+            "aarch64": "involucro.linux-arm64",
+            "arm64": "involucro.linux-arm64",
+            "armv7l": "involucro.linux-armv7",
+        }
+        asset = arch_map.get(machine, "involucro")
+        url = f"{repo}/v{INVOLUCRO_VERSION}/{asset}"
     return url
 
 
