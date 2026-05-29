@@ -129,6 +129,7 @@ class TestComputeResourceToolExecution(
             port=relay_port,
             base_url=relay_base_url,
             keycloak_setup=keycloak_setup,
+            log_path=cls._tmp_dir / "relay.log",
         )
         tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
         cls._secondary_refresh_token = tokens["refresh_token_secondary"]
@@ -228,8 +229,16 @@ class TestComputeResourceToolExecution(
         # Stop the integration-test subprocesses before Galaxy's teardown (which calls
         # into the model session). Order matters: Pulsar first so the relay
         # has no lingering long-polls, then the relay, then Keycloak.
-        teardown_subprocess(cls._pulsar.process if cls._pulsar is not None else None, "pulsar")
-        teardown_subprocess(cls._relay.process if cls._relay is not None else None, "relay")
+        teardown_subprocess(
+            cls._pulsar.process if cls._pulsar is not None else None,
+            "pulsar",
+            cls._pulsar.log_path if cls._pulsar is not None else None,
+        )
+        teardown_subprocess(
+            cls._relay.process if cls._relay is not None else None,
+            "relay",
+            cls._relay.log_path if cls._relay is not None else None,
+        )
         if cls._keycloak is not None:
             stop_keycloak_docker(cls._keycloak.container_name)
         tmp_dir = getattr(cls, "_tmp_dir", None)
@@ -332,7 +341,9 @@ class TestComputeResourceToolExecution(
             ), f"job ran on {job.job_runner_name!r}, expected compute_resource"
             assert job.state == model.Job.states.OK
             # The TPV rule should have injected the resource id into the
-            # destination params.
+            # destination params. ``cls._resource_id`` is the encoded id the API
+            # returned; the rule injects the raw DB id (what the runner resolves
+            # with ``session.get``), so decode before comparing.
             params = job.destination_params or {}
-            assert str(params.get("compute_resource_id")) == str(cls._resource_id)
+            assert str(params.get("compute_resource_id")) == str(self._app.security.decode_id(cls._resource_id))
             assert params.get("manager") == cls._compute_resource_manager_name
