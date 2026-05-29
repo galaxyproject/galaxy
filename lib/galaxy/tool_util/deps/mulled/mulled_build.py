@@ -176,8 +176,27 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
+def _conda_platform() -> str:
+    machine = _platform_module.machine()
+    if IS_OS_X:
+        conda_arch_map = {
+            "x86_64": "osx-64",
+            "arm64": "osx-arm64",
+        }
+    else:
+        conda_arch_map = {
+            "x86_64": "linux-64",
+            "amd64": "linux-64",
+            "aarch64": "linux-aarch64",
+            "arm64": "linux-aarch64",
+            "armv7l": "linux-armv7l",
+        }
+    return conda_arch_map.get(machine, "linux-64")
+
+
 def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
-    search_results = (best_search_result(t, conda_context, platform="linux-64")[0] for t in targets)
+    platform = _conda_platform()
+    search_results = (best_search_result(t, conda_context, platform=platform)[0] for t in targets)
     return [r for r in search_results if r]
 
 
