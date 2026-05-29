@@ -14,8 +14,8 @@ framework tool and asserts that:
    completion.
 4. Galaxy collects the outputs and marks the job ``ok``.
 
-Skipped automatically when Docker / the pulsar-relay checkout / the
-pulsar checkout aren't reachable — see the suite README.
+Skipped automatically when Docker or the pulsar-relay server package
+aren't available — see the suite README.
 
 This test is intentionally instrumented for debugging. Failures dump the
 relay + Pulsar subprocess logs to stdout so a tester can diagnose without
@@ -104,14 +104,11 @@ class TestComputeResourceToolExecution(
 
     @classmethod
     def _prepare_galaxy(cls) -> None:
-        # Heavy opt-in e2e: brings up a Keycloak container, a pulsar-relay
+        # Heavy e2e: brings up a Keycloak container, a pulsar-relay
         # subprocess, and a Pulsar daemon, then boots Galaxy against them.
-        # Far too heavy/flaky for the standard integration matrix (and it
-        # would poison its shard if a subprocess lingers), so it only runs
-        # when explicitly requested. Needs Docker + the pulsar-relay server
-        # package + a local pulsar source tree.
-        if not os.environ.get("GALAXY_TEST_COMPUTE_RESOURCE_E2E"):
-            pytest.skip("Set GALAXY_TEST_COMPUTE_RESOURCE_E2E=1 to run the compute-resource tool-execution e2e.")
+        # Needs Docker + the pulsar-relay server package; the class-level
+        # ``skip_unless_docker`` and module-level ``importorskip`` gates skip
+        # cleanly when those prerequisites are missing.
 
         # ``_test_driver.galaxy_test_tmp_dir`` isn't populated until the driver's
         # ``setup()`` runs (after this hook), so allocate our own dir here and
