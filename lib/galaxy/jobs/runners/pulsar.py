@@ -1468,14 +1468,14 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         # ``get_client`` body sees the right ``self`` state via the helper.
         job = job_wrapper.get_job()
         params = job_wrapper.job_destination.params
-        self._get_or_create_client_manager(params, job.user)
+        client_manager = self._get_or_create_client_manager(params, job.user)
         # Mutate destination_params in place to reflect what the remote
         # pulsar can actually do — the static helpers
         # ``__remote_container_handling`` / ``__dependency_resolution``
         # then read the downgraded values when ``__prepare_job`` runs.
         # Only the submission path runs this; recover/stop reuse the
         # already-cached client and don't re-downgrade.
-        self._apply_capability_downgrades(params, job.user)
+        self._apply_capability_downgrades(params, job.user, client_manager)
         return super().get_client_from_wrapper(job_wrapper)
 
     @staticmethod
@@ -1500,7 +1500,9 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
                 "on this destination."
             )
 
-    def _apply_capability_downgrades(self, params: dict[str, Any], user: Optional["model.User"]) -> None:
+    def _apply_capability_downgrades(
+        self, params: dict[str, Any], user: Optional["model.User"], client_manager: Any = None
+    ) -> None:
         """Reflect the remote pulsar's capability snapshot into ``params``.
 
         Three things happen, in order:
@@ -1528,7 +1530,12 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         resource = self._resource_for_params(params)
         if resource is None:
             return
-        caps = self.app.compute_resource_manager.capabilities_for(resource, user=user)
+        # Reuse the client manager's centrally-cached access token so the
+        # capability probe doesn't independently exchange (and replay) the
+        # single-use rotating refresh token this manager already owns.
+        get_token = getattr(client_manager, "get_relay_access_token", None)
+        access_token = get_token() if callable(get_token) else None
+        caps = self.app.compute_resource_manager.capabilities_for(resource, user=user, access_token=access_token)
         if caps is None:
             return
 

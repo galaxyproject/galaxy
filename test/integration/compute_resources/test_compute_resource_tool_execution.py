@@ -132,16 +132,18 @@ class TestComputeResourceToolExecution(
         )
         tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
         cls._secondary_refresh_token = tokens["refresh_token_secondary"]
-        # manager_name = the relay user's username, which Keycloak maps from
-        # the OIDC claim_username configured for the relay. We pull it from
-        # /auth/me using the access token rather than decoding the JWT here.
+        # manager_name = the relay's local user_id, which is the ``sub`` of the
+        # access tokens the relay issues and the key the relay scopes topic
+        # ownership by. ``complete_registration`` asserts ``sub == manager_name``,
+        # so the manager_name must be this id, not the human-facing username. We
+        # pull it from /auth/me using the access token rather than decoding the JWT.
         me = httpx.get(
             f"{cls._relay.base_url}/auth/me",
             headers={"Authorization": f"Bearer {tokens['access_token']}"},
             timeout=5.0,
         )
         me.raise_for_status()
-        cls._compute_resource_manager_name = me.json()["username"]
+        cls._compute_resource_manager_name = me.json()["user_id"]
 
         # Pre-create the topics pulsar will subscribe to. The relay does not
         # auto-create topics on long-poll subscription (only on owner POST),

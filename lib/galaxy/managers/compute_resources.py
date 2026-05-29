@@ -332,15 +332,25 @@ class ComputeResourceManager:
 
     # ---- capability snapshot ---------------------------------------------
 
-    def capabilities_for(self, resource: ComputeResource, *, user: Optional[User]) -> Optional[dict[str, Any]]:
+    def capabilities_for(
+        self,
+        resource: ComputeResource,
+        *,
+        user: Optional[User],
+        access_token: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
         """Return the latest capability snapshot for a compute resource, or ``None``.
 
-        Most calls are a dict lookup against
-        :class:`RelayCapabilitiesCache`; the closure that does the
-        refresh-token exchange + ``HttpRelayClient.fetch_messages`` runs
-        only on cache miss. Rotated refresh tokens are persisted back
-        to vault so the runner's separately-cached client manager sees
-        them on its next refresh.
+        Most calls are a dict lookup against :class:`RelayCapabilitiesCache`;
+        the ``HttpRelayClient.fetch_messages`` closure runs only on cache miss.
+
+        ``access_token`` should be supplied by the compute-resource runner: it
+        is the access token from the runner's client manager, whose single
+        :class:`RelayAuthManager` owns the refresh-token rotation. Reusing it
+        keeps this probe from independently exchanging (and thereby replaying
+        and revoking) the single-use refresh token the runner is also using.
+        Only when no token is supplied do we fall back to a self-managed
+        refresh-token exchange, persisting any rotation back to vault.
 
         ``None`` means the snapshot is not available — older pulsar
         version, network glitch, schema mismatch, or no vault token.
@@ -353,10 +363,45 @@ class ComputeResourceManager:
         return self._capabilities_cache.get(
             resource.relay_url,
             resource.manager_name,
-            lambda: self._fetch_capabilities(resource, user, topic),
+            lambda: self._fetch_capabilities(resource, user, topic, access_token=access_token),
         )
 
-    def _fetch_capabilities(self, resource: ComputeResource, user: User, topic: str) -> Optional[dict[str, Any]]:
+    def _fetch_capabilities(
+        self,
+        resource: ComputeResource,
+        user: User,
+        topic: str,
+        access_token: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
+        if access_token is None:
+            # No caller-supplied token (non-runner / non-refresh-token path):
+            # do a self-managed exchange and persist any rotation to vault.
+            access_token = self._exchange_for_capabilities_token(resource, user)
+            if access_token is None:
+                return None
+
+        client = self._relay_client(resource.relay_url)
+        try:
+            response = client.fetch_messages(access_token, topic, limit=1, order="desc")
+        except (RefreshTokenRejectedError, RelayClientError) as exc:
+            log.warning(
+                "Capability fetch from %s on %s failed: %s",
+                topic,
+                resource.relay_url,
+                exc,
+            )
+            return None
+        return extract_capability_payload(response, topic, resource.relay_url)
+
+    def _exchange_for_capabilities_token(self, resource: ComputeResource, user: User) -> Optional[str]:
+        """Self-managed refresh-token exchange for the capabilities probe.
+
+        Fallback used only when the caller can't supply an access token (no
+        runner client manager / non-refresh-token auth). Persists any rotation
+        back to the same vault key the runner reads from. Prefer passing
+        ``access_token`` to :meth:`capabilities_for` so the runner's client
+        manager remains the sole owner of the rotating refresh token.
+        """
         vault_wrapper = UserVaultWrapper(self._vault, user)
         secret_path = relay_refresh_token_vault_path(resource.id)
         refresh_token = vault_wrapper.read_secret(secret_path)
@@ -390,18 +435,7 @@ class ComputeResourceManager:
                 resource.id,
             )
             return None
-
-        try:
-            response = client.fetch_messages(access_token, topic, limit=1, order="desc")
-        except RelayClientError as exc:
-            log.warning(
-                "Capability fetch from %s on %s failed: %s",
-                topic,
-                resource.relay_url,
-                exc,
-            )
-            return None
-        return extract_capability_payload(response, topic, resource.relay_url)
+        return access_token
 
     # ---- registration: start ---------------------------------------------
 
