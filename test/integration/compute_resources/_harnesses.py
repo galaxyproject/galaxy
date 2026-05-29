@@ -153,9 +153,13 @@ def bring_up_pulsar(
 ) -> PulsarHandle:
     """Write Pulsar's app.yml + credentials file and start the daemon.
 
-    Waits until the pulsar daemon has subscribed to the BYOC user's
-    ``job_setup_<manager_name>`` topic on the relay — that's the signal
-    that Pulsar is ready to consume jobs.
+    Waits until the pulsar daemon has published its capability snapshot to
+    ``pulsar_capabilities_<manager_name>``. Unlike the job topics (which the
+    caller pre-creates), this topic only comes into existence once Pulsar's
+    relay consumer is actually up and polling — so it's the signal that Pulsar
+    will catch a ``job_setup`` posted next. (The relay long-poll starts from the
+    tail, so a job published before the consumer polls would otherwise be missed
+    until the following message arrives.)
     """
     pulsar_dir = tmp_dir / "pulsar"
     staging = pulsar_dir / "staging"
@@ -239,7 +243,10 @@ def bring_up_pulsar(
     # every iteration with a liveness check and re-confirm the process survived a
     # beat after the topic check, so a daemon that crashes at startup (e.g. an
     # import error) fails loudly here instead of leaving the job stuck in 'queued'.
-    topic = f"job_setup_{manager_name}"
+    # ``pulsar_capabilities_<manager>`` is published by Pulsar's consumer on
+    # startup and is NOT pre-created by the caller, so its existence proves the
+    # consumer is live and polling.
+    topic = f"pulsar_capabilities_{manager_name}"
     deadline = time.time() + PULSAR_READY_TIMEOUT_SECONDS
     headers = {"Authorization": f"Bearer {access_token}"}
     while time.time() < deadline:

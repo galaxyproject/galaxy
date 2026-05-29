@@ -83,16 +83,21 @@ class _StubSession:
 
 class _StubByocManager:
     """Stand-in for ``app.compute_resource_manager`` exposing only the surface the
-    runner uses (``capabilities_for``). Tests set ``snapshot`` to control
-    what the runner sees; ``calls`` records each invocation."""
+    runner uses (``capabilities_for``, ``assert_relay_identity``). Tests set
+    ``snapshot`` to control what the runner sees; ``calls`` records each invocation."""
 
     def __init__(self, snapshot=None):
         self.snapshot = snapshot
         self.calls: list = []
 
-    def capabilities_for(self, resource, *, user):
-        self.calls.append((resource, user))
+    def capabilities_for(self, resource, *, user, access_token=None):
+        self.calls.append((resource, user, access_token))
         return self.snapshot
+
+    def assert_relay_identity(self, resource, access_token):
+        # No-op stub: the runner only calls this when the client manager
+        # surfaces an access token, which these param-downgrade tests don't.
+        pass
 
 
 class _StubSecurity:
@@ -482,7 +487,7 @@ def test_downgrade_no_op_when_capabilities_for_returns_none():
     runner._apply_capability_downgrades(params, user)
     assert params["docker_enabled"] is True
     assert params["dependency_resolution"] == "remote"
-    assert compute_resource_manager.calls == [(compute_resource_manager.calls[0][0], user)]
+    assert compute_resource_manager.calls == [(compute_resource_manager.calls[0][0], user, None)]
 
 
 # --- jobs_directory auto-fill ---
