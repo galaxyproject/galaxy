@@ -725,9 +725,19 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
-        # Turn MutableDict into standard dict for pulsar consumption
-        job_destination_params = dict(job_destination_params.items())
-        return self.client_manager.get_client(job_destination_params, **get_client_kwds)
+        client_manager = self._client_manager_for(job_destination_params, job_id)
+        return client_manager.get_client(self._finalize_destination_params(job_destination_params), **get_client_kwds)
+
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id) -> Any:
+        # Hook: which client manager routes this job. Takes ``job_id`` (not the
+        # user) so a subclass can resolve a per-tenant user/client manager
+        # itself; the base ignores it and uses the shared manager.
+        return self.client_manager
+
+    def _finalize_destination_params(self, job_destination_params: dict[str, Any]) -> dict[str, Any]:
+        # Hook: turn the (possibly MutableDict) destination params into the plain
+        # dict pulsar consumes; subclasses may add transport flags.
+        return dict(job_destination_params.items())
 
     def finish_job(self, job_state: JobState) -> None:
         assert isinstance(
@@ -1616,53 +1626,22 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             )
             params["dependency_resolution"] = "none"
 
-    def get_client_from_state(self, job_state: AsynchronousJobState) -> "BaseJobClient":
-        params = job_state.job_destination.params
-        job = job_state.job_wrapper.get_job()
-        self._get_or_create_client_manager(params, job.user)
-        return super().get_client_from_state(job_state)
-
-    def get_client(
-        self,
-        job_destination_params: dict[str, Any],
-        job_id: Union[int, str],
-        env: Optional[list] = None,
-    ) -> "BaseJobClient":
-        # ``stop_job`` calls this directly with the external pulsar job_id; we
-        # rely on the previously-materialised client manager for the key
-        # ``(relay_url, manager_name)`` in destination_params.
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id) -> Any:
+        # Route through this tenant's client manager rather than the shared one.
+        # ``stop_job`` calls get_client with the external pulsar job_id, so we
+        # resolve the owning user from the Galaxy job_id to pick the right
+        # per-tenant manager (a registry cache hit on the post-submit paths).
         user = self._get_user_for_job_id(job_id)
-        client_manager = self._get_or_create_client_manager(job_destination_params, user)
-        # Build the same client_kwds the base does, but route through the
-        # per-tenant client manager rather than ``self.client_manager``.
-        if env is None:
-            env = []
-        encoded_job_id = self.app.security.encode_id(job_id)
-        # Tenant-scoped credential ``kind``s — see job_security.py. Verifier
-        # picks the same kind based on ``compute_resource_id`` in the
-        # job's persisted destination_params, so a key minted for one BYOC
-        # resource cannot be replayed against another tenant's job.
-        files_kind = job_files_kind_for_params(job_destination_params)
-        token_kind = job_token_kind_for_params(job_destination_params)
-        files_key = self.app.security.encode_id(job_id, kind=files_kind)
-        token_key = self.app.security.encode_id(job_id, kind=token_kind)
-        endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
-        if self.app.config.nginx_upload_job_files_path:
-            endpoint_base = "%s" + self.app.config.nginx_upload_job_files_path + "?job_id=%s&job_key=%s"
-        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, files_key)
-        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={token_key}"
-        get_client_kwds = dict(
-            job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
-        )
-        # The compute-resource dispatch is only used against Galaxy versions
-        # that ship this branch — which read the credential from the
-        # ``Authorization: Bearer …`` header. Opt Pulsar into header-only
-        # auth (``pulsar.client.action_mapper.FileActionMapper`` honours
-        # this flag) so the per-job secret stops being embedded in URLs
-        # that show up in launch_config on the user-controlled node.
-        job_destination_params = dict(job_destination_params.items())
-        job_destination_params["use_bearer_auth"] = True
-        return client_manager.get_client(job_destination_params, **get_client_kwds)
+        return self._get_or_create_client_manager(job_destination_params, user)
+
+    def _finalize_destination_params(self, job_destination_params: dict[str, Any]) -> dict[str, Any]:
+        # Opt Pulsar into ``Authorization: Bearer …`` header auth
+        # (``pulsar.client.action_mapper.FileActionMapper`` honours this flag)
+        # so the per-job secret stops being embedded in URLs that show up in
+        # launch_config on the user-controlled node.
+        params = super()._finalize_destination_params(job_destination_params)
+        params["use_bearer_auth"] = True
+        return params
 
     def recover(self, job: "model.Job", job_wrapper: "MinimalJobWrapper") -> None:
         """Recover compute-resource jobs. If the resource has been deleted
