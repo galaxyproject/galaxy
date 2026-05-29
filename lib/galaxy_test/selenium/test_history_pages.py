@@ -5,9 +5,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestHistoryPages(SeleniumTestCase):
+class TestHistoryPages(SeleniumTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -239,7 +240,7 @@ class TestHistoryPages(SeleniumTestCase):
     def test_page_window_with_embedded_dataset(self):
         """Windowed page renders embedded dataset displays."""
         history_id = self.current_history_id()
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         # Get the dataset ID for the directive
@@ -348,7 +349,7 @@ class TestHistoryPages(SeleniumTestCase):
         """Drag a dataset from history panel and drop on page editor."""
         from seletools.actions import drag_and_drop
 
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.navigate_to_history_pages()
@@ -372,7 +373,7 @@ class TestHistoryPages(SeleniumTestCase):
     @managed_history
     def test_drag_drop_visual_feedback(self):
         """Verify visual feedback during drag over page editor."""
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.navigate_to_history_pages()
@@ -472,7 +473,7 @@ class TestHistoryPages(SeleniumTestCase):
     def test_display_only_shows_expanded_content(self):
         """DisplayOnly mode renders embedded dataset from directive."""
         history_id = self.current_history_id()
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.history_panel_wait_for_hid_ok(1)
 
         datasets = self.dataset_populator.get_history_dataset_details(history_id, hid=1)

@@ -37,6 +37,7 @@ from .framework import (
     UsesHistoryItemAssertions,
 )
 from .test_workflow_editor import CHIPSEQ_COLUMNS
+from .upload_activity_helpers import UsesUploadActivity
 
 # Single cat1 step with no workflow-level ``inputs`` — the step's ``input1``
 # stays unconnected so the run form renders it as a dropdown via
@@ -49,7 +50,7 @@ steps:
 """
 
 
-class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
+class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_only("Not yet migrated to support Playwright backend")
@@ -108,7 +109,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     @selenium_test
     @managed_history
     def test_simple_execution(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.screenshot("workflow_run_simple_ready")
@@ -224,7 +225,7 @@ class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows
     @selenium_test
     @managed_history
     def test_expanded_execution_of_simple_workflow(self):
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_run_ensure_expanded()
@@ -457,7 +458,7 @@ SRR5681005\tinput\t\t
             f"{base_url}/SRR5681005_R2.fastq.gz",
         ]
         pasted_data = "\n".join(urls)
-        self.perform_upload_of_pasted_content(pasted_data)
+        self.upload_context("paste-content").stage_paste_content(pasted_data).start()
         self.history_panel_wait_for_and_select([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
         self.history_panel_build_list_of_pairs()
         self.collection_builder_set_name("inputaslist")
@@ -498,7 +499,7 @@ SRR5681005\tinput\t\t
     @selenium_test
     @managed_history
     def test_runtime_parameters_simple(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
         self.tool_parameter_div("num_lines")
@@ -535,7 +536,7 @@ steps:
     @selenium_test
     @managed_history
     def test_subworkflows_expanded(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_SIMPLE)
         self.workflow_run_ensure_expanded()
@@ -548,7 +549,7 @@ steps:
     @selenium_test
     @managed_history
     def test_subworkflow_runtime_parameters(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_RUNTIME_PARAMETER)
         self.workflow_run_ensure_expanded()
@@ -565,7 +566,7 @@ steps:
     @selenium_test
     @managed_history
     def test_replacement_parameters(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
         self.workflow_run_ensure_expanded()
@@ -583,7 +584,7 @@ steps:
     @selenium_test
     @managed_history
     def test_step_parameter_inputs(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow("""
 class: GalaxyWorkflow
@@ -618,7 +619,7 @@ steps:
     @selenium_test
     @managed_history
     def test_replacement_parameters_on_subworkflows(self):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
         self.workflow_run_ensure_expanded()
@@ -808,12 +809,10 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_paired_list(self):
         history_id = self.current_history_id()
-        self.perform_upload_of_pasted_content(
-            {
-                "foo_1.fasta": "forward content",
-                "foo_2.fasta": "reverse content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.start()
         self.history_panel_wait_for_and_select([1, 2])
         self.history_panel_build_list_of_pairs()
         self.collection_builder_set_name("my awesome paired list")
@@ -830,12 +829,10 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_flat_list(self):
         history_id = self.current_history_id()
-        self.perform_upload_of_pasted_content(
-            {
-                "foo_1.fasta": "forward content",
-                "foo_2.fasta": "reverse content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.start()
         self.history_panel_wait_for_and_select([1, 2])
         self.history_panel_build_list_advanced_and_select_builder("list")
         self.collection_builder_set_name("my awesome flat list")
@@ -852,13 +849,11 @@ steps: {}
     @managed_history
     def test_workflow_run_list_paired_or_unpaired_with_mixed_list(self):
         history_id = self.current_history_id()
-        self.perform_upload_of_pasted_content(
-            {
-                "foo_1.fasta": "forward content",
-                "foo_2.fasta": "reverse content",
-                "other.fasta": "unpaired content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("unpaired content", {"name": "other.fasta"})
+        uploader.start()
         self.history_panel_wait_for_and_select([1, 2, 3])
         self.history_panel_build_list_of_paired_or_unpaireds()
         self.collection_builder_set_name("my awesome flat list")
@@ -890,14 +885,14 @@ steps: {}
     @managed_history
     def test_modal_upload_updates_form(self):
         history_id = self.current_history_id()
-        self.perform_upload_of_pasted_content("goodbye land")
+        self.upload_context("paste-content").stage_paste_content("goodbye land").start()
 
         self._create_and_run_workflow_with_unique_name(WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION)
         workflow_run = self.components.workflow_run
         input = workflow_run.input._(label="input1")
         input.upload.wait_for_and_click()
 
-        self.perform_upload_of_pasted_content("hello world", on_current_page=True)
+        self.upload_context("paste-content").stage_paste_content("hello world").start()
 
         self.history_panel_wait_for_hid_ok(2)
 
@@ -956,13 +951,11 @@ steps: {}
     @managed_history
     def test_upload_list_paired_or_unpaired_from_workflow(self):
         history_id = self.current_history_id()
-        self.perform_upload_of_pasted_content(
-            {
-                "foo_1.fasta": "forward content",
-                "foo_2.fasta": "reverse content",
-                "other.fasta": "unpaired content",
-            }
-        )
+        uploader = self.upload_context("paste-content")
+        uploader.stage_paste_content("forward content", {"name": "foo_1.fasta"})
+        uploader.stage_paste_content("reverse content", {"name": "foo_2.fasta"})
+        uploader.stage_paste_content("unpaired content", {"name": "other.fasta"})
+        uploader.start()
         self.history_panel_wait_for_hid_ok(3)
         self._create_and_run_workflow_with_unique_name(WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT)
         workflow_run = self.components.workflow_run
@@ -1041,7 +1034,7 @@ steps: {}
 
     def _setup_simple_invocation_for_export_testing(self):
         # precondition: refresh history
-        self.perform_upload(self.get_filename("1.fasta"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.fasta")).start()
         self.wait_for_history()
         self.workflow_run_open_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_run_submit()

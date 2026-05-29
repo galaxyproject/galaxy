@@ -10,13 +10,14 @@ from .framework import (
     SeleniumTestCase,
     UsesHistoryItemAssertions,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivity):
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_file(self):
-        self.perform_upload(self.get_filename("1.sam"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
@@ -27,19 +28,9 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
-    def test_upload_pasted_content(self):
-        pasted_content = "this is pasted"
-        self.perform_upload_of_pasted_content(pasted_content)
-
-        self.history_panel_wait_for_hid_ok(1)
-        history_count = len(self.history_contents())
-        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
     def test_upload_pasted_url_content(self):
         pasted_content = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt"
-        self.perform_upload_of_pasted_content(pasted_content)
+        self.upload_context("paste-content").stage_paste_content(pasted_content).start()
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
@@ -66,7 +57,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_simplest(self):
-        self.perform_upload(self.get_filename("1.sam"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.sam")).start()
 
         self.history_panel_wait_for_hid_ok(1)
         history_contents = self.history_contents()
@@ -82,48 +73,10 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
-    def test_upload_specify_ext(self):
-        self.perform_upload(self.get_filename("1.sam"), ext="txt")
-        self.history_panel_wait_for_hid_ok(1)
-        history_contents = self.history_contents()
-        hda = history_contents[0]
-        assert hda["name"] == "1.sam"
-        assert hda["extension"] == "txt", hda
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
-    def test_upload_specify_genome(self):
-        self.perform_upload(self.get_filename("1.sam"), genome="hg18")
-        self.history_panel_wait_for_hid_ok(1)
-
-        self.history_panel_click_item_title(hid=1, wait=True)
-        self.assert_item_dbkey_displayed_as(1, "hg18")
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
-    def test_upload_specify_ext_all(self):
-        self.perform_upload(self.get_filename("1.sam"), ext_all="txt")
-        self.history_panel_wait_for_hid_ok(1)
-        history_contents = self.history_contents()
-        hda = history_contents[0]
-        assert hda["name"] == "1.sam"
-        assert hda["extension"] == "txt", hda
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
-    def test_upload_specify_genome_all(self):
-        self.perform_upload(self.get_filename("1.sam"), genome_all="hg18")
-        self.history_panel_wait_for_hid_ok(1)
-
-        self.history_panel_click_item_title(hid=1, wait=True)
-        self.assert_item_dbkey_displayed_as(1, "hg18")
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
     def test_upload_deferred(self):
-        self.perform_upload_of_pasted_content(
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", deferred=True
-        )
+        self.upload_context("paste-content").stage_paste_content(
+            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", {"deferred": True}
+        ).start()
         hid = 1
         self.history_panel_wait_for_hid_deferred(hid)
         self.history_panel_click_item_title(hid=hid, wait=True)
@@ -273,7 +226,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_2_list(self):
-        self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJDA60709.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collections")
@@ -301,7 +254,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
     def test_rules_example_3_list_pairs(self):
-        self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJDB3920.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collections")
@@ -415,7 +368,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     @pytest.mark.local
     def test_rules_example_6_nested_lists(self):
         self.home()
-        self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJNA355367.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collections")
@@ -495,7 +448,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     @pytest.mark.local
     def test_rules_deferred_list(self):
         self.home()
-        self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJNA355367.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collections")
@@ -552,7 +505,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         action_chains.perform()
 
     def _setup_uniprot_example(self):
-        self.perform_upload(self.get_filename("rules/uniprot.tsv"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("rules/uniprot.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collections")

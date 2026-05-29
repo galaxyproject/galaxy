@@ -7,9 +7,10 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+from .upload_activity_helpers import UsesUploadActivity
 
 
-class TestWorkflowLanding(SeleniumTestCase, RunsWorkflows):
+class TestWorkflowLanding(SeleniumTestCase, RunsWorkflows, UsesUploadActivity):
     ensure_registered = True
 
     @selenium_test
@@ -23,7 +24,7 @@ class TestWorkflowLanding(SeleniumTestCase, RunsWorkflows):
         self._create_landing_and_run(public="true")
 
     def _create_landing_and_run(self, public: Literal["false", "true"]):
-        self.perform_upload(self.get_filename("1.txt"))
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.txt")).start()
         self.wait_for_history()
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """

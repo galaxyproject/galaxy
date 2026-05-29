@@ -95,11 +95,11 @@ class UploadItem:
         if self.context._current_method_id != "paste-content":
             raise AssertionError("Per-item content editing is only available for the paste-content method")
 
-        textarea_target = self.context.components.beta_upload.paste_content_row_textarea(
+        textarea_target = self.context.components.upload_activity.paste_content_row_textarea(
             row=self.context._row_number(self.index)
         )
         if textarea_target.is_absent or not textarea_target.is_displayed:
-            self.context.components.beta_upload.paste_content_row_toggle_button(
+            self.context.components.upload_activity.paste_content_row_toggle_button(
                 row=self.context._row_number(self.index)
             ).wait_for_and_click()
         textarea = textarea_target.wait_for_visible()
@@ -150,11 +150,9 @@ class UploadContext:
         self._item_count = 0
         self._current_method_id: UploadMethodId | None = None
 
-        # Navigate to the upload method
-        self.driver_wrapper.home()
-        self.driver_wrapper.components.tools.activity.wait_for_visible()
-        self.driver_wrapper.components.preferences.activity.wait_for_and_click()
-        self.driver_wrapper.components.beta_upload.activity.wait_for_and_click()
+        # Prefer opening upload from the current context; if unavailable,
+        # fall back to home and then a legacy preferences path if needed.
+        self._open_upload_activity(method_id)
         self._select_method(method_id)
 
     @property
@@ -177,7 +175,7 @@ class UploadContext:
 
     def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
         """Stage text content for upload. Returns the new item."""
-        textarea = self.components.beta_upload.paste_content_textarea.wait_for_visible()
+        textarea = self.components.upload_activity.paste_content_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys(content)
 
@@ -188,10 +186,10 @@ class UploadContext:
 
         You cannot chain-stage multiple links with this method - use stage_paste_links instead. This is for single URLs only.
         """
-        textarea = self.components.beta_upload.paste_textarea.wait_for_visible()
+        textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys(url)
-        self.components.beta_upload.add_urls_button.wait_for_and_click()
+        self.components.upload_activity.add_urls_button.wait_for_and_click()
 
         return self._create_item(UploadItem, metadata)
 
@@ -206,10 +204,10 @@ class UploadContext:
             self for method chaining
         """
         urls = [pair[0] for pair in url_metadata_pairs]
-        textarea = self.components.beta_upload.paste_textarea.wait_for_visible()
+        textarea = self.components.upload_activity.paste_textarea.wait_for_visible()
         textarea.click()
         textarea.send_keys("\n".join(urls))
-        self.components.beta_upload.add_urls_button.wait_for_and_click()
+        self.components.upload_activity.add_urls_button.wait_for_and_click()
 
         # Apply metadata to each item
         start_index = self._item_count
@@ -249,11 +247,11 @@ class UploadContext:
 
     def start(self) -> None:
         """Execute the upload with all staged items."""
-        self.components.beta_upload.start_button.wait_for_and_click()
+        self.components.upload_activity.start_button.wait_for_and_click()
 
     def cancel(self) -> None:
         """Cancel all staged items without uploading."""
-        self.components.beta_upload.cancel_button.wait_for_and_click()
+        self.components.upload_activity.cancel_button.wait_for_and_click()
 
     def stage_remote_file(
         self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
@@ -272,13 +270,13 @@ class UploadContext:
             raise AssertionError("stage_remote_file is only available for the remote-files method")
 
         # Navigate into the source by clicking its label
-        self.components.beta_upload.remote_files_browser_label(label=source_label).wait_for_and_click()
+        self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
         # Wait for the file list to load and become visible
-        self.components.beta_upload.remote_files_browser_label(label=file_label).wait_for_visible()
+        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
         # Select the file by clicking its label (toggles selection)
-        self.components.beta_upload.remote_files_browser_label(label=file_label).wait_for_and_click()
+        self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
         # Click "Add Selected Files" button
-        self.components.beta_upload.remote_files_add_selected.wait_for_and_click()
+        self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
         return self._create_item(RemoteFileUploadItem, metadata)
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
@@ -295,9 +293,9 @@ class UploadContext:
         if self._current_method_id != "data-library":
             raise AssertionError("stage_data_library_dataset is only available for the data-library method")
 
-        self.components.beta_upload.data_library_library_label(label=library_label).wait_for_and_click()
-        self.components.beta_upload.data_library_item_label(label=dataset_label).wait_for_and_click()
-        self.components.beta_upload.data_library_add_selected.wait_for_and_click()
+        self.components.upload_activity.data_library_library_label(label=library_label).wait_for_and_click()
+        self.components.upload_activity.data_library_item_label(label=dataset_label).wait_for_and_click()
+        self.components.upload_activity.data_library_add_selected.wait_for_and_click()
         return self._create_item(DataLibraryUploadItem)
 
     def select_composite(self, composite_type: str) -> "UploadContext":
@@ -316,7 +314,7 @@ class UploadContext:
             raise AssertionError("slot must be >= 1")
 
         self._select_composite_slot_mode(row=slot, mode="url")
-        url_input = self.components.beta_upload.composite_slot_url_input(row=slot).wait_for_visible()
+        url_input = self.components.upload_activity.composite_slot_url_input(row=slot).wait_for_visible()
         url_input.clear()
         url_input.send_keys(url)
         return self
@@ -329,7 +327,7 @@ class UploadContext:
             raise AssertionError("slot must be >= 1")
 
         self._select_composite_slot_mode(row=slot, mode="paste")
-        paste_textarea = self.components.beta_upload.composite_slot_paste_textarea(row=slot).wait_for_visible()
+        paste_textarea = self.components.upload_activity.composite_slot_paste_textarea(row=slot).wait_for_visible()
         paste_textarea.clear()
         paste_textarea.send_keys(content)
         return self
@@ -342,7 +340,7 @@ class UploadContext:
             raise AssertionError("slot must be >= 1")
 
         self._select_composite_slot_mode(row=slot, mode="local")
-        file_input = self.components.beta_upload.composite_slot_file_input(row=slot).wait_for_present()
+        file_input = self.components.upload_activity.composite_slot_file_input(row=slot).wait_for_present()
         if self.driver_wrapper.backend_type == "playwright":
             file_input.element_handle.set_input_files(file_path)
         else:
@@ -351,9 +349,9 @@ class UploadContext:
 
     def _select_composite_type(self, composite_type: str) -> None:
         composite_type_lower = composite_type.lower()
-        self.components.beta_upload.composite_type_enabled_dropdown.wait_for_and_click()
+        self.components.upload_activity.composite_type_enabled_dropdown.wait_for_and_click()
 
-        visible_options = self.components.beta_upload.composite_type_options_visible.all()
+        visible_options = self.components.upload_activity.composite_type_options_visible.all()
         candidates: list[tuple[str, str]] = []
         for option in visible_options:
             option_id = option.get_attribute("data-id") or ""
@@ -377,9 +375,9 @@ class UploadContext:
         if not target_id:
             raise AssertionError(f"No composite type candidates found for '{composite_type}'")
 
-        self.components.beta_upload.composite_type_option_by_id_visible(id=target_id).wait_for_and_click()
+        self.components.upload_activity.composite_type_option_by_id_visible(id=target_id).wait_for_and_click()
         try:
-            self.components.beta_upload.composite_first_slot.wait_for_visible(timeout=5)
+            self.components.upload_activity.composite_first_slot.wait_for_visible(timeout=5)
         except Exception as exc:
             raise AssertionError(
                 f"Composite slots did not render after selecting '{composite_type}'. Candidates: {candidates}"
@@ -387,17 +385,17 @@ class UploadContext:
 
     def _select_composite_slot_mode(self, row: int, mode: Literal["local", "url", "paste"]) -> None:
         if mode == "local":
-            visible_action_target = self.components.beta_upload.composite_slot_enter_local_action_visible
-            input_target = self.components.beta_upload.composite_slot_file_input(row=row)
+            visible_action_target = self.components.upload_activity.composite_slot_enter_local_action_visible
+            input_target = self.components.upload_activity.composite_slot_file_input(row=row)
         elif mode == "url":
-            visible_action_target = self.components.beta_upload.composite_slot_enter_url_action_visible
-            input_target = self.components.beta_upload.composite_slot_url_input(row=row)
+            visible_action_target = self.components.upload_activity.composite_slot_enter_url_action_visible
+            input_target = self.components.upload_activity.composite_slot_url_input(row=row)
         else:
-            visible_action_target = self.components.beta_upload.composite_slot_enter_paste_action_visible
-            input_target = self.components.beta_upload.composite_slot_paste_textarea(row=row)
+            visible_action_target = self.components.upload_activity.composite_slot_enter_paste_action_visible
+            input_target = self.components.upload_activity.composite_slot_paste_textarea(row=row)
 
         for _ in range(2):
-            dropdown = self.components.beta_upload.composite_slot_mode_dropdown(row=row).wait_for_visible()
+            dropdown = self.components.upload_activity.composite_slot_mode_dropdown(row=row).wait_for_visible()
             if dropdown.get_attribute("aria-expanded") != "true":
                 try:
                     dropdown.click()
@@ -420,10 +418,10 @@ class UploadContext:
 
     def select_target_history(self, history_id: str) -> "UploadContext":
         """Change the upload target history using the TargetHistorySelector UI."""
-        self.components.beta_upload.target_history_change_link.wait_for_and_click()
-        self.components.beta_upload.history_selector_modal_item(history_id=history_id).wait_for_and_click()
+        self.components.upload_activity.target_history_change_link.wait_for_and_click()
+        self.components.upload_activity.history_selector_modal_item(history_id=history_id).wait_for_and_click()
         # Wait for modal to dismiss before proceeding
-        self.components.beta_upload.history_selector_modal.wait_for_absent_or_hidden()
+        self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
         return self
 
     def activate_advanced_mode(self) -> "UploadContext":
@@ -458,39 +456,75 @@ class UploadContext:
     def _select_method(self, method_id: UploadMethodId) -> None:
         if self._current_method_id == method_id:
             return
-        self.components.beta_upload.method_card(method_id=method_id).wait_for_and_click()
+        self.components.upload_activity.method_card(method_id=method_id).wait_for_and_click()
         self._current_method_id = method_id
+
+    def _open_upload_activity(self, method_id: UploadMethodId) -> None:
+        method_card = self.components.upload_activity.method_card(method_id=method_id)
+        if not method_card.is_absent and method_card.is_displayed:
+            return
+
+        # Try from the current page first (embedded upload flows).
+        if (
+            not self.components.upload_activity.activity.is_absent
+            and self.components.upload_activity.activity.is_displayed
+        ):
+            self.components.upload_activity.activity.wait_for_and_click()
+            if not method_card.is_absent and method_card.is_displayed:
+                return
+
+        # Open from home using the new default activity.
+        self.driver_wrapper.home()
+        self.driver_wrapper.components.tools.activity.wait_for_visible()
+
+        if (
+            not self.components.upload_activity.activity.is_absent
+            and self.components.upload_activity.activity.is_displayed
+        ):
+            self.components.upload_activity.activity.wait_for_and_click()
+            if not method_card.is_absent and method_card.is_displayed:
+                return
+
+        # Compatibility fallback if upload is grouped under preferences.
+        if (
+            not self.driver_wrapper.components.preferences.activity.is_absent
+            and self.driver_wrapper.components.preferences.activity.is_displayed
+        ):
+            self.driver_wrapper.components.preferences.activity.wait_for_and_click()
+            self.components.upload_activity.activity.wait_for_and_click()
+
+        method_card.wait_for_visible()
 
     def _row_number(self, index: int) -> int:
         return index + 1
 
     def _row_name_input(self, index: int):
         row = self._row_number(index)
-        return self.components.beta_upload.row_name_input(row=row)
+        return self.components.upload_activity.row_name_input(row=row)
 
     def _row_extension_select(self, index: int):
         row = self._row_number(index)
-        return self.components.beta_upload.row_extension_select(row=row)
+        return self.components.upload_activity.row_extension_select(row=row)
 
     def _row_dbkey_select(self, index: int):
         row = self._row_number(index)
-        return self.components.beta_upload.row_dbkey_select(row=row)
+        return self.components.upload_activity.row_dbkey_select(row=row)
 
     def _row_remove_button(self, index: int):
         row = self._row_number(index)
-        return self.components.beta_upload.row_remove_button(row=row)
+        return self.components.upload_activity.row_remove_button(row=row)
 
     def _row_deferred_checkbox(self, index: int):
         if self._current_method_id != "paste-links":
             raise AssertionError("Deferred option is only available for the paste-links method")
         row = self._row_number(index)
-        return self.components.beta_upload.paste_links_row_deferred_checkbox(row=row).wait_for_present()
+        return self.components.upload_activity.paste_links_row_deferred_checkbox(row=row).wait_for_present()
 
     def _row_deferred_label(self, index: int):
         if self._current_method_id != "paste-links":
             raise AssertionError("Deferred label is only available for the paste-links method")
         row = self._row_number(index)
-        return self.components.beta_upload.paste_links_row_deferred_label(row=row)
+        return self.components.upload_activity.paste_links_row_deferred_label(row=row)
 
 
 # Mode-specific context classes that provide restricted APIs
