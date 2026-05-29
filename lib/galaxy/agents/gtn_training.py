@@ -92,11 +92,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             topic: Optional[str] = None,
             difficulty: Optional[str] = None,
             hands_on_only: bool = False,
-            limit: int = 2,
+            limit: int = 5,
         ) -> str:
-            """Search GTN tutorials using full-text search over titles, descriptions, and content."""
-            if not self.gtn_db:
-                return json.dumps({"error": "GTN database not available"})
+            """Search GTN tutorials using vector search over titles, descriptions, and content."""
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
                 results = self.gtn_db.search_gtn_vector_db(
@@ -109,7 +107,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 log.info(f"GTN search found {len(results)} results, vector search found {len(results)} results for query: '{query}'")
                 log.info(f"Vector search results: {results}")
                 log.info(f"Vector search results (dict): {[r.to_dict() for r in results]}")
-                
 
                 return json.dumps(
                     {
@@ -125,11 +122,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         async def search_gtn_workflow_vectors(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
-            limit: int = 3,
+            limit: int = 5,
         ) -> str:
             """Search workflow vectors for end-to-end analysis workflows relevant to the query."""
-            if not self.gtn_db:
-                return json.dumps({"error": "GTN database not available"})
             try:
                 embeddings, persist_dir = self._vector_search_dependencies()
                 results = self.gtn_db.search_workflow_vector_db(
@@ -278,8 +273,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             base_url=embedding_base_url,
             model=embedding_model,
             api_key=embedding_api_key,
-            tiktoken_enabled=False,  # Disable tiktoken to avoid DNS issues with custom models
-            check_embedding_ctx_length=False,  # Disable context length checking
+            tiktoken_enabled=False,
+            check_embedding_ctx_length=False,
         )
         self.persist_dir = persist_dir
         self.embeddings = embeddings

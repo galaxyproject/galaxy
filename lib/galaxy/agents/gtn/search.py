@@ -499,7 +499,7 @@ class GTNSearchDB:
         embeddings: OpenAIEmbeddings,
         persist_dir: Path,
         collection_name: str = "gtn_tutorials",
-        limit: int = 2,
+        limit: int = 5,
         doc_type: Optional[str] = None,
     ) -> list[GTNVectorSearchResults]:
         try:
@@ -560,7 +560,7 @@ class GTNSearchDB:
         embeddings: OpenAIEmbeddings,
         persist_dir: Path,
         collection_name: str = "iwc_workflows",
-        limit: int = 2,
+        limit: int = 5,
     ) -> list[WorkflowVectorSearchResults]:
         try:
             # Check if the persist directory exists
