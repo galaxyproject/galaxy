@@ -144,20 +144,7 @@ function onOpen(record: Record) {
 }
 
 /** Called when user decides to upload new data */
-function onLegacyUpload() {
-    const propsData = {
-        multiple: props.multiple,
-        format: props.format,
-        callback: props.callback,
-        modalShow: true,
-        selectable: true,
-    };
-    openGlobalUploadModal(propsData);
-    modalShow.value = false;
-    emit("onUpload");
-}
-
-async function onBetaUpload() {
+async function onUpload() {
     const result = await openUploadModal({
         formats: props.uploadModalFormats,
         multiple: props.multiple,
@@ -231,13 +218,9 @@ watch(
         @onOpen="onOpen"
         @onUndo="load()">
         <template v-slot:buttons>
-            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onLegacyUpload">
+            <GButton v-if="allowUpload" size="small" class="mr-1" @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 Upload
-            </GButton>
-            <GButton v-if="allowUpload" size="small" title="Try our new upload experience" @click="onBetaUpload">
-                <FontAwesomeIcon :icon="faUpload" />
-                <span v-localize>New upload<BBadge variant="warning" class="ml-1">Beta</BBadge></span>
             </GButton>
         </template>
     </SelectionDialog>
