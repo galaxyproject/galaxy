@@ -47,6 +47,7 @@ def test_create_resource_applies_defaults(session):
     resource = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix}",
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
     )
     persist(session, resource)
@@ -67,6 +68,7 @@ def test_manager_name_unique(session):
     first = model.ComputeResource(
         user_id=user.id,
         manager_name=manager_name,
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
     )
     persist(session, first)
@@ -74,6 +76,7 @@ def test_manager_name_unique(session):
     duplicate = model.ComputeResource(
         user_id=user.id,
         manager_name=manager_name,
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
     )
     session.add(duplicate)
@@ -90,11 +93,13 @@ def test_user_can_have_multiple_resources(session):
     r1 = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix[:8]}",
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
     )
     r2 = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix[8:16]}",
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
     )
     persist(session, r1)
@@ -112,6 +117,7 @@ def test_status_lifecycle_is_a_plain_string(session):
     resource = model.ComputeResource(
         user_id=user.id,
         manager_name=f"byoc_{user.id}_{suffix}",
+        relay_user_id="relay-user",
         relay_url="https://relay.example.test",
         status="active",
     )

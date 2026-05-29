@@ -27,9 +27,9 @@ class ComputeResourceSummary(Model):
         str,
         Field(
             description=(
-                "Globally unique relay user identifier; equals the JWT ``sub`` "
-                "claim from the device-flow login and is used as the Pulsar "
-                "manager name (relay topics are ``job_setup_<manager_name>`` etc.)."
+                "Galaxy-minted, globally unique topic-namespace label for this "
+                "resource. The user configures their Pulsar daemon with it; relay "
+                "topics are ``job_setup_<manager_name>`` etc."
             ),
         ),
     ]
@@ -104,16 +104,6 @@ class RegistrationCompletionPayload(Model):
         ),
     ]
     relay_url: Annotated[str, Field(description="Relay URL the user's Pulsar bound to.")]
-    manager_name: Annotated[
-        str,
-        Field(
-            description=(
-                "Relay user identifier (``sub`` claim); becomes the compute "
-                "resource's manager name. Validated against the access token decoded "
-                "from a refresh of ``refresh_token``."
-            ),
-        ),
-    ]
     relay_topic_prefix: Annotated[
         Optional[str],
         Field(None, description="Optional relay topic prefix."),

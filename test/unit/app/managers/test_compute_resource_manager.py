@@ -40,8 +40,7 @@ def _signed_jwt(sub: str) -> str:
 
 def _fake_relay_client(sub: str = "default-sub", rotated_refresh_token: str = "RT-ROTATED") -> FakeRelayClient:
     """Build a :class:`FakeRelayClient` that returns an access token decodable
-    to ``sub`` (the manager verifies the sub claim against the supplied
-    ``manager_name``)."""
+    to ``sub`` (recorded by the manager as the resource's ``relay_user_id``)."""
     return FakeRelayClient(
         user_id=f"u-{sub}",
         username=sub,
@@ -65,10 +64,13 @@ class TestComputeResourceManager(BaseTestCase):
             relay_client_factory=lambda _relay_url: self.fake_relay_client,
         )
 
-    def _add_resource(self, user, *, status: str, manager_name: str) -> ComputeResource:
+    def _add_resource(
+        self, user, *, status: str, manager_name: str, relay_user_id: str = "relay-user"
+    ) -> ComputeResource:
         resource = ComputeResource(
             user_id=user.id,
             manager_name=manager_name,
+            relay_user_id=relay_user_id,
             relay_url="https://relay.example.test",
             status=status,
         )
@@ -141,19 +143,19 @@ class TestComputeResourceManager(BaseTestCase):
     def test_complete_registration_happy_path(self):
         user = self.user_manager.create(email="reg2@example.test", username="reg2", password="x" * 8)
         ticket = self.compute_resource_manager.start_registration(user)
-        manager_name = f"byoc_{user.id}_lab"
-        self._stub_relay_exchange(sub=manager_name)
+        self._stub_relay_exchange(sub="relay-user-reg2")
 
         resource = self.compute_resource_manager.complete_registration(
             bootstrap_token=ticket.bootstrap_token,
             refresh_token="RT-ORIGINAL",
             relay_url="https://relay.example.test",
-            manager_name=manager_name,
         )
 
         assert resource.id is not None
         assert resource.status == STATUS_ACTIVE
-        assert resource.manager_name == manager_name
+        # Galaxy mints the manager_name; the relay sub is recorded separately.
+        assert resource.manager_name.startswith("cr-")
+        assert resource.relay_user_id == "relay-user-reg2"
         assert resource.relay_url == "https://relay.example.test"
         # Token store is consumed on redemption.
         assert (
@@ -176,7 +178,6 @@ class TestComputeResourceManager(BaseTestCase):
                 bootstrap_token="not-a-real-token",
                 refresh_token="RT",
                 relay_url="https://relay.example.test",
-                manager_name="byoc_x_y",
             )
 
     def test_complete_registration_rejects_expired_bootstrap_token(self):
@@ -197,7 +198,6 @@ class TestComputeResourceManager(BaseTestCase):
                 bootstrap_token=ticket.bootstrap_token,
                 refresh_token="RT",
                 relay_url="https://relay.example.test",
-                manager_name=f"byoc_{user.id}_x",
             )
         # Expired tokens are cleaned up so they can't be retried.
         assert (
@@ -207,45 +207,51 @@ class TestComputeResourceManager(BaseTestCase):
             is None
         )
 
-    def test_complete_registration_rejects_sub_mismatch(self):
-        """A user must not be able to redirect another relay user's topics
-        into their Galaxy account."""
+    def test_assert_relay_identity_rejects_drift(self):
+        """A token that resolves to a different relay user than the one the
+        resource was registered with is refused (continuity check)."""
         user = self.user_manager.create(email="reg5@example.test", username="reg5", password="x" * 8)
-        ticket = self.compute_resource_manager.start_registration(user)
-        # Refresh token represents relay user 'someone_else' — but the
-        # caller claims to be 'me'.
-        self._stub_relay_exchange(sub="someone_else")
-
+        resource = self._add_resource(user, status=STATUS_ACTIVE, manager_name="cr-fixed", relay_user_id="relay-user-A")
+        # Same identity → fine.
+        self.compute_resource_manager.assert_relay_identity(resource, _signed_jwt("relay-user-A"))
+        # Drifted identity → refused.
         with pytest.raises(RelayVerificationFailed, match="does not match"):
-            self.compute_resource_manager.complete_registration(
-                bootstrap_token=ticket.bootstrap_token,
-                refresh_token="RT",
-                relay_url="https://relay.example.test",
-                manager_name="me",
-            )
+            self.compute_resource_manager.assert_relay_identity(resource, _signed_jwt("relay-user-B"))
 
-    def test_complete_registration_replaces_existing_active(self):
+    def test_complete_registration_re_registers_same_identity(self):
+        """Re-registering the SAME relay identity must succeed: Galaxy mints a
+        fresh manager_name, disables the prior active row, and never collides on
+        the retained row's name (regression for the global-unique IntegrityError)."""
         user = self.user_manager.create(email="reg6@example.test", username="reg6", password="x" * 8)
-        # First active resource — directly inserted.
-        first = self._add_resource(user, status=STATUS_ACTIVE, manager_name=f"byoc_{user.id}_first")
+        # Both registrations represent the same relay user.
+        self._stub_relay_exchange(sub="relay-user-reg6")
 
-        ticket = self.compute_resource_manager.start_registration(user)
-        self._stub_relay_exchange(sub=f"byoc_{user.id}_second")
-        new_resource = self.compute_resource_manager.complete_registration(
-            bootstrap_token=ticket.bootstrap_token,
+        first_ticket = self.compute_resource_manager.start_registration(user)
+        first = self.compute_resource_manager.complete_registration(
+            bootstrap_token=first_ticket.bootstrap_token,
             refresh_token="RT",
             relay_url="https://relay.example.test",
-            manager_name=f"byoc_{user.id}_second",
         )
 
-        # Old row was disabled, new row is active.
+        second_ticket = self.compute_resource_manager.start_registration(user)
+        # Same sub → same relay_user_id; the colliding old design would raise
+        # IntegrityError here because the disabled first row still holds its name.
+        second = self.compute_resource_manager.complete_registration(
+            bootstrap_token=second_ticket.bootstrap_token,
+            refresh_token="RT",
+            relay_url="https://relay.example.test",
+        )
+
+        # Fresh, distinct manager_name; same relay identity recorded on both.
+        assert second.manager_name != first.manager_name
+        assert first.relay_user_id == second.relay_user_id == "relay-user-reg6"
+        # Old row disabled, new row active and resolved by get_active_for.
         self.trans.sa_session.refresh(first)
         assert first.status == STATUS_DISABLED
-        assert new_resource.status == STATUS_ACTIVE
-        # ``get_active_for`` resolves the new one.
+        assert second.status == STATUS_ACTIVE
         active = self.compute_resource_manager.get_active_for(user)
         assert active is not None
-        assert active.id == new_resource.id
+        assert active.id == second.id
 
     def test_delete_transitions_to_disabled(self):
         user = self.user_manager.create(email="del1@example.test", username="del1", password="x" * 8)
@@ -411,22 +417,21 @@ class TestComputeResourceManager(BaseTestCase):
             }
         ]
 
-    def _register_byoc(self, user, *, manager_name: str) -> "ComputeResource":
-        """End-to-end registration so the vault has a refresh token under
-        the right key. Reuses the same fake relay client the test setup
-        configured."""
+    def _register_byoc(self, user, *, sub: str = "relay-user-cap") -> "ComputeResource":
+        """End-to-end registration so the vault has a refresh token under the
+        right key, returning the resource with its Galaxy-minted manager_name.
+        Callers build capability topics from ``resource.manager_name``."""
         ticket = self.compute_resource_manager.start_registration(user)
-        self._stub_relay_exchange(sub=manager_name)
+        self._stub_relay_exchange(sub=sub)
         return self.compute_resource_manager.complete_registration(
             bootstrap_token=ticket.bootstrap_token,
             refresh_token="RT-ORIGINAL",
             relay_url="https://relay.example.test",
-            manager_name=manager_name,
         )
 
     def test_capabilities_for_returns_none_for_anonymous(self):
         user = self.user_manager.create(email="cap_anon@example.test", username="cap_anon", password="x" * 8)
-        resource = self._register_byoc(user, manager_name=f"byoc_{user.id}_anon")
+        resource = self._register_byoc(user)
         assert self.compute_resource_manager.capabilities_for(resource, user=None) is None
 
     def test_capabilities_for_returns_none_when_no_vault_token(self):
@@ -439,55 +444,50 @@ class TestComputeResourceManager(BaseTestCase):
 
     def test_capabilities_for_returns_payload_on_happy_path(self):
         user = self.user_manager.create(email="cap_ok@example.test", username="cap_ok", password="x" * 8)
-        manager_name = f"byoc_{user.id}_lab"
-        resource = self._register_byoc(user, manager_name=manager_name)
-        payload = self._capability_payload(manager_name=manager_name, conda_available=True)
+        resource = self._register_byoc(user)
+        payload = self._capability_payload(manager_name=resource.manager_name, conda_available=True)
         # Topic mirrors pulsar's __make_capabilities_topic_name convention:
         # non-default manager name → suffix; no prefix configured here.
-        self._seed_capability_message(f"pulsar_capabilities_{manager_name}", payload)
+        self._seed_capability_message(f"pulsar_capabilities_{resource.manager_name}", payload)
 
         out = self.compute_resource_manager.capabilities_for(resource, user=user)
         assert out == payload
 
     def test_capabilities_for_uses_topic_prefix_when_resource_carries_one(self):
         user = self.user_manager.create(email="cap_pfx@example.test", username="cap_pfx", password="x" * 8)
-        manager_name = f"byoc_{user.id}_lab"
-        resource = self._register_byoc(user, manager_name=manager_name)
+        resource = self._register_byoc(user)
         resource.relay_topic_prefix = "prod"
         self.trans.sa_session.add(resource)
         self.trans.sa_session.commit()
-        payload = self._capability_payload(manager_name=manager_name)
-        self._seed_capability_message(f"prod_pulsar_capabilities_{manager_name}", payload)
+        payload = self._capability_payload(manager_name=resource.manager_name)
+        self._seed_capability_message(f"prod_pulsar_capabilities_{resource.manager_name}", payload)
 
         out = self.compute_resource_manager.capabilities_for(resource, user=user)
         assert out is not None
-        assert out["manager_name"] == manager_name
+        assert out["manager_name"] == resource.manager_name
 
     def test_capabilities_for_returns_none_when_topic_empty(self):
         user = self.user_manager.create(email="cap_empty@example.test", username="cap_empty", password="x" * 8)
-        manager_name = f"byoc_{user.id}_e"
-        resource = self._register_byoc(user, manager_name=manager_name)
+        resource = self._register_byoc(user)
         # Don't seed any messages — the fake returns an empty list.
         assert self.compute_resource_manager.capabilities_for(resource, user=user) is None
 
     def test_capabilities_for_returns_none_for_unknown_schema_version(self):
         user = self.user_manager.create(email="cap_v99@example.test", username="cap_v99", password="x" * 8)
-        manager_name = f"byoc_{user.id}_99"
-        resource = self._register_byoc(user, manager_name=manager_name)
+        resource = self._register_byoc(user)
         self._seed_capability_message(
-            f"pulsar_capabilities_{manager_name}",
-            {"schema_version": 99, "manager_name": manager_name},
+            f"pulsar_capabilities_{resource.manager_name}",
+            {"schema_version": 99, "manager_name": resource.manager_name},
         )
         assert self.compute_resource_manager.capabilities_for(resource, user=user) is None
 
     def test_capabilities_for_caches_within_ttl(self):
         """Within the TTL window, two calls only invoke the relay once."""
         user = self.user_manager.create(email="cap_cached@example.test", username="cap_cached", password="x" * 8)
-        manager_name = f"byoc_{user.id}_cached"
-        resource = self._register_byoc(user, manager_name=manager_name)
+        resource = self._register_byoc(user)
         self._seed_capability_message(
-            f"pulsar_capabilities_{manager_name}",
-            self._capability_payload(manager_name=manager_name),
+            f"pulsar_capabilities_{resource.manager_name}",
+            self._capability_payload(manager_name=resource.manager_name),
         )
         self.fake_relay_client.fetch_calls.clear()
         self.fake_relay_client.exchange_calls.clear()
@@ -504,14 +504,13 @@ class TestComputeResourceManager(BaseTestCase):
         manager must vault the new one so the runner's separately-cached
         client manager doesn't try to use a stale token next time."""
         user = self.user_manager.create(email="cap_rotate@example.test", username="cap_rotate", password="x" * 8)
-        manager_name = f"byoc_{user.id}_rot"
-        resource = self._register_byoc(user, manager_name=manager_name)
+        resource = self._register_byoc(user, sub="relay-user-rot")
         # Reconfigure the fake to return a different rotated token on
         # this exchange than the one written by complete_registration.
-        self._stub_relay_exchange(sub=manager_name, rotated_token="RT-ROTATED-AGAIN")
+        self._stub_relay_exchange(sub="relay-user-rot", rotated_token="RT-ROTATED-AGAIN")
         self._seed_capability_message(
-            f"pulsar_capabilities_{manager_name}",
-            self._capability_payload(manager_name=manager_name),
+            f"pulsar_capabilities_{resource.manager_name}",
+            self._capability_payload(manager_name=resource.manager_name),
         )
 
         self.compute_resource_manager.capabilities_for(resource, user=user)
