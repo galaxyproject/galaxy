@@ -36,6 +36,16 @@ from galaxy_test.driver.keycloak import start_keycloak_http_dev
 
 RELAY_READY_TIMEOUT_SECONDS = 30
 PULSAR_READY_TIMEOUT_SECONDS = 30
+LOG_TAIL_BYTES = 16_000
+
+
+def _tail(path: Path, n_bytes: int = LOG_TAIL_BYTES) -> str:
+    """Return the last ``n_bytes`` of a log file, or a note if it's unreadable."""
+    try:
+        data = path.read_bytes()
+    except OSError as exc:
+        return f"<could not read {path}: {exc}>"
+    return data[-n_bytes:].decode(errors="replace")
 
 
 @dataclass
@@ -50,6 +60,7 @@ class RelayHandle:
     port: int
     base_url: str
     process: subprocess.Popen
+    log_path: Path
 
 
 @dataclass
@@ -72,11 +83,15 @@ def bring_up_keycloak(*, port: int, container_name: str) -> KeycloakHandle:
     return KeycloakHandle(port=port, base_url=f"http://localhost:{port}", container_name=container_name)
 
 
-def bring_up_relay(*, port: int, base_url: str, keycloak_setup) -> RelayHandle:
+def bring_up_relay(*, port: int, base_url: str, keycloak_setup, log_path: Path) -> RelayHandle:
     """Start the pulsar-relay subprocess and wait for /health.
 
     The relay subprocess is given an env that points its OIDC config at
-    the Keycloak provisioned for the test run.
+    the Keycloak provisioned for the test run. Its stdout+stderr are
+    redirected to ``log_path`` rather than a ``PIPE``: an undrained pipe
+    fills its OS buffer and blocks the relay mid-write (which surfaces as
+    ``RemoteDisconnected`` on long-poll), and a file keeps the logs around
+    for post-mortem.
     """
     env = {
         **os.environ,
@@ -94,38 +109,37 @@ def bring_up_relay(*, port: int, base_url: str, keycloak_setup) -> RelayHandle:
         "PULSAR_OIDC__PROVIDERS__KEYCLOAK__CLIENT_SECRET": keycloak_setup.client_secret,
         "PULSAR_OIDC__PROVIDERS__KEYCLOAK__CLAIM_USERNAME": "preferred_username",
     }
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "pulsar_relay.main:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-            "--log-level",
-            "warning",
-        ],
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    # Open the log file and hand its fd to the child; the parent closes its
+    # own copy immediately (the child keeps a dup for its lifetime).
+    with open(log_path, "wb") as log_file:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "uvicorn",
+                "pulsar_relay.main:app",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--log-level",
+                "warning",
+            ],
+            env=env,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
     deadline = time.time() + RELAY_READY_TIMEOUT_SECONDS
     while time.time() < deadline:
         try:
             with httpx.Client(timeout=1.0) as c:
                 if c.get(f"{base_url}/health").status_code == 200:
-                    return RelayHandle(port=port, base_url=base_url, process=process)
+                    return RelayHandle(port=port, base_url=base_url, process=process, log_path=log_path)
         except Exception:
             pass
         time.sleep(0.3)
-    stdout, stderr = process.communicate(timeout=2)
-    pytest.fail(
-        "Relay subprocess did not start.\n"
-        f"stdout={stdout.decode(errors='replace')}\n"
-        f"stderr={stderr.decode(errors='replace')}"
-    )
+    process.kill()
+    pytest.fail(f"Relay subprocess did not start.\nRelay log ({log_path}):\n{_tail(log_path)}")
 
 
 def bring_up_pulsar(
@@ -187,29 +201,63 @@ def bring_up_pulsar(
 
     env = {**os.environ}
     env["PYTHONUNBUFFERED"] = "1"
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-u",
-            "-m",
-            "pulsar.main",
-            "--config_dir",
-            str(pulsar_dir),
-            "--ini_path",
-            str(server_ini_path),
-        ],
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
+    # ``pulsar.main`` imports galaxy packages (galaxy.job_metrics, galaxy.util,
+    # …). In the dev/test layout galaxy lives on ``sys.path`` via pytest's
+    # ``pythonpath = lib``, which a subprocess does NOT inherit — so the daemon
+    # would crash at import with ``ModuleNotFoundError: No module named
+    # 'galaxy'``. Put galaxy's ``lib`` on the child's PYTHONPATH explicitly.
+    import galaxy
+
+    # ``galaxy`` is a PEP 420 namespace package (no ``__file__``); its
+    # ``__path__`` entry points at ``<root>/lib/galaxy``, so its parent is the
+    # ``lib`` dir we need on PYTHONPATH.
+    galaxy_lib = str(Path(next(iter(galaxy.__path__))).resolve().parent)
+    existing_pp = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = galaxy_lib if not existing_pp else os.pathsep.join([galaxy_lib, existing_pp])
+    # Redirect stdout+stderr to a file (the daemon logs to stderr; the ini's
+    # file handler isn't applied by ``pulsar.main``). An undrained PIPE would
+    # fill its OS buffer and block the daemon mid-write — stalling job
+    # consumption — so never use one for a process we don't actively drain.
+    with open(pulsar_log_path, "wb") as log_file:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-u",
+                "-m",
+                "pulsar.main",
+                "--config_dir",
+                str(pulsar_dir),
+                "--ini_path",
+                str(server_ini_path),
+            ],
+            env=env,
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+        )
+    # The topics are pre-created by the caller, so a 200 on the topic GET only
+    # proves the topic exists — not that the daemon is alive and consuming. Guard
+    # every iteration with a liveness check and re-confirm the process survived a
+    # beat after the topic check, so a daemon that crashes at startup (e.g. an
+    # import error) fails loudly here instead of leaving the job stuck in 'queued'.
     topic = f"job_setup_{manager_name}"
     deadline = time.time() + PULSAR_READY_TIMEOUT_SECONDS
     headers = {"Authorization": f"Bearer {access_token}"}
     while time.time() < deadline:
+        if process.poll() is not None:
+            pytest.fail(
+                f"Pulsar subprocess exited before subscribing.\n"
+                f"Pulsar log ({pulsar_log_path}):\n{_tail(pulsar_log_path)}"
+            )
         try:
             with httpx.Client(timeout=1.0) as c:
                 r = c.get(f"{relay_base_url}/api/v1/topics/{topic}", headers=headers)
                 if r.status_code == 200:
+                    time.sleep(0.5)
+                    if process.poll() is not None:
+                        pytest.fail(
+                            f"Pulsar subprocess exited just after startup.\n"
+                            f"Pulsar log ({pulsar_log_path}):\n{_tail(pulsar_log_path)}"
+                        )
                     return PulsarHandle(
                         process=process,
                         pulsar_dir=pulsar_dir,
@@ -218,32 +266,21 @@ def bring_up_pulsar(
                     )
         except Exception:
             pass
-        if process.poll() is not None:
-            stdout, stderr = process.communicate(timeout=2)
-            pytest.fail(
-                "Pulsar subprocess exited before subscribing.\n"
-                f"stdout={stdout.decode(errors='replace')}\n"
-                f"stderr={stderr.decode(errors='replace')}"
-            )
         time.sleep(0.5)
-    process.terminate()
-    try:
-        stdout, stderr = process.communicate(timeout=5)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        stdout, stderr = process.communicate()
+    process.kill()
     pytest.fail(
         f"Pulsar did not subscribe to {topic} within {PULSAR_READY_TIMEOUT_SECONDS}s\n"
-        f"stdout={stdout.decode(errors='replace')}\n"
-        f"stderr={stderr.decode(errors='replace')}"
+        f"Pulsar log ({pulsar_log_path}):\n{_tail(pulsar_log_path)}"
     )
 
 
-def teardown_subprocess(proc: Optional[subprocess.Popen], label: str) -> None:
-    """Terminate a subprocess (with kill escalation) and dump its output to stdout.
+def teardown_subprocess(proc: Optional[subprocess.Popen], label: str, log_path: Optional[Path] = None) -> None:
+    """Terminate a subprocess (with kill escalation) and dump its log to stdout.
 
     Idempotent on ``None``; safe to call from teardown paths where bring-up
-    may have raised before the handle was assigned.
+    may have raised before the handle was assigned. Output is read from
+    ``log_path`` (the daemons redirect stdout+stderr there) rather than a PIPE,
+    which we deliberately don't use — see ``bring_up_relay`` / ``bring_up_pulsar``.
     """
     if proc is None:
         return
@@ -253,8 +290,5 @@ def teardown_subprocess(proc: Optional[subprocess.Popen], label: str) -> None:
     except subprocess.TimeoutExpired:
         proc.kill()
         proc.wait()
-    stdout, stderr = proc.communicate() if proc.poll() is None else (b"", b"")
-    if stdout:
-        print(f"\n--- {label} stdout ---\n{stdout.decode(errors='replace')}")
-    if stderr:
-        print(f"\n--- {label} stderr ---\n{stderr.decode(errors='replace')}")
+    if log_path is not None:
+        print(f"\n--- {label} log ({log_path}) ---\n{_tail(log_path)}")
