@@ -2,8 +2,7 @@
 job_tokens endpoints, and for the path-allowlist policy that decides what
 a job runner may read or write on the Galaxy server.
 
-This consolidates three pieces of policy that were previously duplicated
-across :mod:`galaxy.webapps.galaxy.api.job_files`,
+It centralizes the policy shared by :mod:`galaxy.webapps.galaxy.api.job_files`,
 :mod:`galaxy.webapps.galaxy.api.job_tokens` and
 :mod:`galaxy.job_execution.ports.view`:
 
