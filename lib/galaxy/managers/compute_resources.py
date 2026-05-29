@@ -681,8 +681,8 @@ class ComputeResourceManager:
         self.session.add(resource)
         # flush() (not commit()) so resource.id is populated for the vault
         # path. The vault write below and the commit are paired: if either
-        # raises, the transaction rolls back and nothing is persisted —
-        # closing the prior pending-row-without-vault-secret leak.
+        # raises, the transaction rolls back and nothing is persisted, so we
+        # never leave a committed row without its vault secret.
         self.session.flush()
 
         UserVaultWrapper(self._vault, user).write_secret(
