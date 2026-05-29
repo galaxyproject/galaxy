@@ -94,7 +94,6 @@ class ComputeResourceService:
                 bootstrap_token=payload.bootstrap_token,
                 refresh_token=payload.refresh_token,
                 relay_url=payload.relay_url,
-                manager_name=payload.manager_name,
                 relay_topic_prefix=payload.relay_topic_prefix,
             )
         except RegistrationTokenInvalid as exc:

@@ -49,6 +49,7 @@ def upgrade():
                 index=True,
             ),
             sa.Column("manager_name", sa.String(96), nullable=False, unique=True),
+            sa.Column("relay_user_id", sa.String(255), nullable=False, index=True),
             sa.Column("relay_url", sa.Text, nullable=False),
             sa.Column("relay_topic_prefix", sa.String(96), nullable=True),
             sa.Column("status", sa.String(16), nullable=False, server_default="pending"),

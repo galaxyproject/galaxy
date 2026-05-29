@@ -1469,6 +1469,11 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         job = job_wrapper.get_job()
         params = job_wrapper.job_destination.params
         client_manager = self._get_or_create_client_manager(params, job.user)
+        # Refuse to dispatch if the resource's relay token has drifted to a
+        # different relay identity than it was registered with — otherwise we'd
+        # publish the job (command line, job_files endpoint + key) to topics
+        # owned by an identity Galaxy never authorised.
+        self._verify_relay_identity(params, client_manager)
         # Mutate destination_params in place to reflect what the remote
         # pulsar can actually do — the static helpers
         # ``__remote_container_handling`` / ``__dependency_resolution``
@@ -1477,6 +1482,18 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
         # already-cached client and don't re-downgrade.
         self._apply_capability_downgrades(params, job.user, client_manager)
         return super().get_client_from_wrapper(job_wrapper)
+
+    def _verify_relay_identity(self, params: dict[str, Any], client_manager: Any) -> None:
+        """Assert the client manager's relay token still resolves to the
+        identity the compute resource was registered with."""
+        resource = self._resource_for_params(params)
+        if resource is None:
+            return
+        get_token = getattr(client_manager, "get_relay_access_token", None)
+        access_token = get_token() if callable(get_token) else None
+        if access_token is None:
+            return
+        self.app.compute_resource_manager.assert_relay_identity(resource, access_token)
 
     @staticmethod
     def _refuse_extended_metadata(job_wrapper: "MinimalJobWrapper") -> None:

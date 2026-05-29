@@ -13028,7 +13028,16 @@ class ComputeResource(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    # Galaxy-generated topic-namespace label (relay topics are
+    # ``job_setup_<manager_name>`` etc.). Minted fresh and globally unique per
+    # registration, so re-registering the same daemon never collides with a
+    # retained prior row — the name is never reused.
     manager_name: Mapped[str] = mapped_column(String(96), unique=True)
+    # Relay user identity (the access token's ``sub``) this resource is bound
+    # to. Recorded at registration and re-checked before each dispatch so a
+    # vault token that drifts to a different relay user can't silently retarget
+    # the resource's job topics.
+    relay_user_id: Mapped[str] = mapped_column(String(255), index=True)
     relay_url: Mapped[str] = mapped_column(TEXT)
     relay_topic_prefix: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
     status: Mapped[str] = mapped_column(String(16), default="pending")

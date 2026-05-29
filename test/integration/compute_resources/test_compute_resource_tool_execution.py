@@ -96,6 +96,11 @@ class TestComputeResourceToolExecution(
     _relay: ClassVar[Optional[RelayHandle]] = None
     _pulsar: ClassVar[Optional[PulsarHandle]] = None
     _secondary_refresh_token: ClassVar[str]
+    # Stashed from the device flow in _prepare_galaxy for use in setUp, where
+    # the Pulsar daemon is brought up (it needs the Galaxy-minted manager_name,
+    # which doesn't exist until registration completes).
+    _primary_refresh_token: ClassVar[str]
+    _relay_access_token: ClassVar[str]
     _compute_resource_manager_name: ClassVar[str]
     _resource_id: ClassVar[Optional[int]] = None  # genuinely None until setUp() inserts the row
     _tmp_dir: ClassVar[Path]
@@ -132,35 +137,15 @@ class TestComputeResourceToolExecution(
             log_path=cls._tmp_dir / "relay.log",
         )
         tokens = cls._drive_device_flow(keycloak_setup, client_hint="compute-resource-tool-execution")
+        # Galaxy now mints the manager_name during registration, so the Pulsar
+        # daemon (which is configured with it) can only be started in setUp,
+        # after the registration callback returns the generated name. Stash the
+        # device-flow tokens for that step. Both refresh tokens belong to the
+        # same relay user; the relay scopes topic ownership by that user, so the
+        # name is just a label and need not match any relay id.
         cls._secondary_refresh_token = tokens["refresh_token_secondary"]
-        # manager_name = the relay's local user_id, which is the ``sub`` of the
-        # access tokens the relay issues and the key the relay scopes topic
-        # ownership by. ``complete_registration`` asserts ``sub == manager_name``,
-        # so the manager_name must be this id, not the human-facing username. We
-        # pull it from /auth/me using the access token rather than decoding the JWT.
-        me = httpx.get(
-            f"{cls._relay.base_url}/auth/me",
-            headers={"Authorization": f"Bearer {tokens['access_token']}"},
-            timeout=5.0,
-        )
-        me.raise_for_status()
-        cls._compute_resource_manager_name = me.json()["user_id"]
-
-        # Pre-create the topics pulsar will subscribe to. The relay does not
-        # auto-create topics on long-poll subscription (only on owner POST),
-        # so without this the GET /api/v1/topics/{name} signal we use in
-        # bring_up_pulsar would never go 200. Mirrors the
-        # ``create_or_verify_topic`` loop Galaxy runs during compute-resource bootstrap.
-        cls._pre_create_topics(access_token=tokens["access_token"])
-
-        cls._pulsar = bring_up_pulsar(
-            tmp_dir=cls._tmp_dir,
-            relay_base_url=cls._relay.base_url,
-            manager_name=cls._compute_resource_manager_name,
-            primary_token=tokens["refresh_token"],
-            access_token=tokens["access_token"],
-            app_template=PULSAR_APP_TEMPLATE,
-        )
+        cls._primary_refresh_token = tokens["refresh_token"]
+        cls._relay_access_token = tokens["access_token"]
         cls._render_galaxy_config_files()
 
     @classmethod
@@ -217,12 +202,24 @@ class TestComputeResourceToolExecution(
                 "bootstrap_token": bootstrap_token,
                 "refresh_token": cls._secondary_refresh_token,
                 "relay_url": cls._relay.base_url,
-                "manager_name": cls._compute_resource_manager_name,
             },
             json=True,
         )
         api_asserts.assert_status_code_is_ok(complete_resp)
+        # Galaxy minted the manager_name; the user (here, the test) configures
+        # their Pulsar with it. Pin the topics pulsar subscribes to and start
+        # the daemon now that the name exists.
+        cls._compute_resource_manager_name = complete_resp.json()["manager_name"]
         cls._resource_id = complete_resp.json()["id"]
+        cls._pre_create_topics(access_token=cls._relay_access_token)
+        cls._pulsar = bring_up_pulsar(
+            tmp_dir=cls._tmp_dir,
+            relay_base_url=cls._relay.base_url,
+            manager_name=cls._compute_resource_manager_name,
+            primary_token=cls._primary_refresh_token,
+            access_token=cls._relay_access_token,
+            app_template=PULSAR_APP_TEMPLATE,
+        )
 
     @classmethod
     def tearDownClass(cls) -> None:
