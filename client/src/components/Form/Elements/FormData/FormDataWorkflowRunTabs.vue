@@ -120,7 +120,7 @@ watch(
                 :has-callback="false"
                 :history-id="currentHistoryId"
                 :list-db-keys="listDbKeys"
-                :show-beta-upload="false"
+                :show-upload-activity="false"
                 disable-footer
                 emit-uploaded
                 size="small"

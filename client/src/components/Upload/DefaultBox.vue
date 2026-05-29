@@ -46,6 +46,7 @@ interface Props {
     disableFooter?: boolean;
     emitUploaded?: boolean;
     size?: ComponentSize;
+    showUploadActivity?: boolean;
     showBetaUpload?: boolean;
 }
 
@@ -55,6 +56,7 @@ const props = withDefaults(defineProps<Props>(), {
     lazyLoad: 150,
     size: "medium",
     isCollection: false,
+    showUploadActivity: true,
     showBetaUpload: true,
 });
 
@@ -378,14 +380,14 @@ function uploadPercentage(percentage: number, size: number) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
-function openBetaUpload() {
-    const betaUploadActivity = activityStore.findById("beta-upload");
-    if (betaUploadActivity) {
-        if (!betaUploadActivity.visible) {
-            activityStore.ensureVisible(betaUploadActivity.id);
-            activityStore.setPosition(betaUploadActivity.id, 0);
+function openUploadActivity() {
+    const uploadActivity = activityStore.findById("upload");
+    if (uploadActivity) {
+        if (!uploadActivity.visible) {
+            activityStore.ensureVisible(uploadActivity.id);
+            activityStore.setPosition(uploadActivity.id, 0);
         }
-        activityStore.ensureSideBarOpen(betaUploadActivity.id);
+        activityStore.ensureSideBarOpen(uploadActivity.id);
         emit("dismiss");
     }
 }
@@ -497,12 +499,12 @@ defineExpose({
             }">
             <div class="d-flex">
                 <GButton
-                    v-if="props.showBetaUpload"
-                    id="btn-beta-upload"
+                    v-if="props.showUploadActivity ?? props.showBetaUpload"
+                    id="btn-upload-activity"
                     size="small"
-                    title="Try our new upload experience"
-                    @click="openBetaUpload">
-                    <span v-localize>New upload<BBadge variant="warning" class="ml-1">Beta</BBadge></span>
+                    title="Use the upload activity"
+                    @click="openUploadActivity">
+                    <span v-localize>Upload activity</span>
                 </GButton>
             </div>
             <div class="d-flex justify-content-end flex-wrap">

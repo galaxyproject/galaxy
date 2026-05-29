@@ -75,6 +75,13 @@ const canStartUpload = computed(() => {
     return Boolean(selectedMethod.value) && !uploading.value && canUpload.value && !uploadBlockReason.value;
 });
 
+const immediateFiles = computed(() => {
+    if (selectedMethod.value?.id !== "local-file") {
+        return undefined;
+    }
+    return modalConfig.value.immediateFiles;
+});
+
 const startButtonTitle = computed(() => {
     if (uploadBlockReason.value) {
         return uploadBlockReason.value;
@@ -245,6 +252,7 @@ async function handleStartClick() {
                             :allow-collections="config.allowCollections"
                             :formats="config.formats"
                             :multiple="config.multiple"
+                            :initial-files="immediateFiles"
                             :transient="true"
                             @ready="handleReadyStateChange" />
                     </div>

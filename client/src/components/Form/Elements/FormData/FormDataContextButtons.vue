@@ -2,7 +2,7 @@
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEye, faPlus, faSpinner, faTimes, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BBadge, BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
+import { BButton, BButtonGroup, BDropdown, BDropdownItem } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CollectionType } from "@/api/datasetCollections";
@@ -56,7 +56,7 @@ function clickedTab(tab: string) {
     emit("update:workflow-tab", props.workflowTab === tab ? "" : tab);
 }
 
-async function onUploadBeta() {
+async function onUpload() {
     const result = await openUploadModal({
         formats: props.extensions,
         multiple: props.multiple,
@@ -191,12 +191,11 @@ const defaultCollectionBuilderType = computed<CollectionBuilderType>(() => {
             <BButton
                 v-g-tooltip.bottom.hover
                 class="d-flex flex-gapx-1 align-items-center"
-                data-description="upload-beta"
-                title="Try our new upload experience"
-                @click="onUploadBeta">
+                data-description="upload-modal"
+                title="Upload data"
+                @click="onUpload">
                 <FontAwesomeIcon :icon="faUpload" />
                 <span v-localize>Upload</span>
-                <BBadge variant="warning" class="ml-1">Beta</BBadge>
             </BButton>
         </template>
     </BButtonGroup>

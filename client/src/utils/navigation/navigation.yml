@@ -910,7 +910,7 @@ workflow_run:
     selectors:
       _: '[data-label="${label}"]'
       upload: '${_} [data-description="upload"]'
-      upload_beta: '${_} [data-description="upload-beta"]'
+      upload_modal: '${_} [data-description="upload-modal"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
       collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
       # data inputs
@@ -1500,11 +1500,9 @@ upload:
     local_button: '#btn-local'
     explore_archive_button: '.btn-explore-archive'
 
-beta_upload:
+upload_activity:
   selectors:
-    activity:
-      type: xpath
-      selector: '//button[contains(., "Beta Upload")]'
+    activity: '#activity-upload'
     method_card: '[data-method-id="${method_id}"]'
     local_file_input: '#local-file-input'
     paste_content_textarea: '.paste-textarea'

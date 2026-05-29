@@ -49,7 +49,7 @@ type SingleOrMultipleHistoryItems = HistoryOrCollectionItem | HistoryOrCollectio
 
 /**
  * Response types from the data dialog callback.
- * DataOption[] is returned by the beta upload path for fresh uploads.
+ * DataOption[] is returned by the upload modal path for fresh uploads.
  * SingleOrMultipleHistoryItems (HistoryItemSummary and DCESummary) are returned for dataset/collection selection.
  */
 type DialogResponse = DataOption[] | SingleOrMultipleHistoryItems;
@@ -721,7 +721,7 @@ function isInKeepOptions(keepKey: string, newValue: DataOption): boolean {
  * @param response - The response from the data dialog
  */
 function onDataDialogResponse(response: DialogResponse): void {
-    // The data dialog's beta upload path returns DataOption[] directly
+    // The data dialog's upload modal path returns DataOption[] directly
     if (isDataOptionArray(response)) {
         handleUploadedDataOptions(response);
         return;
