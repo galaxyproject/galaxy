@@ -12,12 +12,12 @@ Build a mulled image with:
 import json
 import logging
 import os
+import platform as _platform_module
 import shutil
 import stat
 import string
 import subprocess
 import sys
-import platform as _platform_module
 from sys import platform as _platform
 from typing import (
     Any,
@@ -176,7 +176,7 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
-def _conda_platform() -> str:
+def conda_platform() -> str:
     machine = _platform_module.machine()
     if IS_OS_X:
         conda_arch_map = {
@@ -195,7 +195,7 @@ def _conda_platform() -> str:
 
 
 def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
-    platform = _conda_platform()
+    platform = conda_platform()
     search_results = (best_search_result(t, conda_context, platform=platform)[0] for t in targets)
     return [r for r in search_results if r]
 
