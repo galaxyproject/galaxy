@@ -186,7 +186,10 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
             return open(local_filename, "rb")
         upload = payload.get("file", payload.get("__file"))
-        assert upload is not None, "No upload file provided in request payload."
+        if upload is None:
+            # Reachable from a malformed runner request, so raise a real 400
+            # rather than assert (asserts are stripped under ``python -O``).
+            raise exceptions.RequestParameterInvalidException("No upload file provided in request payload.")
         return upload.file
 
     @expose_api_anonymous_and_sessionless
