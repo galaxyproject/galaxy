@@ -60,18 +60,6 @@ class _StubSession:
         return self._jobs.get(pk)
 
 
-class _StubModel:
-    def __init__(self, session: _StubSession) -> None:
-        self.session = session
-
-
-class _StubApp:
-    def __init__(self, security: _StubSecurity, model: _StubModel, object_store: _StubObjectStore) -> None:
-        self.security = security
-        self.model = model
-        self.object_store = object_store
-
-
 class _StubDataset:
     """Stand-in for HistoryDatasetAssociation — just the methods the
     manager calls."""
@@ -145,12 +133,11 @@ def tmp_working_dir(tmp_path):
 
 
 def _make_manager(*, jobs: dict[int, Any], working_directory: str = "/tmp/nonexistent") -> JobFilesManager:
-    app = _StubApp(
-        security=_StubSecurity(),
-        model=_StubModel(_StubSession(jobs)),
-        object_store=_StubObjectStore(working_directory),
+    return JobFilesManager(
+        _StubSecurity(),  # type: ignore[arg-type]
+        _StubSession(jobs),  # type: ignore[arg-type]
+        _StubObjectStore(working_directory),  # type: ignore[arg-type]
     )
-    return JobFilesManager(app)  # type: ignore[arg-type]
 
 
 # ---- authorize_for_files / authorize_for_token --------------------------

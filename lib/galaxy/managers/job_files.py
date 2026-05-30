@@ -43,20 +43,29 @@ from galaxy.model import (
     JobToOutputDatasetAssociation,
     JobToOutputLibraryDatasetAssociation,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import BaseObjectStore
+from galaxy.security.idencoding import IdEncodingHelper
 
 
 class JobFilesManager:
     """Per-job credential and path-policy gatekeeper.
 
     Constructed once per app; methods are stateless and safe to call
-    concurrently. Holds a ``MinimalManagerApp`` to reach the
-    ``IdEncodingHelper``, SQLAlchemy session, and object store — three
-    dependencies that always travel together for this kind of check.
+    concurrently. Injects the three dependencies this check needs — the
+    id encoder, the SQLAlchemy session, and the object store — directly
+    via Lagom rather than reaching through ``app.*``.
     """
 
-    def __init__(self, app: MinimalManagerApp) -> None:
-        self._app = app
+    def __init__(
+        self,
+        security: IdEncodingHelper,
+        session: galaxy_scoped_session,
+        object_store: BaseObjectStore,
+    ) -> None:
+        self._security = security
+        self._session = session
+        self._object_store = object_store
 
     # ---- authorization ---------------------------------------------------
 
@@ -97,15 +106,14 @@ class JobFilesManager:
     ) -> Job:
         if not supplied_job_key:
             raise raise_class("Invalid job_key supplied.")
-        job_id = self._app.security.decode_id(encoded_job_id)
-        session = self._app.model.session
-        job = session.get(Job, job_id)
+        job_id = self._security.decode_id(encoded_job_id)
+        job = self._session.get(Job, job_id)
         if job is None:
             raise raise_class("Invalid job_key supplied.")
         # Pick the kind from the job's compute-resource binding (if any) — verifying
         # with the wrong kind yields a plain mismatch, so callers see the
         # same response we'd give for a forged key.
-        expected = self._app.security.encode_id(job_id, kind=kind_for_job(job))
+        expected = self._security.encode_id(job_id, kind=kind_for_job(job))
         if not util.safe_str_cmp(str(supplied_job_key), expected):
             raise raise_class("Invalid job_key supplied.")
         if job.state not in Job.non_ready_states:
@@ -201,7 +209,7 @@ class JobFilesManager:
         compute resource has no legitimate reason to rewrite.
         """
         job_dir = os.path.realpath(
-            self._app.object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
+            self._object_store.get_filename(job, base_dir="job_work", dir_only=True, extra_dir=str(job.id))
         )
         tool_cwd = os.path.join(job_dir, "working")
         return util.in_directory(os.path.realpath(path), tool_cwd)
@@ -238,7 +246,7 @@ class JobFilesManager:
         return False
 
     def _in_working_directory(self, job: Job, path: str) -> bool:
-        working_directory = self._app.object_store.get_filename(
+        working_directory = self._object_store.get_filename(
             job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
         )
         return util.in_directory(os.path.realpath(path), os.path.realpath(working_directory))
