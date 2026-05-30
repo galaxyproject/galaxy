@@ -1,10 +1,12 @@
 import os.path
+from unittest import mock
 
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_build import (
     base_image_for_targets,
     build_target,
+    conda_platform,
     DEFAULT_BASE_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
     InvolucroContext,
@@ -54,3 +56,10 @@ def test_target_str_to_targets():
     targets = target_str_to_targets(target_str)
     assert (targets[0].package, targets[0].version, targets[0].build) == ("samtools", "1.3.1", "4")
     assert (targets[1].package, targets[1].version, targets[1].build) == ("bedtools", "2.22", None)
+
+
+@mock.patch("galaxy.tool_util.deps.mulled.mulled_build._platform_module.machine")
+def test_conda_platform_fallback_to_linux64(mock_machine):
+    mock_machine.return_value = "riscv64"
+    with mock.patch("galaxy.tool_util.deps.mulled.mulled_build.IS_OS_X", False):
+        assert conda_platform() == "linux-64"
