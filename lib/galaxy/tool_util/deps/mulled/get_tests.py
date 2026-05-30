@@ -103,7 +103,7 @@ def get_run_test(file: str) -> Dict[str, Any]:
     return package_tests
 
 
-def get_anaconda_url(container, anaconda_channel="bioconda", conda_platform_str=None):
+def get_anaconda_url(container: str, anaconda_channel: str = "bioconda", conda_platform_str: Optional[str] = None) -> str:
     """
     Download tarball from anaconda for test
     """
@@ -216,12 +216,12 @@ def try_a_func(func1, func2, param, container):
 
 
 def deep_test_search(
-    container,
-    recipes_path=None,
-    anaconda_channel="bioconda",
-    github_repo="bioconda/bioconda-recipes",
-    conda_platform_str=None,
-):
+    container: str,
+    recipes_path: Optional[str] = None,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Look in bioconda-recipes repo as well as anaconda for the tests, checking in multiple possible locations. If no test is found for the specified version, search if other package versions have a test available.
     """
@@ -284,13 +284,13 @@ def deep_test_search(
 
 
 def main_test_search(
-    container,
-    recipes_path=None,
-    deep=False,
-    anaconda_channel="bioconda",
-    github_repo="bioconda/bioconda-recipes",
-    conda_platform_str=None,
-):
+    container: str,
+    recipes_path: Optional[str] = None,
+    deep: bool = False,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Download tarball from anaconda for test
     """
@@ -318,11 +318,11 @@ def import_test_to_command_list(import_lang: str, import_: str) -> List[str]:
 
 def hashed_test_search(
     container: str,
-    recipes_path=None,
-    deep=False,
-    anaconda_channel="bioconda",
-    github_repo="bioconda/bioconda-recipes",
-    conda_platform_str=None,
+    recipes_path: Optional[str] = None,
+    deep: bool = False,
+    anaconda_channel: str = "bioconda",
+    github_repo: str = "bioconda/bioconda-recipes",
+    conda_platform_str: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Get test for hashed containers
