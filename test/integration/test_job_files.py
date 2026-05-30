@@ -610,9 +610,9 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session = self.sa_session
         hda = input_hda or self.input_hda
         assert hda
-        history = sa_session.scalars(select(model.History)).all()[0]
+        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
         assert history
-        user = sa_session.scalars(select(model.User)).all()[0]
+        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
