@@ -512,7 +512,12 @@ def test_downgrade_no_op_when_capabilities_for_returns_none():
     runner._apply_capability_downgrades(params, user)
     assert params["docker_enabled"] is True
     assert params["dependency_resolution"] == "remote"
-    assert compute_resource_manager.calls == [(compute_resource_manager.calls[0][0], user, None)]
+    # Exactly one capabilities_for call, for resource 42, this user, no access token.
+    assert len(compute_resource_manager.calls) == 1
+    resource, called_user, access_token = compute_resource_manager.calls[0]
+    assert resource.id == 42
+    assert called_user is user
+    assert access_token is None
 
 
 # --- jobs_directory auto-fill ---
