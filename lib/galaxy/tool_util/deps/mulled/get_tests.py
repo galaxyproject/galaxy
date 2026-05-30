@@ -103,7 +103,9 @@ def get_run_test(file: str) -> Dict[str, Any]:
     return package_tests
 
 
-def get_anaconda_url(container: str, anaconda_channel: str = "bioconda", conda_platform_str: Optional[str] = None) -> str:
+def get_anaconda_url(
+    container: str, anaconda_channel: str = "bioconda", conda_platform_str: Optional[str] = None
+) -> str:
     """
     Download tarball from anaconda for test
     """
