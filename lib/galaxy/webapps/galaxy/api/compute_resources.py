@@ -20,6 +20,7 @@ translation lives in the service.
 """
 
 import logging
+from typing import Annotated
 
 from fastapi import (
     Body,
@@ -36,6 +37,7 @@ from galaxy.schema.compute_resources import (
     RegistrationCompletionPayload,
     RegistrationTicket,
 )
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -47,7 +49,9 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["compute_resources"])
 
-ResourceIdPathParam: int = Path(..., title="Resource ID", description="Numeric ID of a compute resource.")
+ResourceIdPathParam = Annotated[
+    DecodedDatabaseIdField, Path(title="Resource ID", description="The ID of a compute resource.")
+]
 
 
 def _require_enabled(trans: ProvidesUserContext = DependsOnTrans) -> None:
@@ -74,6 +78,7 @@ class FastAPIComputeResources:
     @router.post(
         "/api/compute_resources/registrations",
         summary="Start a compute-resource registration",
+        operation_id="compute_resources__start_registration",
         response_model=RegistrationTicket,
         dependencies=_GATE,
     )
@@ -86,6 +91,7 @@ class FastAPIComputeResources:
     @router.post(
         "/api/compute_resources/registrations/complete",
         summary="Complete a compute-resource registration (host-side callback)",
+        operation_id="compute_resources__complete_registration",
         response_model=ComputeResourceSummary,
         dependencies=_GATE,
     )
@@ -102,6 +108,7 @@ class FastAPIComputeResources:
     @router.get(
         "/api/compute_resources",
         summary="List the requesting user's compute resources",
+        operation_id="compute_resources__index",
         response_model=list[ComputeResourceSummary],
         dependencies=_GATE,
     )
@@ -114,40 +121,43 @@ class FastAPIComputeResources:
     @router.get(
         "/api/compute_resources/{resource_id}",
         summary="Get one of the requesting user's compute resources",
+        operation_id="compute_resources__show",
         response_model=ComputeResourceSummary,
         dependencies=_GATE,
     )
     def show(
         self,
+        resource_id: ResourceIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        resource_id: int = ResourceIdPathParam,
     ) -> ComputeResourceSummary:
         return self.service.show(trans, resource_id)
 
     @router.delete(
         "/api/compute_resources/{resource_id}",
         summary="Disable one of the requesting user's compute resources",
+        operation_id="compute_resources__delete",
         status_code=status.HTTP_204_NO_CONTENT,
         dependencies=_GATE,
     )
     def delete(
         self,
+        resource_id: ResourceIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        resource_id: int = ResourceIdPathParam,
     ) -> Response:
         self.service.delete(trans, resource_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post(
         "/api/compute_resources/{resource_id}/purge",
-        summary="Fully delete a disabled compute resource (vault secret + DB row)",
+        summary="Purge a disabled compute resource (clears its vault secret, marks it deleted)",
+        operation_id="compute_resources__purge",
         status_code=status.HTTP_204_NO_CONTENT,
         dependencies=_GATE,
     )
     def purge(
         self,
+        resource_id: ResourceIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        resource_id: int = ResourceIdPathParam,
     ) -> Response:
         self.service.purge(trans, resource_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
