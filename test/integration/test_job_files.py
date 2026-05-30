@@ -304,11 +304,18 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def create_static_job_with_state(self, state):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
-        hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
+        # Order by id so we deterministically pick the original shared input
+        # dataset / history / user created in setUp. Without ORDER BY, PostgreSQL
+        # (CI) returns rows in arbitrary order; once earlier tests have added
+        # HDAs, ``[0]`` could be another job's output, the job's input would no
+        # longer be ``self.input_hda``, and positive-path reads would 403.
+        hda = sa_session.scalars(
+            select(model.HistoryDatasetAssociation).order_by(model.HistoryDatasetAssociation.id)
+        ).first()
         assert hda
-        history = sa_session.scalars(select(model.History)).all()[0]
+        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
         assert history
-        user = sa_session.scalars(select(model.User)).all()[0]
+        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
