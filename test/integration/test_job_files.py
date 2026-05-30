@@ -273,6 +273,30 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
 
+    def test_compute_resource_scoped_key_rejects_other_tenant(self):
+        """A well-formed scoped key for a *different* compute resource is
+        rejected: a credential lifted from tenant A's Pulsar node cannot be
+        replayed against tenant B's job. The legacy-kind test only proves the
+        pre-tenant key is refused; this proves cross-tenant isolation."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id = self._app.security.encode_id(job.id)
+        # Job is bound to resource 42; mint a valid key scoped to resource 99.
+        own_key = self._bind_to_compute_resource(job, 42)
+        other_kind = job_files_kind_for_params({"compute_resource_id": 99})
+        other_tenant_key = self._app.security.encode_id(job.id, kind=other_kind)
+        assert other_tenant_key != own_key
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": other_tenant_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        # Sanity: the correctly-scoped key for this job's own resource works.
+        data["job_key"] = own_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
     @property
     def sa_session(self):
         return self._app.model.session
