@@ -315,7 +315,8 @@ class ComputeResourceManager:
         multiple active resources per user are a planned follow-up). The
         ``order_by`` makes selection deterministic if that invariant is ever
         momentarily violated (e.g. concurrent registrations): newest active
-        registration wins, matching :meth:`list_for`'s ordering.
+        registration wins, matching :meth:`list_for`'s ``create_time``
+        ordering, with ``id`` as a deterministic tiebreaker.
         """
         if user is None:
             return None
