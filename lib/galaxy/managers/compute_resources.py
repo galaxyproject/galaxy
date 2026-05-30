@@ -309,12 +309,23 @@ class ComputeResourceManager:
         Anonymous callers (``user is None``) always get ``None`` so TPV rules can
         unconditionally reference ``app.compute_resource_manager.get_active_for(user)``
         without guarding for the anonymous case.
+
+        ``complete_registration`` keeps at most one active row per user, but it
+        enforces that in Python rather than with a DB constraint (deliberately —
+        multiple active resources per user are a planned follow-up). The
+        ``order_by`` makes selection deterministic if that invariant is ever
+        momentarily violated (e.g. concurrent registrations): newest active
+        registration wins, matching :meth:`list_for`'s ordering.
         """
         if user is None:
             return None
-        stmt = select(ComputeResource).where(
-            ComputeResource.user_id == user.id,
-            ComputeResource.status == STATUS_ACTIVE,
+        stmt = (
+            select(ComputeResource)
+            .where(
+                ComputeResource.user_id == user.id,
+                ComputeResource.status == STATUS_ACTIVE,
+            )
+            .order_by(ComputeResource.create_time.desc(), ComputeResource.id.desc())
         )
         return self.session.scalars(stmt).first()
 
@@ -736,8 +747,10 @@ class ComputeResourceManager:
         return False
 
     def purge(self, user: Optional[User], resource_id: int) -> Optional[ComputeResource]:
-        """Fully delete a resource: clears the vault secret and transitions
-        status to ``deleted``.
+        """Soft-delete a resource: clears the vault secret and transitions
+        status to ``deleted``. The row itself is retained (it drops out of
+        ``list_for`` but stays fetchable by id) so the registration history
+        survives for audit.
 
         Refuses to purge while non-terminal jobs reference this resource —
         in-flight jobs need the vault token to drain on the lazy-cached
