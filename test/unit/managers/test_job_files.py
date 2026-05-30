@@ -40,11 +40,22 @@ class _StubSecurity:
 
 
 class _StubObjectStore:
-    def __init__(self, working_directory: str) -> None:
-        self._working_directory = working_directory
+    """Resolves a job's working directory strictly by ``extra_dir`` — the job
+    id the manager passes to ``get_filename``. Keying on it (rather than
+    returning one directory unconditionally) means a regression that drops
+    ``extra_dir`` — and would alias one job's working dir onto a shared
+    parent — surfaces as a lookup miss instead of silently passing."""
 
-    def get_filename(self, *args: Any, **kwargs: Any) -> str:
-        return self._working_directory
+    def __init__(self, working_dirs: dict[str, str]) -> None:
+        self._working_dirs = working_dirs
+
+    def get_filename(self, job: Any, *, extra_dir: Optional[str] = None, **kwargs: Any) -> str:
+        if extra_dir not in self._working_dirs:
+            raise AssertionError(
+                f"object store queried with extra_dir={extra_dir!r}; "
+                f"known job working dirs: {sorted(self._working_dirs)}"
+            )
+        return self._working_dirs[extra_dir]
 
 
 class _StubSession:
@@ -132,11 +143,21 @@ def tmp_working_dir(tmp_path):
     return str(d)
 
 
-def _make_manager(*, jobs: dict[int, Any], working_directory: str = "/tmp/nonexistent") -> JobFilesManager:
+def _make_manager(
+    *,
+    jobs: dict[int, Any],
+    working_directory: str = "/tmp/nonexistent",
+    working_dirs: Optional[dict[str, str]] = None,
+) -> JobFilesManager:
+    # By default every job resolves to the same ``working_directory`` (most
+    # tests use a single job). Pass ``working_dirs`` to give jobs distinct
+    # directories keyed by ``str(job.id)``.
+    if working_dirs is None:
+        working_dirs = {str(job_id): working_directory for job_id in jobs}
     return JobFilesManager(
         _StubSecurity(),  # type: ignore[arg-type]
         _StubSession(jobs),  # type: ignore[arg-type]
-        _StubObjectStore(working_directory),  # type: ignore[arg-type]
+        _StubObjectStore(working_dirs),  # type: ignore[arg-type]
     )
 
 
@@ -268,6 +289,28 @@ class TestPathPolicy:
         mgr = _make_manager(jobs={5: job}, working_directory=tmp_working_dir)
         allowed = os.path.join(tmp_working_dir, "working", "outputs", "galaxy.json")
         mgr.assert_writable(job, allowed)  # No raise.
+
+    def test_write_resolves_this_jobs_working_dir(self, tmp_path):
+        """The working-dir check must resolve *this* job's directory (via
+        ``extra_dir``), not a shared parent: a key authorised for job A must
+        not let a write land in job B's working directory. Regression guard
+        for a manager that drops ``extra_dir`` and aliases jobs together."""
+        work_a = tmp_path / "job_a" / "working"
+        work_a.mkdir(parents=True)
+        work_b = tmp_path / "job_b" / "working"
+        work_b.mkdir(parents=True)
+        job_a = _stub_job(id=5, destination_params={"compute_resource_id": 7})
+        job_b = _stub_job(id=6, destination_params={"compute_resource_id": 7})
+        mgr = _make_manager(
+            jobs={5: job_a, 6: job_b},
+            working_dirs={"5": str(work_a.parent), "6": str(work_b.parent)},
+        )
+
+        # job_a may write inside its own working directory...
+        mgr.assert_writable(job_a, str(work_a / "out.txt"))  # No raise.
+        # ...but not into job_b's, even though both are compute-resource jobs.
+        with pytest.raises(exceptions.ItemAccessibilityException):
+            mgr.assert_writable(job_a, str(work_b / "out.txt"))
 
     def test_write_symlink_rejected(self, tmp_path):
         target = tmp_path / "real.out"
