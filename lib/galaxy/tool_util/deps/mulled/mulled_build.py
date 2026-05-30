@@ -100,9 +100,9 @@ From: %(base_image)s
 
 
 def involucro_link():
-    repo = "https://github.com/involucro/involucro/releases/download"
+    url_start = f"https://github.com/involucro/involucro/releases/download/v{INVOLUCRO_VERSION}/"
     if IS_OS_X:
-        url = f"{repo}/v{INVOLUCRO_VERSION}/involucro.darwin"
+        url = f"{url_start}involucro.darwin"
     else:
         machine = _platform_module.machine()
         arch_map = {
@@ -113,7 +113,7 @@ def involucro_link():
             "armv7l": "involucro.linux-armv7",
         }
         asset = arch_map.get(machine, "involucro")
-        url = f"{repo}/v{INVOLUCRO_VERSION}/{asset}"
+        url = f"{url_start}{asset}"
     return url
 
 
