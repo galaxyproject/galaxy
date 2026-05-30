@@ -728,7 +728,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         client_manager = self._client_manager_for(job_destination_params, job_id)
         return client_manager.get_client(self._finalize_destination_params(job_destination_params), **get_client_kwds)
 
-    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id) -> Any:
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id: Union[int, str]) -> Any:
         # Hook: which client manager routes this job. Takes ``job_id`` (not the
         # user) so a subclass can resolve a per-tenant user/client manager
         # itself; the base ignores it and uses the shared manager.
@@ -1626,7 +1626,7 @@ class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
             )
             params["dependency_resolution"] = "none"
 
-    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id) -> Any:
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id: Union[int, str]) -> Any:
         # Route through this tenant's client manager rather than the shared one.
         # ``stop_job`` calls get_client with the external pulsar job_id, so we
         # resolve the owning user from the Galaxy job_id to pick the right
