@@ -293,7 +293,7 @@ export interface paths {
             cookie?: never;
         };
         /** List the requesting user's compute resources */
-        get: operations["index_api_compute_resources_get"];
+        get: operations["compute_resources__index"];
         put?: never;
         post?: never;
         delete?: never;
@@ -312,7 +312,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Start a compute-resource registration */
-        post: operations["start_registration_api_compute_resources_registrations_post"];
+        post: operations["compute_resources__start_registration"];
         delete?: never;
         options?: never;
         head?: never;
@@ -329,7 +329,7 @@ export interface paths {
         get?: never;
         put?: never;
         /** Complete a compute-resource registration (host-side callback) */
-        post: operations["complete_registration_api_compute_resources_registrations_complete_post"];
+        post: operations["compute_resources__complete_registration"];
         delete?: never;
         options?: never;
         head?: never;
@@ -344,11 +344,11 @@ export interface paths {
             cookie?: never;
         };
         /** Get one of the requesting user's compute resources */
-        get: operations["show_api_compute_resources__resource_id__get"];
+        get: operations["compute_resources__show"];
         put?: never;
         post?: never;
         /** Disable one of the requesting user's compute resources */
-        delete: operations["delete_api_compute_resources__resource_id__delete"];
+        delete: operations["compute_resources__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -363,8 +363,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Fully delete a disabled compute resource (vault secret + DB row) */
-        post: operations["purge_api_compute_resources__resource_id__purge_post"];
+        /** Purge a disabled compute resource (clears its vault secret, marks it deleted) */
+        post: operations["compute_resources__purge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -31902,7 +31902,7 @@ export interface operations {
             };
         };
     };
-    index_api_compute_resources_get: {
+    compute_resources__index: {
         parameters: {
             query?: never;
             header?: {
@@ -31943,7 +31943,7 @@ export interface operations {
             };
         };
     };
-    start_registration_api_compute_resources_registrations_post: {
+    compute_resources__start_registration: {
         parameters: {
             query?: never;
             header?: {
@@ -31984,7 +31984,7 @@ export interface operations {
             };
         };
     };
-    complete_registration_api_compute_resources_registrations_complete_post: {
+    compute_resources__complete_registration: {
         parameters: {
             query?: never;
             header?: {
@@ -32029,7 +32029,7 @@ export interface operations {
             };
         };
     };
-    show_api_compute_resources__resource_id__get: {
+    compute_resources__show: {
         parameters: {
             query?: never;
             header?: {
@@ -32037,8 +32037,8 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description Numeric ID of a compute resource. */
-                resource_id: number;
+                /** @description The ID of a compute resource. */
+                resource_id: string;
             };
             cookie?: never;
         };
@@ -32073,7 +32073,7 @@ export interface operations {
             };
         };
     };
-    delete_api_compute_resources__resource_id__delete: {
+    compute_resources__delete: {
         parameters: {
             query?: never;
             header?: {
@@ -32081,8 +32081,8 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description Numeric ID of a compute resource. */
-                resource_id: number;
+                /** @description The ID of a compute resource. */
+                resource_id: string;
             };
             cookie?: never;
         };
@@ -32115,7 +32115,7 @@ export interface operations {
             };
         };
     };
-    purge_api_compute_resources__resource_id__purge_post: {
+    compute_resources__purge: {
         parameters: {
             query?: never;
             header?: {
@@ -32123,8 +32123,8 @@ export interface operations {
                 "run-as"?: string | null;
             };
             path: {
-                /** @description Numeric ID of a compute resource. */
-                resource_id: number;
+                /** @description The ID of a compute resource. */
+                resource_id: string;
             };
             cookie?: never;
         };
