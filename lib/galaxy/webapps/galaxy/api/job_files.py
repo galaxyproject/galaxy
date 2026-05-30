@@ -5,11 +5,13 @@ related to running and queued jobs.
 import logging
 import os
 import re
+from typing import IO
 
 from galaxy import exceptions
 from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.job_files import JobFilesManager
+from galaxy.model import Job
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
@@ -87,7 +89,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             if not re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
                 raise
 
-    def __raise_if_input_purged(self, job, path):
+    def __raise_if_input_purged(self, job: Job, path: str) -> None:
         """Raise a 400 ``ItemDeletionException`` if ``path`` looks like a Galaxy
         dataset file and any of the job's input datasets have been purged.
         Returns normally otherwise (the caller decides how to propagate)."""
@@ -144,7 +146,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 pass
         return {"message": "ok"}
 
-    def __open_upload_source(self, trans: ProvidesAppContext, payload):
+    def __open_upload_source(self, trans: ProvidesAppContext, payload: dict) -> IO[bytes]:
         """Return an open file-like for the upload, regardless of transport.
 
         Picks between three Pulsar upload mechanisms:
@@ -160,7 +162,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
           ``multipart/form-data``) and we read its underlying file object.
         """
         if "__file_path" in payload:
-            file_path = payload.get("__file_path")
+            file_path = payload["__file_path"]
             upload_store = trans.app.config.nginx_upload_job_files_store
             assert upload_store, (
                 "Request appears to have been processed by"
@@ -170,7 +172,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             assert file_path.startswith(
                 upload_store
             ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
-            return open(file_path)
+            return open(file_path, "rb")
         if "session_id" in payload:
             # code stolen from basic.py
             session_id = payload["session_id"]
@@ -182,8 +184,10 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             if re.match(r"^[\w-]+$", session_id) is None:
                 raise ValueError("Invalid session id format.")
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            return open(local_filename)
-        return payload.get("file", payload.get("__file", None)).file
+            return open(local_filename, "rb")
+        upload = payload.get("file", payload.get("__file"))
+        assert upload is not None, "No upload file provided in request payload."
+        return upload.file
 
     @expose_api_anonymous_and_sessionless
     def tus_patch(self, trans, **kwds):
