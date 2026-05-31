@@ -1,5 +1,8 @@
 import os.path
-from unittest import SkipTest, mock
+from unittest import (
+    mock,
+    SkipTest,
+)
 
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
