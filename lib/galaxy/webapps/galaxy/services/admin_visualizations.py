@@ -27,6 +27,7 @@ from galaxy.schema.visualization_admin import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
@@ -207,7 +208,10 @@ class AdminVisualizationsService(ServiceBase):
         """Reload the visualization registry to pick up configuration changes."""
         try:
             if hasattr(self.app, "visualizations_registry"):
-                self.app.visualizations_registry.reload()
+                self.app.visualizations_registry = VisualizationsRegistry(
+                    self.app,
+                    directories_setting=self.app.config.visualization_plugins_directory,
+                )
 
             return MessageResponse(message="Visualization registry reloaded successfully")
 
