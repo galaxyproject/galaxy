@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from galaxy.webapps.galaxy.services.admin_visualizations import AdminVisualizationsService
 from galaxy.managers.visualization_admin import VisualizationPackageManager
+from galaxy.webapps.galaxy.services.admin_visualizations import AdminVisualizationsService
 
 
 def _write_package(package_dir: str, package_name: str, version: str) -> None:
@@ -44,9 +44,12 @@ def test_update_package_restores_previous_version_on_swap_failure(service):
         return {"package": package, "version": version, "size": 1}
 
     real_move = shutil.move
+    swap_failed = False
 
     def flaky_move(src: str, dst: str, *args, **kwargs):
-        if src != target_dir and dst == target_dir:
+        nonlocal swap_failed
+        if not swap_failed and src != target_dir and dst == target_dir:
+            swap_failed = True
             raise OSError("swap failed")
         return real_move(src, dst, *args, **kwargs)
 

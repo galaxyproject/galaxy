@@ -1,5 +1,6 @@
 """API tests for admin visualization management endpoints."""
 
+import uuid
 from unittest.mock import patch
 
 from galaxy_test.base.api_asserts import (
@@ -24,7 +25,21 @@ class TestAdminVisualizationsApi(ApiTestCase):
         assert_status_code_is(response, 403)
 
     @requires_admin
-    def test_available(self):
+    @patch("galaxy.managers.visualization_admin.VisualizationPackageManager.query_npm_registry")
+    def test_available(self, mock_query):
+        mock_query.return_value = [
+            {
+                "name": "@galaxyproject/circster",
+                "description": "Circster",
+                "version": "1.2.3",
+                "keywords": ["visualization"],
+                "author": {},
+                "maintainers": [],
+                "links": {},
+                "date": "2026-01-01",
+                "score": {},
+            }
+        ]
         response = self._get("admin/visualizations/available", admin=True)
         assert_status_code_is(response, 200)
         data = response.json()
@@ -38,7 +53,7 @@ class TestAdminVisualizationsApi(ApiTestCase):
     @requires_admin
     @patch("galaxy.managers.visualization_admin.VisualizationPackageManager.install_npm_package")
     def test_install(self, mock_install):
-        viz_id = "api_install_test_viz"
+        viz_id = f"api_install_test_viz_{uuid.uuid4().hex[:8]}"
         mock_install.return_value = {
             "package": "@galaxyproject/api-install-test-viz",
             "version": "1.2.3",
