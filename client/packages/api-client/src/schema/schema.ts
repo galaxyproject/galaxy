@@ -75,7 +75,7 @@ export interface paths {
         put?: never;
         /**
          * Stage all visualization assets.
-         * @description Stage all visualization assets from config/plugins to static/plugins for Galaxy to serve.
+         * @description Stage all visualization assets into Galaxy's static serving directory.
          */
         post: operations["stage_all_api_admin_visualizations_stage_post"];
         delete?: never;
@@ -219,7 +219,7 @@ export interface paths {
         put?: never;
         /**
          * Stage assets for a specific visualization.
-         * @description Stage assets for a specific visualization from config/plugins to static/plugins.
+         * @description Stage assets for a specific visualization into Galaxy's static serving directory.
          */
         post: operations["stage_visualization_api_admin_visualizations__viz_id__stage_post"];
         delete?: never;
