@@ -9,9 +9,11 @@ from typing import (
     Optional,
 )
 
+from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -28,9 +30,6 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
-from galaxy import util
-from galaxy.datatypes.metadata import MetadataElement
-
 
 log = logging.getLogger(__name__)
 
@@ -1078,7 +1077,7 @@ class Msp(Text):
 
     def _count_spectra(self, path: str) -> int:
         count = 0
-        with open(path, 'r', encoding='utf-8') as handle:
+        with open(path, "r", encoding="utf-8") as handle:
             for line in handle:
                 stripped = line.strip()
                 lower_line = stripped.split(":", 1)[0].strip().lower()
