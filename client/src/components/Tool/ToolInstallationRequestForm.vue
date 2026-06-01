@@ -107,7 +107,7 @@ async function submit() {
         @ok="submit"
         @cancel="close"
         @update:show="emit('update:show', $event)">
-        <BAlert v-if="successMessage" variant="success" show dismissible @dismissed="close">
+        <BAlert v-if="successMessage" variant="success" show>
             {{ successMessage }}
         </BAlert>
 
