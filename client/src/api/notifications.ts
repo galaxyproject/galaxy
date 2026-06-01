@@ -1,5 +1,6 @@
 import { GalaxyApi } from "@/api";
 import type { components } from "@/api/schema";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export type BaseUserNotification = components["schemas"]["UserNotificationResponse"];
 export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"]["preferences"];
@@ -34,17 +35,8 @@ export interface MessageNotificationCreateRequest extends NotificationCreateRequ
     notification: MessageNotificationCreateData;
 }
 
-export interface ToolInstallationRequestNotificationContent {
-    category: "tool_installation_request";
-    tool_names: string[];
-    tool_url?: string;
-    description: string;
-    scientific_domain?: string;
-    requested_version?: string;
-    requester_email?: string | null;
-    workflow_id?: string;
-    additional_remarks?: string;
-}
+export type ToolInstallationRequestNotificationContent =
+    components["schemas"]["ToolInstallationRequestNotificationContent"];
 
 export interface ToolInstallationRequestNotification extends BaseUserNotification {
     category: "tool_installation_request";
@@ -66,21 +58,11 @@ export type NotificationVariants = components["schemas"]["NotificationVariant"];
 export type NewSharedItemNotificationContentItemType =
     components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
 
-export interface ToolInstallationRequestSubmitContent {
-    tool_names: string[];
-    tool_url?: string;
-    description: string;
-    scientific_domain?: string;
-    requested_version?: string;
-    workflow_id?: string;
-    additional_remarks?: string;
-}
-
 /** Submit a tool installation request as the authenticated user.
  *  Returns the encoded notification ID so the caller can link to it.
  */
-export async function submitToolInstallationRequest(content: ToolInstallationRequestSubmitContent): Promise<string> {
-    const { data, error } = await GalaxyApi().POST("/api/notifications", {
+export async function submitToolInstallationRequest(content: ToolInstallationRequestNotificationContent) {
+    const { error } = await GalaxyApi().POST("/api/notifications", {
         body: {
             recipients: { user_ids: [], group_ids: [], role_ids: [] },
             notification: {
@@ -95,9 +77,6 @@ export async function submitToolInstallationRequest(content: ToolInstallationReq
         },
     });
     if (error) {
-        const errorObject = error as { err_msg?: string; message?: string };
-        const message = errorObject.err_msg || errorObject.message || "Failed to submit notification.";
-        throw new Error(message);
+        rethrowSimple(error);
     }
-    return (data as { notification: { id: string } }).notification.id;
 }
