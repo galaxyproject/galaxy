@@ -1077,7 +1077,7 @@ class Msp(Text):
 
     def _count_spectra(self, path: str) -> int:
         count = 0
-        with open(path, "r", encoding="utf-8") as handle:
+        with open(path, encoding="utf-8") as handle:
             for line in handle:
                 stripped = line.strip()
                 lower_line = stripped.split(":", 1)[0].strip().lower()
