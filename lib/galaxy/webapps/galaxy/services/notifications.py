@@ -93,18 +93,8 @@ class NotificationService(ServiceBase):
         galaxy_url = (
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
-        if sender_context.user_is_admin:
-            request = NotificationCreateRequest.model_construct(
-                notification=payload.notification,
-                recipients=payload.recipients,
-                galaxy_url=galaxy_url,
-            )
-            return self.send_notification_internal(request)
-
         request = self._build_user_sender_request(sender_context, payload, galaxy_url)
-        # User-submitted notifications must return the created notification id synchronously,
-        # so the client can link the requester directly to the new record.
-        return self.send_notification_internal(request, force_sync=True)
+        return self.send_notification_internal(request)
 
     def _build_user_sender_request(
         self,
