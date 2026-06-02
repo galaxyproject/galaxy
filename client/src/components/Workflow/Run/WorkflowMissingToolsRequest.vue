@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert, BLink } from "bootstrap-vue";
+import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import { submitToolInstallationRequest } from "@/api/notifications";
@@ -20,7 +20,7 @@ const userStore = useUserStore();
 
 const showConfirm = ref(false);
 const submitting = ref(false);
-const submittedNotificationId = ref<string | null>(null);
+const submitted = ref(false);
 const errorMessage = ref("");
 
 const showButton = computed(
@@ -32,14 +32,6 @@ const showButton = computed(
 );
 
 const toolCount = computed(() => props.missingToolIds.length);
-const submittedNotificationRoute = computed(() =>
-    submittedNotificationId.value
-        ? {
-              path: "/user/notifications",
-              hash: `#notification-card-${submittedNotificationId.value}`,
-          }
-        : undefined,
-);
 
 async function requestInstallation() {
     submitting.value = true;
@@ -51,13 +43,14 @@ async function requestInstallation() {
         `${props.missingToolIds.join(", ")}. These tools are available in the Tool Shed and need to be installed.`;
 
     try {
-        const notificationId = await submitToolInstallationRequest({
+        await submitToolInstallationRequest({
+            category: "tool_installation_request",
             tool_names: props.missingToolIds,
             workflow_id: props.workflowId,
             description,
         });
 
-        submittedNotificationId.value = notificationId;
+        submitted.value = true;
         showConfirm.value = false;
     } catch (e) {
         errorMessage.value = errorMessageAsString(e, "Failed to submit installation request. Please try again.");
@@ -73,9 +66,8 @@ async function requestInstallation() {
             {{ errorMessage }}
         </BAlert>
 
-        <BAlert v-if="submittedNotificationId" variant="success" show>
-            Installation request sent &mdash;
-            <BLink :to="submittedNotificationRoute">view your request</BLink>.
+        <BAlert v-if="submitted" variant="success" show>
+            Installation request sent. Check your notifications for updates.
         </BAlert>
 
         <GButton
