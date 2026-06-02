@@ -1390,6 +1390,120 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
             item.title.wait_for_and_click()
 
 
+class ExtractsWorkflows(GalaxyTestSeleniumContext):
+    """Shared history setup + extraction-form UI drivers.
+
+    Used by the history-options extraction tests and the notebook (page)
+    extraction tests so both drive the same form through one set of helpers.
+    """
+
+    def setup_cat1_history(self, history_id: str) -> str:
+        """Run the cat1 example workflow and return the cat1 job_id."""
+        workflow = self.workflow_populator.load_workflow(name="test_for_extract")
+        workflow_request, _, workflow_id = self.workflow_populator.setup_workflow_run(workflow, history_id=history_id)
+        self.workflow_populator.invoke_workflow_and_wait(workflow_id, request=workflow_request, history_id=history_id)
+        jobs = self.dataset_populator.history_jobs(history_id)
+        cat1_jobs = [j for j in jobs if j["tool_id"] == "cat1"]
+        assert cat1_jobs, "Expected cat1 job to be present"
+        return cat1_jobs[0]["id"]
+
+    def run_cat1(self, history_id: str) -> tuple[str, str]:
+        """Run a single cat1 over two fresh uploads. Returns (job_id, output_id)."""
+        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
+        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return run["jobs"][0]["id"], run["outputs"][0]["id"]
+
+    def setup_two_independent_cat1_runs(self, history_id: str) -> tuple[str, str, str]:
+        """Two independent cat1 runs in one history. Returns (job_a, output_a, job_b).
+
+        Only run A's output is meant to be referenced by a notebook, so seeding
+        should select run A's subgraph and leave run B unchecked — the
+        differentiator vs. the form's default whole-history check.
+        """
+        job_a, output_a = self.run_cat1(history_id)
+        job_b, _ = self.run_cat1(history_id)
+        return job_a, output_a, job_b
+
+    def extract_workflow_toggle_job(self, job_id: str):
+        """Toggle the selection checkbox for a specific job card by job_id."""
+        checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)
+        element = checkbox.wait_for_present()
+        self.execute_script_click(element)
+
+    def find_workflow_by_name(self, name: str) -> str:
+        """Find workflow ID by name via API. Returns most recently created if multiple match."""
+        response = self.workflow_populator._get("workflows")
+        response.raise_for_status()
+        workflows = response.json()
+        matching = [w for w in workflows if w["name"] == name]
+        assert len(matching) >= 1, f"Expected at least 1 workflow '{name}', found 0: {[w['name'] for w in workflows]}"
+        matching.sort(key=lambda w: w["create_time"], reverse=True)
+        return matching[0]["id"]
+
+    def get_workflow_by_name(self, name: str) -> dict:
+        """Find and download workflow by name."""
+        workflow_id = self.find_workflow_by_name(name)
+        return self.workflow_populator.download_workflow(workflow_id)
+
+    def extract_workflow_and_download(self, name: str, screenshot_name: Optional[str] = None) -> dict:
+        """Navigate to extraction, submit form, return downloaded workflow."""
+        self.navigate_to_workflow_extraction()
+        if screenshot_name:
+            self.screenshot(screenshot_name)
+        self.extract_workflow_name_and_submit(name)
+        return self.get_workflow_by_name(name)
+
+    def count_job_checkboxes(self) -> int:
+        """Count the number of tool-step cards in the extraction form."""
+        return len(self.components.workflow_extract.tool_card_checkbox.all())
+
+    def count_checked_job_checkboxes(self) -> int:
+        """Count the number of checked tool-step cards."""
+        return len(self.components.workflow_extract.tool_card_checkbox_checked.all())
+
+    def get_job_checkbox_values(self) -> list:
+        """Get job IDs from all tool-step cards."""
+        cards = self.components.workflow_extract.tool_card_with_job_id.all()
+        return [card.get_attribute("data-job-id") for card in cards]
+
+    def extract_workflow_toggle_output_star(self, job_id: str):
+        """Star/un-star the first output of the tool card for the given job.
+        The star button in WorkflowExtractionCard.vue is disabled while
+        `!props.job.checked` — a regression that defaults cards to
+        unchecked turns the click into a silent no-op, so the test surfaces
+        the bug directly rather than via a downstream timeout."""
+        star = self.components.workflow_extract.output_star_for_job(job_id=job_id).wait_for_present()
+        assert not star.get_attribute("disabled"), f"star for job {job_id} is disabled — its card is unchecked"
+        self.execute_script_click(star)
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+    def extract_workflow_rename_output(self, job_id: str, new_label: str):
+        """Click the output label button, type a new label in the modal, and
+        click the modal OK button. Requires the output to already be starred
+        (label button is v-if=output.exposed)."""
+        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(label_button)
+        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys(new_label)
+        self.components.workflow_extract.output_rename_confirm.wait_for_and_click()
+        # Modal closes asynchronously after the rename callback resolves.
+        self.components.workflow_extract.output_rename_input.wait_for_absent()
+
+    def extract_workflow_cancel_rename_output(self, job_id: str):
+        """Open the rename modal, type some text, and dismiss without
+        confirming. Asserts the modal closes without applying the rename."""
+        label_button = self.components.workflow_extract.output_label_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(label_button)
+        self.components.workflow_extract.output_rename_input.wait_for_and_clear_and_send_keys("discarded label")
+        self.components.workflow_extract.output_rename_cancel.wait_for_and_click()
+        self.components.workflow_extract.output_rename_input.wait_for_absent()
+
+    def count_active_output_stars(self) -> int:
+        return len(self.components.workflow_extract.all_active_output_stars.all())
+
+
 def default_web_host_for_selenium_tests():
     if asbool(GALAXY_TEST_SELENIUM_REMOTE):
         try:

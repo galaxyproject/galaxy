@@ -13,6 +13,7 @@ export type PageRevisionSummary = components["schemas"]["PageRevisionSummary"];
 export type PageRevisionDetails = components["schemas"]["PageRevisionDetails"];
 export type CreateHistoryPagePayload = components["schemas"]["CreatePagePayload"];
 export type UpdateHistoryPagePayload = components["schemas"]["UpdatePagePayload"];
+export type WorkflowExtractionSummary = components["schemas"]["WorkflowExtractionSummary"];
 
 // --- API functions ---
 
@@ -73,6 +74,20 @@ export async function savePage(
     editSource: string = "user",
 ): Promise<HistoryPageDetails> {
     return updateHistoryPage(pageId, { content, edit_source: editSource });
+}
+
+/**
+ * Fetches the workflow extraction summary seeded from the outputs a notebook page references.
+ * The producing subgraph is flagged `seeded` and referenced outputs `exposed`.
+ */
+export async function fetchWorkflowExtractionSummary(pageId: string): Promise<WorkflowExtractionSummary> {
+    const { data, error } = await GalaxyApi().GET("/api/pages/{id}/workflow_extraction_summary", {
+        params: { path: { id: pageId } },
+    });
+    if (error) {
+        rethrowSimple(error);
+    }
+    return data as WorkflowExtractionSummary;
 }
 
 export async function deleteHistoryPage(pageId: string): Promise<void> {

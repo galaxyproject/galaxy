@@ -705,6 +705,32 @@ pages:
       permissions_button:
         type: data-description
         selector: 'page permissions button'
+      save_view_button:
+        type: data-description
+        selector: 'page save-view button'
+      chat_button:
+        type: data-description
+        selector: 'page chat button'
+      extract_workflow_button:
+        type: data-description
+        selector: 'page extract workflow button'
+      chat_panel:
+        type: data-description
+        selector: 'page chat panel'
+      chat_input: '.page-chat-panel #chat-input'
+      chat_send_button: '.page-chat-panel .send-button'
+      chat_loading: '.page-chat-panel [data-description="chat loading indicator"]'
+      chat_query_cell: '.page-chat-panel .entry-query .query-text'
+      chat_response_content: '.page-chat-panel .entry-response .response-content'
+      chat_new_conversation:
+        type: data-description
+        selector: 'new conversation button'
+      chat_history_button:
+        type: data-description
+        selector: 'chat history button'
+      chat_history_sidebar:
+        type: data-description
+        selector: 'page chat history list'
       revision_compare_current_button:
         type: data-description
         selector: 'revision compare current button'
