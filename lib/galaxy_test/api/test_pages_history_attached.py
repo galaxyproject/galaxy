@@ -417,3 +417,71 @@ steps:
         with self._different_user():
             response = self.dataset_populator.get_page_chat_history_raw(page["id"])
             self._assert_status_code_is(response, 403)
+
+
+class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
+    """GET /api/pages/{id}/workflow_extraction_summary — seeded from referenced outputs."""
+
+    dataset_populator: DatasetPopulator
+
+    def _extraction_summary(self, page_id: str) -> dict:
+        response = self._get(f"pages/{page_id}/workflow_extraction_summary")
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _cat1_history(self, history_id):
+        hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+        hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+        inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
+        run = self.dataset_populator.run_tool("cat1", inputs, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return run["outputs"][0]["id"]
+
+    @skip_without_tool("cat1")
+    def test_referenced_output_seeds_producer_and_exposes_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            output_id = self._cat1_history(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, [output_id])
+
+            summary = self._extraction_summary(page["id"])
+            tool_jobs = [j for j in summary["jobs"] if j["step_type"] == "tool"]
+            assert len(tool_jobs) == 1, summary["jobs"]
+            cat1_job = tool_jobs[0]
+            assert cat1_job["tool_id"] == "cat1"
+            assert cat1_job["seeded"] is True, cat1_job
+            exposed_outputs = [o for o in cat1_job["outputs"] if o["exposed"]]
+            assert len(exposed_outputs) == 1, cat1_job["outputs"]
+            assert exposed_outputs[0]["id"] == output_id
+            assert exposed_outputs[0]["suggested_name"]
+            # The two uploaded inputs are part of the producing subgraph → seeded input rows.
+            input_jobs = [j for j in summary["jobs"] if j["step_type"] in ("input_dataset", "input_collection")]
+            assert input_jobs, summary["jobs"]
+            assert all(j["seeded"] for j in input_jobs), input_jobs
+
+    @skip_without_tool("cat1")
+    def test_unreferenced_history_seeds_nothing(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._cat1_history(history_id)
+            page = self.dataset_populator.new_history_page(history_id, content="# Just prose, no directives")
+
+            summary = self._extraction_summary(page["id"])
+            assert summary["jobs"], "whole-history rows should still be present"
+            assert all(j["seeded"] is False for j in summary["jobs"]), summary["jobs"]
+            assert all(not o["exposed"] for j in summary["jobs"] for o in j["outputs"]), summary["jobs"]
+
+    def test_400_on_page_without_history(self):
+        page = self.dataset_populator.new_page(slug="extraction-no-history")
+        response = self._get(f"pages/{page['id']}/workflow_extraction_summary")
+        self._assert_status_code_is(response, 400)
+
+    @skip_without_tool("cat1")
+    def test_403_for_other_user_without_history_access(self):
+        with self.dataset_populator.test_history() as history_id:
+            output_id = self._cat1_history(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, [output_id])
+            # publish the page so a different user can resolve it...
+            self._put(f"pages/{page['id']}/publish", json=True)
+            with self._different_user():
+                # ...but without history access the full-history summary must not leak.
+                response = self._get(f"pages/{page['id']}/workflow_extraction_summary")
+                self._assert_status_code_is(response, 403)

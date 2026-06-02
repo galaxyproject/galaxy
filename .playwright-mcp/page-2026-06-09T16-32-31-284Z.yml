@@ -1,0 +1,77 @@
+- generic [ref=e1]:
+  - main:
+    - generic:
+      - generic [ref=e2]:
+        - navigation "Main" [ref=e4]:
+          - list [ref=e5]:
+            - link "Home" [ref=e6] [cursor=pointer]:
+              - /url: /
+              - img "logo" [ref=e7]
+          - list [ref=e8]:
+            - listitem "Enable/Disable Window Manager" [ref=e9]:
+              - link "Enable/Disable Window Manager" [ref=e10] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e11]: Enable/Disable Window Manager
+                - img [ref=e12]: 
+            - listitem "See Galaxy Training Materials" [ref=e14]:
+              - link "See Galaxy Training Materials " [ref=e15] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e16]: See Galaxy Training Materials
+                - generic [ref=e17]: 
+            - listitem "Show Username" [ref=e18]:
+              - link "Show Username " [ref=e19] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e20]: Show Username
+                - generic [ref=e21]: 
+            - listitem "Galaxy Help" [ref=e22]:
+              - link "Galaxy Help " [ref=e23] [cursor=pointer]:
+                - /url: "#"
+                - generic [ref=e24]: Galaxy Help
+                - generic [ref=e25]: 
+            - listitem "Support, Contact, and Community" [ref=e26]:
+              - link "Support, Contact, and Community" [ref=e27] [cursor=pointer]:
+                - /url: /about
+                - generic [ref=e28]: Support, Contact, and Community
+                - img [ref=e29]: 
+            - generic "Login to Access Storage Details" [ref=e31]:
+              - link "0 Using 0 b" [ref=e32] [cursor=pointer]:
+                - /url: /login/start
+                - generic:
+                  - progressbar "Quota usage"
+                - generic: Using 0 b
+            - listitem [ref=e33]:
+              - link "Login" [ref=e34] [cursor=pointer]:
+                - /url: "#"
+            - listitem [ref=e35]:
+              - link "Register" [ref=e36] [cursor=pointer]:
+                - /url: "#"
+        - generic [ref=e40]:
+          - alert [ref=e41]: Please register only one account to ensure fair sharing of computational resources. Multiple registrations are monitored and will result in account termination and data deletion.
+          - alert [ref=e71]: User with email 'jmchilton@gmail.com' already exists. Public name is taken; please choose another.
+          - generic [ref=e43]:
+            - generic [ref=e44]: Create a Galaxy account
+            - tabpanel [ref=e45]:
+              - generic [ref=e47]:
+                - group [ref=e48]:
+                  - generic [ref=e49]: Email address
+                  - textbox "Email address" [ref=e51]: jmchilton@gmail.com
+                - group [ref=e52]:
+                  - generic [ref=e53]: Password
+                  - textbox "Password" [ref=e55]: mycoolpassw0rd
+                - group [ref=e56]:
+                  - generic [ref=e57]: Confirm password
+                  - textbox "Confirm password" [ref=e59]: mycoolpassw0rd
+                - group [ref=e60]:
+                  - generic [ref=e61]: Public name
+                  - generic [ref=e62]:
+                    - textbox "Public name" [ref=e63]: jmchilton
+                    - generic [ref=e64]: Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes ('.', '_', '-').
+                - button "Create" [active] [ref=e65] [cursor=pointer]
+            - generic [ref=e66]:
+              - text: Already have an account?
+              - link "Log in here." [ref=e67] [cursor=pointer]:
+                - /url: /login/start
+      - generic:         
+      - generic [ref=e68]:
+        - img [ref=e69]: 
+        - text: Draggable

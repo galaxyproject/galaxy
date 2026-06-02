@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { faCopy, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faSitemap, faSpinner, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
@@ -159,6 +159,19 @@ async function handleEdit() {
     }
 }
 
+async function handleExtractWorkflow() {
+    if (!props.historyId || !store.currentPage) {
+        return;
+    }
+    // The summary scans the last saved revision, so flush any edits first.
+    if (store.isDirty) {
+        await store.savePage();
+        if (store.error) {
+            return;
+        }
+    }
+    router.push(`/histories/${props.historyId}/extract_workflow?from_page=${props.pageId}`);
+}
 function handleContentUpdate(newContent: string) {
     store.updateContent(newContent);
 }
@@ -202,16 +215,28 @@ function handleRevisionRestore(revisionId: string) {
         <!-- Edit mode: toolbar + editor + optional chat/revision panels -->
         <template v-else-if="store.hasCurrentPage">
             <PageDisplayToolbar :labels="labels" mode="editor" @preview="handlePreview" @back="handleBack">
-                <template v-if="isStandalone" v-slot:extra-actions>
-                    <ObjectPermissionsModal :show.sync="showPermissions" :markdown-content="store.currentContent" />
+                <template v-slot:extra-actions>
+                    <template v-if="isStandalone">
+                        <ObjectPermissionsModal :show.sync="showPermissions" :markdown-content="store.currentContent" />
+                        <GButton
+                            color="blue"
+                            outline
+                            size="small"
+                            data-description="page permissions button"
+                            @click="showPermissions = true">
+                            <FontAwesomeIcon :icon="faUsers" />
+                            Permissions
+                        </GButton>
+                    </template>
                     <GButton
+                        v-if="props.historyId"
                         color="blue"
                         outline
                         size="small"
-                        data-description="page permissions button"
-                        @click="showPermissions = true">
-                        <FontAwesomeIcon :icon="faUsers" />
-                        Permissions
+                        data-description="page extract workflow button"
+                        @click="handleExtractWorkflow">
+                        <FontAwesomeIcon :icon="faSitemap" />
+                        Extract Workflow
                     </GButton>
                 </template>
             </PageDisplayToolbar>

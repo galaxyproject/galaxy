@@ -186,6 +186,9 @@ describe("PageEditorView", () => {
             expect(editor.props("mode")).toBe("page");
         });
 
+        it("hides Extract Workflow button in standalone mode", () => {
+            expect(wrapper.find(SELECTORS.EXTRACT_WORKFLOW_BUTTON).exists()).toBe(false);
+        });
         it("back button navigates to pages list", async () => {
             wrapper.findComponent(PageDisplayToolbar).vm.$emit("back");
             expect(mockPush).toHaveBeenCalledWith("/pages/list");

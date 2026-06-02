@@ -3,7 +3,7 @@ import { faCheck, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert } from "bootstrap-vue";
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { useRoute, useRouter } from "vue-router/composables";
 
 import {
     extractWorkflowByIds,
@@ -11,7 +11,9 @@ import {
     type OutputLabelHint,
     type StepLabelHint,
     type WorkflowExtractionByIdsPayload,
+    type WorkflowExtractionSummary,
 } from "@/api/histories";
+import { fetchWorkflowExtractionSummary } from "@/api/pages";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -40,6 +42,14 @@ const props = defineProps<{
 }>();
 
 const router = useRouter();
+const route = useRoute();
+
+/** When the form is opened from a notebook, the producing subgraph of the page's
+ *  referenced outputs is pre-checked instead of the default non-deleted heuristic. */
+const fromPageId = computed(() => {
+    const value = route.query.from_page;
+    return typeof value === "string" && value ? value : null;
+});
 
 const Toast = useToast();
 
@@ -302,7 +312,9 @@ function uniqueInputLabel(desired: string, taken: Set<string>): string {
 
 async function extractWorkflow() {
     try {
-        const result = await extractWorkflowFromHistory(props.historyId);
+        const result: WorkflowExtractionSummary = fromPageId.value
+            ? await fetchWorkflowExtractionSummary(fromPageId.value)
+            : await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
             const rows = result.jobs.map(toExtractionRow);
             const taken = new Set<string>();
@@ -312,6 +324,12 @@ async function extractWorkflow() {
                 }
             }
             jobsList.value = rows;
+            if (fromPageId.value) {
+                // Pre-check the producing subgraph rather than the default non-deleted heuristic.
+                jobsList.value.forEach((job) => {
+                    job.checked = job.seeded;
+                });
+            }
         }
 
         warnings.value = result.warnings || [];
