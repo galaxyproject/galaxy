@@ -139,8 +139,8 @@ describe("WorkflowMissingToolsRequest", () => {
         expect(typeof payload.description).toBe("string");
     });
 
-    it("shows success alert with link after successful request", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notification-id-xyz");
+    it("shows success alert after successful request", async () => {
+        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -151,25 +151,8 @@ describe("WorkflowMissingToolsRequest", () => {
 
         expect(wrapper.text()).not.toContain("Request Installation");
         expect(wrapper.find(".alert-success").exists()).toBe(true);
-        expect(wrapper.text()).toContain("view your request");
-    });
-
-    it("success alert links to notification via router", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notification-id-xyz");
-        const wrapper = mountComponent();
-        await flushPromises();
-
-        await wrapper.find("[data-testid='request-install-btn']").trigger("click");
-        await flushPromises();
-        wrapper.findComponent(GModal).vm.$emit("ok");
-        await flushPromises();
-
-        const link = wrapper.findComponent({ name: "BLink" });
-        expect(link.exists()).toBe(true);
-        expect(link.props("to")).toEqual({
-            path: "/user/notifications",
-            hash: "#notification-card-notification-id-xyz",
-        });
+        expect(wrapper.text()).toContain("Installation request sent");
+        expect(wrapper.text()).toContain("Check your notifications for updates");
     });
 
     it("shows error alert when submission fails", async () => {
@@ -202,7 +185,7 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("sends tool_names as array of IDs", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notif-id");
+        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]], workflowId: "wf-id" });
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -216,7 +199,7 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("description includes each tool ID", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notif-id");
+        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent();
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -233,8 +216,8 @@ describe("WorkflowMissingToolsRequest", () => {
     it("button is disabled while the submission is in-flight", async () => {
         let resolveRequest!: () => void;
         mockSubmitToolInstallationRequest.mockReturnValueOnce(
-            new Promise<string>((resolve) => {
-                resolveRequest = () => resolve("notif-id");
+            new Promise<void>((resolve) => {
+                resolveRequest = () => resolve();
             }),
         );
         const wrapper = mountComponent();
