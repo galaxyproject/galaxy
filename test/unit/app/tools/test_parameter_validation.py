@@ -141,6 +141,20 @@ class TestParameterValidation(BaseParameterTestCase):
             p.validate(["Fop", "foo"])
         p.validate(["Fop", "fop"])
 
+    def test_RegexValidator_non_string_value(self):
+        p = self._parameter_for(xml="""
+<param name="blah" type="integer" value="10">
+    <validator type="regex">[0-9]+</validator>
+</param>""")
+        p.validate(10)
+        with self.assertRaisesRegex(
+            ValueError, r"Parameter 'blah': Value '10' does not match regular expression '\[a-z\]\+'"
+        ):
+            self._parameter_for(xml="""
+<param name="blah" type="integer" value="10">
+    <validator type="regex">[a-z]+</validator>
+</param>""").validate(10)
+
     def test_LengthValidator(self):
         p = self._parameter_for(xml="""
 <param name="blah" type="text" value="foobar">

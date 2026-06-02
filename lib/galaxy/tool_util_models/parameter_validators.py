@@ -183,7 +183,7 @@ class RegexParameterValidatorModel(StaticValidatorModel):
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            match = regex.match(expression, val or "")
+            match = regex.match(expression, str(val) if val else "")
             raise_error_if_validation_fails(match is not None, validator, value_to_show=val)
 
 
