@@ -86,7 +86,7 @@ describe("ToolInstallationRequestForm", () => {
     });
 
     it("submits correct payload on ok", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notif-id-123");
+        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = await mountForm(true);
         await wrapper.find("#tool-installation-request-name").setValue("FastQC");
         await wrapper.find("#tool-installation-request-url").setValue("https://github.com/s-andrews/FastQC");
@@ -129,7 +129,7 @@ describe("ToolInstallationRequestForm", () => {
     });
 
     it("shows success alert after successful submission", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notif-id-123");
+        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = await mountForm(true);
         await fillRequiredFields(wrapper);
         wrapper.findComponent(GModal).vm.$emit("ok");
