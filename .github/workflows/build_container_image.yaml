@@ -4,128 +4,18 @@ on:
     branches:
       - dev
       - release_*
-  release:
-    types: [released, prereleased]
-  workflow_dispatch:
-    inputs:
-      release_tag:
-        description: 'Specify release tag to build for (releases only)'
-        required: false
-        type: string
-
+    tags:
+      - v*
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.release.tag_name || github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  check-permissions:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check if user can create releases
-        run: |
-          PERMISSION=$(gh api repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission --jq '.permission')
-          if [[ "$PERMISSION" != "admin" ]]; then
-            echo "Error: Only repository admins can manually trigger release builds"
-            exit 1
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  version-check:
-    name: Check if version should be built
-    runs-on: ubuntu-latest
-    needs: [check-permissions]
-    if: |
-      github.repository_owner == 'galaxyproject' &&
-      (github.event_name != 'workflow_dispatch' || (!cancelled() && !failure()))
-    outputs:
-      should_build: ${{ steps.decision.outputs.should_build }}
-      is_release: ${{ steps.decision.outputs.is_release }}
-      version: ${{ steps.decision.outputs.version }}
-      tag_name: ${{ steps.decision.outputs.tag_name }}
-      is_prerelease: ${{ steps.decision.outputs.is_prerelease }}
-      trigger_type: ${{ steps.decision.outputs.trigger_type }}
-    steps:
-      - name: Determine build decision
-        id: decision
-        run: |
-          should_build="true"
-          is_release="false"
-          is_prerelease="false"
-          version=""
-          tag_name=""
-          trigger_type=""
-
-          # Determine trigger type and get version info
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            trigger_type="release"
-            is_release="true"
-            tag_name="${{ github.event.release.tag_name }}"
-            is_prerelease="${{ github.event.release.prerelease }}"
-            version=${tag_name#v}
-            echo "GitHub Release detected: $tag_name (version: $version, prerelease: $is_prerelease)"
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            trigger_type="manual"
-            if [[ -n "${{ inputs.release_tag }}" ]]; then
-              is_release="true"
-              tag_name="${{ inputs.release_tag }}"
-              version=${tag_name#v}
-              echo "Manual release build: $tag_name (version: $version)"
-            else
-              echo "Manual dispatch requires release_tag input for release builds"
-              exit 1
-            fi
-          else
-            trigger_type="branch"
-            echo "Branch push detected, proceeding with development build"
-            # For branch pushes, set version info for consistency
-            if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
-              version="dev"
-            elif [[ "$GITHUB_REF" == "refs/heads/release_"* ]]; then
-              version="${GITHUB_REF#refs/heads/release_}-auto"
-            fi
-          fi
-
-          # For release builds, check if we should skip due to existing artifacts
-          if [[ "$is_release" == "true" ]]; then
-            echo "Checking if release artifacts already exist for version $version..."
-
-            # Check if Docker images exist
-            if docker manifest inspect quay.io/galaxyproject/galaxy-min:$version >/dev/null 2>&1; then
-              echo "Docker image quay.io/galaxyproject/galaxy-min:$version already exists"
-              should_build="false"
-              echo "Skipping build - Docker images for version $version already exist"
-              echo "::notice::Release $tag_name artifacts already exist. Skipping duplicate build."
-            elif docker manifest inspect galaxy/galaxy-min:$version >/dev/null 2>&1; then
-              echo "Docker image galaxy/galaxy-min:$version already exists"
-              should_build="false"
-              echo "Skipping build - Docker images for version $version already exist"
-              echo "::notice::Release $tag_name artifacts already exist. Skipping duplicate build."
-            else
-              echo "Docker images do not exist for version $version"
-              echo "Proceeding with release build for version $version"
-            fi
-          fi
-
-          echo "should_build=$should_build" >> $GITHUB_OUTPUT
-          echo "is_release=$is_release" >> $GITHUB_OUTPUT
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
-          echo "is_prerelease=$is_prerelease" >> $GITHUB_OUTPUT
-          echo "trigger_type=$trigger_type" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
   ghcrbuild:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
-    needs: version-check
-    if: needs.version-check.outputs.should_build == 'true'
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.version-check.outputs.tag_name || '' }}
           persist-credentials: false
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
       - name: Set outputs
@@ -134,7 +24,9 @@ jobs:
       - name: Set branch name
         id: branch
         run: |
-          if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
+          if [[ "$GITHUB_REF" == "refs/tags/"* ]]; then
+            echo "name=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
             echo "name=dev" >> $GITHUB_OUTPUT
           elif [[ "$GITHUB_REF" == "refs/heads/release_"* ]]; then
             echo "name=${GITHUB_REF#refs/heads/release_}-auto" >> $GITHUB_OUTPUT
@@ -150,9 +42,9 @@ jobs:
       - name: Build args
         id: buildargs
         run: |
-            echo "gitcommit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+            echo "gitcommit=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT 
             echo "builddate=$(date -u +'%Y-%m-%dT%H:%M:%SZ')"  >> $GITHUB_OUTPUT
-
+      
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
         with:
@@ -182,15 +74,13 @@ jobs:
   build:
     name: Build container image for Galaxy repos
     runs-on: ubuntu-latest
-    needs: version-check
-    if: needs.version-check.outputs.should_build == 'true'
+    if: github.repository_owner == 'galaxyproject'
     outputs:
       tag: ${{ steps.branch.outputs.name }}
       version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: ${{ needs.version-check.outputs.tag_name || '' }}
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
@@ -202,7 +92,9 @@ jobs:
       - name: Set branch name
         id: branch
         run: |
-          if [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
+          if [[ "$GITHUB_REF" == "refs/tags/"* ]]; then
+            echo "name=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+          elif [[ "$GITHUB_REF" == "refs/heads/dev" ]]; then
             echo "name=dev" >> $GITHUB_OUTPUT
           elif [[ "$GITHUB_REF" == "refs/heads/release_"* ]]; then
             echo "name=${GITHUB_REF#refs/heads/release_}-auto" >> $GITHUB_OUTPUT
@@ -257,8 +149,7 @@ jobs:
   smoke-test:
     name: Try installing the new image
     runs-on: ubuntu-latest
-    needs: [ version-check, build ]
-    if: needs.version-check.outputs.should_build == 'true'
+    needs: [ build ]
     steps:
       - name: Start k8s locally
         uses: jupyterhub/action-k3s-helm@v4
@@ -361,208 +252,48 @@ jobs:
           echo "Client build is properly served"
 
   pr:
-    name: Create a PR to update the Galaxy Helm chart
+    name: Create a PR to update the Galaxy Helm chart when a release is tagged
     runs-on: ubuntu-latest
-    needs: [version-check, smoke-test, build]
-    if: needs.version-check.outputs.is_release == 'true' && needs.version-check.outputs.should_build == 'true' && needs.version-check.outputs.is_prerelease == 'false'
-    outputs:
-      pr_number: ${{ steps.create_pr.outputs.pull-request-number }}
-      pr_url: ${{ steps.create_pr.outputs.pull-request-url }}
+    needs: [smoke-test, build]
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Generate GitHub App Token
-        id: generate_token
-        uses: actions/create-github-app-token@v1
-        with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
-          repositories: galaxy-helm
-
       - name: Checkout Galaxy Helm chart
         uses: actions/checkout@v6
         with:
           repository: galaxyproject/galaxy-helm
-          token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: false
 
       - name: Update Chart.yaml appVersion
         run: |
-          echo "Updating Chart.yaml appVersion to ${{ needs.build.outputs.version }}"
           sed -i "s/^appVersion:.*/appVersion: \"${{ needs.build.outputs.version }}\"/" galaxy/Chart.yaml
 
       - name: Update values.yaml image.tag
         run: |
-          echo "Updating values.yaml image.tag to ${{ needs.build.outputs.tag }}"
           sed -i "s/^  tag:.*/  tag: \"${{ needs.build.outputs.tag }}\"/" galaxy/values.yaml
 
-      - name: Show changes
-        run: |
-          echo "=== Changes to be committed ==="
-          git diff
-          echo "=== End of changes ==="
-
       - name: Create Pull Request
-        id: create_pr
         uses: peter-evans/create-pull-request@v8
         with:
-          token: ${{ steps.generate_token.outputs.token }}
+          token: ${{ secrets.GALAXY_HELM_PULL_REQUEST_TOKEN }}
           commit-message: "Update Galaxy to version ${{ needs.build.outputs.version }}"
           title: "Update Galaxy to version ${{ needs.build.outputs.version }}"
           body: |
             This PR updates the Galaxy Helm chart to use the new Galaxy release.
 
-            ## Changes
-            - **appVersion**: `${{ needs.build.outputs.version }}`
-            - **image.tag**: `${{ needs.build.outputs.tag }}`
+            Changes:
+            - appVersion: ${{ needs.build.outputs.version }}
+            - image.tag: ${{ needs.build.outputs.tag }}
 
-            ## Triggered by
-            - **Repository**: ${{ github.repository }}
-            - **Tag**: ${{ needs.version-check.outputs.tag_name }}
-            - **Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-            ---
-            🤖 This PR was automatically created by the Galaxy release workflow.
+            Triggered by: ${{ github.ref }}
           branch: update-galaxy-${{ needs.build.outputs.version }}
           delete-branch: true
-          labels: |
-            patch
-            automated-update
+          labels: patch
 
-  notify-success:
-    name: Notify Slack on successful release
+  notify-failure:
+    name: Notify Slack on failure
     runs-on: ubuntu-latest
-    needs: [version-check, pr, build]
-    if: always() && needs.version-check.outputs.is_release == 'true' && needs.version-check.outputs.should_build == 'true' && needs.build.result == 'success'
-    steps:
-      - name: Send Slack notification for successful release
-        uses: slackapi/slack-github-action@v3.0.1
-        with:
-          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": ":rocket: *Galaxy Release Container Images Published*",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": ":rocket: Galaxy Release Container Images Published",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Release:*\n${{ needs.version-check.outputs.tag_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Version:*\n${{ needs.version-check.outputs.version }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Trigger:*\n${{ needs.version-check.outputs.trigger_type }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Prerelease:*\n${{ needs.version-check.outputs.is_prerelease }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "*Published Images:*\n• `quay.io/galaxyproject/galaxy-min:${{ needs.version-check.outputs.version }}`\n• `galaxy/galaxy-min:${{ needs.version-check.outputs.version }}`\n• `ghcr.io/galaxyproject/galaxy:${{ needs.version-check.outputs.version }}`"
-                  }
-                }${{ needs.pr.outputs.pr_url && ',{"type": "section","text": {"type": "mrkdwn","text": "*Helm Chart PR:* <' || '' }}${{ needs.pr.outputs.pr_url }}${{ needs.pr.outputs.pr_url && '|#' || '' }}${{ needs.pr.outputs.pr_number }}${{ needs.pr.outputs.pr_url && '>"}}' || '' }},
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Workflow Run",
-                        "emoji": true
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }${{ needs.pr.outputs.pr_url && ',{"type": "button", "text": {"type": "plain_text", "text": "View Helm Chart PR", "emoji": true}, "url": "' || '' }}${{ needs.pr.outputs.pr_url }}${{ needs.pr.outputs.pr_url && '"}' || '' }}
-                  ]
-                }
-              ]
-            }
-
-  notify-skipped:
-    name: Notify Slack when release build is skipped
-    runs-on: ubuntu-latest
-    needs: [version-check]
-    if: needs.version-check.outputs.is_release == 'true' && needs.version-check.outputs.should_build == 'false'
-    steps:
-      - name: Send Slack notification for skipped build
-        uses: slackapi/slack-github-action@v3.0.1
-        with:
-          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": ":information_source: *Galaxy Build Skipped*",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": ":information_source: Galaxy Build Skipped",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Release *${{ needs.version-check.outputs.tag_name }}* container images have already been built. Skipping duplicate build."
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Release:*\n${{ needs.version-check.outputs.tag_name }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Trigger:*\n${{ needs.version-check.outputs.trigger_type }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Triggered by:*\n${{ github.actor }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Workflow Run",
-                        "emoji": true
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
-
-  notify-release-failure:
-    name: Notify Slack on release build failure
-    runs-on: ubuntu-latest
-    needs: [version-check, build, smoke-test]
-    if: ${{ always() && needs.version-check.outputs.should_build == 'true' && needs.version-check.outputs.is_release == 'true' && (needs.build.result == 'failure' || needs.smoke-test.result == 'failure') }}
+    needs: [build, smoke-test]
+    if: ${{ always() && (needs.build.result == 'failure' || needs.smoke-test.result == 'failure') }}
     steps:
       - name: Determine which job failed
         id: failure-info
@@ -580,13 +311,13 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ":x: *Galaxy Release Build Failed*",
+              "text": ":x: *Build Container Image Failed*",
               "blocks": [
                 {
                   "type": "header",
                   "text": {
                     "type": "plain_text",
-                    "text": ":x: Galaxy Release Build Failed",
+                    "text": ":x: Build Container Image Failed",
                     "emoji": true
                   }
                 },
@@ -599,122 +330,12 @@ jobs:
                     },
                     {
                       "type": "mrkdwn",
-                      "text": "*Release:*\n${{ needs.version-check.outputs.tag_name }}"
+                      "text": "*Branch/Tag:*\n${{ github.ref_name }}"
                     },
                     {
                       "type": "mrkdwn",
                       "text": "*Failed Job:*\n${{ steps.failure-info.outputs.failed_job }}"
                     },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Triggered by:*\n${{ github.actor }}"
-                    }
-                  ]
-                },
-                {
-                  "type": "actions",
-                  "elements": [
-                    {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "text": "View Workflow Run",
-                        "emoji": true
-                      },
-                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-                    }
-                  ]
-                }
-              ]
-            }
-
-  notify-dev-failure-transition:
-    name: Notify Slack on dev build state transitions
-    runs-on: ubuntu-latest
-    needs: [version-check, build, smoke-test]
-    if: ${{ always() && needs.version-check.outputs.should_build == 'true' && needs.version-check.outputs.is_release == 'false' }}
-    steps:
-      - name: Determine current run status
-        id: current-status
-        run: |
-          if [[ "${{ needs.build.result }}" == "failure" || "${{ needs.smoke-test.result }}" == "failure" ]]; then
-            echo "status=failure" >> $GITHUB_OUTPUT
-            if [[ "${{ needs.build.result }}" == "failure" ]]; then
-              echo "failed_job=Docker image build" >> $GITHUB_OUTPUT
-            elif [[ "${{ needs.smoke-test.result }}" == "failure" ]]; then
-              echo "failed_job=Smoke test" >> $GITHUB_OUTPUT
-            fi
-          else
-            echo "status=success" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Get previous workflow run status
-        id: previous-status
-        run: |
-          # Get the previous workflow run for the same workflow and branch
-          previous_run=$(curl -s -H "Authorization: token ${{ github.token }}" \
-            "${{ github.api_url }}/repos/${{ github.repository }}/actions/workflows/build_container_image.yaml/runs?branch=${{ github.ref_name }}&per_page=2" \
-            | jq -r '.workflow_runs | sort_by(.created_at) | reverse | .[1].conclusion // "none"')
-
-          echo "previous_status=$previous_run" >> $GITHUB_OUTPUT
-          echo "Previous run status: $previous_run"
-          echo "Current run status: ${{ steps.current-status.outputs.status }}"
-
-      - name: Determine if notification should be sent
-        id: should-notify
-        run: |
-          current="${{ steps.current-status.outputs.status }}"
-          previous="${{ steps.previous-status.outputs.previous_status }}"
-
-          # Send notification on state transitions:
-          # - First failure (success/none -> failure)
-          # - Recovery (failure -> success)
-          if [[ "$current" == "failure" && "$previous" != "failure" ]]; then
-            echo "notify=true" >> $GITHUB_OUTPUT
-            echo "notification_type=first_failure" >> $GITHUB_OUTPUT
-          elif [[ "$current" == "success" && "$previous" == "failure" ]]; then
-            echo "notify=true" >> $GITHUB_OUTPUT
-            echo "notification_type=recovery" >> $GITHUB_OUTPUT
-          else
-            echo "notify=false" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Send Slack notification for state transition
-        if: steps.should-notify.outputs.notify == 'true'
-        uses: slackapi/slack-github-action@v3.0.1
-        with:
-          webhook: ${{ secrets.K8S_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && ':white_check_mark: *Galaxy Dev Build Recovered*' || ':x: *Galaxy Dev Build Failed*' }}",
-              "blocks": [
-                {
-                  "type": "header",
-                  "text": {
-                    "type": "plain_text",
-                    "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && ':white_check_mark: Galaxy Dev Build Recovered' || ':x: Galaxy Dev Build Failed' }}",
-                    "emoji": true
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "${{ steps.should-notify.outputs.notification_type == 'recovery' && 'The Galaxy development build is now working again after previous failures.' || 'The Galaxy development build has started failing.' }}"
-                  }
-                },
-                {
-                  "type": "section",
-                  "fields": [
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Repository:*\n${{ github.repository }}"
-                    },
-                    {
-                      "type": "mrkdwn",
-                      "text": "*Branch:*\n${{ github.ref_name }}"
-                    }${{ steps.should-notify.outputs.notification_type == 'first_failure' && format(',{{"type": "mrkdwn", "text": "*Failed Job:*\\n{0}"}}', steps.current-status.outputs.failed_job) || '' }},
                     {
                       "type": "mrkdwn",
                       "text": "*Triggered by:*\n${{ github.actor }}"
