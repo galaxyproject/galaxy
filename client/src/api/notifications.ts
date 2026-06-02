@@ -58,9 +58,7 @@ export type NotificationVariants = components["schemas"]["NotificationVariant"];
 export type NewSharedItemNotificationContentItemType =
     components["schemas"]["NewSharedItemNotificationContent"]["item_type"];
 
-/** Submit a tool installation request as the authenticated user.
- *  Returns the encoded notification ID so the caller can link to it.
- */
+/** Submit a tool installation request as the authenticated user. */
 export async function submitToolInstallationRequest(content: ToolInstallationRequestNotificationContent) {
     const { error } = await GalaxyApi().POST("/api/notifications", {
         body: {
@@ -69,10 +67,7 @@ export async function submitToolInstallationRequest(content: ToolInstallationReq
                 source: "tool_installation_request_form",
                 category: "tool_installation_request",
                 variant: "info",
-                content: {
-                    category: "tool_installation_request",
-                    ...content,
-                },
+                content,
             },
         },
     });
