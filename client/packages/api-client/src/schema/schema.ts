@@ -4695,6 +4695,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pages/{id}/workflow_extraction_summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Summarize the page's history for workflow extraction, seeded from referenced outputs.
+         * @description Summarize the jobs in the page's history, preselecting the subgraph that
+         *     produced the datasets/collections the page references.
+         */
+        get: operations["workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plugins": {
         parameters: {
             query?: never;
@@ -27086,6 +27107,12 @@ export interface components {
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
             /**
+             * Seeded
+             * @description Whether this job is part of the producing subgraph of the outputs a page/notebook references. Always False for the plain history summary; set when the summary is computed for a page.
+             * @default false
+             */
+            seeded: boolean;
+            /**
              * Step Type
              * @description The role this job plays in the extracted workflow.
              * @enum {string}
@@ -46658,6 +46685,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    workflow_extraction_summary_api_pages__id__workflow_extraction_summary_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of the Page. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The history's extraction summary with seeded rows and exposed outputs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkflowExtractionSummary"];
                 };
             };
             /** @description Request Error */

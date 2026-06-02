@@ -2143,6 +2143,20 @@ class BaseDatasetPopulator(BasePopulator):
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
+    def new_notebook_referencing(
+        self,
+        history_id: str,
+        output_ids: list[str],
+        title: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Create a history-attached page (notebook) whose markdown references the
+        given dataset outputs via history_dataset_display directives."""
+        directives = "\n".join(
+            f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids
+        )
+        content = f"# Analysis\n\n{directives}\n"
+        return self.new_history_page(history_id, title=title, content=content)
+
     def get_history_page(self, page_id: str) -> dict[str, Any]:
         response = self._get(f"pages/{page_id}")
         api_asserts.assert_status_code_is(response, 200)

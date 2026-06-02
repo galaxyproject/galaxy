@@ -9,12 +9,14 @@ from galaxy import model
 from galaxy.exceptions import (
     ItemAccessibilityException,
     MalformedContents,
+    ObjectNotFound,
 )
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
     _remap_galaxy_markdown_calls,
     populate_invocation_markdown,
     ready_galaxy_markdown_for_export,
+    referenced_content_ids,
     to_basic_markdown,
 )
 from galaxy.util import now
@@ -589,3 +591,77 @@ history_dataset_display(history_dataset_id=2)
 """
         with pytest.raises(MalformedContents):
             _remap_galaxy_markdown_calls(lambda container, line: (line, False), example)
+
+
+class TestReferencedContentCollector(BaseExportTestCase):
+    def test_dataset_display(self):
+        hda = self._new_hda()
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+"""
+        with self._expect_get_hda(hda):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hda", 1)]
+        assert referenced.warnings == []
+
+    def test_multiple_dataset_directives_deduped(self):
+        hda = self._new_hda()
+        hda2 = self._new_hda()
+        hda2.id = 2
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+
+```galaxy
+history_dataset_as_image(history_dataset_id=2)
+```
+
+```galaxy
+history_dataset_peek(history_dataset_id=1)
+```
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2, hda]
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hda", 1), ("hda", 2)]
+        assert referenced.warnings == []
+
+    def test_collection_display(self):
+        hdca = model.HistoryDatasetCollectionAssociation()
+        hdca.id = 7
+        self.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
+        example = """
+```galaxy
+history_dataset_collection_display(history_dataset_collection_id=7)
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == [("hdca", 7)]
+        assert referenced.warnings == []
+
+    def test_inaccessible_reference_skipped_with_warning(self):
+        self.app.hda_manager.get_accessible.side_effect = ObjectNotFound("gone")
+        example = """
+```galaxy
+history_dataset_display(history_dataset_id=1)
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == []
+        assert len(referenced.warnings) == 1
+
+    def test_non_content_directives_ignored(self):
+        example = """
+```galaxy
+generate_time()
+```
+
+```galaxy
+generate_galaxy_version()
+```
+"""
+        referenced = referenced_content_ids(self.trans, example)
+        assert referenced.refs == []
+        assert referenced.warnings == []
