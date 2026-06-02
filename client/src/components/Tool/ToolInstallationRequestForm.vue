@@ -76,6 +76,7 @@ async function submit() {
 
     try {
         await submitToolInstallationRequest({
+            category: "tool_installation_request",
             tool_names: [toolName.value.trim()],
             tool_url: toolUrl.value.trim() || undefined,
             description: description.value.trim(),
