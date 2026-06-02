@@ -122,7 +122,6 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("calls submitToolInstallationRequest with correct payload on confirm", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce("notification-id-xyz");
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -140,7 +139,6 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("shows success alert after successful request", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent();
         await flushPromises();
 
@@ -185,7 +183,6 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("sends tool_names as array of IDs", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent({ missingToolIds: [MISSING_TOOL_IDS[0]], workflowId: "wf-id" });
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
@@ -199,7 +196,6 @@ describe("WorkflowMissingToolsRequest", () => {
     });
 
     it("description includes each tool ID", async () => {
-        mockSubmitToolInstallationRequest.mockResolvedValueOnce(undefined);
         const wrapper = mountComponent();
         await flushPromises();
         await wrapper.find("[data-testid='request-install-btn']").trigger("click");
