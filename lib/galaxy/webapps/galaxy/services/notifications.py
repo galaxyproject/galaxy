@@ -85,7 +85,10 @@ class NotificationService(ServiceBase):
     ) -> NotificationCreatedResponse | AsyncTaskResultSummary:
         """Sends a notification to a list of recipients (users, groups or roles).
 
-        Admin users may send to arbitrary recipients with any category.
+        Admin users may send to arbitrary recipients for categories outside the user-allowed set.
+        For user-allowed categories (e.g. tool installation requests), admin submissions are treated
+        like regular user submissions so that recipients and content are populated server-side.
+
         Authenticated non-admin users may only use categories in the server-side allow-list,
         subject to per-category feature-flag checks; their recipients are overridden server-side.
         """
@@ -94,7 +97,7 @@ class NotificationService(ServiceBase):
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
         request = self._build_user_sender_request(sender_context, payload, galaxy_url)
-        return self.send_notification_internal(request)
+        return self.send_internal_notification(request)
 
     def _build_user_sender_request(
         self,
@@ -102,7 +105,23 @@ class NotificationService(ServiceBase):
         payload: NotificationCreateRequestBody,
         galaxy_url: Optional[str],
     ) -> NotificationCreateRequest:
-        """Validate and rewrite a non-admin notification submission."""
+        """Validate and rewrite a user notification submission.
+
+        For admin users sending non-user-allowed categories, passes through the payload as-is.
+        For all other cases (non-admins, or admins sending user-allowed categories), validates
+        the category and rewrites recipients/content server-side.
+        """
+        category = payload.notification.category
+
+        # Admin sending arbitrary category notification: pass through unchanged
+        if sender_context.user_is_admin and category not in _USER_ALLOWED_CATEGORIES:
+            return NotificationCreateRequest.model_construct(
+                notification=payload.notification,
+                recipients=payload.recipients,
+                galaxy_url=galaxy_url,
+            )
+
+        # All other cases: validate and rewrite
         user_manager = self.user_manager
         config = self.config
         if user_manager is None or config is None:
@@ -113,7 +132,6 @@ class NotificationService(ServiceBase):
         if sender_context.anonymous or sender_context.user is None:
             raise AuthenticationRequired("You must be logged in to submit a notification.")
 
-        category = payload.notification.category
         if category not in _USER_ALLOWED_CATEGORIES:
             raise AdminRequiredException("Only administrators can send notifications of this category.")
 
@@ -149,18 +167,6 @@ class NotificationService(ServiceBase):
             recipients=NotificationRecipients(user_ids=recipient_ids),
             galaxy_url=galaxy_url,
         )
-
-    def send_notification_internal(
-        self, request: NotificationCreateRequest, force_sync: bool = False
-    ) -> Union[NotificationCreatedResponse, AsyncTaskResultSummary]:
-        """Sends a notification to a list of recipients (users, groups or roles).
-
-        If `force_sync` is set to `True`, the notification recipients will be processed synchronously instead of
-        in a background task.
-
-        Note: This function is meant for internal use from other services that don't need to check sender permissions.
-        """
-        return self.notification_manager.send_notification_internal(request, force_sync=force_sync)
 
     def broadcast(
         self, sender_context: ProvidesUserContext, payload: BroadcastNotificationCreateRequest
