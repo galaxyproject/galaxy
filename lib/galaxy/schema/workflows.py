@@ -424,7 +424,15 @@ class WorkflowExtractionJob(Model):
         title="Checked",
         description="Whether this job should be preselected for extraction (True if any outputs are not deleted).",
     )
-    tool_version_warning: str | None = Field(
+    seeded: bool = Field(
+        False,
+        title="Seeded",
+        description=(
+            "Whether this job is part of the producing subgraph of the outputs a page/notebook references. "
+            "Always False for the plain history summary; set when the summary is computed for a page."
+        ),
+    )
+    tool_version_warning: Optional[str] = Field(
         None,
         title="Tool Version Warning",
         description="Warning when the current tool version differs from the version used by this job.",

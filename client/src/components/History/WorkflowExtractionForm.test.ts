@@ -9,6 +9,7 @@ import {
     type WorkflowExtractionJob,
     type WorkflowExtractionSummary,
 } from "@/api/histories";
+import { fetchWorkflowExtractionSummary } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
@@ -21,9 +22,16 @@ import WorkflowExtractionForm from "./WorkflowExtractionForm.vue";
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
+// Mutable route query so individual tests can drive the `from_page` branch.
+const mockRoute = vi.hoisted(() => ({ query: {} as Record<string, string> }));
+
 vi.mock("@/api/histories", () => ({
     extractWorkflowFromHistory: vi.fn(),
     extractWorkflowByIds: vi.fn(),
+}));
+
+vi.mock("@/api/pages", () => ({
+    fetchWorkflowExtractionSummary: vi.fn(),
 }));
 
 vi.mock("@/composables/toast", () => {
@@ -36,6 +44,7 @@ vi.mock("@/composables/toast", () => {
 
 vi.mock("vue-router/composables", () => ({
     useRouter: () => ({ push: vi.fn() }),
+    useRoute: () => mockRoute,
 }));
 
 vi.mock("@/stores/historyStore", () => ({
@@ -65,6 +74,7 @@ const TOOL_JOB: WorkflowExtractionJob = {
     tool_version: "1.0",
     step_type: "tool",
     checked: true,
+    seeded: false,
     tool_version_warning: null,
     outputs: [TOOL_OUTPUT],
 };
@@ -93,6 +103,7 @@ const INPUT_JOB: WorkflowExtractionJob = {
     tool_version: null,
     step_type: "input_dataset",
     checked: true,
+    seeded: false,
     tool_version_warning: null,
     outputs: [
         {
@@ -129,9 +140,32 @@ const TOOL_JOB_OUT_B: WorkflowExtractionJob = {
     outputs: [{ ...TOOL_OUTPUT, id: "out-b", name: "shared" }],
 };
 
+// Seeded fixtures use `checked` values opposite to `seeded` to prove the
+// from_page branch derives checked-state from `seeded`, not the backend default.
+const SEEDED_TOOL_JOB: WorkflowExtractionJob = {
+    ...TOOL_JOB,
+    checked: false,
+    seeded: true,
+    outputs: [{ ...TOOL_OUTPUT, exposed: true }],
+};
+
+const UNSEEDED_TOOL_JOB: WorkflowExtractionJob = {
+    ...TOOL_JOB,
+    id: "job-tool-unseeded",
+    checked: true,
+    seeded: false,
+};
+
+const SEEDED_INPUT_JOB: WorkflowExtractionJob = {
+    ...INPUT_JOB,
+    checked: false,
+    seeded: true,
+};
+
 const SUMMARY_WITH_JOBS = summary([TOOL_JOB, INPUT_JOB]);
 const SUMMARY_WITH_DUPLICATE_INPUT_NAMES = summary([INPUT_JOB, INPUT_JOB_DUP]);
 const SUMMARY_WITH_DUPLICATE_OUTPUT_NAMES = summary([TOOL_JOB_OUT_A, TOOL_JOB_OUT_B]);
+const SEEDED_SUMMARY = summary([SEEDED_TOOL_JOB, UNSEEDED_TOOL_JOB, SEEDED_INPUT_JOB]);
 const SUMMARY_WITH_MAPPED_JOB = summary([MAPPED_TOOL_JOB]);
 const SUMMARY_WITH_DUPLICATE_MAPPED_JOBS = summary([MAPPED_TOOL_JOB, MAPPED_TOOL_JOB_2]);
 const SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS = summary([TOOL_JOB, MAPPED_TOOL_JOB]);
@@ -168,6 +202,7 @@ async function clickCreateButton(wrapper: ReturnType<typeof shallowMount>) {
 describe("WorkflowExtractionForm", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        mockRoute.query = {};
     });
 
     describe("loading state", () => {
@@ -611,6 +646,56 @@ describe("WorkflowExtractionForm", () => {
             expect(wrapper.findComponent(GButton).props("disabledTitle")).toBe(
                 "Step labels must be unique and distinct from input names",
             );
+        });
+    });
+
+    describe("from a notebook page (from_page query param)", () => {
+        beforeEach(() => {
+            mockRoute.query = { from_page: "page-1" };
+            vi.mocked(fetchWorkflowExtractionSummary).mockResolvedValue(SEEDED_SUMMARY);
+        });
+
+        it("fetches the page summary instead of the history summary", async () => {
+            await mountForm();
+            expect(fetchWorkflowExtractionSummary).toHaveBeenCalledWith("page-1");
+            expect(extractWorkflowFromHistory).not.toHaveBeenCalled();
+        });
+
+        it("pre-checks seeded rows and unchecks unseeded rows regardless of backend `checked`", async () => {
+            const wrapper = await mountForm();
+            const cards = wrapper.findAllComponents(WorkflowExtractionCard);
+            expect(cards.at(0).props("job").checked).toBe(true); // seeded tool (backend checked=false)
+            expect(cards.at(1).props("job").checked).toBe(false); // unseeded tool (backend checked=true)
+            expect(cards.at(2).props("job").checked).toBe(true); // seeded input (backend checked=false)
+        });
+
+        it("pre-stars referenced (exposed) outputs", async () => {
+            const wrapper = await mountForm();
+            const seededTool = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            expect(seededTool.props("job").outputs[0].exposed).toBe(true);
+        });
+
+        it("submits only the seeded subgraph by default", async () => {
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "From Notebook");
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).toEqual(
+                expect.objectContaining({
+                    job_ids: ["job-tool-1"], // seeded tool only; unseeded excluded
+                    hda_ids: ["ds-2"], // seeded input
+                }),
+            );
+        });
+    });
+
+    describe("without from_page (history default)", () => {
+        it("does not call the page summary endpoint", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
+            await mountForm();
+            expect(fetchWorkflowExtractionSummary).not.toHaveBeenCalled();
+            expect(extractWorkflowFromHistory).toHaveBeenCalledWith("history-1");
         });
     });
 });
