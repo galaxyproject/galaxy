@@ -24,6 +24,8 @@ interface RowBase {
     id: string | null;
     checked: boolean;
     invalid?: InvalidReason | null;
+    /** Part of the producing subgraph of a notebook's referenced outputs. False for plain history summaries. */
+    seeded: boolean;
     outputs: ExtractionOutput[];
 }
 
@@ -61,6 +63,7 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
             id: job.id,
             checked: job.checked,
             invalid: job.invalid,
+            seeded: job.seeded ?? false,
             outputs,
             step_type: "tool",
             tool_id: job.tool_id,
@@ -75,6 +78,7 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
         id: job.id,
         checked: job.checked,
         invalid: job.invalid,
+        seeded: job.seeded ?? false,
         outputs,
         step_type: job.step_type,
         newName: defaultInputName(outputs),
