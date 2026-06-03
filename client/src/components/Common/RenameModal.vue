@@ -60,6 +60,7 @@ async function onRename(newName: string) {
 
 <template>
     <GModal
+        :id="`rename-modal-${props.itemType}`"
         show
         :ok-text="localize('Rename')"
         :ok-disabled="nameInvalid || renaming"

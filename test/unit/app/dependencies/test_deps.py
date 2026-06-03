@@ -25,6 +25,7 @@ FILES_SOURCES_CONFIG = """
 - type: webdav
 - type: dropbox
 - type: googledrive
+- type: irods
 """
 JOB_CONF_YAML = """
 runners:
@@ -95,6 +96,7 @@ def test_fs_configured():
         assert cds.check_gdrive_fsspec()
         assert cds.check_dropboxdrivefs()
         assert cds.check_webdav4()
+        assert cds.check_fs_irods()
 
 
 def test_yaml_jobconf_runners():

@@ -337,6 +337,44 @@ class WorkflowExtractionOutput(Model):
         title="History Content Type",
         description="Whether this is a dataset or dataset_collection.",
     )
+    output_name: Optional[str] = Field(
+        None,
+        title="Output Name",
+        description="Workflow/tool output port name for this concrete output, when known.",
+    )
+    suggested_name: Optional[str] = Field(
+        None,
+        title="Suggested Name",
+        description="Suggested workflow output label for this concrete output.",
+    )
+    suggested_name_source: Optional[Literal["renamed", "rendered_label", "bare_label", "port_name"]] = Field(
+        None,
+        title="Suggested Name Source",
+        description="Source used to derive the suggested workflow output label.",
+    )
+    exposed: bool = Field(
+        False,
+        title="Exposed",
+        description="Whether this output should be preselected for exposure as a workflow output.",
+    )
+
+
+class OutputLabelHint(Model):
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Decoded ID of the concrete HDA/HDCA output to expose.",
+    )
+    kind: Literal["hda", "hdca"] = Field(
+        ...,
+        title="Kind",
+        description="Whether the output ID identifies an HDA or an HDCA.",
+    )
+    label: str = Field(
+        ...,
+        title="Label",
+        description="Workflow output label to assign to the exposed output.",
+    )
 
 
 class InvalidWorkflowExtractionJobReason(str, Enum):
@@ -499,6 +537,11 @@ class WorkflowExtractionByIdsPayload(Model):
         default_factory=list,
         title="Dataset Collection Names",
         description="Names for the input dataset collections, parallel to hdca_ids.",
+    )
+    output_labels: list[OutputLabelHint] = Field(
+        default_factory=list,
+        title="Output Labels",
+        description="Concrete tool outputs to expose as workflow outputs, with labels.",
     )
 
     @model_validator(mode="after")

@@ -47,6 +47,17 @@ vi.mock("@/stores/historyStore", () => ({
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
+const TOOL_OUTPUT = {
+    id: "ds-1",
+    hid: 1,
+    name: "output1",
+    history_content_type: "dataset",
+    state: "ok",
+    deleted: false,
+    exposed: false,
+    output_name: "out_file1",
+} as NonNullable<WorkflowExtractionJob["outputs"]>[number];
+
 const TOOL_JOB: WorkflowExtractionJob = {
     id: "job-tool-1",
     tool_id: "cat1",
@@ -55,7 +66,7 @@ const TOOL_JOB: WorkflowExtractionJob = {
     step_type: "tool",
     checked: true,
     tool_version_warning: null,
-    outputs: [{ id: "ds-1", hid: 1, name: "output1", history_content_type: "dataset", state: "ok", deleted: false }],
+    outputs: [TOOL_OUTPUT],
 };
 
 const MAPPED_TOOL_JOB: WorkflowExtractionJob = {
@@ -70,6 +81,11 @@ const MAPPED_TOOL_JOB_2: WorkflowExtractionJob = {
     id: "job-tool-3",
 };
 
+const TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT: WorkflowExtractionJob = {
+    ...TOOL_JOB,
+    outputs: [{ ...TOOL_OUTPUT, output_name: undefined } as NonNullable<WorkflowExtractionJob["outputs"]>[number]],
+};
+
 const INPUT_JOB: WorkflowExtractionJob = {
     id: null,
     tool_id: null,
@@ -78,7 +94,17 @@ const INPUT_JOB: WorkflowExtractionJob = {
     step_type: "input_dataset",
     checked: true,
     tool_version_warning: null,
-    outputs: [{ id: "ds-2", hid: 2, name: "myfile.txt", history_content_type: "dataset", state: "ok", deleted: false }],
+    outputs: [
+        {
+            id: "ds-2",
+            hid: 2,
+            name: "myfile.txt",
+            history_content_type: "dataset",
+            state: "ok",
+            deleted: false,
+            exposed: false,
+        },
+    ],
 };
 
 function summary(jobs: WorkflowExtractionJob[], warnings: string[] = []): WorkflowExtractionSummary {
@@ -243,7 +269,8 @@ describe("WorkflowExtractionForm", () => {
             const wrapper = await mountForm();
             await setWorkflowName(wrapper, "Extracted WF");
             await clickCreateButton(wrapper);
-            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).toEqual(
                 expect.objectContaining({
                     workflow_name: "Extracted WF",
                     job_ids: ["job-tool-1"],
@@ -254,6 +281,58 @@ describe("WorkflowExtractionForm", () => {
                     dataset_collection_names: [],
                 }),
             );
+            expect(payload).not.toHaveProperty("output_labels");
+        });
+
+        it("submits output_labels only after an output is starred", async () => {
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            await wrapper.vm.$nextTick();
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    output_labels: [{ id: "ds-1", kind: "hda", label: "output1" }],
+                }),
+            );
+        });
+
+        it("does not submit starred outputs from unchecked tool rows", async () => {
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            toolCard.vm.$emit("toggle-output", 0);
+            toolCard.vm.$emit("select");
+            await wrapper.vm.$nextTick();
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).not.toHaveProperty("output_labels");
+            expect(payload).toEqual(expect.objectContaining({ job_ids: [] }));
+        });
+
+        it("does not submit output labels for outputs without a workflow-visible output name", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(summary([TOOL_JOB_WITH_NON_WORKFLOW_OUTPUT]));
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            wrapper.findAllComponents(WorkflowExtractionCard).at(0).vm.$emit("toggle-output", 0);
+            await wrapper.vm.$nextTick();
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).not.toHaveProperty("output_labels");
+        });
+
+        it("does not submit a starred output with an empty label", async () => {
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            const toolCard = wrapper.findAllComponents(WorkflowExtractionCard).at(0);
+            toolCard.vm.$emit("toggle-output", 0);
+            toolCard.vm.$emit("rename-output", 0);
+            await flushPromises();
+            const renameAction = wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void;
+            renameAction("");
+            await wrapper.vm.$nextTick();
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).not.toHaveBeenCalled();
         });
 
         it("submits mapped tool job via implicit_collection_jobs_ids", async () => {

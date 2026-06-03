@@ -12,6 +12,7 @@ Build a mulled image with:
 import json
 import logging
 import os
+import platform as _platform_module
 import shutil
 import stat
 import string
@@ -76,7 +77,7 @@ DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
-INVOLUCRO_VERSION = "1.1.2"
+INVOLUCRO_VERSION = "1.2.0"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
@@ -99,10 +100,20 @@ From: %(base_image)s
 
 
 def involucro_link():
+    url_start = f"https://github.com/involucro/involucro/releases/download/v{INVOLUCRO_VERSION}/"
     if IS_OS_X:
-        url = f"https://github.com/mvdbeek/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro.darwin"
+        url = f"{url_start}involucro.darwin"
     else:
-        url = f"https://github.com/involucro/involucro/releases/download/v{INVOLUCRO_VERSION}/involucro"
+        machine = _platform_module.machine()
+        arch_map = {
+            "x86_64": "involucro.linux-amd64",
+            "amd64": "involucro.linux-amd64",
+            "aarch64": "involucro.linux-arm64",
+            "arm64": "involucro.linux-arm64",
+            "armv7l": "involucro.linux-armv7",
+        }
+        asset = arch_map.get(machine, "involucro")
+        url = f"{url_start}{asset}"
     return url
 
 
@@ -165,8 +176,29 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
+def conda_platform() -> str:
+    machine = _platform_module.machine().lower()
+    if IS_OS_X:
+        conda_arch_map = {
+            "x86_64": "osx-64",
+            "arm64": "osx-arm64",
+        }
+        default_platform = "osx-64"
+    else:
+        conda_arch_map = {
+            "x86_64": "linux-64",
+            "amd64": "linux-64",
+            "aarch64": "linux-aarch64",
+            "arm64": "linux-aarch64",
+            "armv7l": "linux-armv7l",
+        }
+        default_platform = "linux-64"
+    return conda_arch_map.get(machine, default_platform)
+
+
 def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
-    search_results = (best_search_result(t, conda_context, platform="linux-64")[0] for t in targets)
+    platform = conda_platform()
+    search_results = (best_search_result(t, conda_context, platform=platform)[0] for t in targets)
     return [r for r in search_results if r]
 
 

@@ -8,18 +8,19 @@ import { useRouter } from "vue-router/composables";
 import {
     extractWorkflowByIds,
     extractWorkflowFromHistory,
+    type OutputLabelHint,
     type WorkflowExtractionByIdsPayload,
-    type WorkflowExtractionJob,
 } from "@/api/histories";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import {
+    type ExtractionRow,
+    type InputStep,
+    isInputStep,
     isMappedTool,
-    isWorkflowExtractionInput,
-    type WorkflowExtractionInput,
-    type WorkflowExtractionRow,
+    toExtractionRow,
 } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
@@ -56,9 +57,10 @@ const breadcrumbItems = computed(() => [
 const loading = ref(true);
 const submitting = ref(false);
 const errorMessage = ref<string | null>(null);
-const jobsList = ref<WorkflowExtractionRow[]>([]);
+const jobsList = ref<ExtractionRow[]>([]);
 const workflowName = ref("");
 const renameIndex = ref<number | null>(null);
+const outputRenameTarget = ref<{ jobIndex: number; outputIndex: number } | null>(null);
 const warnings = ref<string[]>([]);
 const showJobModal = ref(false);
 const viewedJobId = ref<string | null>(null);
@@ -69,14 +71,31 @@ const toRenameInput = computed(() => {
         return null;
     }
     const job = jobsList.value[renameIndex.value];
-    if (job && isWorkflowExtractionInput(job)) {
+    if (job && isInputStep(job)) {
         return job;
     }
     return null;
 });
 
+const toRenameOutput = computed(() => {
+    const target = outputRenameTarget.value;
+    if (!target || !jobsList.value?.length) {
+        return null;
+    }
+    const job = jobsList.value[target.jobIndex];
+    if (!job || job.step_type !== "tool") {
+        return null;
+    }
+    return job.outputs[target.outputIndex] || null;
+});
+
 const submissionDisabled = computed(
-    () => submitting.value || hasUnnamedSelectedInputs.value || !workflowName.value.trim() || hasNoSelectedSteps.value,
+    () =>
+        submitting.value ||
+        hasUnnamedSelectedInputs.value ||
+        hasUnnamedSelectedOutputs.value ||
+        !workflowName.value.trim() ||
+        hasNoSelectedSteps.value,
 );
 
 const submissionDisabledMsg = computed(() => {
@@ -85,6 +104,9 @@ const submissionDisabledMsg = computed(() => {
     }
     if (hasUnnamedSelectedInputs.value) {
         return "All selected inputs must have a name";
+    }
+    if (hasUnnamedSelectedOutputs.value) {
+        return "All exposed outputs must have a label";
     }
     if (hasNoSelectedSteps.value) {
         return "At least one workflow step must be selected";
@@ -130,20 +152,42 @@ const selectedInputs = computed<
     if (!jobsList.value?.length) {
         return [];
     }
-    const retVal = jobsList.value
-        .filter(
-            (job): job is WorkflowExtractionInput =>
-                job.checked && isWorkflowExtractionInput(job) && (job.outputs?.length ?? 0) > 0,
-        )
+    return jobsList.value
+        .filter((job): job is InputStep => job.checked && isInputStep(job) && job.outputs.length > 0)
         .flatMap((job) =>
-            job.outputs?.map((output) => ({
+            job.outputs.map((output) => ({
                 id: output.id,
                 newName: job.newName,
                 history_content_type: output.history_content_type,
             })),
-        )
-        .filter((item) => item !== undefined);
-    return retVal;
+        );
+});
+
+const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
+    if (!jobsList.value?.length) {
+        return [];
+    }
+    const outputLabels: OutputLabelHint[] = [];
+    for (const job of jobsList.value) {
+        if (!job.checked || job.step_type !== "tool") {
+            continue;
+        }
+        for (const output of job.outputs) {
+            if (!output.exposed || !output.output_name) {
+                continue;
+            }
+            const label = output.label.trim();
+            if (!label) {
+                continue;
+            }
+            outputLabels.push({
+                id: output.id,
+                kind: output.history_content_type === "dataset" ? "hda" : "hdca",
+                label,
+            });
+        }
+    }
+    return outputLabels;
 });
 
 /** No workflow steps are selected: the workflow would have no steps */
@@ -154,32 +198,16 @@ const hasUnnamedSelectedInputs = computed(() => {
     return selectedInputs.value.some((input) => !input.newName);
 });
 
+const hasUnnamedSelectedOutputs = computed(() => {
+    return jobsList.value.some((job) => {
+        if (!job.checked || job.step_type !== "tool") {
+            return false;
+        }
+        return job.outputs.some((output) => output.exposed && Boolean(output.output_name) && !output.label.trim());
+    });
+});
+
 extractWorkflow();
-
-function toWorkflowExtractionRow(job: WorkflowExtractionJob): WorkflowExtractionRow {
-    const checked = job.checked ?? false;
-    if (job.step_type === "tool") {
-        return {
-            ...job,
-            checked,
-            step_type: "tool",
-        };
-    } else {
-        return {
-            ...job,
-            checked,
-            step_type: job.step_type,
-            newName: getInputName(job) || "",
-        };
-    }
-}
-
-function getInputName(job: WorkflowExtractionJob): string | undefined {
-    if (job.outputs?.length && job.outputs[0]) {
-        const output = job.outputs[0];
-        return output.name || `Input ${output.hid}`;
-    }
-}
 
 function getSelectedInputs(type: "dataset" | "dataset_collection"): { ids: string[]; names: string[] } {
     const inputs = selectedInputs.value.filter(
@@ -195,7 +223,7 @@ async function extractWorkflow() {
     try {
         const result = await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
-            jobsList.value = result.jobs.map(toWorkflowExtractionRow);
+            jobsList.value = result.jobs.map(toExtractionRow);
         }
 
         warnings.value = result.warnings || [];
@@ -221,7 +249,31 @@ function onJobSelect(index: number) {
     const job = jobsList.value[index];
     if (job) {
         job.checked = !job.checked;
+        if (!job.checked && job.step_type === "tool") {
+            job.outputs.forEach((output) => {
+                output.exposed = false;
+            });
+        }
     }
+}
+
+function onOutputToggle(jobIndex: number, outputIndex: number) {
+    const job = jobsList.value[jobIndex];
+    if (!job || job.step_type !== "tool" || !job.checked || job.invalid) {
+        return;
+    }
+    const output = job.outputs[outputIndex];
+    if (!output || output.deleted || !output.output_name) {
+        return;
+    }
+    output.exposed = !output.exposed;
+    if (output.exposed && !output.label.trim()) {
+        output.label = output.suggested_name || output.name || output.output_name || "";
+    }
+}
+
+function onOutputRename(jobIndex: number, outputIndex: number) {
+    outputRenameTarget.value = { jobIndex, outputIndex };
 }
 
 function onViewJob(jobId: string) {
@@ -243,7 +295,23 @@ async function renameInput(newName: string) {
 
     // Instead of using the computed `toRenameInput`, we directly update the `newName` in the `jobsList`
     // to ensure reactivity and that the change is reflected in the UI immediately.
-    (jobsList.value[renameIndex.value] as WorkflowExtractionInput).newName = newName;
+    (jobsList.value[renameIndex.value] as InputStep).newName = newName;
+}
+
+async function renameOutput(newName: string) {
+    const target = outputRenameTarget.value;
+    if (!target) {
+        throw new Error("Invalid output rename target");
+    }
+    const job = jobsList.value[target.jobIndex];
+    if (!job || job.step_type !== "tool") {
+        throw new Error("Job not found or is not a tool");
+    }
+    const output = job.outputs[target.outputIndex];
+    if (!output) {
+        throw new Error("Output not found");
+    }
+    output.label = newName;
 }
 
 async function submitWorkflow() {
@@ -267,6 +335,9 @@ async function submitWorkflow() {
             dataset_names: selectedDatasets.names,
             dataset_collection_names: selectedDatasetCollections.names,
         };
+        if (selectedOutputLabels.value.length) {
+            payload.output_labels = selectedOutputLabels.value;
+        }
 
         const data = await extractWorkflowByIds(payload);
 
@@ -280,7 +351,7 @@ async function submitWorkflow() {
     }
 }
 
-function stepKind(job: WorkflowExtractionRow): string {
+function stepKind(job: ExtractionRow): string {
     if (isMappedTool(job)) {
         return "mapped-tool";
     }
@@ -340,6 +411,8 @@ function stepKind(job: WorkflowExtractionRow): string {
                 :data-icj-id="isMappedTool(job) ? job.implicit_collection_jobs_id : undefined"
                 :data-step-kind="stepKind(job)"
                 @rename="onJobRename(index)"
+                @toggle-output="(outputIndex) => onOutputToggle(index, outputIndex)"
+                @rename-output="(outputIndex) => onOutputRename(index, outputIndex)"
                 @select="onJobSelect(index)"
                 @view-job="onViewJob" />
         </div>
@@ -350,6 +423,13 @@ function stepKind(job: WorkflowExtractionRow): string {
             :name="toRenameInput.newName"
             :rename-action="renameInput"
             @close="renameIndex = null" />
+
+        <RenameModal
+            v-if="toRenameOutput"
+            item-type="output"
+            :name="toRenameOutput.label"
+            :rename-action="renameOutput"
+            @close="outputRenameTarget = null" />
 
         <GModal :show.sync="showJobModal" title="View Job" fixed-height size="medium" @close="viewedJobId = null">
             <JobDetails v-if="viewedJobId" :job-id="viewedJobId" />

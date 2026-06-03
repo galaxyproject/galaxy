@@ -1132,6 +1132,213 @@ test_data:
 
         assert signature(wf_a) == signature(wf_b)
 
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_with_output_labels_marks_workflow_outputs(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n")
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n")
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        run = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={
+                "input1": {"src": "hda", "id": d1["id"]},
+                "queries_0|input2": {"src": "hda", "id": d2["id"]},
+            },
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output = run["outputs"][0]
+
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[run["jobs"][0]["id"]],
+            output_labels=[{"kind": "hda", "id": output["id"], "label": "merged lines"}],
+        )
+
+        tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+        workflow_outputs = tool_step["workflow_outputs"]
+        assert len(workflow_outputs) == 1
+        assert workflow_outputs[0]["output_name"] == "out_file1"
+        assert workflow_outputs[0]["label"] == "merged lines"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_with_output_label_for_copied_output(self, history_id):
+        original_history_id = self.dataset_populator.new_history()
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(original_history_id, c1="alpha\n", c2="beta\n")
+        output = self._history_contents(original_history_id)[-1]
+        copied_output = self._copy_hda_to_history(history_id, output)
+
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            output_labels=[{"kind": "hda", "id": copied_output["id"], "label": "copied merged lines"}],
+        )
+
+        tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+        workflow_outputs = tool_step["workflow_outputs"]
+        assert len(workflow_outputs) == 1
+        assert workflow_outputs[0]["output_name"] == "out_file1"
+        assert workflow_outputs[0]["label"] == "copied merged lines"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_duplicate_output_label_rejected(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        contents = self._history_contents(history_id)
+        output = contents[-1]
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "duplicate output labels",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "output_labels": [
+                    {"kind": "hda", "id": output["id"], "label": "duplicate"},
+                    {"kind": "hda", "id": output["id"], "label": "duplicate"},
+                ],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_distinct_outputs_with_duplicate_label_string_rejected(self, history_id):
+        """Two distinct outputs cannot share the same workflow output label
+        (duplicate-label-string guard in `WorkflowsService._validate_extract_by_ids_payload`).
+        Sibling of the same-id duplicate guard which the existing duplicate test pins."""
+        d1, _, cat1_job_id_a = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        out_a = self._history_contents(history_id)[-1]
+        run_b = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": d1["id"]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        out_b = run_b["outputs"][0]
+        cat1_job_id_b = run_b["jobs"][0]["id"]
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "duplicate label string",
+                "hda_ids": [d1["id"]],
+                "job_ids": [cat1_job_id_a, cat1_job_id_b],
+                "output_labels": [
+                    {"kind": "hda", "id": out_a["id"], "label": "shared"},
+                    {"kind": "hda", "id": out_b["id"], "label": "shared"},
+                ],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_with_empty_output_labels_matches_existing_behavior(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            output_labels=[],
+        )
+        tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+        assert tool_step["workflow_outputs"] == []
+
+    @skip_without_tool("random_lines1")
+    @summarize_instance_history_on_error
+    def test_extract_output_label_for_icj_step(self, history_id):
+        """ICJ producer: labelling the mapped output HDCA of a map-over step
+        must attach the workflow_output to the tool step, keyed by the
+        implicit collection output name."""
+        hdca, _, _, implicit_hdca1_id, implicit_hdca2_id = self._run_random_lines_mapped_over_pair(history_id)
+        icj_id1 = self._icj_id_for_hdca(history_id, implicit_hdca1_id)
+        icj_id2 = self._icj_id_for_hdca(history_id, implicit_hdca2_id)
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hdca_ids=[hdca["id"]],
+            implicit_collection_jobs_ids=[icj_id1, icj_id2],
+            output_labels=[{"kind": "hdca", "id": implicit_hdca1_id, "label": "mapped lines"}],
+        )
+        tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
+        labelled = [s for s in tool_steps if s["workflow_outputs"]]
+        assert len(labelled) == 1, [s["workflow_outputs"] for s in tool_steps]
+        outputs = labelled[0]["workflow_outputs"]
+        assert len(outputs) == 1, outputs
+        assert outputs[0]["output_name"] == "out_file1"
+        assert outputs[0]["label"] == "mapped lines"
+        # The labelled step must be the first map-over (consumes the data_collection_input),
+        # not the chained second step that consumes the first tool's output.
+        input_step = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)[0]
+        connection = labelled[0]["input_connections"]["input"]
+        connection = connection[0] if isinstance(connection, list) else connection
+        assert connection["id"] == input_step["id"], (connection, input_step)
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_output_label_orphan_rejected(self, history_id):
+        """Labelling an HDA that was not produced by any selected step must
+        be rejected with a 400. Hits the orphan guard in
+        `WorkflowsService._validate_extract_by_ids_payload` (the inner
+        guard in `extract_steps` is dead for the API path because the
+        service layer fires first)."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        unrelated = self.dataset_populator.new_dataset(history_id, content="orphan\n", wait=True)
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "orphan label",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "output_labels": [{"kind": "hda", "id": unrelated["id"], "label": "orphan"}],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_output_label_collapses_internal_whitespace(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        output = self._history_contents(history_id)[-1]
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            output_labels=[{"kind": "hda", "id": output["id"], "label": "merged   lines\tfoo"}],
+        )
+        tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+        outputs = tool_step["workflow_outputs"]
+        assert len(outputs) == 1, outputs
+        assert outputs[0]["output_name"] == "out_file1"
+        assert outputs[0]["label"] == "merged lines foo"
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_output_label_truncated_at_255(self, history_id):
+        """Sanitizer silently truncates at 255 chars (`_sanitize_output_label`)."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        output = self._history_contents(history_id)[-1]
+        long_label = "x" * 300
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            output_labels=[{"kind": "hda", "id": output["id"], "label": long_label}],
+        )
+        tool_step = self.assert_steps_of_type(downloaded, "tool", expected_len=1)[0]
+        workflow_outputs = tool_step["workflow_outputs"]
+        assert len(workflow_outputs) == 1, workflow_outputs
+        assert workflow_outputs[0]["output_name"] == "out_file1"
+        assert len(workflow_outputs[0]["label"]) == 255, workflow_outputs[0]["label"]
+        assert workflow_outputs[0]["label"] == "x" * 255
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_output_label_empty_after_sanitize_rejected(self, history_id):
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        output = self._history_contents(history_id)[-1]
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "empty after strip",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "output_labels": [{"kind": "hda", "id": output["id"], "label": "   "}],
+            },
+            (400,),
+        )
+
 
 class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase):
     """Tests for GET /api/histories/{history_id}/extraction_summary."""
@@ -1198,6 +1405,11 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
             assert tool_job["checked"] is True
             assert tool_job["tool_version_warning"] is None
             assert len(tool_job["outputs"]) >= 1
+            output = tool_job["outputs"][0]
+            assert output["output_name"] == "out_file1"
+            assert output["suggested_name"]
+            assert output["suggested_name_source"] in {"renamed", "rendered_label", "bare_label", "port_name"}
+            assert output["exposed"] is False
 
     def test_extraction_summary_includes_udt_step(self):
         # UDT (unprivileged/user-defined tool) jobs were silently skipped in the
@@ -1267,6 +1479,57 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
             assert {j["implicit_collection_jobs_id"] for j in mapped_tool_jobs}.issuperset(expected_icj_ids)
             for job in mapped_tool_jobs:
                 assert job["implicit_collection_jobs_size"] == 2, job
+
+    @skip_without_tool("cat1")
+    @skip_without_tool("random_lines1")
+    def test_extraction_summary_suggested_name_source_per_producer_kind(self):
+        """Per-kind dispatch (HDA path vs HDCA path in
+        workflow_extraction_naming): rename the cat1 HDA so its source is
+        'renamed' and its suggested_name reflects the rename. The mapped
+        ICJ HDCA — never renamed by us — must surface its own auto-generated
+        HDCA name, distinct from the cat1 rename. A regression that
+        hard-codes a single source token or returns the same name for both
+        producer kinds fails this test."""
+        sentinel_cat1_name = "renamed cat1 output sentinel"
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            cat1_run = self.dataset_populator.run_tool(
+                "cat1",
+                {
+                    "input1": {"src": "hda", "id": hda1["id"]},
+                    "queries_0|input2": {"src": "hda", "id": hda2["id"]},
+                },
+                history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            self.dataset_populator.rename_dataset(cat1_run["outputs"][0]["id"], sentinel_cat1_name)
+            self._run_random_lines_mapped_over_pair(history_id)
+
+            summary = self._get_extraction_summary(history_id)
+            cat1_jobs = [j for j in summary["jobs"] if j.get("tool_id") == "cat1"]
+            mapped_jobs = [
+                j
+                for j in summary["jobs"]
+                if j.get("tool_id") == "random_lines1" and j.get("implicit_collection_jobs_id")
+            ]
+            assert cat1_jobs, summary["jobs"]
+            assert mapped_jobs, summary["jobs"]
+
+            cat1_outputs = cat1_jobs[0]["outputs"]
+            assert len(cat1_outputs) == 1, cat1_outputs
+            assert cat1_outputs[0]["suggested_name"] == sentinel_cat1_name, cat1_outputs[0]
+            assert cat1_outputs[0]["suggested_name_source"] == "renamed", cat1_outputs[0]
+
+            mapped_outputs = mapped_jobs[0]["outputs"]
+            assert mapped_outputs, mapped_jobs[0]
+            for output in mapped_outputs:
+                assert output["suggested_name"], output
+                # HDCA path's content_name is the implicit collection's
+                # auto-generated name — must differ from the sentinel we
+                # injected on the cat1 HDA, proving the dispatch did not
+                # bleed the cat1 rename into the HDCA path.
+                assert output["suggested_name"] != sentinel_cat1_name, output
 
     @skip_without_tool("cat1")
     def test_extraction_summary_structure(self):

@@ -291,6 +291,9 @@ class ConditionalDependencies:
     def check_rspace_client(self):
         return "rspace" in self.file_sources
 
+    def check_fs_irods(self):
+        return "irods" in self.file_sources
+
     def check_watchdog(self):
         install_set = {"auto", "True", "true", "polling", True}
         return self.config["watch_tools"] in install_set or self.config["watch_tool_data_dir"] in install_set

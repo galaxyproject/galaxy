@@ -1193,6 +1193,7 @@ workflow_extract:
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
     tool_card: '[data-step-type="tool"]'
+    tool_card_with_job_id: '[data-step-type="tool"][data-job-id]'
     mapped_tool_card: '[data-step-kind="mapped-tool"]'
     tool_card_checkbox: '[data-step-type="tool"] input[id^="g-card-select-"]'
     tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
@@ -1200,6 +1201,13 @@ workflow_extract:
     card_by_icj_id: '[data-icj-id="${icj_id}"]'
     mapped_badge: '[id^="g-card-badge-mapped-tool-"]'
     all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
+    output_star_for_job: '[data-job-id="${job_id}"] [data-output-star]'
+    output_star_active_for_job: '[data-job-id="${job_id}"] [data-output-star].active'
+    output_label_for_job: '[data-job-id="${job_id}"] [data-output-label]'
+    all_active_output_stars: '[data-description="workflow-extraction-form"] [data-output-star].active'
+    output_rename_input: '#output-name-input'
+    output_rename_confirm: '#rename-modal-output .g-modal-confirm-buttons button:last-of-type'
+    output_rename_cancel: '#rename-modal-output .g-modal-confirm-buttons button:first-of-type'
 
 invocations:
   selectors:

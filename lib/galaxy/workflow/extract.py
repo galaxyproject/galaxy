@@ -4,6 +4,7 @@ histories.
 
 import logging
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import (
     Any,
     cast,
@@ -528,6 +529,7 @@ def extract_workflow_by_ids(
     hdca_ids: Optional[list[int]] = None,
     dataset_names: Optional[list[str]] = None,
     dataset_collection_names: Optional[list[str]] = None,
+    output_labels: Optional[list[Any]] = None,
 ) -> StoredWorkflow:
     """ID-based variant of :func:`extract_workflow`."""
     steps = extract_steps_by_ids(
@@ -539,12 +541,84 @@ def extract_workflow_by_ids(
         hdca_ids=hdca_ids,
         dataset_names=dataset_names,
         dataset_collection_names=dataset_collection_names,
+        output_labels=output_labels,
     )
     return _finalize_workflow(trans, user, workflow_name, steps)
 
 
 IdKey = tuple[Literal["dataset", "collection"], int]
 IdAssociations = list[tuple[IdKey, str]]
+OutputLabelKind = Literal["hda", "hdca"]
+OutputLabelKey = tuple[OutputLabelKind, int]
+OutputStepKey = tuple[Literal["job", "icj"], int, str]
+
+
+@dataclass(frozen=True)
+class OutputLabelTarget:
+    key: OutputLabelKey
+    step_key: OutputStepKey
+    output_name: str
+
+
+def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
+    if kind == "hda":
+        return ("dataset", content_id)
+    return ("collection", content_id)
+
+
+def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelKind, content_id: int) -> OutputLabelKey:
+    """Normalize a visible HDA/HDCA output id to the original id used by extraction wiring."""
+    user = getattr(trans, "user", None)
+    if kind == "hda":
+        hda = trans.app.hda_manager.get_accessible(content_id, user)
+        return ("hda", _original_hda(hda).id)
+    hdca = trans.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", content_id)
+    return ("hdca", _original_hdca(hdca).id)
+
+
+def collect_output_label_targets(
+    trans: ProvidesHistoryContext,
+    job_manager: Optional[JobManager] = None,
+    job_ids: Optional[list[int]] = None,
+    implicit_collection_jobs_ids: Optional[list[int]] = None,
+) -> dict[OutputLabelKey, OutputLabelTarget]:
+    """Collect concrete outputs produced by the selected extraction steps."""
+    job_ids = list(job_ids or [])
+    implicit_collection_jobs_ids = list(implicit_collection_jobs_ids or [])
+    targets: dict[OutputLabelKey, OutputLabelTarget] = {}
+
+    for job_id in job_ids:
+        assert job_manager is not None, "job_manager required when job_ids supplied"
+        job = job_manager.get_accessible_job(trans, job_id)
+        for hda_assoc in job.output_datasets:
+            output_name = hda_assoc.name
+            if _skip_output_assoc_name(output_name):
+                continue
+            original_hda = _original_hda(hda_assoc.dataset)
+            key: OutputLabelKey = ("hda", original_hda.id)
+            targets[key] = OutputLabelTarget(key=key, step_key=("job", job.id, output_name), output_name=output_name)
+        for hdca_assoc in job.output_dataset_collection_instances:
+            output_name = hdca_assoc.name
+            original_hdca = _original_hdca(hdca_assoc.dataset_collection_instance)
+            key = ("hdca", original_hdca.id)
+            targets[key] = OutputLabelTarget(key=key, step_key=("job", job.id, output_name), output_name=output_name)
+
+    sa_session = trans.sa_session
+    for icj_id in implicit_collection_jobs_ids:
+        icj = sa_session.get(ImplicitCollectionJobs, icj_id)
+        if icj is None:
+            continue
+        seen_output_names: set[str] = set()
+        for output_hdca in icj.output_dataset_collection_instances:
+            output_name = output_hdca.implicit_output_name
+            if not output_name or output_name in seen_output_names:
+                continue
+            seen_output_names.add(output_name)
+            original_hdca = _original_hdca(output_hdca)
+            key = ("hdca", original_hdca.id)
+            targets[key] = OutputLabelTarget(key=key, step_key=("icj", icj.id, output_name), output_name=output_name)
+
+    return targets
 
 
 def extract_steps_by_ids(
@@ -556,6 +630,7 @@ def extract_steps_by_ids(
     hdca_ids: Optional[list[int]] = None,
     dataset_names: Optional[list[str]] = None,
     dataset_collection_names: Optional[list[str]] = None,
+    output_labels: Optional[list[Any]] = None,
 ) -> list[WorkflowStep]:
     """ID-based variant of :func:`extract_steps`.
 
@@ -575,6 +650,7 @@ def extract_steps_by_ids(
     implicit_collection_jobs_ids = list(implicit_collection_jobs_ids or [])
     hda_ids = list(hda_ids or [])
     hdca_ids = list(hdca_ids or [])
+    output_labels = list(output_labels or [])
 
     user = getattr(trans, "user", None)
     sa_session = trans.sa_session
@@ -681,6 +757,20 @@ def extract_steps_by_ids(
                 original_hdca = _original_hdca(hdca_assoc.dataset_collection_instance)
                 id_to_output_pair[("collection", original_hdca.id)] = (step, hdca_assoc.name)
 
+    for output_label in output_labels:
+        kind = output_label.kind
+        content_id = output_label.id
+        label = output_label.label
+        normalized_kind, normalized_content_id = normalize_output_label_key(trans, kind, content_id)
+        id_key = output_label_to_id_key(normalized_kind, normalized_content_id)
+        output_pair = id_to_output_pair.get(id_key)
+        if output_pair is None:
+            raise exceptions.RequestParameterInvalidException(
+                f"output_labels includes {kind} id {content_id} that was not produced by a selected extraction step"
+            )
+        step, output_name = output_pair
+        step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
+
     return steps
 
 
@@ -753,8 +843,11 @@ def __cleanup_param_values_by_id(inputs: ToolInputs, values: ToolInputs) -> IdAs
 
 
 __all__ = (
+    "collect_output_label_targets",
     "summarize",
     "extract_workflow",
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
+    "normalize_output_label_key",
+    "output_label_to_id_key",
 )

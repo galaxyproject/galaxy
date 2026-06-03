@@ -35,6 +35,7 @@ adlfs
 huggingface_hub
 omero-py #type: omero
 iiif-fsspec # type: iiif
+fs-irods # type: irods, depends on python-irodsclient
 
 # Vault backend
 hvac

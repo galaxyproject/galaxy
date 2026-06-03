@@ -91,6 +91,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a file repository plugin that connects with a remote server over SSH.",
     },
+    irods: {
+        icon: faNetworkWired,
+        message: "This is a file repository plugin that connects with an iRODS server.",
+    },
 };
 
 export const FileSourcesValidFilters = {

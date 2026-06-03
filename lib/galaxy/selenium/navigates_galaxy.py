@@ -2382,6 +2382,20 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.components.workflow_extract._.wait_for_visible()
 
+    def extract_workflow_set_name(self, name: str):
+        """Set the workflow name in the extraction form."""
+        self.components.workflow_extract.workflow_name_input.wait_for_and_clear_and_send_keys(name)
+
+    def extract_workflow_submit(self):
+        """Submit the extraction form."""
+        self.components.workflow_extract.create_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+
+    def extract_workflow_name_and_submit(self, name: str):
+        """Set the workflow name and submit the extraction form."""
+        self.extract_workflow_set_name(name)
+        self.extract_workflow_submit()
+
     def click_history_option(self, option_label_or_component):
         # Open menu
         self.click_history_options()

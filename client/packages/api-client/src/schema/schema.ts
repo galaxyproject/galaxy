@@ -13044,6 +13044,7 @@ export interface components {
                 | "s3fs"
                 | "azure"
                 | "azureflat"
+                | "irods"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -19804,6 +19805,26 @@ export interface components {
          * @enum {string}
          */
         OutputCompareType: "diff" | "re_match" | "sim_size" | "re_match_multiline" | "contains" | "image_diff";
+        /** OutputLabelHint */
+        OutputLabelHint: {
+            /**
+             * ID
+             * @description Decoded ID of the concrete HDA/HDCA output to expose.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Whether the output ID identifies an HDA or an HDCA.
+             * @enum {string}
+             */
+            kind: "hda" | "hdca";
+            /**
+             * Label
+             * @description Workflow output label to assign to the exposed output.
+             */
+            label: string;
+        };
         /** OutputReferenceByLabel */
         OutputReferenceByLabel: {
             /**
@@ -25350,6 +25371,7 @@ export interface components {
                 | "s3fs"
                 | "azure"
                 | "azureflat"
+                | "irods"
                 | "onedata"
                 | "webdav"
                 | "dropbox"
@@ -26350,6 +26372,11 @@ export interface components {
              */
             job_ids?: string[];
             /**
+             * Output Labels
+             * @description Concrete tool outputs to expose as workflow outputs, with labels.
+             */
+            output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
              * Workflow Name
              * @description The name for the extracted workflow.
              */
@@ -26422,6 +26449,12 @@ export interface components {
              */
             deleted: boolean;
             /**
+             * Exposed
+             * @description Whether this output should be preselected for exposure as a workflow output.
+             * @default false
+             */
+            exposed: boolean;
+            /**
              * HID
              * @description The history item ID (position in history).
              */
@@ -26443,10 +26476,25 @@ export interface components {
              */
             name: string;
             /**
+             * Output Name
+             * @description Workflow/tool output port name for this concrete output, when known.
+             */
+            output_name?: string | null;
+            /**
              * State
              * @description The state of the dataset or collection.
              */
             state: components["schemas"]["DatasetState"];
+            /**
+             * Suggested Name
+             * @description Suggested workflow output label for this concrete output.
+             */
+            suggested_name?: string | null;
+            /**
+             * Suggested Name Source
+             * @description Source used to derive the suggested workflow output label.
+             */
+            suggested_name_source?: ("renamed" | "rendered_label" | "bare_label" | "port_name") | null;
         };
         /** WorkflowExtractionPayload */
         WorkflowExtractionPayload: {

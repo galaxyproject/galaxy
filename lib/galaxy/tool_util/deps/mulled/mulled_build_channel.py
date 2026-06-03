@@ -19,7 +19,6 @@ See recent changes that would be built with:
 
 import os
 import subprocess
-import sys
 import time
 
 from galaxy.util import requests
@@ -28,6 +27,7 @@ from .mulled_build import (
     add_build_arguments,
     args_to_mull_targets_kwds,
     build_target,
+    conda_platform,
     conda_versions,
     get_affected_packages,
     mull_targets,
@@ -42,7 +42,7 @@ def _fetch_repo_data(args):
     repo_data = args.repo_data
     channel = args.channel
     if not os.path.exists(repo_data):
-        platform_tag = "osx-64" if sys.platform == "darwin" else "linux-64"
+        platform_tag = conda_platform()
         subprocess.check_call(
             [
                 "wget",

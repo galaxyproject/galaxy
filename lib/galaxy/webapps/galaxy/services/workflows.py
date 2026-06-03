@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import (
     Any,
     Optional,
@@ -48,8 +49,10 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 from galaxy.workflow.extract import (
+    collect_output_label_targets,
     extract_workflow,
     extract_workflow_by_ids,
+    normalize_output_label_key,
 )
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
@@ -59,6 +62,13 @@ log = logging.getLogger(__name__)
 
 def _to_extraction_result(stored_workflow: StoredWorkflow) -> WorkflowExtractionResult:
     return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+
+
+def _sanitize_output_label(label: str) -> str:
+    label = re.sub(r"\s+", " ", label.strip())
+    if not label:
+        raise exceptions.RequestParameterInvalidException("output_labels contains an empty label")
+    return label[:255]
 
 
 class WorkflowsService(ServiceBase):
@@ -249,6 +259,7 @@ class WorkflowsService(ServiceBase):
             hdca_ids=payload.hdca_ids,
             dataset_names=payload.dataset_names,
             dataset_collection_names=payload.dataset_collection_names,
+            output_labels=payload.output_labels,
         )
         return _to_extraction_result(stored_workflow)
 
@@ -295,6 +306,44 @@ class WorkflowsService(ServiceBase):
                 )
             for hdca in output_hdcas:
                 dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
+
+        output_targets = collect_output_label_targets(
+            trans,
+            job_manager=self._job_manager,
+            job_ids=payload.job_ids,
+            implicit_collection_jobs_ids=payload.implicit_collection_jobs_ids,
+        )
+        seen_output_ids = set()
+        seen_resolved_outputs = set()
+        seen_labels = set()
+        for output_label in payload.output_labels:
+            sanitized_label = _sanitize_output_label(output_label.label)
+            output_label.label = sanitized_label
+            output_key = normalize_output_label_key(trans, output_label.kind, output_label.id)
+            output_label.id = output_key[1]
+            if output_key in seen_output_ids:
+                raise exceptions.RequestParameterInvalidException(
+                    f"output_labels contains duplicate {output_label.kind} id {output_label.id}"
+                )
+            seen_output_ids.add(output_key)
+
+            output_target = output_targets.get(output_key)
+            if output_target is None:
+                raise exceptions.RequestParameterInvalidException(
+                    f"output_labels includes {output_label.kind} id {output_label.id} "
+                    "that is not produced by a selected extraction step"
+                )
+            if output_target.step_key in seen_resolved_outputs:
+                raise exceptions.RequestParameterInvalidException(
+                    f"output_labels contains multiple labels for output {output_target.output_name!r}"
+                )
+            seen_resolved_outputs.add(output_target.step_key)
+
+            if sanitized_label in seen_labels:
+                raise exceptions.RequestParameterInvalidException(
+                    f"output_labels contains duplicate workflow output label {sanitized_label!r}"
+                )
+            seen_labels.add(sanitized_label)
 
     def delete(self, trans, workflow_id):
         workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)

@@ -2,8 +2,8 @@
 #    uv export --frozen --no-annotate --no-hashes --only-group=typecheck
 annotated-types==0.7.0
 ast-serialize==0.5.0
-boto3-stubs==1.43.14
-botocore-stubs==1.42.41
+boto3-stubs==1.43.18
+botocore-stubs==1.43.14
 cffi==2.0.0 ; platform_python_implementation != 'PyPy'
 cryptography==48.0.0
 librt==0.11.0 ; platform_python_implementation != 'PyPy'
@@ -16,7 +16,7 @@ pycparser==3.0 ; implementation_name != 'PyPy' and platform_python_implementatio
 pydantic==2.13.4
 pydantic-core==2.46.4
 tomli==2.4.1 ; python_full_version < '3.11'
-types-awscrt==0.31.3
+types-awscrt==0.33.0
 types-bleach==6.3.0.20260508
 types-boto==2.49.18.20241019
 types-cachetools==7.0.0.20260518

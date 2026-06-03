@@ -43,6 +43,7 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.history_graph import HistoryGraphManager
 from galaxy.managers.users import UserManager
+from galaxy.managers.workflow_extraction_naming import suggested_output_name
 from galaxy.model import (
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
@@ -109,7 +110,10 @@ from galaxy.webapps.galaxy.services.base import (
 )
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from galaxy.webapps.galaxy.services.sharable import ShareableService
-from galaxy.workflow.extract import summarize
+from galaxy.workflow.extract import (
+    _skip_output_assoc_name,
+    summarize,
+)
 
 log = logging.getLogger(__name__)
 
@@ -844,7 +848,15 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 icj_assoc.job_id: icj_assoc for icj_assoc in trans.sa_session.scalars(stmt).unique().all()
             }
 
-        def serialize_output(content) -> WorkflowExtractionOutput:
+        def serialize_output(
+            content, output_name: Optional[str] = None, expose_outputs: bool = False
+        ) -> WorkflowExtractionOutput:
+            suggested = None
+            if output_name is not None:
+                content_kind: Literal["hda", "hdca"] = (
+                    "hdca" if content.history_content_type == "dataset_collection" else "hda"
+                )
+                suggested = suggested_output_name(trans, content.id, content_kind)
             return WorkflowExtractionOutput.model_validate(
                 {
                     "id": content.id,
@@ -853,6 +865,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                     "state": content.state,
                     "deleted": content.deleted,
                     "history_content_type": content.history_content_type,
+                    "output_name": output_name,
+                    "suggested_name": suggested.name if suggested else None,
+                    "suggested_name_source": suggested.source if suggested else None,
+                    "exposed": expose_outputs,
                 }
             )
 
@@ -861,10 +877,20 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 return "input_collection"
             return "input_dataset"
 
+        def workflow_output_name(content, output_name: Optional[str]) -> Optional[str]:
+            if output_name and _skip_output_assoc_name(output_name):
+                return None
+            if content.history_content_type == "dataset_collection":
+                return getattr(content, "implicit_output_name", None) or output_name
+            return output_name
+
         jobs_list = []
         for job, datasets in jobs.items():
             is_fake = getattr(job, "is_fake", False)
-            outputs = [serialize_output(data) for _, data in datasets]
+            input_outputs = [serialize_output(data) for _, data in datasets]
+            tool_outputs = [
+                serialize_output(data, workflow_output_name(data, output_name)) for output_name, data in datasets
+            ]
             checked = any(not data.deleted for _, data in datasets)
 
             if is_fake:
@@ -872,13 +898,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                 jobs_list.append(
                     WorkflowExtractionJob(
                         id=None,
-                        step_type=input_step_type(outputs),
+                        step_type=input_step_type(input_outputs),
                         tool_name=getattr(job, "name", None),
                         tool_id=None,
                         tool_version=None,
                         checked=checked,
                         tool_version_warning=None,
-                        outputs=outputs,
+                        outputs=input_outputs,
                         invalid=None,
                     )
                 )
@@ -905,7 +931,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                             tool_version=job.tool_version,
                             checked=False,
                             tool_version_warning=None,
-                            outputs=outputs,
+                            outputs=tool_outputs,
                             invalid=invalid_reason,
                         )
                     )
@@ -914,13 +940,13 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                     jobs_list.append(
                         WorkflowExtractionJob(
                             id=None,
-                            step_type=input_step_type(outputs),
+                            step_type=input_step_type(input_outputs),
                             tool_name=tool.name,
                             tool_id=None,
                             tool_version=None,
                             checked=checked,
                             tool_version_warning=None,
-                            outputs=outputs,
+                            outputs=input_outputs,
                             invalid=None,
                         )
                     )
@@ -944,7 +970,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
                             tool_version=job.tool_version,
                             checked=checked,
                             tool_version_warning=tool_version_warning,
-                            outputs=outputs,
+                            outputs=tool_outputs,
                             invalid=None,
                             implicit_collection_jobs_id=(
                                 icj_assoc.implicit_collection_jobs_id if icj_assoc is not None else None
