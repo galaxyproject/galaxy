@@ -22,8 +22,7 @@ def _stringify_nested_columns(table):
     for column in table.columns:
         if pa.types.is_nested(column.type):
             values = column.to_pylist()
-            values = [json.dumps(value, ensure_ascii=True) 
-                      if value is not None else None for value in values]
+            values = [json.dumps(value, ensure_ascii=True) if value is not None else None for value in values]
             new_columns.append(pa.array(values, type=pa.string()))
         else:
             new_columns.append(column)
