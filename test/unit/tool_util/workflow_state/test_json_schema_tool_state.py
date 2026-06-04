@@ -308,3 +308,54 @@ class TestErrorDetails:
         result = validate_workflow_json_schema(wf, get_tool_info=FakeGetToolInfo())
         assert result.structural_errors == []
         assert not result.valid
+
+
+def _workflow_with_tool_state(tool_state, tool_id="test_tool"):
+    return {
+        "class": "GalaxyWorkflow",
+        "inputs": {},
+        "outputs": {},
+        "steps": {
+            "step1": {
+                "tool_id": tool_id,
+                "tool_version": "1.0",
+                "tool_state": tool_state,
+            },
+        },
+    }
+
+
+class TestNativeToolStateBlock:
+    """A format2 step carrying verbatim native ``tool_state`` validates against
+    the native representation (parity with the Pydantic path), not skipped."""
+
+    def test_native_tool_state_passes(self):
+        wf = _workflow_with_tool_state({"num_lines": 5})
+        result = validate_workflow_json_schema(wf, get_tool_info=FakeGetToolInfo())
+        assert result.valid
+        assert result.step_results[0].status == "ok"
+
+    def test_native_double_encoded_int_passes(self):
+        # The native representation accepts double-encoded scalars ("5" for an
+        # int); the default workflow_step representation would reject the string.
+        wf = _workflow_with_tool_state({"num_lines": "5"})
+        result = validate_workflow_json_schema(wf, get_tool_info=FakeGetToolInfo())
+        assert result.valid
+        assert result.step_results[0].status == "ok"
+
+    def test_native_tool_state_unknown_key_fails(self):
+        # The native representation still enforces additionalProperties: false,
+        # so an unknown key fails. (Scalar type errors like "not_a_number" for an
+        # int can't be caught in JSON-schema mode — native double-encoding makes
+        # the schema accept any string; the Pydantic path catches those.)
+        wf = _workflow_with_tool_state({"num_lines": 5, "bogus_key": 1})
+        result = validate_workflow_json_schema(wf, get_tool_info=FakeGetToolInfo())
+        assert not result.valid
+        assert result.step_results[0].status == "fail"
+        assert any("bogus_key" in e.message for e in result.step_results[0].errors)
+
+    def test_empty_tool_state_skipped(self):
+        wf = _workflow_with_tool_state({})
+        result = validate_workflow_json_schema(wf, get_tool_info=FakeGetToolInfo())
+        assert result.valid
+        assert result.step_results[0].status == "skip"
