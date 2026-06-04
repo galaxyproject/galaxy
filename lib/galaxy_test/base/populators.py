@@ -2146,15 +2146,21 @@ class BaseDatasetPopulator(BasePopulator):
     def new_notebook_referencing(
         self,
         history_id: str,
-        output_ids: list[str],
+        output_ids: Optional[list[str]] = None,
+        collection_ids: Optional[list[str]] = None,
         title: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a history-attached page (notebook) whose markdown references the
-        given dataset outputs via history_dataset_display directives."""
-        directives = "\n".join(
-            f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids
-        )
-        content = f"# Analysis\n\n{directives}\n"
+        given dataset outputs (history_dataset_display) and/or dataset collection
+        outputs (history_dataset_collection_display)."""
+        blocks = [
+            f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids or []
+        ]
+        blocks += [
+            f"```galaxy\nhistory_dataset_collection_display(history_dataset_collection_id={collection_id})\n```"
+            for collection_id in collection_ids or []
+        ]
+        content = "# Analysis\n\n" + "\n".join(blocks) + "\n"
         return self.new_history_page(history_id, title=title, content=content)
 
     def get_history_page(self, page_id: str) -> dict[str, Any]:

@@ -1182,6 +1182,7 @@ workflow_extract:
     tool_card_checkbox_checked: '[data-step-type="tool"] input[id^="g-card-select-"]:checked'
     card_checkbox_by_job_id: '[data-job-id="${job_id}"] input[id^="g-card-select-"]'
     card_by_icj_id: '[data-icj-id="${icj_id}"]'
+    card_checkbox_by_icj_id: '[data-icj-id="${icj_id}"] input[id^="g-card-select-"]'
     mapped_badge: '[id^="g-card-badge-mapped-tool-"]'
     all_card_checkboxes_checked: '[data-description="workflow-extraction-form"] input[id^="g-card-select-"]:checked'
     output_star_for_job: '[data-job-id="${job_id}"] [data-output-star]'
