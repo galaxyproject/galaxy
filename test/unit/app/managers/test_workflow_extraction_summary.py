@@ -67,13 +67,20 @@ class MockOutputAssoc:
 
 
 class MockInputDatasetAssoc:
-    def __init__(self, dataset):
+    def __init__(self, dataset, name=None):
         self.dataset = dataset
+        self.name = name
 
 
 class MockInputCollectionAssoc:
     def __init__(self, dataset_collection):
         self.dataset_collection = dataset_collection
+
+
+class MockImplicitInputCollection:
+    def __init__(self, input_dataset_collection, name=None):
+        self.input_dataset_collection = input_dataset_collection
+        self.name = name
 
 
 class MockIcjAssoc:
@@ -102,10 +109,11 @@ class MockHda:
 class MockHdca:
     history_content_type = "dataset_collection"
 
-    def __init__(self, id, creating_jobs=(), copied_from=None):
+    def __init__(self, id, creating_jobs=(), copied_from=None, implicit_input_collections=()):
         self.id = id
         self.creating_job_associations = [MockOutputAssoc(j) for j in creating_jobs]
         self.copied_from_history_dataset_collection_association = copied_from
+        self.implicit_input_collections = list(implicit_input_collections)
 
 
 def _trans(contents, toolbox=None):
