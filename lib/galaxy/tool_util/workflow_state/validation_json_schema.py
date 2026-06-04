@@ -244,8 +244,19 @@ def validate_workflow_json_schema(
             continue
 
         tool_version = step.get("tool_version")
+        # State shape selects the schema: a schema-aware ``state`` block
+        # validates against *representation*; a verbatim native ``tool_state``
+        # block validates against the native representation (parity with the
+        # Pydantic path, where tool_state routes to WorkflowStepNativeToolState).
         state = step.get("state")
-        if state is None:
+        tool_state = step.get("tool_state")
+        if state is not None:
+            state_to_validate = state
+            state_representation = representation
+        elif tool_state:
+            state_to_validate = tool_state
+            state_representation = "workflow_step_native"
+        else:
             result.step_results.append(
                 JsonSchemaStepResult(
                     step=step_key,
@@ -265,17 +276,21 @@ def validate_workflow_json_schema(
         effective_tool_id = tool_id or (parsed_tool.id if parsed_tool else None)
         effective_version = tool_version or (parsed_tool.version if parsed_tool else None)
 
-        cache_key = f"{effective_tool_id}@{effective_version}@{step_key if is_inline else '-'}"
+        cache_key = f"{effective_tool_id}@{effective_version}@{state_representation}@{step_key if is_inline else '-'}"
         if cache_key not in _validator_cache:
             validator = None
-            if tool_schema_dir and effective_tool_id is not None:
+            # Pre-exported dir schemas are the default ``representation`` only;
+            # a native tool_state block must build from the parsed tool.
+            if tool_schema_dir and effective_tool_id is not None and state_representation == representation:
                 step_path = step_key if is_inline else None
                 validator = _load_tool_state_validator_from_dir(
                     effective_tool_id, effective_version, tool_schema_dir, step_path=step_path
                 )
             if validator is None and parsed_tool is not None:
                 try:
-                    validator = _build_tool_state_validator_from_parsed_tool(parsed_tool, representation=representation)
+                    validator = _build_tool_state_validator_from_parsed_tool(
+                        parsed_tool, representation=state_representation
+                    )
                 except Exception:
                     log.debug(f"Failed to build validator for {effective_tool_id}", exc_info=True)
             _validator_cache[cache_key] = validator
@@ -292,7 +307,7 @@ def validate_workflow_json_schema(
             )
             continue
 
-        errors = sorted(validator.iter_errors(state), key=lambda e: list(e.absolute_path))
+        errors = sorted(validator.iter_errors(state_to_validate), key=lambda e: list(e.absolute_path))
         step_errors = _convert_errors(errors)
         result.step_results.append(
             JsonSchemaStepResult(

@@ -23,6 +23,7 @@ from ._types import (
     GetToolInfo,
     ToolInputs,
 )
+from .validation_native import validate_native_state
 
 
 def validate_format2_state(
@@ -72,8 +73,6 @@ def validate_step_format2(step: NormalizedWorkflowStep, get_tool_info: GetToolIn
 
 
 def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs):
-    state = dict(step.state) if step.state else {}
-
     # Build connect dict from step.in_ (connections already resolved by normalization)
     connect: dict = {}
     for step_input in step.in_:
@@ -81,4 +80,12 @@ def validate_step_against(step: NormalizedWorkflowStep, parsed_tool: ToolInputs)
             src = step_input.source
             connect[step_input.id] = src if isinstance(src, list) else [src]
 
+    # A step carries either a schema-aware ``state`` block or a verbatim native
+    # ``tool_state`` block (gxformat2's state-unaware conversion copies the
+    # latter). State shape — not workflow format — picks the validator.
+    if not step.state and step.tool_state:
+        validate_native_state(list(parsed_tool.inputs), dict(step.tool_state), connect)
+        return
+
+    state = dict(step.state) if step.state else {}
     validate_format2_state(list(parsed_tool.inputs), state, connect)
