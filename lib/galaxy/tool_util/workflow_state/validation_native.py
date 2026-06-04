@@ -1,5 +1,7 @@
 import copy
 from typing import (
+    Dict,
+    List,
     Optional,
     Union,
 )
@@ -32,24 +34,40 @@ class ReplacementParamsSkip(Exception):
     pass
 
 
-def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
-    tool_state = step_tool_state(step)
-    input_connections = step_input_connections(step)
+def validate_native_state(
+    tool_inputs: List,
+    tool_state: dict,
+    connections: Dict[str, object],
+) -> None:
+    """Validate native-encoded tool_state against tool definitions.
 
+    Shared by native-body steps and format2-body steps that carry a verbatim
+    ``tool_state`` block instead of a schema-aware ``state`` block — the native
+    encoding (double-encoded scalars, inline ConnectedValue/RuntimeValue
+    markers) is identical regardless of the surrounding workflow format, so the
+    same model validates both. *connections* maps flat parameter paths to their
+    connected sources.
+    """
     # Skip validation entirely if replacement parameters are present —
     # these can't pass type validation (e.g., "${num}" for an integer field)
-    scan = scan_native_state(list(parsed_tool.inputs), tool_state, input_connections)
+    scan = scan_native_state(tool_inputs, tool_state, connections)
     if scan.classification == ReplacementClassification.YES:
         raise ReplacementParamsSkip("Replacement parameters detected")
 
     state = copy.deepcopy(tool_state)
 
     # Inject connection markers for connected params missing their marker
-    connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
-    inject_connections_into_state(list(parsed_tool.inputs), state, connections)
+    inject_connections_into_state(tool_inputs, state, connections)
 
-    model = WorkflowStepNativeToolState.parameter_model_for(list(parsed_tool.inputs))
+    model = WorkflowStepNativeToolState.parameter_model_for(tool_inputs)
     model.model_validate(state)
+
+
+def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
+    tool_state = step_tool_state(step)
+    input_connections = step_input_connections(step)
+    connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
+    validate_native_state(list(parsed_tool.inputs), tool_state, connections)
 
 
 # -- Public utilities --

@@ -461,6 +461,17 @@ def _validate_format2(
                     inline_source=inline_source,
                 )
             )
+        except ReplacementParamsSkip as e:
+            results.append(
+                ValidationStepResult(
+                    step=step_label,
+                    tool_id=tool_id,
+                    version=tool_version,
+                    status="skip_replacement_params",
+                    errors=[str(e)],
+                    inline_source=inline_source,
+                )
+            )
         except Exception as e:
             error_str = str(e)
             if "No tool definition" in error_str or "Not a toolshed tool" in error_str:
