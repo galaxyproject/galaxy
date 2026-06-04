@@ -1,6 +1,11 @@
 import logging
 from dataclasses import dataclass
 
+from sqlalchemy import (
+    func,
+    select,
+)
+
 from galaxy import (
     exceptions,
     model,
@@ -92,11 +97,6 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
         README_FILENAMES = {"readme.md", "readme.markdown", "readme.txt", "readme"}
 
         # Query for README file in folder (independent of pagination)
-        from sqlalchemy import (
-            func,
-            select,
-        )
-
         readme_stmt = (
             select(model.LibraryDataset)
             .where(model.LibraryDataset.folder_id == folder.id)
@@ -111,7 +111,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             if ldda and ldda.dataset and ldda.dataset.has_data():
                 if ldda.extension in {"txt", "md", "markdown"}:
                     try:
-                        with open(ldda.dataset.get_file_name(), "r", encoding="utf-8") as f:
+                        with open(ldda.dataset.get_file_name(), encoding="utf-8") as f:
                             readme_raw = f.read()
                     except Exception as e:
                         log.warning(f"Could not render README for folder {folder_id}: {e}")
