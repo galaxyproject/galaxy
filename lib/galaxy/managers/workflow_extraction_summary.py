@@ -124,11 +124,27 @@ def _backward_job_closure(trans: ProvidesHistoryContext, refs: list[ContentRef],
         seen_content.add(key)
         result.content_refs.add(key)
 
+        is_collection = key[0] == "hdca"
         original = (
             _original_hdca(cast(HistoryDatasetCollectionAssociation, content))
-            if key[0] == "hdca"
+            if is_collection
             else _original_hda(cast(HistoryDatasetAssociation, content))
         )
+
+        # Map-over: an implicit output collection records the collection(s) it was
+        # mapped over on itself, not on the per-element jobs (whose recorded inputs
+        # are individual elements). Recover those at the collection level so the
+        # input collection is seeded, and remember their names so the matching
+        # per-element job inputs below are not walked back into as loose datasets.
+        mapped_input_names: set[str] = set()
+        if is_collection:
+            for implicit_input in cast(HistoryDatasetCollectionAssociation, original).implicit_input_collections:
+                input_collection = implicit_input.input_dataset_collection
+                if input_collection is not None:
+                    if implicit_input.name is not None:
+                        mapped_input_names.add(implicit_input.name)
+                    queue.append(input_collection)
+
         creating = original.creating_job_associations
         if not creating:
             result.boundary_input_refs.add(key)
@@ -154,6 +170,9 @@ def _backward_job_closure(trans: ProvidesHistoryContext, refs: list[ContentRef],
             if icj_assoc is not None:
                 result.icj_ids.add(icj_assoc.implicit_collection_jobs_id)
             for in_dataset in job.input_datasets:
+                if in_dataset.name in mapped_input_names:
+                    # Folded into a mapped input collection already queued above.
+                    continue
                 if in_dataset.dataset is not None:
                     queue.append(in_dataset.dataset)
             for in_collection in job.input_dataset_collections:
