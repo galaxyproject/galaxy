@@ -45,6 +45,16 @@ class TestDataToolParameter(BaseParameterTestCase):
         with pytest.raises(ParameterValueError, match="invalid dataset id"):
             self.param.from_json("not-an-id", self.trans)
 
+    def test_from_json_multi_tolerates_none(self):
+        # An unset optional data input connected to a multiple data parameter
+        # arrives as a null list element; it must be filtered out rather than
+        # rejected as a malformed id (regression from #22617, surfaced as a
+        # workflow run erroring on an unset optional data input).
+        self.multiple = True
+        self.optional = True
+        assert self.param.from_json([None], self.trans) == []
+        assert self.param.from_json(["None"], self.trans) == []
+
     def test_field_filter_on_types(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
