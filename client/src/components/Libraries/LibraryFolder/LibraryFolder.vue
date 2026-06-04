@@ -707,7 +707,7 @@ export default {
             if (this.folder_metadata.readme_raw) {
                 const rawHtml = renderMarkdown(this.folder_metadata.readme_raw);
                 // Sanitize the rendered markdown to prevent XSS attacks
-                this.renderedReadme = this.sanitize(rawHtml);
+                this.renderedReadme = purify.sanitize(rawHtml);
             } else {
                 this.renderedReadme = "";
             }
