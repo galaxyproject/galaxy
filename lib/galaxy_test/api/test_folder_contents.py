@@ -324,6 +324,32 @@ class TestFolderContentsApi(ApiTestCase):
         expected_order_by_name = ["Folder_C", "Folder_B", "Folder_A", "c", "b", "a"]
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
+    @requires_new_library
+    def test_index_readme(self, history_id):
+        folder_id = self._create_folder_in_library("Test Folder Contents Readme")
+
+        # A folder without a README exposes no readme content
+        response = self._get(f"folders/{folder_id}/contents")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["metadata"]["readme_raw"] is None
+
+        # Add a README markdown dataset to the folder
+        readme_content = "# Project README\n\nSome **markdown** content.\n"
+        self._create_dataset_in_folder(
+            history_id,
+            folder_id,
+            name="README.md",
+            content=readme_content,
+            file_type="markdown",
+        )
+        self.dataset_populator.wait_for_history(history_id)
+
+        # The raw README content is now surfaced in the folder metadata, regardless of
+        # the dataset's casing (the lookup is case-insensitive)
+        response = self._get(f"folders/{folder_id}/contents")
+        self._assert_status_code_is(response, 200)
+        assert response.json()["metadata"]["readme_raw"].strip() == readme_content.strip()
+
     def _assert_folder_order_by_is_expected(
         self, folder_id: str, order_by: str, sort_desc: str, expected_order_by_name: list[str]
     ):
