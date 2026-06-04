@@ -1427,6 +1427,17 @@ class ExtractsWorkflows(GalaxyTestSeleniumContext):
         job_b, _ = self.run_cat1(history_id)
         return job_a, output_a, job_b
 
+    def run_random_lines_mapped(self, history_id: str) -> str:
+        """Map random_lines1 over a fresh pair. Returns the implicit output
+        collection id (the HDCA a notebook would reference)."""
+        hdca = self.dataset_collection_populator.create_pair_in_history(
+            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+        ).json()["outputs"][0]
+        inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}, "num_lines": 2}
+        run = self.dataset_populator.run_tool("random_lines1", inputs, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return run["implicit_collections"][0]["id"]
+
     def extract_workflow_toggle_job(self, job_id: str):
         """Toggle the selection checkbox for a specific job card by job_id."""
         checkbox = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_id)

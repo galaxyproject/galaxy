@@ -162,10 +162,29 @@ const SEEDED_INPUT_JOB: WorkflowExtractionJob = {
     seeded: true,
 };
 
+// A seeded mapped (ICJ) row paired with an unseeded one: the seeded-translation
+// path must pre-check by `seeded` and route the checked row into the
+// implicit_collection_jobs_ids bucket (not job_ids), excluding the unseeded ICJ.
+const SEEDED_MAPPED_TOOL_JOB: WorkflowExtractionJob = {
+    ...MAPPED_TOOL_JOB,
+    checked: false,
+    seeded: true,
+    outputs: [{ ...TOOL_OUTPUT, exposed: true }],
+};
+
+const UNSEEDED_MAPPED_TOOL_JOB: WorkflowExtractionJob = {
+    ...MAPPED_TOOL_JOB,
+    id: "job-tool-mapped-unseeded",
+    implicit_collection_jobs_id: "icj-2",
+    checked: true,
+    seeded: false,
+};
+
 const SUMMARY_WITH_JOBS = summary([TOOL_JOB, INPUT_JOB]);
 const SUMMARY_WITH_DUPLICATE_INPUT_NAMES = summary([INPUT_JOB, INPUT_JOB_DUP]);
 const SUMMARY_WITH_DUPLICATE_OUTPUT_NAMES = summary([TOOL_JOB_OUT_A, TOOL_JOB_OUT_B]);
 const SEEDED_SUMMARY = summary([SEEDED_TOOL_JOB, UNSEEDED_TOOL_JOB, SEEDED_INPUT_JOB]);
+const SEEDED_MAPPED_SUMMARY = summary([SEEDED_MAPPED_TOOL_JOB, UNSEEDED_MAPPED_TOOL_JOB]);
 const SUMMARY_WITH_MAPPED_JOB = summary([MAPPED_TOOL_JOB]);
 const SUMMARY_WITH_DUPLICATE_MAPPED_JOBS = summary([MAPPED_TOOL_JOB, MAPPED_TOOL_JOB_2]);
 const SUMMARY_WITH_PLAIN_AND_MAPPED_JOBS = summary([TOOL_JOB, MAPPED_TOOL_JOB]);
@@ -685,6 +704,27 @@ describe("WorkflowExtractionForm", () => {
                 expect.objectContaining({
                     job_ids: ["job-tool-1"], // seeded tool only; unseeded excluded
                     hda_ids: ["ds-2"], // seeded input
+                }),
+            );
+        });
+
+        it("pre-checks a seeded mapped row and submits its ICJ, excluding the unseeded one", async () => {
+            // Seeded-translation must reach the implicit_collection_jobs_ids
+            // bucket, not just plain job_ids — the one seam Selenium and the
+            // earlier seeded vitest fixtures (all plain job-id cards) never hit.
+            vi.mocked(fetchWorkflowExtractionSummary).mockResolvedValue(SEEDED_MAPPED_SUMMARY);
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
+            const wrapper = await mountForm();
+            const cards = wrapper.findAllComponents(WorkflowExtractionCard);
+            expect(cards.at(0).props("job").checked).toBe(true); // seeded mapped (backend checked=false)
+            expect(cards.at(1).props("job").checked).toBe(false); // unseeded mapped (backend checked=true)
+            await setWorkflowName(wrapper, "From Notebook Mapped");
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).toEqual(
+                expect.objectContaining({
+                    job_ids: [],
+                    implicit_collection_jobs_ids: ["icj-1"], // icj-2 (unseeded) excluded
                 }),
             );
         });

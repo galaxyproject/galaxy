@@ -1,6 +1,7 @@
 """API tests for history-attached pages (pages created with history_id)."""
 
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_agents,
     skip_without_tool,
@@ -423,11 +424,109 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
     """GET /api/pages/{id}/workflow_extraction_summary — seeded from referenced outputs."""
 
     dataset_populator: DatasetPopulator
+    dataset_collection_populator: DatasetCollectionPopulator
+
+    def setUp(self):
+        super().setUp()
+        self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def _extraction_summary(self, page_id: str) -> dict:
         response = self._get(f"pages/{page_id}/workflow_extraction_summary")
         self._assert_status_code_is(response, 200)
         return response.json()
+
+    def _run_random_lines_mapped_over_pair(self, history_id):
+        """Upload a pair and map random_lines1 over it. Returns
+        (input_hdca, implicit_output_hdca, map_job_id)."""
+        input_hdca = self.dataset_collection_populator.create_pair_in_history(
+            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+        ).json()["outputs"][0]
+        inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": input_hdca["id"]}]}, "num_lines": 2}
+        run = self.dataset_populator.run_tool(tool_id="random_lines1", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return input_hdca, run["implicit_collections"][0], run["jobs"][0]["id"]
+
+    def _copy_hdca_to_history(self, history_id, hdca):
+        response = self._post(
+            f"histories/{history_id}/contents/dataset_collections",
+            {"source": "hdca", "content": hdca["id"]},
+            json=True,
+        )
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _rows_by_type(self, summary, *step_types):
+        return [j for j in summary["jobs"] if j["step_type"] in step_types]
+
+    def _row_with_output_id(self, summary, content_id):
+        for job in summary["jobs"]:
+            if any(o["id"] == content_id for o in job["outputs"]):
+                return job
+        return None
+
+    @skip_without_tool("random_lines1")
+    def test_referenced_map_over_output_seeds_subgraph(self):
+        """Reference an implicit map-over output collection; its producing
+        map step and the collection it was mapped over must both be seeded."""
+        with self.dataset_populator.test_history() as history_id:
+            input_hdca, output_hdca, _ = self._run_random_lines_mapped_over_pair(history_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[output_hdca["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            # The map-over step is seeded and its output collection exposed.
+            tool_rows = self._rows_by_type(summary, "tool")
+            assert len(tool_rows) == 1, summary["jobs"]
+            map_row = tool_rows[0]
+            assert map_row["tool_id"] == "random_lines1", map_row
+            assert map_row["seeded"] is True, map_row
+            assert map_row["implicit_collection_jobs_id"], map_row
+            exposed = [o for o in map_row["outputs"] if o["exposed"]]
+            assert len(exposed) == 1 and exposed[0]["id"] == output_hdca["id"], map_row["outputs"]
+
+            # The collection the tool was mapped over is an input of the
+            # producing subgraph and must be seeded too.
+            input_row = self._row_with_output_id(summary, input_hdca["id"])
+            assert input_row is not None, summary["jobs"]
+            assert input_row["step_type"] == "input_collection", input_row
+            assert input_row["seeded"] is True, input_row
+
+    @skip_without_tool("random_lines1")
+    @skip_without_tool("multi_data_param")
+    def test_referenced_reduction_output_seeds_collection_input(self):
+        """Reference the output of a reduction over a mapped collection; the
+        reduction job, the upstream map step, and the original input
+        collection must all be seeded."""
+        with self.dataset_populator.test_history() as history_id:
+            input_hdca, output_hdca, _ = self._run_random_lines_mapped_over_pair(history_id)
+            reduction = self.dataset_populator.run_tool(
+                tool_id="multi_data_param",
+                inputs={
+                    "f1": {"src": "hdca", "id": output_hdca["id"]},
+                    "f2": {"src": "hdca", "id": output_hdca["id"]},
+                },
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            reduction_output_id = reduction["outputs"][0]["id"]
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[reduction_output_id])
+
+            summary = self._extraction_summary(page["id"])
+
+            reduction_row = self._row_with_output_id(summary, reduction_output_id)
+            assert reduction_row is not None and reduction_row["seeded"] is True, summary["jobs"]
+            assert reduction_row["tool_id"] == "multi_data_param", reduction_row
+
+            # Reached by walking back through the reduction's collection input.
+            map_row = self._row_with_output_id(summary, output_hdca["id"])
+            assert map_row is not None and map_row["seeded"] is True, summary["jobs"]
+            assert map_row["tool_id"] == "random_lines1", map_row
+
+            # The originally uploaded collection input must be seeded.
+            input_row = self._row_with_output_id(summary, input_hdca["id"])
+            assert input_row is not None, summary["jobs"]
+            assert input_row["step_type"] == "input_collection", input_row
+            assert input_row["seeded"] is True, input_row
 
     def _cat1_history(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
@@ -457,6 +556,68 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
             input_jobs = [j for j in summary["jobs"] if j["step_type"] in ("input_dataset", "input_collection")]
             assert input_jobs, summary["jobs"]
             assert all(j["seeded"] for j in input_jobs), input_jobs
+
+    @skip_without_tool("collection_split_on_column")
+    @skip_without_tool("cat_list")
+    def test_referenced_output_seeds_collection_producing_tool(self):
+        """A tool that produces a (non-mapped) output collection consumed by a
+        downstream reduction is reached by walking back through the consumer's
+        collection input and seeded by its own job id (no ICJ)."""
+        with self.dataset_populator.test_history() as history_id:
+            d1 = self.dataset_populator.new_dataset(history_id, content="a\t1\nb\t2\na\t3\n", wait=True)
+            split = self.dataset_populator.run_tool(
+                tool_id="collection_split_on_column",
+                inputs={"input1": {"src": "hda", "id": d1["id"]}},
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            split_collection = split["output_collections"][0]
+            cat_list = self.dataset_populator.run_tool(
+                tool_id="cat_list",
+                inputs={"input1": {"src": "hdca", "id": split_collection["id"]}},
+                history_id=history_id,
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            final_output_id = cat_list["outputs"][0]["id"]
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[final_output_id])
+
+            summary = self._extraction_summary(page["id"])
+
+            consumer = self._row_with_output_id(summary, final_output_id)
+            assert consumer is not None and consumer["seeded"] is True, summary["jobs"]
+            assert consumer["tool_id"] == "cat_list", consumer
+
+            producer = self._row_with_output_id(summary, split_collection["id"])
+            assert producer is not None and producer["seeded"] is True, summary["jobs"]
+            assert producer["tool_id"] == "collection_split_on_column", producer
+            assert producer["implicit_collection_jobs_id"] is None, producer
+
+            input_row = self._row_with_output_id(summary, d1["id"])
+            assert input_row is not None, summary["jobs"]
+            assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
+
+    def test_referenced_copied_collection_normalizes_to_original(self):
+        """A collection copied in from another history is followed to its
+        original for identity (the summary row carries the original id), and is
+        surfaced as a seeded input collection row; the cross-history producer is
+        not leaked as an extractable step."""
+        source_history_id = self.dataset_populator.new_history()
+        source_hdca = self.dataset_collection_populator.create_pair_in_history(
+            source_history_id, contents=["a\n", "b\n"], wait=True
+        ).json()["outputs"][0]
+        with self.dataset_populator.test_history() as history_id:
+            copied = self._copy_hdca_to_history(history_id, source_hdca)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[copied["id"]])
+
+            summary = self._extraction_summary(page["id"])
+
+            # Rows are keyed by the original (source) id even though the copy lives here.
+            row = self._row_with_output_id(summary, source_hdca["id"])
+            assert row is not None, summary["jobs"]
+            assert row["step_type"] == "input_collection", row
+            assert row["seeded"] is True, row
+            assert self._rows_by_type(summary, "tool") == [], summary["jobs"]
 
     @skip_without_tool("cat1")
     def test_unreferenced_history_seeds_nothing(self):
