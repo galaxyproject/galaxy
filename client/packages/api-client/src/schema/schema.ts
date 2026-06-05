@@ -19059,6 +19059,8 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             parent_library_id: string;
+            /** Readme Raw */
+            readme_raw?: string | null;
             /** Total Rows */
             total_rows: number;
         };
