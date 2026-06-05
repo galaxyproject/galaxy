@@ -27,8 +27,9 @@ from .mulled_build import (
     add_build_arguments,
     args_to_mull_targets_kwds,
     build_target,
-    conda_platform,
     conda_versions,
+    docker_platform_tag_suffix,
+    docker_platform_to_conda_subdir,
     get_affected_packages,
     mull_targets,
 )
@@ -42,7 +43,7 @@ def _fetch_repo_data(args):
     repo_data = args.repo_data
     channel = args.channel
     if not os.path.exists(repo_data):
-        platform_tag = conda_platform()
+        platform_tag = docker_platform_to_conda_subdir(getattr(args, "target_platform", None))
         subprocess.check_call(
             [
                 "wget",
@@ -56,11 +57,15 @@ def _fetch_repo_data(args):
     return repo_data
 
 
-def _new_versions(quay, conda):
+def _new_versions(quay, conda, tag_suffix=None):
     """Calculate the versions that are in conda but not on quay.io."""
-    sconda = set(conda)
     squay = set(quay) if quay else set()
-    return sconda - squay  # sconda.symmetric_difference(squay)
+    if tag_suffix:
+        # Unsuffixed legacy tags represent amd64 builds and must not suppress
+        # publication of the requested non-amd64 variant.
+        suffix = f"-{tag_suffix}"
+        squay = {tag.removesuffix(suffix) for tag in squay if tag.endswith(suffix)}
+    return [v for v in conda if v not in squay]
 
 
 def run_channel(args, build_last_n_versions: int = 1) -> None:
@@ -75,7 +80,7 @@ def run_channel(args, build_last_n_versions: int = 1) -> None:
         if not args.force_rebuild:
             time.sleep(1)
             q = quay_versions(args.namespace, pkg_name, session)
-            versions = _new_versions(q, c)
+            versions = _new_versions(q, c, docker_platform_tag_suffix(getattr(args, "target_platform", None)))
         else:
             versions = c
 

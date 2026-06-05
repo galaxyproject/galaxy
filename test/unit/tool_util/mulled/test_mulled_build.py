@@ -1,14 +1,23 @@
 import os.path
+from argparse import (
+    ArgumentParser,
+    Namespace,
+)
 from unittest import mock
 
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_build import (
+    add_build_arguments,
+    apply_platform_tag_suffix,
+    args_to_mull_targets_kwds,
     base_image_for_targets,
     build_target,
     conda_platform,
     DEFAULT_BASE_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
+    docker_platform_to_conda_subdir,
+    get_conda_hits_for_targets,
     InvolucroContext,
     mull_targets,
     target_str_to_targets,
@@ -63,3 +72,113 @@ def test_conda_platform_fallback_to_linux64(mock_machine):
     mock_machine.return_value = "riscv64"
     with mock.patch("galaxy.tool_util.deps.mulled.mulled_build.IS_OS_X", False):
         assert conda_platform() == "linux-64"
+
+
+@pytest.mark.parametrize(
+    "target_platform,conda_subdir",
+    [
+        ("linux/amd64", "linux-64"),
+        ("linux/arm64", "linux-aarch64"),
+        ("linux/arm/v7", "linux-armv7l"),
+        ("linux/ppc64le", "linux-ppc64le"),
+    ],
+)
+def test_docker_platform_to_conda_subdir(target_platform, conda_subdir):
+    assert docker_platform_to_conda_subdir(target_platform) == conda_subdir
+
+
+def test_docker_platform_to_conda_subdir_defaults_to_host_platform():
+    with mock.patch("galaxy.tool_util.deps.mulled.mulled_build.conda_platform", return_value="osx-arm64"):
+        assert docker_platform_to_conda_subdir(None) == "osx-arm64"
+
+
+def test_docker_platform_to_conda_subdir_rejects_unsupported_platform():
+    with pytest.raises(ValueError, match="Unsupported target platform 'linux/riscv64'"):
+        docker_platform_to_conda_subdir("linux/riscv64")
+
+
+def test_target_platform_cli_argument_rejects_unsupported_platform():
+    parser = ArgumentParser()
+    add_build_arguments(parser)
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--target-platform", "linux/riscv64"])
+
+
+@pytest.mark.parametrize(
+    "image,expected",
+    [
+        ("samtools:1.3--0", "samtools:1.3--0-arm64"),
+        ("mulled-v2-xxx:hash", "mulled-v2-xxx:hash-arm64"),
+        ("some-image", "some-image:latest-arm64"),
+        ("registry.example:5000/namespace/some-image", "registry.example:5000/namespace/some-image:latest-arm64"),
+    ],
+)
+def test_apply_platform_tag_suffix(image, expected):
+    assert apply_platform_tag_suffix(image, "linux/arm64") == expected
+
+
+def test_apply_platform_tag_suffix_keeps_default_platform_tag():
+    assert apply_platform_tag_suffix("samtools:1.3--0", "linux/amd64") == "samtools:1.3--0"
+
+
+@mock.patch("galaxy.tool_util.deps.mulled.mulled_build._platform_module.machine", return_value="aarch64")
+def test_apply_platform_tag_suffix_uses_native_non_amd64_platform(_mock_machine):
+    assert apply_platform_tag_suffix("samtools:1.3--0", None) == "samtools:1.3--0-arm64"
+
+
+def test_involucro_context_build_command_includes_platform():
+    context = InvolucroContext(involucro_bin="involucro", platform="linux/arm64")
+    assert context.build_command(["build"]) == ["involucro", "-v=3", "--platform", "linux/arm64", "build"]
+
+
+def test_get_conda_hits_for_targets_uses_explicit_conda_platform():
+    target = build_target("samtools")
+    conda_context = mock.Mock()
+    with mock.patch(
+        "galaxy.tool_util.deps.mulled.mulled_build.best_search_result", return_value=({"name": "samtools"}, True)
+    ) as best_search_result:
+        assert get_conda_hits_for_targets([target], conda_context, "linux-aarch64") == [{"name": "samtools"}]
+    best_search_result.assert_called_once_with(target, conda_context, platform="linux-aarch64")
+
+
+def test_mull_targets_dry_run_uses_target_platform(capsys):
+    target = build_target("samtools", version="1.3", build="0")
+    assert mull_targets([target], target_platform="linux/arm64", determine_base_image=False, dry_run=True) == 0
+    output = capsys.readouterr().out
+    assert "--platform linux/arm64" in output
+    assert "REPO=quay.io/biocontainers/samtools:1.3--0-arm64" in output
+
+
+def test_mull_targets_rejects_target_platform_with_singularity():
+    with pytest.raises(ValueError, match="--target-platform cannot be used with --singularity"):
+        mull_targets([build_target("samtools")], target_platform="linux/arm64", singularity=True, dry_run=True)
+
+
+def test_mull_targets_rejects_conflicting_involucro_platform():
+    context = InvolucroContext(platform="linux/arm64")
+    with pytest.raises(ValueError, match="conflicts with Involucro platform"):
+        mull_targets([build_target("samtools")], involucro_context=context, target_platform="linux/amd64", dry_run=True)
+
+
+def test_mull_targets_does_not_mutate_involucro_context_platform():
+    context = InvolucroContext()
+    mull_targets(
+        [build_target("samtools")],
+        involucro_context=context,
+        target_platform="linux/arm64",
+        determine_base_image=False,
+        dry_run=True,
+    )
+    assert context.platform is None
+
+
+def test_args_to_mull_targets_kwds_passes_target_platform_to_context():
+    args = Namespace(
+        involucro_path="custom-involucro",
+        strict_channel_priority=True,
+        target_platform="linux/arm64",
+        verbose=False,
+    )
+    kwds = args_to_mull_targets_kwds(args)
+    assert kwds["target_platform"] == "linux/arm64"
+    assert kwds["involucro_context"].platform == "linux/arm64"
