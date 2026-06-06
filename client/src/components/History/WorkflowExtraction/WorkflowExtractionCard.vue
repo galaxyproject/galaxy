@@ -133,6 +133,16 @@ const badges = computed<CardBadge[]>(() => {
     } else {
         badges.push(INPUT_IS_RENAMABLE_BADGE);
     }
+    if (props.job.seed_warning) {
+        badges.push({
+            id: "seed-warning",
+            label: "Seeded as Input",
+            icon: faExclamationTriangle,
+            title: props.job.seed_warning,
+            class: "unselectable",
+            variant: "warning",
+        });
+    }
     badges.push({
         id: "step-type",
         label: meta.label,

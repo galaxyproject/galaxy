@@ -58,6 +58,11 @@ from galaxy.workflow.extract import (
 
 log = logging.getLogger(__name__)
 
+SEED_AS_INPUT_WARNING = (
+    "Referenced by a notebook job directive, but its tool is not a workflow step "
+    "(e.g. an upload or data fetch). It was seeded as a workflow input instead."
+)
+
 
 @dataclass
 class ClosureResult:
@@ -73,6 +78,7 @@ class ClosureResult:
     referenced_output_refs: set[ContentRef] = field(default_factory=set)
     boundary_input_refs: set[ContentRef] = field(default_factory=set)
     content_refs: set[ContentRef] = field(default_factory=set)
+    seed_warning_refs: set[ContentRef] = field(default_factory=set)
     warnings: list[str] = field(default_factory=list)
 
 
@@ -96,8 +102,36 @@ def _tool_for_job(trans: ProvidesHistoryContext, job: Job):
         return None
 
 
-def _backward_job_closure(trans: ProvidesHistoryContext, refs: list[ContentRef], history_id: int) -> ClosureResult:
+def _job_output_contents(job: Job) -> list[HistoryItem]:
+    """All of a job's output HDAs/HDCAs (visible or not).
+
+    Seeding re-derives the producing job from any one output's
+    ``creating_job_associations``, so visibility does not affect correctness.
+    """
+    contents: list[HistoryItem] = []
+    for out_dataset in job.output_datasets:
+        if out_dataset.dataset is not None:
+            contents.append(out_dataset.dataset)
+    for out_collection in job.output_dataset_collection_instances:
+        if out_collection.dataset_collection_instance is not None:
+            contents.append(out_collection.dataset_collection_instance)
+    return contents
+
+
+def _backward_job_closure(
+    trans: ProvidesHistoryContext,
+    refs: list[ContentRef],
+    job_refs: list[int],
+    icj_refs: list[int],
+    history_id: int,
+) -> ClosureResult:
     """Walk backward from each referenced output to its producing subgraph.
+
+    Content ``refs`` are the page's displayed outputs: walked and marked exposed.
+    ``job_refs`` / ``icj_refs`` are jobs a notebook references via a job directive
+    (stdout/stderr/metrics/parameters); they seed their producing subgraph but
+    their outputs are *not* exposed. They are folded into the same backward walk
+    by enqueueing the referenced job's outputs unexposed.
 
     Stops at boundary inputs: datasets with no creating job, jobs whose tool is
     not workflow-compatible (upload, data fetch, ...), and cross-history
@@ -113,6 +147,32 @@ def _backward_job_closure(trans: ProvidesHistoryContext, refs: list[ContentRef],
             continue
         result.referenced_output_refs.add(_content_key(content))
         queue.append(content)
+
+    for job_id in job_refs:
+        job = trans.sa_session.get(Job, job_id)
+        if job is None:
+            result.warnings.append(f"A referenced job ({job_id}) is no longer available and was skipped.")
+            continue
+        tool = _tool_for_job(trans, job)
+        # A directly job-referenced non-step (upload, data fetch, cross-history) becomes a
+        # seeded input row; flag its outputs so the form can explain why. An upstream upload
+        # reached only by an ordinary walk below is not flagged.
+        not_a_step = tool is None or not tool.is_workflow_compatible or job.history_id != history_id
+        for content in _job_output_contents(job):
+            if not_a_step:
+                result.seed_warning_refs.add(_content_key(content))
+            queue.append(content)
+
+    for icj_id in icj_refs:
+        # Access was enforced at the collector via Phase-1's get_accessible_job before this id
+        # entered icj_refs; this bare fetch is safe only under that precondition. Do not call
+        # _backward_job_closure with an externally-supplied, unchecked ICJ id.
+        icj = trans.sa_session.get(ImplicitCollectionJobs, icj_id)
+        if icj is None:
+            result.warnings.append(f"A referenced collection job ({icj_id}) is no longer available and was skipped.")
+            continue
+        for hdca in icj.output_dataset_collection_instances:
+            queue.append(hdca)
 
     seen_content: set[ContentRef] = set()
     seen_jobs: set[int] = set()
@@ -248,6 +308,7 @@ def _input_extraction_row(
     *,
     seeded: bool,
     tool_name: Optional[str],
+    seed_warning: Optional[str] = None,
 ) -> WorkflowExtractionJob:
     """A non-step input row: a FakeJob/DatasetCollectionCreationJob, or a job
     whose tool is not workflow-compatible (upload, data fetch)."""
@@ -262,6 +323,7 @@ def _input_extraction_row(
         checked=checked,
         seeded=seeded,
         tool_version_warning=None,
+        seed_warning=seed_warning,
         outputs=outputs,
         invalid=None,
     )
@@ -277,10 +339,18 @@ def _extraction_row(
     referenced = closure.referenced_output_refs if closure else set()
     content_keys = {_content_key(data) for _, data in datasets}
     input_seeded = bool(closure and (content_keys & closure.content_refs))
+    seed_warning = SEED_AS_INPUT_WARNING if closure and (content_keys & closure.seed_warning_refs) else None
 
     if getattr(job, "is_fake", False):
         # FakeJob / DatasetCollectionCreationJob: input with no creating tool.
-        return _input_extraction_row(trans, job, datasets, seeded=input_seeded, tool_name=getattr(job, "name", None))
+        return _input_extraction_row(
+            trans,
+            job,
+            datasets,
+            seeded=input_seeded,
+            tool_name=getattr(job, "name", None),
+            seed_warning=seed_warning,
+        )
 
     custom_tools_inaccessible = False
     try:
@@ -319,7 +389,9 @@ def _extraction_row(
 
     if not tool.is_workflow_compatible:
         # Not a workflow step (e.g. upload, data fetch) — treat as input.
-        return _input_extraction_row(trans, job, datasets, seeded=input_seeded, tool_name=tool.name)
+        return _input_extraction_row(
+            trans, job, datasets, seeded=input_seeded, tool_name=tool.name, seed_warning=seed_warning
+        )
 
     tool_version_warning = (
         (
@@ -370,7 +442,12 @@ def _synthesize_cross_history_inputs(
         content = _resolve_content(trans, ref)
         if content is None:
             continue
-        synthesized.append(_input_extraction_row(trans, content, [(None, content)], seeded=True, tool_name=None))
+        seed_warning = SEED_AS_INPUT_WARNING if ref in closure.seed_warning_refs else None
+        synthesized.append(
+            _input_extraction_row(
+                trans, content, [(None, content)], seeded=True, tool_name=None, seed_warning=seed_warning
+            )
+        )
     return synthesized
 
 
@@ -409,6 +486,6 @@ def summary_from_page(trans: ProvidesHistoryContext, page: Page) -> WorkflowExtr
     revision = page.latest_revision
     content = revision.content if revision is not None else None
     referenced = referenced_content_ids(trans, content or "")
-    closure = _backward_job_closure(trans, referenced.refs, history.id)
+    closure = _backward_job_closure(trans, referenced.refs, referenced.job_refs, referenced.icj_refs, history.id)
     closure.warnings = referenced.warnings + closure.warnings
     return build_extraction_summary(trans, history, closure=closure)
