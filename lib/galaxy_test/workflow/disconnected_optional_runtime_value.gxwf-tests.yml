@@ -1,0 +1,17 @@
+- doc: |
+    A disconnected, optional data param carrying a RuntimeValue marker resolves to
+    absent/None at runtime - the marker is inert. Output content is the realized-value
+    proof: data_optional emits the resolved optional value deterministically.
+  job: {}
+  outputs:
+    out:
+      class: File
+      asserts:
+        - that: has_line
+          line: "INPUT None"
+        - that: has_line
+          line: "INPUT ext data"
+        - that: has_line
+          line: "ISOFTYPE mothur.names False"
+        - that: has_line
+          line: "ISOFTYPE mothur.count_table False"
