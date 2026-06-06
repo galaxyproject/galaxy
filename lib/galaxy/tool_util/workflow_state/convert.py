@@ -26,6 +26,8 @@ from ._types import (
 from ._util import (
     coerce_select_value,
     is_connected_or_runtime,
+    is_connected_value,
+    is_runtime_value,
     step_connected_paths,
     step_input_connections,
     step_tool_state,
@@ -134,10 +136,13 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
         parameter_type = tool_input.parameter_type
 
         if parameter_type in ["gx_data", "gx_data_collection"]:
-            if state_path in connected or is_connected_or_runtime(value):
+            if state_path in connected or is_connected_value(value):
                 format2_in[state_path] = "placeholder"
-            elif isinstance(value, dict) and value.get("__class__") == "RuntimeValue":
-                format2_in[state_path] = "placeholder"
+                return SKIP_VALUE
+            if is_runtime_value(value):
+                if not tool_input.optional:
+                    format2_in[state_path] = "placeholder"
+                return SKIP_VALUE
             return SKIP_VALUE
 
         if parameter_type == "gx_rules":
@@ -148,11 +153,12 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
             return SKIP_VALUE
 
         # Scalar types
-        if is_connected_or_runtime(value):
+        if state_path in connected or is_connected_value(value):
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
-        if state_path in connected:
-            format2_in[state_path] = "placeholder"
+        if is_runtime_value(value):
+            if not tool_input.optional:
+                format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if value is not None and value != "null":
             return _convert_scalar_value(parameter_type, tool_input.name, value, tool_input)
