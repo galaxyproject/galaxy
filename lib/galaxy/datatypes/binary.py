@@ -110,6 +110,7 @@ try:
 except ModuleNotFoundError:
     # If astropy cannot be found FITS datatype will work with minimal metadata support
     pass
+import pyarrow.parquet as parquet
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
@@ -4628,6 +4629,24 @@ class Parquet(Binary):
     False
     """
 
+    MetadataElement(
+        name="columns",
+        default=0,
+        desc="Number of columns",
+        readonly=True,
+        visible=True,
+        no_value=0,
+    )
+    MetadataElement(
+        name="column_names",
+        default=[],
+        desc="Column names",
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=[],
+    )
+
     file_ext = "parquet"
 
     def __init__(self, **kwd):
@@ -4636,6 +4655,23 @@ class Parquet(Binary):
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith_bytes(self._magic)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if not os.path.isfile(dataset.get_file_name()):
+            return
+        parquet_file = parquet.ParquetFile(dataset.get_file_name())
+        column_names = list(parquet_file.schema_arrow.names)
+        dataset.metadata.column_names = column_names
+        dataset.metadata.columns = len(column_names)
+
+    def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        if not dataset.dataset.purged:
+            label = "column" if dataset.metadata.columns == 1 else "columns"
+            dataset.peek = f"Parquet file with {dataset.metadata.columns} {label} ({', '.join(dataset.metadata.column_names)})"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
 
 
 class BafTar(CompressedArchive):
