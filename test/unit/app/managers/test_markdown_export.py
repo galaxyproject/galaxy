@@ -93,6 +93,19 @@ class BaseExportTestCase(BaseTestCase):
         collection.collection_type = "paired"
         return collection
 
+    def _mapped_job_and_icj(self, count=3):
+        """A representative job standing in for an N-element map-over (ICJ)."""
+        job = model.Job()
+        job.id = 1
+        icj = mock.MagicMock()
+        icj.representative_job = job
+        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
+        icj_assoc = mock.MagicMock()
+        icj_assoc.implicit_collection_jobs = icj
+        icj_assoc.implicit_collection_jobs_id = 7
+        job.implicit_collection_jobs_association = icj_assoc
+        return job, icj
+
 
 class TestToBasicMarkdown(BaseExportTestCase):
     def setUp(self):
@@ -335,18 +348,6 @@ job_metrics(job_id=1)
         assert "**env**\n" in result
         assert "| Cores Allocated | 1 |\n" in result
         assert "| GALAXY_HOME | /path/to/home |\n" in result
-
-    def _mapped_job_and_icj(self, count=3):
-        """A representative job standing in for an N-element map-over (ICJ)."""
-        job = model.Job()
-        job.id = 1
-        icj = mock.MagicMock()
-        icj.representative_job = job
-        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
-        icj_assoc = mock.MagicMock()
-        icj_assoc.implicit_collection_jobs = icj
-        job.implicit_collection_jobs_association = icj_assoc
-        return job, icj
 
     def test_tool_stdout_implicit_collection_jobs(self):
         job, icj = self._mapped_job_and_icj(count=3)
@@ -665,3 +666,56 @@ generate_galaxy_version()
         referenced = referenced_content_ids(self.trans, example)
         assert referenced.refs == []
         assert referenced.warnings == []
+
+    def test_job_directive_records_plain_job(self):
+        job = model.Job()
+        job.id = 5
+        example = """
+```galaxy
+job_metrics(job_id=5)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.job_refs == [5]
+        assert referenced.icj_refs == []
+        assert referenced.refs == []
+
+    def test_job_directive_records_icj(self):
+        job, icj = self._mapped_job_and_icj()
+        example = """
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                referenced = referenced_content_ids(self.trans, example)
+        assert referenced.icj_refs == [7]
+        assert referenced.job_refs == []
+
+    def test_element_job_folded_to_icj(self):
+        # A job_id= directive on a job that belongs to an ICJ is folded to its ICJ.
+        job, _icj = self._mapped_job_and_icj()
+        example = """
+```galaxy
+job_metrics(job_id=1)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.icj_refs == [7]
+        assert referenced.job_refs == []
+
+    def test_inaccessible_job_skipped_with_warning(self):
+        example = """
+```galaxy
+job_metrics(job_id=5)
+```
+"""
+        with mock.patch.object(JobManager, "get_accessible_job", side_effect=ItemAccessibilityException("nope")):
+            referenced = referenced_content_ids(self.trans, example)
+        assert referenced.job_refs == []
+        assert referenced.icj_refs == []
+        assert len(referenced.warnings) == 1
