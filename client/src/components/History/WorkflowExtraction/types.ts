@@ -26,6 +26,8 @@ interface RowBase {
     invalid?: InvalidReason | null;
     /** Part of the producing subgraph of a notebook's referenced outputs. False for plain history summaries. */
     seeded: boolean;
+    /** Set when a job directive seeded this row but its tool is not a workflow step, so it became an input. */
+    seed_warning?: string | null;
     outputs: ExtractionOutput[];
 }
 
@@ -64,6 +66,7 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
             checked: job.checked,
             invalid: job.invalid,
             seeded: job.seeded ?? false,
+            seed_warning: job.seed_warning,
             outputs,
             step_type: "tool",
             tool_id: job.tool_id,
@@ -79,6 +82,7 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
         checked: job.checked,
         invalid: job.invalid,
         seeded: job.seeded ?? false,
+        seed_warning: job.seed_warning,
         outputs,
         step_type: job.step_type,
         newName: defaultInputName(outputs),
