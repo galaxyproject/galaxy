@@ -12,8 +12,11 @@ import {
 import { fetchWorkflowExtractionSummary } from "@/api/pages";
 import { Toast } from "@/composables/toast";
 
+import { toExtractionRow } from "./WorkflowExtraction/types";
+
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
 import GButton from "../BaseComponents/GButton.vue";
+import GCard from "../Common/GCard.vue";
 import RenameModal from "../Common/RenameModal.vue";
 import LoadingSpan from "../LoadingSpan.vue";
 import WorkflowExtractionCard from "./WorkflowExtraction/WorkflowExtractionCard.vue";
@@ -737,5 +740,27 @@ describe("WorkflowExtractionForm", () => {
             expect(fetchWorkflowExtractionSummary).not.toHaveBeenCalled();
             expect(extractWorkflowFromHistory).toHaveBeenCalledWith("history-1");
         });
+    });
+});
+
+describe("WorkflowExtractionCard seed_warning", () => {
+    function cardBadges(job: WorkflowExtractionJob): Array<{ id: string; title?: string }> {
+        const wrapper = shallowMount(WorkflowExtractionCard as object, {
+            propsData: { job: toExtractionRow(job) },
+            localVue,
+        });
+        return wrapper.findComponent(GCard).props("badges");
+    }
+
+    it("renders a seed warning badge when seed_warning is set", () => {
+        const badge = cardBadges({ ...INPUT_JOB, seed_warning: "Seeded as an input." }).find(
+            (b) => b.id === "seed-warning",
+        );
+        expect(badge).toBeTruthy();
+        expect(badge?.title).toBe("Seeded as an input.");
+    });
+
+    it("does not render a seed warning badge when seed_warning is absent", () => {
+        expect(cardBadges(INPUT_JOB).find((b) => b.id === "seed-warning")).toBeFalsy();
     });
 });

@@ -596,6 +596,76 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
             assert input_row is not None, summary["jobs"]
             assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
 
+    @skip_without_tool("cat1")
+    def test_job_directive_seeds_producing_job_unexposed(self):
+        """A notebook that references a job via job_metrics seeds the producing
+        job (and its upstream inputs) but does NOT expose its outputs."""
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
+            inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
+            run = self.dataset_populator.run_tool("cat1", inputs, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            cat1_job_id = run["jobs"][0]["id"]
+            page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[cat1_job_id])
+
+            summary = self._extraction_summary(page["id"])
+            tool_rows = self._rows_by_type(summary, "tool")
+            assert len(tool_rows) == 1, summary["jobs"]
+            cat1_row = tool_rows[0]
+            assert cat1_row["tool_id"] == "cat1"
+            assert cat1_row["seeded"] is True, cat1_row
+            # Job-referenced (not content-referenced): seeded but not exposed.
+            assert all(not o["exposed"] for o in cat1_row["outputs"]), cat1_row["outputs"]
+            input_rows = self._rows_by_type(summary, "input_dataset", "input_collection")
+            assert input_rows and all(r["seeded"] for r in input_rows), summary["jobs"]
+
+    @skip_without_tool("random_lines1")
+    def test_job_directive_seeds_map_step_via_icj_and_element_job(self):
+        """job_metrics(implicit_collection_jobs_id=...) and the equivalent
+        job_metrics(job_id=<element job>) both seed the map step (folded to ICJ)
+        and the collection it was mapped over."""
+        with self.dataset_populator.test_history() as history_id:
+            input_hdca, output_hdca, element_job_id = self._run_random_lines_mapped_over_pair(history_id)
+            # Resolve the (encoded) ICJ id from a content-referencing summary.
+            content_page = self.dataset_populator.new_notebook_referencing(
+                history_id, collection_ids=[output_hdca["id"]]
+            )
+            icj_id = self._rows_by_type(self._extraction_summary(content_page["id"]), "tool")[0][
+                "implicit_collection_jobs_id"
+            ]
+            assert icj_id
+
+            for variant in ({"icj_ids": [icj_id]}, {"job_ids": [element_job_id]}):
+                page = self.dataset_populator.new_notebook_referencing(history_id, **variant)
+                summary = self._extraction_summary(page["id"])
+                tool_rows = self._rows_by_type(summary, "tool")
+                assert len(tool_rows) == 1, (variant, summary["jobs"])
+                map_row = tool_rows[0]
+                assert map_row["tool_id"] == "random_lines1", (variant, map_row)
+                assert map_row["seeded"] is True, (variant, map_row)
+                assert map_row["implicit_collection_jobs_id"] == icj_id, (variant, map_row)
+                assert all(not o["exposed"] for o in map_row["outputs"]), (variant, map_row["outputs"])
+                input_row = self._row_with_output_id(summary, input_hdca["id"])
+                assert input_row is not None and input_row["seeded"] is True, (variant, summary["jobs"])
+
+    def test_job_directive_on_upload_seeds_input_with_warning(self):
+        """A job_metrics directive on an upload job (not a workflow step) seeds an
+        input row and surfaces a per-row seed_warning."""
+        with self.dataset_populator.test_history() as history_id:
+            hda = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            upload_jobs = self.dataset_populator.history_jobs_for_tool(history_id, "__DATA_FETCH__")
+            assert upload_jobs, "expected an upload (__DATA_FETCH__) job"
+            page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[upload_jobs[0]["id"]])
+
+            summary = self._extraction_summary(page["id"])
+            input_row = self._row_with_output_id(summary, hda["id"])
+            assert input_row is not None, summary["jobs"]
+            assert input_row["step_type"] == "input_dataset", input_row
+            assert input_row["seeded"] is True, input_row
+            assert input_row["seed_warning"], input_row
+            assert self._rows_by_type(summary, "tool") == [], summary["jobs"]
+
     def test_referenced_copied_collection_normalizes_to_original(self):
         """A collection copied in from another history is followed to its
         original for identity (the summary row carries the original id), and is

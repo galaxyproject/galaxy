@@ -437,6 +437,14 @@ class WorkflowExtractionJob(Model):
         title="Tool Version Warning",
         description="Warning when the current tool version differs from the version used by this job.",
     )
+    seed_warning: Optional[str] = Field(
+        None,
+        title="Seed Warning",
+        description=(
+            "Warning when this row was seeded directly by a notebook job directive but its tool is not a "
+            "workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead."
+        ),
+    )
     outputs: list[WorkflowExtractionOutput] = Field(
         default_factory=list,
         title="Outputs",
