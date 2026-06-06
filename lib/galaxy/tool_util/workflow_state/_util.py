@@ -150,3 +150,13 @@ def coerce_select_value(value) -> str:
 def is_connected_or_runtime(value) -> bool:
     """Check if value is a ConnectedValue or RuntimeValue marker."""
     return isinstance(value, dict) and value.get("__class__") in ("ConnectedValue", "RuntimeValue")
+
+
+def is_connected_value(value) -> bool:
+    """Check if value is a ConnectedValue marker."""
+    return isinstance(value, dict) and value.get("__class__") == "ConnectedValue"
+
+
+def is_runtime_value(value) -> bool:
+    """Check if value is a RuntimeValue marker."""
+    return isinstance(value, dict) and value.get("__class__") == "RuntimeValue"
