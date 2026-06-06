@@ -698,11 +698,21 @@ class ReferencedContent:
     """
 
     refs: list[ContentRef] = field(default_factory=list)
+    job_refs: list[int] = field(default_factory=list)
+    icj_refs: list[int] = field(default_factory=list)
     warnings: list[str] = field(default_factory=list)
 
     def _record(self, ref: ContentRef) -> None:
         if ref not in self.refs:
             self.refs.append(ref)
+
+    def _record_job(self, job_id: int) -> None:
+        if job_id not in self.job_refs:
+            self.job_refs.append(job_id)
+
+    def _record_icj(self, icj_id: int) -> None:
+        if icj_id not in self.icj_refs:
+            self.icj_refs.append(icj_id)
 
 
 class _ReferencedContentCollector(GalaxyInternalMarkdownDirectiveHandler):
@@ -766,17 +776,30 @@ class _ReferencedContentCollector(GalaxyInternalMarkdownDirectiveHandler):
     def handle_workflow_license(self, line, stored_workflow):
         pass
 
+    def _record_job(self, job) -> None:
+        """Seed the job a directive references, folding an element job to its ICJ.
+
+        The collector holds the resolved (representative) job, so it decides
+        job-vs-ICJ here at the directive boundary: a job in an implicit collection
+        is recorded as its ICJ id (a map-over step), a plain job as its job id.
+        """
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is not None:
+            self.content._record_icj(icj_assoc.implicit_collection_jobs_id)
+        else:
+            self.content._record_job(job.id)
+
     def handle_tool_stdout(self, line, job):
-        pass
+        self._record_job(job)
 
     def handle_tool_stderr(self, line, job):
-        pass
+        self._record_job(job)
 
     def handle_job_metrics(self, line, job):
-        pass
+        self._record_job(job)
 
     def handle_job_parameters(self, line, job):
-        pass
+        self._record_job(job)
 
     def handle_generate_galaxy_version(self, line, galaxy_version):
         pass

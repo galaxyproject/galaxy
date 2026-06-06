@@ -2148,11 +2148,14 @@ class BaseDatasetPopulator(BasePopulator):
         history_id: str,
         output_ids: Optional[list[str]] = None,
         collection_ids: Optional[list[str]] = None,
+        job_ids: Optional[list[str]] = None,
+        icj_ids: Optional[list[str]] = None,
         title: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a history-attached page (notebook) whose markdown references the
-        given dataset outputs (history_dataset_display) and/or dataset collection
-        outputs (history_dataset_collection_display)."""
+        given dataset outputs (history_dataset_display), dataset collection
+        outputs (history_dataset_collection_display), and/or jobs via a job
+        directive (job_metrics) by job id or implicit collection jobs id."""
         blocks = [
             f"```galaxy\nhistory_dataset_display(history_dataset_id={output_id})\n```" for output_id in output_ids or []
         ]
@@ -2160,6 +2163,8 @@ class BaseDatasetPopulator(BasePopulator):
             f"```galaxy\nhistory_dataset_collection_display(history_dataset_collection_id={collection_id})\n```"
             for collection_id in collection_ids or []
         ]
+        blocks += [f"```galaxy\njob_metrics(job_id={job_id})\n```" for job_id in job_ids or []]
+        blocks += [f"```galaxy\njob_metrics(implicit_collection_jobs_id={icj_id})\n```" for icj_id in icj_ids or []]
         content = "# Analysis\n\n" + "\n".join(blocks) + "\n"
         return self.new_history_page(history_id, title=title, content=content)
 

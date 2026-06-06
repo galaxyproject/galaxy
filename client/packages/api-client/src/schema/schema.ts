@@ -27107,6 +27107,11 @@ export interface components {
              */
             outputs?: components["schemas"]["WorkflowExtractionOutput"][];
             /**
+             * Seed Warning
+             * @description Warning when this row was seeded directly by a notebook job directive but its tool is not a workflow step (e.g. an upload referenced via job_metrics), so it was seeded as an input instead.
+             */
+            seed_warning?: string | null;
+            /**
              * Seeded
              * @description Whether this job is part of the producing subgraph of the outputs a page/notebook references. Always False for the plain history summary; set when the summary is computed for a page.
              * @default false

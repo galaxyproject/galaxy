@@ -44,13 +44,26 @@ class MockApp:
 class MockSession:
     def __init__(self):
         self._by_key: dict = {}
+        self._jobs: dict = {}
+        self._icjs: dict = {}
 
     def register(self, content):
         kind = "hdca" if content.history_content_type == "dataset_collection" else "hda"
         self._by_key[(kind, content.id)] = content
 
+    def register_job(self, job):
+        self._jobs[job.id] = job
+
+    def register_icj(self, icj):
+        self._icjs[icj.id] = icj
+
     def get(self, model_class, id_):
-        kind = "hdca" if "Collection" in model_class.__name__ else "hda"
+        name = model_class.__name__
+        if name == "Job":
+            return self._jobs.get(id_)
+        if name == "ImplicitCollectionJobs":
+            return self._icjs.get(id_)
+        kind = "hdca" if "Collection" in name else "hda"
         return self._by_key.get((kind, id_))
 
 
@@ -88,13 +101,40 @@ class MockIcjAssoc:
         self.implicit_collection_jobs_id = icj_id
 
 
+class MockOutputDatasetAssoc:
+    def __init__(self, dataset):
+        self.dataset = dataset
+
+
+class MockOutputCollectionAssoc:
+    def __init__(self, dataset_collection_instance):
+        self.dataset_collection_instance = dataset_collection_instance
+
+
 class MockJob:
-    def __init__(self, id, history_id=TARGET_HISTORY, inputs=(), input_collections=(), icj_id=None):
+    def __init__(
+        self,
+        id,
+        history_id=TARGET_HISTORY,
+        inputs=(),
+        input_collections=(),
+        icj_id=None,
+        outputs=(),
+        output_collections=(),
+    ):
         self.id = id
         self.history_id = history_id
         self.input_datasets = [MockInputDatasetAssoc(d) for d in inputs]
         self.input_dataset_collections = [MockInputCollectionAssoc(c) for c in input_collections]
+        self.output_datasets = [MockOutputDatasetAssoc(d) for d in outputs]
+        self.output_dataset_collection_instances = [MockOutputCollectionAssoc(c) for c in output_collections]
         self.implicit_collection_jobs_association = MockIcjAssoc(icj_id) if icj_id is not None else None
+
+
+class MockImplicitCollectionJobs:
+    def __init__(self, id, output_collections=()):
+        self.id = id
+        self.output_dataset_collection_instances = list(output_collections)
 
 
 class MockHda:
@@ -116,15 +156,19 @@ class MockHdca:
         self.implicit_input_collections = list(implicit_input_collections)
 
 
-def _trans(contents, toolbox=None):
+def _trans(contents, toolbox=None, jobs=(), icjs=()):
     session = MockSession()
     for content in contents:
         session.register(content)
+    for job in jobs:
+        session.register_job(job)
+    for icj in icjs:
+        session.register_icj(icj)
     return cast(ProvidesHistoryContext, MockTrans(session, toolbox or MockToolbox()))
 
 
-def _closure(trans, refs):
-    return _backward_job_closure(trans, refs, TARGET_HISTORY)
+def _closure(trans, refs, job_refs=(), icj_refs=()):
+    return _backward_job_closure(trans, refs, list(job_refs), list(icj_refs), TARGET_HISTORY)
 
 
 def test_linear_chain_collects_all_upstream_jobs():
@@ -225,3 +269,94 @@ def test_copied_dataset_normalized_to_original():
     original = MockHda(10)
     copy = MockHda(11, copied_from=original)
     assert _content_key(cast(HistoryItem, copy)) == ("hda", 10)
+
+
+def test_plain_job_ref_seeds_producing_subgraph():
+    upload = MockHda(3)  # boundary input
+    out = MockHda(1)
+    job1 = MockJob(1, inputs=[upload], outputs=[out])
+    out.creating_job_associations = [MockOutputAssoc(job1)]
+    trans = _trans([], jobs=[job1])
+
+    result = _closure(trans, [], job_refs=[1])
+
+    assert result.job_ids == {1}
+    assert ("hda", 1) in result.content_refs
+    assert ("hda", 3) in result.content_refs  # upstream input walked & seeded
+    assert result.referenced_output_refs == set()  # job-seeded output is not exposed
+    assert result.seed_warning_refs == set()
+
+
+def test_icj_ref_seeds_mapped_input():
+    input_collection = MockHdca(20)  # the mapped-over input collection (boundary)
+    element_job = MockJob(2, icj_id=7)
+    impl_out = MockHdca(
+        10,
+        creating_jobs=[element_job],
+        implicit_input_collections=[MockImplicitInputCollection(input_collection, name="input")],
+    )
+    icj = MockImplicitCollectionJobs(7, output_collections=[impl_out])
+    trans = _trans([], icjs=[icj])
+
+    result = _closure(trans, [], icj_refs=[7])
+
+    assert 7 in result.icj_ids
+    assert ("hdca", 20) in result.content_refs  # mapped-over input collection recovered & seeded
+    assert result.referenced_output_refs == set()  # implicit output not exposed
+
+
+def test_non_compatible_job_ref_warns_only_when_directly_referenced():
+    # Directly job-referenced upload -> seed_warning.
+    direct_upload_out = MockHda(1)
+    direct_upload_job = MockJob(5, outputs=[direct_upload_out])
+    direct_upload_out.creating_job_associations = [MockOutputAssoc(direct_upload_job)]
+
+    # An ordinary content ref whose upstream is an upload -> no warning on that upload.
+    walk_upload = MockHda(3)  # boundary upload reached only by the walk
+    step_out = MockHda(2)
+    step_job = MockJob(6, inputs=[walk_upload])
+    step_out.creating_job_associations = [MockOutputAssoc(step_job)]
+
+    toolbox = MockToolbox(by_job_id={5: MockTool(workflow_compatible=False)})
+    trans = _trans([step_out], toolbox=toolbox, jobs=[direct_upload_job])
+
+    result = _closure(trans, [("hda", 2)], job_refs=[5])
+
+    assert ("hda", 1) in result.seed_warning_refs
+    assert ("hda", 3) not in result.seed_warning_refs
+
+
+def test_referenced_and_job_seeded_dedup():
+    upload = MockHda(2)
+    out = MockHda(1)
+    job1 = MockJob(1, inputs=[upload], outputs=[out])
+    out.creating_job_associations = [MockOutputAssoc(job1)]
+    trans = _trans([out], jobs=[job1])
+
+    result = _closure(trans, [("hda", 1)], job_refs=[1])
+
+    assert result.referenced_output_refs == {("hda", 1)}  # exposed via the content ref
+    assert result.job_ids == {1}  # and seeded via the job ref, deduped
+
+
+def test_job_ref_multiple_outputs_none_exposed():
+    out_a = MockHda(1)
+    out_b = MockHda(2)
+    job1 = MockJob(1, outputs=[out_a, out_b])
+    out_a.creating_job_associations = [MockOutputAssoc(job1)]
+    out_b.creating_job_associations = [MockOutputAssoc(job1)]
+    trans = _trans([], jobs=[job1])
+
+    result = _closure(trans, [], job_refs=[1])
+
+    assert result.job_ids == {1}  # seeded once despite two outputs
+    assert result.referenced_output_refs == set()  # neither output exposed
+
+
+def test_missing_job_ref_skipped_with_warning():
+    trans = _trans([])  # nothing registered -> session.get(Job) returns None
+
+    result = _closure(trans, [], job_refs=[42])
+
+    assert not result.job_ids
+    assert len(result.warnings) == 1
