@@ -8,7 +8,12 @@
         <param name="input" type="data" format="parquet" label="Parquet file"/>
     </inputs>
     <outputs>
-        <data name="output" format="tabular"/>
+        <data name="output" format="tabular">
+            <actions>
+                <!-- <action name="column_names" type="metadata" default="${','.join($input.metadata.column_names).replace('__ob__', '').replace('__sq__', '').replace('__cb__', '')}"/> -->
+                <action name="column_names" type="metadata" default="${$input.metadata.column_names.replace('__ob__', '').replace('__sq__', '').replace('__cb__', '')}"/>
+            </actions>
+        </data>
     </outputs>
     <tests>
         <test>
