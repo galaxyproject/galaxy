@@ -6,7 +6,7 @@ import { computed, nextTick, ref, watch } from "vue";
 
 import type { HDCASummary } from "@/api";
 import type { CollectionBuilderType } from "@/components/Collections/common/buildCollectionModal";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import type { DataOption, ExtendedCollectionType } from "./types";
@@ -16,7 +16,6 @@ import CollectionCreatorIndex from "@/components/Collections/CollectionCreatorIn
 import CollectionCreatorShowExtensions from "@/components/Collections/common/CollectionCreatorShowExtensions.vue";
 import Heading from "@/components/Common/Heading.vue";
 import GenericItem from "@/components/History/Content/GenericItem.vue";
-import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
 const WorkflowRunTabs: Record<string, number> = {
     view: 0,
@@ -48,14 +47,7 @@ const currentWorkflowTab = computed({
 });
 
 const { currentHistoryId } = storeToRefs(useHistoryStore());
-
-// Upload properties
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: uploadReady,
-} = useUploadConfigurations(props.extensions);
+const { openUploadModal } = useUploadMethodModal();
 
 function addUploadedFiles(value: any[], viewUploads = true) {
     emit("uploaded-data", value);
@@ -74,6 +66,18 @@ const creatorIndex = ref();
 function goToFirstWorkflowTab() {
     emit("focus");
     currentWorkflowTab.value = WorkflowRunTabs.view;
+}
+
+async function onUploadForWorkflowInput() {
+    const result = await openUploadModal({
+        formats: props.extensions,
+        hideTips: true,
+    });
+
+    if (!result.cancelled && result.datasets.length > 0) {
+        emit("uploaded-data", result.toDataOptions());
+        goToFirstWorkflowTab();
+    }
 }
 
 // hack for AG grid - it doesn't resize automatically so we need to force it
@@ -113,25 +117,20 @@ watch(
                 <FontAwesomeIcon :icon="faUpload" fixed-width />
                 Upload {{ props.currentVariant?.tooltip.toLocaleLowerCase() || "value(s)" }}
             </Heading>
-            <DefaultBox
-                v-if="currentHistoryId && uploadReady && configOptions"
-                :effective-extensions="effectiveExtensions"
-                v-bind="configOptions"
-                :has-callback="false"
-                :history-id="currentHistoryId"
-                :list-db-keys="listDbKeys"
-                :show-upload-activity="false"
-                disable-footer
-                emit-uploaded
-                size="small"
-                @uploaded="addUploadedFiles"
-                @dismiss="goToFirstWorkflowTab">
-                <template v-slot:footer>
+            <div class="p-2">
+                <button
+                    class="btn btn-primary btn-sm"
+                    type="button"
+                    data-description="workflow form upload modal trigger"
+                    @click="onUploadForWorkflowInput">
+                    Upload from local files, links, or text
+                </button>
+                <div class="mt-2">
                     <CollectionCreatorShowExtensions
                         :extensions="props.extensions && props.extensions.filter((ext) => ext !== 'data')"
                         upload />
-                </template>
-            </DefaultBox>
+                </div>
+            </div>
         </div>
         <div v-show="currentWorkflowTab === WorkflowRunTabs.create && props.currentVariant?.src === 'hdca'">
             <CollectionCreatorIndex
