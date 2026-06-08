@@ -1073,20 +1073,11 @@ class RunsToolTests(NavigatesGalaxyMixin):
 
     def _set_color_value(self, expanded_id: str, value: str):
         color_input = self.components.tool_form.parameter_color_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(color_input, value)
+        self.set_element_value(color_input, value)
 
     def _set_text_value(self, expanded_id: str, value: str):
         input_element = self.components.tool_form.parameter_text_input(parameter=expanded_id).wait_for_present()
-        self._set_input_value_via_js(input_element, value)
-
-    def _set_input_value_via_js(self, element, value):
-        self.execute_script(
-            "arguments[0].value = arguments[1];"
-            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
-            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
-            element,
-            value,
-        )
+        self.set_element_value(input_element, value)
 
     # -- Output verification --
 
