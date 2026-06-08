@@ -210,9 +210,14 @@ function removeFile(index: number) {
 }
 
 function addFileFromInput(eventTarget: EventTarget | null) {
-    const files = (eventTarget as HTMLInputElement)?.files;
+    const input = eventTarget as HTMLInputElement | null;
+    const files = input?.files;
     if (files) {
         addFiles(files);
+    }
+    // Reset the input so subsequent selections don't accumulate files
+    if (input) {
+        input.value = "";
     }
 }
 
