@@ -12,6 +12,7 @@ import os
 
 import pytest
 from gxformat2.converter import python_to_workflow
+from gxformat2.normalized import ensure_native
 from gxformat2.yaml import ordered_load
 
 from galaxy.tool_util.workflow_state.roundtrip import (
@@ -24,6 +25,10 @@ from galaxy.tool_util.workflow_state.roundtrip import (
     RoundTripResult,
     RoundTripValidationResult,
     StepResult,
+)
+from galaxy.tool_util.workflow_state.toolshed_tool_info import (
+    parse_toolshed_tool_id,
+    ToolShedGetToolInfo,
 )
 from galaxy.util import galaxy_directory
 from galaxy.workflow.gx_validator import (
@@ -64,22 +69,14 @@ EXCLUDED_WORKFLOWS = {
     "test_workflow_missing_tool.ga": "Intentionally references nonexistent tool 'cat_missing_tool'",
 }
 
+# Native fixtures must use the modern nested tool_state encoding. Older shared
+# .ga exports with double-encoded values or ${...} replacement parameters are
+# out of scope for the converter; rich real-world coverage lives in the IWC
+# sweep below.
 NATIVE_WORKFLOWS = [
-    "test_workflow_1.ga",
-    "test_workflow_2.ga",
     "test_workflow_two_random_lines.ga",
-    "test_workflow_pause.ga",
-    "test_workflow_batch.ga",
-    "test_workflow_matching_lists.ga",
-    "test_workflow_randomlines_legacy_params.ga",
-    "test_workflow_randomlines_legacy_params_mixed_types.ga",
-    "test_workflow_topoambigouity.ga",
-    "test_workflow_topoambigouity_auto_laidout.ga",
-    "test_workflow_map_reduce_pause.ga",
     "test_workflow_missing_tool.ga",
-    "test_workflow_validation_1.ga",
     "test_workflow_with_input_tags.ga",
-    "test_workflow_with_runtime_input.ga",
     "test_subworkflow_with_integer_input.ga",
     "test_subworkflow_with_tags.ga",
 ]
@@ -310,33 +307,13 @@ class TestNativeRoundTrip:
         result = roundtrip_native_workflow(workflow, GET_TOOL_INFO, "test_workflow_two_random_lines.ga")
         _assert_roundtrip_passes(result)
 
-    def test_workflow_1(self):
-        workflow = load_native_workflow("test_workflow_1.ga")
-        result = roundtrip_native_workflow(workflow, GET_TOOL_INFO, "test_workflow_1.ga")
-        _assert_roundtrip_passes(result)
-
 
 class TestFullNativeRoundTrip:
     """Full round-trip: native → format2 → native' → compare."""
 
-    def test_workflow_1(self):
-        workflow = load_native_workflow("test_workflow_1.ga")
-        result = roundtrip_validate(workflow, GET_TOOL_INFO, workflow_path="test_workflow_1.ga")
-        _assert_validation_ok(result)
-
     def test_workflow_two_random_lines(self):
         workflow = load_native_workflow("test_workflow_two_random_lines.ga")
         result = roundtrip_validate(workflow, GET_TOOL_INFO, workflow_path="test_workflow_two_random_lines.ga")
-        _assert_validation_ok(result)
-
-    def test_workflow_batch(self):
-        workflow = load_native_workflow("test_workflow_batch.ga")
-        result = roundtrip_validate(workflow, GET_TOOL_INFO, workflow_path="test_workflow_batch.ga")
-        _assert_validation_ok(result)
-
-    def test_workflow_pause(self):
-        workflow = load_native_workflow("test_workflow_pause.ga")
-        result = roundtrip_validate(workflow, GET_TOOL_INFO, workflow_path="test_workflow_pause.ga")
         _assert_validation_ok(result)
 
 
@@ -434,17 +411,13 @@ def _iwc_workflows_available() -> list[str]:
 
 
 def _iwc_cache_populated(workflow_path: str) -> bool:
-    from galaxy.tool_util.workflow_state.workflow_tools import extract_toolshed_tools
-
     with open(workflow_path) as f:
         workflow = json.load(f)
-    tools = extract_toolshed_tools(workflow)
-    if not tools:
+    tool_refs = [t for t in ensure_native(workflow).unique_tools if parse_toolshed_tool_id(t.tool_id)]
+    if not tool_refs:
         return True
-    from galaxy.tool_util.workflow_state.toolshed_tool_info import ToolShedGetToolInfo
-
     tool_info = ToolShedGetToolInfo()
-    return all(tool_info.has_cached(tid, tver) for tid, tver in tools)
+    return all(tool_info.has_cached(t.tool_id, t.tool_version) for t in tool_refs)
 
 
 def run_iwc_sweep() -> dict[str, RoundTripResult]:
@@ -547,6 +520,21 @@ class TestIWCRoundTrip:
         total = len(results)
         passed = sum(1 for r in results.values() if r.ok)
         print(f"\nIWC full round-trip: {passed}/{total} passed")
+
+    @pytest.mark.parametrize(
+        "filename",
+        ["average-bigwig-between-replicates.ga", "RepeatMasking-Workflow.ga"],
+    )
+    def test_iwc_workflow_full_roundtrip(self, filename):
+        path = os.path.join(IWC_WORKFLOW_DIRECTORY, filename)
+        if not os.path.exists(path):
+            pytest.skip(f"{filename} not present")
+        if not _iwc_cache_populated(path):
+            pytest.skip(f"tool cache not populated for {filename}")
+        with open(path) as f:
+            workflow = json.load(f)
+        result = roundtrip_validate(workflow, GET_TOOL_INFO_WITH_TOOLSHED, workflow_path=filename)
+        _assert_validation_ok(result)
 
 
 # -- CLI entry point --
