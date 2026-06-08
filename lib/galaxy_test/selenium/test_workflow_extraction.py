@@ -226,6 +226,16 @@ test_data:
         self.components.workflow_extract.output_rename_cancel.wait_for_and_click()
         self.components.workflow_extract.output_rename_input.wait_for_absent()
 
+    def extract_workflow_label_step(self, job_id: str, label: str):
+        """Click the 'Label Step' badge for the tool card, type a label in the
+        modal, and confirm. The badge is only rendered when the card is checked."""
+        badge = self.components.workflow_extract.step_label_add_for_job(job_id=job_id).wait_for_present()
+        self.execute_script_click(badge)
+        self.components.workflow_extract.step_rename_input.wait_for_and_clear_and_send_keys(label)
+        self.screenshot("workflow_extract_step_label_modal")
+        self.components.workflow_extract.step_rename_confirm.wait_for_and_click()
+        self.components.workflow_extract.step_rename_input.wait_for_absent()
+
     def count_active_output_stars(self) -> int:
         return len(self.components.workflow_extract.all_active_output_stars.all())
 
@@ -523,6 +533,28 @@ test_data:
         assert len(outputs) == 1, outputs
         assert outputs[0]["output_name"] == "out_file1"
         assert outputs[0]["label"] == "cat1 result"
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_extract_step_label_creates_labeled_step(self):
+        """Label a tool step via the extraction UI, submit, and confirm the
+        downloaded workflow's tool step carries the label."""
+        history_id = self.current_history_id()
+        cat1_job_id = self.setup_cat1_history(history_id)
+
+        self.navigate_to_workflow_extraction()
+        self.components.workflow_extract.step_label_add_for_job(job_id=cat1_job_id).wait_for_present()
+        self.screenshot("workflow_extract_step_label_affordance")
+        self.extract_workflow_label_step(cat1_job_id, "my cat step")
+        self.screenshot("workflow_extract_step_labeled")
+
+        workflow_name = "Selenium Step Label"
+        self.extract_workflow_name_and_submit(workflow_name)
+
+        workflow = self.get_workflow_by_name(workflow_name)
+        tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
+        assert tool_steps[0]["label"] == "my cat step", tool_steps[0]
 
     @skip_without_tool("cat1")
     @selenium_test

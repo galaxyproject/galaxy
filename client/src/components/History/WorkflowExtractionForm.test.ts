@@ -537,4 +537,80 @@ describe("WorkflowExtractionForm", () => {
             expect(disabledReason(wrapper)).toBe("Exposed output labels must be unique");
         });
     });
+
+    describe("step labels", () => {
+        function card(wrapper: ReturnType<typeof shallowMount>, index: number) {
+            return wrapper.findAllComponents(WorkflowExtractionCard).at(index);
+        }
+
+        async function labelStepVia(wrapper: ReturnType<typeof shallowMount>, index: number, label: string) {
+            card(wrapper, index).vm.$emit("label-step");
+            await flushPromises();
+            (wrapper.findComponent(RenameModal).props("renameAction") as (name: string) => void)(label);
+            await wrapper.vm.$nextTick();
+        }
+
+        beforeEach(() => {
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "new-workflow-id" });
+        });
+
+        it("submits a labeled plain tool step as a job-kind step_labels hint", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await labelStepVia(wrapper, 0, "concatenate");
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    step_labels: [{ kind: "job", id: "job-tool-1", label: "concatenate" }],
+                }),
+            );
+        });
+
+        it("submits a labeled mapped tool step keyed by its ICJ id", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_MAPPED_JOB);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await labelStepVia(wrapper, 0, "first map");
+            await clickCreateButton(wrapper);
+            expect(extractWorkflowByIds).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    step_labels: [{ kind: "implicit_collection_jobs", id: "icj-1", label: "first map" }],
+                }),
+            );
+        });
+
+        it("omits step_labels when no step is labeled", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).not.toHaveProperty("step_labels");
+        });
+
+        it("removes a step label from the payload after it is cleared", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            await labelStepVia(wrapper, 0, "concatenate");
+            card(wrapper, 0).vm.$emit("clear-step-label");
+            await wrapper.vm.$nextTick();
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload).not.toHaveProperty("step_labels");
+        });
+
+        it("disables submit when a step label collides with an input name", async () => {
+            vi.mocked(extractWorkflowFromHistory).mockResolvedValue(SUMMARY_WITH_JOBS);
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "Extracted WF");
+            // INPUT_JOB's newName defaults to "myfile.txt"; label the tool step the same.
+            await labelStepVia(wrapper, 0, "myfile.txt");
+            expect(wrapper.findComponent(GButton).props("disabled")).toBe(true);
+            expect(wrapper.findComponent(GButton).props("disabledTitle")).toBe(
+                "Step labels must be unique and distinct from input names",
+            );
+        });
+    });
 });

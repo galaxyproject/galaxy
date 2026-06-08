@@ -1165,6 +1165,11 @@ workflow_extract:
     output_rename_input: '#output-name-input'
     output_rename_confirm: '#rename-modal-output .g-modal-confirm-buttons button:last-of-type'
     output_rename_cancel: '#rename-modal-output .g-modal-confirm-buttons button:first-of-type'
+    step_label_add_for_job: '[data-job-id="${job_id}"] .g-card-rename'
+    step_label_edit_for_job: '[data-job-id="${job_id}"] .g-card-rename'
+    step_label_clear_for_job: '[data-job-id="${job_id}"] .clear-step-label'
+    step_rename_input: '#step-name-input'
+    step_rename_confirm: '#rename-modal-step .g-modal-confirm-buttons button:last-of-type'
 
 invocations:
   selectors:

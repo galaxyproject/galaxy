@@ -9,6 +9,7 @@ import {
     extractWorkflowByIds,
     extractWorkflowFromHistory,
     type OutputLabelHint,
+    type StepLabelHint,
     type WorkflowExtractionByIdsPayload,
 } from "@/api/histories";
 import { useToast } from "@/composables/toast";
@@ -21,6 +22,7 @@ import {
     isInputStep,
     isMappedTool,
     toExtractionRow,
+    type ToolStep,
 } from "./WorkflowExtraction/types";
 
 import GFormInput from "../BaseComponents/Form/GFormInput.vue";
@@ -60,6 +62,7 @@ const errorMessage = ref<string | null>(null);
 const jobsList = ref<ExtractionRow[]>([]);
 const workflowName = ref("");
 const renameIndex = ref<number | null>(null);
+const stepLabelIndex = ref<number | null>(null);
 const outputRenameTarget = ref<{ jobIndex: number; outputIndex: number } | null>(null);
 const warnings = ref<string[]>([]);
 const showJobModal = ref(false);
@@ -72,6 +75,18 @@ const toRenameInput = computed(() => {
     }
     const job = jobsList.value[renameIndex.value];
     if (job && isInputStep(job)) {
+        return job;
+    }
+    return null;
+});
+
+/** The tool step to label based on the current `stepLabelIndex`. */
+const toLabelStep = computed<ToolStep | null>(() => {
+    if (stepLabelIndex.value === null || !jobsList.value?.length) {
+        return null;
+    }
+    const job = jobsList.value[stepLabelIndex.value];
+    if (job && job.step_type === "tool") {
         return job;
     }
     return null;
@@ -95,6 +110,7 @@ const submissionDisabled = computed(
         hasUnnamedSelectedInputs.value ||
         hasUnnamedSelectedOutputs.value ||
         hasDuplicateOutputLabels.value ||
+        hasDuplicateStepLabels.value ||
         !workflowName.value.trim() ||
         hasNoSelectedSteps.value,
 );
@@ -111,6 +127,9 @@ const submissionDisabledMsg = computed(() => {
     }
     if (hasDuplicateOutputLabels.value) {
         return "Exposed output labels must be unique";
+    }
+    if (hasDuplicateStepLabels.value) {
+        return "Step labels must be unique and distinct from input names";
     }
     if (hasNoSelectedSteps.value) {
         return "At least one workflow step must be selected";
@@ -194,6 +213,28 @@ const selectedOutputLabels = computed<OutputLabelHint[]>(() => {
     return outputLabels;
 });
 
+/** Step labels for checked tool steps that carry one. Mapped steps are keyed by
+ *  their ICJ id; plain tool steps by job id. Steps without a label are omitted —
+ *  labeling is off by default. */
+const selectedStepLabels = computed<StepLabelHint[]>(() => {
+    const hints: StepLabelHint[] = [];
+    for (const job of jobsList.value ?? []) {
+        if (!job.checked || job.step_type !== "tool") {
+            continue;
+        }
+        const label = job.stepLabel.trim();
+        if (!label) {
+            continue;
+        }
+        if (isMappedTool(job)) {
+            hints.push({ kind: "implicit_collection_jobs", id: job.implicit_collection_jobs_id, label });
+        } else if (job.id) {
+            hints.push({ kind: "job", id: job.id, label });
+        }
+    }
+    return hints;
+});
+
 /** No workflow steps are selected: the workflow would have no steps */
 const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.checked));
 
@@ -221,6 +262,16 @@ function hasDuplicates(values: string[]): boolean {
 const hasDuplicateOutputLabels = computed(() => {
     const labels = selectedOutputLabels.value.map((output) => output.label.trim().replace(/\s+/g, " ").slice(0, 255));
     return hasDuplicates(labels);
+});
+
+/** Step labels share one namespace with input names on the backend. Compared
+ *  RAW (no `_sanitize_output_label`-style whitespace collapse) so the prediction
+ *  matches the backend's raw reject-not-sanitize rule for step labels and input
+ *  names exactly. */
+const hasDuplicateStepLabels = computed(() => {
+    const stepLabels = selectedStepLabels.value.map((hint) => hint.label);
+    const inputNames = selectedInputs.value.map((input) => input.newName);
+    return hasDuplicates([...stepLabels, ...inputNames]);
 });
 
 extractWorkflow();
@@ -313,6 +364,20 @@ function onOutputRename(jobIndex: number, outputIndex: number) {
     outputRenameTarget.value = { jobIndex, outputIndex };
 }
 
+function onStepLabel(index: number) {
+    const job = jobsList.value[index];
+    if (job && job.step_type === "tool" && job.checked && !job.invalid) {
+        stepLabelIndex.value = index;
+    }
+}
+
+function onStepLabelClear(index: number) {
+    const job = jobsList.value[index];
+    if (job && job.step_type === "tool") {
+        job.stepLabel = "";
+    }
+}
+
 function onViewJob(jobId: string) {
     viewedJobId.value = jobId;
     showJobModal.value = true;
@@ -340,6 +405,17 @@ async function renameInput(newName: string) {
         }
     });
     (jobsList.value[renameIndex.value] as InputStep).newName = uniqueInputLabel(newName, taken);
+}
+
+async function renameStep(newName: string) {
+    if (stepLabelIndex.value === null) {
+        throw new Error("Invalid step index");
+    }
+    const job = jobsList.value[stepLabelIndex.value];
+    if (!job || job.step_type !== "tool") {
+        throw new Error("Step not found or is not a tool");
+    }
+    job.stepLabel = newName;
 }
 
 async function renameOutput(newName: string) {
@@ -381,6 +457,9 @@ async function submitWorkflow() {
         };
         if (selectedOutputLabels.value.length) {
             payload.output_labels = selectedOutputLabels.value;
+        }
+        if (selectedStepLabels.value.length) {
+            payload.step_labels = selectedStepLabels.value;
         }
 
         const data = await extractWorkflowByIds(payload);
@@ -457,6 +536,8 @@ function stepKind(job: ExtractionRow): string {
                 @rename="onJobRename(index)"
                 @toggle-output="(outputIndex) => onOutputToggle(index, outputIndex)"
                 @rename-output="(outputIndex) => onOutputRename(index, outputIndex)"
+                @label-step="onStepLabel(index)"
+                @clear-step-label="onStepLabelClear(index)"
                 @select="onJobSelect(index)"
                 @view-job="onViewJob" />
         </div>
@@ -467,6 +548,13 @@ function stepKind(job: ExtractionRow): string {
             :name="toRenameInput.newName"
             :rename-action="renameInput"
             @close="renameIndex = null" />
+
+        <RenameModal
+            v-if="toLabelStep"
+            item-type="step"
+            :name="toLabelStep.stepLabel"
+            :rename-action="renameStep"
+            @close="stepLabelIndex = null" />
 
         <RenameModal
             v-if="toRenameOutput"
