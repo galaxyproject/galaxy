@@ -5,14 +5,11 @@ import {
     faExclamationTriangle,
     faInfoCircle,
     faLayerGroup,
-    faPen,
     faPencilAlt,
     faStar as faStarSolid,
-    faTimes,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
@@ -170,6 +167,12 @@ const renameTitle = computed(() => {
     return props.job.stepLabel ? "Edit this workflow step's label" : "Add a workflow step label";
 });
 
+/** Tool steps with a label set get a clear (x) beside the pencil to drop it
+ *  back to the unlabeled default. Inputs always have a name, so no clear. */
+const canClearStepLabel = computed(
+    () => props.job.step_type === "tool" && Boolean(props.job.stepLabel) && props.job.checked && !props.job.invalid,
+);
+
 /** The title pencil drives input rename for inputs and label add/edit for tool
  *  steps, so both step kinds share the same title-adjacent affordance. */
 function onTitleRename() {
@@ -191,31 +194,17 @@ function displayLabel(output: ExtractionOutput): string {
         :badges="badges"
         :title="cardTitle"
         :title-icon="titleIcon"
+        :can-rename-title="props.job.checked && !props.job.invalid"
+        :rename-title="renameTitle"
+        :can-clear-title="canClearStepLabel"
+        clear-title-tooltip="Remove this workflow step's label"
         selectable
         :selected="props.job.checked"
         select-title="Include as a step in the workflow"
         dim-when-unselected
+        @rename="onTitleRename"
+        @clear-title="emit('clear-step-label')"
         @select="emit('select')">
-        <template v-slot:titleActions>
-            <BButton
-                v-if="props.job.checked && !props.job.invalid"
-                v-g-tooltip.hover
-                class="inline-icon-button g-card-rename"
-                variant="link"
-                :title="renameTitle"
-                @click="onTitleRename">
-                <FontAwesomeIcon :icon="faPen" fixed-width />
-            </BButton>
-            <BButton
-                v-if="props.job.step_type === 'tool' && props.job.stepLabel && props.job.checked && !props.job.invalid"
-                v-g-tooltip.hover
-                class="inline-icon-button clear-step-label"
-                variant="link"
-                title="Remove this workflow step's label"
-                @click="emit('clear-step-label')">
-                <FontAwesomeIcon :icon="faTimes" fixed-width />
-            </BButton>
-        </template>
         <template v-slot:select>
             <FontAwesomeIcon
                 v-if="Boolean(props.job.invalid)"
@@ -286,9 +275,10 @@ function displayLabel(output: ExtractionOutput): string {
         border-radius: 0.25rem 0.25rem 0 0;
     }
 
-    // The clear-label control sits beside the title pencil as a plain icon
-    // (no badge border), muted by default and red on hover to signal removal.
-    .clear-step-label {
+    // GCard renders the clear-title control as a neutral icon button; the
+    // destructive (muted -> red on hover) styling is our policy, so we keep it
+    // here rather than push it into GCard's default.
+    :deep(.g-card-clear-title) {
         color: $text-muted;
 
         &:hover {
