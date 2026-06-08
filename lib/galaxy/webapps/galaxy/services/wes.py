@@ -71,8 +71,10 @@ log = logging.getLogger(__name__)
 # Map Galaxy workflow invocation states to WES states
 GALAXY_TO_WES_STATE = {
     "new": State.QUEUED,
+    "requires_materialization": State.INITIALIZING,
     "ready": State.INITIALIZING,
     "scheduled": State.RUNNING,
+    "completed": State.COMPLETE,
     "failed": State.EXECUTOR_ERROR,
     "cancelled": State.CANCELED,
     "cancelling": State.CANCELING,

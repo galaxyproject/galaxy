@@ -386,22 +386,14 @@ steps:
                 history_id=history_id,
             )
 
-            # Get status via WES API
-            status = self._get_run_status_validated(invocation_id)
+            # A successfully finished invocation (Galaxy state "completed") must map to
+            # the terminal WES state COMPLETE - not UNKNOWN - so clients can poll for done.
+            self.workflow_populator.wait_for_invocation_and_completion(invocation_id, assert_ok=True)
+            invocation = self.workflow_populator.get_invocation(invocation_id)
+            assert invocation["state"] == "completed"
 
-            # Verify state is properly mapped
-            # After waiting for completion, should be COMPLETE or similar
-            assert status["state"] in [
-                "QUEUED",
-                "INITIALIZING",
-                "RUNNING",
-                "PAUSED",
-                "COMPLETE",
-                "EXECUTOR_ERROR",
-                "SYSTEM_ERROR",
-                "CANCELED",
-                "CANCELING",
-            ]
+            status = self._get_run_status_validated(invocation_id)
+            assert status["state"] == "COMPLETE"
 
     def test_wes_error_handling_missing_workflow_type(self):
         """Test error handling when workflow_type is missing."""
