@@ -2,57 +2,50 @@ name: Deferred Data - An Introduction
 description: An introduction on how to work with deferred datasets.
 title_default: Deferred Data - An Introduction
 tags:
-  - "core"
-  - "UI"
+    - "core"
+    - "UI"
 
 requirements:
-  - new_history
+    - new_history
 
 steps:
     - content: This short tour will walk you through using deferred datasets
 
-    - title: Start as Normal with the Upload Dialog
-      component: upload.start
-      intro: The Galaxy upload dialog can be used to simulate 'uploads' of deferred datasets as if they were normal datasets.
+    - title: Open the Upload Activity
+      component: upload_activity.activity
+      intro: The upload activity can be used to create deferred datasets from URLs.
+      preclick:
+          - ".activity-bar-header-badge"
       postclick: true
 
-    - title: "'Upload' Your Data"
-      component: upload.create_button
-      intro: Copy and paste data directly into Galaxy or include URLs that lead to your data
+    - title: Choose Paste Links
+      component: upload_activity.method_card(method_id=paste-links)
+      intro: Select the Paste Links method to upload deferred datasets via URL.
       preclick: true
 
     - title: Specify Deferred Dataset...
-      intro: ...by pasting deferred URL into the upload text area.
-      component: upload.paste_content(n=0)
+      intro: ...by pasting a deferred URL into the text area.
+      component: upload_activity.paste_textarea
       textinsert: |
-        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+          https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
 
-    - title: Configure Upload.
-      component: upload.settings_button(n=0)
-      intro: Now, we may further configure the upload content by clicking this settings button.
+    - title: Add URLs
+      component: upload_activity.add_urls_button
+      intro: Click Add URLs to stage the URL for upload.
       postclick: true
 
     - title: Deferred Setting.
-      component: upload.setting_deferred
-      intro: ...by specifying to defer datasets, only URLs will be stored in Galaxy and the dataset will only be fetched if and when needed by Galaxy to run tools or workflows.
-      postclick: true
-
-    - title: Close Settings
-      element: .popper-close
+      component: upload_activity.paste_links_row_deferred_checkbox(row=1)
+      intro: By enabling deferred mode, only URLs will be stored in Galaxy and the dataset will only be fetched if and when needed by Galaxy to run tools or workflows.
       postclick: true
 
     - title: Start Upload
-      component: upload.start_button
-      intro: Click the start button to begin the process of 'uploading' your deferred dataset.
-      postclick: true
-
-    - title: Close Upload
-      component: upload.close_button
-      intro: Hit the close button to close the upload dialog.
+      component: upload_activity.start_button
+      intro: Click the start button to begin the process of uploading your deferred dataset.
       postclick: true
 
     - title: History Panel
-      element: '#current-history-panel'
+      element: "#current-history-panel"
       intro: The deferred dataset will be placed in the history panel like any other history dataset.
 
     - title: The Deferred Dataset
@@ -86,10 +79,15 @@ steps:
       component: dataset_details.deferred_source_uri
       intro: Typically this part of the dataset information page describes how the dataset is stored by Galaxy. For deferred datasets, only information about where the dataset will be fetched from is dislayed.
 
+    - title: Switch to Tools
+      component: tools.activity
+      intro: Switch to the tools activity to access the tool panel.
+      postclick: true
+
     - title: Tool Search
       component: tool_panel.search
       intro: Let's search for the concatenate tool to run on our deferred dataset.
-      textinsert: 'Concatenate'
+      textinsert: "Concatenate"
 
     - title: Select a Tool
       component: tool_panel.tool_link(tool_id=cat1)
