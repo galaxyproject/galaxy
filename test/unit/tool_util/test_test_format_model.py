@@ -81,26 +81,16 @@ def test_validate_workflow_tests():
         Tests.model_validate(json)
 
 
-def test_collection_type_alias_sugar():
-    c = Collection.model_validate({"class": "Collection", "type": "paired"})
-    assert c.collection_type == "paired"
-    assert "type" not in c.model_dump(exclude_none=True)
-
-
-def test_collection_type_alias_passthrough():
+def test_collection_type_canonical():
     c = Collection.model_validate({"class": "Collection", "collection_type": "list"})
     assert c.collection_type == "list"
 
 
-def test_collection_type_alias_matching_values_allowed():
-    c = Collection.model_validate({"class": "Collection", "collection_type": "paired", "type": "paired"})
-    assert c.collection_type == "paired"
-
-
-def test_collection_type_alias_conflict_rejected():
-    with pytest.raises(ValidationError) as exc_info:
-        Collection.model_validate({"class": "Collection", "collection_type": "list", "type": "paired"})
-    assert "Conflicting" in str(exc_info.value) or "conflict" in str(exc_info.value).lower()
+def test_collection_type_alias_rejected():
+    # `type:` is not an accepted alias for collection_type — IWC test files
+    # using it must be fixed upstream. The strict model rejects the extra key.
+    with pytest.raises(ValidationError):
+        Collection.model_validate({"class": "Collection", "type": "paired"})
 
 
 @skip_unless_environ("GALAXY_TEST_IWC_DIRECTORY")

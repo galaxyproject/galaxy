@@ -19,14 +19,12 @@ from pydantic import (
     ConfigDict,
     Discriminator,
     Field,
-    model_validator,
     RootModel,
     Tag,
 )
 
 from ._base import (
     CollectionType,
-    normalize_collection_type_alias,
     StrictModel,
 )
 
@@ -141,11 +139,6 @@ class Collection(_StrictJobModel):
     identifier: Annotated[str | None, Field(title="Identifier")] = None
     elements: Annotated[list["CollectionElement"] | None, Field(title="Elements")] = None
     rows: Annotated[dict[str, list] | None, Field(title="Rows")] = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def _normalize_type_alias(cls, values):
-        return normalize_collection_type_alias(values)
 
 
 CollectionElement = Annotated[
