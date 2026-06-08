@@ -36,11 +36,17 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         history_count = len(self.history_contents())
         assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
-    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_composite_dataset_pasted_data(self):
         paste_content = ["a", "b", "c"]
-        self.perform_upload_of_composite_dataset_pasted_data("velvet", paste_content)
+        (
+            self.upload_context("composite-file")
+            .select_composite("velvet")
+            .stage_composite_paste_slot(slot=1, content=paste_content[0])
+            .stage_composite_paste_slot(slot=2, content=paste_content[1])
+            .stage_composite_paste_slot(slot=3, content=paste_content[2])
+            .start()
+        )
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
@@ -74,9 +80,11 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_deferred(self):
-        self.upload_context("paste-content").stage_paste_content(
-            "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", {"deferred": True}
-        ).start()
+        uploader = self.upload_context("paste-links")
+        url = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+        item = uploader.stage_paste_link(url)
+        item.set_deferred(True)
+        uploader.start()
         hid = 1
         self.history_panel_wait_for_hid_deferred(hid)
         self.history_panel_click_item_title(hid=hid, wait=True)
@@ -85,96 +93,43 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_list(self):
-        self.upload_list([self.get_filename("1.tabular")], name="Test List")
-        self.history_panel_wait_for_hid_ok(3)
-        # Make sure modals disappeared - both List creator (TODO: upload).
-        self.wait_for_selector_absent_or_hidden(".collection-creator")
+        self.upload_context("local-file").stage_local_file(self.get_filename("1.tabular")).to_list("Test List").start()
 
-        self.assert_item_name(3, "Test List")
-
-        # Make sure source item is hidden when the collection is created.
-        self.history_panel_wait_for_hid_hidden(1)
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "Test List")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair(self):
-        self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair")
-        self.history_panel_wait_for_hid_ok(5)
-        # Make sure modals disappeared - both collection creator (TODO: upload).
-        self.wait_for_selector_absent_or_hidden(".collection-creator")
+        uploader = self.upload_context("local-file")
+        uploader.stage_local_file(self.get_filename("1.tabular"))
+        uploader.stage_local_file(self.get_filename("2.tabular"))
+        uploader.to_paired_list("Test Pair").start()
 
-        self.assert_item_name(5, "Test Pair")
-
-        # Make sure source items are hidden when the collection is created.
-        self.history_panel_wait_for_hid_hidden(1)
-        self.history_panel_wait_for_hid_hidden(2)
-        self.history_panel_wait_for_hid_hidden(3)
-        self.history_panel_wait_for_hid_hidden(4)
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "Test Pair")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair_specify_extension(self):
-        self.upload_list(
-            [self.get_filename("1.tabular"), self.get_filename("2.tabular")],
-            name="Test Pair",
-            ext="txt",
-            hide_source_items=False,
-        )
-        self.history_panel_wait_for_hid_ok(5)
-        self.history_panel_wait_for_hid_ok(1)
+        uploader = self.upload_context("local-file")
+        uploader.stage_local_file(self.get_filename("1.tabular"), {"extension": "txt"})
+        uploader.stage_local_file(self.get_filename("2.tabular"), {"extension": "txt"})
+        uploader.to_paired_list("Test Pair").start()
 
-        history_contents = self.history_contents()
-        hda = history_contents[0]
-        assert hda["name"] == "1.tabular"
-        assert hda["extension"] == "txt", hda
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "Test Pair")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_paired_list(self):
-        self.upload_paired_list(
-            [self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Paired List"
-        )
-        self.history_panel_wait_for_hid_ok(5)
-        # Make sure modals disappeared - both collection creator (TODO: upload).
-        self.wait_for_selector_absent_or_hidden(".collection-creator")
-        self.assert_item_name(5, "Test Paired List")
+        uploader = self.upload_context("local-file")
+        uploader.stage_local_file(self.get_filename("1.tabular"))
+        uploader.stage_local_file(self.get_filename("2.tabular"))
+        uploader.to_paired_list("Test Paired List").start()
 
-        # Make sure source items are hidden when the collection is created.
-        self.history_panel_wait_for_hid_hidden(1)
-        self.history_panel_wait_for_hid_hidden(2)
-        self.history_panel_wait_for_hid_hidden(3)
-        self.history_panel_wait_for_hid_hidden(4)
-
-    @selenium_only("Not yet migrated to support Playwright backend")
-    @selenium_test
-    def test_upload_modal_retains_content(self):
-        self.home()
-
-        # initialize 2 uploads and close modal
-        self.upload_start_click()
-        self.upload_queue_local_file(self.get_filename("1.sam"))
-        self.upload_paste_data("some pasted data")
-        self.components.upload.close_button.wait_for_and_click()
-
-        # reopen modal and check that the files are still there
-        self.upload_start_click()
-        self.wait_for_selector_visible("#upload-row-0.upload-init")
-        self.wait_for_selector_visible("#upload-row-1.upload-init")
-
-        # perform upload and close modal
-        self.upload_start()
-        self.components.upload.close_button.wait_for_and_click()
-
-        # add another pasted file, but don't upload it
-        self.upload_start_click()
-        self.upload_paste_data("some more pasted data")
-        self.components.upload.close_button.wait_for_and_click()
-
-        # reopen modal and see 2 uploaded, 1 yet to upload
-        self.upload_start_click()
-        self.wait_for_selector_visible("#upload-row-0.upload-success")
-        self.wait_for_selector_visible("#upload-row-1.upload-success")
-        self.wait_for_selector_visible("#upload-row-2.upload-init")
+        self.history_panel_wait_for_hid_ok(1)
+        self.assert_item_name(1, "Test Paired List")
 
     @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
@@ -184,10 +139,10 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
         # Test case generated for:
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
         self.home()
-        self.upload_rule_start()
+        rule_import = self.upload_context("rule")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("rules_example_1_1_rules_landing")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
+        rule_import.creating("datasets").from_source("pasted_table").paste_content(
             """study_accession sample_accession    experiment_accession    fastq_ftp
 PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
 PRJDA60709  SAMD00016383    DRX000476   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000771/DRR000771.fastq.gz
@@ -196,11 +151,9 @@ PRJDA60709  SAMD00016378    DRX000478   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
 PRJDA60709  SAMD00016381    DRX000479   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000774/DRR000774.fastq.gz
 PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000775/DRR000775.fastq.gz"""
         )
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_1_2_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_example_1_3_initial_rules")
         rule_builder.menu_button_filter.wait_for_and_click()
         self.screenshot("rule_builder_filters")
@@ -228,14 +181,10 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def test_rules_example_2_list(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJDA60709.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.upload_rule_dataset_dialog()
-        self.upload_rule_set_dataset(1)
+        self.upload_context("rule").creating("collections").from_source("dataset_as_table").select_dataset(1)
         self.screenshot("rules_example_2_1_inputs")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_example_2_2_initial_rules")
         # Filter header.
         self.rule_builder_filter_count(1)
@@ -256,15 +205,10 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def test_rules_example_3_list_pairs(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJDB3920.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.upload_rule_dataset_dialog()
-        self.upload_rule_set_dataset(1)
-        self._wait_for_upload_modal()
+        self.upload_context("rule").creating("collections").from_source("dataset_as_table").select_dataset(1)
         self.screenshot("rules_example_3_1_inputs")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_example_3_2_initial_rules")
         # Filter header.
         self.rule_builder_filter_count(1)
@@ -295,11 +239,9 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def test_rules_example_4_accessions(self):
         # http://www.uniprot.org/uniprot/?query=proteome:UP000052092+AND+proteomecomponent:%22Genome%22
         self._setup_uniprot_example()
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_4_1_inputs")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_example_4_2_initial_rules")
         self.rule_builder_filter_count(1)
         self.rule_builder_remove_columns(["B", "C", "E", "F", "G"])
@@ -332,9 +274,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     @pytest.mark.local
     def test_rules_example_5_matching_collections(self):
         self._setup_uniprot_example()
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_5_1_inputs")
-        self.upload_rule_build()
 
         rule_builder = self.components.rule_builder
         rule_builder.view_source.wait_for_and_click()
@@ -370,17 +310,12 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.home()
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJNA355367.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.upload_rule_dataset_dialog()
-        self.upload_rule_set_dataset(1)
+        self.upload_context("rule").creating("collections").from_source("dataset_as_table").select_dataset(1)
 
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_6_1_paste")
-        self.upload_rule_build()
 
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
 
         self.screenshot("rules_example_6_2_rules_landing")
 
@@ -406,10 +341,10 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # Test case generated for:
         #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
         self.home()
-        self.upload_rule_start()
+        rule_import = self.upload_context("rule")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("rules_deferred_datasets_1_rules_landing")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
+        rule_import.creating("datasets").from_source("pasted_table").paste_content(
             """study_accession sample_accession    experiment_accession    fastq_ftp
 PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
 PRJDA60709  SAMD00016383    DRX000476   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000771/DRR000771.fastq.gz
@@ -418,11 +353,9 @@ PRJDA60709  SAMD00016378    DRX000478   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
 PRJDA60709  SAMD00016381    DRX000479   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000774/DRR000774.fastq.gz
 PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000775/DRR000775.fastq.gz"""
         )
-        self._wait_for_upload_modal()
         self.screenshot("rules_deferred_datasets_2_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_deferred_datasets_3_initial_rules")
         rule_builder.menu_button_filter.wait_for_and_click()
         self.screenshot("rule_builder_filters")
@@ -450,17 +383,12 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.home()
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/PRJNA355367.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.upload_rule_dataset_dialog()
-        self.upload_rule_set_dataset(1)
+        self.upload_context("rule").creating("collections").from_source("dataset_as_table").select_dataset(1)
 
-        self._wait_for_upload_modal()
         self.screenshot("rules_deferred_list_1_paste")
-        self.upload_rule_build()
 
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.screenshot("rules_deferred_list_2_rules_landing")
 
         self.rule_builder_filter_count(1)
@@ -486,10 +414,6 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         with open(self.test_data_resolver.get_filename(os.path.join("rules", name))) as f:
             return f.read()
 
-    def _wait_for_upload_modal(self):
-        self.components.upload.build_button.wait_for_visible()
-        self.components.upload.build_button.wait_for_clickable()
-
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
@@ -507,10 +431,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _setup_uniprot_example(self):
         self.upload_context("local-file").stage_local_file(self.get_filename("rules/uniprot.tsv")).start()
         self.history_panel_wait_for_hid_ok(1)
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.upload_rule_dataset_dialog()
-        self.upload_rule_set_dataset(1)
+        self.upload_context("rule").creating("collections").from_source("dataset_as_table").select_dataset(1)
 
     # @selenium_test
     # def test_rules_example_5_matching_collections(self):

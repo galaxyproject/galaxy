@@ -5,20 +5,33 @@ in Galaxy.
 
 Example usage:
     # Simple upload
-    self.upload_activity().stage_local_file("1.sam").start()
+    self.upload_context("local-file").stage_local_file("1.sam").start()
 
     # Multiple items with metadata
-    (self.upload_activity()
-        .stage_local_file("1.sam", name="file1", extension="sam", dbkey="hg18")
-        .stage_local_file("2.txt", name="file2", extension="txt")
+    (self.upload_context("local-file")
+        .stage_local_file("1.sam", {"name": "file1", "extension": "sam", "dbkey": "hg18"})
+        .stage_local_file("2.txt", {"name": "file2", "extension": "txt"})
+        .start())
+
+    # Atomic list creation from staged files
+    (self.upload_context("local-file")
+        .stage_local_file("1.tabular")
+        .stage_local_file("2.tabular")
+        .to_list("My Upload List")
         .start())
 
     # Staged manipulation
-    uploader = self.upload_activity()
+    uploader = self.upload_context("paste-content")
     item = uploader.stage_paste_content("data")
     item.set_name("my_dataset")
     item.set_deferred(True)
     uploader.start()
+
+    # Rule-based import
+    (self.upload_context("rule")
+        .creating("collections")
+        .from_source("dataset_as_table")
+        .select_dataset(1))
 """
 
 from typing import (
@@ -41,7 +54,14 @@ UploadMethodId = Literal[
     "remote-files",
     "composite-file",
     "data-library",
+    "explore-zip",
 ]
+
+RuleImportContextId = Literal["rule"]
+RuleImportTarget = Literal["datasets", "collections"]
+RuleImportSource = Literal["pasted_table", "dataset_as_table", "remote_files", "workbook"]
+
+CollectionType = Literal["list", "list:paired"]
 
 
 class UploadMetadata(TypedDict, total=False):
@@ -115,6 +135,16 @@ class UploadItem:
         """Remove this item from the staged items list."""
         self.context._row_remove_button(self.index).wait_for_and_click()
 
+    def to_list(self, name: str) -> "UploadItem":
+        """Configure staged uploads to be created as a list collection when started."""
+        self.context.to_list(name)
+        return self
+
+    def to_paired_list(self, name: str) -> "UploadItem":
+        """Configure staged uploads to be created as a paired-list collection when started."""
+        self.context.to_paired_list(name)
+        return self
+
 
 class LocalUploadItem(UploadItem):
     def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> "LocalUploadItem":
@@ -149,6 +179,7 @@ class UploadContext:
         self.driver_wrapper = driver_wrapper
         self._item_count = 0
         self._current_method_id: UploadMethodId | None = None
+        self._collection_config: tuple[str, CollectionType] | None = None
 
         # Prefer opening upload from the current context; if unavailable,
         # fall back to home and then a legacy preferences path if needed.
@@ -247,6 +278,7 @@ class UploadContext:
 
     def start(self) -> None:
         """Execute the upload with all staged items."""
+        self._apply_collection_config()
         self.components.upload_activity.start_button.wait_for_and_click()
 
     def cancel(self) -> None:
@@ -424,6 +456,39 @@ class UploadContext:
         self.components.upload_activity.history_selector_modal.wait_for_absent_or_hidden()
         return self
 
+    def to_list(self, name: str) -> "UploadContext":
+        """Configure staged uploads to create a list collection on start."""
+        self._set_collection_config(name=name, collection_type="list")
+        return self
+
+    def to_paired_list(self, name: str) -> "UploadContext":
+        """Configure staged uploads to create a paired-list collection on start."""
+        self._set_collection_config(name=name, collection_type="list:paired")
+        return self
+
+    def _set_collection_config(self, name: str, collection_type: CollectionType) -> None:
+        if not name.strip():
+            raise AssertionError("Collection name is required")
+        if self._current_method_id == "composite-file":
+            raise AssertionError("Collection creation is not supported for the composite-file method")
+        self._collection_config = (name.strip(), collection_type)
+
+    def _apply_collection_config(self) -> None:
+        if self._collection_config is None:
+            return
+
+        collection_name, collection_type = self._collection_config
+        name_input_target = self.components.upload_activity.collection_name_input
+
+        if name_input_target.is_absent or not name_input_target.is_displayed:
+            self.components.upload_activity.collection_section.wait_for_and_click()
+
+        name_input = name_input_target.wait_for_visible()
+        name_input.clear()
+        name_input.send_keys(collection_name)
+        self.components.upload_activity.collection_type_select.wait_for_visible()
+        self.components.upload_activity.collection_type_select.select_by_value(collection_type)
+
     def activate_advanced_mode(self) -> "UploadContext":
         """Backward-compatible alias for enabling advanced mode via the UI switch."""
         return self.set_advanced_mode(True)
@@ -546,6 +611,35 @@ class BaseUploadContext:
         self._context.select_target_history(history_id)
         return self
 
+    def to_list(self, name: str) -> "BaseUploadContext":
+        """Configure staged uploads to create a list collection on start."""
+        self._context.to_list(name)
+        return self
+
+    def to_paired_list(self, name: str) -> "BaseUploadContext":
+        """Configure staged uploads to create a paired-list collection on start."""
+        self._context.to_paired_list(name)
+        return self
+
+    def _start_and_wait_for_uploaded_hids(self) -> list[int]:
+        staged_item_count = self._context._item_count
+        if staged_item_count < 1:
+            raise AssertionError("No staged upload items found. Stage files/content before creating collections.")
+
+        initial_hid = self._current_latest_hid() + 1
+        self._context.start()
+        last_hid = initial_hid + staged_item_count - 1
+        uploaded_hids = list(range(initial_hid, last_hid + 1))
+        for hid in uploaded_hids:
+            self._context.driver_wrapper.history_panel_wait_for_hid_ok(hid)
+        return uploaded_hids
+
+    def _current_latest_hid(self) -> int:
+        latest_item = self._context.driver_wrapper._latest_history_item()
+        if latest_item and isinstance(latest_item, dict) and "hid" in latest_item:
+            return int(latest_item["hid"])
+        return 0
+
     def activate_advanced_mode(self: TUploadContext) -> TUploadContext:
         """Backward-compatible alias for enabling advanced mode via the UI switch."""
         self._context.activate_advanced_mode()
@@ -640,6 +734,253 @@ class DataLibraryContext(BaseUploadContext):
         return self._context.stage_data_library_dataset(library_label, dataset_label)
 
 
+class ExploreZipContext(BaseUploadContext):
+    """Fluent context for the explore-zip upload method.
+
+    This method opens the ZipImportWizard directly. Use the fluent API
+    to navigate through the wizard steps: explore a zip, select files,
+    and start importing.
+
+    Example usage::
+
+        # Explore a local zip and import a single file
+        (self.upload_context("explore-zip")
+            .explore_local_zip("example-bag.zip")
+            .expect_total_files(8)
+            .go_next()
+            .select_file("test-bag-fetch-http/data/README.txt")
+            .go_next()
+            .expect_files_to_import(1)
+            .start_import())
+
+        # Explore a remote zip URL
+        (self.upload_context("explore-zip")
+            .explore_remote_zip("https://example.com/archive.zip")
+            .wait_for_preview()
+            .expect_preview_title("My Archive"))
+    """
+
+    @property
+    def _wizard(self):
+        """Access the zip_import_wizard component selectors."""
+        return self._context.driver_wrapper.components.zip_import_wizard
+
+    def explore_local_zip(self, test_path: str) -> "ExploreZipContext":
+        """Select a local zip file to explore in the wizard.
+
+        Args:
+            test_path: Path to the zip file to explore.
+
+        Returns:
+            self for method chaining.
+        """
+        file_input = self._wizard.local_file_input.wait_for_present()
+        if self._context.driver_wrapper.backend_type == "playwright":
+            file_input.element_handle.set_input_files(test_path)
+        else:
+            file_input.send_keys(test_path)
+        return self
+
+    def explore_remote_zip(self, url: str) -> "ExploreZipContext":
+        """Enter a remote zip URL to explore in the wizard.
+
+        The URL is set atomically (not character-by-character) to avoid
+        triggering Vue's reactive watch on each keystroke, which would
+        cause partial URLs to be validated and emitted prematurely.
+
+        Args:
+            url: URL of the remote zip file.
+
+        Returns:
+            self for method chaining.
+        """
+        url_input = self._wizard.remote_url_input.wait_for_visible()
+        self._context.driver_wrapper.set_element_value(url_input, url)
+        return self
+
+    def go_next(self) -> "ExploreZipContext":
+        """Click the 'Next' button in the wizard.
+
+        Returns:
+            self for method chaining.
+        """
+        self._wizard.wizard_next_button.wait_for_and_click()
+        return self
+
+    def start_import(self) -> "ExploreZipContext":
+        """Click the 'Import' button to start importing selected files.
+
+        Returns:
+            self for method chaining.
+        """
+        self._wizard.wizard_import_button.wait_for_and_click()
+        return self
+
+    def select_file(self, file_path: str) -> "ExploreZipContext":
+        """Select a file entry in the wizard by its path.
+
+        Args:
+            file_path: The file path identifying the entry to select.
+
+        Returns:
+            self for method chaining.
+        """
+        self._wizard.select_file(file_path=file_path).wait_for_and_click()
+        return self
+
+    def select_all_files(self) -> "ExploreZipContext":
+        """Select all files in the wizard using the select-all checkbox.
+
+        Returns:
+            self for method chaining.
+        """
+        self._wizard.select_all_checkbox.wait_for_and_click()
+        return self
+
+    def search_for(self, query: str) -> "ExploreZipContext":
+        """Type a search query into the file search input.
+
+        Args:
+            query: The search string to filter files.
+
+        Returns:
+            self for method chaining.
+        """
+        search_input = self._wizard.search_input.wait_for_visible()
+        search_input.send_keys(query)
+        self._context.driver_wrapper.sleep_for(self._context.driver_wrapper.wait_types.UX_RENDER)
+        return self
+
+    def get_visible_item_cards(self) -> list:
+        """Return all visible file item card elements.
+
+        Returns:
+            List of WebElement card elements currently visible in the selector.
+        """
+        return self._context.driver_wrapper.find_elements_by_selector(".zip-file-selector .g-card")
+
+    def wait_for_preview(self) -> "ExploreZipContext":
+        """Wait for the loading indicator to appear and then disappear.
+
+        Returns:
+            self for method chaining.
+        """
+        loading_indicator = self._wizard.loading_indicator
+        loading_indicator.wait_for_present()
+        loading_indicator.wait_for_absent()
+        return self
+
+    def expect_total_files(self, count: int) -> "ExploreZipContext":
+        """Assert that the total number of files in the zip matches the expected count.
+
+        Args:
+            count: Expected number of files.
+
+        Returns:
+            self for method chaining.
+        """
+        badge_text = self._wizard.zip_file_count_badge.wait_for_text()
+        assert badge_text.startswith(f"{count}"), f"Expected {count} files but badge says: {badge_text}"
+        return self
+
+    def expect_files_to_import(self, count: int) -> "ExploreZipContext":
+        """Assert that the number of selected files to import matches the expected count.
+
+        Args:
+            count: Expected number of selected files.
+
+        Returns:
+            self for method chaining.
+        """
+        badge_text = self._wizard.selected_files_to_import_count_badge.wait_for_text()
+        assert badge_text.startswith(f"{count}"), f"Expected {count} files to import but badge says: {badge_text}"
+        return self
+
+    def expect_workflows_to_import(self, count: int) -> "ExploreZipContext":
+        """Assert that the number of selected workflows to import matches the expected count.
+
+        Args:
+            count: Expected number of selected workflows.
+
+        Returns:
+            self for method chaining.
+        """
+        badge_text = self._wizard.selected_workflows_to_import_count_badge.wait_for_text()
+        assert badge_text.startswith(f"{count}"), f"Expected {count} workflows to import but badge says: {badge_text}"
+        return self
+
+    def expect_preview_title(self, title: str) -> "ExploreZipContext":
+        """Assert that the preview title matches the expected title.
+
+        Args:
+            title: Expected preview title text.
+
+        Returns:
+            self for method chaining.
+        """
+        title_text = self._wizard.preview_title.wait_for_text()
+        assert title_text == title, f"Expected preview title '{title}' but got '{title_text}'"
+        return self
+
+
+class RuleImportContext:
+    """Fluent helper for the standalone rule-based import wizard."""
+
+    def __init__(self, driver_wrapper: NavigatesGalaxyMixin):
+        self.driver_wrapper = driver_wrapper
+        self.driver_wrapper.get("rules")
+        self.driver_wrapper.components.file_set_wizard.creating_what_datasets.wait_for_visible()
+
+    @property
+    def components(self):
+        return self.driver_wrapper.components
+
+    def creating(self, creating_what: RuleImportTarget) -> "RuleImportContext":
+        wizard = self.components.file_set_wizard
+        if creating_what == "datasets":
+            wizard.creating_what_datasets.wait_for_and_click()
+        else:
+            wizard.creating_what_collections.wait_for_and_click()
+        wizard.wizard_next_button.wait_for_and_click()
+        return self
+
+    def from_source(self, source: RuleImportSource) -> "RuleImportContext":
+        wizard = self.components.file_set_wizard
+        source_map = {
+            "pasted_table": wizard.source_pasted_table,
+            "dataset_as_table": wizard.source_dataset_as_table,
+            "remote_files": wizard.source_remote_files,
+            "workbook": wizard.source_workbook,
+        }
+        source_map[source].wait_for_and_click()
+        wizard.wizard_next_button.wait_for_and_click()
+        return self
+
+    def paste_content(self, content: str) -> "RuleImportContext":
+        wizard = self.components.file_set_wizard
+        wizard.paste_textarea.wait_for_and_send_keys(content)
+        wizard.wizard_next_button.wait_for_and_click()
+        return self.wait_for_builder()
+
+    def wait_for_dataset_dialog(self) -> "RuleImportContext":
+        self.driver_wrapper.wait_for_selector_visible(".selection-dialog-modal")
+        return self
+
+    def select_dataset(self, row: int = 1) -> "RuleImportContext":
+        self.wait_for_dataset_dialog()
+        self.driver_wrapper.wait_for_and_click_selector(
+            f'.selection-dialog-modal table tbody tr[aria-rowindex="{row}"] td[aria-colindex="1"]'
+        )
+        self.driver_wrapper.wait_for_and_click_selector(
+            '.selection-dialog-modal [data-description="selection dialog ok"]:not([disabled])'
+        )
+        return self.wait_for_builder()
+
+    def wait_for_builder(self) -> "RuleImportContext":
+        self.components.rule_builder.menu_button_filter.wait_for_visible()
+        return self
+
+
 # Mapping of upload method IDs to their corresponding context classes
 _CONTEXT_CLASS_MAP: dict[UploadMethodId, type[BaseUploadContext]] = {
     "local-file": LocalFileContext,
@@ -648,6 +989,7 @@ _CONTEXT_CLASS_MAP: dict[UploadMethodId, type[BaseUploadContext]] = {
     "remote-files": RemoteFilesContext,
     "composite-file": CompositeFileContext,
     "data-library": DataLibraryContext,
+    "explore-zip": ExploreZipContext,
 }
 
 
@@ -672,8 +1014,14 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
     @overload
     def upload_context(self, method_id: Literal["data-library"]) -> DataLibraryContext: ...
 
+    @overload
+    def upload_context(self, method_id: Literal["explore-zip"]) -> ExploreZipContext: ...
+
+    @overload
+    def upload_context(self, method_id: RuleImportContextId) -> RuleImportContext: ...
+
     def upload_context(
-        self, method_id: UploadMethodId
+        self, method_id: UploadMethodId | RuleImportContextId
     ) -> (
         LocalFileContext
         | PasteContentContext
@@ -681,6 +1029,8 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
         | RemoteFilesContext
         | CompositeFileContext
         | DataLibraryContext
+        | ExploreZipContext
+        | RuleImportContext
     ):
         """Create an upload context for the specified method.
 
@@ -690,8 +1040,18 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
         Returns:
             A mode-specific context object for staging and executing uploads.
         """
+        if method_id == "rule":
+            return RuleImportContext(self)
+
         base_context = UploadContext(method_id, self)
         context_class = _CONTEXT_CLASS_MAP[method_id]
         # mypy cannot infer the return type here due to the dynamic mapping,
         # but the overloads provide correct type hints for callers
         return context_class(base_context)  # type: ignore[return-value]
+
+    def _rule_import_context(self) -> RuleImportContext:
+        context = getattr(self, "_active_rule_import_context", None)
+        if context is None:
+            context = self.upload_context("rule")
+            self._active_rule_import_context = context
+        return context

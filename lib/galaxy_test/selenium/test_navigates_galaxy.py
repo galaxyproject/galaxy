@@ -17,7 +17,6 @@ class TestNavigatesGalaxySelenium(SeleniumTestCase):
     def test_click_error(self):
         """Verify exception handling stuff by attempting to click on a disabled element in the UI."""
         self.home()
-        self.upload_start_click()
         # Open the details, verify they are open and do a refresh.
         exception = None
         disabled_element_selector = ".show-history-content-selectors-btn"

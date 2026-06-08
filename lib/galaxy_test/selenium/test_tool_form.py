@@ -516,9 +516,7 @@ class TestLoggedInToolForm(SeleniumTestCase, UsesUploadActivity):
     @pytest.mark.local
     def test_run_apply_rules_tutorial(self):
         self.home()
-        self.upload_rule_start()
-        self.upload_rule_set_data_type("Collections")
-        self.components.upload.rule_source_content.wait_for_and_send_keys(
+        self.upload_context("rule").creating("collections").from_source("pasted_table").paste_content(
             """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated3fb.txt treated_paired_3
@@ -529,9 +527,8 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
 """
         )
         self.screenshot("rules_apply_rules_example_4_1_input_paste")
-        self.upload_rule_build()
         rule_builder = self.components.rule_builder
-        rule_builder._.wait_for_and_click()
+        rule_builder._.wait_for_visible()
         self.rule_builder_set_mapping("url", "A")
         self.rule_builder_set_mapping("list-identifiers", ["B"])
         self.rule_builder_set_collection_name("flat_count_list")
