@@ -368,6 +368,24 @@ class OutputLabelHint(Model):
     )
 
 
+class StepLabelHint(Model):
+    kind: Literal["job", "implicit_collection_jobs"] = Field(
+        ...,
+        title="Kind",
+        description="Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).",
+    )
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="ID",
+        description="Decoded ID of the selected tool job or ImplicitCollectionJobs to label.",
+    )
+    label: str = Field(
+        ...,
+        title="Label",
+        description="Workflow step label to assign to the extracted tool step.",
+    )
+
+
 class InvalidWorkflowExtractionJobReason(str, Enum):
     """Reasons a workflow extraction job may be invalid and disabled for extraction."""
 
@@ -533,6 +551,11 @@ class WorkflowExtractionByIdsPayload(Model):
         default_factory=list,
         title="Output Labels",
         description="Concrete tool outputs to expose as workflow outputs, with labels.",
+    )
+    step_labels: list[StepLabelHint] = Field(
+        default_factory=list,
+        title="Step Labels",
+        description="Labels to assign to extracted tool steps. Steps not listed are left unlabeled.",
     )
 
     @model_validator(mode="after")
