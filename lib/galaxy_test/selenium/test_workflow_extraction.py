@@ -227,8 +227,9 @@ test_data:
         self.components.workflow_extract.output_rename_input.wait_for_absent()
 
     def extract_workflow_label_step(self, job_id: str, label: str):
-        """Click the 'Label Step' badge for the tool card, type a label in the
-        modal, and confirm. The badge is only rendered when the card is checked."""
+        """Click the label (pencil) control for the tool card, type a label in
+        the modal, and confirm. The control is only rendered when the card is
+        checked."""
         badge = self.components.workflow_extract.step_label_add_for_job(job_id=job_id).wait_for_present()
         self.execute_script_click(badge)
         self.components.workflow_extract.step_rename_input.wait_for_and_clear_and_send_keys(label)
