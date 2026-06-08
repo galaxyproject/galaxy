@@ -258,7 +258,12 @@ const {
 </script>
 
 <template>
-    <GenericWizard :use="wizard" :submit-button-label="importButtonLabel" :title="title" @submit="submit">
+    <GenericWizard
+        :use="wizard"
+        :submit-button-label="importButtonLabel"
+        :title="title"
+        class="rule-based-import-wizard"
+        @submit="submit">
         <template v-slot:header>
             <BAlert
                 :show="!!uploadErrorMessage"

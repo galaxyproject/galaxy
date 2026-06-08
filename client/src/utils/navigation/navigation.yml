@@ -893,28 +893,11 @@ trs_import:
     url_input: "#trs-import-url-input"
     url_import_button: "#trs-url-import-button"
 
-# not meant as a stand-alone component - just using for the anchor
-upload_mixin:
-  selectors: &upload_mixin
-    create_button: '${_} #btn-new'
-    paste_option: '${_} #upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
-    paste_content: '${_} #upload-row-${n} .upload-text-content'
-    title: '${_} #upload-row-${n} .upload-title'
-    row: '${_} #upload-row-${n}'
-    embedded_start_button: '${_} #btn-start'
-    use_button: '${_} #btn-emit'
-    use_button_disabled: '${_} #btn-emit.g-disabled'
-
 workflow_run:
   input:
     selectors:
       _: '[data-label="${label}"]'
-      upload: '${_} [data-description="upload"]'
-      upload_modal: '${_} [data-description="upload-modal"]'
       collection_tab_build_link: '${_} [data-description="collection create tab build"]'
-      collection_tab_upload_link: '${_} [data-description="collection create tab upload"]'
-      # data inputs
-      <<: *upload_mixin
 
     collection_builder:
       selectors:
@@ -922,7 +905,6 @@ workflow_run:
         create: '${_} .create-collection'
         select_all: "${_} [data-description='select many select all']"
         element_by_hid: "${_} [data-description='list dataset collection element'][data-hid='${hid}'] [data-description='dataset hid']"
-        <<: *upload_mixin
 
     sample_sheet:
       selectors:
@@ -1465,41 +1447,6 @@ gies:
     spinner: 'img#spinner'
     iframe: 'body iframe[seamless="seamless"]'
 
-# TODO: use the newer upload_mixin to avoid duplication
-upload:
-  selectors:
-    build_button: '#rule-based #btn-build'
-    close_button: '#regular #btn-close'
-    composite_close_button: '#composite #btn-close'
-    create_button: '#btn-new'
-    file_dialog: '#btn-remote-files'
-    file_dialog_ok: '[data-description="selection dialog ok"]'
-    file_source_selector:
-      type: xpath
-      selector: '//span[contains(@title, "${path}")]'
-    paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
-    paste_content: '#upload-row-${n} .upload-text-content'
-    row: '#upload-row-${n}'
-    status: '[data-description="upload state alert"]'
-    rule_dataset_dialog: '[data-description="rules dataset dialog"]'
-    rule_dataset_selector:
-      selector: '.selection-dialog-modal'
-    rule_dataset_selector_row:
-      selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
-    rule_select_data_type: '.rule-data-type'
-    rule_source_content: 'textarea.upload-rule-source-content'
-    tab: '#tab-title-link-${tab}'
-    title: '#upload-row-${n} .upload-title'
-    settings: '.upload-settings-table'
-    settings_button: '#upload-row-${n} .upload-settings span'
-    setting_deferred: '.upload-deferred'
-    setting_space_to_tab: '.upload-space-to-tab'
-    source_button: '#upload-row-${n} .upload-source'
-    start: '#activity-upload'
-    start_button: '#regular #btn-start'
-    local_button: '#btn-local'
-    explore_archive_button: '.btn-explore-archive'
-
 upload_activity:
   selectors:
     activity: '#activity-upload'
@@ -1686,6 +1633,8 @@ zip_import_wizard:
   selectors:
     _: '.zip-import-wizard'
     loading_indicator: '#g-card-content-zip-preview-loading-indicator'
+    local_file_input: 'input[type="file"]'
+    remote_url_input: 'input[type="text"]#zip-url'
     preview_title: '#g-card-title-text-rocrate-summary'
     zip_file_count_badge: '#g-card-badge-file-count-regular-zip-summary-card'
     selected_files_to_import_count_badge: '#g-card-badge-file-count-zip-files-summary'
@@ -1694,6 +1643,23 @@ zip_import_wizard:
     wizard_import_button: '.wizard-actions .go-next-btn.btn-primary'
     search_input: '.zip-file-selector-search input'
     select_all_checkbox: '.list-header-select-all'
+    select_file:
+      type: xpath
+      selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"
+    item_card: '.zip-file-selector .g-card'
+
+file_set_wizard:
+  selectors:
+    _: '.rule-based-import-wizard'
+    creating_what_datasets: '[data-creating-what="datasets"]'
+    creating_what_collections: '[data-creating-what="collections"]'
+    source_pasted_table: '[data-import-source-from="pasted_table"]'
+    source_dataset_as_table: '[data-import-source-from="dataset_as_table"]'
+    source_remote_files: '[data-import-source-from="remote_files"]'
+    source_workbook: '[data-import-source-from="workbook"]'
+    paste_textarea: '.paste-data textarea'
+    wizard_next_button: '.wizard-actions .go-next-btn'
+    wizard_submit_button: '.wizard-actions .go-next-btn.btn-primary'
     select_file:
       type: xpath
       selector: "//div[@role='button' and contains(@id, 'g-card-${file_path}')]"
