@@ -34,6 +34,8 @@ export interface ToolStep extends RowBase {
     tool_version_warning?: string | null;
     implicit_collection_jobs_id?: string | null;
     implicit_collection_jobs_size?: number | null;
+    /** Optional workflow step label; empty string = unlabeled (off by default). */
+    stepLabel: string;
 }
 
 export interface InputStep extends RowBase {
@@ -66,6 +68,7 @@ export function toExtractionRow(job: WorkflowExtractionJob): ExtractionRow {
             tool_version_warning: job.tool_version_warning,
             implicit_collection_jobs_id: job.implicit_collection_jobs_id,
             implicit_collection_jobs_size: job.implicit_collection_jobs_size,
+            stepLabel: "",
         };
     }
     return {
