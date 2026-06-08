@@ -70,21 +70,22 @@ def _sanitize_output_label(label: str) -> str:
     return label[:255]
 
 
-def _validate_input_names(
-    dataset_names: list[str] | None,
-    dataset_collection_names: list[str] | None,
+def _validate_extraction_labels(
+    dataset_names: Optional[list[str]],
+    dataset_collection_names: Optional[list[str]],
+    step_labels: Optional[list[str]] = None,
 ) -> None:
-    """Validate user-supplied workflow input names (step labels).
+    """Validate user-supplied workflow input names and tool step labels.
 
-    Dataset and collection input names share one namespace (the single
-    ``step_labels`` set in ``extract_steps``), so uniqueness is checked across
-    the combined list. Only inspects names that were actually supplied — the
-    no-names default path (the ``"Input Dataset"`` constants) is untouched.
-    Names are kept raw: limits are enforced by rejection, never truncation.
+    Input dataset/collection names and tool step labels share one namespace
+    (the single ``step_labels`` set in ``extract_steps_by_ids``), so uniqueness
+    is checked across the combined list. Only inspects values that were actually
+    supplied — the no-names default path (the ``"Input Dataset"`` constants) and
+    unlabeled steps are untouched. Values are kept raw: limits are enforced by
+    rejection, never truncation (no whitespace collapse — unlike output labels).
     """
-    provided = (dataset_names or []) + (dataset_collection_names or [])
     seen: set[str] = set()
-    for name in provided:
+    for name in (dataset_names or []) + (dataset_collection_names or []):
         if not name.strip():
             raise exceptions.RequestParameterInvalidException("workflow input names must not be empty")
         if len(name) > 255:
@@ -92,6 +93,16 @@ def _validate_input_names(
         if name in seen:
             raise exceptions.RequestParameterInvalidException(f"workflow input names must be unique: {name!r}")
         seen.add(name)
+    for label in step_labels or []:
+        if not label.strip():
+            raise exceptions.RequestParameterInvalidException("workflow step labels must not be empty")
+        if len(label) > 255:
+            raise exceptions.RequestParameterInvalidException(f"workflow step label exceeds 255 characters: {label!r}")
+        if label in seen:
+            raise exceptions.RequestParameterInvalidException(
+                f"workflow step label collides with another input name or step label: {label!r}"
+            )
+        seen.add(label)
 
 
 class WorkflowsService(ServiceBase):
@@ -253,7 +264,7 @@ class WorkflowsService(ServiceBase):
     ) -> WorkflowExtractionResult:
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
-        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
+        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names)
         stored_workflow = extract_workflow(
             trans,
             user=trans.user,
@@ -287,6 +298,7 @@ class WorkflowsService(ServiceBase):
             dataset_names=payload.dataset_names,
             dataset_collection_names=payload.dataset_collection_names,
             output_labels=payload.output_labels,
+            step_labels=payload.step_labels,
         )
         return _to_extraction_result(stored_workflow)
 
@@ -334,7 +346,26 @@ class WorkflowsService(ServiceBase):
             for hdca in output_hdcas:
                 dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
 
-        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
+        selected_job_ids = set(payload.job_ids)
+        selected_icj_ids = set(payload.implicit_collection_jobs_ids)
+        seen_step_keys: set[tuple[str, int]] = set()
+        step_label_strings: list[str] = []
+        for step_label in payload.step_labels:
+            step_key = (step_label.kind, step_label.id)
+            if step_key in seen_step_keys:
+                raise exceptions.RequestParameterInvalidException(
+                    f"step_labels contains duplicate {step_label.kind} id {step_label.id}"
+                )
+            seen_step_keys.add(step_key)
+            selected = selected_job_ids if step_label.kind == "job" else selected_icj_ids
+            if step_label.id not in selected:
+                raise exceptions.RequestParameterInvalidException(
+                    f"step_labels includes {step_label.kind} id {step_label.id} "
+                    "that is not a selected extraction step"
+                )
+            step_label_strings.append(step_label.label)
+
+        _validate_extraction_labels(payload.dataset_names, payload.dataset_collection_names, step_label_strings)
 
         output_targets = collect_output_label_targets(
             trans,

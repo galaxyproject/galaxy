@@ -23161,6 +23161,26 @@ export interface components {
             /** Stdout Match */
             stdout_match: boolean;
         };
+        /** StepLabelHint */
+        StepLabelHint: {
+            /**
+             * ID
+             * @description Decoded ID of the selected tool job or ImplicitCollectionJobs to label.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Kind
+             * @description Whether the ID identifies a plain tool job or an ImplicitCollectionJobs (mapped step).
+             * @enum {string}
+             */
+            kind: "job" | "implicit_collection_jobs";
+            /**
+             * Label
+             * @description Workflow step label to assign to the extracted tool step.
+            */
+            label: string;
+        };
         /** StepReferenceByLabel */
         StepReferenceByLabel: {
             /**
@@ -27022,6 +27042,11 @@ export interface components {
              * @description Concrete tool outputs to expose as workflow outputs, with labels.
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
+             * Step Labels
+             * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
+             */
+            step_labels?: components["schemas"]["StepLabelHint"][];
             /**
              * Workflow Name
              * @description The name for the extracted workflow.
