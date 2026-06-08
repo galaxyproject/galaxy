@@ -508,13 +508,25 @@ class HasDriver(TimeoutMessageMixin, WaitMethodsMixin, Generic[WaitTypeT]):
         """
         Set an element's value property directly using JavaScript.
 
-        This is useful for contenteditable elements or when .clear() doesn't work.
+        This is useful for contenteditable elements, Vue/JS framework inputs
+        that need event dispatch, or when .clear() doesn't work.
+
+        The value is passed via ``arguments[1]`` (not interpolated into the JS
+        string) so that values containing quotes or other special characters
+        are handled correctly. Both ``input`` and ``change`` events are
+        dispatched so that reactive frameworks (e.g. Vue) detect the change.
 
         Args:
             element: The element to modify
             value: The value to set
         """
-        self.execute_script(f"arguments[0].value = '{value}';", element)
+        self.execute_script(
+            "arguments[0].value = arguments[1];"
+            "arguments[0].dispatchEvent(new Event('input', {bubbles: true}));"
+            "arguments[0].dispatchEvent(new Event('change', {bubbles: true}));",
+            element,
+            value,
+        )
 
     def execute_script_click(self, element: WebElement) -> None:
         """
