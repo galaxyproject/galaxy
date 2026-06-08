@@ -5,11 +5,14 @@ import {
     faExclamationTriangle,
     faInfoCircle,
     faLayerGroup,
+    faPen,
     faPencilAlt,
     faStar as faStarSolid,
+    faTimes,
     faWrench,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import { computed } from "vue";
 
 import type { CardBadge, TitleIcon } from "@/components/Common/GCard.types";
@@ -72,6 +75,8 @@ const emit = defineEmits<{
     (e: "select"): void;
     (e: "toggle-output", outputIndex: number): void;
     (e: "rename-output", outputIndex: number): void;
+    (e: "label-step"): void;
+    (e: "clear-step-label"): void;
     (e: "view-job", jobId: string): void;
 }>();
 
@@ -146,6 +151,35 @@ const titleIcon = computed<TitleIcon>(() => {
     return { icon, title: label };
 });
 
+/** Card title: input rows show their (editable) name; tool rows show the step
+ *  label when one is set, falling back to the tool name. Mirrors the workflow
+ *  editor, where a labeled node displays its label rather than the tool name. */
+const cardTitle = computed(() => {
+    if (isInputStep(props.job)) {
+        return props.job.newName;
+    }
+    return props.job.stepLabel || props.job.tool_name || props.job.tool_id || "Unnamed Step";
+});
+
+/** Title pencil tooltip: inputs are renamed, tool steps are labeled (add vs.
+ *  edit depending on whether a label is already set). */
+const renameTitle = computed(() => {
+    if (isInputStep(props.job)) {
+        return "Rename";
+    }
+    return props.job.stepLabel ? "Edit this workflow step's label" : "Add a workflow step label";
+});
+
+/** The title pencil drives input rename for inputs and label add/edit for tool
+ *  steps, so both step kinds share the same title-adjacent affordance. */
+function onTitleRename() {
+    if (props.job.step_type === "tool") {
+        emit("label-step");
+    } else {
+        emit("rename");
+    }
+}
+
 function displayLabel(output: ExtractionOutput): string {
     return output.label || output.suggested_name || output.name || output.output_name || "Output";
 }
@@ -155,15 +189,33 @@ function displayLabel(output: ExtractionOutput): string {
     <GCard
         :class="{ disabled: Boolean(props.job.invalid) }"
         :badges="badges"
-        :title="isInputStep(props.job) ? props.job.newName : props.job.tool_name || props.job.tool_id || 'Unnamed Step'"
+        :title="cardTitle"
         :title-icon="titleIcon"
-        :can-rename-title="props.job.step_type !== 'tool' && props.job.checked"
         selectable
         :selected="props.job.checked"
         select-title="Include as a step in the workflow"
         dim-when-unselected
-        @rename="emit('rename')"
         @select="emit('select')">
+        <template v-slot:titleActions>
+            <BButton
+                v-if="props.job.checked && !props.job.invalid"
+                v-g-tooltip.hover
+                class="inline-icon-button g-card-rename"
+                variant="link"
+                :title="renameTitle"
+                @click="onTitleRename">
+                <FontAwesomeIcon :icon="faPen" fixed-width />
+            </BButton>
+            <BButton
+                v-if="props.job.step_type === 'tool' && props.job.stepLabel && props.job.checked && !props.job.invalid"
+                v-g-tooltip.hover
+                class="inline-icon-button clear-step-label"
+                variant="link"
+                title="Remove this workflow step's label"
+                @click="emit('clear-step-label')">
+                <FontAwesomeIcon :icon="faTimes" fixed-width />
+            </BButton>
+        </template>
         <template v-slot:select>
             <FontAwesomeIcon
                 v-if="Boolean(props.job.invalid)"
@@ -232,6 +284,17 @@ function displayLabel(output: ExtractionOutput): string {
         font-size: 0.8rem;
         padding: 0.25rem 0.5rem;
         border-radius: 0.25rem 0.25rem 0 0;
+    }
+
+    // The clear-label control sits beside the title pencil as a plain icon
+    // (no badge border), muted by default and red on hover to signal removal.
+    .clear-step-label {
+        color: $text-muted;
+
+        &:hover {
+            background-color: $brand-danger;
+            color: $white;
+        }
     }
 
     .workflow-extraction-output {
