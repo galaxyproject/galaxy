@@ -5,7 +5,7 @@ import { computed, ref, watch } from "vue";
 
 import type { HDASummary } from "@/api";
 import { COLLECTION_TYPE_TO_LABEL } from "@/components/Collections/common/buildCollectionModal";
-import { useUploadConfigurations } from "@/composables/uploadConfigurations";
+import { useUploadMethodModal } from "@/composables/upload/useUploadMethodModal";
 import localize from "@/utils/localization";
 
 import CollectionCreatorFooterButtons from "./CollectionCreatorFooterButtons.vue";
@@ -16,7 +16,6 @@ import CollectionCreatorSourceOptions from "./CollectionCreatorSourceOptions.vue
 import CollectionNameInput from "./CollectionNameInput.vue";
 import GTab from "@/components/BaseComponents/GTab.vue";
 import GTabs from "@/components/BaseComponents/GTabs.vue";
-import DefaultBox from "@/components/Upload/DefaultBox.vue";
 
 const Tabs = {
     create: 0,
@@ -61,14 +60,7 @@ const emit = defineEmits<{
 const currentTab = ref(Tabs.create);
 const localHideSourceItems = ref(props.hideSourceItems);
 const name = ref(props.collectionName);
-
-// Upload properties
-const {
-    configOptions,
-    effectiveExtensions,
-    listDbKeys,
-    ready: uploadReady,
-} = useUploadConfigurations(props.extensions);
+const { openUploadModal } = useUploadMethodModal();
 
 const validInput = computed(() => {
     return props.collectionName.length > 0;
@@ -90,6 +82,18 @@ function addUploadedFiles(value: HDASummary[]) {
     // TODO: We really need to wait for each of these items to get `state = 'ok'`
     //       before we can add them to the collection.
     emit("add-uploaded-files", value);
+}
+
+async function onUploadFilesToCollection() {
+    const result = await openUploadModal({
+        formats: props.extensions,
+        hideTips: true,
+    });
+
+    if (!result.cancelled && result.datasets.length > 0) {
+        addUploadedFiles(result.datasets as unknown as HDASummary[]);
+        currentTab.value = Tabs.create;
+    }
 }
 
 function cancelCreate() {
@@ -208,22 +212,18 @@ watch(
                     <FontAwesomeIcon :icon="faUpload" fixed-width />
                     <span>{{ localize("Upload Files to Add to Collection") }}</span>
                 </template>
-                <DefaultBox
-                    v-if="uploadReady && configOptions"
-                    :effective-extensions="effectiveExtensions"
-                    v-bind="configOptions"
-                    :has-callback="false"
-                    :history-id="historyId"
-                    :list-db-keys="listDbKeys"
-                    disable-footer
-                    emit-uploaded
-                    size="small"
-                    @uploaded="addUploadedFiles"
-                    @dismiss="currentTab = Tabs.create">
-                    <template v-slot:footer>
+                <div class="p-3">
+                    <button
+                        class="btn btn-primary btn-sm"
+                        type="button"
+                        data-description="collection upload modal trigger"
+                        @click="onUploadFilesToCollection">
+                        {{ localize("Open Upload Dialog") }}
+                    </button>
+                    <div class="mt-2">
                         <CollectionCreatorShowExtensions :extensions="extensions" upload />
-                    </template>
-                </DefaultBox>
+                    </div>
+                </div>
             </GTab>
         </GTabs>
     </span>
