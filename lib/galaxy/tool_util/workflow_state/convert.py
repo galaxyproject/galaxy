@@ -18,6 +18,7 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from ._inline_tool import resolve_for_step
+from ._state_merge import inject_connections_into_state
 from ._types import (
     Format2StateDict,
     GetToolInfo,
@@ -111,7 +112,7 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
         )
     result = _convert_valid_state_to_format2(native_step, parsed_tool)
     try:
-        _validate_converted_result(result, parsed_tool)
+        _validate_converted_result(result, parsed_tool, input_connections)
     except Exception:
         raise ConversionValidationFailure(
             "Failed to validate resulting cleaned step - not going to convert to an unvalidated tool state"
@@ -119,11 +120,24 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[
     return result
 
 
-def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs):
-    """Validate converted format2 state via shared format2 validation."""
+def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs, input_connections: dict):
+    """Validate converted format2 state via shared format2 validation.
+
+    ``result.inputs`` is rebuilt by walking tool_state, so it drops connections
+    that target a leaf under a conditional whose discriminator is absent from
+    state (the walker can't pick a branch to descend). Recover those from the
+    native ``input_connections``, restricted to keys that resolve to a tool
+    parameter — this excludes step-level inputs like a ``when`` conditional-
+    execution input, which feed the step but are not tool parameters.
+    """
     from .validation_format2 import validate_format2_state
 
-    validate_format2_state(list(parsed_tool.inputs), result.state, dict(result.inputs))
+    inputs = list(parsed_tool.inputs)
+    probe: dict = {}
+    unmatched = inject_connections_into_state(inputs, probe, dict.fromkeys(input_connections, "placeholder"))
+    connections: Dict[str, object] = {k: "placeholder" for k in input_connections if k not in unmatched}
+    connections.update(result.inputs)
+    validate_format2_state(inputs, result.state, connections)
 
 
 def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInputs) -> Format2State:
