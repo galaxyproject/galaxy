@@ -276,11 +276,8 @@ export default {
         },
         hasCredentialsErrors() {
             if (this.formConfig.credentials?.length) {
-                const { hasUserProvidedAllRequiredServiceCredentials, toolHasRequiredServiceCredentials } =
+                const { hasUserProvidedAllRequiredServiceCredentials } =
                     useUserToolCredentials(this.formConfig.id, this.formConfig.version);
-                if (!toolHasRequiredServiceCredentials.value) {
-                    return false;
-                }
                 return !hasUserProvidedAllRequiredServiceCredentials.value;
             }
             return false;
