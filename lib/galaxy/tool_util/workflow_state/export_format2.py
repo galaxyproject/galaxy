@@ -21,6 +21,7 @@ from typing import (
     Literal,
 )
 
+import yaml
 from gxformat2.normalized import (
     ensure_native,
     NormalizedFormat2,
@@ -254,19 +255,36 @@ def format_summary(result: ExportResult) -> str:
     return "\n".join(lines)
 
 
+_YAML_RESOLVER = yaml.resolver.Resolver()
+
+
+def _scalar_needs_quoting(value: str) -> bool:
+    """True if emitting ``value`` unquoted would let a reader re-read it as a non-string.
+
+    Uses PyYAML's (YAML 1.1) resolver, the most permissive, so quoted output is safe for
+    any 1.1 or 1.2 consumer. Covers the reserved words (yes/no/on/off/true/false/null) and
+    numeric-looking strings that ruamel's emitter otherwise writes bare.
+    """
+    return _YAML_RESOLVER.resolve(yaml.ScalarNode, value, (True, False)) != "tag:yaml.org,2002:str"
+
+
+def _represent_portable_str(representer, data):
+    style = "'" if _scalar_needs_quoting(data) else None
+    return representer.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
 def format_yaml(format2_dict: dict) -> str:
     try:
         from ruamel.yaml import YAML
 
-        yaml = YAML()
-        yaml.default_flow_style = False
+        yaml_dumper = YAML()
+        yaml_dumper.default_flow_style = False
+        yaml_dumper.representer.add_representer(str, _represent_portable_str)
         stream = io.StringIO()
-        yaml.dump(format2_dict, stream)
+        yaml_dumper.dump(format2_dict, stream)
         return stream.getvalue()
     except ImportError:
-        import yaml as pyyaml
-
-        return pyyaml.dump(format2_dict, default_flow_style=False, sort_keys=False)
+        return yaml.dump(format2_dict, default_flow_style=False, sort_keys=False)
 
 
 def format_json(format2_dict: dict) -> str:
