@@ -41,9 +41,20 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         # Capture the source notebook (its history_dataset_display directive names
         # the referenced output) alongside the Extract Workflow toolbar action —
         # the "before" frame that motivates the seeded form below.
-        self.sleep_for(self.wait_types.UX_RENDER)
+        # Wait for the toolbar's Extract Workflow action AND the left tool panel to
+        # finish loading (its "Loading Toolbox" spinner otherwise leaks into the shot)
+        # before the "before" capture, rather than racing a fixed sleep.
+        self.components.pages.history.extract_workflow_button.wait_for_visible()
+        self.components.tool_panel.toolbox.wait_for_visible()
         self.screenshot("notebook_extract_seeded_notebook")
         self.notebook_click_extract_workflow()
+
+        # The form fetches its summary async. Wait for both tool cards' checkboxes and
+        # the seeded run's active output star before capturing, so the screenshot shows
+        # the settled pre-checked + pre-starred state rather than a mid-fetch spinner.
+        checkbox_a = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_a).wait_for_present()
+        checkbox_b = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_b).wait_for_present()
+        self.components.workflow_extract.output_star_active_for_job(job_id=job_a).wait_for_present()
         self.screenshot("notebook_extract_seeded_form")
 
         # Both tool cards render, but only the referenced run is pre-checked.
@@ -51,15 +62,11 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         # both — so this count is the regression lever for the whole feature.)
         assert self.count_job_checkboxes() == 2, "Expected both cat1 tool cards to render"
         assert self.count_checked_job_checkboxes() == 1, "Expected only the referenced run pre-checked"
-
-        checkbox_a = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_a).wait_for_present()
-        checkbox_b = self.components.workflow_extract.card_checkbox_by_job_id(job_id=job_b).wait_for_present()
         assert checkbox_a.is_selected(), f"Expected referenced run {job_a} pre-checked"
         assert not checkbox_b.is_selected(), f"Expected unreferenced run {job_b} unchecked"
 
         # The referenced output is pre-starred (exposed) — exactly one star active.
         assert self.count_active_output_stars() == 1, "Expected exactly the referenced output pre-starred"
-        self.components.workflow_extract.output_star_active_for_job(job_id=job_a).wait_for_present()
 
         workflow_name = "Selenium Notebook Seeded"
         self.extract_workflow_name_and_submit(workflow_name)
@@ -88,6 +95,11 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
 
         self.navigate_to_history_page_editor(history_id, page["id"])
         self.notebook_click_extract_workflow()
+
+        # The summary fetch is async; wait for the mapped (ICJ) card and the active
+        # output star to render before capturing the settled seeded state.
+        mapped_card = self.components.workflow_extract.mapped_tool_card.wait_for_present()
+        self.components.workflow_extract.all_active_output_stars.wait_for_present()
         self.screenshot("notebook_extract_seeded_mapped_form")
 
         # Both tool cards render (mapped random_lines1 + plain cat1); only the
@@ -95,7 +107,6 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         assert self.count_job_checkboxes() == 2, "Expected mapped and cat1 tool cards to render"
         assert self.count_checked_job_checkboxes() == 1, "Expected only the referenced mapped run pre-checked"
 
-        mapped_card = self.components.workflow_extract.mapped_tool_card.wait_for_present()
         icj_id = mapped_card.get_attribute("data-icj-id")
         assert icj_id, "mapped-tool card missing data-icj-id"
         mapped_checkbox = self.components.workflow_extract.card_checkbox_by_icj_id(icj_id=icj_id).wait_for_present()
@@ -117,6 +128,37 @@ class TestNotebookWorkflowExtraction(SeleniumTestCase, ExtractsWorkflows, Workfl
         self.assert_input_step_collection_type(workflow, "paired")
         tool_steps = self.assert_steps_of_type(workflow, "tool", expected_len=1)
         assert tool_steps[0]["tool_id"] == "random_lines1", tool_steps[0]
+
+    @skip_without_tool("cat1")
+    @selenium_test
+    @managed_history
+    def test_notebook_referencing_nothing_explains_empty_seed(self):
+        """A notebook that references nothing extractable explains the empty seed.
+
+        The history has a cat1 run (so the form renders that tool card), but the
+        notebook's markdown references no output or job — so the closure seeds
+        nothing. The form must surface the no-seed message and leave every card
+        unchecked, rather than dead-ending on a disabled Create button with no
+        explanation. Distinct from the empty-history path (no cards at all).
+        """
+        history_id = self.current_history_id()
+        self.run_cat1(history_id)
+        page = self.dataset_populator.new_history_page(history_id, content="# Notebook\n\nNo directives here.\n")
+
+        self.navigate_to_history_page_editor(history_id, page["id"])
+        self.notebook_click_extract_workflow()
+
+        # The no-seed banner and the (unchecked) cat1 card both appear only after the
+        # async summary loads; wait for them before capturing so the screenshot shows
+        # the settled empty-seed state, not the mid-fetch spinner.
+        self.components.workflow_extract.no_seed_message.wait_for_visible()
+        self.components.workflow_extract.tool_card_checkbox.wait_for_present()
+        self.screenshot("notebook_extract_no_seed_form")
+
+        # The cat1 card renders (so this is the seeded-nothing path, not an empty
+        # history), nothing is pre-checked, and the form says why.
+        assert self.count_job_checkboxes() >= 1, "Expected the cat1 tool card to render"
+        assert self.count_checked_job_checkboxes() == 0, "Expected nothing pre-checked when the notebook seeds nothing"
 
     @selenium_test
     @managed_history
