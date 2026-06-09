@@ -2065,7 +2065,9 @@ class TestNotebookWorkflowExtractionReport(
             assert result["report_warnings"] == [], result["report_warnings"]
 
             # The output= label is a real workflow output the reconcile exposed.
-            output_label = re.search(r'output="([^"]+)"', markdown).group(1)
+            output_match = re.search(r'output="([^"]+)"', markdown)
+            assert output_match is not None, markdown
+            output_label = output_match.group(1)
             downloaded = self._get(f"workflows/{result['id']}/download").json()
             output_labels = {
                 wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])

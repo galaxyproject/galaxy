@@ -637,7 +637,9 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
             assert icj_id
 
             for variant in ({"icj_ids": [icj_id]}, {"job_ids": [element_job_id]}):
-                page = self.dataset_populator.new_notebook_referencing(history_id, **variant)
+                page = self.dataset_populator.new_notebook_referencing(
+                    history_id, icj_ids=variant.get("icj_ids"), job_ids=variant.get("job_ids")
+                )
                 summary = self._extraction_summary(page["id"])
                 tool_rows = self._rows_by_type(summary, "tool")
                 assert len(tool_rows) == 1, (variant, summary["jobs"])
