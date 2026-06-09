@@ -1,29 +1,45 @@
 """Galaxy FileSource implementation for OSF."""
 
-from typing import Union, Optional
 from abc import ABC
+from pathlib import Path
+from typing import Any, Optional, Union
+from urllib.parse import urljoin, urlparse
 
 from galaxy import exceptions as galaxy_exceptions
-from galaxy.util import requests
 from galaxy.files.models import (
-    BaseFileSourceConfiguration,
-    BaseFileSourceTemplateConfiguration,
+    AnyRemoteEntry,
+    FilesSourceRuntimeContext,
+    RemoteDirectory,
+    RemoteFile,
 )
+from galaxy.files.sources._defaults import DEFAULT_SCHEME
+from galaxy.files.sources._rdm import (
+    ContainerAndFileIdentifier,
+    RDMFileSourceConfiguration,
+    RDMFileSourceTemplateConfiguration,
+    RDMFilesSource,
+    RDMRepositoryInteractor,
+)
+from galaxy.util import requests
 from galaxy.util.config_templates import TemplateExpansion
 
-from urllib.parse import urljoin
 
 OSF_DEFAULT_URL = "https://api.osf.io/v2/"
-TOP_LEVEL_CATEGORIES = ("Projects", "Registrations", "Files")
+WATERBUTLER_URL = "https://files.osf.io/v1/"
+DEFAULT_STORAGE = "osfstorage"
+OSF_MAX_PAGE_SIZE = 100
+CONNECT_TIMEOUT = 10
+READ_TIMEOUT = 60
+CHUNK_SIZE = 64 * 1024
 
 
-class OSFFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
+class OSFFileSourceTemplateConfiguration(RDMFileSourceTemplateConfiguration):
     type: str = "osf"
     url: Union[str, TemplateExpansion] = OSF_DEFAULT_URL
     token: Union[str, TemplateExpansion]
 
 
-class OSFFileSourceConfiguration(BaseFileSourceConfiguration):
+class OSFFileSourceConfiguration(RDMFileSourceConfiguration):
     url: str = OSF_DEFAULT_URL
     token: str
 
@@ -52,26 +68,6 @@ class ValidationError(galaxy_exceptions.MessageException, OSFFilesSourceExceptio
     """OSF returned an unexpected or malformed response."""
 
 
-def parse_path(path: str) -> tuple[Optional[str], Optional[str], list[str]]:
-    """Split a virtual OSF path into (category, record_title, remaining_parts).
-
-    "/"                            -> (None, None, [])
-    "/Projects"                    -> ("Projects", None, [])
-    "/Projects/My Research"        -> ("Projects", "My Research", [])
-    "/Projects/My Research/x/a.csv"-> ("Projects", "My Research", ["x", "a.csv"])
-    """
-    if not isinstance(path, str) or not path.startswith("/"):
-        raise InvalidPath(f"Path must be absolute (start with '/'): {path!r}")
-    parts = [segment for segment in path.split("/") if segment]
-    if not parts:
-        return (None, None, [])
-    category = parts[0]
-    if category not in TOP_LEVEL_CATEGORIES:
-        raise InvalidPath(f"Unknown category {category!r}; expected {TOP_LEVEL_CATEGORIES}.")
-    record_title = parts[1] if len(parts) > 1 else None
-    return (category, record_title, parts[2:])
-
-
 class _OSFClient:
     def __init__(self, base_url: str, token: str):
         self.base_url = base_url.rstrip("/") + "/"
@@ -94,33 +90,91 @@ class _OSFClient:
         response.raise_for_status()
         return response.json()
 
-    def list_projects(self, only_latest: bool = True) -> list[dict]:
-        nodes = self._request("GET", "users/me/nodes/").get("data", [])
-        if only_latest:
-            nodes = [n for n in nodes if not _has_parent(n)]
-        return nodes
+    def list_projects(
+        self,
+        page: int = 1,
+        page_size: int = OSF_MAX_PAGE_SIZE,
+        query: Optional[str] = None,
+        write_intent: bool = False,
+        sort: Optional[str] = None,
+    ) -> dict:
+        params: dict[str, Any] = {"page": page, "page[size]": page_size}
+        if query:
+            params["filter[title]"] = query
+        if write_intent:
+            params["filter[current_user_permissions]"] = "write"
+        if sort:
+            params["sort"] = sort
+        return self._request(
+            "GET", "users/me/nodes/",
+            params=params, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
 
-    def list_registrations(self) -> list[dict]:
-        return self._request("GET", "users/me/registrations/").get("data", [])
+    def list_registrations(
+        self, page: int = 1, page_size: int = OSF_MAX_PAGE_SIZE,
+    ) -> dict:
+        return self._request(
+            "GET", "users/me/registrations/",
+            params={"page": page, "page[size]": page_size},
+            timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
 
-    # still to do (raise so unfinished paths fail loudly)
-    def list_files_top_level(self) -> list[dict]:
-        raise NotImplementedError("design step 9: /Files listing.")
+    def create_node(self, payload: dict) -> dict:
+        return self._request(
+            "POST", "nodes/",
+            json=payload, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
 
-    def get_node_by_title(self, title: str, parent_guid: Optional[str] = None) -> Optional[dict]:
-        raise NotImplementedError("title -> GUID resolution.")
+    # WaterButler
+    def waterbutler_url(self, container_id: str, wb_path: str = "/") -> str:
+        if not wb_path.startswith("/"):
+            wb_path = "/" + wb_path
+        return urljoin(
+            WATERBUTLER_URL,
+            f"resources/{container_id}/providers/{DEFAULT_STORAGE}{wb_path}",
+        )
 
-    def list_storage_files(self, node_guid: str, storage: str, path: str = "") -> list[dict]:
-        raise NotImplementedError("WaterButler listing.")
+    def list_storage(self, container_id: str, wb_path: str = "/") -> list[dict]:
+        if self._session is None:
+            self._session = self._make_session()
+        url = self.waterbutler_url(container_id, wb_path)
+        response = self._session.get(
+            url, params={"meta": ""}, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+        )
+        response.raise_for_status()
+        return response.json().get("data", [])
 
-    def get_download_url(self, node_guid: str, storage: str, path: str) -> str:
-        raise NotImplementedError("needed for _realize_to.")
+    def upload(
+        self, container_id: str, folder_wb_path: str, filename: str, local_path: str,
+    ) -> dict:
+        if self._session is None:
+            self._session = self._make_session()
+        url = self.waterbutler_url(container_id, folder_wb_path)
+        params = {"kind": "file", "name": filename}
+        with open(local_path, "rb") as f:
+            response = self._session.put(
+                url, params=params, data=f,
+                timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            )
+        response.raise_for_status()
+        return response.json()
 
-    def upload_file(self, node_guid, storage, folder_path, filename, file_obj) -> dict:
-        raise NotImplementedError("needed for _write_from.")
-
-    def resolve_guid(self, path_segment: str, parent_guid: Optional[str] = None) -> str:
-        raise NotImplementedError("walk one path level title -> GUID.")
+    def download(self, container_id: str, wb_path: str, local_path: str) -> None:
+        if self._session is None:
+            self._session = self._make_session()
+        url = self.waterbutler_url(container_id, wb_path)
+        try:
+            with self._session.get(
+                url, stream=True, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT),
+            ) as response:
+                response.raise_for_status()
+                with open(local_path, "wb") as out:
+                    for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                        if chunk:
+                            out.write(chunk)
+        except Exception:
+            Path(local_path).unlink(missing_ok=True)
+            raise
 
 
 def _has_parent(node: dict) -> bool:
@@ -131,10 +185,193 @@ def _node_title(node: dict) -> str:
     return node.get("attributes", {}).get("title", node.get("id", "untitled"))
 
 
-class OSFFilesSource(RDMFilesource):
-    # TODO(design): target base is RDMFilesSource (-> BaseFilesSource). Switch
+def _galaxy_pagination_to_osf(
+    limit: Optional[int], offset: Optional[int],
+) -> tuple[int, int]:
+    """Translate Galaxy's (limit, offset) into OSF's (page, page[size]).
+
+    OSF caps page[size] at OSF_MAX_PAGE_SIZE. When offset is not aligned to
+    the page size, this returns the page that *contains* it (the framework
+    trims; ``total`` is still accurate).
+    """
+    page_size = min(limit, OSF_MAX_PAGE_SIZE) if limit else OSF_MAX_PAGE_SIZE
+    page = ((offset or 0) // page_size) + 1
+    return page, page_size
+
+
+def _galaxy_sort_to_osf(sort_by: Optional[str]) -> Optional[str]:
+    if not sort_by:
+        return None
+    return {
+        "name": "title",
+        "uri": "id",
+        "path": "id",
+        "ctime": "-date_modified",
+        "size": "size",
+    }.get(sort_by, "id")
+
+
+class OSFRepositoryInteractor(RDMRepositoryInteractor):
+    """OSF flavor of the RDM repository contract.
+
+    A "container" is an OSF Project (GUID). Files inside a container are the
+    files in its osfstorage, flattened (subfolder paths are encoded in
+    ``file_identifier`` so downloads can find them again).
+    """
+
+    def to_plugin_uri(self, container_id: str, filename: Optional[str] = None) -> str:
+        scheme = self.plugin.get_scheme()
+        prefix = self.plugin.get_prefix() or ""
+        if filename:
+            return f"{scheme}://{prefix}/{container_id}/{filename}"
+        return f"{scheme}://{prefix}/{container_id}"
+
+    def get_file_containers(
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        write_intent: bool,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> tuple[list[RemoteDirectory], int]:
+        client = self._client(context)
+        page, page_size = _galaxy_pagination_to_osf(limit, offset)
+        payload = client.list_projects(
+            page=page,
+            page_size=page_size,
+            query=query,
+            write_intent=write_intent,
+            sort=_galaxy_sort_to_osf(sort_by),
+        )
+        nodes = [n for n in payload.get("data", []) if not _has_parent(n)]
+        total = int(payload.get("meta", {}).get("total", 0))
+        containers = [
+            RemoteDirectory(**{
+                "name": _node_title(node),
+                "uri": self.to_plugin_uri(node["id"]),
+                "path": f"/{node['id']}",
+                "class": "Directory",
+            })
+            for node in nodes
+        ]
+        return containers, total
+
+    def get_files_in_container(
+        self,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+        container_id: str,
+        writeable: bool,
+        query: Optional[str] = None,
+    ) -> list[RemoteFile]:
+        client = self._client(context)
+        files = list(self._walk_files(client, container_id, wb_path="/", rel_prefix=""))
+        if query:
+            files = [f for f in files if query in f.get("name", "")]
+        return files
+
+    def create_draft_file_container(
+        self,
+        title: str,
+        public_name: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ) -> dict[str, Any]:
+        payload = {
+            "data": {
+                "type": "nodes",
+                "attributes": {
+                    "title": title,
+                    "category": "project",
+                    "public": False,
+                    "description": f"Created by Galaxy on behalf of {public_name}",
+                },
+            }
+        }
+        return self._client(context).create_node(payload).get("data", {})
+
+    def upload_file_to_draft_container(
+        self,
+        container_id: str,
+        filename: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ) -> None:
+        self._client(context).upload(container_id, "/", filename, file_path)
+
+    def download_file_from_container(
+        self,
+        container_id: str,
+        file_identifier: str,
+        file_path: str,
+        context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
+    ) -> None:
+        if not file_identifier:
+            raise FileExpected("cannot download without a file identifier")
+        client = self._client(context)
+        leaf = self._walk_to(client, container_id, file_identifier.split("/"))
+        if leaf.get("attributes", {}).get("kind") != "file":
+            raise FileExpected(
+                f"path {file_identifier!r} resolved to a folder, not a file"
+            )
+        client.download(container_id, leaf["attributes"]["path"], file_path)
+
+    # private helpers
+    def _client(self, context) -> _OSFClient:
+        return _OSFClient(self.repository_url, context.config.token)
+
+    def _walk_to(
+        self, client: _OSFClient, container_id: str, segments: list,
+    ) -> dict:
+        """Descend osfstorage segment-by-segment, matching on name.
+
+        osfstorage addresses children by internal WaterButler IDs, not names,
+        so we list each level, pick the named child, and descend using its
+        ``attributes.path``.
+        """
+        current_path = "/"
+        leaf: Optional[dict] = None
+        for segment in segments:
+            items = client.list_storage(container_id, current_path)
+            match = next(
+                (it for it in items if it.get("attributes", {}).get("name") == segment),
+                None,
+            )
+            if match is None:
+                raise ResourceNotFound(
+                    f"No entry named {segment!r} in osfstorage:{current_path}"
+                )
+            leaf = match
+            current_path = match["attributes"]["path"]
+        if leaf is None:
+            raise InvalidPath("walk called with empty segments")
+        return leaf
+
+    def _walk_files(
+        self, client: _OSFClient, container_id: str, wb_path: str, rel_prefix: str,
+    ):
+        for item in client.list_storage(container_id, wb_path):
+            attrs = item.get("attributes", {})
+            name = attrs.get("name", "untitled")
+            kind = attrs.get("kind")
+            rel_path = name if not rel_prefix else f"{rel_prefix}/{name}"
+            if kind == "folder":
+                yield from self._walk_files(
+                    client, container_id, attrs["path"], rel_path,
+                )
+            elif kind == "file":
+                yield RemoteFile(**{
+                    "name": name,
+                    "uri": self.to_plugin_uri(container_id, rel_path),
+                    "path": f"/{container_id}/{rel_path}",
+                    "class": "File",
+                    "size": attrs.get("size", 0),
+                    "ctime": attrs.get("modified_utc") or attrs.get("created_utc"),
+                })
+
+
+class OSFFilesSource(RDMFilesSource):
     plugin_type = "osf"
-    supports_pagination = True  # spec'd in design, not implemented yet
+    supports_pagination = True
     supports_search = True
     supports_sorting = True
 
@@ -142,65 +379,115 @@ class OSFFilesSource(RDMFilesource):
     resolved_config_class = OSFFileSourceConfiguration
 
     def get_scheme(self) -> str:
-        return "osf"
+        return (
+            self.scheme
+            if self.scheme and self.scheme != DEFAULT_SCHEME
+            else "osf"
+        )
 
     def get_prefix(self) -> Optional[str]:
-        return None  # mirror elabftw.get_prefix() once config is wired in
+        endpoint = urlparse(self.template_config.url)
+        return (
+            self.id
+            if self.scheme not in {"osf", DEFAULT_SCHEME}
+            else (endpoint.netloc or None)
+        )
 
     def score_url_match(self, url: str) -> int:
-        scheme = f"{self.get_scheme()}://"
-        return len(scheme) if url.startswith(scheme) else 0
+        parsed = urlparse(url)
+        return sum(
+            int(check)
+            for check in (
+                parsed.scheme == self.get_scheme(),
+                parsed.netloc == self.get_prefix(),
+            )
+        )
 
     def to_relative_path(self, url: str) -> str:
-        scheme = f"{self.get_scheme()}://"
-        if url.startswith(scheme):
-            remainder = url[len(scheme):]
-            return "/" + remainder.split("/", 1)[1] if "/" in remainder else "/"
-        return url
+        parsed = urlparse(url)
+        path = parsed.path or "/"
+        if not path.startswith("/"):
+            path = f"/{path}"
+        return path
 
     def user_has_access(self, user_context) -> bool:
         return user_context is not None  # true only when a token is configured
 
-    def _list(self, path="/", recursive=False, user_context=None, opts=None,
-              limit=None, offset=None, query=None, sort_by=None) -> tuple[list[dict], int]:
-        category, record_title, remaining = parse_path(path)
-        if category is None:  # "/"
-            entries = [self._directory_entry(n, f"/{n}") for n in TOP_LEVEL_CATEGORIES]
-            return entries, len(entries)
-        if category == "Projects" and record_title is None:
-            return self._list_projects(self._build_client(user_context))
-        if category == "Registrations" and record_title is None:
-            client = self._build_client(user_context)
-            entries = [self._directory_entry(_node_title(n), f"/Registrations/{_node_title(n)}")
-                       for n in client.list_registrations()]
-            return entries, len(entries)
-        raise NotImplementedError(f"Listing not implemented yet for: {path!r}")
+    # RDM contract
+    def get_repository_interactor(self, repository_url: str) -> OSFRepositoryInteractor:
+        return OSFRepositoryInteractor(repository_url=repository_url, plugin=self)
 
-    def _list_projects(self, client: "_OSFClient") -> tuple[list[dict], int]:
-        entries = [self._directory_entry(_node_title(n), f"/Projects/{_node_title(n)}")
-                   for n in client.list_projects(only_latest=True)]
-        return entries, len(entries)
+    def parse_path(
+        self, source_path: str, container_id_only: bool = False,
+    ) -> ContainerAndFileIdentifier:
+        """Split a plugin path into (container_id, file_identifier).
 
-    def _realize_to(self, source_path, native_path, user_context=None, opts=None):
-        raise NotImplementedError("download: design step 7.")
+        "/"                          -> ("", "")
+        "/abc12"                     -> ("abc12", "")
+        "/abc12/data.csv"            -> ("abc12", "data.csv")
+        "/abc12/folder/sub/a.csv"    -> ("abc12", "folder/sub/a.csv")
+        """
+        path_obj = Path(source_path)
+        if not path_obj.is_absolute():
+            raise InvalidPath(
+                f"Path must be absolute (start with '/'): {source_path!r}"
+            )
+        parts = path_obj.parts[1:]
+        if not parts:
+            return ContainerAndFileIdentifier(container_id="", file_identifier="")
+        container_id = parts[0]
+        if container_id_only or len(parts) == 1:
+            return ContainerAndFileIdentifier(
+                container_id=container_id, file_identifier="",
+            )
+        return ContainerAndFileIdentifier(
+            container_id=container_id, file_identifier="/".join(parts[1:]),
+        )
 
-    def _write_from(self, target_path, native_path, user_context=None, opts=None) -> str:
-        raise NotImplementedError("upload: design step 8.")
+    def get_container_id_from_path(self, source_path: str) -> str:
+        return self.parse_path(source_path, container_id_only=True).container_id
 
-    # helpers
-    def _build_client(self, user_context) -> "_OSFClient":
-        # TODO(verify): how the resolved url/token are exposed (see elabftw.py).
-        config = self._resolved_config()
-        return _OSFClient(config.url, config.token)
+    # Galaxy contract
+    def _list(
+        self,
+        context: FilesSourceRuntimeContext[OSFFileSourceConfiguration],
+        path: str = "/",
+        recursive: bool = False,
+        write_intent: bool = False,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        query: Optional[str] = None,
+        sort_by: Optional[str] = None,
+    ) -> tuple[list[AnyRemoteEntry], int]:
+        container_id = self.parse_path(path).container_id
+        if not container_id:
+            return self.repository.get_file_containers(
+                context, write_intent, limit, offset, query, sort_by,
+            )
+        files = self.repository.get_files_in_container(
+            context, container_id, writeable=write_intent, query=query,
+        )
+        return files, len(files)
 
-    def _resolved_config(self) -> "OSFFileSourceConfiguration":
-        raise NotImplementedError("hook up resolved config accessor (see elabftw.py).")
+    def _realize_to(
+        self,
+        source_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[OSFFileSourceConfiguration],
+    ) -> None:
+        identifier = self.parse_path(source_path)
+        self.repository.download_file_from_container(
+            identifier.container_id, identifier.file_identifier, native_path, context,
+        )
 
-    def _directory_entry(self, name: str, path: str) -> dict:
-        # RemoteDirectory is a TypedDict -> a plain dict works at runtime.
-        return {"class": "Directory", "name": name,
-                "uri": f"{self.get_scheme()}://{path}", "path": path}
-
-    def _file_entry(self, name: str, path: str, size: int = 0) -> dict:
-        return {"class": "File", "name": name,
-                "uri": f"{self.get_scheme()}://{path}", "path": path, "size": size}
+    def _write_from(
+        self,
+        target_path: str,
+        native_path: str,
+        context: FilesSourceRuntimeContext[OSFFileSourceConfiguration],
+    ) -> str:
+        identifier = self.parse_path(target_path)
+        self.repository.upload_file_to_draft_container(
+            identifier.container_id, identifier.file_identifier, native_path, context,
+        )
+        return target_path
