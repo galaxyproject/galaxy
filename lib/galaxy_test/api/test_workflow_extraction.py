@@ -1,4 +1,5 @@
 import functools
+import re
 import time
 import unittest
 from collections import (
@@ -2009,3 +2010,102 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
 
 
 RunJobsSummary = namedtuple("RunJobsSummary", ["history_id", "workflow_id", "inputs", "jobs"])
+
+
+class TestNotebookWorkflowExtractionReport(
+    _ExtractionHelpersMixin, BaseWorkflowsApiTestCase, WorkflowStructureAssertions
+):
+    """POST /api/workflows/extract with from_page_id — carry a notebook's markdown
+    into the extracted workflow as its report, rewriting internal-id directives
+    into workflow-relative label directives."""
+
+    def _extract(self, **payload):
+        if "workflow_name" not in payload:
+            payload["workflow_name"] = "report extraction"
+        response = self._post("workflows/extract", data=payload, json=True)
+        self._assert_status_code_is(response, 200)
+        return response.json()
+
+    def _report_markdown(self, workflow_id):
+        download = self._get(f"workflows/{workflow_id}/download")
+        self._assert_status_code_is(download, 200)
+        return download.json().get("report", {}).get("markdown")
+
+    def _run_cat1(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="1 2 3\n")
+        d2 = self.dataset_populator.new_dataset(history_id, content="4 5 6\n")
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        run = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": d1["id"]}, "queries_0|input2": {"src": "hda", "id": d2["id"]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        return run["outputs"][0]["id"], run["jobs"][0]["id"]
+
+    @skip_without_tool("cat1")
+    def test_report_rewrites_output_and_job_directives(self):
+        with self.dataset_populator.test_history() as history_id:
+            out_id, cat1_job_id = self._run_cat1(history_id)
+            page = self.dataset_populator.new_notebook_referencing(
+                history_id, output_ids=[out_id], job_ids=[cat1_job_id]
+            )
+
+            result = self._extract(job_ids=[cat1_job_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None, "extracted workflow has no report markdown"
+            # The page's prose is preserved; its id directives are rewritten to labels.
+            assert "# Analysis" in markdown, markdown
+            assert 'output="' in markdown, markdown
+            assert 'step="' in markdown, markdown
+            # No instance id may leak into a portable workflow report.
+            assert "history_dataset_id=" not in markdown, markdown
+            assert "job_id=" not in markdown, markdown
+            assert result["report_warnings"] == [], result["report_warnings"]
+
+            # The output= label is a real workflow output the reconcile exposed.
+            output_label = re.search(r'output="([^"]+)"', markdown).group(1)
+            downloaded = self._get(f"workflows/{result['id']}/download").json()
+            output_labels = {
+                wo["label"] for step in downloaded["steps"].values() for wo in step.get("workflow_outputs", [])
+            }
+            assert output_label in output_labels, (output_label, output_labels)
+
+    @skip_without_tool("random_lines1")
+    def test_report_rewrites_icj_job_directive_to_step(self):
+        with self.dataset_populator.test_history() as history_id:
+            hdca = self.dataset_collection_populator.create_pair_in_history(
+                history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+            ).json()["outputs"][0]
+            inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca["id"]}]}, "num_lines": 2}
+            run = self.dataset_populator.run_tool(tool_id="random_lines1", inputs=inputs, history_id=history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_hdca_id = run["implicit_collections"][0]["id"]
+            icj_id = self._icj_id_for_hdca(history_id, output_hdca_id)
+            page = self.dataset_populator.new_notebook_referencing(history_id, icj_ids=[icj_id])
+
+            result = self._extract(implicit_collection_jobs_ids=[icj_id], from_page_id=page["id"])
+            markdown = self._report_markdown(result["id"])
+
+            assert markdown is not None
+            assert 'step="' in markdown, markdown
+            assert "implicit_collection_jobs_id=" not in markdown, markdown
+            assert result["report_warnings"] == [], result["report_warnings"]
+
+    def test_400_on_page_without_history(self):
+        page_response = self.dataset_populator._post(
+            "pages",
+            {"slug": "no-history-report", "title": "No History", "content": "# x", "content_format": "markdown"},
+            json=True,
+        )
+        self._assert_status_code_is(page_response, 200)
+        page = page_response.json()
+        with self.dataset_populator.test_history() as history_id:
+            d1 = self.dataset_populator.new_dataset(history_id, content="a", wait=True)
+            response = self._post(
+                "workflows/extract",
+                {"workflow_name": "bad report", "hda_ids": [d1["id"]], "from_page_id": page["id"]},
+                json=True,
+            )
+            assert response.status_code == 400, response.text

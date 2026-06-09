@@ -38,7 +38,7 @@ vi.mock("@/api/pages", () => ({
 }));
 
 vi.mock("@/composables/toast", () => {
-    const toastInstance = { success: vi.fn(), error: vi.fn() };
+    const toastInstance = { success: vi.fn(), error: vi.fn(), warning: vi.fn() };
     return {
         Toast: toastInstance,
         useToast: () => toastInstance,
@@ -709,6 +709,26 @@ describe("WorkflowExtractionForm", () => {
                     hda_ids: ["ds-2"], // seeded input
                 }),
             );
+        });
+
+        it("sends from_page_id so the page markdown becomes the workflow report", async () => {
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({ id: "wf" });
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "From Notebook");
+            await clickCreateButton(wrapper);
+            const payload = vi.mocked(extractWorkflowByIds).mock.calls[0]?.[0] as Record<string, unknown>;
+            expect(payload.from_page_id).toBe("page-1");
+        });
+
+        it("surfaces report_warnings as a warning toast", async () => {
+            vi.mocked(extractWorkflowByIds).mockResolvedValue({
+                id: "wf",
+                report_warnings: ["Dropped a workflow display from the report."],
+            });
+            const wrapper = await mountForm();
+            await setWorkflowName(wrapper, "From Notebook");
+            await clickCreateButton(wrapper);
+            expect(Toast.warning).toHaveBeenCalled();
         });
 
         it("pre-checks a seeded mapped row and submits its ICJ, excluding the unseeded one", async () => {
