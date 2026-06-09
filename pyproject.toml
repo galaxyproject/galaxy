@@ -73,6 +73,7 @@ dependencies = [
     "pillow",
     "psutil",
     "pulsar-galaxy-lib>=0.15.10",
+    "pulsar-relay-client>=0.2.2",
     "pycryptodome",
     "pydantic[email]>=2.7.4",  # https://github.com/pydantic/pydantic/pull/9639
     "pydantic-ai>=1.56.0",  # https://github.com/pydantic/pydantic-ai/security/advisories/GHSA-2jrp-274c-jhv3
@@ -134,6 +135,7 @@ test = [
     "onedatafilerestclient==21.2.5.2",
     "pkce",
     "playwright>=1.48.0",  # Python 3.13 support
+    "pulsar-relay>=0.2.1",  # BYOC e2e tests boot the relay server in-process
     "pytest",
     "pytest-asyncio",
     "pytest-cov",

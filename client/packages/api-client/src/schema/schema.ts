@@ -305,6 +305,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/compute_resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the requesting user's compute resources */
+        get: operations["compute_resources__index"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compute_resources/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a compute-resource registration */
+        post: operations["compute_resources__start_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compute_resources/registrations/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a compute-resource registration (host-side callback) */
+        post: operations["compute_resources__complete_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compute_resources/{resource_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one of the requesting user's compute resources */
+        get: operations["compute_resources__show"];
+        put?: never;
+        post?: never;
+        /** Disable one of the requesting user's compute resources */
+        delete: operations["compute_resources__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/compute_resources/{resource_id}/purge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Purge a disabled compute resource (clears its vault secret, marks it deleted) */
+        post: operations["compute_resources__purge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/configuration": {
         parameters: {
             query?: never;
@@ -9117,6 +9203,56 @@ export interface components {
              * @default MD5
              */
             hash_function: components["schemas"]["HashFunctionNameEnum"] | null;
+        };
+        /**
+         * ComputeResourceSummary
+         * @description User-visible view of a registered compute resource.
+         *
+         *     The relay refresh token is intentionally absent — it lives in the
+         *     Galaxy vault and is never exposed through the API.
+         */
+        ComputeResourceSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             */
+            create_time: string;
+            /**
+             * Id
+             * @description Encoded ID of the compute resource.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Last Seen Time
+             * @description Last time the relay observed this resource.
+             */
+            last_seen_time?: string | null;
+            /**
+             * Manager Name
+             * @description Galaxy-minted, globally unique topic-namespace label for this resource. The user configures their Pulsar daemon with it; relay topics are ``job_setup_<manager_name>`` etc.
+             */
+            manager_name: string;
+            /**
+             * Relay Topic Prefix
+             * @description Optional relay topic prefix, when the operator namespaces topics.
+             */
+            relay_topic_prefix?: string | null;
+            /**
+             * Relay Url
+             * @description Base URL of the pulsar-relay this resource is wired to.
+             */
+            relay_url: string;
+            /**
+             * Status
+             * @description Lifecycle state: pending|active|disabled|deleted.
+             */
+            status: string;
+            /**
+             * Update Time
+             * Format: date-time
+             */
+            update_time: string;
         };
         /** ConcreteObjectStoreModel */
         ConcreteObjectStoreModel: {
@@ -21152,6 +21288,64 @@ export interface components {
              */
             type: "regex";
         };
+        /**
+         * RegistrationCompletionPayload
+         * @description Body of ``POST /api/compute_resources/registrations/complete``, sent by
+         *     the user's host after the device-flow login. Authenticates via the
+         *     bootstrap_token.
+         */
+        RegistrationCompletionPayload: {
+            /**
+             * Bootstrap Token
+             * @description The token from RegistrationTicket.
+             */
+            bootstrap_token: string;
+            /**
+             * Refresh Token
+             * @description Relay refresh token earmarked for Galaxy (the secondary token from the device-flow pair). Stored in the user's vault and rotated by the compute-resource runner.
+             */
+            refresh_token: string;
+            /**
+             * Relay Topic Prefix
+             * @description Optional relay topic prefix.
+             */
+            relay_topic_prefix?: string | null;
+            /**
+             * Relay Url
+             * @description Relay URL the user's Pulsar bound to.
+             */
+            relay_url: string;
+        };
+        /**
+         * RegistrationTicket
+         * @description Returned by ``POST /api/compute_resources/registrations``.
+         *
+         *     Carries the one-shot bootstrap token the user passes to
+         *     ``pulsar-config register-with-galaxy`` so the host-side flow can call
+         *     back into Galaxy with the freshly-minted secondary refresh token.
+         */
+        RegistrationTicket: {
+            /**
+             * Bootstrap Token
+             * @description Single-use, short-TTL opaque token. Authenticates the subsequent ``POST /api/compute_resources/registrations/complete`` callback.
+             */
+            bootstrap_token: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * One Liner
+             * @description Convenience command — the user pastes this onto their Pulsar host to complete bootstrap.
+             */
+            one_liner: string;
+            /**
+             * Relay Url
+             * @description Operator-configured relay URL the user's Pulsar should bind to.
+             */
+            relay_url: string;
+        };
         /** ReloadFeedback */
         ReloadFeedback: {
             /** Failed */
@@ -31817,6 +32011,261 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WorkflowReportResponse"];
                 };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__index: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeResourceSummary"][];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__start_registration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationTicket"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__complete_registration: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationCompletionPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeResourceSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__show: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of a compute resource. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComputeResourceSummary"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of a compute resource. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    compute_resources__purge: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path: {
+                /** @description The ID of a compute resource. */
+                resource_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request Error */
             "4XX": {
@@ -42794,12 +43243,13 @@ export interface operations {
     get_token_api_jobs__job_id__oidc_tokens_get: {
         parameters: {
             query: {
-                /** @description A key used to authenticate this request as acting on behalf or a job runner for the specified job */
-                job_key: string;
                 /** @description OIDC provider name */
                 provider: string;
+                /** @description A key used to authenticate this request as acting on behalf of a job runner for the specified job. Prefer the ``Authorization: Bearer <key>`` header; this query-string form is kept only for backward compatibility with older Pulsar versions that embed the secret in the URL. */
+                job_key?: string | null;
             };
             header?: {
+                authorization?: string | null;
                 /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
                 "run-as"?: string | null;
             };

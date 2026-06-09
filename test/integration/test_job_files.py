@@ -18,12 +18,14 @@ API has gone too far.
 import io
 import os
 import tempfile
+from typing import ClassVar
 
 import requests
 from sqlalchemy import select
 from tusclient import client
 
 from galaxy import model
+from galaxy.job_execution.job_security import job_files_kind_for_params
 from galaxy.model.base import ensure_object_added_to_session
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
@@ -40,6 +42,14 @@ TEST_TUS_CHUNK_SIZE = 1024
 class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
     dataset_populator: DatasetPopulator
+    # The shared input dataset is created once per class and stored on the
+    # *class* (not the instance): pytest runs each test method on a fresh
+    # instance, so an instance attribute would only exist for whichever test
+    # happened to initialize it. With the class scattered across test shards
+    # any other test referencing ``self.input_hda`` would otherwise hit an
+    # AttributeError.
+    input_hda: ClassVar[model.HistoryDatasetAssociation]
+    input_hda_dict: ClassVar[dict]
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
@@ -57,9 +67,11 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session = self.sa_session
             stmt = select(model.HistoryDatasetAssociation)
             assert len(sa_session.scalars(stmt).all()) == 0
-            self.input_hda_dict = self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
+            TestJobFilesIntegration.input_hda_dict = self.dataset_populator.new_dataset(
+                history_id, content=TEST_INPUT_TEXT, wait=True
+            )
             assert len(sa_session.scalars(stmt).all()) == 1
-            self.input_hda = sa_session.scalars(stmt).all()[0]
+            TestJobFilesIntegration.input_hda = sa_session.scalars(stmt).all()[0]
             TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
@@ -170,6 +182,121 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         response = requests.post(post_url, data=data, files=files)
         _assert_insufficient_permissions(response)
 
+    def test_read_path_constraint(self):
+        """A valid job_key must not be usable to read arbitrary paths on the
+        Galaxy server — only paths the job legitimately needs to stage."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+
+        # A tempfile that has nothing to do with this job's I/O — previously
+        # would have been served verbatim. Reject now.
+        with tempfile.NamedTemporaryFile("w", delete=False) as t_file:
+            t_file.write("server-side secret")
+            outside_path = t_file.name
+        try:
+            response = requests.get(get_url, params={"path": outside_path, "job_key": job_key})
+            _assert_insufficient_permissions(response)
+        finally:
+            os.unlink(outside_path)
+
+    def test_read_via_authorization_header(self):
+        """``Authorization: Bearer <key>`` should be accepted in place of the
+        query-string ``job_key`` parameter."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        response = requests.get(
+            get_url,
+            params={"path": self.input_hda.get_file_name()},
+            headers={"Authorization": f"Bearer {job_key}"},
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
+    def test_compute_resource_write_allowlist_blocks_outputs_populated(self):
+        """A compute-resource job must not write into ``metadata/outputs_populated``
+        even via a path that's lexically inside its working directory. That
+        path is the remote-extended-metadata import store; trusting it from
+        user-controlled compute is a cross-user mutation primitive (and the
+        compute-resource runner refuses ``metadata_strategy='extended'`` at
+        dispatch for the same reason)."""
+        job, _, working_directory = self.create_static_job_with_state("running")
+        job_id = self._app.security.encode_id(job.id)
+        scoped_key = self._bind_to_compute_resource(job, 99)
+
+        # metadata/outputs_populated/* is denied for compute-resource jobs
+        denied_paths = [
+            os.path.join(working_directory, "metadata", "outputs_populated", "results.json"),
+            os.path.join(working_directory, "container_runtime.json"),
+            os.path.join(working_directory, "tool_script.sh"),
+            os.path.join(working_directory, "configs", "foo.txt"),
+        ]
+        for path in denied_paths:
+            _assert_insufficient_permissions(self._post_file(job_id, scoped_key, path, "attack payload"))
+
+        # working/** is the tool's CWD — legitimately writable
+        allowed_path = os.path.join(working_directory, "working", "outputs", "galaxy.json")
+        api_asserts.assert_status_code_is_ok(self._post_file(job_id, scoped_key, allowed_path, '{"foo": 1}'))
+
+    def test_write_through_symlink_is_rejected(self):
+        """Defense in depth: refuse to write to a path that's already a
+        symlink. Galaxy never places symlinks at output paths a runner
+        would post to, so an existing symlink can only be a foreign artefact
+        the API should not blindly follow."""
+        job, output_hda, _ = self.create_static_job_with_state("running")
+        job_id, job_key = self._api_job_keys(job)
+        real_path = self._app.object_store.get_filename(output_hda.dataset)
+        assert real_path
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            symlink_path = os.path.join(tmpdir, "linked")
+            os.symlink(real_path, symlink_path)
+            _assert_insufficient_permissions(self._post_file(job_id, job_key, symlink_path, "attack payload"))
+
+    def test_compute_resource_scoped_key_rejects_legacy_kind(self):
+        """A job bound to a compute resource refuses the legacy ``jobs_files``
+        key — only the tenant-scoped ``jf:cr:<resource_id>`` key is accepted.
+        Prevents cross-tenant replay of a leaked credential."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id = self._app.security.encode_id(job.id)
+        legacy_key = self._app.security.encode_id(job.id, kind="jobs_files")
+        scoped_key = self._bind_to_compute_resource(job, 42)
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": legacy_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        data["job_key"] = scoped_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
+    def test_compute_resource_scoped_key_rejects_other_tenant(self):
+        """A well-formed scoped key for a *different* compute resource is
+        rejected: a credential lifted from tenant A's Pulsar node cannot be
+        replayed against tenant B's job. The legacy-kind test only proves the
+        pre-tenant key is refused; this proves cross-tenant isolation."""
+        job, _, _ = self.create_static_job_with_state("running")
+        job_id = self._app.security.encode_id(job.id)
+        # Job is bound to resource 42; mint a valid key scoped to resource 99.
+        own_key = self._bind_to_compute_resource(job, 42)
+        other_kind = job_files_kind_for_params({"compute_resource_id": 99})
+        other_tenant_key = self._app.security.encode_id(job.id, kind=other_kind)
+        assert other_tenant_key != own_key
+
+        get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        data = {"path": self.input_hda.get_file_name(), "job_key": other_tenant_key}
+        response = requests.get(get_url, params=data)
+        _assert_insufficient_permissions(response)
+
+        # Sanity: the correctly-scoped key for this job's own resource works.
+        data["job_key"] = own_key
+        response = requests.get(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(response)
+        assert response.text == TEST_INPUT_TEXT
+
     @property
     def sa_session(self):
         return self._app.model.session
@@ -177,11 +304,18 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def create_static_job_with_state(self, state):
         """Create a job with unknown handler so its state won't change."""
         sa_session = self.sa_session
-        hda = sa_session.scalars(select(model.HistoryDatasetAssociation)).all()[0]
+        # Order by id so we deterministically pick the original shared input
+        # dataset / history / user created in setUp. Without ORDER BY, PostgreSQL
+        # (CI) returns rows in arbitrary order; once earlier tests have added
+        # HDAs, ``[0]`` could be another job's output, the job's input would no
+        # longer be ``self.input_hda``, and positive-path reads would 403.
+        hda = sa_session.scalars(
+            select(model.HistoryDatasetAssociation).order_by(model.HistoryDatasetAssociation.id)
+        ).first()
         assert hda
-        history = sa_session.scalars(select(model.History)).all()[0]
+        history = sa_session.scalars(select(model.History).order_by(model.History.id)).first()
         assert history
-        user = sa_session.scalars(select(model.User)).all()[0]
+        user = sa_session.scalars(select(model.User).order_by(model.User.id)).first()
         assert user
         output_hda = model.HistoryDatasetAssociation(history=history, create_dataset=True, flush=False)
         output_hda.hid = 2
@@ -213,6 +347,25 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         sa_session = self.sa_session
         sa_session.add(job)
         sa_session.commit()
+
+    def _bind_to_compute_resource(self, job, resource_id):
+        """Bind ``job`` to a compute resource and return the matching scoped
+        files key — what the BYOC runner would mint at dispatch. Derives the
+        ``kind`` via the shared helper so the test key always matches the
+        verifier (and the base62 encoding stays in one place)."""
+        job.destination_params = {"compute_resource_id": resource_id}
+        sa_session = self.sa_session
+        sa_session.add(job)
+        sa_session.commit()
+        kind = job_files_kind_for_params(job.destination_params)
+        return self._app.security.encode_id(job.id, kind=kind)
+
+    def _post_file(self, job_id, job_key, path, content):
+        return requests.post(
+            self._api_url(f"jobs/{job_id}/files", use_key=False),
+            data={"path": path, "job_key": job_key},
+            files={"file": io.StringIO(content)},
+        )
 
 
 def _assert_insufficient_permissions(response):

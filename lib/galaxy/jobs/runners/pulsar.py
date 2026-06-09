@@ -9,6 +9,8 @@ import logging
 import os
 import re
 import subprocess
+import threading
+from collections.abc import Callable
 from time import sleep
 from typing import (
     Any,
@@ -45,6 +47,10 @@ from galaxy.job_execution.compute_environment import (
     ComputeEnvironment,
     dataset_path_to_extra_path,
 )
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_params,
+    job_token_kind_for_params,
+)
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.handler import JobHandlerQueue
 from galaxy.jobs.job_destination import JobDestination
@@ -53,7 +59,9 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState,
 )
+from galaxy.managers.compute_resources import relay_refresh_token_vault_path
 from galaxy.model.base import check_database_connection
+from galaxy.security.vault import UserVaultWrapper
 from galaxy.tool_util.deps import dependencies
 from galaxy.tool_util.parser.output_collection_def import FilePatternDatasetCollectionDescription
 from galaxy.tool_util.parser.output_objects import ToolOutput
@@ -92,6 +100,25 @@ NO_REMOTE_DATATYPES_CONFIG = "Pulsar client is configured to use remote datatype
 GENERIC_REMOTE_ERROR = "Failed to communicate with remote job server."
 FAILED_REMOTE_ERROR = "Remote job server indicated a problem running or monitoring this job."
 LOST_REMOTE_ERROR = "Remote job server could not determine this job's state."
+
+
+def _remote_failure_message(base_message: str, full_status: Union[dict[str, Any], None]) -> str:
+    """Augment a remote-failure message with whatever diagnostics the remote
+    status carries, so operators see *why* a Pulsar job failed instead of only
+    the generic ``base_message``. No-op when no detail is available (e.g. the
+    polling path, which only fetches a status string)."""
+    if not full_status:
+        return base_message
+    parts = [base_message]
+    returncode = full_status.get("returncode")
+    if returncode not in (None, ""):
+        parts.append(f"Remote exit code: {returncode}.")
+    stderr = (full_status.get("stderr") or "").strip()
+    if stderr:
+        # Tail only — full stderr is also attached to the dataset separately.
+        parts.append(f"Remote stderr (tail): {stderr[-1024:]}")
+    return " ".join(parts)
+
 
 UPGRADE_PULSAR_ERROR = "Galaxy is misconfigured, please contact administrator. The target Pulsar server is unsupported, this version of Galaxy requires Pulsar version %s or newer."
 
@@ -248,7 +275,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if self.use_mq:
             # This is a message queue driven runner, don't monitor
             # just setup required callback.
-            self.client_manager.ensure_has_status_update_callback(self.__async_update)
+            self.client_manager.ensure_has_status_update_callback(self._async_update)
             self.client_manager.ensure_has_ack_consumers()
 
         if self.poll:
@@ -373,9 +400,9 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
             return None
         if pulsar_status in ["failed", "lost"]:
             if pulsar_status == "failed":
-                message = FAILED_REMOTE_ERROR
+                message = _remote_failure_message(FAILED_REMOTE_ERROR, full_status)
             else:
-                message = LOST_REMOTE_ERROR
+                message = _remote_failure_message(LOST_REMOTE_ERROR, full_status)
             if not job_state.job_wrapper.get_job().finished:
                 self.fail_job(job_state, message=message, full_status=full_status)
             return None
@@ -682,20 +709,35 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         if env is None:
             env = []
         encoded_job_id = self.app.security.encode_id(job_id)
-        job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+        # Credential ``kind`` selection lives in job_security.py — for the
+        # base runner this resolves to the legacy ``"jobs_files"`` /
+        # ``"jobs_token"`` (or the per-destination ``job_secret_base``
+        # override). The verifier side calls the matching helper.
+        files_kind = job_files_kind_for_params(job_destination_params)
+        token_kind = job_token_kind_for_params(job_destination_params)
+        files_key = self.app.security.encode_id(job_id, kind=files_kind)
+        token_key = self.app.security.encode_id(job_id, kind=token_kind)
         endpoint_base = "%s/api/jobs/%s/files?job_key=%s"
         if self.app.config.nginx_upload_job_files_path:
             endpoint_base = "%s" + self.app.config.nginx_upload_job_files_path + "?job_id=%s&job_key=%s"
-        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, job_key)
-        secret = job_destination_params.get("job_secret_base", "jobs_token")
-        job_key = self.app.security.encode_id(job_id, kind=secret)
-        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={job_key}"
+        files_endpoint = endpoint_base % (self.galaxy_url, encoded_job_id, files_key)
+        token_endpoint = f"{self.galaxy_url}/api/jobs/{encoded_job_id}/oidc-tokens?job_key={token_key}"
         get_client_kwds = dict(
             job_id=str(job_id), files_endpoint=files_endpoint, token_endpoint=token_endpoint, env=env
         )
-        # Turn MutableDict into standard dict for pulsar consumption
-        job_destination_params = dict(job_destination_params.items())
-        return self.client_manager.get_client(job_destination_params, **get_client_kwds)
+        client_manager = self._client_manager_for(job_destination_params, job_id)
+        return client_manager.get_client(self._finalize_destination_params(job_destination_params), **get_client_kwds)
+
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id: Union[int, str]) -> Any:
+        # Hook: which client manager routes this job. Takes ``job_id`` (not the
+        # user) so a subclass can resolve a per-tenant user/client manager
+        # itself; the base ignores it and uses the shared manager.
+        return self.client_manager
+
+    def _finalize_destination_params(self, job_destination_params: dict[str, Any]) -> dict[str, Any]:
+        # Hook: turn the (possibly MutableDict) destination params into the plain
+        # dict pulsar consumes; subclasses may add transport flags.
+        return dict(job_destination_params.items())
 
     def finish_job(self, job_state: JobState) -> None:
         assert isinstance(
@@ -1088,7 +1130,7 @@ class PulsarJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
                 metadata_kwds["datatypes_config"] = datatypes_config
         return metadata_kwds
 
-    def __async_update(self, full_status: dict[str, Any]) -> None:
+    def _async_update(self, full_status: dict[str, Any]) -> None:
         galaxy_job_id = None
         remote_job_id = None
         try:
@@ -1220,6 +1262,411 @@ class PulsarEmbeddedJobRunner(PulsarJobRunner):
 
 class PulsarEmbeddedMQJobRunner(PulsarMQJobRunner):
     default_build_pulsar_app = True
+
+
+class ComputeResourceClientManagerRegistry:
+    """Per-tenant Pulsar client managers, lazily created and held under a lock.
+
+    Keyed by ``(relay_url, manager_name)``. Decoupled from the
+    runner so the lifecycle (lazy create → cache → shutdown) can be
+    exercised without bypassing the runner's ``__init__`` in tests.
+
+    ``factory`` is the Pulsar ``build_client_manager`` callable (or a fake
+    in tests); ``kwargs_builder`` is invoked only on cache miss so its
+    cost (vault read for the refresh token, on-the-fly callback build)
+    is paid once per tenant rather than on every job.
+    """
+
+    def __init__(self, factory: Callable[..., Any]) -> None:
+        self._factory = factory
+        self._client_managers: dict[tuple[str, str], Any] = {}
+        self._lock = threading.RLock()
+
+    def get_or_create(
+        self,
+        key: tuple[str, str],
+        kwargs_builder: Callable[[], dict[str, Any]],
+        on_create: Optional[Callable[[Any], None]] = None,
+    ) -> Any:
+        with self._lock:
+            cm = self._client_managers.get(key)
+            if cm is not None:
+                return cm
+            kwargs = kwargs_builder()
+            cm = self._factory(**kwargs)
+            if on_create is not None:
+                on_create(cm)
+            self._client_managers[key] = cm
+            return cm
+
+    def shutdown(self) -> None:
+        with self._lock:
+            for cm in self._client_managers.values():
+                try:
+                    cm.shutdown()
+                except Exception:
+                    log.exception("failure shutting down compute-resource client manager")
+            self._client_managers.clear()
+
+    def __len__(self) -> int:
+        with self._lock:
+            return len(self._client_managers)
+
+
+class PulsarMQBYOCJobRunner(PulsarMQJobRunner):
+    """Multi-tenant Pulsar runner backing user-self-registered compute resources.
+
+    One statically-registered instance of this runner serves every compute
+    resource. At startup it holds no relay credentials and no client manager;
+    those are materialised lazily — keyed by ``(relay_url, manager_name)`` —
+    when a job's destination params point at a user's compute resource.
+
+    Per-job destination params required (injected by the TPV
+    ``compute_resource`` rule from
+    ``app.compute_resource_manager.get_active_for(user)``):
+
+    * ``compute_resource_id`` — primary key of the user's ``ComputeResource``
+      row; used to look up the row and locate the refresh-token vault entry.
+    * ``relay_url``, ``manager`` — relay endpoint and per-user manager name.
+
+    The relay refresh token lives in the Galaxy vault at
+    ``compute_resource/<resource_id>/relay_refresh_token``; rotations are
+    persisted back to the vault via the ``on_refresh_token_rotated`` callback
+    we hand to Pulsar's client at construction time.
+    """
+
+    use_mq = True
+    poll = False
+    # Skip ``_init_client_manager`` at startup — without credentials we have
+    # nothing to connect. We override ``_monitor`` to be a no-op startup too,
+    # so the inherited base does not try to attach a status-update callback to
+    # a non-existent ``self.client_manager``.
+    start_methods = ["_init_worker_threads", "_monitor"]
+
+    destination_defaults = dict(
+        default_file_action="remote_transfer",
+        rewrite_parameters="true",
+        dependency_resolution="remote",
+        jobs_directory=PARAMETER_SPECIFICATION_REQUIRED,
+        url=PARAMETER_SPECIFICATION_IGNORED,
+        private_token=PARAMETER_SPECIFICATION_IGNORED,
+    )
+
+    def __init__(
+        self,
+        app: Any,
+        nworkers: int,
+        *,
+        client_manager_factory: Optional[Callable[..., Any]] = None,
+        **kwds: Any,
+    ) -> None:
+        """``client_manager_factory`` defaults to pulsar's ``build_client_manager``.
+
+        Tests inject a fake to avoid touching the AMQP/relay transport and to
+        assert per-tenant ``relay_url`` / ``manager_name`` / ``relay_refresh_token``
+        threading by inspecting the recorded kwargs.
+        """
+        super().__init__(app, nworkers, **kwds)
+        self._registry = ComputeResourceClientManagerRegistry(client_manager_factory or build_client_manager)
+
+    def _monitor(self) -> None:
+        # Skip the parent's attempt to wire ``ensure_has_status_update_callback``
+        # at startup — we have no client manager yet. The poll thread is also
+        # not needed because ``poll`` is False.
+        self._init_noop_monitor()
+
+    def _resource_for_params(self, job_destination_params: dict[str, Any]) -> Optional["model.ComputeResource"]:
+        resource_id = job_destination_params.get("compute_resource_id")
+        if resource_id is None:
+            return None
+        try:
+            resource_id = int(resource_id)
+        except (TypeError, ValueError):
+            log.warning("compute_resource_id %r is not an int; refusing to dispatch", resource_id)
+            return None
+        return self.app.model.session.get(model.ComputeResource, resource_id)
+
+    def _read_refresh_token(self, resource: "model.ComputeResource", user: Optional["model.User"]) -> Optional[str]:
+        """Fetch the relay refresh token from the per-user vault.
+
+        Returns ``None`` if the secret is missing or unreadable — the caller
+        decides whether to fail the job or skip dispatch.
+        """
+        if user is None:
+            return None
+        vault = UserVaultWrapper(self.app.vault, user)
+        return vault.read_secret(relay_refresh_token_vault_path(resource.id))
+
+    def _write_refresh_token(self, resource_id: int, user: Optional["model.User"], data: dict[str, Any]) -> None:
+        if user is None:
+            return
+        token = data.get("refresh_token")
+        if token:
+            vault = UserVaultWrapper(self.app.vault, user)
+            vault.write_secret(relay_refresh_token_vault_path(resource_id), token)
+
+    def _get_or_create_client_manager(
+        self, job_destination_params: dict[str, Any], user: Optional["model.User"]
+    ) -> Any:
+        resource = self._resource_for_params(job_destination_params)
+        if resource is None:
+            raise RuntimeError(
+                f"No ComputeResource for resource id {job_destination_params.get('compute_resource_id')!r}"
+            )
+        if resource.status != "active":
+            raise RuntimeError(f"ComputeResource id={resource.id} is in status '{resource.status}', not 'active'")
+
+        key = (resource.relay_url, resource.manager_name)
+
+        def _build_kwargs() -> dict[str, Any]:
+            refresh_token = self._read_refresh_token(resource, user)
+            if not refresh_token:
+                raise RuntimeError(f"No relay refresh token in vault for ComputeResource id={resource.id}")
+
+            def _persist_rotation(
+                data: dict[str, Any],
+                _resource_id: int = resource.id,
+                _user: Optional["model.User"] = user,
+            ) -> None:
+                self._write_refresh_token(_resource_id, _user, data)
+
+            kwargs = self._pulsar_client_manager_args()
+            # Per-tenant fields; override anything that might have leaked
+            # from runner-level params.
+            kwargs.update(
+                relay_url=resource.relay_url,
+                relay_refresh_token=refresh_token,
+                on_refresh_token_rotated=_persist_rotation,
+                manager=resource.manager_name,
+                relay_topic_prefix=resource.relay_topic_prefix or "",
+            )
+            # The base ``manager`` runner param is None for the multi-tenant
+            # runner; drop None overrides so we don't shadow the per-resource value.
+            for k in ("relay_username", "relay_password"):
+                kwargs.pop(k, None)
+            return kwargs
+
+        def _on_create(cm: Any) -> None:
+            # MQ runners attach the callback in ``_monitor``; for the
+            # compute-resource runner we
+            # attach it as soon as the client manager is materialised so
+            # status updates from this tenant's Pulsar are wired up before
+            # any job is submitted against it.
+            cm.ensure_has_status_update_callback(self._async_update)
+            cm.ensure_has_ack_consumers()
+
+        return self._registry.get_or_create(key, _build_kwargs, _on_create)
+
+    def _get_user_for_job_id(self, job_id: Union[int, str]) -> Optional["model.User"]:
+        """Look up the Galaxy User for a Galaxy job_id.
+
+        Used by call paths that don't carry a job_wrapper (e.g. ``stop_job``
+        passes the external pulsar id to ``get_client``).
+        """
+        try:
+            job = self.app.model.session.get(model.Job, int(job_id))
+        except (TypeError, ValueError):
+            return None
+        return job.user if job else None
+
+    def get_client_from_wrapper(self, job_wrapper: "MinimalJobWrapper") -> "BaseJobClient":
+        # Refuse extended metadata before any client setup — failing here
+        # is cheaper than letting the job submit and die opaquely on the
+        # remote.
+        self._refuse_extended_metadata(job_wrapper)
+        # Resolve the per-tenant client manager up front so the inherited
+        # ``get_client`` body sees the right ``self`` state via the helper.
+        job = job_wrapper.get_job()
+        params = job_wrapper.job_destination.params
+        client_manager = self._get_or_create_client_manager(params, job.user)
+        # Refuse to dispatch if the resource's relay token has drifted to a
+        # different relay identity than it was registered with — otherwise we'd
+        # publish the job (command line, job_files endpoint + key) to topics
+        # owned by an identity Galaxy never authorised.
+        self._verify_relay_identity(params, client_manager)
+        # Mutate destination_params in place to reflect what the remote
+        # pulsar can actually do — the static helpers
+        # ``__remote_container_handling`` / ``__dependency_resolution``
+        # then read the downgraded values when ``__prepare_job`` runs.
+        # Only the submission path runs this; recover/stop reuse the
+        # already-cached client and don't re-downgrade.
+        self._apply_capability_downgrades(params, job.user, client_manager)
+        return super().get_client_from_wrapper(job_wrapper)
+
+    def _verify_relay_identity(self, params: dict[str, Any], client_manager: Any) -> None:
+        """Assert the client manager's relay token still resolves to the
+        identity the compute resource was registered with."""
+        resource = self._resource_for_params(params)
+        if resource is None:
+            return
+        get_token = getattr(client_manager, "get_relay_access_token", None)
+        access_token = get_token() if callable(get_token) else None
+        if access_token is None:
+            return
+        self.app.compute_resource_manager.assert_relay_identity(resource, access_token)
+
+    @staticmethod
+    def _refuse_extended_metadata(job_wrapper: "MinimalJobWrapper") -> None:
+        """Statically refuse ``metadata_strategy=extended`` on this runner.
+
+        Extended metadata has pulsar write the post-job ``model store`` on
+        the remote host and Galaxy collects it from the destination's
+        staging directory. The compute-resource runner has no shared FS
+        between Galaxy and the user's pulsar — the strategy is wedged
+        regardless of operator config — and the remote pulsar typically
+        doesn't ship Galaxy's metadata writer either. Fail at submit
+        time with a clear message instead of letting the job die opaquely
+        on the remote.
+        """
+        strategy = job_wrapper.metadata_strategy
+        if strategy == "extended":
+            raise RuntimeError(
+                "The compute-resource runner does not support metadata_strategy='extended' "
+                "(no shared filesystem between Galaxy and the user's pulsar, and the remote "
+                "typically lacks Galaxy's metadata writer). Set metadata_strategy='directory' "
+                "on this destination."
+            )
+
+    def _apply_capability_downgrades(
+        self, params: dict[str, Any], user: Optional["model.User"], client_manager: Any = None
+    ) -> None:
+        """Reflect the remote pulsar's capability snapshot into ``params``.
+
+        Three things happen, in order:
+
+        1. ``jobs_directory`` data-supply: if unset (or the destination_default
+           sentinel), set from the snapshot's ``staging_directory``. If set
+           and matching, no-op. If set and mismatched, log a loud warning —
+           Compute-resource runners have no shared FS between Galaxy and
+           pulsar, so the two values *must* agree for path rewrites to work.
+        2. Container-runtime clear-only: if the operator asked for
+           ``docker_enabled`` / ``singularity_enabled`` / ``apptainer_enabled``
+           but the remote reports the binary isn't on PATH, clear it. Same
+           treatment for ``remote_container_handling`` if no runtime at all.
+        3. Conda dependency-resolution downgrade: ``remote`` → ``none``
+           when the remote reports no conda. NOT ``local`` — the
+           compute-resource runner has no shared FS so galaxy's local conda
+           paths don't exist on pulsar;
+           ``none`` lets jobs without conda needs still run, and jobs that
+           need conda fail at startup with a clear error.
+
+        ``capabilities_for`` returning ``None`` (older pulsar version, network
+        glitch, schema mismatch, missing vault token) means we trust the
+        operator's params verbatim — capabilities are advisory.
+        """
+        resource = self._resource_for_params(params)
+        if resource is None:
+            return
+        # Reuse the client manager's centrally-cached access token so the
+        # capability probe doesn't independently exchange (and replay) the
+        # single-use rotating refresh token this manager already owns.
+        get_token = getattr(client_manager, "get_relay_access_token", None)
+        access_token = get_token() if callable(get_token) else None
+        caps = self.app.compute_resource_manager.capabilities_for(resource, user=user, access_token=access_token)
+        if caps is None:
+            return
+
+        manager_name = caps.get("manager_name", resource.manager_name)
+
+        # 1. jobs_directory: data-supply.
+        snapshot_staging = caps.get("staging_directory")
+        if snapshot_staging:
+            existing = params.get("jobs_directory")
+            if existing in (None, "", PARAMETER_SPECIFICATION_REQUIRED):
+                params["jobs_directory"] = snapshot_staging
+            elif existing != snapshot_staging:
+                log.warning(
+                    "Destination jobs_directory=%r doesn't match pulsar %s "
+                    "staging_directory=%r; path rewrites WILL be wrong. "
+                    "The compute-resource runner has no shared FS — these must agree.",
+                    existing,
+                    manager_name,
+                    snapshot_staging,
+                )
+
+        # 2. Container runtimes: clear-only.
+        cr = caps.get("container_runtime") or {}
+        runtime_available = {
+            "docker_enabled": bool(cr.get("docker_available", False)),
+            "singularity_enabled": bool(cr.get("singularity_available", False)),
+            "apptainer_enabled": bool(cr.get("apptainer_available", False)),
+        }
+        for param_name, available in runtime_available.items():
+            if available:
+                continue
+            if not string_as_bool_or_none(params.get(param_name, False)):
+                continue
+            runtime = param_name.removesuffix("_enabled")
+            log.warning(
+                "Destination requested %s=true but pulsar %s reports no %s; clearing.",
+                param_name,
+                manager_name,
+                runtime,
+            )
+            params[param_name] = False
+        if not any(runtime_available.values()):
+            if string_as_bool_or_none(params.get("remote_container_handling", False)):
+                log.warning(
+                    "Destination requested remote_container_handling=true but "
+                    "pulsar %s reports no container runtime; clearing.",
+                    manager_name,
+                )
+                params["remote_container_handling"] = False
+
+        # 3. Dependency resolution: remote -> none (NOT local), because
+        # the compute-resource runner has no shared FS so galaxy's
+        # local conda paths don't exist on pulsar.
+        if params.get("dependency_resolution") == "remote" and not caps.get("conda_available"):
+            log.warning(
+                "Destination requested dependency_resolution=remote but pulsar %s "
+                "reports no conda; downgrading to 'none' (no shared FS, "
+                "so 'local' would just shift the failure). Tools that need conda "
+                "will fail at startup; tools that don't will still run.",
+                manager_name,
+            )
+            params["dependency_resolution"] = "none"
+
+    def _client_manager_for(self, job_destination_params: dict[str, Any], job_id: Union[int, str]) -> Any:
+        # Route through this tenant's client manager rather than the shared one.
+        # ``stop_job`` calls get_client with the external pulsar job_id, so we
+        # resolve the owning user from the Galaxy job_id to pick the right
+        # per-tenant manager (a registry cache hit on the post-submit paths).
+        user = self._get_user_for_job_id(job_id)
+        return self._get_or_create_client_manager(job_destination_params, user)
+
+    def _finalize_destination_params(self, job_destination_params: dict[str, Any]) -> dict[str, Any]:
+        # Opt Pulsar into ``Authorization: Bearer …`` header auth
+        # (``pulsar.client.action_mapper.FileActionMapper`` honours this flag)
+        # so the per-job secret stops being embedded in URLs that show up in
+        # launch_config on the user-controlled node.
+        params = super()._finalize_destination_params(job_destination_params)
+        params["use_bearer_auth"] = True
+        return params
+
+    def recover(self, job: "model.Job", job_wrapper: "MinimalJobWrapper") -> None:
+        """Recover compute-resource jobs. If the resource has been deleted
+        while the job was running, fail the job cleanly rather than crashing
+        recovery."""
+        params = dict(job_wrapper.job_destination.params)
+        try:
+            self._get_or_create_client_manager(params, job.user)
+        except RuntimeError as exc:
+            log.warning("Compute-resource recovery failed for job %s: %s — failing job cleanly", job.id, exc)
+            job_wrapper.fail(f"Compute resource removed while job was running: {exc}")
+            return
+        super().recover(job, job_wrapper)
+
+    def shutdown(self) -> None:
+        # Don't call PulsarJobRunner.shutdown — it expects a single
+        # ``self.client_manager`` that we never created. We do still want
+        # ``AsynchronousJobRunner.shutdown`` to drain worker threads, so
+        # skip past PulsarJobRunner to AsynchronousJobRunner. The
+        # ``cast`` (in type-checker terms) — mypy can't see that
+        # PulsarMQBYOCJobRunner is a subclass of AsynchronousJobRunner via
+        # PulsarJobRunner because of the generic parameter; the call is
+        # safe at runtime.
+        AsynchronousJobRunner.shutdown(self)  # type: ignore[arg-type]
+        self._registry.shutdown()
 
 
 class PulsarComputeEnvironment(ComputeEnvironment):

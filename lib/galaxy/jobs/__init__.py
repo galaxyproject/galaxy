@@ -57,6 +57,7 @@ from galaxy.exceptions import (
 from galaxy.files import ProvidesFileSourcesUserContext
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
+from galaxy.job_execution.job_security import job_files_kind_for_params
 from galaxy.job_execution.output_collect import (
     collect_extra_files,
     collect_shrinked_content_from_path,
@@ -2679,7 +2680,11 @@ class MinimalJobWrapper(HasResourceParameters):
         if result == "callback":
             job_id = self.job_id
             encoded_job_id = self.app.security.encode_id(job_id)
-            job_key = self.app.security.encode_id(job_id, kind="jobs_files")
+            # Same tenant-aware kind selection as the pulsar runner uses for
+            # files_endpoint; the ports verifier in JobPortsView reads the
+            # matching kind off the job's persisted destination_params.
+            files_kind = job_files_kind_for_params(self.job_destination.params)
+            job_key = self.app.security.encode_id(job_id, kind=files_kind)
             endpoint_base = "%s/api/jobs/%s/ports?job_key=%s"
             callback_url = endpoint_base % (galaxy_url, encoded_job_id, job_key)
             container_config_dict["callback_url"] = callback_url

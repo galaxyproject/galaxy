@@ -5,25 +5,21 @@ related to running and queued jobs.
 import logging
 import os
 import re
-import shutil
-from typing import Union
+from typing import IO
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import exceptions
+from galaxy.job_execution.job_security import resolve_job_key
 from galaxy.managers.context import ProvidesAppContext
-from galaxy.model import (
-    Job,
-    JobToOutputDatasetAssociation,
-    JobToOutputLibraryDatasetAssociation,
-)
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.managers.job_files import JobFilesManager
+from galaxy.model import Job
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from . import BaseGalaxyAPIController
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
@@ -39,6 +35,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
     low-level unfiltered files and such authorization would break Galaxy's
     security model for tool execution.
     """
+
+    manager: JobFilesManager = depends(JobFilesManager)
 
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans: ProvidesAppContext, job_id: str, **kwargs):
@@ -63,21 +61,42 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     binary
         :returns:   contents of file
         """
-        job = self.__authorize_job_access(trans, job_id, **kwargs)
+        if "path" not in kwargs:
+            raise exceptions.ObjectAttributeMissingException("Job files action requires a valid 'path'.")
+        # ``trans.request`` is a webob ``Request`` at runtime — ``request.headers``
+        # is webob-only and not part of the ``GalaxyAbstractRequest`` interface
+        # that ``ProvidesAppContext`` declares, hence the ignore.
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied = resolve_job_key(auth_header, kwargs.get("job_key"))
+        job = self.manager.authorize_for_files(job_id, supplied)
         path = kwargs["path"]
+        try:
+            self.manager.assert_readable(job, path)
+        except exceptions.ItemAccessibilityException:
+            # A purged input dataset's object-store path no longer matches the
+            # read allowlist (the path changes on purge), but requesting it is
+            # a legitimate runner action — surface the purge as the 400 the
+            # runner expects rather than a generic 403.
+            self.__raise_if_input_purged(job, path)
+            raise
         try:
             return open(path, "rb")
         except FileNotFoundError:
             # We know that the job is not terminal, but users (or admin scripts) can purge input datasets.
             # Here we discriminate that case from truly unexpected bugs.
             # Not failing the job here, this is or should be handled by pulsar.
-            match = re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path))
-            if match:
-                # This looks like a galaxy dataset, check if any job input has been deleted.
-                if any(jtid.dataset.dataset.purged for jtid in job.input_datasets):
-                    raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
-            else:
+            self.__raise_if_input_purged(job, path)
+            if not re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)):
                 raise
+
+    def __raise_if_input_purged(self, job: Job, path: str) -> None:
+        """Raise a 400 ``ItemDeletionException`` if ``path`` looks like a Galaxy
+        dataset file and any of the job's input datasets have been purged.
+        Returns normally otherwise (the caller decides how to propagate)."""
+        if re.match(r"(galaxy_)?dataset_(.*)\.dat", os.path.basename(path)) and any(
+            jtid.dataset and jtid.dataset.dataset and jtid.dataset.dataset.purged for jtid in job.input_datasets
+        ):
+            raise exceptions.ItemDeletionException("Input dataset(s) for job have been purged.")
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans: ProvidesAppContext, job_id: str, payload, **kwargs):
@@ -103,15 +122,47 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         :rtype:     dict
         :returns:   an okay message
         """
-        job = self.__authorize_job_access(trans, job_id, **payload)
         path = payload.get("path")
         if not path:
             raise exceptions.RequestParameterInvalidException("'path' parameter not provided or empty.")
-        self.__check_job_can_write_to_path(trans, job, path)
+        auth_header = trans.request.headers.get("Authorization")  # type: ignore[attr-defined]
+        supplied = resolve_job_key(auth_header, payload.get("job_key"))
+        job = self.manager.authorize_for_files(job_id, supplied)
 
-        # Is this writing an unneeded file? Should this just copy in Python?
+        # Resolve the upload source from its transport-specific shape into a
+        # single file object the manager can persist. Each branch is a wire
+        # contract with a different Pulsar-facing transport (nginx_upload
+        # module, tus, direct multipart) — that's request-shaping, hence
+        # controller-layer.
+        input_file = self.__open_upload_source(trans, payload)
+        try:
+            self.manager.store_uploaded_file(job, path, input_file)
+        finally:
+            try:
+                input_file.close()
+            except OSError:
+                # Fails to close file if not using nginx upload because the
+                # tempfile has moved and Python wants to delete it.
+                pass
+        return {"message": "ok"}
+
+    def __open_upload_source(self, trans: ProvidesAppContext, payload: dict) -> IO[bytes]:
+        """Return an open file-like for the upload, regardless of transport.
+
+        Picks between three Pulsar upload mechanisms:
+
+        * ``__file_path`` — nginx_upload module has already written the file
+          and forwarded the absolute path. We assert it sits inside the
+          configured ``nginx_upload_job_files_store`` before opening.
+        * ``session_id`` — the tus daemon has streamed the upload into its
+          configured store; we reconstruct the local path and open it. The
+          session id is regex-checked to keep this from being a path-traversal
+          primitive.
+        * Otherwise the payload carries a ``file`` field (regular
+          ``multipart/form-data``) and we read its underlying file object.
+        """
         if "__file_path" in payload:
-            file_path = payload.get("__file_path")
+            file_path = payload["__file_path"]
             upload_store = trans.app.config.nginx_upload_job_files_store
             assert upload_store, (
                 "Request appears to have been processed by"
@@ -121,8 +172,8 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             assert file_path.startswith(
                 upload_store
             ), f"Filename provided by nginx ({file_path}) is not in correct directory ({upload_store})"
-            input_file = open(file_path)
-        elif "session_id" in payload:
+            return open(file_path, "rb")
+        if "session_id" in payload:
             # code stolen from basic.py
             session_id = payload["session_id"]
             upload_store = (
@@ -133,25 +184,13 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             if re.match(r"^[\w-]+$", session_id) is None:
                 raise ValueError("Invalid session id format.")
             local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-            input_file = open(local_filename)
-        else:
-            input_file = payload.get("file", payload.get("__file", None)).file
-        target_dir = os.path.dirname(path)
-        util.safe_makedirs(target_dir)
-        try:
-            if os.path.exists(path) and (path.endswith("tool_stdout") or path.endswith("tool_stderr")):
-                with open(path, "ab") as destination:
-                    shutil.copyfileobj(open(input_file.name, "rb"), destination)
-            else:
-                shutil.move(input_file.name, path)
-        finally:
-            try:
-                input_file.close()
-            except OSError:
-                # Fails to close file if not using nginx upload because the
-                # tempfile has moved and Python wants to delete it.
-                pass
-        return {"message": "ok"}
+            return open(local_filename, "rb")
+        upload = payload.get("file", payload.get("__file"))
+        if upload is None:
+            # Reachable from a malformed runner request, so raise a real 400
+            # rather than assert (asserts are stripped under ``python -O``).
+            raise exceptions.RequestParameterInvalidException("No upload file provided in request payload.")
+        return upload.file
 
     @expose_api_anonymous_and_sessionless
     def tus_patch(self, trans, **kwds):
@@ -193,59 +232,3 @@ class JobFilesAPIController(BaseGalaxyAPIController):
         tus_patch.
         """
         pass
-
-    def __authorize_job_access(self, trans: ProvidesAppContext, encoded_job_id: str, **kwargs):
-        for key in ["path", "job_key"]:
-            if key not in kwargs:
-                error_message = f"Job files action requires a valid '{key}'."
-                raise exceptions.ObjectAttributeMissingException(error_message)
-
-        job_id = trans.security.decode_id(encoded_job_id)
-        job_key = trans.security.encode_id(job_id, kind="jobs_files")
-        if not util.safe_str_cmp(str(kwargs["job_key"]), job_key):
-            raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
-
-        # Verify job is active. Don't update the contents of complete jobs.
-        job = trans.sa_session.get(Job, job_id)
-        assert job
-        if job.state not in Job.non_ready_states:
-            error_message = "Attempting to read or modify the files of a job that has already completed."
-            raise exceptions.ItemAccessibilityException(error_message)
-        return job
-
-    def __check_job_can_write_to_path(self, trans: ProvidesAppContext, job: Job, path: str):
-        """Verify an idealized job runner should actually be able to write to
-        the specified path - it must be a dataset output, a dataset "extra
-        file", or a some place in the working directory of this job.
-
-        Would like similar checks for reading the unstructured nature of loc
-        files make this very difficult. (See abandoned work here
-        https://gist.github.com/jmchilton/9103619.)
-        """
-        in_work_dir = self.__in_working_directory(job, path, trans.app)
-        if not in_work_dir and not self.__is_output_dataset_path(job, path):
-            raise exceptions.ItemAccessibilityException("Job is not authorized to write to supplied path.")
-
-    def __is_output_dataset_path(self, job: Job, path: str):
-        """Check if is an output path for this job or a file in the an
-        output's extra files path.
-        """
-        all_output_assocs: list[Union[JobToOutputDatasetAssociation, JobToOutputLibraryDatasetAssociation]] = [
-            *job.output_datasets,
-            *job.output_library_datasets,
-        ]
-        for assoc in all_output_assocs:
-            dataset = assoc.dataset
-            if not dataset:
-                continue
-            if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
-                return True
-            elif util.in_directory(path, dataset.extra_files_path):
-                return True
-        return False
-
-    def __in_working_directory(self, job: Job, path: str, app: MinimalManagerApp):
-        working_directory = app.object_store.get_filename(
-            job, base_dir="job_work", dir_only=True, extra_dir=str(job.id)
-        )
-        return util.in_directory(path, working_directory)

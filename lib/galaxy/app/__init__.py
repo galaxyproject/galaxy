@@ -56,6 +56,7 @@ from galaxy.managers.agents import AgentService
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.compute_resources import ComputeResourceManager
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.file_source_instances import (
     FileSourceInstancesManager,
@@ -889,6 +890,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
             TestDataResolver(file_dirs=self.config.tool_test_data_directories),
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
+        # Exposed as ``app.compute_resource_manager`` so TPV rules can call
+        # ``app.compute_resource_manager.get_active_for(user)`` at job
+        # dispatch time.
+        self.compute_resource_manager = self._register_singleton(ComputeResourceManager)
 
         # Genomes
         self.genomes = self._register_singleton(Genomes)

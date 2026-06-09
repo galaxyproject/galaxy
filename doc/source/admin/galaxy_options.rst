@@ -4765,6 +4765,36 @@
 :Type: map
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_compute_resources``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable user self-registration of compute resources (the user
+    supplies their own Pulsar daemon; Galaxy dispatches jobs to it
+    via the relay). When true, the /api/compute_resources endpoints
+    are exposed and the multi-tenant ``compute_resource`` job runner
+    consults the per-user resource set stored on
+    ``app.compute_resource_manager``. Requires a configured Pulsar
+    relay and a vault to store the per-resource relay refresh tokens.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``compute_resource_relay_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL of the operator-managed pulsar-relay against which
+    user-managed Pulsar daemons authenticate via device-flow OIDC.
+    Surfaced in the ``POST /api/compute_resources/registrations``
+    response and embedded in the one-liner the user pastes into
+    ``pulsar-config register-with-galaxy``.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~
 ``dependency_resolvers``
 ~~~~~~~~~~~~~~~~~~~~~~~~

@@ -195,6 +195,14 @@ fi
 
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
+# TEMP (revert before merge): requirements.txt pins pulsar-galaxy-lib at a git
+# branch (PR galaxyproject/pulsar#459) instead of a release. pulsar's setup.py
+# builds as "pulsar-app" unless PULSAR_GALAXY_LIB=1 is set, so the source build
+# below would otherwise produce a dist whose name doesn't match the requirement
+# and the install fails. Harmless for the normal released-wheel path (the env
+# var only affects building from source).
+export PULSAR_GALAXY_LIB=1
+
 if [ $FETCH_WHEELS -eq 1 ]; then
     if [ "${PIP_CMD}" = 'python -m pip' ]; then
         if ! python -m pip --version >/dev/null; then

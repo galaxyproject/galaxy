@@ -1,0 +1,760 @@
+"""Unit tests for the multi-tenant PulsarMQBYOCJobRunner.
+
+These tests exercise the BYOC-specific lookup/cache/recovery logic in
+isolation. The Pulsar client factory is injected via the runner's
+``client_manager_factory`` kwarg so tests never touch the network or
+``MagicMock.assert_called_*`` — they inspect the fake's recorded calls
+directly (state verification, not interaction verification).
+"""
+
+from typing import (
+    Any,
+    Optional,
+)
+from unittest.mock import MagicMock
+
+import pytest
+
+from galaxy.job_execution.job_security import (
+    job_files_kind_for_params,
+    job_token_kind_for_params,
+)
+from galaxy.jobs.runners.pulsar import (
+    ComputeResourceClientManagerRegistry,
+    PulsarMQBYOCJobRunner,
+)
+
+
+class _StubResource:
+    def __init__(
+        self,
+        *,
+        id: int,
+        manager_name: str,
+        relay_url: str = "https://relay.test",
+        relay_topic_prefix: str | None = None,
+        status: str = "active",
+    ):
+        self.id = id
+        self.manager_name = manager_name
+        self.relay_url = relay_url
+        self.relay_topic_prefix = relay_topic_prefix
+        self.status = status
+
+
+class _StubUser:
+    def __init__(self, id: int):
+        self.id = id
+
+
+class _StubVault:
+    """Minimal Vault double; tracks reads and writes per key."""
+
+    def __init__(self, initial=None):
+        self._store: dict[str, str] = dict(initial or {})
+        self.reads: list[str] = []
+        self.writes: list[tuple[str, str]] = []
+
+    def read_secret(self, key: str):
+        self.reads.append(key)
+        return self._store.get(key)
+
+    def write_secret(self, key: str, value: str) -> None:
+        self.writes.append((key, value))
+        self._store[key] = value
+
+    def list_secrets(self, key: str):
+        return [k for k in self._store if k.startswith(key)]
+
+
+class _StubSession:
+    def __init__(self, resources_by_id):
+        self._resources = resources_by_id
+        self._jobs: dict[int, object] = {}
+
+    def get(self, model_cls, pk):
+        # Caller passes the SQLAlchemy class; we dispatch by name.
+        if model_cls.__name__ == "ComputeResource":
+            return self._resources.get(pk)
+        if model_cls.__name__ == "Job":
+            return self._jobs.get(pk)
+        return None
+
+
+class _StubByocManager:
+    """Stand-in for ``app.compute_resource_manager`` exposing only the surface the
+    runner uses (``capabilities_for``, ``assert_relay_identity``). Tests set
+    ``snapshot`` to control what the runner sees; ``calls`` records each invocation."""
+
+    def __init__(self, snapshot=None):
+        self.snapshot = snapshot
+        self.calls: list = []
+
+    def capabilities_for(self, resource, *, user, access_token=None):
+        self.calls.append((resource, user, access_token))
+        return self.snapshot
+
+    def assert_relay_identity(self, resource, access_token):
+        # No-op stub: the runner only calls this when the client manager
+        # surfaces an access token, which these param-downgrade tests don't.
+        pass
+
+
+class _StubSecurity:
+    """Minimal stand-in for ``IdEncodingHelper`` that records each
+    ``encode_id`` call and returns a synthetic, easy-to-assert token of the
+    form ``"ENC[<kind>]:<job_id>"``. Tests inspect ``encode_calls`` to
+    verify the runner passed the expected ``kind=`` value through."""
+
+    def __init__(self) -> None:
+        self.encode_calls: list[dict[str, Any]] = []
+
+    def encode_id(self, obj_id: int, kind: Optional[str] = None) -> str:
+        self.encode_calls.append({"obj_id": obj_id, "kind": kind})
+        return f"ENC[{kind}]:{obj_id}"
+
+
+class _StubConfig:
+    """Minimal stand-in for ``GalaxyAppConfiguration`` covering just the
+    runner-relevant fields. Defaults match production fall-through."""
+
+    nginx_upload_job_files_path: Optional[str] = None
+
+
+class _StubModel:
+    def __init__(self, session: "_StubSession") -> None:
+        self.session = session
+
+
+class _StubApp:
+    def __init__(self, resources_by_id, vault, compute_resource_manager=None):
+        self.model = _StubModel(_StubSession(resources_by_id))
+        self.vault = vault
+        self.compute_resource_manager = compute_resource_manager or _StubByocManager(snapshot=None)
+        # security and config are unused by most tests and set lazily by
+        # ``test_get_client_mints_compute_resource_scoped_job_keys`` when it
+        # needs to observe encode_id calls.
+        self.security: Optional[_StubSecurity] = None
+        self.config: Optional[_StubConfig] = None
+
+
+class _StubJobDestination:
+    def __init__(self, params: dict[str, Any]) -> None:
+        self.params = params
+
+
+class _RecordingJobWrapper:
+    """Records ``fail()`` calls in plain attributes so tests can assert on
+    *state* (the wrapper was failed, with this message) rather than on
+    MagicMock's call_args introspection."""
+
+    def __init__(self, destination_params: dict[str, Any]) -> None:
+        self.job_destination = _StubJobDestination(destination_params)
+        self.failures: list[str] = []
+
+    def fail(self, message: str) -> None:
+        self.failures.append(message)
+
+
+class _StubJob:
+    def __init__(self, id: int, user: "_StubUser") -> None:
+        self.id = id
+        self.user = user
+
+
+class _StubJobWrapperForState:
+    """Minimal job-wrapper double for ``get_client_from_state``.
+
+    The base ``get_client_from_state`` reads only ``.job_id``; ``get_job()`` is
+    here so this also exercises the (pre-cleanup) BYOC override that called
+    ``job_wrapper.get_job().user`` — letting the new tests serve as a
+    regression net across the override's deletion."""
+
+    def __init__(self, job_id: int, job: "_StubJob") -> None:
+        self.job_id = job_id
+        self._job = job
+
+    def get_job(self) -> "_StubJob":
+        return self._job
+
+
+class _StubAsyncJobState:
+    """Stand-in for ``AsynchronousJobState`` covering only what the
+    finish/check path reads: ``.job_destination.params`` and ``.job_wrapper``."""
+
+    def __init__(self, destination_params: dict[str, Any], job_wrapper: "_StubJobWrapperForState") -> None:
+        self.job_destination = _StubJobDestination(destination_params)
+        self.job_wrapper = job_wrapper
+
+
+class _FakeClientManager:
+    """A recording fake for pulsar.client.manager.ClientManagerInterface.
+
+    The runner only calls three methods on the returned object after
+    construction: ``ensure_has_status_update_callback``, ``ensure_has_ack_consumers``,
+    and ``shutdown``. Recording each lets tests verify *state* (the manager
+    was shut down) rather than asserting on mock interactions.
+    """
+
+    def __init__(self) -> None:
+        self.shutdowns = 0
+        self.status_callbacks: list = []
+        self.ack_consumers_armed = 0
+        self.get_client_calls: list[dict] = []
+
+    def ensure_has_status_update_callback(self, callback) -> None:
+        self.status_callbacks.append(callback)
+
+    def ensure_has_ack_consumers(self) -> None:
+        self.ack_consumers_armed += 1
+
+    def shutdown(self) -> None:
+        self.shutdowns += 1
+
+    def get_client(self, destination_params, **client_kwds):
+        # Recorded so tests that drive ``runner.get_client`` can inspect the
+        # endpoints/kwargs the runner passes through to its per-tenant client
+        # manager. Returns a sentinel — callers only assert on the kwds.
+        self.get_client_calls.append({"destination_params": destination_params, **client_kwds})
+        return MagicMock(name="PulsarClient")
+
+
+class _FakeClientManagerFactory:
+    """Records every ``build_client_manager`` call the runner makes and
+    returns a fresh ``_FakeClientManager`` per call."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+        self.created: list[_FakeClientManager] = []
+
+    def __call__(self, **kwargs) -> _FakeClientManager:
+        self.calls.append(kwargs)
+        cm = _FakeClientManager()
+        self.created.append(cm)
+        return cm
+
+
+def _make_runner(
+    *,
+    resources_by_id: dict[int, "_StubResource"],
+    vault: "_StubVault",
+    runner_params: Optional[dict[str, Any]] = None,
+    factory: Optional["_FakeClientManagerFactory"] = None,
+    compute_resource_manager: Optional["_StubByocManager"] = None,
+) -> PulsarMQBYOCJobRunner:
+    """Build a PulsarMQBYOCJobRunner bypassing its inherited __init__.
+
+    ``factory`` is the ``client_manager_factory`` that __init__ would
+    normally store — we just attach it directly because we're skipping
+    the chain. ``compute_resource_manager`` is the stub the downgrade tests use to
+    drive ``self.app.compute_resource_manager.capabilities_for``.
+    """
+    runner = object.__new__(PulsarMQBYOCJobRunner)
+    # We bypass __init__ to skip worker-thread setup; mypy sees these
+    # attributes as the parent class's exact types but the runtime methods
+    # we exercise only use the simple in-test surface.
+    runner.app = _StubApp(resources_by_id, vault, compute_resource_manager=compute_resource_manager)  # type: ignore[assignment]
+    runner.runner_params = runner_params or {  # type: ignore[assignment]
+        "manager": None,
+        "cache": None,
+        "transport": None,
+        "persistence_directory": None,
+    }
+    runner.client_manager_kwargs = {}
+    runner._registry = ComputeResourceClientManagerRegistry(factory or _FakeClientManagerFactory())
+    return runner
+
+
+@pytest.fixture
+def vault_with_token():
+    user = _StubUser(id=7)
+    vault = _StubVault({f"user/{user.id}/compute_resource/42/relay_refresh_token": "RT-AAA"})
+    return user, vault
+
+
+def test_lazy_creates_one_client_manager_per_resource(vault_with_token):
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+
+    params = {"compute_resource_id": 42}
+    cm1 = runner._get_or_create_client_manager(params, user)
+    cm2 = runner._get_or_create_client_manager(params, user)
+
+    assert cm1 is cm2
+    assert len(factory.calls) == 1
+    kwargs = factory.calls[0]
+    assert kwargs["relay_url"] == "https://relay.test"
+    assert kwargs["manager"] == "byoc_7_lab"
+    assert kwargs["relay_refresh_token"] == "RT-AAA"
+    # The on_save callback must be wired so rotated tokens get persisted.
+    assert callable(kwargs["on_refresh_token_rotated"])
+    # The status-update callback must be wired immediately, not deferred.
+    assert len(cm1.status_callbacks) == 1
+    assert cm1.ack_consumers_armed == 1
+
+
+def test_different_resources_get_different_client_managers():
+    user_a, user_b = _StubUser(id=1), _StubUser(id=2)
+    vault = _StubVault(
+        {
+            f"user/{user_a.id}/compute_resource/10/relay_refresh_token": "RT-A",
+            f"user/{user_b.id}/compute_resource/20/relay_refresh_token": "RT-B",
+        }
+    )
+    resources = {
+        10: _StubResource(id=10, manager_name="byoc_1_one"),
+        20: _StubResource(id=20, manager_name="byoc_2_two"),
+    }
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
+
+    cm_a = runner._get_or_create_client_manager({"compute_resource_id": 10}, user_a)  # type: ignore[arg-type]
+    cm_b = runner._get_or_create_client_manager({"compute_resource_id": 20}, user_b)  # type: ignore[arg-type]
+
+    assert cm_a is not cm_b
+    assert len(factory.calls) == 2
+    # Each call carried the right manager_name for its tenant.
+    managers = sorted(c["manager"] for c in factory.calls)
+    assert managers == ["byoc_1_one", "byoc_2_two"]
+
+
+def test_non_active_resource_is_refused(vault_with_token):
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab", status="disabled")
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault)
+
+    with pytest.raises(RuntimeError, match="not 'active'"):
+        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
+
+
+def test_missing_resource_is_refused():
+    user = _StubUser(id=7)
+    vault = _StubVault()
+    runner = _make_runner(resources_by_id={}, vault=vault)
+
+    with pytest.raises(RuntimeError, match="No ComputeResource"):
+        runner._get_or_create_client_manager({"compute_resource_id": 999}, user)  # type: ignore[arg-type]
+
+
+def test_missing_vault_token_is_refused():
+    user = _StubUser(id=7)
+    vault = _StubVault()  # No secrets at all
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+
+    with pytest.raises(RuntimeError, match="No relay refresh token"):
+        runner._get_or_create_client_manager({"compute_resource_id": 42}, user)  # type: ignore[arg-type]
+    # Vault was consulted at the right key
+    assert vault.reads == [f"user/{user.id}/compute_resource/42/relay_refresh_token"]
+    # The factory MUST NOT have been called when the token is missing.
+    assert factory.calls == []
+
+
+def test_rotation_callback_persists_to_vault(vault_with_token):
+    """When the in-memory store rotates the refresh token, the on_save
+    callback we pass to Pulsar must write the new value back into Galaxy's
+    vault — otherwise the next process picks up a stale token and gets
+    locked out."""
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+
+    runner._get_or_create_client_manager({"compute_resource_id": 42}, user)
+    rotated_callback = factory.calls[0]["on_refresh_token_rotated"]
+
+    rotated_callback(
+        {
+            "relay_url": "https://relay.test",
+            "refresh_token": "RT-ROTATED",
+            "issued_at": "2026-05-11T00:00:00+00:00",
+        }
+    )
+
+    assert (f"user/{user.id}/compute_resource/42/relay_refresh_token", "RT-ROTATED") in vault.writes
+
+
+def test_shutdown_closes_all_cached_client_managers(monkeypatch):
+    """Each materialised client manager must be told to shut down so its
+    long-poll thread can stop and the relay-transport session can close."""
+    # Skip AsynchronousJobRunner.shutdown (it touches worker queues that
+    # aren't initialised on our bypass-__init__ instance).
+    monkeypatch.setattr(
+        "galaxy.jobs.runners.pulsar.AsynchronousJobRunner.shutdown",
+        lambda self: None,
+    )
+
+    user = _StubUser(id=7)
+    vault = _StubVault(
+        {
+            f"user/{user.id}/compute_resource/10/relay_refresh_token": "RT-A",
+            f"user/{user.id}/compute_resource/20/relay_refresh_token": "RT-B",
+        }
+    )
+    resources = {
+        10: _StubResource(id=10, manager_name="byoc_7_one"),
+        20: _StubResource(id=20, manager_name="byoc_7_two"),
+    }
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id=resources, vault=vault, factory=factory)
+
+    cm1 = runner._get_or_create_client_manager({"compute_resource_id": 10}, user)  # type: ignore[arg-type]
+    cm2 = runner._get_or_create_client_manager({"compute_resource_id": 20}, user)  # type: ignore[arg-type]
+
+    runner.shutdown()
+
+    assert cm1.shutdowns == 1
+    assert cm2.shutdowns == 1
+    assert len(runner._registry) == 0
+
+
+class _StubJobWrapperWithStrategy:
+    """Minimal job-wrapper double exposing only ``metadata_strategy`` —
+    that's the one attribute the refusal check reads."""
+
+    def __init__(self, metadata_strategy: str) -> None:
+        self.metadata_strategy = metadata_strategy
+
+
+def test_refuse_extended_metadata_raises_when_strategy_is_extended():
+    """The compute-resource runner has no shared FS with Galaxy and the
+    remote pulsar doesn't ship Galaxy's metadata writer, so
+    ``metadata_strategy='extended'`` is statically refused at submit time."""
+    with pytest.raises(RuntimeError, match="metadata_strategy='extended'"):
+        # Stub stands in for MinimalJobWrapper; the refusal only reads
+        # ``.metadata_strategy``.
+        PulsarMQBYOCJobRunner._refuse_extended_metadata(_StubJobWrapperWithStrategy("extended"))  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("strategy", ["directory", None, "legacy"])
+def test_refuse_extended_metadata_accepts_other_strategies(strategy):
+    """Only ``extended`` is refused — directory / legacy / unset all pass."""
+    PulsarMQBYOCJobRunner._refuse_extended_metadata(_StubJobWrapperWithStrategy(strategy))  # type: ignore[arg-type]
+
+
+def test_recover_fails_job_cleanly_when_resource_deleted():
+    """If the BYOC resource has been purged while a job was running, the
+    next recovery attempt must fail the job — not crash the recovery loop."""
+    user = _StubUser(id=7)
+    runner = _make_runner(resources_by_id={}, vault=_StubVault())
+
+    job = _StubJob(id=99, user=user)
+    job_wrapper = _RecordingJobWrapper({"compute_resource_id": 42})
+
+    runner.recover(job, job_wrapper)  # type: ignore[arg-type]
+
+    assert len(job_wrapper.failures) == 1
+    assert "Compute resource removed" in job_wrapper.failures[0]
+
+
+# ---- _apply_capability_downgrades ---------------------------------------
+
+
+def _make_snapshot(
+    *,
+    manager_name: str = "byoc_7_lab",
+    staging_directory: str = "/srv/pulsar/files/staging",
+    docker: bool = False,
+    singularity: bool = False,
+    apptainer: bool = False,
+    conda: bool = False,
+) -> dict:
+    return {
+        "schema_version": 1,
+        "manager_name": manager_name,
+        "pulsar_version": "0.15.16",
+        "staging_directory": staging_directory,
+        "persistence_directory": "/srv/pulsar/files/persisted",
+        "tool_dependency_dir": None,
+        "dependency_resolvers": [],
+        "conda_available": conda,
+        "container_runtime": {
+            "docker_available": docker,
+            "singularity_available": singularity,
+            "apptainer_available": apptainer,
+        },
+        "manager": {"name": manager_name, "type": "queued_python", "num_concurrent_jobs": 1},
+    }
+
+
+def _runner_with_snapshot(snapshot, *, vault=None):
+    user = _StubUser(id=7)
+    if vault is None:
+        vault = _StubVault({f"user/{user.id}/compute_resource/42/relay_refresh_token": "RT-AAA"})
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    compute_resource_manager = _StubByocManager(snapshot=snapshot)
+    runner = _make_runner(
+        resources_by_id={42: resource},
+        vault=vault,
+        compute_resource_manager=compute_resource_manager,
+    )
+    return runner, user, compute_resource_manager
+
+
+def test_downgrade_no_op_when_no_resource_id():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot())
+    params = {"docker_enabled": True}  # no compute_resource_id
+    runner._apply_capability_downgrades(params, user)
+    assert params == {"docker_enabled": True}
+
+
+def test_downgrade_no_op_when_capabilities_for_returns_none():
+    """No snapshot → trust operator params verbatim."""
+    runner, user, compute_resource_manager = _runner_with_snapshot(snapshot=None)
+    params = {
+        "compute_resource_id": 42,
+        "docker_enabled": True,
+        "dependency_resolution": "remote",
+    }
+    runner._apply_capability_downgrades(params, user)
+    assert params["docker_enabled"] is True
+    assert params["dependency_resolution"] == "remote"
+    # Exactly one capabilities_for call, for resource 42, this user, no access token.
+    assert len(compute_resource_manager.calls) == 1
+    resource, called_user, access_token = compute_resource_manager.calls[0]
+    assert resource.id == 42
+    assert called_user is user
+    assert access_token is None
+
+
+# --- jobs_directory auto-fill ---
+
+
+def test_downgrade_fills_jobs_directory_when_unset():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params: dict[str, Any] = {"compute_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_fills_jobs_directory_when_set_to_required_sentinel():
+    """The destination_default sentinel means "operator must supply this";
+    the snapshot's staging_directory is exactly that operator-supplied
+    value, so use it."""
+    from galaxy.jobs.runners.pulsar import PARAMETER_SPECIFICATION_REQUIRED
+
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"compute_resource_id": 42, "jobs_directory": PARAMETER_SPECIFICATION_REQUIRED}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_leaves_matching_jobs_directory_alone():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"compute_resource_id": 42, "jobs_directory": "/srv/staging"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/srv/staging"
+
+
+def test_downgrade_warns_on_mismatched_jobs_directory_but_does_not_overwrite(caplog):
+    """Operator override wins (perhaps they know something we don't)
+    but they get a loud warning that paths will be wrong."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(staging_directory="/srv/staging"))
+    params = {"compute_resource_id": 42, "jobs_directory": "/some/other/path"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["jobs_directory"] == "/some/other/path"  # unchanged
+    assert any("path rewrites WILL be wrong" in r.message for r in caplog.records)
+
+
+def test_downgrade_no_op_when_snapshot_has_no_staging_directory():
+    snap = _make_snapshot()
+    snap["staging_directory"] = None
+    runner, user, _ = _runner_with_snapshot(snap)
+    params = {"compute_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert "jobs_directory" not in params
+
+
+# --- container runtimes (clear-only) ---
+
+
+@pytest.mark.parametrize(
+    "param_name,available_kw",
+    [
+        ("docker_enabled", "docker"),
+        ("singularity_enabled", "singularity"),
+        ("apptainer_enabled", "apptainer"),
+    ],
+)
+def test_downgrade_clears_runtime_flag_when_remote_lacks_it(param_name, available_kw, caplog):
+    snapshot_kwargs: dict[str, Any] = {available_kw: False}
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
+    params: dict[str, Any] = {"compute_resource_id": 42, param_name: True}
+    runner._apply_capability_downgrades(params, user)
+    assert params[param_name] is False
+    assert any(f"requested {param_name}=true" in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize(
+    "param_name,available_kw",
+    [
+        ("docker_enabled", "docker"),
+        ("singularity_enabled", "singularity"),
+        ("apptainer_enabled", "apptainer"),
+    ],
+)
+def test_downgrade_preserves_runtime_flag_when_remote_has_it(param_name, available_kw):
+    snapshot_kwargs: dict[str, Any] = {available_kw: True}
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(**snapshot_kwargs))
+    params: dict[str, Any] = {"compute_resource_id": 42, param_name: True}
+    runner._apply_capability_downgrades(params, user)
+    assert params[param_name] is True
+
+
+def test_downgrade_does_not_set_runtime_flag_when_operator_did_not_request_it():
+    """Clear-only: even if pulsar reports docker available, we never auto-enable it."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(docker=True))
+    params = {"compute_resource_id": 42}
+    runner._apply_capability_downgrades(params, user)
+    assert "docker_enabled" not in params
+
+
+def test_downgrade_clears_remote_container_handling_when_no_runtime_at_all(caplog):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot())  # all runtimes False
+    params = {"compute_resource_id": 42, "remote_container_handling": True}
+    runner._apply_capability_downgrades(params, user)
+    assert params["remote_container_handling"] is False
+    assert any("no container runtime" in r.message for r in caplog.records)
+
+
+def test_downgrade_keeps_remote_container_handling_if_any_runtime_present():
+    """Even one runtime is enough to honor the request."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(singularity=True))
+    params = {"compute_resource_id": 42, "remote_container_handling": True}
+    runner._apply_capability_downgrades(params, user)
+    assert params["remote_container_handling"] is True
+
+
+# --- conda dependency resolution ---
+
+
+def test_downgrade_demotes_dependency_resolution_remote_to_none_when_no_conda(caplog):
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
+    params = {"compute_resource_id": 42, "dependency_resolution": "remote"}
+    runner._apply_capability_downgrades(params, user)
+    # NOT "local" — that would be a broken path on a non-shared FS.
+    assert params["dependency_resolution"] == "none"
+    assert any("downgrading to 'none'" in r.message for r in caplog.records)
+
+
+def test_downgrade_keeps_dependency_resolution_remote_when_conda_available():
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=True))
+    params = {"compute_resource_id": 42, "dependency_resolution": "remote"}
+    runner._apply_capability_downgrades(params, user)
+    assert params["dependency_resolution"] == "remote"
+
+
+@pytest.mark.parametrize("resolution", ["local", "none"])
+def test_downgrade_does_not_touch_non_remote_dependency_resolution(resolution):
+    """Operator already opted out of remote conda; we don't second-guess."""
+    runner, user, _ = _runner_with_snapshot(_make_snapshot(conda=False))
+    params = {"compute_resource_id": 42, "dependency_resolution": resolution}
+    runner._apply_capability_downgrades(params, user)
+    assert params["dependency_resolution"] == resolution
+
+
+def test_get_client_mints_compute_resource_scoped_job_keys(vault_with_token):
+    """The compute-resource runner must encode the credential ``kind`` with
+    the resource id baked in — so a key minted for one tenant can never
+    validate against another tenant's job (see job_security.py).
+    """
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+
+    # Wire the security/config stubs so we can observe the kinds the runner
+    # passes through to encode_id without monkey-patching MagicMocks.
+    security = _StubSecurity()
+    runner.app.security = security  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
+
+    # Pre-bind the user→job lookup the runner consults via ``_get_user_for_job_id``.
+    job_obj = _StubJob(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
+
+    runner.get_client({"compute_resource_id": 42}, 99)
+
+    # The runner must have minted credentials with the tenant-scoped kinds
+    # (terse, base62-packed ``jf:cr:`` / ``jt:cr:`` form — idencoding caps
+    # kinds at <15 chars). Compare against the shared helper rather than a
+    # hard-coded literal so this stays correct if the encoding ever changes.
+    files_kind = job_files_kind_for_params({"compute_resource_id": 42})
+    token_kind = job_token_kind_for_params({"compute_resource_id": 42})
+    kinds_used = [c["kind"] for c in security.encode_calls]
+    assert files_kind in kinds_used
+    assert token_kind in kinds_used
+    # And — crucially — never the legacy unscoped kinds.
+    assert "jobs_files" not in kinds_used
+    assert "jobs_token" not in kinds_used
+
+    # The minted kinds end up in the endpoint URLs handed to Pulsar.
+    [cm] = factory.created
+    [client_kwds] = cm.get_client_calls
+    assert f"job_key=ENC[{files_kind}]:99" in client_kwds["files_endpoint"]
+    assert f"job_key=ENC[{token_kind}]:99" in client_kwds["token_endpoint"]
+    # And the runner tells Pulsar to strip the secret out of URLs and send
+    # it as ``Authorization: Bearer …`` — see pulsar's
+    # ``FileActionMapper.use_bearer_auth`` handling.
+    assert client_kwds["destination_params"].get("use_bearer_auth") is True
+
+
+def test_get_client_from_state_reuses_cached_client_manager(vault_with_token):
+    """finish_job / check_watched_item resolve the client for an
+    already-submitted job. They must reuse the per-tenant client manager cached
+    at submit time — not build a second one. Pins the behavior so deleting the
+    BYOC ``get_client_from_state`` override is provably safe."""
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+    runner.app.security = _StubSecurity()  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
+    job_obj = _StubJob(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
+    params = {"compute_resource_id": 42}
+
+    # Submit-time: materialise (and cache) the per-tenant client manager.
+    runner.get_client(params, 99)
+    assert len(factory.created) == 1
+    cached_cm = factory.created[0]
+
+    # Finish/check-time: resolve the client again from the persisted state.
+    job_state = _StubAsyncJobState(params, _StubJobWrapperForState(job_id=99, job=job_obj))
+    runner.get_client_from_state(job_state)  # type: ignore[arg-type]
+
+    # No second manager built — the cached one was reused...
+    assert len(factory.created) == 1
+    # ...and the finish-path get_client landed on that same manager.
+    assert len(cached_cm.get_client_calls) == 2
+    second_call = cached_cm.get_client_calls[1]
+    assert second_call["job_id"] == "99"
+    assert second_call["destination_params"].get("use_bearer_auth") is True
+
+
+def test_get_client_from_state_cold_cache_builds_tenant_manager(vault_with_token):
+    """Galaxy-restart-then-finish: the registry is empty when finish runs first.
+    ``get_client_from_state`` must still materialise the per-tenant client
+    manager (reading the tenant's vault token) rather than fall back to a shared
+    one — on the bypass-``__init__`` test runner there is no ``self.client_manager``,
+    so a regression would surface as AttributeError."""
+    user, vault = vault_with_token
+    resource = _StubResource(id=42, manager_name="byoc_7_lab")
+    factory = _FakeClientManagerFactory()
+    runner = _make_runner(resources_by_id={42: resource}, vault=vault, factory=factory)
+    runner.galaxy_url = "https://galaxy.test"
+    runner.app.security = _StubSecurity()  # type: ignore[assignment]
+    runner.app.config = _StubConfig()  # type: ignore[assignment]
+    job_obj = _StubJob(id=99, user=user)
+    runner.app.model.session._jobs = {99: job_obj}  # type: ignore[attr-defined]
+
+    job_state = _StubAsyncJobState({"compute_resource_id": 42}, _StubJobWrapperForState(job_id=99, job=job_obj))
+    runner.get_client_from_state(job_state)  # type: ignore[arg-type]
+
+    assert len(factory.created) == 1
+    assert f"user/{user.id}/compute_resource/42/relay_refresh_token" in vault.reads

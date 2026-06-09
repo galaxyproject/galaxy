@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from galaxy.jobs import JobConfiguration
     from galaxy.jobs.manager import JobManager
     from galaxy.managers.collections import DatasetCollectionManager
+    from galaxy.managers.compute_resources import ComputeResourceManager
     from galaxy.managers.folders import FolderManager
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
@@ -123,6 +124,7 @@ class MinimalApp(BasicSharedApp):
 class MinimalManagerApp(MinimalApp):
     # Minimal App that is sufficient to run Celery tasks
     amqp_internal_connection_obj: Optional[Connection]
+    compute_resource_manager: "ComputeResourceManager"
     execution_timer_factory: "ExecutionTimerFactory"
     carbon_intensity: float
     file_sources: ConfiguredFileSources

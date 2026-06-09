@@ -13040,6 +13040,54 @@ class Credential(Base):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
 
+class ComputeResource(Base, RepresentById):
+    """A user-registered compute resource.
+
+    The relay refresh token associated with each row lives in the Galaxy vault at
+    ``compute_resource/<id>/relay_refresh_token``; it is never stored on the row itself.
+    """
+
+    __tablename__ = "compute_resource"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    # Galaxy-generated topic-namespace label (relay topics are
+    # ``job_setup_<manager_name>`` etc.). Minted fresh and globally unique per
+    # registration, so re-registering the same daemon never collides with a
+    # retained prior row — the name is never reused.
+    manager_name: Mapped[str] = mapped_column(String(96), unique=True)
+    # Relay user identity (the access token's ``sub``) this resource is bound
+    # to. Recorded at registration and re-checked before each dispatch so a
+    # vault token that drifts to a different relay user can't silently retarget
+    # the resource's job topics.
+    relay_user_id: Mapped[str] = mapped_column(String(255), index=True)
+    relay_url: Mapped[str] = mapped_column(TEXT)
+    relay_topic_prefix: Mapped[Optional[str]] = mapped_column(String(96), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), default="pending")
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
+    last_seen_time: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+
+
+class ComputeResourceRegistration(Base):
+    """Single-use short-TTL token authorising the
+    ``POST /api/compute_resources/registrations/complete`` callback. The
+    row is deleted on successful redemption.
+
+    Galaxy convention: surrogate ``id`` integer PK + a unique secret column.
+    The opaque ``token`` string is what the user posts back; we look it up
+    via the unique index rather than treating it as the row identity.
+    """
+
+    __tablename__ = "compute_resource_registration"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    create_time: Mapped[datetime] = mapped_column(default=now)
+    expiration_time: Mapped[datetime]
+
+
 # The following models (HDA, LDDA) are mapped imperatively (for details see discussion in PR #12064)
 # TLDR: there are issues ('metadata' property, Galaxy object wrapping) that need to be addressed separately
 # before these models can be mapped declaratively. Keeping them in the mapping module breaks the auth package
