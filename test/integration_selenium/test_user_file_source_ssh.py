@@ -6,6 +6,7 @@ from galaxy.selenium.navigates_galaxy import (
     ConfigTemplateParameter,
     FileSourceInstance,
 )
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from ._base_user_file_sources import BaseUserObjectStoreSeleniumIntegration
 from ._sftp_server import SFTPServerMixin
 from .framework import (
@@ -14,7 +15,9 @@ from .framework import (
 )
 
 
-class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumIntegration, SFTPServerMixin):
+class TestObjectStoreSelectionSeleniumIntegration(
+    BaseUserObjectStoreSeleniumIntegration, SFTPServerMixin, UsesUploadActivity
+):
     """Selenium tests for the SSH user file source template.
 
     A single in-process SFTP server is started for the whole class and torn
@@ -71,7 +74,8 @@ class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumInt
             ],
         )
         uri_root = self.create_file_source_template(instance)
-        self.upload_uri(f"{uri_root}/test_file.txt", wait=True)
+        self.upload_context("paste-links").stage_paste_link(f"{uri_root}/test_file.txt").start()
+        self.wait_for_history()
 
     @selenium_test
     @managed_history
@@ -95,4 +99,5 @@ class TestObjectStoreSelectionSeleniumIntegration(BaseUserObjectStoreSeleniumInt
             ],
         )
         uri_root = self.create_file_source_template(instance)
-        self.upload_uri(f"{uri_root}/subdir_file.txt", wait=True)
+        self.upload_context("paste-links").stage_paste_link(f"{uri_root}/subdir_file.txt").start()
+        self.wait_for_history()

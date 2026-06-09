@@ -1,12 +1,13 @@
 import os
 
+from galaxy_test.selenium.upload_activity_helpers import UsesUploadActivity
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
 
-class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestCase):
+class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestCase, UsesUploadActivity):
     ensure_registered = True
 
     @classmethod
@@ -54,7 +55,7 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         self.create_user_ftp_dir()
 
         gx_selenium_context = self
-        gx_selenium_context.perform_upload_of_pasted_content("my cool content")
+        gx_selenium_context.upload_context("paste-content").stage_paste_content("my cool content").start()
         gx_selenium_context.history_panel_wait_for_hid_ok(1)
         gx_selenium_context.click_history_options()
         gx_selenium_context.components.history_panel.options_show_export_history_to_file.wait_for_and_click()
@@ -103,7 +104,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
     def test_history_export_tracking(self):
         self.create_user_ftp_dir()
 
-        self.perform_upload_of_pasted_content("my cool content")
+        self.upload_context("paste-content").stage_paste_content("my cool content").start()
         self.history_panel_wait_for_hid_ok(1)
 
         self.click_history_option_export_to_file()
