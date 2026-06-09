@@ -971,9 +971,10 @@ class RuleImportContext:
         self.driver_wrapper.wait_for_and_click_selector(
             f'.selection-dialog-modal table tbody tr[aria-rowindex="{row}"] td[aria-colindex="1"]'
         )
-        self.driver_wrapper.wait_for_and_click_selector(
-            '.selection-dialog-modal [data-description="selection dialog ok"]:not([disabled])'
-        )
+        self.driver_wrapper.wait_for_selector_absent_or_hidden(".selection-dialog-modal")
+        # After the dataset is selected, advance the wizard to the rule builder step
+        wizard = self.components.file_set_wizard
+        wizard.wizard_next_button.wait_for_and_click()
         return self.wait_for_builder()
 
     def wait_for_builder(self) -> "RuleImportContext":
