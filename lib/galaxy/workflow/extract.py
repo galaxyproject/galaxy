@@ -64,11 +64,13 @@ DataInputAssociations = list[tuple[int, str]]
 
 class _WorkItem(NamedTuple):
     """A tool step to extract: its representative job, the ICJ output HDCAs
-    (empty for plain jobs), and the optional caller-supplied step label."""
+    (empty for plain jobs), the optional caller-supplied step label, and the
+    ImplicitCollectionJobs id for a mapped step (None for a plain job)."""
 
     job: Job
     output_hdcas: list[HistoryDatasetCollectionAssociation]
     step_label: Optional[str]
+    icj_id: Optional[int]
 
 
 log = logging.getLogger(__name__)
@@ -575,9 +577,15 @@ def extract_workflow_by_ids(
     dataset_collection_names: Optional[list[str]] = None,
     output_labels: Optional[list[OutputLabelHint]] = None,
     step_labels: Optional[list[StepLabelHint]] = None,
-) -> StoredWorkflow:
-    """ID-based variant of :func:`extract_workflow`."""
-    steps = extract_steps_by_ids(
+) -> "tuple[StoredWorkflow, ExtractionLabelIndex]":
+    """ID-based variant of :func:`extract_workflow`.
+
+    Returns the finalized workflow and the label index mapping the ids the
+    extraction consumed to the labels it assigned, so a caller can rewrite a
+    notebook page's markdown into the workflow's report. A caller that only wants
+    the workflow ignores the index (``stored, _ = extract_workflow_by_ids(...)``).
+    """
+    steps, index = extract_steps_by_ids(
         trans,
         job_manager=job_manager,
         job_ids=job_ids,
@@ -589,7 +597,7 @@ def extract_workflow_by_ids(
         output_labels=output_labels,
         step_labels=step_labels,
     )
-    return _finalize_workflow(trans, user, workflow_name, steps)
+    return _finalize_workflow(trans, user, workflow_name, steps), index
 
 
 IdKey = tuple[Literal["dataset", "collection"], int]
@@ -610,6 +618,57 @@ def output_label_to_id_key(kind: OutputLabelKind, content_id: int) -> IdKey:
     if kind == "hda":
         return ("dataset", content_id)
     return ("collection", content_id)
+
+
+@dataclass(frozen=True)
+class ExtractionLabelIndex:
+    """Resolve an extracted-from id to the workflow-relative label extraction
+    assigned it, so a notebook page's internal-id markdown directives can be
+    rewritten to portable workflow report directives.
+
+    Holds the live ``WorkflowStep`` objects (not snapshotted label strings) so a
+    label assigned after construction - e.g. by the report auto-label reconcile -
+    is read back here. ``content_to_step`` is extraction's own connection-wiring
+    map (keyed by *original* HDA/HDCA id); ``job_to_step`` / ``icj_to_step`` map a
+    plain job id / ImplicitCollectionJobs id to the tool step it became.
+    """
+
+    content_to_step: dict[IdKey, tuple[WorkflowStep, str]]
+    job_to_step: dict[int, WorkflowStep]
+    icj_to_step: dict[int, WorkflowStep]
+
+    def content_label_arg(self, content_kind: OutputLabelKind, content: HistoryItem) -> Optional[str]:
+        """Directive argument (``input="x"`` / ``output="y"``) for a referenced
+        HDA/HDCA, or None when it is not in the extracted subgraph / not labeled."""
+        if content_kind == "hda":
+            id_key: IdKey = ("dataset", _original_hda(cast(HistoryDatasetAssociation, content)).id)
+        else:
+            id_key = ("collection", _original_hdca(cast(HistoryDatasetCollectionAssociation, content)).id)
+        pair = self.content_to_step.get(id_key)
+        if pair is None:
+            return None
+        step, output_name = pair
+        if step.type in ("data_input", "data_collection_input"):
+            return f'input="{step.label}"' if step.label else None
+        workflow_output = step.workflow_output_for(output_name)
+        if workflow_output is None or not workflow_output.label:
+            return None
+        return f'output="{workflow_output.label}"'
+
+    def job_label_arg(self, job: Job) -> Optional[str]:
+        """Directive argument (``step="z"``) for a referenced job/ICJ, folding an
+        element job to its ICJ step exactly as the seeding collector does."""
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is not None:
+            step = self.icj_to_step.get(icj_assoc.implicit_collection_jobs_id)
+        else:
+            step = self.job_to_step.get(job.id)
+        if step is None or not step.label:
+            return None
+        return f'step="{step.label}"'
+
+    def step_for_content(self, content_kind: OutputLabelKind, original_id: int) -> Optional[tuple[WorkflowStep, str]]:
+        return self.content_to_step.get(output_label_to_id_key(content_kind, original_id))
 
 
 def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelKind, content_id: int) -> OutputLabelKey:
@@ -678,7 +737,7 @@ def extract_steps_by_ids(
     dataset_collection_names: Optional[list[str]] = None,
     output_labels: Optional[list[OutputLabelHint]] = None,
     step_labels: Optional[list[StepLabelHint]] = None,
-) -> list[WorkflowStep]:
+) -> tuple[list[WorkflowStep], ExtractionLabelIndex]:
     """ID-based variant of :func:`extract_steps`.
 
     Inputs are decoded DB ids; each is fetched and access-checked against the
@@ -719,6 +778,8 @@ def extract_steps_by_ids(
     steps: list[WorkflowStep] = []
     step_labels_seen: set[str] = set()
     id_to_output_pair: dict[IdKey, tuple[WorkflowStep, str]] = {}
+    job_to_step: dict[int, WorkflowStep] = {}
+    icj_to_step: dict[int, WorkflowStep] = {}
 
     for i, hda_id in enumerate(hda_ids):
         hda = hda_manager.get_accessible(hda_id, user)
@@ -757,7 +818,7 @@ def extract_steps_by_ids(
     for job_id in job_ids:
         assert job_manager is not None, "job_manager required when job_ids supplied"
         job = job_manager.get_accessible_job(trans, job_id)
-        work_items.append(_WorkItem(job, [], job_step_labels.get(job_id)))
+        work_items.append(_WorkItem(job, [], job_step_labels.get(job_id), None))
 
     # FIXME: representative-job param read is the only remaining HID-style
     # inference here. Swap step_inputs_by_id for a Job.tool_state /
@@ -769,7 +830,9 @@ def extract_steps_by_ids(
         icj = sa_session.get(ImplicitCollectionJobs, icj_id)
         assert icj is not None, f"ImplicitCollectionJobs {icj_id} not found"
         work_items.append(
-            _WorkItem(icj.representative_job, icj.output_dataset_collection_instances, icj_step_labels.get(icj_id))
+            _WorkItem(
+                icj.representative_job, icj.output_dataset_collection_instances, icj_step_labels.get(icj_id), icj_id
+            )
         )
 
     # Job.id is monotonically assigned at submission, so sorting by it
@@ -777,7 +840,7 @@ def extract_steps_by_ids(
     # than the jobs whose outputs it consumes.
     work_items.sort(key=lambda item: item.job.id)
 
-    for job, output_hdcas, step_label in work_items:
+    for job, output_hdcas, step_label, icj_id in work_items:
         tool_inputs, associations = step_inputs_by_id(trans, job)
         step = model.WorkflowStep()
         step.type = "tool"
@@ -786,6 +849,10 @@ def extract_steps_by_ids(
         step.tool_inputs = tool_inputs
         if job.dynamic_tool_id:
             step.dynamic_tool_id = job.dynamic_tool_id
+        if icj_id is not None:
+            icj_to_step[icj_id] = step
+        else:
+            job_to_step[job.id] = step
         if step_label is not None:
             # Input names already populated step_labels_seen; a tool-step label
             # colliding here means the caller asked for a label that is already
@@ -846,7 +913,8 @@ def extract_steps_by_ids(
         step, output_name = output_pair
         step.create_or_update_workflow_output(output_name=output_name, label=label, uuid=None)
 
-    return steps
+    index = ExtractionLabelIndex(content_to_step=id_to_output_pair, job_to_step=job_to_step, icj_to_step=icj_to_step)
+    return steps, index
 
 
 def step_inputs_by_id(trans: ProvidesHistoryContext, job: Job) -> tuple[ToolInputs, IdAssociations]:
@@ -935,6 +1003,7 @@ __all__ = (
     "extract_workflow",
     "extract_workflow_by_ids",
     "extract_steps_by_ids",
+    "ExtractionLabelIndex",
     "normalize_output_label_key",
     "output_label_to_id_key",
 )

@@ -1,5 +1,4 @@
 import logging
-import re
 from typing import (
     Any,
 )
@@ -15,6 +14,8 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.workflow_extraction_naming import normalize_label
+from galaxy.managers.workflow_extraction_report import reconcile_and_build_report
 from galaxy.managers.workflows import (
     RefactorRequest,
     RefactorResponse,
@@ -59,15 +60,17 @@ from galaxy.workflow.scheduling_manager import WorkflowSchedulingManager
 log = logging.getLogger(__name__)
 
 
-def _to_extraction_result(stored_workflow: StoredWorkflow) -> WorkflowExtractionResult:
-    return WorkflowExtractionResult.model_validate({"id": stored_workflow.id})
+def _to_extraction_result(
+    stored_workflow: StoredWorkflow, report_warnings: Optional[list[str]] = None
+) -> WorkflowExtractionResult:
+    return WorkflowExtractionResult.model_validate({"id": stored_workflow.id, "report_warnings": report_warnings or []})
 
 
 def _sanitize_output_label(label: str) -> str:
-    label = re.sub(r"\s+", " ", label.strip())
-    if not label:
+    sanitized = normalize_label(label)
+    if not sanitized:
         raise exceptions.RequestParameterInvalidException("output_labels contains an empty label")
-    return label[:255]
+    return sanitized
 
 
 def _validate_extraction_labels(
@@ -286,7 +289,8 @@ class WorkflowsService(ServiceBase):
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
         self._validate_extract_by_ids_payload(trans, payload)
-        stored_workflow = extract_workflow_by_ids(
+        page = self._load_report_page(trans, payload.from_page_id) if payload.from_page_id is not None else None
+        stored_workflow, label_index = extract_workflow_by_ids(
             trans,
             user=trans.user,
             workflow_name=payload.workflow_name,
@@ -300,7 +304,32 @@ class WorkflowsService(ServiceBase):
             output_labels=payload.output_labels,
             step_labels=payload.step_labels,
         )
-        return _to_extraction_result(stored_workflow)
+        report_warnings: list[str] = []
+        if page is not None:
+            # Reconcile mutates the just-extracted workflow's steps to auto-expose
+            # outputs / assign labels for anything the page references but the user
+            # left unstarred; the commit below persists those alongside the report.
+            markdown, report_warnings = reconcile_and_build_report(trans, page, label_index)
+            workflow = stored_workflow.latest_workflow
+            workflow.reports_config = {"markdown": markdown, "title": payload.report_title or payload.workflow_name}
+            trans.sa_session.add(workflow)
+            trans.sa_session.commit()
+        return _to_extraction_result(stored_workflow, report_warnings)
+
+    def _load_report_page(self, trans: ProvidesHistoryContext, page_id: int):
+        """Load and gate a notebook page used to build the workflow report.
+
+        Mirrors the page workflow-extraction-summary endpoint: only history-backed
+        pages are extractable, and page accessibility must not leak the underlying
+        history - require access to the history too.
+        """
+        page = self.get_object(trans, page_id, "Page", check_ownership=False, check_accessible=True)
+        if page.history_id is None:
+            raise exceptions.RequestParameterInvalidException(
+                "Workflow report extraction is only available for history-backed pages (notebooks)."
+            )
+        trans.app.history_manager.get_accessible(page.history_id, trans.user, current_history=trans.history)
+        return page
 
     def _validate_extract_by_ids_payload(
         self,

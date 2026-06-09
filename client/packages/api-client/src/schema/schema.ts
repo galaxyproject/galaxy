@@ -27039,6 +27039,11 @@ export interface components {
              */
             dataset_names?: string[];
             /**
+             * From Page ID
+             * @description Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's markdown is rewritten so each dataset/collection/job directive references the workflow's inputs/outputs/steps by label.
+             */
+            from_page_id?: string | null;
+            /**
              * HDA IDs
              * @description Decoded IDs of HistoryDatasetAssociations to treat as workflow inputs.
              */
@@ -27063,6 +27068,11 @@ export interface components {
              * @description Concrete tool outputs to expose as workflow outputs, with labels.
              */
             output_labels?: components["schemas"]["OutputLabelHint"][];
+            /**
+             * Report Title
+             * @description Title for the workflow report built from from_page_id; defaults to the workflow name.
+             */
+            report_title?: string | null;
             /**
              * Step Labels
              * @description Labels to assign to extracted tool steps. Steps not listed are left unlabeled.
@@ -27240,6 +27250,11 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+            /**
+             * Report Warnings
+             * @description Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive that had to be dropped because it has no workflow-relative form).
+             */
+            report_warnings?: string[];
         };
         /** WorkflowExtractionSummary */
         WorkflowExtractionSummary: {
