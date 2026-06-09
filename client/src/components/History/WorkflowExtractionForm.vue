@@ -479,10 +479,17 @@ async function submitWorkflow() {
         if (selectedStepLabels.value.length) {
             payload.step_labels = selectedStepLabels.value;
         }
+        if (fromPageId.value) {
+            // Carry the notebook's markdown into the workflow as its report.
+            payload.from_page_id = fromPageId.value;
+        }
 
         const data = await extractWorkflowByIds(payload);
 
         Toast.success("Workflow created successfully", "Success");
+        if (data.report_warnings?.length) {
+            Toast.warning(data.report_warnings.join("\n"), "Some report directives were dropped");
+        }
 
         router.push(`/published/workflow?id=${data.id}`);
     } catch (error) {
