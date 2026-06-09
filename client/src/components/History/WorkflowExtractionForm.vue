@@ -248,6 +248,14 @@ const selectedStepLabels = computed<StepLabelHint[]>(() => {
 /** No workflow steps are selected: the workflow would have no steps */
 const hasNoSelectedSteps = computed(() => !jobsList.value?.some((job) => job.checked));
 
+/** Opened from a notebook whose markdown referenced nothing that maps to an
+ *  extractable step — every row loaded unchecked. Distinct from an empty history
+ *  (`!jobsList.length`), which keeps its own message; here the full history is
+ *  shown and the user can still check steps by hand. */
+const nothingSeeded = computed(
+    () => !!fromPageId.value && jobsList.value.length > 0 && !jobsList.value.some((job) => job.seeded),
+);
+
 /** For any inputs selected for inclusion as workflow steps, check if any are missing a name/label */
 const hasUnnamedSelectedInputs = computed(() => {
     return selectedInputs.value.some((input) => !input.newName);
@@ -515,6 +523,10 @@ function stepKind(job: ExtractionRow): string {
             <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
             <BAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Extracting workflow from history" />
+            </BAlert>
+            <BAlert v-if="!loading && nothingSeeded" data-description="no-seed-message" variant="info" show>
+                This notebook doesn't reference any outputs that map to extractable workflow steps yet. Display a
+                dataset or collection in the notebook, or check steps below to build the workflow manually.
             </BAlert>
             <div v-if="!loading && jobsList.length" class="d-flex flex-column flex-gapy-1">
                 <div class="workflow-extraction-actions">
