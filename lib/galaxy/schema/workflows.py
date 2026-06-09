@@ -573,6 +573,20 @@ class WorkflowExtractionByIdsPayload(Model):
         title="Step Labels",
         description="Labels to assign to extracted tool steps. Steps not listed are left unlabeled.",
     )
+    from_page_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="From Page ID",
+        description=(
+            "Decoded ID of a notebook page to carry into the extracted workflow as its report: the page's "
+            "markdown is rewritten so each dataset/collection/job directive references the workflow's "
+            "inputs/outputs/steps by label."
+        ),
+    )
+    report_title: Optional[str] = Field(
+        None,
+        title="Report Title",
+        description="Title for the workflow report built from from_page_id; defaults to the workflow name.",
+    )
 
     @model_validator(mode="after")
     def _at_least_one_input(self):
@@ -586,4 +600,12 @@ class WorkflowExtractionResult(Model):
         ...,
         title="Workflow ID",
         description="The encoded ID of the newly created workflow.",
+    )
+    report_warnings: list[str] = Field(
+        default_factory=list,
+        title="Report Warnings",
+        description=(
+            "Warnings from building the workflow report when from_page_id was supplied (e.g. a page directive "
+            "that had to be dropped because it has no workflow-relative form)."
+        ),
     )
