@@ -13,7 +13,7 @@ authors = [
     {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
 ]
 dependencies = [
-    "galaxy-tool-util-models",
+    "galaxy-tool-util-models>=26.1",
     "galaxy-util[template,image-util]>=22.1",
     "conda-package-streaming",
     "jsonschema",
