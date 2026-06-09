@@ -1175,6 +1175,7 @@ workflow_extract:
     workflow_name_input: '[data-description="workflow-name-input"]'
     create_button: '[data-description="create-workflow-button"]'
     no_workflow_message: '[data-description="no-workflow-message"]'
+    no_seed_message: '[data-description="no-seed-message"]'
     tool_card: '[data-step-type="tool"]'
     tool_card_with_job_id: '[data-step-type="tool"][data-job-id]'
     mapped_tool_card: '[data-step-kind="mapped-tool"]'
