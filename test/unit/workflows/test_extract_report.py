@@ -11,11 +11,18 @@ The full markdown walk against real datasets/jobs is proved by the API test.
 """
 
 from types import SimpleNamespace
+from typing import cast
 
 from galaxy import model
 from galaxy.managers import workflow_extraction_report as report
+from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.workflow_extraction_report import _ReportLabelRewriter
+from galaxy.model import Job
 from galaxy.workflow.extract import ExtractionLabelIndex
+
+# Tests build duck-typed SimpleNamespace stubs and pass None for the unused
+# trans; cast to keep the production signatures strict without real instances.
+_NO_TRANS = cast(ProvidesHistoryContext, None)
 
 
 class FakeIndex:
@@ -147,14 +154,14 @@ def test_index_plain_job_resolves_to_step_label():
     step = _tool_step("bwa_mem")
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=None)
-    assert index.job_label_arg(job) == 'step="bwa_mem"'
+    assert index.job_label_arg(cast(Job, job)) == 'step="bwa_mem"'
 
 
 def test_index_mapped_job_folds_to_icj_step_label():
     step = _tool_step("mapped_step")
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={}, icj_to_step={4: step})
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=SimpleNamespace(implicit_collection_jobs_id=4))
-    assert index.job_label_arg(job) == 'step="mapped_step"'
+    assert index.job_label_arg(cast(Job, job)) == 'step="mapped_step"'
 
 
 # --- reconcile --------------------------------------------------------------
@@ -175,7 +182,7 @@ def test_reconcile_exposes_unstarred_output(monkeypatch):
     step = _tool_step()
     index = ExtractionLabelIndex(content_to_step={("dataset", 12): (step, "out_file")}, job_to_step={}, icj_to_step={})
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "aligned_reads")
-    report.reconcile_report_labels(None, index, _referenced(refs=[("hda", 12)]))
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
     workflow_output = step.workflow_output_for("out_file")
     assert workflow_output is not None
     assert workflow_output.label == "aligned_reads"
@@ -185,7 +192,7 @@ def test_reconcile_labels_unnamed_input(monkeypatch):
     step = _input_step(None)
     index = ExtractionLabelIndex(content_to_step={("dataset", 11): (step, "output")}, job_to_step={}, icj_to_step={})
     _patch_resolution(monkeypatch, {("hda", 11): _content_stub(11)}, "raw_input")
-    report.reconcile_report_labels(None, index, _referenced(refs=[("hda", 11)]))
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 11)]))
     assert step.label == "raw_input"
 
 
@@ -198,7 +205,7 @@ def test_reconcile_dedupes_against_existing_label(monkeypatch):
         icj_to_step={},
     )
     _patch_resolution(monkeypatch, {("hda", 12): _content_stub(12)}, "aligned_reads")
-    report.reconcile_report_labels(None, index, _referenced(refs=[("hda", 12)]))
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(refs=[("hda", 12)]))
     assert unstarred.workflow_output_for("out_file").label == "aligned_reads_2"
 
 
@@ -206,5 +213,5 @@ def test_reconcile_labels_referenced_step(monkeypatch):
     step = _tool_step()
     step.tool_id = "toolshed.g2.bx.psu.edu/repos/iuc/bwa/bwa_mem/0.7"
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={9: step}, icj_to_step={})
-    report.reconcile_report_labels(None, index, _referenced(job_refs=[9]))
+    report.reconcile_report_labels(_NO_TRANS, index, _referenced(job_refs=[9]))
     assert step.label == "bwa_mem"

@@ -9057,7 +9057,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     name: Mapped[str | None] = mapped_column(TEXT)
     has_cycles: Mapped[bool | None]
     has_errors: Mapped[bool | None]
-    reports_config: Mapped[bytes | None] = mapped_column(JSONType)
+    reports_config: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
     creator_metadata: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
     license: Mapped[str | None] = mapped_column(TEXT)
     source_metadata: Mapped[dict[str, str] | None] = mapped_column(JSONType)
