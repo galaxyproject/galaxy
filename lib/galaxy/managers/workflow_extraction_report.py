@@ -306,6 +306,6 @@ def _resolve_content(trans: ProvidesHistoryContext, kind: str, content_id: int) 
 
 
 def _original_id(kind: str, content: HistoryItem) -> int:
-    if kind == "hdca":
+    if isinstance(content, HistoryDatasetCollectionAssociation):
         return _original_hdca(content).id
     return _original_hda(content).id

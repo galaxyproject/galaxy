@@ -764,11 +764,11 @@ def extract_steps_by_ids(
     # is sorted by representative-job id below.
     job_step_labels: dict[int, str] = {}
     icj_step_labels: dict[int, str] = {}
-    for step_label in step_labels or []:
-        if step_label.kind == "job":
-            job_step_labels[step_label.id] = step_label.label
+    for label_hint in step_labels or []:
+        if label_hint.kind == "job":
+            job_step_labels[label_hint.id] = label_hint.label
         else:
-            icj_step_labels[step_label.id] = step_label.label
+            icj_step_labels[label_hint.id] = label_hint.label
 
     user = getattr(trans, "user", None)
     sa_session = trans.sa_session
@@ -824,14 +824,17 @@ def extract_steps_by_ids(
     # inference here. Swap step_inputs_by_id for a Job.tool_state /
     # ToolRequest.request_state reader once that exists; see
     # docs/research/Problem - YAML Tool Post-Hoc State Divergence.md.
-    for icj_id in implicit_collection_jobs_ids:
+    for collection_jobs_id in implicit_collection_jobs_ids:
         # Service-layer validator already checked existence, populated_state,
         # output-HDCA presence, and per-HDCA accessibility.
-        icj = sa_session.get(ImplicitCollectionJobs, icj_id)
-        assert icj is not None, f"ImplicitCollectionJobs {icj_id} not found"
+        icj = sa_session.get(ImplicitCollectionJobs, collection_jobs_id)
+        assert icj is not None, f"ImplicitCollectionJobs {collection_jobs_id} not found"
         work_items.append(
             _WorkItem(
-                icj.representative_job, icj.output_dataset_collection_instances, icj_step_labels.get(icj_id), icj_id
+                icj.representative_job,
+                icj.output_dataset_collection_instances,
+                icj_step_labels.get(collection_jobs_id),
+                collection_jobs_id,
             )
         )
 
