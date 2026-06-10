@@ -232,7 +232,7 @@ def docker_platform_tag_suffix(target_platform: Optional[str]) -> Optional[str]:
     )
     if target_platform == "linux/amd64":
         return None
-    return target_platform.removeprefix("linux/").replace("/", "-")
+    return target_platform[len("linux/"):].replace("/", "-")
 
 
 def apply_platform_tag_suffix(image: str, target_platform: Optional[str]) -> str:
