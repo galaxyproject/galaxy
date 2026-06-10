@@ -54,7 +54,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions, UsesUploadActivit
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_element(By.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree")
+        param_values = self.find_element_by_selector("#tool-parameters td.tool-parameter-value .vjs-tree")
         request_json = param_values.get_attribute("data-request-json")
         assert request_json
         for data in paste_content:
