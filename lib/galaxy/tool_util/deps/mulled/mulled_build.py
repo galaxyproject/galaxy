@@ -584,7 +584,7 @@ def add_build_arguments(parser):
     parser.add_argument("-n", "--namespace", dest="namespace", default="biocontainers", help="quay.io namespace.")
     parser.add_argument(
         "-r",
-        "--repository_template",
+        "--repository-template",
         dest="repository_template",
         default=DEFAULT_REPOSITORY_TEMPLATE,
         help="Docker repository target for publication (only quay.io or compat. API is currently supported).",
@@ -597,7 +597,7 @@ def add_build_arguments(parser):
         help="Comma separated list of target conda channels.",
     )
     parser.add_argument(
-        "--disable_strict_channel_priority",
+        "--disable-strict-channel-priority",
         dest="strict_channel_priority",
         default=True,
         action="store_false",
