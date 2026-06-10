@@ -311,6 +311,39 @@ class UploadContext:
         self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
         return self._create_item(RemoteFileUploadItem, metadata)
 
+    def stage_remote_files(
+        self,
+        source_label: str,
+        file_labels: list[str],
+        metadata_list: Optional[list[Optional["UploadMetadata"]]] = None,
+    ) -> list[RemoteFileUploadItem]:
+        if self._current_method_id != "remote-files":
+            raise AssertionError("stage_remote_files is only available for the remote-files method")
+
+        if metadata_list is not None and len(metadata_list) != len(file_labels):
+            raise AssertionError(
+                f"metadata_list length ({len(metadata_list)}) must match file_labels length ({len(file_labels)})"
+            )
+
+        # Navigate into the source by clicking its label
+        self.components.upload_activity.remote_files_browser_label(label=source_label).wait_for_and_click()
+
+        # Select each file by clicking its label (toggles selection)
+        for file_label in file_labels:
+            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_visible()
+            self.components.upload_activity.remote_files_browser_label(label=file_label).wait_for_and_click()
+
+        # Click "Add Selected Files" button once for all selected files
+        self.components.upload_activity.remote_files_add_selected.wait_for_and_click()
+
+        # Create items for each staged file
+        items: list[RemoteFileUploadItem] = []
+        for i in range(len(file_labels)):
+            metadata = metadata_list[i] if metadata_list else None
+            items.append(self._create_item(RemoteFileUploadItem, metadata))
+
+        return items
+
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         """Stage a single dataset from a data library via the data-library method.
 
@@ -705,6 +738,16 @@ class RemoteFilesContext(BaseUploadContext):
         self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
     ) -> RemoteFileUploadItem:
         return self._context.stage_remote_file(source_label, file_label, metadata)
+
+    def stage_remote_files(
+        self,
+        source_label: str,
+        file_labels: list[str],
+        metadata_list: Optional[list[Optional["UploadMetadata"]]] = None,
+    ) -> "RemoteFilesContext":
+        """Stage multiple remote files from the same source."""
+        self._context.stage_remote_files(source_label, file_labels, metadata_list)
+        return self
 
 
 class CompositeFileContext(BaseUploadContext):
