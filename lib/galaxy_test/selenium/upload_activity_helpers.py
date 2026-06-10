@@ -528,7 +528,7 @@ class UploadContext:
 
     def set_advanced_mode(self, enabled: bool) -> "UploadContext":
         """Set advanced mode state using the real upload panel switch control."""
-        checkbox = self.components.beta_upload.advanced_mode_toggle_checkbox.wait_for_present()
+        checkbox = self.components.upload_activity.advanced_mode_toggle_checkbox.wait_for_present()
         if checkbox.is_selected() != enabled:
             # Match existing framework checkbox handling via JS click on the input.
             self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
@@ -536,7 +536,7 @@ class UploadContext:
 
     def toggle_advanced_mode(self) -> "UploadContext":
         """Toggle advanced mode using the real upload panel switch control."""
-        checkbox = self.components.beta_upload.advanced_mode_toggle_checkbox.wait_for_present()
+        checkbox = self.components.upload_activity.advanced_mode_toggle_checkbox.wait_for_present()
         self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
         return self
 
@@ -545,8 +545,8 @@ class UploadContext:
 
         Note: Advanced mode must be enabled first for this selector to be visible.
         """
-        self.components.beta_upload.target_object_store_selector_dropdown.wait_for_and_click()
-        self.components.beta_upload.target_object_store_selector_option(
+        self.components.upload_activity.target_object_store_selector_dropdown.wait_for_and_click()
+        self.components.upload_activity.target_object_store_selector_option(
             object_store_id=object_store_id
         ).wait_for_and_click()
         return self
