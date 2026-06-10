@@ -4634,7 +4634,7 @@ class Parquet(Binary):
         default=0,
         desc="Number of columns",
         readonly=True,
-        visible=True,
+        visible=False,
         no_value=0,
     )
     MetadataElement(
@@ -4642,7 +4642,7 @@ class Parquet(Binary):
         default=[],
         desc="Column names",
         readonly=True,
-        visible=True,
+        visible=False,
         optional=True,
         no_value=[],
     )
