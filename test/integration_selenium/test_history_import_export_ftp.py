@@ -39,7 +39,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestC
         self.components.history_export.directory_input.wait_for_and_click()
         self._wait_for_files_dialog_ready()
         self.components.files_dialog.ftp_label.wait_for_and_click()
-        self.components.upload.file_dialog_ok.wait_for_and_click()
+        self.components.files_dialog.ok.wait_for_and_click()
         self.components.history_export.name_input.wait_for_and_send_keys(filename)
         self.components.history_export.export_button.wait_for_and_click()
 
@@ -137,7 +137,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         self.components.history_export.directory_input.wait_for_and_click()
         self._wait_for_files_dialog_ready()
         self.components.files_dialog.ftp_label.wait_for_and_click()
-        self.components.upload.file_dialog_ok.wait_for_and_click()
+        self.components.files_dialog.ok.wait_for_and_click()
 
         # Go to Summary step
         history_export_tasks.next_button.wait_for_and_click()
