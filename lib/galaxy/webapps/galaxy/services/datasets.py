@@ -4,6 +4,7 @@ API operations on the contents of a history dataset.
 
 import logging
 import os
+from dataclasses import dataclass
 from enum import Enum
 from typing import (
     Any,
@@ -92,6 +93,26 @@ from galaxy.webapps.galaxy.services.base import ServiceBase
 log = logging.getLogger(__name__)
 
 DEFAULT_LIMIT = 500
+
+
+@dataclass(frozen=True)
+class DirectDownloadUrl:
+    """Sentinel returned by `DatasetsService.display` to signal a redirect to a backing-store URL."""
+
+    url: str
+
+
+def is_direct_download_candidate(filename, to_ext, raw, offset, ck_size, is_archive) -> bool:
+    """Whether a display request is a plain whole-file download eligible for a direct backing-store link.
+
+    Excludes extra-files access, chunked display, datatype-processed previews, and archived/composite
+    downloads -- only a request for the single stored object's bytes can be served directly.
+    """
+    if filename or offset is not None or ck_size is not None:
+        return False
+    if is_archive:
+        return False
+    return raw or to_ext is not None
 
 
 class RequestDataType(str, Enum):
@@ -633,6 +654,22 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         return rval
 
+    def _direct_download_url(self, trans, dataset_instance, filename, to_ext, raw, offset, ck_size) -> Optional[str]:
+        """Return a backing-store URL the client can be redirected to, or None to stream as usual."""
+        datatype = dataset_instance.datatype
+        is_archive = datatype.is_archive_download(trans.app.datatypes_registry, dataset_instance.extension)
+        if not is_direct_download_candidate(filename, to_ext, raw, offset, ck_size, is_archive):
+            return None
+        content_disposition = None
+        content_type = None
+        if to_ext is not None:
+            # Match the filename/content-type a streamed download would produce.
+            content_disposition = datatype.download_content_disposition(dataset_instance, to_ext)
+            content_type = "application/octet-stream"
+        return trans.app.object_store.get_direct_download_url(
+            dataset_instance.dataset, content_disposition=content_disposition, content_type=content_type
+        )
+
     def display(
         self,
         trans: ProvidesHistoryContext,
@@ -662,6 +699,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             if filename and filename.startswith("/"):
                 # Path needs to relative to extra files path
                 filename = filename.lstrip("/")
+            direct_url = self._direct_download_url(trans, dataset_instance, filename, to_ext, raw, offset, ck_size)
+            if direct_url is not None:
+                return DirectDownloadUrl(direct_url), headers
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store

@@ -598,7 +598,9 @@ class RucioObjectStore(CachingConcreteObjectStore):
         log.debug("rucio _get_store_usage_percent, not implemented yet")
         return 0.0
 
-    def _get_object_url(self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None):
+    def _get_object_url(
+        self, obj, extra_dir=None, extra_dir_at_root=False, alt_name=None, content_disposition=None, content_type=None
+    ):
         log.debug("rucio _get_object_url")
         return None
 

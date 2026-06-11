@@ -590,7 +590,7 @@ class IRODSObjectStore(CachingConcreteObjectStore):
         return False
 
     # Unlike S3, url is not really applicable to iRODS
-    def _get_object_url(self, obj, **kwargs):
+    def _get_object_url(self, obj, content_disposition=None, content_type=None, **kwargs):
         if self._exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
 

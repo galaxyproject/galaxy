@@ -481,29 +481,43 @@ class Data(metaclass=DataMeta):
             file_paths.append(dataset.get_file_name())
         return zip(file_paths, rel_paths)
 
-    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
+    def is_archive_download(self, datatypes_registry, extension) -> bool:
+        """Whether downloading a dataset of this `extension` is served as a multi-file archive (zip).
+
+        Composite/bundled datatypes are zipped on the fly rather than served as the single stored
+        object, so such downloads cannot be satisfied by a direct link to the backing store.
+        """
+        composite_extensions = datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
         composite_extensions.append("tool_markdown")  # basically should act as an HTML datatype in this capacity
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         composite_extensions.append("directory")  # for downloading directories.
         composite_extensions.append("zarr")  # for downloading zarr directories.
+        return extension in composite_extensions
 
-        if data.extension in composite_extensions:
+    def download_content_disposition(self, dataset, to_ext, **kwd) -> str:
+        """Build the Content-Disposition header value used when downloading `dataset`.
+
+        Shared so direct (e.g. presigned URL) downloads receive the same filename as streamed ones.
+        """
+        filename = self._download_filename(
+            dataset,
+            to_ext,
+            hdca=kwd.get("hdca"),
+            element_identifier=kwd.get("element_identifier"),
+            filename_pattern=kwd.get("filename_pattern"),
+        )
+        return to_content_disposition(filename)
+
+    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
+        if self.is_archive_download(trans.app.datatypes_registry, data.extension):
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
-            filename = self._download_filename(
-                data,
-                to_ext,
-                hdca=kwd.get("hdca"),
-                element_identifier=kwd.get("element_identifier"),
-                filename_pattern=kwd.get("filename_pattern"),
-            )
             headers["content-type"] = (
                 "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
             )
-            headers["Content-Disposition"] = to_content_disposition(filename)
+            headers["Content-Disposition"] = self.download_content_disposition(data, to_ext, **kwd)
             return open(data.get_file_name(), "rb"), headers
 
     def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
