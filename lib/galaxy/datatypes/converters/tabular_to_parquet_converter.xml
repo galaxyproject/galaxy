@@ -1,0 +1,21 @@
+<!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
+<tool id="CONVERTER_tabular_to_parquet" name="Convert tabular to Parquet" version="1.0.0" profile="19.05">
+    <requirements>
+        <requirement type="package" version="24.0.0">pyarrow</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/tabular_to_parquet_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="tabular" label="Tabular file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="parquet"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="tabular" value="conv.tabular"/>
+            <output name="output" ftype="parquet" value="conv.parquet"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
