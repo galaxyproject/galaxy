@@ -206,7 +206,11 @@ class UploadContext:
 
     def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
         """Stage text content for upload. Returns the new item."""
-        textarea = self.components.upload_activity.paste_content_textarea.wait_for_visible()
+        if self._item_count > 0:
+            self.components.upload_activity.add_another_dataset_button.wait_for_and_click()
+
+        row = self._row_number(self._item_count)
+        textarea = self.components.upload_activity.paste_content_row_textarea(row=row).wait_for_visible()
         textarea.click()
         textarea.send_keys(content)
 

@@ -1454,6 +1454,7 @@ upload_activity:
     method_card: '[data-method-id="${method_id}"]'
     local_file_input: '#local-file-input'
     paste_content_textarea: '.paste-textarea'
+    add_another_dataset_button: '[data-test-id="add-another-dataset"]'
     paste_textarea: '#paste-links-textarea'
     add_urls_button: '[data-test-id="add-urls"]'
     collection_section: '[data-test-id="collection-toggle"] label'

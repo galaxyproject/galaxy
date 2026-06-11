@@ -480,6 +480,7 @@ defineExpose<UploadMethodComponent>({ prepareUpload, reset });
             <div class="paste-list-actions mt-2">
                 <GButton
                     v-if="!isSingleMode"
+                    data-test-id="add-another-dataset"
                     color="grey"
                     tooltip
                     tooltip-placement="top"
