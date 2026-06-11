@@ -9,12 +9,13 @@ from typing import (
     IO,
 )
 
+import ijson
+
 from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.text import Json
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -29,10 +30,9 @@ from galaxy.datatypes.tabular import (
     Tabular,
     TabularData,
 )
+from galaxy.datatypes.text import Json
 from galaxy.datatypes.xml import GenericXml
-from galaxy import util
 from galaxy.util import nice_size
-import ijson
 
 log = logging.getLogger(__name__)
 MAX_LINE_LEN = 100
@@ -234,7 +234,7 @@ class MzTab2(MzTab):
 @build_sniff_from_prefix
 class MzSpecLibJson(Json):
     """
-    mzSpecLib v1.0 is a formal standard and file format 
+    mzSpecLib v1.0 is a formal standard and file format
     to store and distribute spectral libraries/archives
     https://github.com/HUPO-PSI/mzSpecLib
 
@@ -270,7 +270,6 @@ class MzSpecLibJson(Json):
             try:
                 payload = json.loads(header)
             except Exception:
-                log.exception("Failed to parse mzSpecLib JSON")
                 return False
             return isinstance(payload, dict) and all(key in payload for key in self._required_keys)
 
@@ -305,7 +304,7 @@ class MzSpecLibJson(Json):
 @build_sniff_from_prefix
 class MzSpecLibTxt(Text):
     """
-    mzSpecLib v1.0 is a formal standard and file format 
+    mzSpecLib v1.0 is a formal standard and file format
     to store and distribute spectral libraries/archives
     https://github.com/HUPO-PSI/mzSpecLib
 
