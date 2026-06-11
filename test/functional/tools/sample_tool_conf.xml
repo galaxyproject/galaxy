@@ -17,6 +17,7 @@
   <tool file="inheritance_simple.xml" />
   <tool file="boolean_conditional.xml" />
   <tool file="composite.xml" />
+  <tool file="composite_pbed.xml" />
   <tool file="environment_variables.xml" />
   <tool file="environment_variables_inject.xml" />
   <tool file="code_file.xml" />
@@ -143,6 +144,7 @@
   <tool file="select_optional_legacy.xml" />
   <tool file="select_optional.xml" />
   <tool file="select_dynamic.xml" />
+  <tool file="select_from_data_table_no_name.xml" />
   <tool file="hidden_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />

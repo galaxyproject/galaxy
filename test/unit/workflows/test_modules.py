@@ -12,7 +12,12 @@ import pytest
 from galaxy import model
 from galaxy.managers.workflows import WorkflowContentsManager
 from galaxy.tool_util.parser.output_objects import ToolOutput
-from galaxy.tools.parameters.workflow_utils import NO_REPLACEMENT
+from galaxy.tools.parameters.meta import to_decoded_json
+from galaxy.tools.parameters.workflow_utils import (
+    ConnectedValue,
+    NO_REPLACEMENT,
+    RuntimeValue,
+)
 from galaxy.util import bunch
 from galaxy.workflow import modules
 from .workflow_support import (
@@ -556,3 +561,145 @@ def __mock_tool(
 
 def _to_json(*args, **kwargs):
     return "{}"
+
+
+# _mapped_inputs_from_collection_info: reduce a MatchingCollections to
+# source-neutral per-input map-over descriptors. Workflow path is always
+# linked=True.
+
+
+def test_mapped_inputs_from_collection_info_none_or_empty():
+    assert modules._mapped_inputs_from_collection_info(None) == {}
+    assert modules._mapped_inputs_from_collection_info(bunch.Bunch(collections={})) == {}
+
+
+def test_mapped_inputs_from_collection_info_hdca_no_subcollection():
+    collection_info = bunch.Bunch(collections={"a": bunch.Bunch(id=7)}, subcollection_types={})
+
+    mapped = modules._mapped_inputs_from_collection_info(collection_info)
+
+    assert set(mapped) == {"a"}
+    descriptor = mapped["a"]
+    assert descriptor.src == "hdca"
+    assert descriptor.id == 7
+    assert descriptor.map_over_type is None
+    assert descriptor.linked is True
+
+
+def test_mapped_inputs_from_collection_info_subcollection_map_over_type():
+    collection_info = bunch.Bunch(
+        collections={"a": bunch.Bunch(id=7)},
+        subcollection_types={"a": bunch.Bunch(collection_type="paired")},
+    )
+
+    mapped = modules._mapped_inputs_from_collection_info(collection_info)
+
+    assert mapped["a"].map_over_type == "paired"
+
+
+def test_mapped_inputs_from_collection_info_dce_src():
+    dce = mock.MagicMock(spec=model.DatasetCollectionElement)
+    dce.id = 9
+    collection_info = bunch.Bunch(collections={"a": dce}, subcollection_types={})
+
+    mapped = modules._mapped_inputs_from_collection_info(collection_info)
+
+    assert mapped["a"].src == "dce"
+    assert mapped["a"].id == 9
+
+
+# _capture_workflow_tool_request_state outcome taxonomy: the function
+# returns (template, combinations, tool_request). Skipped steps and
+# unexpected capture-code defects return (None, None, None) — no
+# ToolRequest minted. Real meta-model rejections after the converter has
+# produced a structural payload mint a ToolRequest with
+# request_state == "validation_failed". trans/step are unused here;
+# collection_info=None -> no mapped inputs; resolve raises before any
+# downstream is reached.
+
+
+class _CaptureFakeTool:
+    id = "test_tool"
+    profile = "21.09"
+    parameters: list = []
+
+
+def _capture(resolve):
+    # history=None means the mint path is unreachable in these unit cases;
+    # every exercised branch returns before touching it.
+    return modules._capture_workflow_tool_request_state(None, _CaptureFakeTool(), None, None, None, resolve, [])
+
+
+def test_capture_skipped_conditional_step_returns_none():
+    """A falsy `when` raises SkipWorkflowStepEvaluation: nothing to capture."""
+
+    def resolve(iteration_elements):
+        raise modules.SkipWorkflowStepEvaluation
+
+    assert _capture(resolve) == (None, None, None)
+
+
+def test_capture_converter_guard_returns_none_quietly():
+    """Converter raised before request_internal was built: no ToolRequest, quiet."""
+
+    def resolve(iteration_elements):
+        raise modules.RequestInternalToWorkflowStateError("cross-product")
+
+    with mock.patch.object(modules, "log") as log:
+        assert _capture(resolve) == (None, None, None)
+
+    log.debug.assert_called_once()
+    log.warning.assert_not_called()
+
+
+def test_capture_invalid_state_returns_none_quietly():
+    """Meta-model rejection at resolve-time: no payload to record, quiet."""
+
+    def resolve(iteration_elements):
+        raise modules.exceptions.RequestParameterInvalidException("bad state")
+
+    with mock.patch.object(modules, "log") as log:
+        assert _capture(resolve) == (None, None, None)
+
+    log.debug.assert_called_once()
+    log.warning.assert_not_called()
+
+
+def test_capture_unexpected_error_returns_none_loudly():
+    """Capture-code defect: drop the partial payload, surface at warning."""
+
+    def resolve(iteration_elements):
+        raise RuntimeError("capture bug")
+
+    with mock.patch.object(modules, "log") as log:
+        assert _capture(resolve) == (None, None, None)
+
+    log.warning.assert_called_once()
+
+
+def test_to_decoded_json_lowers_connected_value_in_repeat():
+    """ConnectedValue inside a repeat lowers to its JSON marker.
+
+    Regression: an unresolved connection inside a `repeat` survived to the
+    tool_request flush as a raw ``ConnectedValue()`` and broke JSON encode
+    with a TypeError. ``to_decoded_json`` recurses and lowers it to a marker.
+    """
+    payload = {
+        "datasets": [
+            {"input": {"src": "hda", "id": 1}},
+            {"input": ConnectedValue()},
+        ],
+    }
+
+    result = to_decoded_json(payload)
+
+    assert result["datasets"][0]["input"] == {"src": "hda", "id": 1}
+    assert result["datasets"][1]["input"] == {"__class__": "ConnectedValue"}
+    json.dumps(result)
+
+
+def test_to_decoded_json_lowers_bare_runtime_value():
+    """Bare RuntimeValue tokens lower to their JSON marker form too."""
+    result = to_decoded_json({"foo": RuntimeValue()})
+    assert result == {"foo": {"__class__": "RuntimeValue"}}
+    json.dumps(result)

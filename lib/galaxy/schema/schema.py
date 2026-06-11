@@ -4222,7 +4222,10 @@ class ToolRequestStateMessage(Model):
 class ToolRequestModel(Model):
     id: EncodedDatabaseIdField = ToolRequestIdField
     request: dict[str, Any]
-    state: ToolRequestState
+    # Async-submission lifecycle. NULL on rows captured outside the async
+    # API path (e.g. workflow tool steps), where no submission lifecycle
+    # applies.
+    state: Optional[ToolRequestState] = None
     state_message: Optional[ToolRequestStateMessage] = None
 
 

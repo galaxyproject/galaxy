@@ -13,7 +13,6 @@ from typing import (
     Union,
 )
 
-from boltons.iterutils import remap
 from sqlalchemy import (
     Select,
     select,
@@ -27,6 +26,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model import (
+    batch_fetch_job_state_summaries,
     Dataset,
     DatasetCollection,
     DatasetCollectionElement,
@@ -44,20 +44,36 @@ from galaxy.schema.history_graph import (
     NodeRef,
     TruncationInfo,
 )
-from galaxy.schema.schema import DataItemSourceType
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_util.parameters.request import request_internal_input_refs
 from galaxy.tool_util.toolbox import AbstractToolBox
 
 log = logging.getLogger(__name__)
 
 TYPE_RANK = {"dataset": 0, "collection": 1, "tool_request": 2}
-EDGE_TYPE_RANK = {"dataset_input": 0, "dataset_output": 1, "collection_input": 2, "collection_output": 3}
+EDGE_TYPE_RANK = {
+    "dataset_input": 0,
+    "dataset_output": 1,
+    "collection_input": 2,
+    "collection_output": 3,
+    "dataset_element": 4,
+}
 # Internal node-type token -> public src value. The internal tokens
 # ("dataset"/"collection") stay because they mirror request payload
 # content_type; only the wire boundary speaks src.
 NODE_SRC: dict[str, str] = {"dataset": "hda", "collection": "hdca", "tool_request": "tool_request"}
 MAX_LIMIT = 1000
+
+# Tool ids that represent infrastructure operations (uploads, metadata setting,
+# etc.) rather than user-level lineage steps. Jobs with these tool_ids are
+# excluded from producer lookups so they do not appear as nodes or edges.
+SYNTHETIC_TOOL_IDS: tuple[str, ...] = ("__DATA_FETCH__",)
+
+
+def _summary_dict(summary) -> Optional[dict[str, int]]:
+    """Lift JobStateSummary (a NamedTuple) to a dict, or None."""
+    return None if summary is None else summary._asdict()
 
 
 class HistoryGraphManager:
@@ -183,6 +199,21 @@ class HistoryGraphBuilder:
                     closure_dataset_ids.add(ref_id)
                 elif ref_type == "collection" and ref_id not in collection_ids:
                     closure_collection_ids.add(ref_id)
+
+        # Collection element membership: each visible HDA that is (transitively)
+        # an element of an HDCA in the graph gets a `dataset_element` edge to
+        # that HDCA, surfacing the build-collection-from-datasets step that
+        # has no tool_request of its own.
+        for hda_id, hdca_id in self._collection_element_edges(collection_ids):
+            edges.append(
+                GraphEdge(
+                    source=self._ref("dataset", hda_id),
+                    target=self._ref("collection", hdca_id),
+                    type="dataset_element",
+                )
+            )
+            if hda_id not in dataset_ids:
+                closure_dataset_ids.add(hda_id)
 
         # 4. Filter closure items by the same deleted policy as seed selection.
         if not self.include_deleted and (closure_dataset_ids or closure_collection_ids):
@@ -320,7 +351,7 @@ class HistoryGraphBuilder:
                 JobToOutputDatasetAssociation.dataset_id.in_(dataset_ids),
                 Job.tool_request_id.isnot(None),
                 Job.tool_id.isnot(None),
-                Job.tool_id != "__DATA_FETCH__",
+                Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
         candidates: dict[int, dict[int, str]] = {}  # hda_id -> {tr_id: tool_id}
@@ -354,10 +385,10 @@ class HistoryGraphBuilder:
                 JobToOutputDatasetCollectionAssociation.dataset_collection_id.in_(collection_ids),
                 Job.tool_request_id.isnot(None),
                 Job.tool_id.isnot(None),
-                Job.tool_id != "__DATA_FETCH__",
+                Job.tool_id.notin_(SYNTHETIC_TOOL_IDS),
             )
         )
-        candidates: dict[int, dict[int, str]] = {}
+        candidates: dict[int, dict[int, str]] = {}  # hdca_id -> {tr_id: tool_id}
         for row in self.sa_session.execute(stmt):
             candidates.setdefault(row.hdca_id, {})[row.tool_request_id] = row.tool_id
 
@@ -409,22 +440,9 @@ class HistoryGraphBuilder:
         Payload shape is trusted to be Pydantic-validated upstream when
         the tool_request was accepted; no explicit depth or ref caps are
         applied here by design."""
-        refs: set[tuple[str, int]] = set()
-
-        def visit(path, key, value):
-            if key == "id" and isinstance(value, int) and not isinstance(value, bool):
-                parent = payload
-                for step in path:
-                    parent = parent[step]
-                if isinstance(parent, dict):
-                    src = parent.get("src")
-                    if src == DataItemSourceType.hda:
-                        refs.add(("dataset", value))
-                    elif src == DataItemSourceType.hdca:
-                        refs.add(("collection", value))
-            return key, value
-
-        remap(payload, visit=visit)
+        refs: set[tuple[str, int]] = {
+            (ref.content_type, ref.id) for ref in request_internal_input_refs(payload, {"hda", "hdca"})
+        }
         return self._normalize_refs(refs)
 
     def _normalize_refs(self, refs: set[tuple[str, int]]) -> set[tuple[str, int]]:
@@ -461,6 +479,61 @@ class HistoryGraphBuilder:
             else:
                 result.add((ref_type, ref_id))
         return result
+
+    # ── Collection element walk ──
+
+    def _collection_element_edges(self, hdca_ids: set[int]) -> set[tuple[int, int]]:
+        """Walk each HDCA's collection tree and return (hda_id, hdca_id) pairs
+        for every visible leaf HDA element. Hidden elements are suppressed,
+        mirroring ``_remove_hidden_elements``. Nested collections are traversed
+        transparently: intermediate child_collections do not have HDCA nodes,
+        so leaf HDAs are wired directly to the top-level HDCA they belong to.
+        """
+        if not hdca_ids:
+            return set()
+
+        root_stmt = select(
+            HistoryDatasetCollectionAssociation.id,
+            HistoryDatasetCollectionAssociation.collection_id,
+        ).where(HistoryDatasetCollectionAssociation.id.in_(hdca_ids))
+        roots = {row.collection_id: row.id for row in self.sa_session.execute(root_stmt)}
+        if not roots:
+            return set()
+
+        edges: set[tuple[int, int]] = set()
+        dc_to_root: dict[int, int] = dict(roots)
+        frontier: set[int] = set(roots.keys())
+        seen: set[int] = set()
+        while frontier:
+            stmt = select(
+                DatasetCollectionElement.dataset_collection_id,
+                DatasetCollectionElement.hda_id,
+                DatasetCollectionElement.child_collection_id,
+            ).where(DatasetCollectionElement.dataset_collection_id.in_(frontier))
+            next_frontier: set[int] = set()
+            for row in self.sa_session.execute(stmt):
+                root_hdca = dc_to_root[row.dataset_collection_id]
+                if row.hda_id is not None:
+                    edges.add((row.hda_id, root_hdca))
+                elif row.child_collection_id is not None and row.child_collection_id not in seen:
+                    dc_to_root[row.child_collection_id] = root_hdca
+                    next_frontier.add(row.child_collection_id)
+            seen |= frontier
+            frontier = next_frontier - seen
+
+        # Suppress hidden elements: a tool-produced collection's internal
+        # element HDAs are hidden and must not surface as dataset nodes.
+        # This mirrors _remove_hidden_elements, which strips them from the
+        # top-level selection — without it the closure would re-add them.
+        if not edges:
+            return edges
+        leaf_hda_ids = {hda_id for hda_id, _ in edges}
+        visible_stmt = select(HistoryDatasetAssociation.id).where(
+            HistoryDatasetAssociation.id.in_(leaf_hda_ids),
+            HistoryDatasetAssociation.visible == True,  # noqa: E712
+        )
+        visible_ids = {row.id for row in self.sa_session.execute(visible_stmt)}
+        return {(hda_id, hdca_id) for hda_id, hdca_id in edges if hda_id in visible_ids}
 
     # ── Node construction ──
 
@@ -511,6 +584,7 @@ class HistoryGraphBuilder:
             .join(DatasetCollection, HistoryDatasetCollectionAssociation.collection_id == DatasetCollection.id)
             .where(HistoryDatasetCollectionAssociation.id.in_(db_ids))
         )
+        summaries = batch_fetch_job_state_summaries(self.sa_session, list(db_ids))
         return [
             self._node(
                 "collection",
@@ -518,6 +592,7 @@ class HistoryGraphBuilder:
                 name=row.name,
                 hid=row.hid,
                 state=row.populated_state,
+                job_state_summary=_summary_dict(summaries.get(row.id)),
                 collection_type=row.collection_type,
                 deleted=row.deleted,
                 visible=row.visible,
@@ -526,6 +601,8 @@ class HistoryGraphBuilder:
         ]
 
     def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
+        if not tr_map:
+            return []
         return [self._node("tool_request", tr_id, tool_id=tool_id) for tr_id, tool_id in tr_map.items()]
 
     def _resolve_tool_names(self, nodes: list[GraphNode]) -> None:

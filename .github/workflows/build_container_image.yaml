@@ -9,12 +9,13 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   ghcrbuild:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -79,7 +80,7 @@ jobs:
       tag: ${{ steps.branch.outputs.name }}
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
@@ -137,7 +138,8 @@ jobs:
             galaxy/galaxy-min:${{ steps.branch.outputs.name }}
             quay.io/galaxyproject/galaxy-min:${{ steps.branch.outputs.name }}
       - name: Create Dockerfile for auto-expiring image
-        run: echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" > /tmp/Dockerfile.auto
+        run: |  # zizmor: ignore[template-injection]
+          echo "FROM galaxy/galaxy-min:${{ steps.branch.outputs.name }}" > /tmp/Dockerfile.auto
       - name: Build and push auto-expiring per-commit image
         uses: docker/build-push-action@v7
         with:
@@ -175,7 +177,7 @@ jobs:
           --wait \
           --timeout=1200s
       - name: Install Galaxy using the image we just pushed
-        run: |
+        run: |  # zizmor: ignore[template-injection]
           helm install galaxy galaxy/galaxy \
           --namespace galaxy \
           --create-namespace \
@@ -225,7 +227,7 @@ jobs:
             kubectl describe -n galaxy-deps $pod
           done
       - name: Check the version
-        run: |
+        run: |  # zizmor: ignore[template-injection]
           kubectl get svc -n galaxy
           kubectl describe svc -n galaxy galaxy-nginx
           address=$(kubectl get svc -n galaxy galaxy-nginx -o jsonpath="http://{.spec.clusterIP}:{.spec.ports[0].port}/galaxy/api/version")
@@ -258,17 +260,17 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout Galaxy Helm chart
-        uses: actions/checkout@v6
+        uses: actions/checkout@v6.0.2
         with:
           repository: galaxyproject/galaxy-helm
           persist-credentials: false
 
       - name: Update Chart.yaml appVersion
-        run: |
+        run: |  # zizmor: ignore[template-injection]
           sed -i "s/^appVersion:.*/appVersion: \"${{ needs.build.outputs.version }}\"/" galaxy/Chart.yaml
 
       - name: Update values.yaml image.tag
-        run: |
+        run: |  # zizmor: ignore[template-injection]
           sed -i "s/^  tag:.*/  tag: \"${{ needs.build.outputs.tag }}\"/" galaxy/values.yaml
 
       - name: Create Pull Request

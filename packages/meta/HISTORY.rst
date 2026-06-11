@@ -3,11 +3,83 @@ History
 
 .. to_doc
 
----------
-26.1.dev0
----------
+-------
+26.1rc1
+-------
 
 
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Add debug middleware and regression tests for blocked main event loop by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22207 <https://github.com/galaxyproject/galaxy/pull/22207>`_
+* Hide hidden tools in the tool form by `@bgruening <https://github.com/bgruening>`_ in `#22215 <https://github.com/galaxyproject/galaxy/pull/22215>`_
+* Fix IndexError in SplitPairedAndUnpairedTool for unpaired elements by `@ernestprovo23 <https://github.com/ernestprovo23>`_ in `#22282 <https://github.com/galaxyproject/galaxy/pull/22282>`_
+* Respect workflow object store preference for mapped step outputs  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22409 <https://github.com/galaxyproject/galaxy/pull/22409>`_
+* Avoid premature commit when copying MetadataFile by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22422 <https://github.com/galaxyproject/galaxy/pull/22422>`_
+* Fix testing, publishing and dependencies of packages by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22445 <https://github.com/galaxyproject/galaxy/pull/22445>`_
+* Fix version commit by `@guerler <https://github.com/guerler>`_ in `#22447 <https://github.com/galaxyproject/galaxy/pull/22447>`_
+* Fix \`get_structure\` when it is passed a DCE with nested elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22453 <https://github.com/galaxyproject/galaxy/pull/22453>`_
+* Move job-level filters inside CTE in job cache query by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22454 <https://github.com/galaxyproject/galaxy/pull/22454>`_
+* Fix filtering of Data Source Tools in Upload Activity by `@davelopez <https://github.com/davelopez>`_ in `#22465 <https://github.com/galaxyproject/galaxy/pull/22465>`_
+* Accept bare ftype as valid test output check by `@jmchilton <https://github.com/jmchilton>`_ in `#22483 <https://github.com/galaxyproject/galaxy/pull/22483>`_
+* Enforce file source access during dataset materialization by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22486 <https://github.com/galaxyproject/galaxy/pull/22486>`_
+* Fix sample sheet upload without sample-sheet-specific columns  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22488 <https://github.com/galaxyproject/galaxy/pull/22488>`_
+* Fix UI no longer auto-decompressing files. by `@jmchilton <https://github.com/jmchilton>`_ in `#22490 <https://github.com/galaxyproject/galaxy/pull/22490>`_
+* Strip whitespace from URIs in get_file_source_path by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22506 <https://github.com/galaxyproject/galaxy/pull/22506>`_
+* Drop --frozen-lockfile from prebuilt client install by `@dannon <https://github.com/dannon>`_ in `#22508 <https://github.com/galaxyproject/galaxy/pull/22508>`_
+* Truncate dataset name in export arcname to avoid OSError by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22518 <https://github.com/galaxyproject/galaxy/pull/22518>`_
+* Catch end of file error when reading corrupted tabular dataset by `@guerler <https://github.com/guerler>`_ in `#22523 <https://github.com/galaxyproject/galaxy/pull/22523>`_
+* Fix data manager URL for managers with '+' version suffix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22525 <https://github.com/galaxyproject/galaxy/pull/22525>`_
+* Fix UnicodeError on empty-label URLs in fetch validation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22526 <https://github.com/galaxyproject/galaxy/pull/22526>`_
+* Treat paused inputs as not-ready in DatabaseOperationTool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22529 <https://github.com/galaxyproject/galaxy/pull/22529>`_
+* Fix TypeError when generating tour for tool with boolean conditional case by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22532 <https://github.com/galaxyproject/galaxy/pull/22532>`_
+* Backport rocrate<0.15.0 pin by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22537 <https://github.com/galaxyproject/galaxy/pull/22537>`_
+* Fix \`WorkflowAnnotation\` wrapping inconsistencies by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22539 <https://github.com/galaxyproject/galaxy/pull/22539>`_
+* Handle list-valued tool_id in ToolRunner.__get_tool by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22545 <https://github.com/galaxyproject/galaxy/pull/22545>`_
+* Fix crash merging structurally invalid nested collections by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22546 <https://github.com/galaxyproject/galaxy/pull/22546>`_
+* Fix silent OIDC failure when pkce is missing by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22547 <https://github.com/galaxyproject/galaxy/pull/22547>`_
+* Raise ToolInputsNotReady for unpopulated structured_like target by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22552 <https://github.com/galaxyproject/galaxy/pull/22552>`_
+* Fix notification channels not processed correctly by `@davelopez <https://github.com/davelopez>`_ in `#22556 <https://github.com/galaxyproject/galaxy/pull/22556>`_
+* Cancel background traffic before login/register so session cookie isnt clobbered by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22564 <https://github.com/galaxyproject/galaxy/pull/22564>`_
+* Fix admin resend-activation email missing hostname by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22568 <https://github.com/galaxyproject/galaxy/pull/22568>`_
+* Fixes looks_like_flattened_repeat_key helper by `@guerler <https://github.com/guerler>`_ in `#22578 <https://github.com/galaxyproject/galaxy/pull/22578>`_
+* Raises error if decoding fails during relabeling from file by `@guerler <https://github.com/guerler>`_ in `#22595 <https://github.com/galaxyproject/galaxy/pull/22595>`_
+* Preserve falsy workflow parameter values on workflow rerun by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22601 <https://github.com/galaxyproject/galaxy/pull/22601>`_
+* Fix job access check for collection-only outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22603 <https://github.com/galaxyproject/galaxy/pull/22603>`_
+* Fix error handling for Help Forum integration by `@davelopez <https://github.com/davelopez>`_ in `#22604 <https://github.com/galaxyproject/galaxy/pull/22604>`_
+* Reject malformed dataset ids in data tool parameter by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22617 <https://github.com/galaxyproject/galaxy/pull/22617>`_
+* Exclude user defined tools from requiring galaxy env by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22628 <https://github.com/galaxyproject/galaxy/pull/22628>`_
+* Adds missing TLS support for FTP configurations in templates by `@davelopez <https://github.com/davelopez>`_ in `#22657 <https://github.com/galaxyproject/galaxy/pull/22657>`_
+* Update Vintent by `@guerler <https://github.com/guerler>`_ in `#22660 <https://github.com/galaxyproject/galaxy/pull/22660>`_
+* Fix repository sort order to fix incremental tool shed search updates work by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22663 <https://github.com/galaxyproject/galaxy/pull/22663>`_
+* Fix workflow rerun for unset optional data inputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22664 <https://github.com/galaxyproject/galaxy/pull/22664>`_
+* Fixes GTN integration missing router by `@davelopez <https://github.com/davelopez>`_ in `#22673 <https://github.com/galaxyproject/galaxy/pull/22673>`_
+* Fix webdav file download by `@davelopez <https://github.com/davelopez>`_ in `#22683 <https://github.com/galaxyproject/galaxy/pull/22683>`_
+* Fix Zenodo/Invenio browsing of own records by `@davelopez <https://github.com/davelopez>`_ in `#22690 <https://github.com/galaxyproject/galaxy/pull/22690>`_
+* Ensure workflow editor always inserts latest tool version by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22693 <https://github.com/galaxyproject/galaxy/pull/22693>`_
+* Fix data source tool redirect back to Galaxy SPA by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22720 <https://github.com/galaxyproject/galaxy/pull/22720>`_
+* Fix HDA leak in tool form for data managers (#22674) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22724 <https://github.com/galaxyproject/galaxy/pull/22724>`_
+* Backport FastAPI/Starlette upgrade for BadHost (CVE-2026-48710) by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22778 <https://github.com/galaxyproject/galaxy/pull/22778>`_
+* update the binary.py for spatialdata so it also works if the file has… by `@nilchia <https://github.com/nilchia>`_ in `#22802 <https://github.com/galaxyproject/galaxy/pull/22802>`_
+* Fix \`FlexPanel\` drag handle gets stuck when dragging over iframe by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#22810 <https://github.com/galaxyproject/galaxy/pull/22810>`_
+* Fix client linting by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22815 <https://github.com/galaxyproject/galaxy/pull/22815>`_
+* Fix ConnectedValue leak for omitted optional inputs inside groups by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22820 <https://github.com/galaxyproject/galaxy/pull/22820>`_
+* Fix missing scripts in built wheels by `@jdavcs <https://github.com/jdavcs>`_ in `#22825 <https://github.com/galaxyproject/galaxy/pull/22825>`_
+
+============
+Enhancements
+============
+
+* Update Openlayers by `@guerler <https://github.com/guerler>`_ in `#22503 <https://github.com/galaxyproject/galaxy/pull/22503>`_
+* Replace per-term joins in workflow search with EXISTS subqueries by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22548 <https://github.com/galaxyproject/galaxy/pull/22548>`_
+* add TEI XML datatype by `@bgruening <https://github.com/bgruening>`_ in `#22718 <https://github.com/galaxyproject/galaxy/pull/22718>`_
 
 -------------------
 26.0.0 (2026-04-08)

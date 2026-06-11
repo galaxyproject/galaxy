@@ -1,15 +1,16 @@
 name: Labels Verifier
-on:
+on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [closed]
 jobs:
   onMerged:
-    name: "Check Labels on merge"
+    name: Check PR labels on merge
+    if: github.repository_owner == 'galaxyproject'
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Check Labels on merge
+      - name: Check PR labels on merge
         if: |
           github.event.pull_request.merged == true &&
           ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/') &&

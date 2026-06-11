@@ -182,6 +182,14 @@ cases:
         - {type: reference, content: 10.1234/abc.def}
     valid: true
 
+  - name: legacy_doi_prefix_citation_accepted
+    # Legacy W3C/RFC 'doi:'-prefixed DOIs are normalized to the bare DOI rather
+    # than rejected (see issue #22795).
+    doc:
+      citations:
+        - {type: doi, content: "doi:10.1186/1471-2105-11-485"}
+    valid: true
+
   - name: no_citations_accepted
     doc:
       citations: null

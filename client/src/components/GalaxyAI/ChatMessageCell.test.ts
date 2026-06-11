@@ -83,6 +83,58 @@ describe("ChatMessageCell", () => {
         });
     });
 
+    describe("clarification messages", () => {
+        function makeClarificationMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
+            return makeAssistantMessage({
+                agentType: "clarification",
+                content: "Do you want a tool recommendation or a tutorial?",
+                agentResponse: {
+                    content: "Do you want a tool recommendation or a tutorial?",
+                    agent_type: "clarification",
+                    confidence: "medium",
+                    suggestions: [],
+                    metadata: { options: ["Tool recommendation", "Tutorial"] },
+                },
+                ...overrides,
+            });
+        }
+
+        it("renders the ClarificationCard, not the markdown content", () => {
+            const wrapper = mountCell(makeClarificationMessage());
+            expect(wrapper.find(".clarification-card").exists()).toBe(true);
+            expect(wrapper.find(".response-content").exists()).toBe(false);
+        });
+
+        it("renders one quick-reply button per option", () => {
+            const wrapper = mountCell(makeClarificationMessage());
+            expect(wrapper.findAll(".clarification-options button").length).toBe(2);
+        });
+
+        it("bubbles select-clarification-option with the chosen option", async () => {
+            const wrapper = mountCell(makeClarificationMessage());
+            await wrapper.findAll(".clarification-options button").at(0)!.trigger("click");
+            expect(wrapper.emitted("select-clarification-option")).toEqual([["Tool recommendation"]]);
+        });
+
+        it("renders the question even with no options", () => {
+            const wrapper = mountCell(
+                makeClarificationMessage({
+                    agentResponse: {
+                        content: "What would you like to do?",
+                        agent_type: "clarification",
+                        confidence: "medium",
+                        suggestions: [],
+                        metadata: {},
+                    },
+                }),
+            );
+            expect(wrapper.find(".clarification-question").text()).toBe(
+                "Do you want a tool recommendation or a tutorial?",
+            );
+            expect(wrapper.findAll(".clarification-options button").length).toBe(0);
+        });
+    });
+
     describe("system messages", () => {
         it("renders system notice", () => {
             const wrapper = mountCell(makeAssistantMessage({ isSystemMessage: true, content: "Welcome" }));

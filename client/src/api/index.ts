@@ -214,6 +214,15 @@ export function isHDCA(entry?: HistoryItemSummary | CollectionEntry): entry is H
     );
 }
 
+/**
+ * Returns true if the given collection entry carries the detailed payload
+ * (i.e. has `elements`). The element list is a snapshot at fetch time —
+ * use `collectionElementsStore` for fresh element pagination, not this.
+ */
+export function isDetailedCollection(entry?: HDCASummary | HDCADetailed | null): entry is HDCADetailed {
+    return !!entry && "elements" in entry;
+}
+
 export function isDCE(item: object): item is DCESummary {
     return item && "element_type" in item;
 }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { createTestingPinia } from "@pinia/testing";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { useSidebarSelection } from "./useSidebarSelection";
@@ -17,6 +18,10 @@ function mouseEvent(opts: Partial<MouseEvent> = {}): MouseEvent {
 }
 
 describe("useSidebarSelection", () => {
+    beforeEach(() => {
+        createTestingPinia({ createSpy: vi.fn, stubActions: false });
+    });
+
     it("starts in non-selection mode with empty selection", () => {
         const items = ref(makeItems("a", "b", "c"));
         const { selectionMode, selectedIds, allSelected } = useSidebarSelection(items, (i) => i.id);

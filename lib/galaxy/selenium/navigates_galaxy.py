@@ -1661,6 +1661,9 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         """Ensure GalaxyAI center panel shows an empty conversation."""
         galaxyai = self.components.galaxyai
         galaxyai._.wait_for_visible()
+        # Don't reset mid-stream -- the new chat button can be transiently unclickable and the
+        # reset races with an in-flight response render.
+        galaxyai.loading.wait_for_absent_or_hidden()
         if len(galaxyai.query_cell.all()) > 0 or len(galaxyai.response_content.all()) > 0:
             galaxyai.new_chat_button.wait_for_and_click()
         self._galaxyai_assert_chat_empty()
@@ -1673,11 +1676,15 @@ class NavigatesGalaxy(HasDriverProxy[WaitType]):
         galaxyai.loading.wait_for_absent_or_hidden()
         galaxyai.response_content.wait_for_visible()
 
-    @retry_during_transitions
     def _galaxyai_assert_chat_empty(self):
         galaxyai = self.components.galaxyai
-        assert len(galaxyai.query_cell.all()) == 0
-        assert len(galaxyai.response_content.all()) == 0
+        # A reset chat renders only the welcome notice, no query/response cells. Poll for that
+        # state instead of asserting counts once: under load the prior messages clear a beat
+        # after the new-chat click, and retry_during_transitions does not retry a bare
+        # AssertionError, so a count-based assert here could fire before the DOM settled.
+        galaxyai.welcome_message.wait_for_visible()
+        galaxyai.query_cell.wait_for_absent_or_hidden()
+        galaxyai.response_content.wait_for_absent_or_hidden()
 
     def navigate_to_dataset_error(self, hid):
         """Display a dataset and click the error tab."""

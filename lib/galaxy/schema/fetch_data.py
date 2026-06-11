@@ -273,6 +273,10 @@ class FilesPayload(Model):
 
 class BaseDataPayload(FetchBaseModel):
     history_id: DecodedDatabaseIdField
+    preferred_object_store_id: Optional[str] = Field(
+        None,
+        description="Optional preferred storage location id used when creating fetched datasets.",
+    )
     model_config = ConfigDict(extra="allow")
     landing_uuid: Optional[UUID4] = None
 

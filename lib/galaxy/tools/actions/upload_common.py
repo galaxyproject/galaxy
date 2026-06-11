@@ -381,7 +381,17 @@ def create_paramfile(trans, uploaded_datasets):
     return json_file_path
 
 
-def create_job(trans, params, tool, json_file_path, outputs, folder=None, history=None, job_params=None):
+def create_job(
+    trans,
+    params,
+    tool,
+    json_file_path,
+    outputs,
+    folder=None,
+    history=None,
+    job_params=None,
+    preferred_object_store_id=None,
+):
     """
     Create the upload job.
     """
@@ -393,6 +403,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id
+    job.preferred_object_store_id = preferred_object_store_id
     if folder:
         job.library_folder_id = folder.id
     else:

@@ -71,6 +71,30 @@ def _sanitize_output_label(label: str) -> str:
     return label[:255]
 
 
+def _validate_input_names(
+    dataset_names: Optional[list[str]],
+    dataset_collection_names: Optional[list[str]],
+) -> None:
+    """Validate user-supplied workflow input names (step labels).
+
+    Dataset and collection input names share one namespace (the single
+    ``step_labels`` set in ``extract_steps``), so uniqueness is checked across
+    the combined list. Only inspects names that were actually supplied — the
+    no-names default path (the ``"Input Dataset"`` constants) is untouched.
+    Names are kept raw: limits are enforced by rejection, never truncation.
+    """
+    provided = (dataset_names or []) + (dataset_collection_names or [])
+    seen: set[str] = set()
+    for name in provided:
+        if not name.strip():
+            raise exceptions.RequestParameterInvalidException("workflow input names must not be empty")
+        if len(name) > 255:
+            raise exceptions.RequestParameterInvalidException(f"workflow input name exceeds 255 characters: {name!r}")
+        if name in seen:
+            raise exceptions.RequestParameterInvalidException(f"workflow input names must be unique: {name!r}")
+        seen.add(name)
+
+
 class WorkflowsService(ServiceBase):
     def __init__(
         self,
@@ -227,6 +251,7 @@ class WorkflowsService(ServiceBase):
     ) -> WorkflowExtractionResult:
         if trans.user is None:
             raise exceptions.AuthenticationRequired("Workflow extraction requires an authenticated user.")
+        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
         stored_workflow = extract_workflow(
             trans,
             user=trans.user,
@@ -306,6 +331,8 @@ class WorkflowsService(ServiceBase):
                 )
             for hdca in output_hdcas:
                 dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca.id)
+
+        _validate_input_names(payload.dataset_names, payload.dataset_collection_names)
 
         output_targets = collect_output_label_targets(
             trans,

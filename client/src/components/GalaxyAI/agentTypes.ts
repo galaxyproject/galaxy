@@ -6,6 +6,7 @@ import {
     faGraduationCap,
     faMagic,
     faPlus,
+    faQuestionCircle,
     faRobot,
     faRoute,
 } from "@fortawesome/free-solid-svg-icons";
@@ -27,6 +28,7 @@ export const agentTypes: AgentType[] = [
     { value: "custom_tool", label: "Custom Tool", icon: faPlus, description: "Create custom tools" },
     { value: "dataset_analyzer", label: "Dataset Analyzer", icon: faChartBar, description: "Analyze datasets" },
     { value: "gtn_training", label: "GTN Training", icon: faGraduationCap, description: "Find tutorials" },
+    { value: "clarification", label: "Clarification", icon: faQuestionCircle, description: "Needs more info" },
     {
         value: "page_assistant",
         label: AGENT_LABELS.pageAssistantLabel,

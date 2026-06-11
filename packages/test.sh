@@ -84,7 +84,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[image-util,template,jstree,config-template,test]'
     elif [ "$package_dir" = "tool_util" ]; then
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[cwl,mulled,edam,extended-assertions,test]'
-    elif grep -q 'test =' setup.cfg 2>/dev/null; then
+    elif grep -q '^test = \[' pyproject.toml 2>/dev/null; then
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} '.[test]'
     else
         ${PIP_CMD} install ${PIP_EXTRA_ARGS} .

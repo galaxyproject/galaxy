@@ -30,6 +30,7 @@ from galaxy.agents.error_analysis import ErrorAnalysisAgent
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
 from galaxy.agents.tools import ToolRecommendationAgent
+from .datasets import build_history
 
 UsageBuffer = Optional[list[dict[str, int]]]
 
@@ -193,6 +194,64 @@ def make_router_task(
         return response.agent_type
 
     return router_task
+
+
+def make_router_multiturn_task(
+    deps: GalaxyAgentDependencies,
+    representation: str,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[dict], Awaitable[str]]:
+    """Build an async callable for the routing-depth dataset.
+
+    The case input is ``{"history_turns": [...], "query": str}``. Prior turns are rendered
+    into a conversation_history in the given ``representation`` ("none" or "prose") and
+    threaded into the router; returns the router's chosen agent_type. The shipped router
+    routes on the current message, so both representations should score near the turn-1
+    baseline -- which is the point the routing-depth eval demonstrates.
+    """
+
+    async def router_multiturn_task(case_input: dict) -> str:
+        history = build_history(case_input["history_turns"], representation)
+        router = QueryRouterAgent(deps)
+        response = await router.process(case_input["query"], context={"conversation_history": history})
+        _record_response_usage(usage_buffer, response)
+        return response.agent_type
+
+    return router_multiturn_task
+
+
+def make_router_clarification_task(
+    deps: GalaxyAgentDependencies,
+    responding_to_clarification: bool = True,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[dict], Awaitable[str]]:
+    """Build an async callable for the clarification-followup dataset.
+
+    The case input is ``{"original_query", "clarification_question", "answer"}``.
+    Reconstructs the prior turn (the ambiguous request + the question the router asked) as
+    conversation_history and routes the elliptical ``answer``. With
+    ``responding_to_clarification=True`` the router includes that turn (the seam fix); with
+    ``False`` it withholds history as usual -- the A/B that quantifies the seam's value.
+    Returns the router's chosen agent_type.
+    """
+
+    async def router_clarification_task(case_input: dict) -> str:
+        history = [
+            {"role": "user", "content": case_input["original_query"]},
+            {"role": "assistant", "content": case_input["clarification_question"]},
+        ]
+        router = QueryRouterAgent(deps)
+        response = await router.process(
+            case_input["answer"],
+            context={
+                "conversation_history": history,
+                "responding_to_clarification": responding_to_clarification,
+            },
+        )
+        _record_response_usage(usage_buffer, response)
+        return response.agent_type
+
+    return router_clarification_task
 
 
 def make_router_content_task(

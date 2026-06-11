@@ -26,6 +26,7 @@ env:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   setup-selenium:
     uses: ./.github/workflows/setup_selenium.yaml
@@ -54,7 +55,7 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -62,7 +63,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
       - name: Get full Python version
         id: full-python-version
         shell: bash

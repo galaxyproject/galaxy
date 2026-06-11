@@ -117,8 +117,6 @@ def _select_which_when(conditional: ConditionalParameterModel, state: dict) -> C
     explicit_test_value = state.get(test_parameter_name)
     test_value = validate_explicit_conditional_test_value(test_parameter_name, explicit_test_value)
     for when in conditional.whens:
-        print(when.discriminator)
-        print(type(when.discriminator))
         if test_value is None and when.is_default_when:
             return when
         elif test_value == when.discriminator:

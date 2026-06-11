@@ -36,6 +36,7 @@ function showProgressDetails() {
             <BFormCheckbox
                 v-model="advancedMode"
                 v-g-tooltip.hover
+                data-test-id="upload-advanced-mode-toggle"
                 size="sm"
                 switch
                 class="mx-2"

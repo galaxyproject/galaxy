@@ -444,10 +444,11 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "histories/:historyId/graph",
+                        path: "histories/:historyId/graph/:tab?",
                         component: HistoryGraphView,
                         props: (route) => ({
                             historyId: route.params.historyId,
+                            tab: route.params.tab,
                             seedSrc: route.query.seed_src || undefined,
                             seedId: route.query.seed_id || undefined,
                         }),

@@ -228,6 +228,7 @@ def visit_input_values(
     payload = {
         "context": context,
         "no_replacement_value": no_replacement_value,
+        "replace_optional_connections": replace_optional_connections,
         "allow_case_inference": allow_case_inference,
         "unset_value": unset_value,
     }

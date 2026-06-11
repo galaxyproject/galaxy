@@ -23,7 +23,7 @@ const SELECTORS = {
 const localVue = getLocalVue();
 const { server } = useServerMock();
 
-function mountHarness(prepared: PreparedUpload) {
+function mountHarness(prepared: PreparedUpload, targetObjectStoreId?: string) {
     const Harness = defineComponent({
         setup() {
             const { submitPreparedUpload } = useUploadSubmission();
@@ -32,7 +32,7 @@ function mountHarness(prepared: PreparedUpload) {
 
             async function run() {
                 try {
-                    const uploaded = await submitPreparedUpload("hist_1", prepared);
+                    const uploaded = await submitPreparedUpload("hist_1", prepared, undefined, targetObjectStoreId);
                     result.value = JSON.stringify(uploaded);
                 } catch (err) {
                     error.value = String(err);
@@ -218,6 +218,32 @@ describe("useUploadSubmission", () => {
         expect(state.standaloneUploads.value).toHaveLength(0);
         expect(state.orderedUploadItems.value[0]?.type).toBe("batch");
         expect(state.activeItems.value.every((item) => item.batchId === batch?.id)).toBe(true);
+    });
+
+    it("forwards the selected preferred object store id to fetch uploads", async () => {
+        server.use(
+            http.post("/api/tools/fetch", async ({ request }) => {
+                const body = await request.json();
+                expect(body).toMatchObject({
+                    history_id: "hist_1",
+                    preferred_object_store_id: "object_store_2",
+                });
+
+                return HttpResponse.json({
+                    jobs: [{ id: "job_1" }],
+                    outputs: [{ id: "hda_store_1", name: "stored.txt", hid: 1, src: "hda" }],
+                });
+            }),
+        );
+
+        const apiItem = makeUrlItem({ name: "stored.txt", url: "https://example.org/stored.txt" });
+        const wrapper = mountHarness(buildPreparedUpload([apiItem]), "object_store_2");
+        await flushPromises();
+
+        await wrapper.find(SELECTORS.RUN).trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find(SELECTORS.RESULT).text()).toContain('"id":"hda_store_1"');
     });
 
     it("creates a two-step collection for library-only uploads", async () => {

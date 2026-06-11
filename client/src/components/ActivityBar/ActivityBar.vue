@@ -27,6 +27,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HistoryGraphPanel from "@/components/Panels/HistoryGraphPanel.vue";
 import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
 import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
 import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
@@ -241,13 +242,16 @@ function toggleSidebar(toggle: string = "", to: string | null = null) {
 function onChatGxyClick() {
     if (chatStore.isCenterMode) {
         toggleSidebar("galaxyai");
-        if (route.path.startsWith("/galaxyai")) {
-            router.push("/");
-        } else {
+        if (!route.path.startsWith("/galaxyai")) {
             router.push("/galaxyai");
         }
     } else {
         chatStore.toggleChat();
+
+        // if we click the activity, in not center mode, and the sidebar is open, we close it as well
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
     }
 }
 
@@ -454,6 +458,7 @@ defineExpose({
             <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
             <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
             <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <HistoryGraphPanel v-else-if="isActiveSideBar('historygraph')" />
             <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
             <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
             <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />

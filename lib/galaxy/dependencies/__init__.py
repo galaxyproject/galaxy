@@ -161,7 +161,7 @@ class ConditionalDependencies:
 
         # Parse file source templates config
         file_source_templates_conf_yml = self.config_object.file_source_templates_config_file
-        if exists(file_source_templates_conf_yml):
+        if file_source_templates_conf_yml and exists(file_source_templates_conf_yml):
             with open(file_source_templates_conf_yml) as f:
                 file_source_templates_conf = apply_syntactic_sugar(yaml.safe_load(f))
             for file_source_template in file_source_templates_conf:

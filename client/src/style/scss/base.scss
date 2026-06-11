@@ -38,6 +38,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "dataset.scss";
 @import "list-item.scss";
 @import "panels.scss";
+@import "panels-divider.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -138,6 +139,7 @@ $galaxy-state-border: (
     "hidden": $state-default-border,
     "setting_metadata": $state-warning-border,
     "inaccessible": darken($state-default-border, 10%),
+    "paused": $state-info-border,
 );
 
 $galaxy-state-bg: (

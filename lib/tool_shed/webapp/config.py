@@ -15,6 +15,7 @@ from galaxy.config import (
     get_database_engine_options,
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
+from galaxy.config._tool_shed_config_schema_attributes import ToolShedAppConfigurationAttributes
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import string_as_bool
@@ -29,7 +30,7 @@ log = logging.getLogger(__name__)
 TOOLSHED_APP_NAME = "tool_shed"
 
 
-class ToolShedAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
+class ToolShedAppConfiguration(ToolShedAppConfigurationAttributes, BaseAppConfiguration, CommonConfigurationMixin):
     default_config_file_name = "tool_shed.yml"
 
     add_sample_file_to_defaults = {"datatypes_config_file"}

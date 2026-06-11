@@ -8,7 +8,11 @@ sections, and summarize analyses.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import (
+    Any,
+    Literal,
+    Optional,
+)
 
 from pydantic_ai import Agent
 from pydantic_ai.tools import RunContext
@@ -119,6 +123,61 @@ class HistoryAgent(BaseGalaxyAgent):
                 return self.ops.peek_dataset_content(dataset_id)
             except MalformedId:
                 return {"error": f"Invalid dataset_id '{dataset_id}'. Please use an exact ID from list_datasets."}
+
+        @agent.tool
+        async def get_history_graph(
+            ctx: RunContext[GalaxyAgentDependencies],
+            history_id: str,
+            seed_src: Optional[Literal["hda", "hdca", "tool_request"]] = None,
+            seed_id: Optional[str] = None,
+            direction: Literal["backward", "forward", "both"] = "both",
+            depth: int = 5,
+            limit: int = 200,
+        ) -> dict[str, Any]:
+            """Fetch the bounded lineage graph of a Galaxy history.
+
+            Use this for questions about LINEAGE, PROVENANCE, or HOW a dataset was
+            produced, and when summarizing an analysis end-to-end. Returns nodes
+            (datasets, collections, tool_requests) and edges showing producer/consumer
+            relationships, plus truncation info indicating whether the graph was capped.
+
+            Args:
+                history_id: encoded id from list_user_histories.
+                seed_src: optional node src to anchor the graph around. One of
+                    "hda" (dataset), "hdca" (collection), "tool_request"
+                    (tool execution). Provide with seed_id.
+                seed_id: optional encoded node id paired with seed_src. Omit
+                    both for a recent overview of the whole history.
+                direction: "backward" (how was the seed produced), "forward" (what was
+                    the seed used for), or "both". Only meaningful when seed is set.
+                depth: max BFS hops from the seed (default 5).
+                limit: max items to include (default 200, max 1000).
+
+            Tips:
+                - For "summarize my analysis" or "write a methods section", call with
+                  no seed for a history-wide overview.
+                - For "how was dataset X made", pass X's id as seed_id with
+                  seed_src="hda" and direction=backward.
+                - Check `truncated` in the response. If item_count_capped is true, the
+                  graph is bounded and your summary should say so.
+            """
+            try:
+                return self.ops.get_history_graph(
+                    history_id=history_id,
+                    seed_src=seed_src,
+                    seed_id=seed_id,
+                    direction=direction,
+                    depth=depth,
+                    limit=limit,
+                )
+            except MalformedId:
+                return {
+                    "error": (
+                        f"Invalid id in get_history_graph "
+                        f"(history_id={history_id!r}, seed=({seed_src!r}, {seed_id!r})). "
+                        "Use exact ids from list_user_histories / list_datasets."
+                    )
+                }
 
         return agent
 

@@ -271,10 +271,7 @@ onUnmounted(() => {
                                 </div>
 
                                 <GTabs justified>
-                                    <GTab
-                                        v-if="workflowStepType === 'tool'"
-                                        class="portlet-body"
-                                        style="width: 100%; overflow-x: auto">
+                                    <GTab v-if="workflowStepType === 'tool'" class="portlet-body" style="width: 100%">
                                         <template v-slot:title>
                                             <FontAwesomeIcon :icon="jobsTabIcon" />
                                             <span v-localize>{{ jobsTabTitle }}</span>

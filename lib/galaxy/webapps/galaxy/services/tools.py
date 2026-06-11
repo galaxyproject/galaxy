@@ -307,6 +307,14 @@ class ToolsService(ServiceBase):
             clean_payload[key] = value
         clean_payload["check_content"] = self.config.check_upload_content
         validate_and_normalize_targets(trans, clean_payload)
+        preferred_object_store_id = clean_payload.get("preferred_object_store_id")
+        if preferred_object_store_id is not None:
+            validation_error = trans.app.object_store.validate_selected_object_store_id(
+                trans.user,
+                preferred_object_store_id,
+            )
+            if validation_error:
+                raise RequestParameterInvalidException(validation_error)
         request = dumps(clean_payload)
         create_payload: ToolRunPayload = {
             "tool_id": "__DATA_FETCH__",
@@ -317,6 +325,8 @@ class ToolsService(ServiceBase):
                 "file_count": str(len(files_payload)),
             },
         }
+        if preferred_object_store_id is not None:
+            create_payload["preferred_object_store_id"] = preferred_object_store_id
         create_payload.update(files_payload)
         return self._create(trans, create_payload)
 

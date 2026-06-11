@@ -1566,6 +1566,11 @@ beta_upload:
     target_history_change_link: '.target-history-banner .change-history-link'
     history_selector_modal: '.g-dialog'
     history_selector_modal_item: '.g-dialog [data-pk="${history_id}"]'
+    # Upload panel advanced mode switch
+    advanced_mode_toggle_checkbox: '[data-test-id="upload-advanced-mode-toggle"]'
+    # Target-object-store selectors (TargetObjectStoreSelector inside UploadMethodView)
+    target_object_store_selector_dropdown: '.target-destination-item [data-test-id="upload-target-object-store-selector"] .target-object-store-multiselect .multiselect__select'
+    target_object_store_selector_option: '.target-destination-item [data-test-id="upload-target-object-store-selector"] .target-object-store-multiselect.multiselect--active [data-test-id="target-object-store-option"][data-id="${object_store_id}"]'
     # Composite-file selectors
     composite_slot_mode_dropdown: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-mode-dropdown"] .dropdown-toggle'
     composite_slot_enter_local_action: '.composite-file-upload .composite-slot-row:nth-of-type(${row}) [data-test-id="composite-slot-enter-local"]'
@@ -1649,8 +1654,8 @@ galaxyai:
     activity: '#activity-galaxyai'
     _: '.galaxyai-container'
     header: '.galaxyai-header'
-    new_chat_button: '.galaxyai-header .btn-outline-primary'
-    delete_chat_button: '.galaxyai-header .btn-outline-danger'
+    new_chat_button: '.galaxyai-header [data-description="new chat button"]'
+    delete_chat_button: '.galaxyai-header [data-description="delete chat button"]'
     messages: '.chat-messages'
     input: '#chat-input'
     send_button: '.send-button'
@@ -1670,11 +1675,11 @@ galaxyai:
       _: '.activity-panel[data-description="GalaxyAI"]'
       toggle_selection_mode: 'button[title="Select chats to delete"]'
       cancel_selection: 'button[title="Cancel selection"]'
-      history_item: '[data-description="sidebar item"]'
-      history_checkbox: '[data-description="sidebar item"] .history-checkbox'
-      delete_selected_button: '.selection-toolbar .btn-danger'
+      history_item: '.chat-history-item'
+      history_checkbox: '.chat-history-item .history-checkbox'
+      delete_selected_button: '.selection-toolbar [data-description="delete selected chats"]'
       select_all_toggle: '.select-all-toggle'
-      empty_message: '[data-description="sidebar list empty"]'
+      empty_message: '[data-description="no items found footer"]'
 
 galaxy_wizard:
   selectors:

@@ -48,12 +48,14 @@ class VaultClient:
             }
         )
 
-    def wait_ready(self, timeout=30):
+    def wait_ready(self, timeout=60):
         def check():
             try:
-                self.session.get(f"{self.addr}/v1/sys/health", timeout=2).raise_for_status()
+                resp = self.session.get(f"{self.addr}/v1/sys/health", timeout=2)
+                resp.raise_for_status()
                 return True
-            except Exception:
+            except Exception as exc:
+                print(f"Vault not ready yet ({self.addr}/v1/sys/health): {exc}")
                 return None
 
         wait_on(check, "Vault to become ready", timeout)

@@ -75,9 +75,11 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
 
     def _create_tool_source(self):
         ts = model.ToolSource()
-        ts.hash = "abc123"
+        # Unique per call — tool_source has a UNIQUE(hash, source_class, identity_hash) constraint.
+        ts.hash = uuid4().hex
         ts.source = {"xml": "<tool/>"}
         ts.source_class = "XmlToolSource"
+        ts.identity_hash = uuid4().hex
         session = self.trans.sa_session
         session.add(ts)
         session.flush()
@@ -277,6 +279,66 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         collection_nodes = [n for n in graph.nodes if n.src == "hdca"]
         assert len(collection_nodes) == 1
         assert collection_nodes[0].collection_type == "list"
+
+    def test_hdca_job_state_summary_direct_job(self):
+        """HDCA produced by a single job carries that job's state in job_state_summary."""
+        history, _ = self._create_history()
+        input_hda = self._create_hda(history, name="in")
+        element_hda = self._create_hda(history, name="el")
+        element_identifiers = self.build_element_identifiers([element_hda])
+        hdca = self.collection_manager.create(
+            self.trans, history, "direct out", "list", element_identifiers=element_identifiers
+        )
+        tr = self._create_tool_request(history)
+        job = self._create_job(tool_request=tr, tool_id="tool")
+        self._link_job_input_hda(job, input_hda)
+        self._link_job_output_hdca(job, hdca)
+        job.state = "error"
+        hdca.job_id = job.id
+        self.trans.sa_session.flush()
+
+        graph = self._build_graph(history)
+        hdca_node = next(n for n in graph.nodes if n.src == "hdca" and n.id == self._encode("c", hdca.id).id)
+        assert hdca_node.job_state_summary is not None
+        assert hdca_node.job_state_summary["error"] == 1
+        assert hdca_node.job_state_summary["all_jobs"] == 1
+        assert hdca_node.job_state_summary["ok"] == 0
+
+    def test_hdca_job_state_summary_implicit_jobs_mixed_states(self):
+        """HDCA produced by an ImplicitCollectionJobs aggregates each member job's state."""
+        history, _ = self._create_history()
+        input_hda = self._create_hda(history, name="in")
+        element_hda = self._create_hda(history, name="el")
+        element_identifiers = self.build_element_identifiers([element_hda])
+        hdca = self.collection_manager.create(
+            self.trans, history, "implicit out", "list", element_identifiers=element_identifiers
+        )
+
+        tr = self._create_tool_request(history)
+        icj = model.ImplicitCollectionJobs(populated_state="ok")
+        self.trans.sa_session.add(icj)
+        self.trans.sa_session.flush()
+
+        for idx, state in enumerate(["ok", "error", "paused"]):
+            job = self._create_job(tool_request=tr, tool_id=f"tool_{idx}")
+            self._link_job_input_hda(job, input_hda)
+            self._link_job_output_hdca(job, hdca)
+            job.state = state
+            icja = model.ImplicitCollectionJobsJobAssociation()
+            icja.implicit_collection_jobs_id = icj.id
+            icja.job_id = job.id
+            icja.order_index = idx
+            self.trans.sa_session.add(icja)
+        hdca.implicit_collection_jobs_id = icj.id
+        self.trans.sa_session.flush()
+
+        graph = self._build_graph(history)
+        hdca_node = next(n for n in graph.nodes if n.src == "hdca" and n.id == self._encode("c", hdca.id).id)
+        assert hdca_node.job_state_summary is not None
+        assert hdca_node.job_state_summary["ok"] == 1
+        assert hdca_node.job_state_summary["error"] == 1
+        assert hdca_node.job_state_summary["paused"] == 1
+        assert hdca_node.job_state_summary["all_jobs"] == 3
 
     def test_element_input_resolves_to_top_level_item(self):
         """When a tool consumes an element HDA that is also a top-level history
@@ -1155,6 +1217,34 @@ class TestHistoryGraphBuilder(BaseTestCase, CreatesCollectionsMixin):
         for hda in original[1:]:
             assert self._encode("d", hda.id) in ids2
 
+    def test_validation_failed_request_still_surfaces_payload(self):
+        """A ToolRequest with ``request_state == 'validation_failed'`` keeps
+        its producer/input edges. The History Graph consumer uses structure
+        (input refs + Batch wrapping), not validation outcome — type-strict
+        rejection by the request validator should not erase usable lineage.
+        Extraction gates on ``validated`` independently at the consumer
+        site."""
+        history, _ = self._create_history()
+        input_hda = self._create_hda(history, name="in")
+        output_hda = self._create_hda(history, name="out")
+        tr = self._create_tool_request(history)
+        tr.request_state = "validation_failed"
+        self.trans.sa_session.flush()
+        job = self._create_job(tool_request=tr, tool_id="wf_tool")
+        self._link_job_input_hda(job, input_hda)
+        self._link_job_output_hda(job, output_hda)
+
+        graph = self._build_graph(history)
+
+        producer_nodes = [n for n in graph.nodes if n.src == "tool_request"]
+        assert len(producer_nodes) == 1
+        prod_ref = producer_nodes[0].ref
+        assert prod_ref == self._encode("r", tr.id)
+
+        edges = {(e.type, e.source, e.target) for e in graph.edges}
+        assert ("dataset_input", self._encode("d", input_hda.id), prod_ref) in edges
+        assert ("dataset_output", prod_ref, self._encode("d", output_hda.id)) in edges
+
 
 # ── Scalability / Boundedness Tests ──
 
@@ -1206,9 +1296,11 @@ class TestHistoryGraphBuilderBoundedness(BaseTestCase, CreatesCollectionsMixin):
 
     def _create_tool_source(self):
         ts = model.ToolSource()
-        ts.hash = "abc123"
+        # Unique per call — tool_source has a UNIQUE(hash, source_class, identity_hash) constraint.
+        ts.hash = uuid4().hex
         ts.source = {"xml": "<tool/>"}
         ts.source_class = "XmlToolSource"
+        ts.identity_hash = uuid4().hex
         session = self.trans.sa_session
         session.add(ts)
         session.flush()

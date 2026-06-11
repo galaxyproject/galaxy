@@ -2,6 +2,7 @@
  * List of built-in activities
  */
 import {
+    faBezierCurve,
     faChartBar,
     faColumns,
     faComments,
@@ -142,6 +143,19 @@ export const defaultActivities = [
         title: "Histories",
         tooltip: "Show all histories",
         to: "/histories/list",
+        visible: true,
+    },
+    {
+        anonymous: false,
+        description: "Lists histories to open in the History Graph view.",
+        icon: faBezierCurve,
+        id: "historygraph",
+        mutable: false,
+        optional: true,
+        panel: true,
+        title: "History Graphs",
+        tooltip: "Pick a history to view its provenance graph",
+        to: null,
         visible: true,
     },
     {

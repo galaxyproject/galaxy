@@ -1,3 +1,4 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -54,6 +55,7 @@ describe("PageChatHistoryList", () => {
     // Vue 2.7 emits prop warnings for `string | null` TS types; suppress them
     beforeEach(() => {
         vi.spyOn(console, "error").mockImplementation(() => {});
+        createTestingPinia({ createSpy: vi.fn, stubActions: false });
     });
     describe("rendering", () => {
         it("renders items", () => {

@@ -1,12 +1,21 @@
 """Custom pydantic-evals evaluators for Galaxy agents."""
 
 from dataclasses import dataclass
-from typing import Any
+from typing import (
+    Any,
+    Generic,
+    TypeVar,
+)
 
 from pydantic_evals.evaluators import (
     Evaluator,
     EvaluatorContext,
 )
+
+# Routing datasets vary in their case-input shape: a plain query string, or a dict for the
+# multi-turn cases. HandoffMatch ignores the input entirely (it only compares output to
+# expected), so it is generic over the input type and adapts to whichever dataset it scores.
+HandoffInputsT = TypeVar("HandoffInputsT")
 
 
 def _output_text(output: Any) -> str:
@@ -17,10 +26,10 @@ def _output_text(output: Any) -> str:
 
 
 @dataclass
-class HandoffMatch(Evaluator[str, str, dict]):
+class HandoffMatch(Evaluator[HandoffInputsT, str, dict], Generic[HandoffInputsT]):
     """Score 1.0 if router's chosen agent_type matches expected, 0.0 otherwise."""
 
-    def evaluate(self, ctx: EvaluatorContext[str, str, dict]) -> float:
+    def evaluate(self, ctx: EvaluatorContext[HandoffInputsT, str, dict]) -> float:
         return 1.0 if ctx.output == ctx.expected_output else 0.0
 
 

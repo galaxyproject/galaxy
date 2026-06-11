@@ -6,6 +6,8 @@ from typing import (
     Union,
 )
 
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import (
     scoped_session,
@@ -330,17 +332,30 @@ class TagHandler:
 
     def _create_tag_instance(self, tag_name):
         # For good performance caller should first check if there's already an appropriate tag
-        tag = Tag(type=0, name=tag_name)
         if not isinstance(self.sa_session, scoped_session):
-            return tag
-        Session = sessionmaker(self.sa_session.bind)
-        with Session() as separate_session:
-            separate_session.add(tag)
-            try:
-                separate_session.commit()
-            except IntegrityError:
-                # tag already exists, get from database
-                separate_session.rollback()
+            return Tag(type=0, name=tag_name)
+        # Upsert the tag on the session's own connection, ignoring a concurrently
+        # created duplicate (the ``tag.name`` unique constraint) so it does not abort
+        # the caller's transaction. The insert must share the caller's connection: a
+        # second connection would deadlock against an enclosing write transaction
+        # under SQLite's single-writer model.
+        bind = self.sa_session.get_bind()
+        dialect = bind.dialect.name
+        if dialect in ("sqlite", "postgresql"):
+            insert_ = sqlite_insert if dialect == "sqlite" else postgresql_insert
+            self.sa_session.execute(
+                insert_(Tag).values(type=0, name=tag_name).on_conflict_do_nothing(index_elements=["name"])
+            )
+        else:
+            # Backends without a native upsert isolate the insert in a separate
+            # session so a unique-name violation does not abort the caller's transaction.
+            Session = sessionmaker(bind)
+            with Session() as separate_session:
+                separate_session.add(Tag(type=0, name=tag_name))
+                try:
+                    separate_session.commit()
+                except IntegrityError:
+                    separate_session.rollback()
         return self._get_tag(tag_name)
 
     def _get_or_create_tag(self, tag_str):

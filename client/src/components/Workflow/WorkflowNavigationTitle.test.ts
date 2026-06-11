@@ -9,6 +9,7 @@ import sampleInvocation from "@/components/Workflow/test/json/invocation.json";
 import { useUserStore } from "@/stores/userStore";
 
 import WorkflowNavigationTitle from "./WorkflowNavigationTitle.vue";
+import NavigationTitle from "@/components/Common/NavigationTitle.vue";
 
 // Constants
 const WORKFLOW_OWNER = "test-user";
@@ -24,7 +25,6 @@ const SAMPLE_WORKFLOW = {
 const IMPORT_ERROR_MESSAGE = "Failed to import workflow";
 
 const SELECTORS = {
-    WORKFLOW_HEADING: "[data-description='workflow heading']",
     ACTIONS_BUTTON_GROUP: "[data-button-group]",
     EDIT_WORKFLOW_BUTTON: `[data-button-edit][title='Edit Workflow']`,
     IMPORT_WORKFLOW_BUTTON: "[data-description='import workflow button']",
@@ -108,7 +108,7 @@ describe("WorkflowNavigationTitle renders", () => {
     it("the workflow name in header and run button in actions; invocation version", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("invocation");
 
-        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        const heading = wrapper.findComponent(NavigationTitle);
         expect(heading.text()).toContain(`Invoked Workflow: ${SAMPLE_WORKFLOW.name}`);
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 
@@ -119,7 +119,7 @@ describe("WorkflowNavigationTitle renders", () => {
     it("the workflow name in header and run button in actions; run form version", async () => {
         const { wrapper } = await mountWorkflowNavigationTitle("run_form");
 
-        const heading = wrapper.find(SELECTORS.WORKFLOW_HEADING);
+        const heading = wrapper.findComponent(NavigationTitle);
         expect(heading.text()).toContain(`Workflow: ${SAMPLE_WORKFLOW.name}`);
         expect(heading.text()).toContain(`(Version: ${SAMPLE_WORKFLOW.version + 1})`);
 

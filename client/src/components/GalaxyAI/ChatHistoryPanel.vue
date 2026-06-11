@@ -1,26 +1,33 @@
 <script setup lang="ts">
 import { faCheckSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
-import { faClock, faColumns, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faClock, faPlus, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { onMounted, ref } from "vue";
-import { useRouter } from "vue-router/composables";
+import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
 
-import { GalaxyApi } from "@/api";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
 import { useSidebarSelection } from "@/composables/useSidebarSelection";
 import { useChatStore } from "@/stores/chatStore";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getAgentIcon } from "./agentTypes";
 import type { ChatHistoryItem } from "./chatTypes";
 
-import SidebarList from "@/components/Common/SidebarList.vue";
+import GButton from "../BaseComponents/GButton.vue";
+import ChatModeSelector from "./ChatModeSelector.vue";
 import ActivityPanel from "@/components/Panels/ActivityPanel.vue";
+import ScrollList from "@/components/ScrollList/ScrollList.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
+const { confirm } = useConfirmDialog();
+const Toast = useToast();
+const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
 
-const chatHistory = ref<ChatHistoryItem[]>([]);
-const loading = ref(false);
+const { chatHistory, loading } = storeToRefs(chatStore);
 
 const {
     selectionMode,
@@ -32,25 +39,21 @@ const {
     pruneAfterDelete,
 } = useSidebarSelection(chatHistory, (item) => item.id);
 
-onMounted(() => {
-    loadHistory();
+const currentExchangeId = computed(() => {
+    if (chatStore.isCenterMode) {
+        return route.params["exchangeId"] || null;
+    } else {
+        return chatStore.activeChatId;
+    }
 });
 
-async function loadHistory() {
-    loading.value = true;
+onMounted(async () => {
     try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: { query: { limit: 50 } },
-        });
-        if (data && !error) {
-            chatHistory.value = data as unknown as ChatHistoryItem[];
-        }
+        await chatStore.loadHistory();
     } catch (e) {
-        console.error("Failed to load chat history:", e);
-    } finally {
-        loading.value = false;
+        Toast.error(errorMessageAsString(e), "Failed to load chat history");
     }
-}
+});
 
 function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent) {
     if (handleSelectionClick(item, index, event)) {
@@ -59,63 +62,69 @@ function handleItemClick(item: ChatHistoryItem, index: number, event: MouseEvent
     if (chatStore.isCenterMode) {
         router.push(`/galaxyai/${item.id}`);
     } else {
-        chatStore.setActiveChatId(item.id);
-        chatStore.showChat();
+        chatStore.showChat(item.id);
     }
 }
 
 function startNewChat() {
     if (chatStore.isCenterMode) {
-        router.push("/galaxyai");
+        router.push("/galaxyai/new");
     } else {
-        chatStore.setActiveChatId(null);
-        chatStore.showChat();
+        chatStore.showChat(null);
     }
-}
-
-function openDockedChat() {
-    if (chatStore.isCenterMode) {
-        chatStore.setLocation("right");
-    }
-    const latestId = chatHistory.value.length > 0 ? chatHistory.value[0]!.id : null;
-    chatStore.showChat(latestId);
 }
 
 async function deleteSelected() {
     if (selectedIds.value.size === 0) {
         return;
     }
-    const ids = Array.from(selectedIds.value);
-    try {
-        const { error } = await GalaxyApi().PUT("/api/chat/exchanges/batch/delete", {
-            body: { ids },
-        });
-        if (!error) {
-            chatHistory.value = chatHistory.value.filter((item) => !selectedIds.value.has(item.id));
+
+    const confirmed = await confirm(
+        `Are you sure you want to delete the ${selectedIds.value.size} selected conversation(s)?`,
+        {
+            title: "Delete Conversations",
+            okText: "Delete",
+            okIcon: faTrash,
+            okColor: "red",
+        },
+    );
+    if (confirmed) {
+        const deletedIds = new Set(selectedIds.value);
+        const routedChatId = currentExchangeId.value;
+        try {
+            await chatStore.deleteChatsByIds(deletedIds);
             pruneAfterDelete();
+            // In center mode the visible chat is driven by the route, not activeChatId, so if we
+            // just deleted the one on screen, move to a fresh chat rather than a dead route.
+            if (chatStore.isCenterMode && routedChatId && deletedIds.has(routedChatId)) {
+                router.push("/galaxyai/new");
+            }
+        } catch (e) {
+            Toast.error(errorMessageAsString(e, "Failed to delete conversations."), "Error deleting conversations");
         }
-    } catch (e) {
-        console.error("Failed to delete exchanges:", e);
     }
 }
 </script>
 
 <template>
-    <ActivityPanel title="GalaxyAI" go-to-all-title="Open GalaxyAI" href="/galaxyai">
+    <ActivityPanel title="GalaxyAI">
         <template v-slot:header-buttons>
-            <button class="btn btn-sm btn-outline-primary" title="New Chat" @click="startNewChat">
+            <GButton color="blue" transparent size="small" title="New Chat" @click="startNewChat">
                 <FontAwesomeIcon :icon="faPlus" fixed-width />
-            </button>
-            <button class="btn btn-sm btn-outline-primary" title="Open docked chat panel" @click="openDockedChat">
-                <FontAwesomeIcon :icon="faColumns" fixed-width />
-            </button>
-            <button
-                class="btn btn-sm"
-                :class="selectionMode ? 'btn-outline-secondary' : 'btn-outline-danger'"
+            </GButton>
+            <GButton
+                :disabled="chatHistory.length === 0"
+                transparent
+                size="small"
+                :pressed="selectionMode"
                 :title="selectionMode ? 'Cancel selection' : 'Select chats to delete'"
                 @click="toggleSelectionMode">
                 <FontAwesomeIcon :icon="selectionMode ? faTimes : faTrash" fixed-width />
-            </button>
+            </GButton>
+        </template>
+
+        <template v-slot:header>
+            <ChatModeSelector class="pt-1" />
         </template>
 
         <div v-if="selectionMode && chatHistory.length > 0" class="selection-toolbar">
@@ -124,37 +133,51 @@ async function deleteSelected() {
                 <FontAwesomeIcon :icon="allSelected ? faCheckSquare : faSquare" fixed-width />
                 {{ allSelected ? "Deselect all" : "Select all" }}
             </span>
-            <button class="btn btn-sm btn-danger" :disabled="selectedIds.size === 0" @click="deleteSelected">
+            <GButton
+                data-description="delete selected chats"
+                :disabled="selectedIds.size === 0"
+                size="small"
+                @click="deleteSelected">
+                <FontAwesomeIcon :icon="faTrash" fixed-width />
                 Delete {{ selectedIds.size > 0 ? selectedIds.size : "" }}
-            </button>
+            </GButton>
         </div>
 
-        <SidebarList
-            :items="chatHistory"
-            :is-loading="loading"
+        <ScrollList
+            :prop-items="chatHistory"
+            :prop-busy="loading"
+            :prop-total-count="chatHistory.length"
             :item-key="(item) => item.id"
-            :item-class="(item) => ({ selected: selectedIds.has(item.id) })"
-            loading-message="Loading history..."
-            empty-message="No chat history yet"
-            @select="handleItemClick">
-            <template v-slot:item="{ item }">
-                <span v-if="selectionMode" class="history-checkbox">
-                    <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
-                </span>
-                <div class="history-content">
-                    <div class="history-query">{{ item.query }}</div>
-                    <div class="history-meta">
-                        <span class="history-agent">
-                            <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
-                        </span>
-                        <span class="history-time">
-                            <FontAwesomeIcon :icon="faClock" class="mr-1" />
-                            <UtcDate :date="item.timestamp" mode="elapsed" />
-                        </span>
+            load-disabled
+            in-panel
+            name="chat"
+            name-plural="chats">
+            <template v-slot:item="{ item, index }">
+                <!-- eslint-disable-next-line vuejs-accessibility/click-events-have-key-events vuejs-accessibility/no-static-element-interactions -->
+                <div
+                    class="chat-history-item d-flex align-items-start p-2 border-bottom unselectable"
+                    :class="{ selected: selectedIds.has(item.id), current: item.id === currentExchangeId }"
+                    role="button"
+                    tabindex="0"
+                    @click="(event) => handleItemClick(item, index, event)">
+                    <span v-if="selectionMode" class="history-checkbox">
+                        <FontAwesomeIcon :icon="selectedIds.has(item.id) ? faCheckSquare : faSquare" fixed-width />
+                    </span>
+                    <div class="history-content">
+                        <div class="history-query">{{ item.query }}</div>
+                        <div class="history-meta">
+                            <span class="history-agent">
+                                <FontAwesomeIcon :icon="getAgentIcon(item.agent_type)" fixed-width />
+                            </span>
+                            <span class="history-time">
+                                <FontAwesomeIcon :icon="faClock" class="mr-1" />
+                                <UtcDate :date="item.timestamp" mode="elapsed" />
+                            </span>
+                        </div>
                     </div>
                 </div>
             </template>
-        </SidebarList>
+        </ScrollList>
     </ActivityPanel>
 </template>
 
@@ -182,11 +205,17 @@ async function deleteSelected() {
     }
 }
 
-// SidebarList provides base item hover/cursor styles.
-// .selected is applied via itemClass prop on the sidebar-item element,
-// which lives inside SidebarList's scoped styles, so we use :deep.
-:deep(.sidebar-item.selected) {
-    background: rgba($brand-primary, 0.06);
+:deep(.chat-history-item) {
+    cursor: pointer;
+    &:hover {
+        background: var(--color-grey-200) !important;
+    }
+}
+:deep(.chat-history-item.selected) {
+    background: var(--color-blue-200);
+}
+:deep(.chat-history-item.current) {
+    border-left: 0.25rem solid $brand-primary;
 }
 
 .history-checkbox {

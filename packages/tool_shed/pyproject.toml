@@ -1,18 +1,81 @@
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "setuptools-scm>=8"]
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "classifiers",
-    "dependencies",
-    "description",
-    "keywords",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-tool-shed"
+version = "26.1.dev0"
+description = "Galaxy Tool Shed"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-app",
+    "galaxy-auth",
+    "galaxy-config",
+    "galaxy-data",
+    "galaxy-util[image-util]",
+    "galaxy-web-framework",
+    "galaxy-web-stack",
+    "galaxy-web-apps",
+    "a2wsgi",
+    "alembic",
+    "fastapi>=0.133.0",
+    "Mako",
+    "MarkupSafe",
+    "mercurial>=7.2",
+    "Paste",
+    "pydantic>=2.7.4",
+    "Routes",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "slowapi",
+    "starlette>=1.0.1",
+    "starlette-context",
+    "typing-extensions",
+    "WebOb",
+    "Whoosh",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+test = [
+    "galaxy-test-base",
+    "galaxy-test-driver",
+    "playwright",
+    "pytest",
+    "pytest-playwright",
+]
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = [
+    "tool_shed.test*",
+]

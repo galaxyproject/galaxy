@@ -147,3 +147,75 @@ class TestGetUserChatHistoryExcludesPage:
         mgr.get_user_chat_history(trans, include_page_chats=True)
 
         trans.sa_session.execute.assert_called_once()
+
+
+class TestGetRoutingHistory:
+    """get_routing_history returns the pydantic-ai history plus whether the last turn asked a
+    clarifying question -- both from one fetch. The router uses the flag to re-include that turn
+    when routing an otherwise-elliptical answer ("the second one")."""
+
+    @staticmethod
+    def _exchange_with(*messages):
+        exchange = _FakeChatExchange()
+        for message in messages:
+            exchange.add_message(message if isinstance(message, str) else json.dumps(message))
+        return exchange
+
+    def _routing_history(self, mgr, trans, exchange):
+        with mock.patch.object(mgr, "get_exchange_by_id", return_value=exchange):
+            return mgr.get_routing_history(trans, 1)
+
+    def test_true_when_last_response_is_clarification(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        exchange = self._exchange_with(
+            {"query": "help me", "response": "Tool or tutorial?", "agent_response": {"agent_type": "clarification"}},
+        )
+        history, responding = self._routing_history(mgr, trans, exchange)
+        assert responding is True
+        # The turn is reconstructed for routing context (user query + assistant response).
+        assert len(history) == 2
+
+    def test_false_for_normal_last_message(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        exchange = self._exchange_with(
+            {"query": "align reads", "response": "Use BWA", "agent_response": {"agent_type": "tool_recommendation"}},
+        )
+        _, responding = self._routing_history(mgr, trans, exchange)
+        assert responding is False
+
+    def test_only_the_last_message_counts(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        # Earlier clarification, last is normal -> False
+        stale = self._exchange_with(
+            {"agent_response": {"agent_type": "clarification"}},
+            {"agent_response": {"agent_type": "router"}},
+        )
+        assert self._routing_history(mgr, trans, stale)[1] is False
+        # Earlier normal, last is clarification -> True
+        fresh = self._exchange_with(
+            {"agent_response": {"agent_type": "router"}},
+            {"agent_response": {"agent_type": "clarification"}},
+        )
+        assert self._routing_history(mgr, trans, fresh)[1] is True
+
+    def test_empty_when_no_exchange(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        with mock.patch.object(mgr, "get_exchange_by_id", return_value=None):
+            assert mgr.get_routing_history(trans, 999) == ([], False)
+
+    def test_empty_for_no_messages(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        with mock.patch.object(mgr, "get_exchange_by_id", return_value=_FakeChatExchange()):
+            assert mgr.get_routing_history(trans, 1) == ([], False)
+
+    def test_not_clarification_for_malformed_json(self):
+        mgr = ChatManager()
+        trans = _make_trans()
+        exchange = self._exchange_with("not valid json{{{")
+        _, responding = self._routing_history(mgr, trans, exchange)
+        assert responding is False

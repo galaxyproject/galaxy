@@ -94,6 +94,7 @@ const submissionDisabled = computed(
         submitting.value ||
         hasUnnamedSelectedInputs.value ||
         hasUnnamedSelectedOutputs.value ||
+        hasDuplicateOutputLabels.value ||
         !workflowName.value.trim() ||
         hasNoSelectedSteps.value,
 );
@@ -107,6 +108,9 @@ const submissionDisabledMsg = computed(() => {
     }
     if (hasUnnamedSelectedOutputs.value) {
         return "All exposed outputs must have a label";
+    }
+    if (hasDuplicateOutputLabels.value) {
+        return "Exposed output labels must be unique";
     }
     if (hasNoSelectedSteps.value) {
         return "At least one workflow step must be selected";
@@ -207,6 +211,18 @@ const hasUnnamedSelectedOutputs = computed(() => {
     });
 });
 
+function hasDuplicates(values: string[]): boolean {
+    return new Set(values).size !== values.length;
+}
+
+/** Duplicate exposed-output labels. Normalized the same way the backend's
+ *  `_sanitize_output_label` does (trim + collapse internal whitespace) so the
+ *  disabled-button prediction matches the backend's 400 exactly. */
+const hasDuplicateOutputLabels = computed(() => {
+    const labels = selectedOutputLabels.value.map((output) => output.label.trim().replace(/\s+/g, " ").slice(0, 255));
+    return hasDuplicates(labels);
+});
+
 extractWorkflow();
 
 function getSelectedInputs(type: "dataset" | "dataset_collection"): { ids: string[]; names: string[] } {
@@ -219,11 +235,32 @@ function getSelectedInputs(type: "dataset" | "dataset_collection"): { ids: strin
     };
 }
 
+/** Append a numeric suffix until `desired` is unique within `taken`, then record it.
+ *  Input step labels share one namespace, so the workflow's input names stay unique
+ *  in the UI exactly as they will be created — the backend rejects duplicates. */
+function uniqueInputLabel(desired: string, taken: Set<string>): string {
+    let label = desired;
+    let suffix = 2;
+    while (taken.has(label)) {
+        label = `${desired} (${suffix})`;
+        suffix++;
+    }
+    taken.add(label);
+    return label;
+}
+
 async function extractWorkflow() {
     try {
         const result = await extractWorkflowFromHistory(props.historyId);
         if (result.jobs) {
-            jobsList.value = result.jobs.map(toExtractionRow);
+            const rows = result.jobs.map(toExtractionRow);
+            const taken = new Set<string>();
+            for (const row of rows) {
+                if (isInputStep(row)) {
+                    row.newName = uniqueInputLabel(row.newName, taken);
+                }
+            }
+            jobsList.value = rows;
         }
 
         warnings.value = result.warnings || [];
@@ -294,8 +331,15 @@ async function renameInput(newName: string) {
     }
 
     // Instead of using the computed `toRenameInput`, we directly update the `newName` in the `jobsList`
-    // to ensure reactivity and that the change is reflected in the UI immediately.
-    (jobsList.value[renameIndex.value] as InputStep).newName = newName;
+    // to ensure reactivity and that the change is reflected in the UI immediately. Re-uniquify so
+    // renaming into a collision suffixes the input just renamed rather than silently colliding.
+    const taken = new Set<string>();
+    jobsList.value.forEach((job, index) => {
+        if (isInputStep(job) && index !== renameIndex.value) {
+            taken.add(job.newName);
+        }
+    });
+    (jobsList.value[renameIndex.value] as InputStep).newName = uniqueInputLabel(newName, taken);
 }
 
 async function renameOutput(newName: string) {

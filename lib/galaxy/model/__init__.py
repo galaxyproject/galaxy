@@ -1401,14 +1401,34 @@ class PasswordResetToken(Base):
 
 class ToolSource(Base, Dictifiable, RepresentById):
     __tablename__ = "tool_source"
+    __table_args__ = (UniqueConstraint("hash", "source_class", "identity_hash"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
     source_class: Mapped[str] = mapped_column(TrimmedString(255))
+    tool_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    tool_version: Mapped[Optional[str]] = mapped_column(String(255))
+    dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    identity_hash: Mapped[str] = mapped_column(String(255))
+
+    dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
 
 
 class ToolRequest(Base, Dictifiable, RepresentById):
+    """A captured request_internal payload for a tool execution.
+
+    Two mint paths:
+
+    - Async tool-request API: ``state`` follows the submission lifecycle
+      (``NEW`` → ``SUBMITTED`` / ``FAILED``).
+    - Workflow tool step capture: ``state`` is ``NULL`` (no async lifecycle
+      applies); ``request_state`` indicates capture validity.
+
+    Discriminator for readers: ``WHERE state IS NULL`` is the workflow set;
+    ``WHERE state IS NOT NULL`` is the async set. The two sets are disjoint.
+    """
+
     __tablename__ = "tool_request"
 
     states: TypeAlias = ToolRequestState
@@ -1419,6 +1439,9 @@ class ToolRequest(Base, Dictifiable, RepresentById):
     request: Mapped[dict] = mapped_column(JSONType)
     state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
     state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
+    # Validity of ``request`` (``not_validated`` / ``validated`` /
+    # ``validation_failed``). Set whenever the payload is captured.
+    request_state: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
 
     tool_source: Mapped["ToolSource"] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")

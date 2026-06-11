@@ -6,6 +6,9 @@ import type { DCESummary, HDCASummary } from "@/api";
 import { useServerMock } from "@/api/client/__mocks__";
 import { type DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
 
+// The "should save collections" test moved to `datasetCollectionStore.test.ts`
+// when detail / summary caching was split out.
+
 const { server, http } = useServerMock();
 
 const fetchCollectionElementsSpy = vi.fn();
@@ -25,21 +28,6 @@ describe("useCollectionElementsStore", () => {
                 return response(200).json(elements);
             }),
         );
-    });
-
-    it("should save collections", async () => {
-        const collection1: HDCASummary = mockCollection("1");
-        const collection2: HDCASummary = mockCollection("2");
-        const collections: HDCASummary[] = [collection1, collection2];
-        const store = useCollectionElementsStore();
-        expect(store.storedCollections).toEqual({});
-
-        store.saveCollections(collections);
-
-        expect(store.storedCollections).toEqual({
-            "1": collection1,
-            "2": collection2,
-        });
     });
 
     it("should fetch collection elements if they are not yet in the store", async () => {

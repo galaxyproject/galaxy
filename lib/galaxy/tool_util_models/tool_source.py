@@ -150,6 +150,10 @@ class YamlTemplateConfigFile(TemplateConfigFile):
 
 # DOI: '10.<registrant>/<suffix>' per Crossref's published shape.
 DOI_RE = re.compile(r"^10\.\d{4,9}/.+$")
+# Legacy W3C/RFC form prefixes a bare DOI with 'doi:' (optionally with whitespace
+# after the colon). Tools written before 26.1 routinely used this form, so we
+# normalize it away to the bare DOI rather than rejecting it.
+DOI_PREFIX_RE = re.compile(r"^doi:\s*", re.IGNORECASE)
 # BibTeX entries open with '@<type>{' -- e.g. '@article{', '@inproceedings{'.
 BIBTEX_RE = re.compile(r"^@[a-zA-Z]+\s*\{", re.MULTILINE)
 
@@ -166,6 +170,12 @@ class Citation(ToolSourceBaseModel):
                 "dynamic_tool.citation_empty",
                 "citation content must not be empty",
             )
+        # Normalize the legacy 'doi:' prefix to a bare DOI so older tools load and
+        # so downstream DOI resolution (https://doi.org/<doi>) gets a clean value.
+        normalized = DOI_PREFIX_RE.sub("", content, count=1)
+        if normalized != content:
+            content = normalized
+            self.content = normalized
         citation_type = (self.type or "").strip().lower()
         if citation_type == "doi":
             if not DOI_RE.match(content):

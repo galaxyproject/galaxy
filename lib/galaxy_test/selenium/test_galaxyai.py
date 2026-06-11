@@ -116,5 +116,8 @@ class TestGalaxyAI(SeleniumTestCase):
         # Delete selected
         history.delete_selected_button.wait_for_and_click()
 
+        # Confirm deletion
+        self.components.confirm_dialog.ok_button.wait_for_and_click()
+
         # Verify all items were removed (panel should be empty)
         history.empty_message.wait_for_visible()

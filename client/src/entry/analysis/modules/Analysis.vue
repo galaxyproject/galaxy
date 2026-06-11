@@ -55,13 +55,6 @@ function onLoad() {
     showCenter.value = true;
 }
 
-function handleUndock() {
-    const chatId = activeChatId.value;
-    chatStore.setLocation("center");
-    chatStore.hideChat();
-    router.push(chatId ? `/galaxyai/${chatId}` : "/galaxyai");
-}
-
 // life cycle
 onMounted(() => {
     // Using a custom event here which, in contrast to watching $route,
@@ -78,7 +71,10 @@ onUnmounted(() => {
     <div id="columns" class="d-flex">
         <ActivityBar v-if="showPanels" />
         <div id="center" class="d-flex flex-column w-100" style="min-width: 0">
-            <div class="flex-grow-1 overflow-auto p-3" style="min-height: 0">
+            <div
+                class="flex-grow-1 overflow-auto"
+                :class="{ 'p-3': !route.path.startsWith('/galaxyai') }"
+                style="min-height: 0">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="h-100">
                     <router-view :key="$route.fullPath" class="h-100" />
@@ -103,11 +99,7 @@ onUnmounted(() => {
             side="right"
             :reactive-width.sync="chatPanelWidth"
             @close="chatStore.hideChat()">
-            <GalaxyAI
-                :exchange-id="activeChatId || undefined"
-                docked
-                @close="chatStore.hideChat()"
-                @undock="handleUndock" />
+            <GalaxyAI :exchange-id="activeChatId || undefined" docked />
         </FlexPanel>
         <DragAndDropModal />
     </div>

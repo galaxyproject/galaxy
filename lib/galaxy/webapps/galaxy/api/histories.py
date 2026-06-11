@@ -371,9 +371,9 @@ class FastAPIHistories:
         history_id: HistoryIDPathParam,
         limit: int = Query(
             default=500,
-            description="Maximum number of nodes. Applied at history scope.",
+            description="Maximum number of nodes. Applied at history scope. Capped at MAX_LIMIT (1000) by the manager.",
             ge=1,
-            le=2000,
+            le=1000,
         ),
         include_deleted: bool = Query(
             default=False,

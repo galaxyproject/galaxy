@@ -33,6 +33,7 @@ from typing import (
 from .framework import NavigatesGalaxyMixin
 
 T = TypeVar("T", bound="UploadItem")
+TUploadContext = TypeVar("TUploadContext", bound="BaseUploadContext")
 
 UploadMethodId = Literal[
     "local-file",
@@ -427,6 +428,35 @@ class UploadContext:
         self.components.beta_upload.history_selector_modal.wait_for_absent_or_hidden()
         return self
 
+    def activate_advanced_mode(self) -> "UploadContext":
+        """Backward-compatible alias for enabling advanced mode via the UI switch."""
+        return self.set_advanced_mode(True)
+
+    def set_advanced_mode(self, enabled: bool) -> "UploadContext":
+        """Set advanced mode state using the real upload panel switch control."""
+        checkbox = self.components.beta_upload.advanced_mode_toggle_checkbox.wait_for_present()
+        if checkbox.is_selected() != enabled:
+            # Match existing framework checkbox handling via JS click on the input.
+            self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
+        return self
+
+    def toggle_advanced_mode(self) -> "UploadContext":
+        """Toggle advanced mode using the real upload panel switch control."""
+        checkbox = self.components.beta_upload.advanced_mode_toggle_checkbox.wait_for_present()
+        self.driver_wrapper.execute_script("arguments[0].click();", checkbox)
+        return self
+
+    def select_target_object_store(self, object_store_id: str) -> "UploadContext":
+        """Select a target object store for this upload.
+
+        Note: Advanced mode must be enabled first for this selector to be visible.
+        """
+        self.components.beta_upload.target_object_store_selector_dropdown.wait_for_and_click()
+        self.components.beta_upload.target_object_store_selector_option(
+            object_store_id=object_store_id
+        ).wait_for_and_click()
+        return self
+
     def _select_method(self, method_id: UploadMethodId) -> None:
         if self._current_method_id == method_id:
             return
@@ -479,9 +509,32 @@ class BaseUploadContext:
         """Cancel all staged items without uploading."""
         self._context.cancel()
 
-    def select_target_history(self, history_id: str) -> "BaseUploadContext":
+    def select_target_history(self: TUploadContext, history_id: str) -> TUploadContext:
         """Change the upload target history using the TargetHistorySelector UI."""
         self._context.select_target_history(history_id)
+        return self
+
+    def activate_advanced_mode(self: TUploadContext) -> TUploadContext:
+        """Backward-compatible alias for enabling advanced mode via the UI switch."""
+        self._context.activate_advanced_mode()
+        return self
+
+    def set_advanced_mode(self: TUploadContext, enabled: bool) -> TUploadContext:
+        """Set advanced mode state using the real upload panel switch control."""
+        self._context.set_advanced_mode(enabled)
+        return self
+
+    def toggle_advanced_mode(self: TUploadContext) -> TUploadContext:
+        """Toggle advanced mode using the real upload panel switch control."""
+        self._context.toggle_advanced_mode()
+        return self
+
+    def select_target_object_store(self: TUploadContext, object_store_id: str) -> TUploadContext:
+        """Select a target object store for this upload.
+
+        Note: Advanced mode must be activated first for this selector to be visible.
+        """
+        self._context.select_target_object_store(object_store_id)
         return self
 
 
@@ -490,21 +543,11 @@ class LocalFileContext(BaseUploadContext):
     def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> LocalUploadItem:
         return self._context.stage_local_file(test_path, metadata)
 
-    def select_target_history(self, history_id: str) -> "LocalFileContext":
-
-        self._context.select_target_history(history_id)
-        return self
-
 
 class PasteContentContext(BaseUploadContext):
 
     def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
         return self._context.stage_paste_content(content, metadata)
-
-    def select_target_history(self, history_id: str) -> "PasteContentContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
-        self._context.select_target_history(history_id)
-        return self
 
 
 class PasteLinksContext(BaseUploadContext):
@@ -532,11 +575,6 @@ class PasteLinksContext(BaseUploadContext):
         self._context.stage_paste_links(url_metadata_pairs)
         return self
 
-    def select_target_history(self, history_id: str) -> "PasteLinksContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
-        self._context.select_target_history(history_id)
-        return self
-
 
 class RemoteFilesContext(BaseUploadContext):
 
@@ -544,11 +582,6 @@ class RemoteFilesContext(BaseUploadContext):
         self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
     ) -> RemoteFileUploadItem:
         return self._context.stage_remote_file(source_label, file_label, metadata)
-
-    def select_target_history(self, history_id: str) -> "RemoteFilesContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
-        self._context.select_target_history(history_id)
-        return self
 
 
 class CompositeFileContext(BaseUploadContext):
@@ -573,21 +606,11 @@ class CompositeFileContext(BaseUploadContext):
         self._context.stage_composite_file_slot(slot, file_path)
         return self
 
-    def select_target_history(self, history_id: str) -> "CompositeFileContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
-        self._context.select_target_history(history_id)
-        return self
-
 
 class DataLibraryContext(BaseUploadContext):
 
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
-
-    def select_target_history(self, history_id: str) -> "DataLibraryContext":
-        """Change the upload target history using the TargetHistorySelector UI."""
-        self._context.select_target_history(history_id)
-        return self
 
 
 # Mapping of upload method IDs to their corresponding context classes

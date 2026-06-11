@@ -3,11 +3,38 @@ History
 
 .. to_doc
 
----------
-26.1.dev0
----------
+-------
+26.1rc1
+-------
 
 
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Respect workflow object store preference for mapped step outputs  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22409 <https://github.com/galaxyproject/galaxy/pull/22409>`_
+* Avoid premature commit when copying MetadataFile by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22422 <https://github.com/galaxyproject/galaxy/pull/22422>`_
+* Fix testing, publishing and dependencies of packages by `@nsoranzo <https://github.com/nsoranzo>`_ in `#22445 <https://github.com/galaxyproject/galaxy/pull/22445>`_
+* Fix \`get_structure\` when it is passed a DCE with nested elements by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22453 <https://github.com/galaxyproject/galaxy/pull/22453>`_
+* Enforce file source access during dataset materialization by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22486 <https://github.com/galaxyproject/galaxy/pull/22486>`_
+* Fix sample sheet upload without sample-sheet-specific columns  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22488 <https://github.com/galaxyproject/galaxy/pull/22488>`_
+* Truncate dataset name in export arcname to avoid OSError by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22518 <https://github.com/galaxyproject/galaxy/pull/22518>`_
+* Catch end of file error when reading corrupted tabular dataset by `@guerler <https://github.com/guerler>`_ in `#22523 <https://github.com/galaxyproject/galaxy/pull/22523>`_
+* Fix data manager URL for managers with '+' version suffix by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22525 <https://github.com/galaxyproject/galaxy/pull/22525>`_
+* update the binary.py for spatialdata so it also works if the file has… by `@nilchia <https://github.com/nilchia>`_ in `#22802 <https://github.com/galaxyproject/galaxy/pull/22802>`_
+
+============
+Enhancements
+============
+
+* Replace per-term joins in workflow search with EXISTS subqueries by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22548 <https://github.com/galaxyproject/galaxy/pull/22548>`_
+* add TEI XML datatype by `@bgruening <https://github.com/bgruening>`_ in `#22718 <https://github.com/galaxyproject/galaxy/pull/22718>`_
 
 -------------------
 26.0.0 (2026-04-08)

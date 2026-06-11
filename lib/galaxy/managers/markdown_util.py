@@ -38,7 +38,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     ServerNotConfiguredForRequest,
 )
-from galaxy.managers.hdcas import HDCASerializer
 from galaxy.managers.jobs import (
     JobManager,
     summarize_job_metrics,
@@ -46,6 +45,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.managers.licenses import LicensesManager
 from galaxy.model import (
+    ImplicitCollectionJobs,
     Job,
 )
 from galaxy.model.item_attrs import get_item_annotation_str
@@ -146,6 +146,25 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         job_manager = JobManager(trans.app, history_manager)
         collection_manager = trans.app.dataset_collection_manager
 
+        def _job_for_job_directive(object_type, object_id):
+            """Resolve the job a job directive (stdout/stderr/metrics/parameters)
+            refers to, by either a job id or an implicit collection jobs id.
+
+            For a map-over (ICJ) the representative job stands in for the step.
+            There is no ICJ-level access accessor, so access is enforced by
+            running the representative job through ``get_accessible_job``.
+            """
+            if object_id is None:
+                return None
+            if object_type == "job_id":
+                return job_manager.get_accessible_job(trans, object_id)
+            if object_type == "implicit_collection_jobs_id":
+                icj = trans.sa_session.get(ImplicitCollectionJobs, object_id)
+                if icj is None:
+                    raise ObjectNotFound(f"ImplicitCollectionJobs [{object_id}] not found")
+                return job_manager.get_accessible_job(trans, icj.representative_job.id)
+            return None
+
         def _remap(container, line):
             line, object_type, object_id, encoded_id = self._encode_line(trans, line)
             rval = None
@@ -214,20 +233,20 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                     hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
                     rval = self.handle_dataset_collection_display(line, hdca)
             elif container == "tool_stdout":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_tool_stdout(line, job)
             elif container == "tool_stderr":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_tool_stderr(line, job)
             elif container == "job_parameters":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_job_parameters(line, job)
             elif container == "job_metrics":
-                if object_id is not None and object_type == "job_id":
-                    job = job_manager.get_accessible_job(trans, object_id)
+                job = _job_for_job_directive(object_type, object_id)
+                if job is not None:
                     rval = self.handle_job_metrics(line, job)
             elif container == "generate_galaxy_version":
                 version = trans.app.config.version_major
@@ -525,60 +544,46 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
-    def ensure_rendering_data_for(self, object_type, obj):
-        encoded_id = self.trans.security.encode_id(obj.id)
-        if object_type not in self.extra_rendering_data:
-            self.extra_rendering_data[object_type] = {}
-        object_type_data = self.extra_rendering_data[object_type]
-        if encoded_id not in object_type_data:
-            object_type_data[encoded_id] = {}
-        return object_type_data[encoded_id]
-
-    def extend_history_dataset_rendering_data(self, obj, key, val, default_val):
-        self.ensure_rendering_data_for("history_datasets", obj)[key] = val or default_val
-
+    # Object directives are no-ops here. The interactive client resolves every
+    # referenced object live from its own store/API (datasets, collections, jobs,
+    # workflows, histories, invocations), and PDF/HTML export renders inline via
+    # ToBasicMarkdownDirectiveHandler. The export markdown carries the (encoded-id)
+    # directive, so nothing needs to be baked into extra_rendering_data. Handlers
+    # are spelled out rather than defaulted on the base class so a new directive
+    # must still be considered here explicitly.
     def handle_dataset_display(self, line, hda):
-        self.handle_dataset_name(line, hda)
-        self.handle_dataset_type(line, hda)
+        pass
 
     def handle_dataset_embedded(self, line, hda):
-        self.handle_dataset_name(line, hda)
+        pass
 
     def handle_dataset_peek(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "peek", hda.peek, "*No Dataset Peek Available*")
+        pass
 
     def handle_dataset_info(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "info", hda.info, "*No Dataset Info Available*")
+        pass
 
     def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
-        self.ensure_rendering_data_for("workflows", stored_workflow)["name"] = stored_workflow.name
+        pass
 
     def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
         pass
 
     def handle_workflow_license(self, line, stored_workflow):
-        self.ensure_rendering_data_for("workflows", stored_workflow)[
-            "license"
-        ] = stored_workflow.latest_workflow.license
+        pass
 
     def handle_dataset_collection_display(self, line, hdca):
-        hdca_serializer = HDCASerializer(self.trans.app)
-        hdca_view = hdca_serializer.serialize_to_view(hdca, user=self.trans.user, trans=self.trans, view="summary")
-        self.ensure_rendering_data_for("history_dataset_collections", hdca).update(hdca_view)
+        pass
 
     def handle_tool_stdout(self, line, job):
-        self.ensure_rendering_data_for("jobs", job)["tool_stdout"] = job.tool_stdout or "*No Standard Output Available*"
+        pass
 
     def handle_tool_stderr(self, line, job):
-        self.ensure_rendering_data_for("jobs", job)["tool_stderr"] = job.tool_stderr or "*No Standard Error Available*"
+        pass
 
     def handle_history_link(self, line, history):
-        self.ensure_rendering_data_for("histories", history)["name"] = history.name
+        pass
 
-    # Following three cases - the client side widgets have everything they need
-    # from the encoded ID. Don't implement a default on the base class though because
-    # it is good to force both Client and PDF/HTML export to deal with each new directive
-    # explicitly.
     def handle_dataset_as_image(self, line, hda):
         pass
 
@@ -622,7 +627,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
+        pass
 
     def handle_invocation_inputs(self, line, invocation):
         pass
@@ -634,10 +639,10 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_dataset_type(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
+        pass
 
     def handle_dataset_name(self, line, hda):
-        self.extend_history_dataset_rendering_data(hda, "name", hda.name, "*Unknown dataset name*")
+        pass
 
     def handle_error(self, container, line, error):
         if "errors" not in self.extra_rendering_data:
@@ -801,13 +806,22 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown = f"---\n{markdown_wrapper[0]}\n---\n"
         return (markdown, True)
 
+    def _mapped_job_note(self, job):
+        """When ``job`` stands in for a map-over (ICJ) step, a note that the
+        rendered data is one representative element, not the whole map."""
+        icj_assoc = job.implicit_collection_jobs_association
+        if icj_assoc is None:
+            return ""
+        count = len(icj_assoc.implicit_collection_jobs.job_list)
+        return f"*Representative job of {count} mapped jobs.*\n\n"
+
     def handle_tool_stdout(self, line, job):
         stdout = job.tool_stdout or "*No Standard Output Available*"
-        return (f"**Standard Output:** {stdout}", True)
+        return (f"{self._mapped_job_note(job)}**Standard Output:** {stdout}", True)
 
     def handle_tool_stderr(self, line, job):
         stderr = job.tool_stderr or "*No Standard Error Available*"
-        return (f"**Standard Error:** {stderr}", True)
+        return (f"{self._mapped_job_note(job)}**Standard Error:** {stderr}", True)
 
     def handle_job_metrics(self, line, job):
         job_metrics = summarize_job_metrics(self.trans, job)
@@ -817,7 +831,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             if plugin not in metrics_by_plugin:
                 metrics_by_plugin[plugin] = {}
             metrics_by_plugin[plugin][job_metric["title"]] = job_metric["value"]
-        markdown = ""
+        markdown = self._mapped_job_note(job)
         for metric_plugin, metrics_for_plugin in metrics_by_plugin.items():
             markdown += f"**{metric_plugin}**\n\n"
             markdown += "|   |   |\n|---|--|\n"
@@ -826,7 +840,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (markdown, True)
 
     def handle_job_parameters(self, line, job: Job):
-        markdown = """
+        markdown = self._mapped_job_note(job)
+        markdown += """
 | Input Parameter | Value |
 |-----------------|-------|
 """

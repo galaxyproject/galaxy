@@ -3,16 +3,76 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "classifiers",
-    "dependencies",
-    "description",
-    "keywords",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-util"
+version = "26.1.dev0"
+description = "Galaxy generic utilities"
+requires-python = ">=3.8"
+license = {"text" = "MIT"}
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "bleach",
+    "boltons",
+    "docutils!=0.17,!=0.17.1",
+    "importlib-resources>=5.10.0; python_version<'3.12'",
+    "packaging",
+    "pyparsing>=3.0.0",
+    "PyYAML",
+    "requests",
+    "typing-extensions",
+    "zipstream-new",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+image-util = [
+    "pillow",
+]
+jstree = [
+    "dictobj",
+]
+template = [
+    "CT3>=3.3.3",
+    "fissix; python_version>='3.13'",
+    "future>=1.0.0",
+]
+config-template = [
+    "galaxy-tool-util-models",
+    "Jinja2",
+    "pydantic>=2.7.4",
+]
+test = [
+    "pytest",
+    "pytest-httpserver",
+    "responses",
+    "Werkzeug",
+]
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

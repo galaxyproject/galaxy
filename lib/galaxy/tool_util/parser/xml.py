@@ -739,8 +739,16 @@ class XmlToolSource(ToolSource):
         for citation_elem in citations_elem:
             try:
                 citation = parse_citation_elem(citation_elem)
-            except Exception:
-                if Version(self.parse_profile()) < Version("24.2"):
+            except Exception as e:
+                # Only fail to load fatally for tools targeting 26.1+. Older tools
+                # skip the offending citation, but log it so the drop is visible
+                # rather than silent.
+                if Version(self.parse_profile()) < Version("26.1"):
+                    log.warning(
+                        "Tool '%s' has an invalid citation that will be skipped: %s",
+                        self._source_path or self.parse_id(),
+                        e,
+                    )
                     continue
                 else:
                     raise

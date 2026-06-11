@@ -37,13 +37,13 @@ dependencies = [
     "docutils!=0.17,!=0.17.1",
     "dparse",
     "edam-ontology",
-    "fastapi>=0.124.0",  # https://github.com/fastapi/fastapi/pull/14453
+    "fastapi>=0.133.0",  # First version compatible with starlette>=1.0.0
     "fissix",
     "fs",
     "future>=1.0.0",  # Python 3.12 support
     "gravity>=1.2.0",  # Python 3.14 support
     "gunicorn!=25.1.0",  # https://github.com/benoitc/gunicorn/discussions/3509
-    "gxformat2>=0.23.0,!=0.25.0,!=0.26.0",  # https://github.com/galaxyproject/gxformat2/issues/204
+    "gxformat2>=0.27.0",
     "h5grove>=1.2.1",
     "h5py>=3.12",  # Python 3.13 support
     "httpx",
@@ -100,7 +100,7 @@ dependencies = [
     "sortedcontainers",
     "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",  # https://github.com/sqlalchemy/sqlalchemy/issues/12019 , https://github.com/sqlalchemy/sqlalchemy/issues/12600
     "sqlparse",
-    "starlette",
+    "starlette>=1.0.1",  # CVE-2026-48710 BadHost
     "starlette-context",
     "svgwrite",
     "tifffile",

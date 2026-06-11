@@ -171,6 +171,8 @@ export interface UploadPayload {
     targets: (HdasUploadTarget | HdcaUploadTarget)[];
     /** Whether to auto-decompress uploads */
     auto_decompress: boolean;
+    /** Optional preferred object store id for all created datasets. */
+    preferred_object_store_id?: string;
     /** Local files to upload via TUS (not part of API, processed by submitUpload) */
     files: UploadableFile[];
 }
@@ -216,6 +218,8 @@ export interface UploadSubmitConfig extends FetchDatasetsCallbacks {
 export interface UploadDatasetsConfig extends FetchDatasetsCallbacks, BuildPayloadOptions {
     /** Chunk size for TUS uploads in bytes (default: 10MB) */
     chunkSize?: number;
+    /** Optional preferred object store id for uploaded datasets. */
+    preferredObjectStoreId?: string;
 }
 
 // ============================================================================
@@ -824,11 +828,17 @@ export function buildCollectionUploadPayload(items: ApiUploadItem[], options: Co
  * Converts UploadPayload to FetchDataPayload for API submission.
  */
 function toApiPayload(data: UploadPayload): FetchDataPayload {
-    return {
+    const payload: FetchDataPayload = {
         history_id: data.history_id,
         targets: data.targets,
         auto_decompress: data.auto_decompress,
     };
+
+    if (data.preferred_object_store_id) {
+        payload.preferred_object_store_id = data.preferred_object_store_id;
+    }
+
+    return payload;
 }
 
 /**
@@ -848,6 +858,10 @@ async function uploadFilesViaTus(
         targets: data.targets,
         auto_decompress: data.auto_decompress,
     };
+
+    if (data.preferred_object_store_id) {
+        apiPayload.preferred_object_store_id = data.preferred_object_store_id;
+    }
 
     try {
         // Upload each file sequentially via TUS
@@ -983,7 +997,16 @@ export async function submitUpload(config: UploadSubmitConfig): Promise<void> {
  * ```
  */
 export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatasetsConfig = {}): Promise<void> {
-    const { composite = false, compositeName, chunkSize, success, error, warning, progress } = config;
+    const {
+        composite = false,
+        compositeName,
+        chunkSize,
+        success,
+        error,
+        warning,
+        progress,
+        preferredObjectStoreId,
+    } = config;
 
     try {
         // Build the API-ready payload from upload items
@@ -994,6 +1017,7 @@ export async function uploadDatasets(items: ApiUploadItem[], config: UploadDatas
             history_id: payload.history_id,
             targets: payload.targets,
             auto_decompress: payload.auto_decompress,
+            preferred_object_store_id: preferredObjectStoreId,
             files: payload.files,
         };
 
@@ -1071,7 +1095,7 @@ export async function uploadCollectionDatasets(
     collectionOptions: CollectionUploadOptions,
     config: UploadDatasetsConfig = {},
 ): Promise<void> {
-    const { chunkSize, success, error, warning, progress } = config;
+    const { chunkSize, success, error, warning, progress, preferredObjectStoreId } = config;
 
     try {
         const payload = buildCollectionUploadPayload(items, collectionOptions);
@@ -1080,6 +1104,7 @@ export async function uploadCollectionDatasets(
             history_id: payload.history_id,
             targets: payload.targets,
             auto_decompress: payload.auto_decompress,
+            preferred_object_store_id: preferredObjectStoreId,
             files: payload.files,
         };
 

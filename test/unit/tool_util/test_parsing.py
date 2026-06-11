@@ -1060,7 +1060,7 @@ def test_old_invalid_citation_dont_cause_failure_to_load():
 
 
 def test_invalid_citation_not_allowed_in_modern_tools():
-    with as_file(resource_path(__name__, "invalid_citation_24.2.xml")) as tool_path:
+    with as_file(resource_path(__name__, "invalid_citation_26.1.xml")) as tool_path:
         tool_source = get_tool_source(tool_path)
     exc = None
     try:
@@ -1068,6 +1068,17 @@ def test_invalid_citation_not_allowed_in_modern_tools():
     except Exception as e:
         exc = e
     assert exc is not None
+
+
+def test_legacy_doi_prefix_citation_is_normalized():
+    # Legacy 'doi:'-prefixed citations load and are normalized to the bare DOI
+    # so downstream resolution (https://doi.org/<doi>) works (see issue #22795).
+    with as_file(resource_path(__name__, "doi_prefixed_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    citations = tool_source.parse_citations()
+    assert len(citations) == 1
+    assert citations[0].type == "doi"
+    assert citations[0].content == "10.1186/1471-2105-11-485"
 
 
 class TestToolProvidedMetadata2(FunctionalTestToolTestCase):

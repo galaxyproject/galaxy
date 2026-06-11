@@ -2310,6 +2310,12 @@ class DataToolParameter(BaseDataToolParameter):
                     ),
                 ):
                     rval.append(single_value)
+                elif single_value in (None, "None", ""):
+                    # An unset optional data input (e.g. connected to a multiple
+                    # data parameter) arrives as a null list element. Tolerate it
+                    # as "no dataset" the way to_python() filters it, rather than
+                    # treating null as a malformed id (regression from #22617).
+                    continue
                 else:
                     pk = _decode_dataset_id(single_value, trans.security, self.name)
                     rval.append(trans.sa_session.get(HistoryDatasetAssociation, pk))

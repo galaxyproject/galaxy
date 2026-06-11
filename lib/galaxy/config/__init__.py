@@ -32,6 +32,7 @@ from urllib.parse import urlparse
 
 import yaml
 
+from galaxy.config._galaxy_config_schema_attributes import GalaxyAppConfigurationAttributes
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -625,7 +626,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
-    sentry_dsn: str
+    sentry_dsn: Optional[str]
     config_dict: dict[str, str]
 
     @property
@@ -669,7 +670,7 @@ class CommonConfigurationMixin:
                 raise ConfigurationError(f"Unable to create missing directory: {path}\n{unicodify(e)}")
 
 
-class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
+class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfiguration, CommonConfigurationMixin):
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
         "whitelist_file": "email_domain_allowlist_file",
@@ -738,7 +739,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     }
 
     allow_local_account_creation: bool
-    allowed_origin_hostnames: list[str]
     builds_file_path: str
     container_resolvers_config_file: str
     database_connection: str
@@ -752,10 +752,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hash_function: HashFunctionNameEnum
     integrated_tool_panel_config: str
     involucro_path: str
-    len_file_path: str
     manage_dependency_relationships: bool
     monitor_thread_join_timeout: int
-    mulled_channels: list[str]
     new_file_path: str
     nginx_upload_store: str
     password_expiration_period: timedelta
@@ -766,21 +764,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     themes: dict[str, dict[str, str]]
     themes_by_host: dict[str, dict[str, dict[str, str]]]
     tool_data_path: str
-    tool_dependency_dir: Optional[str]
-    tool_filters: list[str]
-    tool_label_filters: list[str]
     tool_path: str
-    tool_section_filters: list[str]
-    toolbox_filter_base_modules: list[str]
     track_jobs_in_database: bool
     trust_jupyter_notebook_conversion: bool
     tus_upload_store: str
     use_remote_user: bool
     user_library_import_dir_auto_creation: bool
-    user_library_import_symlink_allowlist: list[str]
-    user_tool_filters: list[str]
-    user_tool_label_filters: list[str]
-    user_tool_section_filters: list[str]
     visualization_plugins_directory: str
     workflow_resource_params_mapper: str
 
@@ -942,7 +931,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             raise ConfigurationError(f"Unrecognized value for hash_function option: {self.hash_function}")
         self.hash_function = HashFunctionNameEnum[self.hash_function]
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
-        self.use_remote_user = self.use_remote_user or self.single_user
+        self.use_remote_user = bool(self.use_remote_user or self.single_user)
         self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
 

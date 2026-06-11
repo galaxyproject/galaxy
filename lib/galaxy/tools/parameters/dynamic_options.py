@@ -993,9 +993,11 @@ class DynamicOptions:
             or self.missing_index_file
         ):
             options = self.get_fields(trans, other_values)
+            value_col = self.columns["value"]
+            name_col = self.columns.get("name", value_col)
             for fields in options:
-                name = fields[self.columns["name"]]
-                value = fields[self.columns["value"]]
+                name = fields[name_col]
+                value = fields[value_col]
                 hda = fields[-1] if isinstance(fields[-1], HistoryDatasetAssociation) else None
                 rval.append(ParameterOption(name, value, False, dataset=hda))
         else:

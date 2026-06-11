@@ -216,6 +216,44 @@ class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
         assert "True" in filter_params.qv
         assert "False" in filter_params.qv
 
+    def test_get_history_graph_forwards_args_and_returns_dump(self):
+        fake_response = mock.MagicMock()
+        fake_response.model_dump.return_value = {
+            "nodes": [{"id": "d-abc", "type": "dataset", "hid": 1}],
+            "edges": [],
+            "truncated": {"item_count_capped": False, "scope_type": "recent"},
+        }
+        mock_service = mock.MagicMock()
+        mock_service.graph.return_value = fake_response
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            result = self.agent_ops.get_history_graph(
+                history_id="hist-encoded",
+                seed_src="hda",
+                seed_id="abc",
+                direction="backward",
+                depth=3,
+                limit=100,
+            )
+
+        mock_service.graph.assert_called_once()
+        call_kwargs = mock_service.graph.call_args.kwargs
+        assert call_kwargs["history_id"] == 42
+        assert call_kwargs["seed_src"] == "hda"
+        assert call_kwargs["seed_id"] == "abc"
+        assert call_kwargs["direction"] == "backward"
+        assert call_kwargs["depth"] == 3
+        assert call_kwargs["limit"] == 100
+        assert call_kwargs["include_deleted"] is False
+
+        assert result["truncated"]["item_count_capped"] is False
+        assert result["nodes"][0]["id"] == "d-abc"
+
     def test_get_tool_run_examples_with_version(self):
         mock_tool_v1 = mock.MagicMock()
         mock_tool_v1.id = "cat1"

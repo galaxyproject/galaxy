@@ -55,7 +55,11 @@ const router = useRouter();
 const { pushToFrameOrPage } = useWindowAwareNavigation();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { config } = useConfig();
-const { connected: sseConnected, hasEverConnected: sseHasEverConnected } = useSSEConnectionStatus();
+const {
+    connected: sseConnected,
+    hasEverConnected: sseHasEverConnected,
+    reconnect: reconnectSSE,
+} = useSSEConnectionStatus();
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useHistoryContentStats(
     toRef(props, "history"),
 );
@@ -134,6 +138,12 @@ function updateTime() {
 }
 
 async function reloadContents() {
+    // When live updates have dropped, the click should re-establish the SSE
+    // pipeline — not just pull a one-shot REST refresh — so subsequent updates
+    // resume on their own. The emit below still re-fetches contents now.
+    if (sseLost.value) {
+        reconnectSSE();
+    }
     emit("reloadContents");
     reloadButtonLoading.value = true;
     setTimeout(() => {

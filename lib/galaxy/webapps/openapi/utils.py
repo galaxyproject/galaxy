@@ -11,19 +11,10 @@ from typing import (
 )
 
 from fastapi import routing
-
-try:
-    from fastapi._compat import (  # type: ignore[attr-defined,unused-ignore]
-        get_flat_models_from_fields,
-        get_model_name_map,
-    )
-
-    GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE = True
-except ImportError:
-    # FastAPI <0.128.4
-    GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE = False
-    from fastapi._compat import get_compat_model_name_map  # type: ignore[attr-defined,unused-ignore]
-
+from fastapi._compat import (  # type: ignore[attr-defined,unused-ignore]
+    get_flat_models_from_fields,
+    get_model_name_map,
+)
 from fastapi.encoders import jsonable_encoder
 from fastapi.openapi.constants import REF_TEMPLATE
 from fastapi.openapi.models import OpenAPI
@@ -74,11 +65,8 @@ def get_openapi(
     webhook_paths: dict[str, dict[str, Any]] = {}
     operation_ids: set[str] = set()
     all_fields = get_fields_from_routes(list(routes or []) + list(webhooks or []))
-    if GET_FLAT_MODELS_FROM_FIELDS_AVAILABLE:
-        flat_models = get_flat_models_from_fields(all_fields, known_models=set())
-        model_name_map = get_model_name_map(flat_models)
-    else:
-        model_name_map = get_compat_model_name_map(all_fields)
+    flat_models = get_flat_models_from_fields(all_fields, known_models=set())
+    model_name_map = get_model_name_map(flat_models)
     schema_generator = schema_generator or GenerateJsonSchema(ref_template=REF_TEMPLATE)
     field_mapping, definitions = get_definitions(
         fields=all_fields,

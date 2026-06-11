@@ -190,15 +190,21 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
-            metadata = item.get("metadata") or {
+            # Substitution keys (e.g. base_name) default from the datatype, with any
+            # provided metadata layered on top.
+            metadata = {
                 composite_file.substitute_name_with_metadata: datatype.metadata_spec[
                     composite_file.substitute_name_with_metadata
                 ].default
                 for composite_file in datatype.composite_files.values()
                 if composite_file.substitute_name_with_metadata
             }
+            metadata.update(item.get("metadata") or {})
+            # History display name: respect an explicitly provided name, then fall back to
+            # base_name. Do NOT write this back into metadata["base_name"] -- base_name drives
+            # the canonical "%s" -> base_name substitution for composite filenames and must keep
+            # its provided/default value (e.g. "RgeneticsData"), independent of the display name.
             name = item.get("name") or metadata.get("base_name") or "Composite Dataset"
-            metadata["base_name"] = name
             dataset = Bunch(
                 name=name,
                 metadata=metadata,

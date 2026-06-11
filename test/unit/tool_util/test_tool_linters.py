@@ -62,7 +62,31 @@ CITATIONS_ERRORS = """
 CITATIONS_VALID = """
 <tool id="id" name="name">
     <citations>
-        <citation type="doi">DOI</citation>
+        <citation type="doi">10.1186/1471-2105-11-485</citation>
+    </citations>
+</tool>
+"""
+
+CITATIONS_LEGACY_DOI_PREFIX = """
+<tool id="id" name="name">
+    <citations>
+        <citation type="doi">doi:10.1186/1471-2105-11-485</citation>
+    </citations>
+</tool>
+"""
+
+CITATIONS_INVALID = """
+<tool id="id" name="name">
+    <citations>
+        <citation type="doi">not-a-doi</citation>
+    </citations>
+</tool>
+"""
+
+CITATIONS_LEGACY_DOI_PREFIX_MODERN = """
+<tool id="id" name="name" profile="26.1">
+    <citations>
+        <citation type="doi">doi:10.1186/1471-2105-11-485</citation>
     </citations>
 </tool>
 """
@@ -1208,7 +1232,36 @@ def test_citations_valid(lint_ctx):
     assert "Found 1 citations." in lint_ctx.valid_messages
     assert len(lint_ctx.valid_messages) == 1
     assert not lint_ctx.info_messages
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
+
+
+def test_citations_legacy_doi_prefix(lint_ctx):
+    tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX)
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert lint_ctx.warn_messages == [
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
+        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+    ]
+    assert not lint_ctx.error_messages
+
+
+def test_citations_invalid(lint_ctx):
+    tool_source = get_xml_tool_source(CITATIONS_INVALID)
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert len(lint_ctx.warn_messages) == 1
+    assert "is invalid and will not load for tools with profile >= 26.1" in str(lint_ctx.warn_messages[0])
+    assert not lint_ctx.error_messages
+
+
+def test_citations_legacy_doi_prefix_error_on_modern_profile(lint_ctx):
+    tool_source = get_xml_tool_source(CITATIONS_LEGACY_DOI_PREFIX_MODERN)
+    run_lint_module(lint_ctx, citations, tool_source)
+    assert lint_ctx.error_messages == [
+        "Citation 'doi:10.1186/1471-2105-11-485' uses the legacy 'doi:' prefix; "
+        "use the bare DOI '10.1186/1471-2105-11-485' instead."
+    ]
+    assert not lint_ctx.warn_messages
 
 
 def test_command_multiple(lint_ctx):
@@ -2543,7 +2596,7 @@ def test_skip_by_module(lint_ctx):
 def test_list_linters():
     linter_names = Linter.list_listers()
     # make sure to add/remove a test for new/removed linters if this number changes
-    assert len(linter_names) == 146
+    assert len(linter_names) == 147
     assert "Linter" not in linter_names
     # make sure that linters from all modules are available
     for prefix in [

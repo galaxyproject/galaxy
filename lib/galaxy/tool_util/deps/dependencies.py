@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Dict,
     List,
     Optional,
     Union,
@@ -28,7 +27,7 @@ class AppInfo:
         library_import_dir: Optional[str] = None,
         enable_mulled_containers: bool = False,
         container_resolvers_config_file: Optional[str] = None,
-        container_resolvers_config_dict: Optional[Dict[str, Any]] = None,
+        container_resolvers_config_dict: Optional[List[Any]] = None,
         involucro_path: Optional[str] = None,
         involucro_auto_init: bool = True,
         mulled_channels: List[str] = DEFAULT_CHANNELS,

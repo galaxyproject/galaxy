@@ -1,118 +1,178 @@
 <script setup lang="ts">
-import { faBezierCurve, faProjectDiagram } from "@fortawesome/free-solid-svg-icons";
+import { faClock } from "@fortawesome/free-regular-svg-icons";
+import {
+    faBezierCurve,
+    faBolt,
+    faExchangeAlt,
+    faExclamationTriangle,
+    faMagic,
+    faMap,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert } from "bootstrap-vue";
-import { computed, ref, toRef } from "vue";
+import { BAlert, BNav, BNavItem } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, toRef, watch } from "vue";
 
-import type { EdgeStyle, GraphNode } from "@/components/Graph/types";
+import { usePersistentToggle } from "@/composables/persistentToggle";
 import { useHistoryStore } from "@/stores/historyStore";
 
-import { useHistoryGraphData } from "./useHistoryGraphData";
-import { useHistoryGraphLayout } from "./useHistoryGraphLayout";
+import { useHistoryGraph } from "./useHistoryGraph";
 
-import HistoryGraphDetails from "./HistoryGraphDetails.vue";
-import HistoryGraphMinimap from "./HistoryGraphMinimap.vue";
+import HistoryGraphOverview from "./HistoryGraphOverview.vue";
+import HistoryGraphReport from "./HistoryGraphReport.vue";
+import HistoryGraphToolExecutions from "./HistoryGraphToolExecutions.vue";
 import GButton from "@/components/BaseComponents/GButton.vue";
-import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
-import Heading from "@/components/Common/Heading.vue";
-import GraphView from "@/components/Graph/GraphView.vue";
+import NavigationTitle from "@/components/Common/NavigationTitle.vue";
+import HistoryDatasetsBadge from "@/components/History/HistoryDatasetsBadge.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import UtcDate from "@/components/UtcDate.vue";
 
 interface Props {
     historyId: string;
+    /** Active tab — undefined means the Overview tab. */
+    tab?: string;
     seedSrc?: string;
     seedId?: string;
 }
 
 const props = defineProps<Props>();
 
-// History name
+// Data-freshness, projections, SSE subscription — owned by the composable.
+const { history, loading, error, focusNodeId, graphNodes, graphEdges, isTruncated, toolExecutionNodes } =
+    useHistoryGraph(toRef(props, "historyId"), toRef(props, "seedSrc"), toRef(props, "seedId"));
+
+const historyName = computed(() => history.value?.name ?? "...");
+
+// Whether this is the user's current history — drives the Switch to / Current button.
 const historyStore = useHistoryStore();
-const historyName = computed(() => historyStore.getHistoryNameById(props.historyId));
-
-// Fetch params — product decisions owned here
-const limit = ref(500);
-
-const { graphData, loading, error } = useHistoryGraphData(
-    toRef(props, "historyId"),
-    limit,
-    toRef(props, "seedSrc"),
-    toRef(props, "seedId"),
-);
-
-// Renderer focus key mirrors the mapper's `${src}:${id}` node key.
-const focusNodeId = computed(() => (props.seedSrc && props.seedId ? `${props.seedSrc}:${props.seedId}` : null));
-
-// Layout
-const edgeStyle = ref<EdgeStyle>("orthogonal");
-const { layout, layoutLoading } = useHistoryGraphLayout(graphData, edgeStyle);
-
-// Selection
-const selectedNode = ref<GraphNode | null>(null);
-
-function onNodeSelected(node: GraphNode | null) {
-    selectedNode.value = node;
+const { currentHistoryId } = storeToRefs(historyStore);
+const isCurrent = computed(() => currentHistoryId.value === props.historyId);
+async function switchHistory() {
+    await historyStore.setCurrentHistory(props.historyId);
 }
 
-const isLoading = computed(() => loading.value || layoutLoading.value);
-const isTruncated = computed(() => graphData.value?.truncated?.item_count_capped ?? false);
+// Collapsible header info block.
+const { toggled: headerCollapsed, toggle: toggleHeaderCollapse } = usePersistentToggle(
+    "history-graph-header-collapsed",
+);
+
+// Tab state is internal — driven by clicks, not by URL changes — so switching
+// tabs doesn't change `$route.fullPath` and therefore doesn't trip the
+// `<router-view :key="$route.fullPath">` remount in Analysis.vue. The URL's
+// `:tab?` param is only used as the initial selection (deep-link entry).
+const TABS = [
+    { key: "overview", icon: faMap, label: "Overview" },
+    { key: "tool-requests", icon: faBolt, label: "Executions" },
+    { key: "report", icon: faMagic, label: "Summary" },
+] as const;
+type TabKey = (typeof TABS)[number]["key"];
+
+function parseTabKey(tab?: string): TabKey {
+    return TABS.some((t) => t.key === tab) ? (tab as TabKey) : "overview";
+}
+
+const activeTab = ref<TabKey>(parseTabKey(props.tab));
+
+// AI Summary calls an LLM on mount, so keep it lazy until the user actually
+// visits the tab at least once. After that it stays mounted (v-show) so the
+// fetched report persists across tab switches.
+const reportEverActive = ref(activeTab.value === "report");
+watch(activeTab, (val) => {
+    if (val === "report") {
+        reportEverActive.value = true;
+    }
+});
 </script>
 
 <template>
     <div class="history-graph-view">
         <BAlert v-if="error" variant="danger" show>{{ error }}</BAlert>
-        <LoadingSpan v-else-if="isLoading" message="Loading history graph" />
+        <LoadingSpan v-else-if="loading" message="Loading history graph" />
+        <BAlert v-else-if="graphNodes.length === 0" show variant="info" class="m-3">
+            This history is empty. Add datasets or run tools to populate it.
+        </BAlert>
+        <BAlert v-else-if="toolExecutionNodes.length === 0" show variant="info" class="m-3">
+            No History Graph available. Please ensure that the History contains tool executions, and note that Galaxy
+            started capturing the required tool execution data with release 26.1.
+        </BAlert>
         <template v-else>
-            <div class="ui-form-header-underlay sticky-top" />
-            <div class="tool-header sticky-top bg-secondary px-2 py-1 mb-2 rounded">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="py-1 d-flex flex-gapx-1 align-items-center">
-                        <FontAwesomeIcon :icon="faBezierCurve" class="fa-fw" />
-                        <Heading h1 inline bold size="text">{{ historyName }}</Heading>
+            <NavigationTitle
+                :icon="faBezierCurve"
+                :title="`History Graph: ${historyName}`"
+                heading-description="history graph heading"
+                collapsible
+                :collapsed="headerCollapsed"
+                @toggle="toggleHeaderCollapse">
+                <template v-slot:actions>
+                    <GButton
+                        v-if="isCurrent"
+                        disabled
+                        size="small"
+                        color="blue"
+                        tooltip
+                        title="This history is your current history">
+                        Current
+                    </GButton>
+                    <GButton
+                        v-else
+                        size="small"
+                        color="blue"
+                        tooltip
+                        title="Set as current history"
+                        @click="switchHistory">
+                        <FontAwesomeIcon :icon="faExchangeAlt" fixed-width />
+                        Set as Current
+                    </GButton>
+                </template>
+                <template v-slot:collapsible>
+                    <div
+                        v-if="history"
+                        class="history-graph-info px-2 py-1 mt-1 text-muted d-flex justify-content-between align-items-center">
+                        <i data-description="history graph time info">
+                            <FontAwesomeIcon :icon="faClock" class="mr-1" />
+                            <span v-localize>updated</span>
+                            <UtcDate :date="history.update_time" mode="elapsed" />
+                        </i>
+                        <HistoryDatasetsBadge :history-id="historyId" :count="history.count" />
                     </div>
-                    <GButtonGroup>
-                        <GButton
-                            tooltip
-                            :title="'Orthogonal edges'"
-                            size="small"
-                            color="blue"
-                            :outline="edgeStyle !== 'orthogonal'"
-                            :pressed="edgeStyle === 'orthogonal'"
-                            @click="edgeStyle = 'orthogonal'">
-                            <FontAwesomeIcon :icon="faProjectDiagram" fixed-width />
-                        </GButton>
-                        <GButton
-                            tooltip
-                            :title="'Curved edges'"
-                            size="small"
-                            color="blue"
-                            :outline="edgeStyle !== 'curved'"
-                            :pressed="edgeStyle === 'curved'"
-                            @click="edgeStyle = 'curved'">
-                            <FontAwesomeIcon :icon="faBezierCurve" fixed-width />
-                        </GButton>
-                    </GButtonGroup>
-                </div>
-            </div>
-            <div class="history-graph-content">
-                <GraphView
-                    :layout="layout"
-                    :focus-node-id="focusNodeId"
-                    :edge-style="edgeStyle"
-                    :minimap-component="HistoryGraphMinimap"
-                    @nodeSelected="onNodeSelected" />
-                <HistoryGraphDetails v-if="selectedNode" :node="selectedNode" />
-            </div>
-            <div v-if="isTruncated" class="history-graph-truncation">
-                Showing a partial graph. Not all connections are visible.
+                </template>
+            </NavigationTitle>
+
+            <BAlert
+                v-if="isTruncated && toolExecutionNodes.length > 0"
+                show
+                variant="warning"
+                class="mt-2 mb-0 py-1 flex-shrink-0">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="mr-1" />
+                Only considering first {{ toolExecutionNodes.length }} executions.
+            </BAlert>
+
+            <BNav pills class="mb-2 mt-2 p-2 bg-light border-bottom">
+                <BNavItem
+                    v-for="t in TABS"
+                    :key="t.key"
+                    :title="t.label"
+                    :active="activeTab === t.key"
+                    href="#"
+                    @click.prevent="activeTab = t.key">
+                    <FontAwesomeIcon :icon="t.icon" class="mr-1" />
+                    {{ t.label }}
+                </BNavItem>
+            </BNav>
+            <div class="tab-content-container d-flex flex-column overflow-auto">
+                <HistoryGraphOverview
+                    v-show="activeTab === 'overview'"
+                    :nodes="graphNodes"
+                    :edges="graphEdges"
+                    :focus-node-id="focusNodeId" />
+                <HistoryGraphToolExecutions v-show="activeTab === 'tool-requests'" :nodes="toolExecutionNodes" />
+                <HistoryGraphReport v-if="reportEverActive" v-show="activeTab === 'report'" :history-id="historyId" />
             </div>
         </template>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "@/style/scss/theme/blue.scss";
-
 .history-graph-view {
     display: flex;
     flex-direction: column;
@@ -120,31 +180,8 @@ const isTruncated = computed(() => graphData.value?.truncated?.item_count_capped
     min-height: 400px;
 }
 
-.history-graph-content {
-    display: flex;
-    flex-direction: row;
+.tab-content-container {
     flex: 1;
     min-height: 0;
-}
-
-.history-graph-truncation {
-    padding: 0.375rem 1rem;
-    background: $state-warning-bg;
-    color: $state-warning-text;
-    font-size: $h6-font-size;
-    text-align: center;
-    border-top: 1px solid $state-warning-border;
-}
-
-/* Tool request nodes use primary header (no dataset state) */
-:deep(.node-tool-request) .graph-node-header {
-    background: $brand-primary;
-    color: $white;
-}
-
-/* Dataset/collection nodes use state-driven coloring via data-state attribute */
-:deep(.node-dataset) .graph-node-header,
-:deep(.node-collection) .graph-node-header {
-    color: $text-color;
 }
 </style>

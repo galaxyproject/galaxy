@@ -3,17 +3,93 @@ build-backend = "setuptools.build_meta"
 requires = ["setuptools", "setuptools-scm>=8"]
 
 [project]
-dynamic = [
-    "authors",
-    "classifiers",
-    "dependencies",
-    "description",
-    "keywords",
-    "license",
-    "optional-dependencies",
-    "readme",
-    "requires-python",
-    "scripts",
-    "version",
-]
+dynamic = ["readme"]
 name = "galaxy-tool-util"
+version = "26.1.dev0"
+description = "Galaxy tool and tool dependency utilities"
+requires-python = ">=3.8"
+license = {"text" = "MIT"}
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-tool-util-models",
+    "galaxy-util[template,image-util]>=22.1",
+    "conda-package-streaming",
+    "jsonschema",
+    "lxml!=4.2.2",
+    "MarkupSafe",
+    "packaging",
+    "pydantic>=2.7.4",
+    "PyYAML",
+    "requests",
+    "sortedcontainers",
+    "typing-extensions",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+cwl = [
+    "cwl-utils",
+    "cwltool>=3.1.20230624081518",
+]
+mulled = [
+    "jinja2",
+    "Whoosh",
+]
+edam = [
+    "edam-ontology",
+]
+extended-assertions = [
+    "numpy",
+    "pysam",
+    "pillow",
+    "tifffile",
+]
+test = [
+    "Beaker",
+    "pytest",
+    "pytest-mock",
+]
+
+[project.scripts]
+galaxy-tool-format = "galaxy.tool_util.format:main"
+galaxy-tool-test = "galaxy.tool_util.verify.script:main"
+galaxy-tool-test-case-validation = "galaxy.tool_util.parameters.scripts.validate_test_cases:main"
+galaxy-tool-upgrade-advisor = "galaxy.tool_util.upgrade.script:main"
+validate-test-format = "galaxy.tool_util.validate_test_format:main"
+mulled-build = "galaxy.tool_util.deps.mulled.mulled_build:main"
+mulled-build-channel = "galaxy.tool_util.deps.mulled.mulled_build_channel:main"
+mulled-build-files = "galaxy.tool_util.deps.mulled.mulled_build_files:main"
+mulled-build-tool = "galaxy.tool_util.deps.mulled.mulled_build_tool:main"
+mulled-hash = "galaxy.tool_util.deps.mulled.mulled_hash:main"
+mulled-list = "galaxy.tool_util.deps.mulled.mulled_list:main"
+mulled-search = "galaxy.tool_util.deps.mulled.mulled_search:main"
+mulled-update-singularity-containers = "galaxy.tool_util.deps.mulled.mulled_update_singularity_containers:main"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

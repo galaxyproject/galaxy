@@ -480,8 +480,11 @@ class TestAgentUnitMocked:
         )
 
     @pytest.mark.asyncio
-    async def test_router_passes_message_history_to_run(self):
-        """Router should hand the structured history to ``agent.run`` via ``message_history``."""
+    async def test_router_withholds_history_for_routing(self):
+        """Router routes on the current message, withholding conversation history from the
+        model. Feeding history dilutes the routing signal (evals show it degrades routing
+        monotonically), so ``message_history`` is not forwarded; specialists still get the
+        full history via the handoff context."""
         router = QueryRouterAgent(self.deps)
         history: list[ModelMessage] = [
             ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
@@ -500,9 +503,25 @@ class TestAgentUnitMocked:
 
             mock_run.assert_called_once()
             args, kwargs = mock_run.call_args
-            assert kwargs["message_history"] == history
-            # The query itself should not have history pre-pended as a text blob
+            # Routing decision is made on the current message, not the accumulated history.
+            assert kwargs["message_history"] is None
             assert args[0] == "Tell me more about the second one"
+
+    @pytest.mark.asyncio
+    async def test_router_asks_for_clarification(self):
+        """When the model calls ask_for_clarification, the router surfaces it as a
+        clarification turn (agent_type="clarification") rather than guessing a route."""
+        router = QueryRouterAgent(self.deps)
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = '{"__clarification__": true, "question": "Do you want a tool or a tutorial?"}'
+            mock_run.return_value = mock_result
+
+            response = await router.process("I need help with variant calling")
+
+            assert response.agent_type == "clarification"
+            assert response.content == "Do you want a tool or a tutorial?"
 
     @pytest.mark.asyncio
     async def test_router_runs_without_history_for_fresh_conversation(self):
@@ -518,6 +537,55 @@ class TestAgentUnitMocked:
             mock_run.assert_called_once()
             _, kwargs = mock_run.call_args
             assert kwargs["message_history"] is None
+
+    @pytest.mark.asyncio
+    async def test_router_includes_last_turn_when_responding_to_clarification(self):
+        """When the previous turn asked a clarifying question, the router includes just that
+        turn (the original request + the question) in routing context so an elliptical answer
+        like "the second one" can be routed -- a narrow exception to history-withholding."""
+        router = QueryRouterAgent(self.deps)
+        history: list[ModelMessage] = [
+            ModelRequest(parts=[UserPromptPart(content="What histories do I have?")]),
+            ModelResponse(parts=[TextPart(content="You have 3.")]),
+            ModelRequest(parts=[UserPromptPart(content="I need help with variant calling")]),
+            ModelResponse(parts=[TextPart(content="Do you want a tool recommendation or a tutorial?")]),
+        ]
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = "Routed."
+            mock_run.return_value = mock_result
+
+            await router.process(
+                "the second one",
+                context={"conversation_history": history, "responding_to_clarification": True},
+            )
+
+            _, kwargs = mock_run.call_args
+            forwarded = kwargs["message_history"]
+            assert forwarded is not None
+            # Only the last turn (the clarification Q&A), not the whole conversation.
+            assert len(forwarded) == 2
+            assert forwarded[0].parts[0].content == "I need help with variant calling"
+
+    @pytest.mark.asyncio
+    async def test_router_clarification_carries_options(self):
+        """ask_for_clarification can offer short options; they ride along in metadata so the
+        client can render quick-reply buttons."""
+        router = QueryRouterAgent(self.deps)
+
+        with mock.patch.object(router, "_run_with_retry") as mock_run:
+            mock_result = mock.Mock(spec=["output"])
+            mock_result.output = (
+                '{"__clarification__": true, "question": "Tool or tutorial?", '
+                '"options": ["Tool recommendation", "Tutorial"]}'
+            )
+            mock_run.return_value = mock_result
+
+            response = await router.process("I need help with variant calling")
+
+            assert response.agent_type == "clarification"
+            assert response.metadata["options"] == ["Tool recommendation", "Tutorial"]
 
     @pytest.mark.asyncio
     async def test_custom_tool_rejects_prompt_injection_query(self):

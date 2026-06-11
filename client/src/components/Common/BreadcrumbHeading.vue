@@ -48,7 +48,7 @@ function isPathActive(path: RawLocation): boolean {
                     </sup>
                 </template>
 
-                <template v-if="index < items.length - 1"> / </template>
+                <span v-if="index < items.length - 1" :key="'sep-' + index" class="breadcrumb-separator"> / </span>
             </template>
         </Heading>
 
@@ -62,11 +62,22 @@ function isPathActive(path: RawLocation): boolean {
 
     .breadcrumb-heading-header {
         flex-grow: 1;
+        min-width: 0;
+
+        :deep(.separator) {
+            grid-template-columns: 1rem 1fr 1rem;
+        }
+
+        :deep(h1) {
+            overflow: hidden;
+        }
 
         .breadcrumb-heading-header-active {
+            min-width: 0;
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
+            flex-shrink: 1;
 
             &:hover {
                 cursor: pointer;
@@ -74,13 +85,18 @@ function isPathActive(path: RawLocation): boolean {
         }
 
         .breadcrumb-heading-header-inactive {
+            white-space: nowrap;
             flex-shrink: 0;
-            margin-left: auto;
+        }
+
+        .breadcrumb-separator {
+            flex-shrink: 0;
         }
 
         .breadcrumb-heading-header-beta {
             color: var(--color-grey-500);
             white-space: nowrap;
+            flex-shrink: 0;
         }
     }
 }

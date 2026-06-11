@@ -9,7 +9,10 @@ from datetime import (
 )
 from types import SimpleNamespace
 from typing import Optional
-from unittest.mock import MagicMock
+from unittest.mock import (
+    MagicMock,
+    patch,
+)
 
 import jwt
 import pytest
@@ -411,6 +414,66 @@ def make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
         oidc_backend_config=manager.oidc_backends_config,
         app_config=mock_app.config,
     )
+
+
+def make_mock_token(auth_time: int, expires: int, has_refresh_token: bool = True) -> MagicMock:
+    """Build a minimal UserAuthnzToken mock for refresh() tests."""
+    token = MagicMock()
+    token.extra_data = {"auth_time": auth_time, "expires": expires}
+    if has_refresh_token:
+        token.extra_data["refresh_token"] = "dummy_refresh_token"
+    return token
+
+
+def make_mock_trans():
+    """Build a minimal trans mock with sa_session, request, and session."""
+    trans = MagicMock()
+    trans.sa_session = MagicMock()
+    trans.request = MagicMock()
+    trans.request.host = "https://galaxy.example.com"
+    trans.session = {}
+    return trans
+
+
+@pytest.fixture
+def psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file):
+    return make_psa_authnz(mock_oidc_config_file, mock_oidc_backend_config_file)
+
+
+class TestPSAAuthnzRefresh:
+    def test_refresh_returns_false_when_no_token(self, psa_authnz):
+        assert psa_authnz.refresh(make_mock_trans(), None) is False
+
+    def test_refresh_returns_false_when_no_refresh_token(self, psa_authnz):
+        auth_time = int(datetime.now().strftime("%s")) - 100
+        token = make_mock_token(auth_time=auth_time, expires=3600, has_refresh_token=False)
+        assert psa_authnz.refresh(make_mock_trans(), token) is False
+
+    def test_refresh_returns_false_when_token_too_new(self, psa_authnz):
+        """New token — no refresh needed."""
+        auth_time = int(datetime.now().strftime("%s"))
+        token = make_mock_token(auth_time=auth_time, expires=3600)
+        assert psa_authnz.refresh(make_mock_trans(), token) is False
+
+    def test_refresh_called_when_token_past_half_lifetime(self, psa_authnz):
+        expires = 3600
+        auth_time = int(datetime.now().strftime("%s")) - expires  # issued expires seconds ago, so past half
+        token = make_mock_token(auth_time=auth_time, expires=expires)
+        with patch("galaxy.authnz.psa_authnz.on_the_fly_config"):
+            result = psa_authnz.refresh(make_mock_trans(), token)
+        assert result is True
+        token.refresh_token.assert_called_once()
+
+    def test_refresh_called_when_token_already_expired(self, psa_authnz):
+        """Access token is fully expired — should still refresh using the stored refresh_token."""
+        expires = 3600
+        # issued 2*expires seconds ago so the token is well past full expiry
+        auth_time = int(datetime.now().strftime("%s")) - 2 * expires
+        token = make_mock_token(auth_time=auth_time, expires=expires)
+        with patch("galaxy.authnz.psa_authnz.on_the_fly_config"):
+            result = psa_authnz.refresh(make_mock_trans(), token)
+        assert result is True
+        token.refresh_token.assert_called_once()
 
 
 def test_sync_user_profile_skips_when_account_interface_enabled():

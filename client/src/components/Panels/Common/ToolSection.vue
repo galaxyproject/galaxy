@@ -306,21 +306,18 @@ async function onFavoriteSectionToggle() {
                 'favorite-edam-topic-section': isFavoriteEdamTopicSection,
             },
         ]">
-        <div
-            v-g-tooltip.topright.hover
-            class="toolSectionTitle tool-panel-divider"
-            :title="props.category.description || undefined">
+        <div v-g-tooltip.topright.hover class="toolSectionTitle" :title="props.category.description || undefined">
             <div v-if="props.showDragHandle" class="favorite-top-level-drag-target">
                 <FontAwesomeIcon :icon="faGripLines" />
             </div>
             <a
-                class="title-link tool-panel-divider-link"
+                class="title-link"
                 href="javascript:void(0)"
                 role="button"
                 :aria-expanded="opened"
                 :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null"
                 @click="toggleMenu()">
-                <span class="tool-panel-divider-text">
+                <span>
                     <span class="name">
                         <FontAwesomeIcon
                             v-if="favoriteSectionIcon"
@@ -398,7 +395,7 @@ async function onFavoriteSectionToggle() {
     padding: 0em 0.5em;
 }
 
-.tool-panel-label:not(.tool-panel-divider) {
+.tool-panel-label:not(.unified-panel-divider) {
     border-left: 0.25rem solid darken($panel-bg-color, 25%);
     font-size: $h5-font-size;
     font-weight: 600;
@@ -408,14 +405,14 @@ async function onFavoriteSectionToggle() {
     text-transform: uppercase;
 }
 
-.tool-panel-section .tool-panel-label:not(.tool-panel-divider) {
+.tool-panel-section .tool-panel-label:not(.unified-panel-divider) {
     /* labels within subsections */
     margin-left: 1.5rem;
     padding-top: 0.125rem;
     padding-bottom: 0.125rem;
 }
 
-.tool-panel-section .tool-panel-label.tool-panel-divider {
+.tool-panel-section .tool-panel-label.unified-panel-divider {
     margin-left: 1.5rem;
 }
 
@@ -430,12 +427,12 @@ async function onFavoriteSectionToggle() {
     padding-top: 0.25rem;
 }
 
-.favorite-tag-section .tool-panel-divider-text,
-.favorite-tag-section .tool-panel-divider-link,
-.favorite-edam-operation-section .tool-panel-divider-text,
-.favorite-edam-operation-section .tool-panel-divider-link,
-.favorite-edam-topic-section .tool-panel-divider-text,
-.favorite-edam-topic-section .tool-panel-divider-link {
+.favorite-tag-section .unified-panel-divider-text,
+.favorite-tag-section .unified-panel-divider-link,
+.favorite-edam-operation-section .unified-panel-divider-text,
+.favorite-edam-operation-section .unified-panel-divider-link,
+.favorite-edam-topic-section .unified-panel-divider-text,
+.favorite-edam-topic-section .unified-panel-divider-link {
     gap: 0.35rem;
 }
 

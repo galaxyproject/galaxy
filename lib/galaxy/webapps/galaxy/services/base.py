@@ -1,3 +1,4 @@
+import logging
 import mimetypes
 from tempfile import NamedTemporaryFile
 from typing import (
@@ -45,6 +46,8 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util.parameters.state import RequestInternalToolState
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util import ready_name_for_url
+
+log = logging.getLogger(__name__)
 
 
 def ensure_celery_tasks_enabled(config):
@@ -183,17 +186,29 @@ class ConsumesModelStores:
 
 
 def _encode_tool_request(tool_request: ToolRequest, security: IdEncodingHelper) -> dict[str, Any]:
-    """Encode request IDs using strongly-typed parameter walking."""
+    """Encode request IDs using strongly-typed parameter walking.
+
+    Rows captured outside the async-API path (workflow tool steps) may have
+    a payload that does not satisfy the tool's strict typed model — legacy
+    ``.ga`` workflows store numeric params as strings, for instance. In that
+    case the strict walk would 400 the entire endpoint, blocking consumers
+    (e.g. the History Graph UI) that only need the structural shape. Fall
+    back to the raw payload so the endpoint stays usable.
+    """
     tool_source_model = tool_request.tool_source
     raw_tool_source = cast(str, tool_source_model.source)
-    parsed_tool_source = get_tool_source(
-        tool_source_class=tool_source_model.source_class,
-        raw_tool_source=raw_tool_source,
-    )
-    parameter_bundle = input_models_for_tool_source(parsed_tool_source)
-    internal_state = RequestInternalToolState(tool_request.request)
-    encoded_state = encode_request(internal_state, parameter_bundle, security.encode_id)
-    return encoded_state.input_state
+    try:
+        parsed_tool_source = get_tool_source(
+            tool_source_class=tool_source_model.source_class,
+            raw_tool_source=raw_tool_source,
+        )
+        parameter_bundle = input_models_for_tool_source(parsed_tool_source)
+        internal_state = RequestInternalToolState(tool_request.request)
+        encoded_state = encode_request(internal_state, parameter_bundle, security.encode_id)
+        return encoded_state.input_state
+    except Exception as e:
+        log.debug("Falling back to raw payload for tool_request %d: %s", tool_request.id, e)
+        return tool_request.request if isinstance(tool_request.request, dict) else {}
 
 
 def tool_request_to_model(tool_request: ToolRequest, security: IdEncodingHelper) -> ToolRequestModel:

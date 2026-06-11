@@ -217,6 +217,9 @@ const TabTitleContent = defineComponent({
                     <template v-else>{{ tab.title }}</template>
                 </a>
             </li>
+            <li v-if="$slots['nav-end']" class="nav-item ml-auto my-1 d-flex align-items-center">
+                <slot name="nav-end" />
+            </li>
         </ul>
 
         <div class="tab-content" :class="{ col: props.vertical }">

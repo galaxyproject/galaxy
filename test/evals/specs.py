@@ -10,7 +10,9 @@ from collections.abc import (
 from dataclasses import dataclass
 from typing import (
     Any,
+    Generic,
     Optional,
+    TypeVar,
 )
 
 from pydantic_ai.models import Model
@@ -22,7 +24,10 @@ from .datasets import (
     error_analysis_dataset,
     orchestrator_planning_dataset,
     router_tool_use_dataset,
+    routing_ambiguous_dataset,
+    routing_clarification_followup_dataset,
     routing_dataset,
+    routing_depth_dataset,
     staining_quantification_dataset,
     tool_recommendation_dataset,
 )
@@ -36,19 +41,26 @@ from .evaluators import (
 from .tasks import (
     make_error_analysis_task,
     make_orchestrator_plan_task,
+    make_router_clarification_task,
     make_router_content_task,
     make_router_inspect_task,
+    make_router_multiturn_task,
     make_router_task,
     make_tool_recommendation_task,
 )
 
+# A case input is either a plain query string or, for the multi-turn datasets
+# (routing_depth, routing_clarification_followup), a dict. Parameterizing BuiltDataset on it
+# keeps the dataset and its task linked: a dict-input dataset must pair with a dict-input task.
+CaseInputsT = TypeVar("CaseInputsT")
+
 
 @dataclass
-class BuiltDataset:
+class BuiltDataset(Generic[CaseInputsT]):
     """A dataset configured with evaluators and a task ready to evaluate."""
 
-    dataset: Dataset[str, Any, dict[str, Any]]
-    task: Callable[[str], Awaitable[Any]]
+    dataset: Dataset[CaseInputsT, Any, dict[str, Any]]
+    task: Callable[[CaseInputsT], Awaitable[Any]]
     primary_score: str  # name of the headline scorer for the summary table
 
 
@@ -66,6 +78,103 @@ def build_routing(
         task=make_router_task(deps, usage_buffer=usage_buffer),
         primary_score="HandoffMatch",
     )
+
+
+def _build_routing_depth(
+    deps: GalaxyAgentDependencies,
+    representation: str,
+    only: Optional[list[str]],
+    usage_buffer: Optional[list[dict[str, int]]],
+) -> BuiltDataset:
+    dataset = routing_depth_dataset(only=only)
+    dataset.add_evaluator(HandoffMatch())
+    return BuiltDataset(
+        dataset=dataset,
+        task=make_router_multiturn_task(deps, representation=representation, usage_buffer=usage_buffer),
+        primary_score="HandoffMatch",
+    )
+
+
+def build_routing_depth_turn1(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """Turn-1 baseline: the final query with no conversation history."""
+    return _build_routing_depth(deps, "none", only, usage_buffer)
+
+
+def build_routing_depth_prose(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """Deep conversation as flattened prose. The router routes on the current message, so
+    this should recover to ~the turn-1 baseline rather than degrading."""
+    return _build_routing_depth(deps, "prose", only, usage_buffer)
+
+
+def build_routing_ambiguous(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """Genuinely-ambiguous queries; expected route is "clarification" (ask, don't guess)."""
+    dataset = routing_ambiguous_dataset(only=only)
+    dataset.add_evaluator(HandoffMatch())
+    return BuiltDataset(
+        dataset=dataset,
+        task=make_router_task(deps, usage_buffer=usage_buffer),
+        primary_score="HandoffMatch",
+    )
+
+
+def _build_routing_clarification_followup(
+    deps: GalaxyAgentDependencies,
+    responding_to_clarification: bool,
+    only: Optional[list[str]],
+    usage_buffer: Optional[list[dict[str, int]]],
+) -> BuiltDataset:
+    dataset = routing_clarification_followup_dataset(only=only)
+    dataset.add_evaluator(HandoffMatch())
+    return BuiltDataset(
+        dataset=dataset,
+        task=make_router_clarification_task(
+            deps, responding_to_clarification=responding_to_clarification, usage_buffer=usage_buffer
+        ),
+        primary_score="HandoffMatch",
+    )
+
+
+def build_routing_clarification_followup(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """Route the answer to a clarifying question WITH the seam fix (the shipped behavior):
+    the router sees the prior turn, so "the second one" routes to the right specialist."""
+    return _build_routing_clarification_followup(deps, True, only, usage_buffer)
+
+
+def build_routing_clarification_followup_nofix(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """A/B control: route the same answers WITHOUT the seam (history withheld). The elliptical
+    answers have no referent, so this should score well below the fixed variant -- that gap is
+    the seam's value."""
+    return _build_routing_clarification_followup(deps, False, only, usage_buffer)
 
 
 def build_error_analysis(
@@ -168,6 +277,11 @@ def build_orchestrator_planning(
 
 SPECS: dict[str, Callable[..., BuiltDataset]] = {
     "routing": build_routing,
+    "routing_depth_turn1": build_routing_depth_turn1,
+    "routing_depth_prose": build_routing_depth_prose,
+    "routing_ambiguous": build_routing_ambiguous,
+    "routing_clarification_followup": build_routing_clarification_followup,
+    "routing_clarification_followup_nofix": build_routing_clarification_followup_nofix,
     "error_analysis": build_error_analysis,
     "tool_recommendation": build_tool_recommendation,
     "router_tool_use": build_router_tool_use,

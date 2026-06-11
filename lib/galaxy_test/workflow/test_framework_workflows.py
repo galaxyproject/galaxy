@@ -57,6 +57,7 @@ class TestWorkflow(ApiTestCase):
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
+        self.dataset_populator.create_role([self.dataset_populator.user_id()], role_type="user_tool_execute")
 
     @pytest.mark.workflow
     def test_workflow(self, workflow_path: Path, test_job: JobTestDict):

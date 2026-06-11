@@ -64,6 +64,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/agents/history-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * History Summary
+         * @description **Warning**: This API is unstable and may change without notice.
+         */
+        post: operations["history_summary_api_ai_agents_history_summary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/agents/query": {
         parameters: {
             query?: never;
@@ -8208,8 +8228,18 @@ export interface components {
             history_id: unknown;
             /** Landing Uuid */
             landing_uuid?: unknown;
+            /** Preferred Object Store Id */
+            preferred_object_store_id?: unknown;
             /** Targets */
             targets: unknown;
+        };
+        /** Body_history_summary_api_ai_agents_history_summary_post */
+        Body_history_summary_api_ai_agents_history_summary_post: {
+            /**
+             * History Id
+             * @description Encoded id of the history to summarize.
+             */
+            history_id: string;
         };
         /** Body_submit_run_ga4gh_wes_v1_runs_post */
         Body_submit_run_ga4gh_wes_v1_runs_post: {
@@ -12709,6 +12739,11 @@ export interface components {
             history_id: string;
             /** Landing Uuid */
             landing_uuid?: string | null;
+            /**
+             * Preferred Object Store Id
+             * @description Optional preferred storage location id used when creating fetched datasets.
+             */
+            preferred_object_store_id?: string | null;
             /** Targets */
             targets: (
                 | components["schemas"]["DataElementsTarget"]
@@ -13525,7 +13560,7 @@ export interface components {
              * Type
              * @enum {string}
              */
-            type: "dataset_input" | "dataset_output" | "collection_input" | "collection_output";
+            type: "dataset_input" | "dataset_output" | "collection_input" | "collection_output" | "dataset_element";
         };
         /** GraphNode */
         GraphNode: {
@@ -13539,6 +13574,10 @@ export interface components {
             hid?: number | null;
             /** Id */
             id: string;
+            /** Job State Summary */
+            job_state_summary?: {
+                [key: string]: number;
+            } | null;
             /** Name */
             name?: string | null;
             /**
@@ -16898,27 +16937,6 @@ export interface components {
              */
             generate_version?: string | null;
             /**
-             * Histories
-             * @description Histories associated with the invocation.
-             */
-            histories?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * History dataset collections
-             * @description History dataset collections associated with the invocation.
-             */
-            history_dataset_collections?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * History datasets
-             * @description History datasets associated with the invocation.
-             */
-            history_datasets?: {
-                [key: string]: unknown;
-            } | null;
-            /**
              * Workflow ID
              * @description The workflow this invocation has been triggered for.
              * @example 0123456789ABCDEF
@@ -16929,20 +16947,6 @@ export interface components {
              * @description Raw galaxy-flavored markdown contents of the report.
              */
             invocation_markdown?: string | null;
-            /**
-             * Invocations
-             * @description Other invocations associated with the invocation.
-             */
-            invocations?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Jobs
-             * @description Jobs associated with the invocation.
-             */
-            jobs?: {
-                [key: string]: unknown;
-            } | null;
             /**
              * Markdown
              * @description Raw galaxy-flavored markdown contents of the report.
@@ -16971,13 +16975,6 @@ export interface components {
              * @description The name of the user who owns this report.
              */
             username: string;
-            /**
-             * Workflows
-             * @description Workflows associated with the invocation.
-             */
-            workflows?: {
-                [key: string]: unknown;
-            } | null;
         };
         /**
          * InvocationSerializationView
@@ -24355,7 +24352,7 @@ export interface components {
             request: {
                 [key: string]: unknown;
             };
-            state: components["schemas"]["ToolRequestState"];
+            state?: components["schemas"]["ToolRequestState"] | null;
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /** ToolRequestImplicitCollectionReference */
@@ -24398,7 +24395,7 @@ export interface components {
             request: {
                 [key: string]: unknown;
             };
-            state: components["schemas"]["ToolRequestState"];
+            state?: components["schemas"]["ToolRequestState"] | null;
             state_message?: components["schemas"]["ToolRequestStateMessage"] | null;
         };
         /**
@@ -31174,6 +31171,51 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["Body_analyze_error_api_ai_agents_error_analysis_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentResponse"];
+                };
+            };
+            /** @description Request Error */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+            /** @description Server Error */
+            "5XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageExceptionModel"];
+                };
+            };
+        };
+    };
+    history_summary_api_ai_agents_history_summary_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+                "run-as"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Body_history_summary_api_ai_agents_history_summary_post"];
             };
         };
         responses: {
@@ -40476,7 +40518,7 @@ export interface operations {
     graph_api_histories__history_id__graph_get: {
         parameters: {
             query?: {
-                /** @description Maximum number of nodes. Applied at history scope. */
+                /** @description Maximum number of nodes. Applied at history scope. Capped at MAX_LIMIT (1000) by the manager. */
                 limit?: number;
                 /** @description Include deleted datasets and collections. */
                 include_deleted?: boolean;

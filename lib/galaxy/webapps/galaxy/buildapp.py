@@ -277,6 +277,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/{history_id}/archive")
     webapp.add_client_route("/histories/{history_id}/invocations")
     webapp.add_client_route("/histories/{history_id}/graph")
+    webapp.add_client_route("/histories/{history_id}/graph/{path:.*?}")
     webapp.add_client_route("/histories/{history_id}/pages")
     webapp.add_client_route("/histories/{history_id}/pages/{page_id}")
     webapp.add_client_route("/histories/{history_id}/storage/runs")

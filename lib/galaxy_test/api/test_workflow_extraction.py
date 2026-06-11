@@ -136,6 +136,23 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
 
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
+    def test_extract_from_history_duplicate_input_names_rejected(self, history_id):
+        """POST /api/histories/{id}/extract_workflow rejects duplicate input names."""
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        d2 = self.dataset_populator.new_dataset(history_id, content="beta\n", wait=True)
+        response = self._post(
+            f"histories/{history_id}/extract_workflow",
+            data={
+                "workflow_name": "dup names from history",
+                "dataset_hids": [d1["hid"], d2["hid"]],
+                "dataset_names": ["dup", "dup"],
+            },
+            json=True,
+        )
+        assert response.status_code == 400, response.text
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
     def test_extract_udt_step_with_downstream_tool(self, history_id):
         # A UDT job used to be silently dropped from the extraction because
         # get_tool(job.tool_id) returned None for UUID-based tool IDs. The fix
@@ -1338,6 +1355,110 @@ test_data:
             },
             (400,),
         )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_distinct_output_labels_colliding_after_truncation_rejected(self, history_id):
+        """Two labels identical for 255 chars but differing after collide once
+        `_sanitize_output_label` truncates to 255 — the second must be rejected."""
+        d1, _, cat1_job_id_a = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        out_a = self._history_contents(history_id)[-1]
+        run_b = self.dataset_populator.run_tool(
+            tool_id="cat1",
+            inputs={"input1": {"src": "hda", "id": d1["id"]}},
+            history_id=history_id,
+        )
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        out_b = run_b["outputs"][0]
+        cat1_job_id_b = run_b["jobs"][0]["id"]
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "truncation collision",
+                "hda_ids": [d1["id"]],
+                "job_ids": [cat1_job_id_a, cat1_job_id_b],
+                "output_labels": [
+                    {"kind": "hda", "id": out_a["id"], "label": "x" * 255 + "A"},
+                    {"kind": "hda", "id": out_b["id"], "label": "x" * 255 + "B"},
+                ],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_duplicate_dataset_names_rejected(self, history_id):
+        """Two data inputs given the same name collide in the single step-label
+        namespace. Without the guard the second input silently loses its label."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "duplicate input names",
+                "hda_ids": [d1["id"], d2["id"]],
+                "job_ids": [cat1_job_id],
+                "dataset_names": ["dup", "dup"],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_duplicate_name_across_dataset_and_collection_rejected(self, history_id):
+        """Dataset and collection input names share one namespace — a name reused
+        across the two lists must still be rejected."""
+        d1, _, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        hdca = self.dataset_collection_populator.create_list_in_history(history_id, wait=True).json()["outputs"][0]
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "dup across input namespaces",
+                "hda_ids": [d1["id"]],
+                "hdca_ids": [hdca["id"]],
+                "job_ids": [cat1_job_id],
+                "dataset_names": ["shared"],
+                "dataset_collection_names": ["shared"],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_empty_input_name_rejected(self, history_id):
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "empty input name",
+                "hda_ids": [d1["id"]],
+                "dataset_names": ["   "],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_overlong_input_name_rejected(self, history_id):
+        """WorkflowStep.label is Unicode(255); an over-long input name is a
+        commit-time error, so reject it up front."""
+        d1 = self.dataset_populator.new_dataset(history_id, content="alpha\n", wait=True)
+        self._assert_extract_rejected(
+            {
+                "workflow_name": "overlong input name",
+                "hda_ids": [d1["id"]],
+                "dataset_names": ["x" * 256],
+            },
+            (400,),
+        )
+
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_unique_dataset_names_ok(self, history_id):
+        """Distinct names must not be over-rejected; both labels are kept verbatim."""
+        d1, d2, cat1_job_id = self._seed_two_inputs_and_run_cat1(history_id, c1="alpha\n", c2="beta\n")
+        downloaded = self._extract_and_download_workflow_by_ids(
+            hda_ids=[d1["id"], d2["id"]],
+            job_ids=[cat1_job_id],
+            dataset_names=["first input", "second input"],
+        )
+        input_steps = self.assert_steps_of_type(downloaded, "data_input", expected_len=2)
+        assert {step["label"] for step in input_steps} == {"first input", "second input"}, input_steps
 
 
 class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCase):

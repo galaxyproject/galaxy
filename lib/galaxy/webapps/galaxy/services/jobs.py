@@ -30,11 +30,11 @@ from galaxy.managers.jobs import (
     JobSearch,
     view_show_job,
 )
+from galaxy.managers.tool_source import get_or_create_tool_source
 from galaxy.managers.tools import ToolRunReference
 from galaxy.model import (
     Job,
     ToolRequest,
-    ToolSource as ToolSourceModel,
 )
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -262,19 +262,13 @@ class JobsService(ServiceBase):
             request_state = RequestToolState(inputs or {})
         request_state.validate(parameter_bundle, f"{tool.id} (request model)")
         request_internal_state = decode(request_state, parameter_bundle, trans.security.decode_id)
+        sa_session = trans.sa_session
+        tool_source_model = get_or_create_tool_source(sa_session, tool)
         tool_request = ToolRequest()
-        # TODO: hash and such...
-        tool_source_model = ToolSourceModel(
-            source=tool.tool_source.to_string(),
-            source_class=type(tool.tool_source).__name__,
-            hash="TODO",
-        )
         tool_request.request = request_internal_state.input_state
         tool_request.tool_source = tool_source_model
         tool_request.state = ToolRequest.states.NEW
         tool_request.history = target_history
-        sa_session = trans.sa_session
-        sa_session.add(tool_source_model)
         sa_session.add(tool_request)
         sa_session.commit()
         tool_request_id = tool_request.id

@@ -775,6 +775,16 @@ function onKeyDown(event: KeyboardEvent) {
                 background-color: lighten($brand-light, 0.5);
             }
         }
+
+        // A current row that's also focused stays on its "current" blue
+        // styling instead of swapping to the gray focus ring — keeps the
+        // just-clicked row visually selected. Non-current focused rows still
+        // get the gray ring for keyboard-navigation accessibility.
+        &.g-card-current:focus-within .g-card-content {
+            border-color: $brand-primary;
+            background-color: $brand-light;
+            box-shadow: none;
+        }
     }
 
     .g-card-title-section {

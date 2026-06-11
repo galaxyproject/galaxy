@@ -17,10 +17,11 @@ env:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   test:
     name: Test
-    if: ${{ false }}
+    if: false
     runs-on: ubuntu-latest
     continue-on-error: ${{ startsWith(matrix.marker, 'red') }}
     strategy:
@@ -39,7 +40,7 @@ jobs:
         ports:
           - 5432:5432
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -47,7 +48,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@v8.1.0
       - name: Get full Python version
         id: full-python-version
         shell: bash

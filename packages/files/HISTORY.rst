@@ -3,11 +3,26 @@ History
 
 .. to_doc
 
----------
-26.1.dev0
----------
+-------
+26.1rc1
+-------
 
 
+
+-------------------
+26.0.1 (2026-06-04)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Strip whitespace from URIs in get_file_source_path by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22506 <https://github.com/galaxyproject/galaxy/pull/22506>`_
+* Fix UnicodeError on empty-label URLs in fetch validation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#22526 <https://github.com/galaxyproject/galaxy/pull/22526>`_
+* Adds missing TLS support for FTP configurations in templates by `@davelopez <https://github.com/davelopez>`_ in `#22657 <https://github.com/galaxyproject/galaxy/pull/22657>`_
+* Fix webdav file download by `@davelopez <https://github.com/davelopez>`_ in `#22683 <https://github.com/galaxyproject/galaxy/pull/22683>`_
+* Fix Zenodo/Invenio browsing of own records by `@davelopez <https://github.com/davelopez>`_ in `#22690 <https://github.com/galaxyproject/galaxy/pull/22690>`_
 
 -------------------
 26.0.0 (2026-04-08)

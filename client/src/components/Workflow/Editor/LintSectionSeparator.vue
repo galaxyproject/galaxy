@@ -10,7 +10,7 @@ const props = defineProps<{
 </script>
 
 <template>
-    <!-- TODO: Ideally we want to use the same thing as the `.tool-panel-divider` from 
+    <!-- TODO: Ideally we want to use the same thing as the `.unified-panel-divider` from
         https://github.com/bgruening/galaxy/commit/4b65bde448a1cc7d2f612ad0658f98b0fc64a0bc -->
     <div class="best-practices-lint-separator">
         <div>{{ props.sectionType.charAt(0).toUpperCase() + props.sectionType.slice(1) }} Best Practices</div>

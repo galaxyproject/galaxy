@@ -225,13 +225,14 @@ class ChatAPI:
                 # format so the router passes it as ``message_history`` rather than
                 # flattening into a text blob.
                 if exchange_id:
-                    db_history = await anyio.to_thread.run_sync(
-                        partial(self.chat_manager.get_chat_history, trans, exchange_id, format_for_pydantic_ai=True)
+                    # One fetch yields both the history and whether the previous turn asked a
+                    # clarifying question -- when it did, the router re-includes that turn so it
+                    # can route this (otherwise elliptical) answer instead of withholding history.
+                    db_history, responding_to_clarification = await anyio.to_thread.run_sync(
+                        partial(self.chat_manager.get_routing_history, trans, exchange_id)
                     )
-                    if db_history:
-                        full_context["conversation_history"] = db_history
-                    else:
-                        full_context["conversation_history"] = []
+                    full_context["conversation_history"] = db_history or []
+                    full_context["responding_to_clarification"] = responding_to_clarification
                 else:
                     full_context["conversation_history"] = []
 

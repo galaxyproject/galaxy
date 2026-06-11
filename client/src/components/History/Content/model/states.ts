@@ -203,13 +203,36 @@ export const HIERARCHICAL_COLLECTION_DATASET_STATES = [
     "discarded" as const,
 ] as const satisfies readonly DatasetState[];
 
+/** populated_state values that surface as a terminal collection display state. */
+export function stateFromPopulatedState(populatedState: string | null | undefined): State | null {
+    if (populatedState === "failed") {
+        return "failed_populated_state";
+    }
+    if (populatedState === "new") {
+        return "new_populated_state";
+    }
+    return null;
+}
+
+/** Highest-priority non-zero state from a job_state_summary, or null. */
+export function stateFromJobSummary(jobStateSummary: Record<string, number> | null | undefined): State | null {
+    if (!jobStateSummary) {
+        return null;
+    }
+    for (const jobState of HIERARCHICAL_COLLECTION_JOB_STATES) {
+        if ((jobStateSummary[jobState] ?? 0) > 0) {
+            return jobState;
+        }
+    }
+    return null;
+}
+
 export function getContentItemState(item: HistoryContentItem | HDADetailed | HDCADetailed): State {
     if (isHDCAItem(item) || isDCEWithCollection(item)) {
-        if ("populated_state" in item && item.populated_state === "failed") {
-            return "failed_populated_state";
-        }
-        if ("populated_state" in item && item.populated_state === "new") {
-            return "new_populated_state";
+        const hdca = item as HDCADetailed;
+        const popState = stateFromPopulatedState(hdca.populated_state);
+        if (popState) {
+            return popState;
         }
 
         // Check dataset states first (higher priority for actual data states)
@@ -228,14 +251,9 @@ export function getContentItemState(item: HistoryContentItem | HDADetailed | HDC
             }
         }
 
-        // Fall back to job states if no dataset states
-        if ("job_state_summary" in item && item.job_state_summary) {
-            const jobStateSummary = item.job_state_summary as Record<string, number>;
-            for (const jobState of HIERARCHICAL_COLLECTION_JOB_STATES) {
-                if ((jobStateSummary[jobState] || 0) > 0) {
-                    return jobState;
-                }
-            }
+        const jobState = stateFromJobSummary(hdca.job_state_summary);
+        if (jobState) {
+            return jobState;
         }
     } else if ("accessible" in item && item.accessible === false) {
         return "inaccessible";

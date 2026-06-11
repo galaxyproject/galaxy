@@ -7,6 +7,7 @@ from sqlalchemy import select
 from galaxy.model import (
     Dataset,
     HistoryDatasetAssociation,
+    Job,
 )
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
@@ -71,6 +72,21 @@ steps:
       input1: input_collection
 """
 
+SIMPLE_CAT_WORKFLOW = """
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: input1
+outputs:
+  out:
+    outputSource: cat1/out_file1
+"""
+
 
 class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
     dataset_populator: DatasetPopulator
@@ -95,6 +111,48 @@ class TestWorkflowInvocation(integration_util.IntegrationTestCase, UsesShedApi):
             for step in invocation_details["steps"]:
                 if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
+
+    def test_workflow_tool_step_persists_validated_job_tool_state(self) -> None:
+        # Per-job leg: a workflow tool-step execution feeds validated
+        # job_internal into MappingParameters so execute.py persists it onto
+        # Job.tool_state - the same column the async tool-request path fills.
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                SIMPLE_CAT_WORKFLOW,
+                test_data={"input1": {"value": "1.bed", "type": "File"}},
+                history_id=history_id,
+            )
+            jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
+            cat_jobs = [j for j in jobs if j["tool_id"] == "cat1"]
+            assert len(cat_jobs) == 1, jobs
+            decoded_id = self._app.security.decode_id(cat_jobs[0]["id"])
+            job = self.sa_session.get(Job, decoded_id)
+            assert job is not None
+            tool_state = job.tool_state
+            assert tool_state, f"empty Job.tool_state for workflow tool step: {tool_state!r}"
+            assert tool_state.get("input1", {}).get("src") == "hda", tool_state
+
+    def test_workflow_tool_step_mints_tool_request(self) -> None:
+        # The execute-time capture mints a ToolRequest carrying the
+        # request_internal payload + validity enum; the resulting Job is
+        # linked via Job.tool_request_id (same shape as the async API).
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                SIMPLE_CAT_WORKFLOW,
+                test_data={"input1": {"value": "1.bed", "type": "File"}},
+                history_id=history_id,
+            )
+            jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
+            cat_jobs = [j for j in jobs if j["tool_id"] == "cat1"]
+            assert len(cat_jobs) == 1, jobs
+            job_id = self._app.security.decode_id(cat_jobs[0]["id"])
+            job = self.sa_session.get(Job, job_id)
+            assert job is not None
+            assert job.tool_request_id is not None, "workflow tool step did not mint a ToolRequest"
+            tool_request = job.tool_request
+            assert tool_request.request_state == "validated", tool_request.request_state
+            assert tool_request.request, f"empty ToolRequest.request: {tool_request.request!r}"
+            assert tool_request.request.get("input1", {}).get("src") == "hda", tool_request.request
 
     def test_pick_value_preserves_datatype_and_inheritance_chain(self):
         self.install_repository("iuc", "pick_value", "b19e21af9c52")

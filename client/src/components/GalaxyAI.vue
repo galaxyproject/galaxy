@@ -1,26 +1,15 @@
 <script setup lang="ts">
-import {
-    faAngleDoubleDown,
-    faColumns,
-    faExpand,
-    faExternalLinkAlt,
-    faFile,
-    faMagic,
-    faPlus,
-    faSitemap,
-    faTimes,
-    faTrash,
-    faWrench,
-} from "@fortawesome/free-solid-svg-icons";
+import { faFile, faMagic, faSitemap, faTimes, faTrash, faWrench } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 
 import { GalaxyApi } from "@/api";
-import { getGalaxyInstance } from "@/app";
 import { type AgentResponse, useAgentActions } from "@/composables/agentActions";
+import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
+import { useToast } from "@/composables/toast";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
 import { useChatStore } from "@/stores/chatStore";
@@ -30,6 +19,7 @@ import { getAgentIcon } from "./GalaxyAI/agentTypes";
 import type { ChatHistoryItem, ChatMessage } from "./GalaxyAI/chatTypes";
 import { generateId, scrollToBottom } from "./GalaxyAI/chatUtils";
 
+import ChatActions from "./GalaxyAI/ChatActions.vue";
 import ChatInput from "./GalaxyAI/ChatInput.vue";
 import ChatMessageCell from "./GalaxyAI/ChatMessageCell.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -49,14 +39,11 @@ const props = withDefaults(
     },
 );
 
-const emit = defineEmits<{
-    (e: "close"): void;
-    (e: "undock"): void;
-}>();
-
+const { confirm } = useConfirmDialog();
 const route = useRoute();
 const router = useRouter();
 const chatStore = useChatStore();
+const Toast = useToast();
 
 const { activeContext, contextLabel } = useActiveContext();
 const contextDismissed = ref(false);
@@ -86,6 +73,10 @@ const contextIcon = computed(() => {
     }
 });
 
+/** The chat is in "route mode": It's being viewed in the center and the route starts with `/galaxyai`
+ * _(and we are not in the window manager)_. */
+const isRouteMode = computed(() => chatStore.isCenterMode && !props.compact && route.path.startsWith("/galaxyai"));
+
 const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
@@ -98,9 +89,9 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true, removeNewline
 const { processingAction, handleAction } = useAgentActions();
 
 onMounted(async () => {
-    if (props.exchangeId) {
-        await loadChatById(props.exchangeId);
-    } else if (props.docked || props.panel) {
+    if (props.exchangeId && props.exchangeId !== "new") {
+        await fetchConversation(props.exchangeId);
+    } else if (props.docked || props.panel || props.exchangeId === "new") {
         startNewChat();
     } else {
         await loadLatestChat();
@@ -117,8 +108,8 @@ watch(
         if (newId === oldId) {
             return;
         }
-        if (newId) {
-            await loadChatById(newId);
+        if (newId && newId !== "new") {
+            await fetchConversation(newId);
         } else {
             startNewChat();
         }
@@ -250,42 +241,53 @@ watch(busy, (isBusy) => {
     }
 });
 
+async function selectClarificationOption(option: string) {
+    // A quick-reply to a clarifying question -- send it as the next message. The router
+    // includes the clarification turn when routing, so a terse option still routes.
+    query.value = option;
+    await submitQuery();
+}
+
 async function sendFeedback(messageId: string, value: "up" | "down") {
     const message = messages.value.find((m) => m.id === messageId);
     if (message) {
         message.feedback = value;
 
         if (currentChatId.value) {
-            try {
-                const feedbackValue = value === "up" ? 1 : 0;
-                const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
-                    params: {
-                        path: { exchange_id: currentChatId.value },
-                    },
-                    body: feedbackValue,
-                });
+            const feedbackValue = value === "up" ? 1 : 0;
+            const { error } = await GalaxyApi().PUT("/api/chat/exchange/{exchange_id}/feedback", {
+                params: {
+                    path: { exchange_id: currentChatId.value },
+                },
+                body: feedbackValue,
+            });
 
-                if (error) {
-                    console.error("Failed to save feedback:", error);
-                    message.feedback = null;
-                }
-            } catch (e) {
-                console.error("Failed to save feedback:", e);
+            if (error) {
+                Toast.error(errorMessageAsString(error), "Failed to save feedback");
                 message.feedback = null;
             }
         }
     }
 }
 
-async function fetchConversation(exchangeId: string): Promise<boolean> {
-    const { data: fullConversation } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
+async function fetchConversation(exchangeId: string) {
+    if (exchangeId === "new") {
+        startNewChat();
+        return;
+    }
+
+    const { data: fullConversation, error } = await GalaxyApi().GET(`/api/chat/exchange/{exchange_id}/messages`, {
         params: {
             path: { exchange_id: exchangeId },
         },
     });
 
+    if (error) {
+        Toast.error(errorMessageAsString(error, "Failed to load conversation."), "Error loading conversation");
+        return;
+    }
     if (!fullConversation || fullConversation.length === 0) {
-        return false;
+        return;
     }
 
     messages.value = fullConversation.map((msg: any, index: number) => {
@@ -313,41 +315,22 @@ async function fetchConversation(exchangeId: string): Promise<boolean> {
 
     currentChatId.value = exchangeId;
     nextTick(() => scrollToBottom(chatContainer.value));
-    return true;
-}
 
-async function loadChatById(exchangeId: string) {
-    try {
-        const loaded = await fetchConversation(exchangeId);
-        if (loaded) {
-            hasLoadedInitialChat.value = true;
-        }
-    } catch (e) {
-        console.error("Failed to load chat by ID:", e);
-    }
+    hasLoadedInitialChat.value = true;
 }
 
 async function loadLatestChat() {
-    try {
-        const { data, error } = await GalaxyApi().GET("/api/chat/history", {
-            params: {
-                query: { limit: 1 },
-            },
-        });
+    const { data, error } = await GalaxyApi().GET("/api/chat/history", {
+        params: {
+            query: { limit: 1 },
+        },
+    });
 
-        if (data && !error && data.length > 0) {
-            const latestChat = data[0] as unknown as ChatHistoryItem;
-            try {
-                const loaded = await fetchConversation(latestChat.id);
-                if (loaded) {
-                    hasLoadedInitialChat.value = true;
-                }
-            } catch (e) {
-                console.error("Error loading latest conversation:", e);
-            }
-        }
-    } catch (e) {
-        console.error("Failed to load latest chat:", e);
+    if (error) {
+        Toast.error(errorMessageAsString(error), "Failed to load latest chat");
+    } else if (data && data.length > 0) {
+        const latestChat = data[0] as unknown as ChatHistoryItem;
+        await fetchConversation(latestChat.id);
     }
 }
 
@@ -376,37 +359,52 @@ async function deleteCurrentChat() {
     if (!currentChatId.value) {
         return;
     }
-    try {
-        const { error } = await GalaxyApi().DELETE("/api/chat/exchange/{exchange_id}", {
-            params: { path: { exchange_id: currentChatId.value } },
-        });
-        if (!error) {
+
+    const confirmed = await confirm("Are you sure you want to delete this conversation?", {
+        title: "Delete Conversation",
+        okText: "Delete",
+        okIcon: faTrash,
+        okColor: "red",
+    });
+    if (confirmed) {
+        try {
+            await chatStore.deleteChatById(currentChatId.value);
             startNewChat();
+        } catch (e) {
+            Toast.error(
+                errorMessageAsString(e, "Error occured while trying to delete the conversation"),
+                "Failed to delete conversation.",
+            );
         }
-    } catch (e) {
-        console.error("Failed to delete chat:", e);
     }
 }
 
-function popOutToWindowManager() {
-    const Galaxy = getGalaxyInstance();
-    const path = currentChatId.value ? `/galaxyai/${currentChatId.value}` : "/galaxyai";
-    const url = `${path}?compact=true`;
-    Galaxy.frame.add({ title: "GalaxyAI", url });
-}
-
 function dockTo(location: "right" | "bottom") {
-    chatStore.setActiveChatId(currentChatId.value);
-    chatStore.setLocation(location);
-    chatStore.showChat();
+    chatStore.dockChat(location, currentChatId.value);
     if (route.path.startsWith("/galaxyai")) {
         router.push("/");
     }
 }
 
-watch(currentChatId, (newId) => {
+watch(currentChatId, async (newId) => {
     if (props.docked || props.panel) {
         chatStore.setActiveChatId(newId);
+    }
+
+    if (newId && !chatStore.chatHistory.some((item) => item.id === newId)) {
+        try {
+            await chatStore.loadHistory();
+        } catch (e) {
+            Toast.error(errorMessageAsString(e), "Failed to load chat history");
+        }
+    }
+
+    // Ensure the route is updated to reflect the current chat in center (non-window manager) mode
+    if (isRouteMode.value) {
+        const targetPath = newId ? `/galaxyai/${newId}` : "/galaxyai/new";
+        if (route.path !== targetPath) {
+            router.replace(targetPath);
+        }
     }
 });
 </script>
@@ -415,54 +413,18 @@ watch(currentChatId, (newId) => {
     <div
         class="galaxyai-container"
         :class="{ 'galaxyai-compact': compact, 'galaxyai-docked': docked, 'galaxyai-panel': panel }">
-        <!-- Docked side panel header -->
-        <div v-if="docked" class="galaxyai-header galaxyai-header-docked">
-            <span class="docked-title">
-                <FontAwesomeIcon :icon="faMagic" fixed-width />
-                GalaxyAI
-            </span>
-            <div class="header-actions">
-                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                </button>
-                <button class="btn btn-sm btn-outline-primary" title="Open in center view" @click="emit('undock')">
-                    <FontAwesomeIcon :icon="faExpand" fixed-width />
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" title="Close panel" @click="emit('close')">
-                    <FontAwesomeIcon :icon="faTimes" fixed-width />
-                </button>
-            </div>
-        </div>
-        <!-- Center view header -->
-        <div v-else-if="!compact && !panel" class="galaxyai-header">
-            <Heading h2 :icon="faMagic" size="lg">
-                <span>GalaxyAI</span>
+        <div
+            v-if="docked || (!compact && !panel)"
+            class="galaxyai-header"
+            :class="{ 'galaxyai-header-docked': docked }">
+            <Heading :icon="faMagic" :size="docked ? 'sm' : 'lg'">
+                <span class="heading-label">GalaxyAI</span>
             </Heading>
-            <div class="header-actions">
-                <button class="btn btn-sm btn-outline-primary" title="Start New Chat" @click="startNewChat">
-                    <FontAwesomeIcon :icon="faPlus" fixed-width />
-                    New
-                </button>
-                <button
-                    v-if="currentChatId"
-                    class="btn btn-sm btn-outline-danger"
-                    title="Delete this conversation"
-                    @click="deleteCurrentChat">
-                    <FontAwesomeIcon :icon="faTrash" fixed-width />
-                </button>
-                <button class="btn btn-sm btn-outline-primary" title="Dock to side panel" @click="dockTo('right')">
-                    <FontAwesomeIcon :icon="faColumns" fixed-width />
-                </button>
-                <button class="btn btn-sm btn-outline-primary" title="Dock to bottom panel" @click="dockTo('bottom')">
-                    <FontAwesomeIcon :icon="faAngleDoubleDown" fixed-width />
-                </button>
-                <button
-                    class="btn btn-sm btn-outline-primary"
-                    title="Open in floating window"
-                    @click="popOutToWindowManager">
-                    <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
-                </button>
-            </div>
+            <ChatActions
+                :source="docked ? 'docked' : 'center'"
+                :enable-delete="Boolean(currentChatId)"
+                @delete="deleteCurrentChat"
+                @dock-to="dockTo" />
         </div>
 
         <div v-if="(docked || panel) && effectiveContext" class="context-indicator">
@@ -483,7 +445,8 @@ watch(currentChatId, (newId) => {
                 :render-markdown="renderMarkdown"
                 :processing-action="processingAction"
                 @feedback="sendFeedback"
-                @handle-action="handleAction" />
+                @handle-action="handleAction"
+                @select-clarification-option="selectClarificationOption" />
 
             <!-- Loading state -->
             <div v-if="busy" class="loading-entry">
@@ -538,14 +501,6 @@ watch(currentChatId, (newId) => {
 
 .galaxyai-header-docked {
     padding: 0.5rem 0.75rem;
-
-    .docked-title {
-        font-weight: 600;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.375rem;
-    }
 }
 
 .context-indicator {
@@ -580,16 +535,29 @@ watch(currentChatId, (newId) => {
 }
 
 .galaxyai-header {
+    container-type: inline-size;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
+    row-gap: 0.375rem;
+    padding: 1rem 1.25rem;
     background: $panel-bg-color;
     border-bottom: $border-default;
 
-    .header-actions {
-        display: flex;
-        gap: 0.5rem;
+    :deep(.heading) {
+        margin-bottom: 0;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    :deep(.chat-panel-actions) {
+        margin-left: auto;
+    }
+}
+
+@container (max-width: 360px) {
+    :deep(.heading-label) {
+        display: none;
     }
 }
 

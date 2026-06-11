@@ -4951,13 +4951,16 @@ class SpatialData(CompressedZarrZipArchive):
 
         try:
             with zipfile.ZipFile(filename) as zf:
-                # Find root zarr directory and detect version
+                # Find root zarr directory and detect version (at any nesting level)
                 root_zarr = is_v3 = None
                 for file in zf.namelist():
-                    if file.endswith(".zarr/zarr.json"):
+                    # Look for zarr.json or .zattrs in any directory
+                    if file.endswith("/zarr.json"):
+                        # Format: <path>/zarr.json (v3)
                         root_zarr, is_v3 = file.rsplit("/", 1)[0], True
                         break
-                    elif file.endswith(".zarr/.zattrs"):
+                    elif file.endswith("/.zattrs"):
+                        # Format: <path>/.zattrs (v2)
                         root_zarr, is_v3 = file.rsplit("/", 1)[0], False
                         break
                 if not root_zarr:
@@ -5049,6 +5052,15 @@ class SpatialData(CompressedZarrZipArchive):
         >>> fname = get_test_fname('Images.zarr.zip')
         >>> SpatialData().sniff(fname)
         False
+        >>> fname = get_test_fname('subsampled_visium_no_extension.spatialdata.zip')
+        >>> SpatialData().sniff(fname)
+        True
+        >>> fname = get_test_fname('subsampled_visium_v3_no_extension.spatialdata.zip')
+        >>> SpatialData().sniff(fname)
+        True
+        >>> fname = get_test_fname('subsampled_visium_v3_no_extension_3lvl_nested.spatialdata.zip')
+        >>> SpatialData().sniff(fname)
+        True
         """
         try:
             with zipfile.ZipFile(filename) as zf:
@@ -5057,7 +5069,7 @@ class SpatialData(CompressedZarrZipArchive):
 
                 # Check root metadata files (.zattrs or zarr.json) for spatialdata_attrs
                 for file in zf.namelist():
-                    if len(file.split("/")) <= 2 and file.endswith((".zattrs", "zarr.json")):
+                    if file.endswith(("/.zattrs", "/zarr.json")):
                         try:
                             with zf.open(file) as f:
                                 meta = json.load(f)

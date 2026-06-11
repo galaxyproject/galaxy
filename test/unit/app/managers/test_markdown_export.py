@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from unittest import mock
 
 from galaxy import model
+from galaxy.exceptions import ItemAccessibilityException
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
@@ -326,12 +327,89 @@ job_metrics(job_id=1)
         assert "| Cores Allocated | 1 |\n" in result
         assert "| GALAXY_HOME | /path/to/home |\n" in result
 
+    def _mapped_job_and_icj(self, count=3):
+        """A representative job standing in for an N-element map-over (ICJ)."""
+        job = model.Job()
+        job.id = 1
+        icj = mock.MagicMock()
+        icj.representative_job = job
+        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
+        icj_assoc = mock.MagicMock()
+        icj_assoc.implicit_collection_jobs = icj
+        job.implicit_collection_jobs_association = icj_assoc
+        return job, icj
+
+    def test_tool_stdout_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=3)
+        job.tool_stdout = "mapped stdout"
+        example = """# Example
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                result = self._to_basic(example)
+        assert "**Standard Output:** mapped stdout" in result
+        assert "Representative job of 3 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_job_metrics_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=4)
+        example = """# Example
+```galaxy
+job_metrics(implicit_collection_jobs_id=7)
+```
+"""
+        metrics = [{"plugin": "core", "title": "Cores Allocated", "value": 1}]
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                with mock.patch("galaxy.managers.markdown_util.summarize_job_metrics", return_value=metrics):
+                    result = self._to_basic(example)
+        assert "| Cores Allocated | 1 |\n" in result
+        assert "Representative job of 4 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_job_parameters_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=2)
+        example = """# Example
+```galaxy
+job_parameters(implicit_collection_jobs_id=7)
+```
+"""
+        response = {"parameters": [{"text": "Num Lines", "value": "6", "depth": 1}]}
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                with mock.patch("galaxy.managers.markdown_util.summarize_job_parameters", return_value=response):
+                    result = self._to_basic(example)
+        assert "| Num Lines |" in result
+        assert "Representative job of 2 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_implicit_collection_jobs_access_denied_does_not_leak(self):
+        job, icj = self._mapped_job_and_icj()
+        job.tool_stdout = "SECRET stdout"
+        example = """# Example
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", side_effect=ItemAccessibilityException("nope")):
+                result = self._to_basic(example)
+        assert "SECRET stdout" not in result
+
     def _to_basic(self, example):
         return to_basic_markdown(self.trans, example)
 
 
 class TestReadyExport(BaseExportTestCase):
-    def test_ready_dataset_display(self):
+    def test_ready_dataset_display_not_baked(self):
+        # The client resolves datasets live; nothing is baked into the report.
         hda = self._new_hda()
         example = """
 ```galaxy
@@ -340,10 +418,9 @@ history_dataset_display(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             _, export_markdown, extra_data = self._ready_export(example)
-        assert "history_datasets" in extra_data
-        assert len(extra_data["history_datasets"]) == 1
+        assert "history_datasets" not in extra_data
 
-    def test_ready_export_two_datasets(self):
+    def test_ready_export_two_datasets_not_baked(self):
         hda = self._new_hda()
         hda2 = self._new_hda()
         hda2.id = 2
@@ -358,10 +435,9 @@ history_dataset_display(history_dataset_id=2)
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         _, export_markdown, extra_data = self._ready_export(example)
-        assert "history_datasets" in extra_data
-        assert len(extra_data["history_datasets"]) == 2
+        assert "history_datasets" not in extra_data
 
-    def test_export_dataset_collection_paired(self):
+    def test_export_dataset_collection_not_baked(self):
         hdca = model.HistoryDatasetCollectionAssociation()
         hdca.name = "cool name"
         hdca.collection = self._new_pair_collection()
@@ -375,19 +451,8 @@ history_dataset_display(history_dataset_id=2)
 history_dataset_collection_display(history_dataset_collection_id=1)
 ```
 """
-        # Mock the HDCASerializer to return a dummy serialized view
-        from galaxy.managers.hdcas import HDCASerializer
-
-        mock_hdca_view = {"id": "encoded_id_1", "name": "cool name", "collection_type": "paired"}
-
-        with (
-            mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"),
-            mock.patch.object(HDCASerializer, "serialize_to_view", return_value=mock_hdca_view),
-            mock.patch.object(HDCASerializer, "serialize_store_times_summary", return_value=[]),
-        ):
-            _, export, extra_data = self._ready_export(example)
-        assert "history_dataset_collections" in extra_data
-        assert len(extra_data.get("history_dataset_collections")) == 1
+        _, export, extra_data = self._ready_export(example)
+        assert "history_dataset_collections" not in extra_data
 
     def test_galaxy_version(self):
         example = """# Example
@@ -408,7 +473,7 @@ generate_time()
         _, result, extra_data = self._ready_export(example)
         assert "generate_time" in extra_data
 
-    def test_get_invocation_time(self):
+    def test_invocation_time_not_baked(self):
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]
         example = """# Example
@@ -417,9 +482,7 @@ invocation_time(invocation_id=1)
 ```
 """
         _, result, extra_data = self._ready_export(example)
-        assert "invocations" in extra_data
-        assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.isoformat()
+        assert "invocations" not in extra_data
 
     def test_export_replaces_embedded_history_dataset_type(self):
         hda = self._new_hda()

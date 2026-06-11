@@ -496,37 +496,6 @@ class InvocationReport(Model, WithModelClass):
         description="Errors associated with the invocation.",
     )
 
-    history_datasets: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="History datasets",
-        description="History datasets associated with the invocation.",
-    )
-    workflows: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="Workflows",
-        description="Workflows associated with the invocation.",
-    )
-    history_dataset_collections: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="History dataset collections",
-        description="History dataset collections associated with the invocation.",
-    )
-    jobs: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="Jobs",
-        description="Jobs associated with the invocation.",
-    )
-    histories: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="Histories",
-        description="Histories associated with the invocation.",
-    )
-    invocations: Optional[dict[str, Any]] = Field(
-        default=None,
-        title="Invocations",
-        description="Other invocations associated with the invocation.",
-    )
-
 
 class ReportInvocationErrorPayload(Model):
     invocation_id: DecodedDatabaseIdField = Field(

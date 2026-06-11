@@ -39,6 +39,10 @@ from galaxy.util.permutations import (
 )
 from galaxy.work.context import WorkRequestContext
 from . import visit_input_values
+from .workflow_utils import (
+    runtime_to_json,
+    RuntimeValue,
+)
 from .wrapped import process_key
 from .._types import (
     InputFormatT,
@@ -412,6 +416,8 @@ def to_decoded_json(has_objects):
         return {"src": "hdca", "id": has_objects.id}
     elif isinstance(has_objects, LibraryDatasetDatasetAssociation):
         return {"src": "ldda", "id": has_objects.id}
+    elif isinstance(has_objects, RuntimeValue):
+        return runtime_to_json(has_objects)
     else:
         return has_objects
 
