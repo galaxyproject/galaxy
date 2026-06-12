@@ -189,7 +189,7 @@
     "autoprefixer": "10.4.16",
     "buffer": "^6.0.3",
     "cpy-cli": "^5.0.0",
-    "esbuild": "^0.27.4",
+    "esbuild": "^0.28.1",
     "eslint": "^8.52.0",
     "eslint-plugin-compat": "^4.2.0",
     "eslint-plugin-import": "^2.28.1",
