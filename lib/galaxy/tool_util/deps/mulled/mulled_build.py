@@ -18,7 +18,6 @@ import stat
 import string
 import subprocess
 import sys
-from copy import copy
 from sys import platform as _platform
 from typing import (
     Any,
@@ -322,21 +321,12 @@ def mull_targets(
     strict_channel_priority: bool = True,
     target_platform: Optional[str] = None,
 ) -> int:
-    if involucro_context is not None and involucro_context.platform is not None:
-        if target_platform is not None and target_platform != involucro_context.platform:
-            raise ValueError(
-                f"Target platform '{target_platform}' conflicts with Involucro platform '{involucro_context.platform}'"
-            )
-        target_platform = involucro_context.platform
     conda_platform_str = docker_platform_to_conda_subdir(target_platform)
     if singularity and target_platform:
         raise ValueError("--target-platform cannot be used with --singularity")
 
     if involucro_context is None:
-        involucro_context = InvolucroContext(platform=target_platform)
-    else:
-        involucro_context = copy(involucro_context)
-        involucro_context.platform = target_platform
+        involucro_context = InvolucroContext()
 
     image_function = v1_image_name if hash_func == "v1" else v2_image_name
     if len(targets) > 1 and image_build is None:
@@ -390,6 +380,8 @@ def mull_targets(
         "-set",
         f"BINDS={bind_str}",
     ]
+    if target_platform:
+        involucro_args = ["--platform", target_platform] + involucro_args
     dest_base_image = None
     if base_image:
         dest_base_image = base_image
@@ -478,9 +470,7 @@ def mull_targets(
 
 def context_from_args(args):
     verbose = "2" if not args.verbose else "3"
-    return InvolucroContext(
-        involucro_bin=args.involucro_path, verbose=verbose, platform=getattr(args, "target_platform", None)
-    )
+    return InvolucroContext(involucro_bin=args.involucro_path, verbose=verbose)
 
 
 class InvolucroContext(installable.InstallableContext):
@@ -491,7 +481,6 @@ class InvolucroContext(installable.InstallableContext):
         involucro_bin: Optional[str] = None,
         shell_exec: Optional[Callable[[List[str]], int]] = None,
         verbose: str = "3",
-        platform: Optional[str] = None,
     ) -> None:
         if involucro_bin is None:
             if os.path.exists("./involucro"):
@@ -502,12 +491,9 @@ class InvolucroContext(installable.InstallableContext):
             self.involucro_bin = involucro_bin
         self.shell_exec = shell_exec or commands.shell
         self.verbose = verbose
-        self.platform = platform
 
     def build_command(self, involucro_args: List[str]) -> List[str]:
         cmd = [self.involucro_bin, f"-v={self.verbose}"]
-        if self.platform:
-            cmd.extend(["--platform", self.platform])
         return cmd + involucro_args
 
     def exec_command(self, involucro_args: List[str]) -> int:

@@ -126,11 +126,6 @@ def test_apply_platform_tag_suffix_uses_native_non_amd64_platform(_mock_machine)
     assert apply_platform_tag_suffix("samtools:1.3--0", None) == "samtools:1.3--0-arm64"
 
 
-def test_involucro_context_build_command_includes_platform():
-    context = InvolucroContext(involucro_bin="involucro", platform="linux/arm64")
-    assert context.build_command(["build"]) == ["involucro", "-v=3", "--platform", "linux/arm64", "build"]
-
-
 def test_get_conda_hits_for_targets_uses_explicit_conda_platform():
     target = build_target("samtools")
     conda_context = mock.Mock()
@@ -154,25 +149,7 @@ def test_mull_targets_rejects_target_platform_with_singularity():
         mull_targets([build_target("samtools")], target_platform="linux/arm64", singularity=True, dry_run=True)
 
 
-def test_mull_targets_rejects_conflicting_involucro_platform():
-    context = InvolucroContext(platform="linux/arm64")
-    with pytest.raises(ValueError, match="conflicts with Involucro platform"):
-        mull_targets([build_target("samtools")], involucro_context=context, target_platform="linux/amd64", dry_run=True)
-
-
-def test_mull_targets_does_not_mutate_involucro_context_platform():
-    context = InvolucroContext()
-    mull_targets(
-        [build_target("samtools")],
-        involucro_context=context,
-        target_platform="linux/arm64",
-        determine_base_image=False,
-        dry_run=True,
-    )
-    assert context.platform is None
-
-
-def test_args_to_mull_targets_kwds_passes_target_platform_to_context():
+def test_args_to_mull_targets_kwds_passes_target_platform():
     args = Namespace(
         involucro_path="custom-involucro",
         strict_channel_priority=True,
@@ -181,4 +158,3 @@ def test_args_to_mull_targets_kwds_passes_target_platform_to_context():
     )
     kwds = args_to_mull_targets_kwds(args)
     assert kwds["target_platform"] == "linux/arm64"
-    assert kwds["involucro_context"].platform == "linux/arm64"
