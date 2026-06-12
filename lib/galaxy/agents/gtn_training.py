@@ -148,6 +148,37 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             except (AttributeError, KeyError, TypeError, ValueError) as e:
                 log.warning(f"GTN workflow vector search failed: {e}")
                 return json.dumps({"error": str(e)})
+            
+        @agent.tool
+        async def search_gtn_faq_vectors(
+            ctx: RunContext[GalaxyAgentDependencies],
+            query: str,
+            limit: int = 5,
+        ) -> str:
+            """Search FAQ vectors for relevant questions and answers."""
+            try:
+                embeddings, persist_dir = self._vector_search_dependencies()
+                results = self.gtn_db.search_faq_vector_db(
+                    query=query,
+                    embeddings=embeddings,
+                    persist_dir=persist_dir,
+                    collection_name="galaxy_faqs",
+                    limit=limit,
+                )
+                log.info("FAQ vector search found %d results for query: %r", len(results), query)
+                log.info(f"FAQ search found {len(results)} results, faq vector search found {len(results)} results for query: '{query}'")
+                log.info(f"FAQ Vector search results: {results}")
+                log.info(f"FAQ Vector search results (dict): {[r.to_dict() for r in results]}")
+                return json.dumps(
+                    {
+                        "results": [r.to_dict() for r in results],
+                        "faqs": [r.to_dict() for r in results],
+                        "count": len(results),
+                    }
+                )
+            except (AttributeError, KeyError, TypeError, ValueError) as e:
+                log.warning(f"GTN FAQ vector search failed: {e}")
+                return json.dumps({"error": str(e)})
 
         @agent.tool
         async def search_gtn_tutorials(
@@ -416,12 +447,12 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 topic = tutorial.get("topic", "Unknown")
                 difficulty = tutorial.get("difficulty", "Unknown")
                 time_estimation = tutorial.get("time_estimation", "Unknown")
-                url = tutorial.get("url", "Unknown")
+                url = (
+                    tutorial.get("url") or tutorial.get("link") or None
+                )
                 snippet = tutorial.get("snippet", "")
                 summary = (
-                    tutorial.get("summary") 
-                    or tutorial.get("description")
-                    or None
+                    tutorial.get("summary") or tutorial.get("description") or None
                 )
 
                 parts.append(f"\n{i}. **{title}**")
@@ -469,21 +500,25 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         if response_data.faqs:
             parts.append("\n**Relevant FAQs:**")
             for i, faq in enumerate(response_data.faqs, 1):
-                title = faq.get("title", "Untitled FAQ")
-                category = faq.get("category", "Unknown")
+                title = faq.get("title", f"Untitled FAQ")
                 area = faq.get("area", "")
-                url = faq.get("url", "Unknown")
                 snippet = faq.get("snippet", "")
+                question = faq.get("question", "")
+                answer = faq.get("answer", "")
+                url = faq.get("url", "")
 
                 parts.append(f"\n{i}. **{title}**")
+                if question:
+                    parts.append(f"   - Question: {question}")
+                if answer:
+                    parts.append(f"   - Answer: {answer}")
                 if snippet:
-                    parts.append(f"   {snippet}")
-                if category and category != "Unknown":
-                    parts.append(f"   - Category: {category}")
+                    parts.append(f"   - Snippet: {snippet}")
                 if area:
                     parts.append(f"   - Area: {area}")
                 if url:
                     parts.append(f"   - Link: {url}")
+                
 
         if response_data.learning_path:
             parts.append(f"\n**Suggested Learning Path:**\n{response_data.learning_path}")

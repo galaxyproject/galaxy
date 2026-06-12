@@ -201,6 +201,41 @@ class WorkflowVectorSearchResults:
             "content": self.content,
             "score": round(self.score, 2),
         }
+    
+@dataclass
+class FAQVectorSearchResults:
+    """Represents a search result from vector store db."""
+    area: str
+    content: str
+    snippet: str
+    score: float
+    source: str
+    content_type: str
+    tutorial: str
+    area: str
+    question: str
+    tier: str
+    topic: str
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary for JSON serialization.
+
+        Returns the FAQ metadata fields provided by the FAQ vector store.
+        Includes ``score`` so the agent can gauge match quality.
+        """
+        return {
+            "area": self.area,
+            "question": self.question,
+            "snippet": self.snippet,
+            "score": round(self.score, 2),
+            "result_type": "faq",
+            "content": self.content,
+            "tier": self.tier,
+            "topic": self.topic,
+            "source": self.source,
+            "content_type": self.content_type,
+            "tutorial": self.tutorial,
+        }
 
 
 @dataclass
@@ -618,6 +653,67 @@ class GTNSearchDB:
             return vector_results
         except Exception as e:
             log.warning(f"Vector DB workflow search failed for query '{query}': {e}")
+            return []
+        
+    def search_faq_vector_db(
+        self,
+        query: str,
+        embeddings: OpenAIEmbeddings,
+        persist_dir: Path,
+        collection_name: str = "galaxy_faqs",
+        limit: int = 5,
+    ) -> list[FAQVectorSearchResults]:
+        try:
+            # Check if the persist directory exists
+            if not Path(persist_dir).exists():
+                log.warning(f"ChromaDB persist directory does not exist: {persist_dir}")
+                return []
+
+            vectorstore = Chroma(
+                persist_directory=persist_dir,
+                collection_name=collection_name,
+                embedding_function=embeddings
+            )
+
+            # Use similarity_search_with_score to get relevance scores
+            results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
+
+            log.info(f"Found {len(results_with_scores)} similar FAQs")
+
+            vector_results = []
+
+            for i, (doc, score) in enumerate(results_with_scores, start=1):
+                source_id = doc.metadata.get("source")
+                parent_docs = vectorstore.get(where={"source": source_id})
+                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                parent_context_docs = ""
+                for d in parent_docs["documents"][:3]:
+                    parent_context_docs += d + " "
+
+                result = FAQVectorSearchResults(
+                    source=doc.metadata.get("source", ""),
+                    content_type=doc.metadata.get("content_type", ""),
+                    tutorial=doc.metadata.get("tutorial", ""),
+                    area=doc.metadata.get("area", ""),
+                    question=doc.metadata.get("question", ""),
+                    tier=doc.metadata.get("tier", ""),
+                    topic=doc.metadata.get("topic", ""),
+                    score=score,
+                    snippet=str(doc.page_content),
+                    content=parent_context_docs,
+                )
+                vector_results.append(result)
+
+            log.info(f"Processed {len(vector_results)} FAQ vector DB search results")
+            for i, result in enumerate(vector_results):
+                log.debug(
+                    f"Result {i+1}: score={result.score:.3f}, source={result.source}, "
+                    f"question={result.question}"
+                )
+
+            return vector_results
+        except Exception as e:
+            log.warning(f"Vector DB FAQ search failed for query '{query}': {e}")
             return []
 
     def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
