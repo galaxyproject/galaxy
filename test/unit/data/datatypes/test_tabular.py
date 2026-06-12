@@ -195,6 +195,27 @@ def test_tabular_quick_view_skips_header_after_comments_when_line_counts_are_uns
         assert "<td>A</td>" in html
 
 
+def test_tabular_quick_view_uses_peek_for_unset_line_count_offset():
+    contents = "name\tvalue\nA\t1\nB\t2\nC\t3\n"
+    with tempfile.NamedTemporaryFile(mode="w") as test_file:
+        test_file.write(contents)
+        test_file.flush()
+        dataset = MockDataset(id=1)
+        dataset.set_file_name(test_file.name)
+        datatype = Tabular()
+        datatype.set_meta(_dataset_protocol(dataset), max_data_lines=2)
+
+        def fail_get_file_name(sync_cache=True):
+            raise AssertionError("quick view should not open the dataset file")
+
+        dataset_for_peek = cast(Any, dataset)
+        dataset_for_peek.get_file_name = fail_get_file_name
+        html = _display_peek(datatype, dataset, contents)
+        assert "<th>1.name</th>" in html
+        assert "<td>name</td>" not in html
+        assert "<td>A</td>" in html
+
+
 def test_csv_quick_view_uses_column_names_only_as_headers():
     contents = "TMB,Systemic_therapy_history,Albumin\n32.5,1,4.3\n19.3,1,3.8\n"
     with tempfile.NamedTemporaryFile(mode="w") as test_file:

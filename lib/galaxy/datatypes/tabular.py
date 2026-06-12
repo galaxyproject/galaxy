@@ -149,11 +149,13 @@ class TabularData(Text):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self._get_data_line_offset(dataset, offset),
+                "data_line_offset": self._get_data_line_offset(dataset, offset, ck_data),
             }
         )
 
-    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
+    def _get_data_line_offset(
+        self, dataset: DatasetProtocol, offset: int = 0, data_sample: Optional[str] = None
+    ) -> int:
         if offset:
             return 0
         data_line_offset = self.data_line_offset
@@ -165,29 +167,29 @@ class TabularData(Text):
         if not column_names:
             return data_line_offset
         if comment_lines is None:
-            return self._get_column_name_line_offset(dataset, column_names)
+            return self._get_column_name_line_offset(dataset, column_names, data_sample)
         try:
             return max(data_line_offset, int(comment_lines))
         except (TypeError, ValueError):
             return data_line_offset
 
-    def _get_column_name_line_offset(self, dataset: DatasetProtocol, column_names: list[str]) -> int:
+    def _get_column_name_line_offset(
+        self, dataset: DatasetProtocol, column_names: list[str], data_sample: Optional[str]
+    ) -> int:
+        if data_sample is None:
+            return self.data_line_offset
         try:
             delimiter = dataset.metadata.delimiter
         except AttributeError:
             delimiter = "\t"
-        try:
-            with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
-                for i, line in enumerate(dataset_fh):
-                    line = line.rstrip("\r\n")
-                    if not line or line.startswith("#"):
-                        continue
-                    if line.split(delimiter)[: len(column_names)] == column_names:
-                        return max(self.data_line_offset, i + 1)
-                    return self.data_line_offset
-        except Exception:
-            pass
-        return max(self.data_line_offset, 1)
+        for i, line in enumerate(data_sample.splitlines()):
+            line = line.rstrip("\r\n")
+            if not line or line.startswith("#"):
+                continue
+            if line.split(delimiter)[: len(column_names)] == column_names:
+                return max(self.data_line_offset, i + 1)
+            return self.data_line_offset
+        return self.data_line_offset
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -332,7 +334,7 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
-            data_line_offset = self._get_data_line_offset(dataset)
+            data_line_offset = self._get_data_line_offset(dataset, data_sample=peek)
             for i, line in enumerate(peek.splitlines()):
                 if i >= data_line_offset:
                     if line.startswith(tuple(skipchars)):
