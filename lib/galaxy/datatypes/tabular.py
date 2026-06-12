@@ -159,11 +159,8 @@ class TabularData(Text):
         if offset:
             return 0
         data_line_offset = self.data_line_offset
-        try:
-            column_names = dataset.metadata.column_names
-            comment_lines = dataset.metadata.comment_lines
-        except AttributeError:
-            return data_line_offset
+        column_names = dataset.metadata.column_names
+        comment_lines = dataset.metadata.comment_lines
         if not column_names:
             return data_line_offset
         if comment_lines is None:
@@ -178,10 +175,7 @@ class TabularData(Text):
     ) -> int:
         if data_sample is None:
             return self.data_line_offset
-        try:
-            delimiter = dataset.metadata.delimiter
-        except AttributeError:
-            delimiter = "\t"
+        delimiter = dataset.metadata.delimiter or "\t"
         for i, line in enumerate(data_sample.splitlines()):
             line = line.rstrip("\r\n")
             if not line or line.startswith("#"):
