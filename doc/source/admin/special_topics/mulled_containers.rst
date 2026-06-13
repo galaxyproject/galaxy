@@ -41,7 +41,7 @@ is not available already.
 Automatic build of Linux containers
 -----------------------------------
 
-We utilize involucro_ to automatically convert all packages in Bioconda_ into Linux container images
+We utilize mulled_ (with involucro_) to automatically convert all packages in Bioconda_ into Linux container images
 and make them available at the `BioContainers Quay.io account`_.
 
 We have developed small utilities around this technology stack, which is currently included in the ``galaxy-tool-util``
