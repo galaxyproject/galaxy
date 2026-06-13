@@ -74,7 +74,7 @@ Each mulled container is identified with a hash such as ``mulled-v2-8186960447c5
 The user can specify whether to generate hashes for either version 1 or version 2 containers with ``--hash``; version 2 is the default.
 
 
-Build all packages from bioconda from the last 25h
+Build all packages from bioconda from the last 24h
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The BioConda community is building a container for every package they create with a command similar to this.
