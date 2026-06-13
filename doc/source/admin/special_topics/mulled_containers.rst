@@ -83,7 +83,7 @@ The BioConda community is building a container for every package they create wit
 
    $ mulled-build-channel --channel bioconda --namespace biocontainers \
       --involucro-path ./involucro --recipes-dir ./bioconda-recipes \
-      --diff-hours 25 --repo-data bioconda build
+      --diff-hours 24 --repo-data bioconda build
 
 
 Building Docker containers for local Conda packages
