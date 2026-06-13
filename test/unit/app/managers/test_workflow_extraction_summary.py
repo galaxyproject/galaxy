@@ -97,8 +97,9 @@ class MockImplicitInputCollection:
 
 
 class MockIcjAssoc:
-    def __init__(self, icj_id):
-        self.implicit_collection_jobs_id = icj_id
+    def __init__(self, implicit_collection_jobs):
+        self.implicit_collection_jobs = implicit_collection_jobs
+        self.implicit_collection_jobs_id = implicit_collection_jobs.id
 
 
 class MockOutputDatasetAssoc:
@@ -119,6 +120,7 @@ class MockJob:
         inputs=(),
         input_collections=(),
         icj_id=None,
+        icj=None,
         outputs=(),
         output_collections=(),
     ):
@@ -128,7 +130,9 @@ class MockJob:
         self.input_dataset_collections = [MockInputCollectionAssoc(c) for c in input_collections]
         self.output_datasets = [MockOutputDatasetAssoc(d) for d in outputs]
         self.output_dataset_collection_instances = [MockOutputCollectionAssoc(c) for c in output_collections]
-        self.implicit_collection_jobs_association = MockIcjAssoc(icj_id) if icj_id is not None else None
+        if icj is None and icj_id is not None:
+            icj = MockImplicitCollectionJobs(icj_id)
+        self.implicit_collection_jobs_association = MockIcjAssoc(icj) if icj is not None else None
 
 
 class MockImplicitCollectionJobs:
@@ -303,6 +307,34 @@ def test_icj_ref_seeds_mapped_input():
     assert 7 in result.icj_ids
     assert ("hdca", 20) in result.content_refs  # mapped-over input collection recovered & seeded
     assert result.referenced_output_refs == set()  # implicit output not exposed
+
+
+def test_loose_element_of_map_output_seeds_input_collection():
+    # A downstream tool consumes a single ELEMENT of a map output collection
+    # (e.g. MACS2 reading one BAM out of an alignment collection) rather than the
+    # whole collection. The walk reaches the map via the loose element, not via
+    # the output collection, so it must still recover and seed the map's input
+    # collection -- and not surface the element's per-element input as a loose
+    # dataset.
+    input_collection = MockHdca(20)  # mapped-over input collection -> boundary input
+    impl_out = MockHdca(
+        30, implicit_input_collections=[MockImplicitInputCollection(input_collection, name="library|input_1")]
+    )
+    icj = MockImplicitCollectionJobs(7, output_collections=[impl_out])
+    fastq_element = MockHda(5)  # per-element input -> must NOT surface as a loose input
+    element_job = MockJob(2, icj=icj)
+    element_job.input_datasets = [MockInputDatasetAssoc(fastq_element, name="library|input_1")]
+    bam_element = MockHda(10, creating_jobs=[element_job])  # loose element of the map output
+    downstream_job = MockJob(1, inputs=[bam_element])
+    out = MockHda(1, creating_jobs=[downstream_job])
+    trans = _trans([out])
+
+    result = _closure(trans, [("hda", 1)])
+
+    assert {1, 2}.issubset(result.job_ids)  # downstream tool + element job crossed
+    assert 7 in result.icj_ids  # map step seeded
+    assert ("hdca", 20) in result.content_refs  # input collection recovered & seeded (the fix)
+    assert ("hda", 5) not in result.content_refs  # per-element input not chased as a loose dataset
 
 
 def test_non_compatible_job_ref_warns_only_when_directly_referenced():
