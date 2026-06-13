@@ -1,3 +1,4 @@
+import json
 import os
 from types import SimpleNamespace
 
@@ -10,9 +11,12 @@ from galaxy.util import galaxy_directory
 @pytest.fixture
 def dataset():
     class MockDataset:
-        metadata = SimpleNamespace(column_names=None, comment_lines=None, delimiter="\t")
+        def __init__(self):
+            self.metadata = SimpleNamespace(column_names=None, comment_lines=None, delimiter="\t")
+            self.file_name_calls = 0
 
         def get_file_name(self, sync_cache=True):
+            self.file_name_calls += 1
             return os.path.join(galaxy_directory(), "test-data/1.ct")
 
     return MockDataset()
@@ -51,3 +55,15 @@ def test_get_chunk_with_offset(dataset, make_trans):
     # reads chunk_size chars from offset 5 (line 1) to the end of line 2
     chunk = dt.get_chunk(trans, dataset, 5)
     assert chunk == '{"ck_data": "mRNA\\n1\\tG\\t0\\t2\\t359\\t1", "offset": 24, "data_line_offset": 0}'
+
+
+def test_get_chunk_uses_transformed_chunk_for_unset_line_count_offset(dataset, make_trans):
+    dataset.metadata.column_names = ["363", "tmRNA"]
+    dataset.metadata.comment_lines = None
+    dt = ConnectivityTable()
+    trans = make_trans(1000)
+
+    chunk = json.loads(dt.get_chunk(trans, dataset))
+
+    assert chunk["data_line_offset"] == 1
+    assert dataset.file_name_calls == 1

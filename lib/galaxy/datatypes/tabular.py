@@ -182,8 +182,8 @@ class TabularData(Text):
                 continue
             if line.split(delimiter)[: len(column_names)] == column_names:
                 return max(self.data_line_offset, i + 1)
-            return self.data_line_offset
-        return self.data_line_offset
+            return max(self.data_line_offset, 1)
+        return max(self.data_line_offset, 1)
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -1715,7 +1715,7 @@ class ConnectivityTable(Tabular):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self._get_data_line_offset(dataset, offset),
+                "data_line_offset": self._get_data_line_offset(dataset, offset, ck_data),
             }
         )
 
