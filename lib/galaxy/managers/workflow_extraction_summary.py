@@ -118,6 +118,26 @@ def _job_output_contents(job: Job) -> list[HistoryItem]:
     return contents
 
 
+def _enqueue_mapped_input_collections(
+    output_collection: HistoryDatasetCollectionAssociation, queue: "deque[HistoryItem]"
+) -> set[str]:
+    """Enqueue the input collection(s) a map-over output was mapped over.
+
+    A map output records the collection it was mapped over on itself, not on its
+    per-element jobs (whose recorded inputs are individual elements). Enqueue the
+    input collection so it is seeded, and return the implicit-input names so the
+    matching per-element job inputs are not walked back into as loose datasets.
+    """
+    names: set[str] = set()
+    for implicit_input in output_collection.implicit_input_collections:
+        input_collection = implicit_input.input_dataset_collection
+        if input_collection is not None:
+            if implicit_input.name is not None:
+                names.add(implicit_input.name)
+            queue.append(input_collection)
+    return names
+
+
 def _backward_job_closure(
     trans: ProvidesHistoryContext,
     refs: list[ContentRef],
@@ -191,19 +211,15 @@ def _backward_job_closure(
             else _original_hda(cast(HistoryDatasetAssociation, content))
         )
 
-        # Map-over: an implicit output collection records the collection(s) it was
-        # mapped over on itself, not on the per-element jobs (whose recorded inputs
-        # are individual elements). Recover those at the collection level so the
-        # input collection is seeded, and remember their names so the matching
-        # per-element job inputs below are not walked back into as loose datasets.
+        # Map-over recovery: when the walk reaches an implicit output collection,
+        # seed the collection it was mapped over (recorded on the output, not on
+        # the per-element jobs). The loose-element case is handled in the job loop
+        # below via the same helper.
         mapped_input_names: set[str] = set()
         if is_collection:
-            for implicit_input in cast(HistoryDatasetCollectionAssociation, original).implicit_input_collections:
-                input_collection = implicit_input.input_dataset_collection
-                if input_collection is not None:
-                    if implicit_input.name is not None:
-                        mapped_input_names.add(implicit_input.name)
-                    queue.append(input_collection)
+            mapped_input_names |= _enqueue_mapped_input_collections(
+                cast(HistoryDatasetCollectionAssociation, original), queue
+            )
 
         creating = original.creating_job_associations
         if not creating:
@@ -229,6 +245,15 @@ def _backward_job_closure(
             icj_assoc = job.implicit_collection_jobs_association
             if icj_assoc is not None:
                 result.icj_ids.add(icj_assoc.implicit_collection_jobs_id)
+                # This content is a loose element of a map output (a downstream
+                # tool consumed a single element instead of the whole collection).
+                # The is_collection branch above only fires when the output
+                # collection itself is queued, so recover the map's input
+                # collection here from the ICJ's output collection(s).
+                icj = icj_assoc.implicit_collection_jobs
+                if icj is not None:
+                    for output_hdca in icj.output_dataset_collection_instances:
+                        mapped_input_names |= _enqueue_mapped_input_collections(output_hdca, queue)
             for in_dataset in job.input_datasets:
                 if in_dataset.name in mapped_input_names:
                     # Folded into a mapped input collection already queued above.
