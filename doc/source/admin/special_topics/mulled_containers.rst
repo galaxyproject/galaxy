@@ -104,7 +104,7 @@ This also demonstrates how you can build a container locally and on-the-fly.
 
 .. code-block:: bash
 
-   $ conda index /home/bag/miniconda2/conda-bld/linux-64/
+   $ conda index /home/bag/miniconda3/conda-bld/linux-64/
 
 3) Build a container for your local package
 
