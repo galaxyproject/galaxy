@@ -350,7 +350,7 @@ Build options:
 
 ``--target-platform``
   Target platform for cross-architecture builds.
-  Choices: ``linux/amd64``, ``linux/arm64``, ``linux/arm/v7``, ``linux/ppc64le``.
+  Choices: ``linux/amd64``, ``linux/arm64``, ``linux/arm/v7``, ``linux/ppc64le``, ``linux/riscv64``.
   Requires binfmt/QEMU support on the Docker daemon host.
   Cannot be combined with ``--singularity``.
 

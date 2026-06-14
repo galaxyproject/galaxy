@@ -86,6 +86,7 @@ DOCKER_TO_CONDA_PLATFORM = {
     "linux/arm64": "linux-aarch64",
     "linux/arm/v7": "linux-armv7l",
     "linux/ppc64le": "linux-ppc64le",
+    "linux/riscv64": "linux-riscv64",
 }
 MACHINE_TO_DOCKER_PLATFORM = {
     "x86_64": "linux/amd64",
@@ -94,6 +95,7 @@ MACHINE_TO_DOCKER_PLATFORM = {
     "arm64": "linux/arm64",
     "armv7l": "linux/arm/v7",
     "ppc64le": "linux/ppc64le",
+    "riscv64": "linux/riscv64",
 }
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
