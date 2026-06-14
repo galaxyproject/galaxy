@@ -37,6 +37,7 @@ BOTO3_DIRECT_DOWNLOAD_CONFIG = string.Template("""
 
 @integration_util.skip_unless_docker()
 class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
+    container_name: str
     object_store_cache_path: str
 
     @classmethod

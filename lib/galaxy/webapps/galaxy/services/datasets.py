@@ -690,7 +690,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         some point in the future without warning. Generally, data should be processed by its
         datatype prior to display (the default if raw is unspecified or explicitly false.
         """
-        headers = {}
+        headers: dict[str, str] = {}
         rval: Any = ""
         try:
             dataset_manager = self.dataset_manager_by_type[hda_ldda]
