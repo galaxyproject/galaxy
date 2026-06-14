@@ -119,7 +119,9 @@ def _tool_step(label=None):
 
 
 def _content_stub(id_, copied_from=None):
-    return SimpleNamespace(id=id_, copied_from_history_dataset_association=copied_from)
+    # Plain copies carry no creating job, so _original_hda normalizes them back to
+    # their source; collection-operation outputs that record one are kept as-is.
+    return SimpleNamespace(id=id_, copied_from_history_dataset_association=copied_from, creating_job_associations=())
 
 
 def test_index_input_resolves_to_input_label():
