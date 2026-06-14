@@ -9126,11 +9126,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
-            /**
-             * Enable Direct Download
-             * @default false
-             */
-            enable_direct_download: boolean;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Name */
             name?: string | null;
             /** Object Expires After Days */
@@ -25306,11 +25303,8 @@ export interface components {
             description?: string | null;
             /** Device */
             device?: string | null;
-            /**
-             * Enable Direct Download
-             * @default false
-             */
-            enable_direct_download: boolean;
+            /** Enable Direct Download */
+            enable_direct_download?: boolean | null;
             /** Hidden */
             hidden: boolean;
             /** Name */
