@@ -827,7 +827,11 @@ class ConcreteObjectStore(BaseObjectStore):
     def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> Optional[str]:
         if not self.enable_direct_download:
             return None
-        return self._get_object_url(obj, content_disposition=content_disposition, content_type=content_type)
+        # _get_object_url is resolved via dynamic dispatch on each concrete backend; it is not
+        # declared on ConcreteObjectStore so static analysis can't see it here.
+        return self._get_object_url(  # type: ignore[attr-defined]
+            obj, content_disposition=content_disposition, content_type=content_type
+        )
 
     def _get_concrete_store_badges(self, obj) -> list[BadgeDict]:
         return serialize_badges(
@@ -1297,9 +1301,16 @@ class NestedObjectStore(BaseObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method("_get_object_url", obj, None, False, **kwargs)
 
-    def _get_direct_download_url(self, obj, **kwargs) -> Optional[str]:
+    def _get_direct_download_url(self, obj, content_disposition=None, content_type=None) -> Optional[str]:
         """For the first backend that has this `obj`, get its direct download URL."""
-        return self._call_method("_get_direct_download_url", obj, None, False, **kwargs)
+        return self._call_method(
+            "_get_direct_download_url",
+            obj,
+            None,
+            False,
+            content_disposition=content_disposition,
+            content_type=content_type,
+        )
 
     def _get_concrete_store_name(self, obj):
         return self._call_method("_get_concrete_store_name", obj, None, False)
