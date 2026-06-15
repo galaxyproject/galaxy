@@ -93,15 +93,15 @@ def test_docker_platform_to_conda_subdir_defaults_to_host_platform():
 
 
 def test_docker_platform_to_conda_subdir_rejects_unsupported_platform():
-    with pytest.raises(ValueError, match="Unsupported target platform 'linux/riscv64'"):
-        docker_platform_to_conda_subdir("linux/riscv64")
+    with pytest.raises(ValueError, match="Unsupported target platform"):
+        docker_platform_to_conda_subdir("linux/s390x")
 
 
 def test_target_platform_cli_argument_rejects_unsupported_platform():
     parser = ArgumentParser()
     add_build_arguments(parser)
     with pytest.raises(SystemExit):
-        parser.parse_args(["--target-platform", "linux/riscv64"])
+        parser.parse_args(["--target-platform", "linux/s390x"])
 
 
 @pytest.mark.parametrize(

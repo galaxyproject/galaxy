@@ -81,14 +81,22 @@ INVOLUCRO_VERSION = "1.2.0"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
 # Explicit Docker build targets use OCI platform notation. This is separate
 # from conda_platform(), which detects the native host OS and architecture.
-DOCKER_TO_CONDA_PLATFORM = {
+DockerPlatform = Literal[
+    "linux/amd64",
+    "linux/arm64",
+    "linux/arm/v7",
+    "linux/ppc64le",
+    "linux/riscv64",
+]
+
+DOCKER_TO_CONDA_PLATFORM: dict[DockerPlatform, str] = {
     "linux/amd64": "linux-64",
     "linux/arm64": "linux-aarch64",
     "linux/arm/v7": "linux-armv7l",
     "linux/ppc64le": "linux-ppc64le",
     "linux/riscv64": "linux-riscv64",
 }
-MACHINE_TO_DOCKER_PLATFORM = {
+MACHINE_TO_DOCKER_PLATFORM: dict[str, DockerPlatform] = {
     "x86_64": "linux/amd64",
     "amd64": "linux/amd64",
     "aarch64": "linux/arm64",
@@ -216,7 +224,7 @@ def conda_platform() -> str:
     return conda_arch_map.get(machine, default_platform)
 
 
-def docker_platform_to_conda_subdir(target_docker_platform: Optional[str]) -> str:
+def docker_platform_to_conda_subdir(target_docker_platform: Optional[DockerPlatform]) -> str:
     """Return the conda subdir for an explicit Docker target, or for the host when unset."""
     if target_docker_platform is None:
         return conda_platform()
@@ -226,7 +234,7 @@ def docker_platform_to_conda_subdir(target_docker_platform: Optional[str]) -> st
         raise ValueError(f"Unsupported target platform '{target_docker_platform}'") from None
 
 
-def docker_platform_tag_suffix(target_platform: Optional[str]) -> Optional[str]:
+def docker_platform_tag_suffix(target_platform: Optional[DockerPlatform]) -> Optional[str]:
     """Return an image-tag suffix, preserving unsuffixed tags for legacy amd64 images."""
     target_platform = target_platform or MACHINE_TO_DOCKER_PLATFORM.get(
         _platform_module.machine().lower(), "linux/amd64"
@@ -236,7 +244,7 @@ def docker_platform_tag_suffix(target_platform: Optional[str]) -> Optional[str]:
     return target_platform[len("linux/") :].replace("/", "-")
 
 
-def apply_platform_tag_suffix(image: str, target_platform: Optional[str]) -> str:
+def apply_platform_tag_suffix(image: str, target_platform: Optional[DockerPlatform]) -> str:
     suffix = docker_platform_tag_suffix(target_platform)
     if suffix is None:
         return image
@@ -321,7 +329,7 @@ def mull_targets(
     determine_base_image: bool = True,
     invfile: str = INVFILE,
     strict_channel_priority: bool = True,
-    target_platform: Optional[str] = None,
+    target_platform: Optional[DockerPlatform] = None,
 ) -> int:
     conda_platform_str = docker_platform_to_conda_subdir(target_platform)
     if singularity and target_platform:
