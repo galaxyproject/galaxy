@@ -61,10 +61,13 @@ class GTNTrainingAgent(BaseGalaxyAgent):
 
         db_path = getattr(deps.config, "gtn_database_path", None)
         download_url = getattr(deps.config, "gtn_database_url", None)
+        vector_db_path = getattr(deps.config, "vector_database_path", None)
+        vector_db_url = getattr(deps.config, "vector_database_url", None)
 
         self.gtn_db: GTNSearchDB | None = None
         try:
-            self.gtn_db = GTNSearchDB(db_path=db_path, download_url=download_url)
+            self.gtn_db = GTNSearchDB(db_path=db_path, vector_db_path=vector_db_path, \
+                                      download_url=download_url, vector_db_url=vector_db_url)
             log.info("GTN database initialized successfully")
         except (OSError, RuntimeError) as e:
             log.warning(f"GTN database not available: {e}")

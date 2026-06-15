@@ -9,6 +9,7 @@ import logging
 import re
 import shutil
 import sqlite3
+import tarfile
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -269,17 +270,24 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: Optional[str] = None, download_url: Optional[str] = None):
+    def __init__(self, db_path: Optional[str] = None, vector_db_path: Optional[str] = None, \
+                 download_url: Optional[str] = None, vector_db_url: Optional[str] = None):
         if db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
+            self.vector_db_path = current_dir / "data" / "gtn_chroma_db_composite"
         else:
             self.db_path = Path(db_path)
+            self.vector_db_path = Path(vector_db_path)
 
         self.download_url = download_url or GTN_DATABASE_URL
+        self.vector_db_url = vector_db_url
 
         if not self.db_path.exists():
             self._download_database()
+
+        if not self.vector_db_path.exists():
+            self._download_vector_database()
 
         try:
             metadata = self._validate_database_file(self.db_path)
@@ -307,6 +315,18 @@ class GTNSearchDB:
             f"GTN database downloaded to {self.db_path} "
             f"(version={metadata['version']}, tutorials={metadata['tutorial_count']}, faqs={metadata['faq_count']})"
         )
+    
+    def _download_vector_database(self):
+        """Download the GTN vector database from the configured URL."""
+        if not self.vector_db_url:
+            log.warning("No URL configured for GTN vector database; skipping download.")
+            return
+
+        try:
+            self.vector_db_path = GTNSearchDB._download_vector_database_to_path(self.vector_db_path, self.vector_db_url)
+            log.info(f"GTN vector database downloaded to {self.vector_db_path}")
+        except Exception as e:
+            log.warning(f"Failed to download GTN vector database: {e}") 
 
     def refresh(self) -> None:
         """Force-redownload the database from ``download_url``, replacing it atomically."""
@@ -316,6 +336,33 @@ class GTNSearchDB:
     def refresh_database(cls, db_path: str | Path, download_url: Optional[str] = None) -> dict[str, Any]:
         """Download, validate, and atomically replace a GTN database without opening the old copy."""
         return cls._download_database_to_path(Path(db_path), download_url or GTN_DATABASE_URL)
+
+    @classmethod
+    def _download_vector_database_to_path(cls, vector_db_path: Path, vector_db_url: str) -> None:
+        vector_db_path.mkdir(parents=True, exist_ok=True)
+        tmp_path = vector_db_path.with_suffix(".tmp")
+        tmp_path.unlink(missing_ok=True)
+        try:
+            log.info(f"Downloading vector database from {vector_db_url} ...")
+            with urllib.request.urlopen(vector_db_url, timeout=GTN_DOWNLOAD_TIMEOUT_SECONDS) as response:
+                with tarfile.open(fileobj=response, mode="r:gz") as tar:
+                    tar.extractall(path=tmp_path)
+            items = list(tmp_path.iterdir())
+            if len(items) == 1 and items[0].is_dir():
+                source_dir = items[0]
+            else:
+                source_dir = tmp_path
+            for item in source_dir.iterdir():
+                target = vector_db_path / item.name
+                if item.is_dir():
+                    shutil.copytree(item, target, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, target)
+            if tmp_path.exists():
+                shutil.rmtree(tmp_path)
+        except (OSError, tarfile.TarError) as e:
+            tmp_path.unlink(missing_ok=True)
+            raise FileNotFoundError(f"GTN vector database download failed for {vector_db_path}: {e}") from e
 
     @classmethod
     def _download_database_to_path(cls, db_path: Path, download_url: str) -> dict[str, Any]:
