@@ -35,16 +35,10 @@ jobs:
         with:
           path: 'galaxy root'
           persist-credentials: false
-      - name: Set up Python
-        uses: actions/setup-python@v6.2.0
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
         uses: astral-sh/setup-uv@v8.2.0
-      - name: Get full Python version
-        id: full-python-version
-        shell: bash
-        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Restore client cache
         uses: actions/cache@v5.0.5
         with:

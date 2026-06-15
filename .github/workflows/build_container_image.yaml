@@ -85,7 +85,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v6.2.0
         with:
-          python-version: '3.12'
+          python-version: '3.14'
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
       - name: Set outputs
         id: commit
