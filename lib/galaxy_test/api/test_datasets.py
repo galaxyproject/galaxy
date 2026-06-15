@@ -347,15 +347,22 @@ class TestDatasetsApi(ApiTestCase):
     def test_download_always_redirects(self, history_id):
         content = "download-me\n"
         hda = self.dataset_populator.new_dataset(history_id, content=content, wait=True)
-        download_url = self._api_url(f"datasets/{hda['id']}/download", {"to_ext": "txt"}, use_key=True)
+        # Authenticate via the x-api-key header (as bioblend does); it carries across the redirect.
+        download_url = self._api_url(f"datasets/{hda['id']}/download", {"to_ext": "txt"})
+        headers = {"x-api-key": self.galaxy_interactor.api_key}
         # The /download route always returns a 302 so every client follows redirects uniformly; for a
         # disk object store (no presigned URL) it points back at the streaming /display route.
-        no_follow = requests.get(download_url, allow_redirects=False)
+        no_follow = requests.get(download_url, headers=headers, allow_redirects=False)
         assert no_follow.status_code == 302
-        assert "display" in no_follow.headers["location"]
-        # Following the redirect yields the dataset content.
-        followed = requests.get(download_url)
-        followed.raise_for_status()
+        location = no_follow.headers["location"]
+        assert "display" in location
+        # The to_ext query param is carried through to the streaming route by the redirect.
+        assert "to_ext=txt" in location
+        # The client resends the x-api-key header on this same-origin redirect, so /display
+        # authenticates and serves the data. A 200 here (with only the header, no cookie) is the
+        # proof that auth survived the redirect -- /display would return 401 otherwise.
+        followed = requests.get(download_url, headers=headers)
+        assert followed.status_code == 200
         assert "download-me" in followed.text
 
     def test_display_preview_binary_as_text_uses_text_plain(self, history_id):

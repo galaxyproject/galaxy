@@ -414,16 +414,12 @@ class FastAPIDatasets:
         if url is None:
             # No object-store offload: redirect to the streaming display route. Every download is a 302
             # so clients implement redirect-following uniformly, regardless of the backing object store.
-            query_params = {"to_ext": to_ext}
-            api_key = request.query_params.get("key")
-            if api_key:
-                # Preserve a query-string API key across the redirect (header/cookie auth carries itself).
-                query_params["key"] = api_key
+            # Auth (x-api-key header, session cookie) carries itself across this same-origin redirect.
             url = trans.url_builder(
                 "display",
                 history_content_id=trans.security.encode_id(dataset_id),
                 qualified=True,
-                query_params=query_params,
+                query_params={"to_ext": to_ext},
             )
         return RedirectResponse(url, status_code=302)
 
