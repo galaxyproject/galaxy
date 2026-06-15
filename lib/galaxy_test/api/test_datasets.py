@@ -3,6 +3,8 @@ import zipfile
 from io import BytesIO
 from urllib.parse import quote
 
+import requests
+
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
     one_hda_model_store_dict,
@@ -341,6 +343,20 @@ class TestDatasetsApi(ApiTestCase):
         display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
+
+    def test_download_always_redirects(self, history_id):
+        content = "download-me\n"
+        hda = self.dataset_populator.new_dataset(history_id, content=content, wait=True)
+        download_url = self._api_url(f"datasets/{hda['id']}/download", {"to_ext": "txt"}, use_key=True)
+        # The /download route always returns a 302 so every client follows redirects uniformly; for a
+        # disk object store (no presigned URL) it points back at the streaming /display route.
+        no_follow = requests.get(download_url, allow_redirects=False)
+        assert no_follow.status_code == 302
+        assert "display" in no_follow.headers["location"]
+        # Following the redirect yields the dataset content.
+        followed = requests.get(download_url)
+        followed.raise_for_status()
+        assert "download-me" in followed.text
 
     def test_display_preview_binary_as_text_uses_text_plain(self, history_id):
         # Regression test for https://github.com/galaxyproject/galaxy/issues/22395

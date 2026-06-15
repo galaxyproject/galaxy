@@ -12,6 +12,7 @@ from typing import (
     Annotated,
     cast,
 )
+from urllib.parse import urlencode
 
 from fastapi import (
     Body,
@@ -406,13 +407,22 @@ class FastAPIDatasets:
         # the extension from the datatype) rather than a preview.
         to_ext = to_ext or "data"
         if request.method == "HEAD":
+            # HEAD answers from object-store metadata without redirecting -- clients (e.g. requests) do
+            # not follow redirects on HEAD, so a 302 here would hide the size/filename from them.
             headers = self.service.download_head_headers(trans, dataset_id, to_ext)
             return Response(status_code=200, headers=headers)
         url = self.service.direct_download_url(trans, dataset_id, to_ext)
-        if url is not None:
-            return RedirectResponse(url, status_code=302)
-        # No direct URL available: stream the file through Galaxy, exactly as a /display download would.
-        return self._display(request, trans, dataset_id, preview=False, filename=None, to_ext=to_ext, raw=False)
+        if url is None:
+            # No object-store offload: redirect to the streaming display route. Every download is a 302
+            # so clients implement redirect-following uniformly, regardless of the backing object store.
+            # A relative location resolves to the sibling /display route (same dataset, same auth/prefix).
+            query = {"to_ext": to_ext}
+            api_key = request.query_params.get("key")
+            if api_key:
+                # Preserve a query-string API key across the redirect (header/cookie auth carries itself).
+                query["key"] = api_key
+            url = f"display?{urlencode(query)}"
+        return RedirectResponse(url, status_code=302)
 
     def _display(
         self,
