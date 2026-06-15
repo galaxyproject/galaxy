@@ -333,6 +333,10 @@ def mull_targets(
 ) -> int:
     conda_platform_str = docker_platform_to_conda_subdir(target_platform)
     if singularity and target_platform:
+        # Singularity build (invfile.lua:110-118) runs `singularity build` locally from a
+        # .def file.  Singularity has `--arch` only for remote builds (--remote); there is
+        # no --platform flag for local builds.  The resulting .sif is always the host arch,
+        # so cross-platform builds would produce a .sif for the wrong architecture.
         raise ValueError("--target-platform cannot be used with --singularity")
 
     if involucro_context is None:
