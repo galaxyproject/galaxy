@@ -3049,17 +3049,17 @@ galaxy:
   # ai_api_key: null
 
   # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
-  ai_api_base_url: null
+  # ai_api_base_url: null
 
   # AI model to enable the wizard. Global fallback for all AI agents.
-  ai_model: gpt-4o
+  # ai_model: gpt-4o
 
   # API key for the OpenAI-compatible embedding provider used by vector
   # search agents.
-  embedding_api_key: null
+  # embedding_api_key: null
 
   # Embedding API base URL. Needs to be OpenAI compatible.
-  embedding_api_base_url: null
+  # embedding_api_base_url: null
 
   # Embedding model used by vector search agents.
   # The default value is: BAAI/bge-large-en-v1.5

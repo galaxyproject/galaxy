@@ -356,38 +356,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 log.info(f"Response data is not None, tutorials found: {response_data}")
                 used_fallback = False
                 if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
-                    log.info("Performing vector search")
-                    tutorials_vec_fallback_results = self.gtn_db.search_gtn_vector_db(
-                        query=query,
-                        embeddings=self.embeddings,
-                        persist_dir=self.persist_dir,
-                        collection_name="gtn_tutorials",
-                        limit=5,
-                    )
-                    log.info("Performing workflow vector search")
-                    workflow_vec_fallback_results = self.gtn_db.search_workflow_vector_db(
-                        query=query,
-                        embeddings=self.embeddings,
-                        persist_dir=self.persist_dir,
-                        collection_name="iwc_workflows",
-                        limit=5,
-                    )
-                    if tutorials_vec_fallback_results:
-                        log.info("Vector search successful, found tutorials to use in response")
-                        log.info("Found %d tutorials from vector search, using these results", len(tutorials_vec_fallback_results))
-                        log.info(f"Vector search tutorials: {tutorials_vec_fallback_results}")
-                        used_fallback = True
-                        response_data = GTNSearchResponse(
-                            tutorials=[r.to_dict() for r in tutorials_vec_fallback_results],
-                            summary=response_data.summary
-                            or f"Found {len(tutorials_vec_fallback_results)} GTN tutorial matches from vector search.",
-                            learning_path=response_data.learning_path,
-                            prerequisites=response_data.prerequisites,
-                            total_time=response_data.total_time,
-                        )
-                        if workflow_vec_fallback_results:
-                            response_data.workflows.extend(wf_res.to_dict() for wf_res in workflow_vec_fallback_results)
-                if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
                     log.info("No tutorials or FAQs in response, falling back to direct search")
                     fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
@@ -396,7 +364,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                             tutorials=[r.to_dict() for r in fallback_results],
                             summary=f"Found {len(fallback_results)} tutorials related to your query",
                         )
-
                 return self._build_response(
                     content=self._format_gtn_response(response_data),
                     confidence=(
