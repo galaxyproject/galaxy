@@ -94,7 +94,7 @@ def test_docker_platform_to_conda_subdir_defaults_to_host_platform():
 
 def test_docker_platform_to_conda_subdir_rejects_unsupported_platform():
     with pytest.raises(ValueError, match="Unsupported target platform"):
-        docker_platform_to_conda_subdir("linux/s390x")
+        docker_platform_to_conda_subdir("linux/s390x")  # type: ignore[arg-type]
 
 
 def test_target_platform_cli_argument_rejects_unsupported_platform():
