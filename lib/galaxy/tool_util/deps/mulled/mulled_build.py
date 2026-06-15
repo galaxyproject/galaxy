@@ -89,14 +89,14 @@ DockerPlatform = Literal[
     "linux/riscv64",
 ]
 
-DOCKER_TO_CONDA_PLATFORM: dict[DockerPlatform, str] = {
+DOCKER_TO_CONDA_PLATFORM: Dict[DockerPlatform, str] = {
     "linux/amd64": "linux-64",
     "linux/arm64": "linux-aarch64",
     "linux/arm/v7": "linux-armv7l",
     "linux/ppc64le": "linux-ppc64le",
     "linux/riscv64": "linux-riscv64",
 }
-MACHINE_TO_DOCKER_PLATFORM: dict[str, DockerPlatform] = {
+MACHINE_TO_DOCKER_PLATFORM: Dict[str, DockerPlatform] = {
     "x86_64": "linux/amd64",
     "amd64": "linux/amd64",
     "aarch64": "linux/arm64",
