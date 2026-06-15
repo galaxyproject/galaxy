@@ -3,7 +3,7 @@ from unittest import mock
 
 from galaxy.tool_util.deps.mulled.mulled_build_channel import (
     _fetch_repo_data,
-    _new_versions,
+    _unpublished_versions,
 )
 
 
@@ -40,9 +40,9 @@ def test_fetch_repo_data_defaults_to_host_platform(tmp_path):
     )
 
 
-def test_new_versions_compares_platform_suffixed_quay_tags():
-    assert _new_versions(["1.2--0-arm64"], ["1.2--0", "1.3--0"], "arm64") == ["1.3--0"]
+def test_unpublished_versions_compares_platform_suffixed_quay_tags():
+    assert _unpublished_versions(["1.2--0-arm64"], ["1.2--0", "1.3--0"], "arm64") == ["1.3--0"]
 
 
-def test_new_versions_ignores_legacy_unsuffixed_tags_for_non_amd64_builds():
-    assert _new_versions(["1.2--0"], ["1.2--0"], "arm64") == ["1.2--0"]
+def test_unpublished_versions_ignores_legacy_unsuffixed_tags_for_non_amd64_builds():
+    assert _unpublished_versions(["1.2--0"], ["1.2--0"], "arm64") == ["1.2--0"]
