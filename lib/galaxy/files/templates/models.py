@@ -51,6 +51,7 @@ FileSourceTemplateType = Literal[
     "dataverse",
     "huggingface",
     "iiif",
+    "mavedb",
     "omero",
     "ssh",
 ]
@@ -440,6 +441,22 @@ class IIIFFileSourceConfiguration(StrictModel):
     manifest_url: str
 
 
+class MaveDBFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["mavedb"]
+    base_url: Union[str, TemplateExpansion] = "https://api.mavedb.org/api/v1"
+    api_key: Union[str, TemplateExpansion, None] = None
+    timeout: Union[float, TemplateExpansion] = 30.0
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class MaveDBFileSourceConfiguration(StrictModel):
+    type: Literal["mavedb"]
+    base_url: str = "https://api.mavedb.org/api/v1"
+    api_key: Optional[str] = None
+    timeout: float = 30.0
+
+
 class OmeroFileSourceTemplateConfiguration(StrictModel):
     type: Literal["omero"]
     username: Union[str, TemplateExpansion]
@@ -480,6 +497,7 @@ FileSourceTemplateConfiguration = Annotated[
         DataverseFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
         IIIFFileSourceTemplateConfiguration,
+        MaveDBFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
         SshFileSourceTemplateConfiguration,
     ],
@@ -506,6 +524,7 @@ FileSourceConfiguration = Annotated[
         DataverseFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
         IIIFFileSourceConfiguration,
+        MaveDBFileSourceConfiguration,
         OmeroFileSourceConfiguration,
         SshFileSourceConfiguration,
     ],
@@ -590,6 +609,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "dataverse": DataverseFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
+    "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
 }

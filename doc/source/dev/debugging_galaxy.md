@@ -40,5 +40,5 @@ should work fine.
 2. Re-start VS Code
 3. Add a breakpoint somewhere in your code
 4. Select Run and Debug on Activity Bar, on the far left hand side. In the RUN AND DEBUG drop down, select `GalaxyFastAPI uvicorn`, and click the Start Debugging button (green arrow)
-5. Galaxy should stop right on the break point you added.
+5. Galaxy should stop right on the breakpoint you added.
 6. Enjoy your debugging session :-)

@@ -4376,6 +4376,7 @@ class PageRevisionSummary(Model):
 class PageRevisionDetails(PageRevisionSummary):
     title: Optional[str] = None
     content: Optional[str] = None
+    content_editor: Optional[str] = ContentEditorField
     content_format: Optional[PageContentFormat] = None
 
 

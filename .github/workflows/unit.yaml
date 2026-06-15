@@ -25,7 +25,7 @@ jobs:
       matrix:
         python-version: ['3.10', '3.14']
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
       - name: Get full Python version
         id: full-python-version
         shell: bash
@@ -45,7 +45,7 @@ jobs:
       - name: Run tests
         run: tox -e unit-coverage
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v6.0.1
         with:
           flags: py-unit
           working-directory: 'galaxy root'

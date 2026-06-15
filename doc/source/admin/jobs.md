@@ -279,7 +279,7 @@ def ncbi_blastn_wrapper(app, user_email):
 ```
 
 
-The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
+The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
 
 The above examples demonstrate that the dynamic job destination framework will pass in the arguments to your function that are needed based on the argument names. The valid argument names at this time are:
 

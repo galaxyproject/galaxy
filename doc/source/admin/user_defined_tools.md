@@ -77,7 +77,7 @@ While the structure is similar, several key differences exist:
 To enable this feature:
 
 1. Set `enable_beta_tool_formats: true` in your Galaxy configuration.
-2. Create a role of type `Custom Tool Execution` in the admin user interdace.
+2. Create a role of type `Custom Tool Execution` in the admin user interface.
 3. Assign users or groups to this role.
 
 ## Sharing User-Defined Tools
@@ -88,7 +88,7 @@ These tools can also be exported to disk and loaded like regular tools, enabling
 
 ## Security considerations
 
-User-defined tools share the same security risks as interactive tools..
+User-defined tools share the same security risks as interactive tools.
 See https://training.galaxyproject.org/training-material/topics/admin/tutorials/interactive-tools/tutorial.html#securing-interactive-tools for an extended discussion,
 and see https://github.com/galaxyproject/galaxy/blob/dev/test/integration/embedded_pulsar_job_conf.yml#L29 for a simple example that uses embedded pulsar to isolate mounts and disables network access.
 While the feature is in beta we recommend that only trusted users are allowed to use this feature.

@@ -7,7 +7,7 @@ We removed support for running Galaxy under uWSGI in Galaxy release 22.05.
 We made this move because uWSGI support for newer Python versions has been problematic and because
 we have modernized the API portion of our backend. The Galaxy web application is now an ASGI application
 driven by [FastAPI](https://fastapi.tiangolo.com/) and [Starlette](https://www.starlette.io/).
-This enables numerous important features that were not be possible (or were more complicated to set up)
+This enables numerous important features that were not possible (or were more complicated to set up)
 otherwise. Importantly, [FastAPI's documentation](https://fastapi.tiangolo.com/tutorial/) is very good and
 should increase developer productivity.
 

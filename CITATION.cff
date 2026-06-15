@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+message: >-
+  If you use or extend Galaxy in your work, please cite it using the metadata
+  below. To cite specific Galaxy components/features or other Galaxy project
+  publications, see https://galaxyproject.org/citing-galaxy
+title: "Galaxy"
+type: software
+url: "https://galaxyproject.org/"
+repository-code: "https://github.com/galaxyproject/galaxy"
+license: "MIT"
+authors:
+  - name: "The Galaxy Community"
+preferred-citation:
+  type: article
+  title: "Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update"
+  authors:
+    - name: "The Galaxy Community"
+  journal: "Nucleic Acids Research"
+  doi: "10.1093/nar/gkag469"
+  url: "https://doi.org/10.1093/nar/gkag469"
+  date-published: "2026-06-09"

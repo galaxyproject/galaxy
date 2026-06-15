@@ -146,7 +146,7 @@ Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject
 These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
 [`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
 
-These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same databases, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
+These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same database, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
 
 Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
 

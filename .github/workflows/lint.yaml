@@ -37,14 +37,14 @@ jobs:
       TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
       CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
       - name: Get full Python version
         id: full-python-version
         shell: bash

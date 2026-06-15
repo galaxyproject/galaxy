@@ -13092,6 +13092,7 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
+                | "mavedb"
                 | "omero"
                 | "ssh";
             /** Variables */
@@ -19995,6 +19996,12 @@ export interface components {
         PageRevisionDetails: {
             /** Content */
             content?: string | null;
+            /**
+             * Content for Editor
+             * @description Raw text contents of the last page revision (type dependent on content_format).
+             * @default
+             */
+            content_editor: string | null;
             content_format?: components["schemas"]["PageContentFormat"] | null;
             /**
              * Create Time
@@ -25381,6 +25388,7 @@ export interface components {
                 | "dataverse"
                 | "huggingface"
                 | "iiif"
+                | "mavedb"
                 | "omero"
                 | "ssh";
             /** Uri Root */

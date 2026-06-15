@@ -31,8 +31,11 @@ from galaxy.schema.fetch_data import (
 from galaxy.schema.invocation import InvocationSerializationParams
 from galaxy.schema.schema import (
     CreateHistoryPayload,
+    CreatePagePayload,
     DatasetSourceType,
     InvocationIndexPayload,
+    PageIndexQueryPayload,
+    UpdatePagePayload,
     WorkflowIndexPayload,
 )
 from galaxy.schema.workflows import InvokeWorkflowPayload
@@ -72,6 +75,7 @@ class AgentOperationsManager:
         self._dataset_collections_service: Optional[Any] = None
         self._dynamic_tools_manager: Optional[Any] = None
         self._file_source_instances_manager: Optional[Any] = None
+        self._pages_service: Optional[Any] = None
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
@@ -172,6 +176,14 @@ class AgentOperationsManager:
 
             self._file_source_instances_manager = self.app[FileSourceInstancesManager]
         return self._file_source_instances_manager
+
+    @property
+    def pages_service(self):
+        if self._pages_service is None:
+            from galaxy.webapps.galaxy.services.pages import PagesService
+
+            self._pages_service = self.app[PagesService]
+        return self._pages_service
 
     def connect(self) -> dict[str, Any]:
         config = self.app.config
@@ -1089,3 +1101,127 @@ class AgentOperationsManager:
             "file_sources": file_sources,
             "count": len(file_sources),
         }
+
+    # ==================== Pages (notebooks and reports) ====================
+
+    def _dump_page(self, model, include_rendered: bool = False) -> dict[str, Any]:
+        """Serialize a page/revision schema, dropping the large rendered form by default.
+
+        content_editor (editable encoded-id markdown) is always kept; content (the
+        embed-expanded render form) is included only when include_rendered is True.
+        """
+        result = model.model_dump(mode="json")
+        if not include_rendered:
+            result.pop("content", None)
+        return result
+
+    def list_pages(
+        self,
+        history_id: Optional[str] = None,
+        search: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = False,
+        deleted: bool = False,
+    ) -> dict[str, Any]:
+        """List pages viewable by the current user.
+
+        When history_id is set, only pages attached to that history (Galaxy
+        Notebooks) are returned. Defaults to the user's own pages; published or
+        shared pages are included only when explicitly requested.
+        """
+        payload = PageIndexQueryPayload(
+            history_id=history_id,
+            search=search,
+            limit=limit,
+            offset=offset,
+            show_own=True,
+            show_published=show_published,
+            show_shared=show_shared,
+            deleted=deleted,
+        )
+        pages, total_matches = self.pages_service.index(self.trans, payload, include_total_count=True)
+        return {
+            "pages": pages.model_dump(mode="json"),
+            "count": len(pages.root),
+            "total_matches": total_matches,
+        }
+
+    def get_page(self, page_id: str, include_rendered: bool = False) -> dict[str, Any]:
+        """Return a page with its latest-revision content.
+
+        content_editor (editable markdown with encoded-id directives) is always
+        returned. The embed-expanded render form (content) can be large and is
+        included only when include_rendered is True.
+        """
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        details = self.pages_service.show(self.trans, decoded_page_id)
+        return self._dump_page(details, include_rendered)
+
+    def create_page(
+        self,
+        history_id: Optional[str] = None,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        annotation: Optional[str] = None,
+        slug: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Create a markdown page. Attach it to a history (notebook) by passing history_id.
+
+        Standalone reports (no history_id) require a unique slug and a title.
+        """
+        payload = CreatePagePayload(
+            history_id=history_id,
+            title=title,
+            content=content,
+            content_format="markdown",
+            annotation=annotation,
+            slug=slug,
+        )
+        details = self.pages_service.create(self.trans, payload)
+        return self._dump_page(details)
+
+    def update_page(
+        self,
+        page_id: str,
+        content: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> dict[str, Any]:
+        """Update a page. Supplying content creates a new revision tagged edit_source=agent."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        payload = UpdatePagePayload(
+            content=content,
+            title=title,
+            edit_source="agent",
+        )
+        details = self.pages_service.update(self.trans, decoded_page_id, payload)
+        return self._dump_page(details)
+
+    def list_page_revisions(self, page_id: str, sort_desc: bool = False) -> dict[str, Any]:
+        """List the revision history of a page (provenance via edit_source)."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        revisions = self.pages_service.list_revisions(self.trans, decoded_page_id, sort_desc=sort_desc)
+        return {
+            "revisions": revisions.model_dump(mode="json"),
+            "count": len(revisions.root),
+        }
+
+    def get_page_revision(self, page_id: str, revision_id: str, include_rendered: bool = False) -> dict[str, Any]:
+        """Return a single page revision with its content.
+
+        Mirrors get_page: content_editor (editable encoded-id markdown) is always
+        returned; the embed-expanded render form (content) is included only when
+        include_rendered is True.
+        """
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        decoded_revision_id = self.trans.security.decode_id(revision_id)
+        revision = self.pages_service.show_revision(self.trans, decoded_page_id, decoded_revision_id)
+        return self._dump_page(revision, include_rendered)
+
+    def revert_page_revision(self, page_id: str, revision_id: str) -> dict[str, Any]:
+        """Roll a page back to an earlier revision (creates a new 'restore' revision)."""
+        decoded_page_id = self.trans.security.decode_id(page_id)
+        decoded_revision_id = self.trans.security.decode_id(revision_id)
+        revision = self.pages_service.revert_revision(self.trans, decoded_page_id, decoded_revision_id)
+        return self._dump_page(revision)

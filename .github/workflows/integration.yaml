@@ -53,7 +53,7 @@ jobs:
           kubernetes-version: '1.28.0'
       - name: Check pods
         run: kubectl get pods -A
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -61,7 +61,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
       - name: Get full Python version
         id: full-python-version
         shell: bash
@@ -78,7 +78,7 @@ jobs:
           . .ci/minikube-test-setup/start_services.sh
           ./run_tests.sh --coverage -integration test/integration -- --num-shards=4 --shard-id=${{ matrix.chunk }}
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v6.0.1
         with:
           flags: integration
           working-directory: 'galaxy root'

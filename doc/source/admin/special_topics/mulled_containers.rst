@@ -41,7 +41,7 @@ is not available already.
 Automatic build of Linux containers
 -----------------------------------
 
-We utilize mulled_ with involucro_ to automatically convert all packages in Bioconda_ into Linux containers images 
+We utilize mulled_ with involucro_ to automatically convert all packages in Bioconda_ into Linux container images 
 (Docker and rkt at the moment) and make them available at the `BioContainers Quay.io account`_.
 
 We have developed small utilities around this technology stack, which is currently included in the ``galaxy-tool-util``
@@ -122,7 +122,7 @@ Build, test, and push a conda-forge package to biocontainers
  > You need to have write access to the biocontainers repository
 
 You can build packages from other Conda channels as well, not only from BioConda. ``pandoc`` tool is available from the
-conda-forge channel and conda-forge is also enabled by default in Galaxy. To build ``pandoc`` and push it to biocontainrs
+conda-forge channel and conda-forge is also enabled by default in Galaxy. To build ``pandoc`` and push it to biocontainers
 you could do something along these lines.
 
 
@@ -167,7 +167,7 @@ In order to generate the list file the ``mulled-list`` command may be useful. Th
 
    $ mulled-list --source docker --not-singularity --blacklist blacklist.txt --file output.txt
 
-The list of containers will be saved as ``output.txt``. The (optional) ``--blacklist`` option may be used to exclude containers which should not included in the output; ``blacklist.txt`` should contain a list of the 'blacklisted' containers, each on a new line.
+The list of containers will be saved as ``output.txt``. The (optional) ``--blacklist`` option may be used to exclude containers which should not be included in the output; ``blacklist.txt`` should contain a list of the 'blacklisted' containers, each on a new line.
 
 The generated containers should also be tested. This can be achieved by affixing ``--testing test-output.log`` to the ``mulled-update-singularity-containers`` command:
 

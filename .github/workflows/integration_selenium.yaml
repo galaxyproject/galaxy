@@ -55,7 +55,7 @@ jobs:
           echo "GALAXY_CONFIG_OVERRIDE_OUTPUTS_TO_WORKING_DIRECTORY=true" >> $GITHUB_ENV
       - name: Prune unused docker image, volumes and containers
         run: docker system prune -a -f
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -63,7 +63,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.1.0
+        uses: astral-sh/setup-uv@v8.2.0
       - name: Get full Python version
         id: full-python-version
         shell: bash
@@ -82,7 +82,7 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -integration test/integration_selenium
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v6.0.1
         with:
           flags: integration-selenium
           working-directory: 'galaxy root'

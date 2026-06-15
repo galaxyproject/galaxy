@@ -113,7 +113,7 @@ galaxy_server% export DRMAA_LIBRARY_PATH=/galaxy/sge/lib/lx24-amd64/libdrmaa.so
 
 #### DRM Notes
 
-**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are abvailable that are not affected by these limitations, e.g. univa and slurm runners.
+**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are available that are not affected by these limitations, e.g. univa and slurm runners.
 
 **TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](https://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
 
@@ -456,7 +456,7 @@ The `RemoteShell` plugin uses `rsh(1)` to connect to a remote system and execute
 : Remote system hostname to log in to.
 
 ``shell_rsh``
-: ``rsh``-like command to excute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
+: ``rsh``-like command to execute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
 
 The `RemoteShell` parameters translate to a command line of `% <shell_rsh> [-l <shell_username>] <shell_hostname> "<remote_command_with_args>"`, where the inclusion of `-l` is dependent on whether `shell_username` is set. Alternate values for `shell_rsh` must be compatible with this syntax.
 
@@ -571,7 +571,7 @@ Since this is a complex problem, the current solution does have some caveats:
 * All of the datasets stored in Galaxy will have to be readable on the underlying filesystem by all Galaxy users. Said users need not have direct access to any systems which mount these filesystems, only the ability to run jobs on clusters that mount them. But I expect that in most environments, users will have the ability to submit jobs to these clusters or log in to these clusters outside of Galaxy, so this will be a security concern to evaluate for most environments.
   * *Technical details* - Since Galaxy maintains dataset sharing internally and all files are owned by the Galaxy user, when running jobs only under a single user, permissions can be set such that only the Galaxy user can read all datasets. Since the dataset may be shared by multiple users, it is not suitable to simply change ownership of inputs before a job runs (what if another user tried to use the same dataset as an input during this time?). This could possibly be solved if Galaxy had tight control over extended ACLs on the file, but since many different ACL schemes exist, Galaxy would need a module for each scheme to be supported.
 * The real user system works by changing ownership of the job's working directory to the system prior to running the job, and back to the Galaxy user once the job has completed. It does this by executing a site-customizable script via [sudo](https://www.sudo.ws/).
-  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whos name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
+  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whose name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
   * The script accepts a path and does nothing to ensure that this path is a Galaxy working directory per default (and not at all up to release 17.05). So anyone who has access to the Galaxy user could use this script and sudo to change the ownership of any file or directory. Furthermore, anyone with write access to the script could introduce arbitrary (harmful) code -- so it might be a good idea to give write access only to trustworthy users, e.g., root.
 
 ### Configuration
@@ -605,7 +605,7 @@ For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is
 drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
 ```
 
-Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
+Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directories `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 
