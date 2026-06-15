@@ -12,7 +12,6 @@ from typing import (
     Annotated,
     cast,
 )
-from urllib.parse import urlencode
 
 from fastapi import (
     Body,
@@ -415,13 +414,17 @@ class FastAPIDatasets:
         if url is None:
             # No object-store offload: redirect to the streaming display route. Every download is a 302
             # so clients implement redirect-following uniformly, regardless of the backing object store.
-            # A relative location resolves to the sibling /display route (same dataset, same auth/prefix).
-            query = {"to_ext": to_ext}
+            query_params = {"to_ext": to_ext}
             api_key = request.query_params.get("key")
             if api_key:
                 # Preserve a query-string API key across the redirect (header/cookie auth carries itself).
-                query["key"] = api_key
-            url = f"display?{urlencode(query)}"
+                query_params["key"] = api_key
+            url = trans.url_builder(
+                "display",
+                history_content_id=trans.security.encode_id(dataset_id),
+                qualified=True,
+                query_params=query_params,
+            )
         return RedirectResponse(url, status_code=302)
 
     def _display(
