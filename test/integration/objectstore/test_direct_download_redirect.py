@@ -1,8 +1,9 @@
 """Integration test for direct-download redirects (presigned URLs) from a remote object store.
 
-Datasets stored in a backing object store with ``enable_direct_download`` set should be served via a
-302 redirect to a URL the client fetches directly from the store, instead of being pulled through
-Galaxy's cache. Uses a boto3 object store backed by a disposable minio container.
+Whole-file downloads of datasets stored in a backing object store with ``enable_direct_download`` set
+are served from the dedicated ``/download`` route via a 302 redirect to a URL the client fetches
+directly from the store, instead of being pulled through Galaxy's cache. The ``/display`` route keeps
+streaming through Galaxy (no redirect). Uses a boto3 object store backed by a disposable minio container.
 """
 
 import os
@@ -77,10 +78,13 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    def _download_url(self, hda_id, **params):
+        return self._api_url(f"datasets/{hda_id}/download", params=params, use_key=True)
+
     def _display_url(self, hda_id, **params):
         return self._api_url(f"datasets/{hda_id}/display", params=params, use_key=True)
 
-    def test_download_redirects_to_presigned_url(self):
+    def test_download_route_redirects_to_presigned_url(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content="123", wait=True)
 
@@ -88,7 +92,7 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
         self._reset_cache()
         assert files_count(self.object_store_cache_path) == 0
 
-        url = self._display_url(hda["id"], to_ext="txt")
+        url = self._download_url(hda["id"], to_ext="txt")
         response = requests.get(url, allow_redirects=False)
         assert response.status_code == 302
         location = response.headers["Location"]
@@ -104,14 +108,38 @@ class TestDirectDownloadRedirectIntegration(BaseObjectStoreIntegrationTestCase):
         # Galaxy served the download without pulling the object into its cache.
         assert files_count(self.object_store_cache_path) == 0
 
-    def test_raw_download_redirects(self):
+    def test_download_route_redirects_with_inferred_extension(self):
         history_id = self.dataset_populator.new_history()
-        hda = self.dataset_populator.new_dataset(history_id, content="raw-bytes", wait=True)
+        hda = self.dataset_populator.new_dataset(history_id, content="123", wait=True)
 
-        url = self._display_url(hda["id"], raw="True")
+        # No to_ext: the download route infers it and still redirects for a single-file dataset.
+        url = self._download_url(hda["id"])
         response = requests.get(url, allow_redirects=False)
         assert response.status_code == 302
         assert OBJECT_STORE_HOST in response.headers["Location"]
+
+    def test_head_download_returns_metadata_without_redirect(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="123", wait=True)
+
+        self._reset_cache()
+        url = self._download_url(hda["id"], to_ext="txt")
+        response = requests.head(url, allow_redirects=False)
+        # HEAD answers from object-store metadata: 200, real size, no redirect, no cache pull.
+        assert response.status_code == 200
+        assert "Location" not in response.headers
+        assert response.headers["Content-Length"] == str(len(b"123\n"))
+        assert files_count(self.object_store_cache_path) == 0
+
+    def test_display_does_not_redirect(self):
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="display-me", wait=True)
+
+        # The legacy /display route is unchanged: it streams through Galaxy, never redirects.
+        url = self._display_url(hda["id"], to_ext="txt")
+        response = requests.get(url, allow_redirects=False)
+        assert response.status_code == 200
+        assert "display-me" in response.text
 
     def test_preview_is_not_redirected(self):
         history_id = self.dataset_populator.new_history()

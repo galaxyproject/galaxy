@@ -70,7 +70,6 @@ from galaxy.webapps.galaxy.services.datasets import (
     DatasetTextContentDetails,
     DeleteDatasetBatchPayload,
     DeleteDatasetBatchResult,
-    DirectDownloadUrl,
     RequestDataType,
     UpdateObjectStoreIdPayload,
 )
@@ -310,7 +309,6 @@ class FastAPIDatasets:
         summary="Displays (preview) or downloads dataset content.",
         tags=["histories"],
         response_class=StreamingResponse,
-        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
     )
     @router.head(
         "/api/histories/{history_id}/contents/{history_content_id}/display",
@@ -338,7 +336,6 @@ class FastAPIDatasets:
         "/api/datasets/{history_content_id}/display",
         summary="Displays (preview) or downloads dataset content.",
         response_class=StreamingResponse,
-        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
     )
     @router.head(
         "/api/datasets/{history_content_id}/display",
@@ -358,6 +355,64 @@ class FastAPIDatasets:
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
         return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
+
+    @router.get(
+        "/api/histories/{history_id}/contents/{history_content_id}/download",
+        name="history_contents_download",
+        summary="Downloads the dataset, redirecting to the object store when possible.",
+        tags=["histories"],
+        response_class=StreamingResponse,
+        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
+    )
+    @router.head(
+        "/api/histories/{history_id}/contents/{history_content_id}/download",
+        name="history_contents_download",
+        summary="Returns download metadata (size, filename) for the dataset.",
+        tags=["histories"],
+    )
+    def download_history_content(
+        self,
+        request: Request,
+        history_content_id: HistoryDatasetIDPathParam,
+        history_id: Optional[HistoryIDPathParam] = None,
+        trans=DependsOnTrans,
+        to_ext: Optional[str] = ToExtQueryParam,
+    ):
+        """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
+        return self._download(request, trans, history_content_id, to_ext)
+
+    @router.get(
+        "/api/datasets/{history_content_id}/download",
+        summary="Downloads the dataset, redirecting to the object store when possible.",
+        response_class=StreamingResponse,
+        responses={302: DIRECT_DOWNLOAD_REDIRECT_RESPONSE},
+    )
+    @router.head(
+        "/api/datasets/{history_content_id}/download",
+        summary="Returns download metadata (size, filename) for the dataset.",
+    )
+    def download(
+        self,
+        request: Request,
+        history_content_id: HistoryDatasetIDPathParam,
+        trans=DependsOnTrans,
+        to_ext: Optional[str] = ToExtQueryParam,
+    ):
+        """Downloads the whole dataset file. Clients must follow the 302 redirect this route may return."""
+        return self._download(request, trans, history_content_id, to_ext)
+
+    def _download(self, request: Request, trans, dataset_id: DecodedDatabaseIdField, to_ext: Optional[str]):
+        # Default to_ext to "data" so the route always behaves as a whole-file download (server infers
+        # the extension from the datatype) rather than a preview.
+        to_ext = to_ext or "data"
+        if request.method == "HEAD":
+            headers = self.service.download_head_headers(trans, dataset_id, to_ext)
+            return Response(status_code=200, headers=headers)
+        url = self.service.direct_download_url(trans, dataset_id, to_ext)
+        if url is not None:
+            return RedirectResponse(url, status_code=302)
+        # No direct URL available: stream the file through Galaxy, exactly as a /display download would.
+        return self._display(request, trans, dataset_id, preview=False, filename=None, to_ext=to_ext, raw=False)
 
     def _display(
         self,
@@ -385,8 +440,6 @@ class FastAPIDatasets:
             ck_size=ck_size,
             **extra_params,
         )
-        if isinstance(display_data, DirectDownloadUrl):
-            return RedirectResponse(display_data.url, status_code=302, headers=headers)
         if isinstance(display_data, IOBase):
             file_name = getattr(display_data, "name", None)
             if file_name:
