@@ -443,7 +443,7 @@ class BaseGalaxyAgent(ABC):
 
     # Fallback when no max_tokens is configured. 8k leaves headroom on every
     # backend we currently support (smallest is Qwen3-32B at 32k context).
-    DEFAULT_MAX_TOKENS = 32000 #8192
+    DEFAULT_MAX_TOKENS = 8192
 
     # Retry budget passed to Agent(retries=...) (tool calls and output validation).
     # pydantic-ai defaults to 1; 3 gives a flaky model a couple more chances to

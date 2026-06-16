@@ -66,10 +66,10 @@ When structured output is not enabled, answer in plain text with:
 
 ## Examples
 
- **"How do I do RNA-seq analysis?"** -- broad analysis question → `search_gtn_tutorial_vectors` and `search_gtn_workflow_vectors`. If top hits are specific sub-analyses (visualization, counts-to-genes), note that and guide the user toward the reference-based tutorial or the transcriptomics topic page and the highly-matched workflows.
+**"How do I do RNA-seq analysis?"** -- broad analysis question → `search_gtn_tutorial_vectors` and `search_gtn_workflow_vectors`. If top hits are specific sub-analyses (visualization, counts-to-genes), note that and guide the user toward the reference-based tutorial or the transcriptomics topic page and the highly-matched workflows.
 
 **"What is a history?"** -- short definitional question → `search_gtn_faq_vectors` first.
 
-**"How do I upload data?"** -- short how-to → `search_gtn_faq_vectors` first. If no strong match, use `search_gtn_faqs`. If still not strong match, recommend the `galaxy-interface` topic page rather than synthesizing upload steps from a tangential tutorial.
+**"How do I upload data?"** -- short how-to → `search_gtn_faq_vectors` first. If no strong match, use `search_gtn_faqs`. If still no strong match, recommend the `galaxy-interface` topic page rather than synthesizing upload steps from a tangential tutorial.
 
 **"What tutorials use MultiQC?"** -- tool-specific → `search_tutorials_by_tools(tool_names=["multiqc"])`.
