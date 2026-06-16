@@ -22,6 +22,7 @@ from langchain_chroma import Chroma
 from langchain_openai import OpenAIEmbeddings
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
+GTN_VECTOR_DATABASE_URL = "https://zenodo.org/records/20707620/files/chroma_db.tar.gz"
 GTN_FAQ_BASE_URL = "https://training.galaxyproject.org/training-material/faqs"
 # Connect + per-read timeout for the initial GTN database download. The file
 # is ~25MB; this bounds individual socket reads so a stalled depot can't hang
@@ -272,7 +273,7 @@ class GTNSearchDB:
 
     def __init__(self, db_path: Optional[str] = None, vector_db_path: Optional[str] = None, \
                  download_url: Optional[str] = None, vector_db_url: Optional[str] = None):
-        if db_path is None:
+        if db_path is None and vector_db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
             self.vector_db_path = current_dir / "data" / "gtn_chroma_db_composite"
@@ -281,7 +282,7 @@ class GTNSearchDB:
             self.vector_db_path = Path(vector_db_path)
 
         self.download_url = download_url or GTN_DATABASE_URL
-        self.vector_db_url = vector_db_url
+        self.vector_db_url = vector_db_url or GTN_VECTOR_DATABASE_URL
 
         if not self.db_path.exists():
             self._download_database()
