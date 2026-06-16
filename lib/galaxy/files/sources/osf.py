@@ -247,14 +247,13 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
         nodes = [n for n in payload.get("data", []) if not _has_parent(n)]
         total = int(payload.get("meta", {}).get("total", 0))
         containers = [
-            RemoteDirectory(**{
-                "name": _node_title(node),
-                "uri": self.to_plugin_uri(node["id"]),
-                "path": f"/{node['id']}",
-                "class": "Directory",
-            })
+            RemoteDirectory(
+                name=_node_title(node),
+                uri=self.to_plugin_uri(node["id"]),
+                path=f"/{node['id']}",
+            )
             for node in nodes
-        ]
+            ]
         return containers, total
 
     def get_files_in_container(
@@ -363,7 +362,6 @@ class OSFRepositoryInteractor(RDMRepositoryInteractor):
                     "name": name,
                     "uri": self.to_plugin_uri(container_id, rel_path),
                     "path": f"/{container_id}/{rel_path}",
-                    "class": "File",
                     "size": attrs.get("size", 0),
                     "ctime": attrs.get("modified_utc") or attrs.get("created_utc"),
                 })
@@ -386,12 +384,7 @@ class OSFFilesSource(RDMFilesSource):
         )
 
     def get_prefix(self) -> Optional[str]:
-        endpoint = urlparse(self.template_config.url)
-        return (
-            self.id
-            if self.scheme not in {"osf", DEFAULT_SCHEME}
-            else (endpoint.netloc or None)
-        )
+        return self.id
 
     def score_url_match(self, url: str) -> int:
         parsed = urlparse(url)
@@ -491,3 +484,6 @@ class OSFFilesSource(RDMFilesSource):
             identifier.container_id, identifier.file_identifier, native_path, context,
         )
         return target_path
+
+
+__all__ = ("OSFFilesSource",)
