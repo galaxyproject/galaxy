@@ -3046,24 +3046,24 @@ galaxy:
 
   # API key for an AI provider. AI provider is Openai By default
   # (https://openai.com/) to enable the wizard (or more?)
-  # ai_api_key: null
+  #ai_api_key: null
 
   # AI API base URL. Needs to be OpenAI compatible, defaults to OpenAI
-  # ai_api_base_url: null
+  #ai_api_base_url: null
 
   # AI model to enable the wizard. Global fallback for all AI agents.
-  # ai_model: gpt-4o
+  #ai_model: gpt-4o
 
   # API key for the OpenAI-compatible embedding provider used by vector
   # search agents.
-  # embedding_api_key: null
+  #embedding_api_key: null
 
   # Embedding API base URL. Needs to be OpenAI compatible.
-  # embedding_api_base_url: null
+  #embedding_api_base_url: null
 
   # Embedding model used by vector search agents.
   # The default value is: BAAI/bge-large-en-v1.5
-  # embedding_model: null
+  #embedding_model: null
 
   # Path to the Chroma vector database used by vector search agents.
   # Resolves against ``data_dir`` so admins can place it in a
@@ -3071,7 +3071,11 @@ galaxy:
   # automatically on first use from ``vector_database_url`` if it does
   # not exist.
   # The default value is: gtn/chroma_db_composite
-  # vector_database_path: null
+  #vector_database_path: null
+
+  # URL used to download the Chroma vector database when the local file
+  # at ``vector_database_path`` is missing.
+  #vector_database_url: https://zenodo.org/records/20707620/files/chroma_db.tar.gz?download=1
 
   # Configuration for AI inference services used by agents and
   # visualization plugins. Supports per-agent or per-plugin model,
