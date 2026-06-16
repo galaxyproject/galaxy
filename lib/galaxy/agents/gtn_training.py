@@ -107,10 +107,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     collection_name="gtn_tutorials",
                     limit=limit,
                 )
-                log.info(f"GTN search found {len(results)} results, vector search found {len(results)} results for query: '{query}'")
-                log.info(f"Vector search results: {results}")
-                log.info(f"Vector search results (dict): {[r.to_dict() for r in results]}")
-
                 return json.dumps(
                     {
                         "results": [r.to_dict() for r in results],
@@ -137,14 +133,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     collection_name="iwc_workflows",
                     limit=limit,
                 )
-                log.info("Workflow vector search found %d results for query: %r", len(results), query)
-                log.info(f"Workflow search found {len(results)} results, wf vector search found {len(results)} results for query: '{query}'")
-                log.info(f"Workflow Vector search results: {results}")
-                log.info(f"Workflow Vector search results (dict): {[r.to_dict() for r in results]}")
                 return json.dumps(
                     {
                         "results": [r.to_dict() for r in results],
-                        "workflows": [r.to_dict() for r in results],
                         "count": len(results),
                     }
                 )
@@ -168,14 +159,9 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                     collection_name="galaxy_faqs",
                     limit=limit,
                 )
-                log.info("FAQ vector search found %d results for query: %r", len(results), query)
-                log.info(f"FAQ search found {len(results)} results, faq vector search found {len(results)} results for query: '{query}'")
-                log.info(f"FAQ Vector search results: {results}")
-                log.info(f"FAQ Vector search results (dict): {[r.to_dict() for r in results]}")
                 return json.dumps(
                     {
                         "results": [r.to_dict() for r in results],
-                        "faqs": [r.to_dict() for r in results],
                         "count": len(results),
                     }
                 )
@@ -332,9 +318,6 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             message_history = self._extract_message_history(context)
             
             result = await self._run_with_retry(query, message_history=message_history)
-            log.info(f"Context: {context}")
-            log.info(f"Message history: {message_history}")
-            log.info(f"LLM raw response: {result}")
             usage = extract_usage_info(result)
             if usage:
                 log.info(
@@ -356,10 +339,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                         query=query,
                         error="invalid_structured_output",
                     )
-                log.info(f"Response data is not None, tutorials found: {response_data}")
                 used_fallback = False
                 if not response_data.tutorials and not response_data.faqs and not response_data.workflows:
-                    log.info("No tutorials or FAQs in response, falling back to direct search")
                     fallback_results = self.gtn_db.search(query, limit=5)
                     if fallback_results:
                         used_fallback = True

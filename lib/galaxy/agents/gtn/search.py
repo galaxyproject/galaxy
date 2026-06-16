@@ -97,7 +97,7 @@ class SearchResult:
     hands_on: bool
     time_estimation: str
     description: str = ""
-    result_type: str = "tutorial"  # "tutorial" or "faq"
+    result_type: str = "tutorial"
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization.
@@ -326,7 +326,7 @@ class GTNSearchDB:
             self.vector_db_path = GTNSearchDB._download_vector_database_to_path(self.vector_db_path, self.vector_db_url)
             log.info(f"GTN vector database downloaded to {self.vector_db_path}")
         except Exception as e:
-            log.warning(f"Failed to download GTN vector database: {e}") 
+            log.warning(f"Failed to download GTN vector database: {e}")
 
     def refresh(self) -> None:
         """Force-redownload the database from ``download_url``, replacing it atomically."""
@@ -599,14 +599,12 @@ class GTNSearchDB:
             # Use similarity_search_with_score to get relevance scores
             results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
 
-            log.info(f"Found {len(results_with_scores)} similar documents")
-
             vector_results = []
 
             for i, (doc, score) in enumerate(results_with_scores, start=1):
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
-                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
                 for d in parent_docs["documents"][:10]:
                     parent_context_docs += d + " "
@@ -626,10 +624,6 @@ class GTNSearchDB:
                     content=parent_context_docs,
                 )
                 vector_results.append(result)
-
-            log.info(f"Processed {len(vector_results)} vector DB search results")
-            for i, result in enumerate(vector_results):
-                log.debug(f"Result {i+1}: score={result.score:.3f}, source={result.source}, title={result.title}")
 
             return vector_results
         except Exception as e:
@@ -659,14 +653,12 @@ class GTNSearchDB:
             # Use similarity_search_with_score to get relevance scores
             results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
 
-            log.info(f"Found {len(results_with_scores)} similar workflows")
-
             vector_results = []
 
             for i, (doc, score) in enumerate(results_with_scores, start=1):
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
-                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
                 for d in parent_docs["documents"][:10]:
                     parent_context_docs += d + " "
@@ -689,13 +681,6 @@ class GTNSearchDB:
                     content=parent_context_docs,
                 )
                 vector_results.append(result)
-
-            log.info(f"Processed {len(vector_results)} workflow vector DB search results")
-            for i, result in enumerate(vector_results):
-                log.debug(
-                    f"Result {i+1}: score={result.score:.3f}, source={result.source}, "
-                    f"workflow_name={result.workflow_name}"
-                )
 
             return vector_results
         except Exception as e:
@@ -725,14 +710,12 @@ class GTNSearchDB:
             # Use similarity_search_with_score to get relevance scores
             results_with_scores = vectorstore.similarity_search_with_score(query, k=limit)
 
-            log.info(f"Found {len(results_with_scores)} similar FAQs")
-
             vector_results = []
 
             for i, (doc, score) in enumerate(results_with_scores, start=1):
                 source_id = doc.metadata.get("source")
                 parent_docs = vectorstore.get(where={"source": source_id})
-                log.info(f"Parent documents for source {source_id}: {len(parent_docs)}")
+                # use longer context by taking multiple documents with the same source, if available
                 parent_context_docs = ""
                 for d in parent_docs["documents"][:3]:
                     parent_context_docs += d + " "
@@ -750,13 +733,6 @@ class GTNSearchDB:
                     content=parent_context_docs,
                 )
                 vector_results.append(result)
-
-            log.info(f"Processed {len(vector_results)} FAQ vector DB search results")
-            for i, result in enumerate(vector_results):
-                log.debug(
-                    f"Result {i+1}: score={result.score:.3f}, source={result.source}, "
-                    f"question={result.question}"
-                )
 
             return vector_results
         except Exception as e:
