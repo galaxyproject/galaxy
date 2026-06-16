@@ -322,3 +322,11 @@
   doc: Browse and import canvases from the Cambridge Digital Library
   manifest_url: "https://cudl.lib.cam.ac.uk/iiif/collection/csic"
   writable: false
+
+- type: osf
+  id: osf
+  label: Open Science Framework (OSF)
+  doc: Browse, import, and export files from your OSF projects and registrations.
+  url: "https://api.osf.io/v2/"
+  token: "PASTE_YOUR_PERSONAL_ACCESS_TOKEN_HERE"
+  writable: true
