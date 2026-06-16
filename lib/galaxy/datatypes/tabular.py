@@ -149,13 +149,11 @@ class TabularData(Text):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self._get_data_line_offset(dataset, offset, ck_data),
+                "data_line_offset": self._get_data_line_offset(dataset, offset),
             }
         )
 
-    def _get_data_line_offset(
-        self, dataset: DatasetProtocol, offset: int = 0, data_sample: Optional[str] = None
-    ) -> int:
+    def _get_data_line_offset(self, dataset: DatasetProtocol, offset: int = 0) -> int:
         if offset:
             return 0
         data_line_offset = self.data_line_offset
@@ -163,27 +161,10 @@ class TabularData(Text):
         comment_lines = dataset.metadata.comment_lines
         if not column_names:
             return data_line_offset
-        if comment_lines is None:
-            return self._get_column_name_line_offset(dataset, column_names, data_sample)
         try:
             return max(data_line_offset, int(comment_lines))
         except (TypeError, ValueError):
             return data_line_offset
-
-    def _get_column_name_line_offset(
-        self, dataset: DatasetProtocol, column_names: list[str], data_sample: Optional[str]
-    ) -> int:
-        if data_sample is None:
-            return self.data_line_offset
-        delimiter = dataset.metadata.delimiter or "\t"
-        for i, line in enumerate(data_sample.splitlines()):
-            line = line.rstrip("\r\n")
-            if not line or line.startswith("#"):
-                continue
-            if line.split(delimiter)[: len(column_names)] == column_names:
-                return max(self.data_line_offset, i + 1)
-            return max(self.data_line_offset, 1)
-        return max(self.data_line_offset, 1)
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
@@ -328,7 +309,7 @@ class TabularData(Text):
             if columns is None:
                 columns = dataset.metadata.spec.columns.no_value
             columns = min(columns, self.max_peek_columns)
-            data_line_offset = self._get_data_line_offset(dataset, data_sample=peek)
+            data_line_offset = self._get_data_line_offset(dataset)
             for i, line in enumerate(peek.splitlines()):
                 if i >= data_line_offset:
                     if line.startswith(tuple(skipchars)):
@@ -421,20 +402,7 @@ class Tabular(TabularData):
     file_ext = "tabular"
 
     def get_column_names(self, first_line: str) -> Optional[list[str]]:
-        column_names = first_line.split("\t")
-        if len(column_names) < 2 or not any(column_name.strip() for column_name in column_names):
-            return None
-        return column_names
-
-    def use_column_names(self, column_names: Optional[list[str]], header_sample: str) -> bool:
-        if not column_names:
-            return False
-        if len(header_sample.splitlines()) < 2:
-            return False
-        try:
-            return csv.Sniffer().has_header(header_sample)
-        except csv.Error:
-            return False
+        return None
 
     def set_meta(
         self,
@@ -449,11 +417,10 @@ class Tabular(TabularData):
         """
         Determine tabular metadata including column count, column types, line
         counts, and optional column names. Subclasses can pass ``skip`` when
-        they know how many leading lines are not data. When ``skip`` is
-        ``None``, this generic datatype may treat the first non-comment line as
-        a header. ``max_data_lines`` limits how many data lines are inspected;
-        when the limit is reached before EOF, optional line-count metadata is
-        cleared because the full counts are unknown.
+        they know how many leading lines are not data. ``max_data_lines`` limits
+        how many data lines are inspected; when the limit is reached before EOF,
+        optional line-count metadata is cleared because the full counts are
+        unknown.
 
         Items of interest:
 
@@ -529,10 +496,7 @@ class Tabular(TabularData):
 
         data_lines = 0
         comment_lines = 0
-        existing_column_names = getattr(dataset.metadata, "column_names", None)
         column_names = None
-        header_sample_lines: list[str] = []
-        header_candidate_seen = False
         column_types: list = []
         first_line_column_types = []
         if dataset.has_data():
@@ -541,17 +505,12 @@ class Tabular(TabularData):
                 i = 0
                 for line in iter(dataset_fh.readline, ""):
                     line = line.rstrip("\r\n")
-                    skipped_or_comment = i < skip or not line or line.startswith("#")
-                    if skipped_or_comment:
+                    if i == 0:
+                        column_names = self.get_column_names(first_line=line)
+                    if i < skip or not line or line.startswith("#"):
                         # We'll call blank lines comments
                         comment_lines += 1
                     else:
-                        first_data_line = not header_candidate_seen
-                        if first_data_line:
-                            header_candidate_seen = True
-                            column_names = self.get_column_names(first_line=line)
-                        if len(header_sample_lines) < 21:
-                            header_sample_lines.append(line)
                         data_lines += 1
                         if max_guess_type_data_lines is None or data_lines <= max_guess_type_data_lines:
                             fields = line.split("\t")
@@ -563,9 +522,9 @@ class Tabular(TabularData):
                                 column_type = guess_column_type(field)
                                 if type_overrules_type(column_type, column_types[field_count]):
                                     column_types[field_count] = column_type
-                        if first_data_line and requested_skip is None:
-                            # The first non-comment line may be a header. Use its type guesses only as fallbacks once
-                            # header detection has had later rows to compare against.
+                        if i == 0 and requested_skip is None:
+                            # The first line may be a header. Use its type guesses only as fallbacks after checking
+                            # later rows.
                             # This is far from perfect, as
                             # 1,2,3	1.1	2.2	qwerty
                             # 0	0		1,2,3
@@ -599,25 +558,13 @@ class Tabular(TabularData):
                 else:
                     column_types[i] = first_line_column_types[i]
         # Set the discovered metadata values for the dataset
-        use_column_names = requested_skip is None and self.use_column_names(
-            column_names, "\n".join(header_sample_lines)
-        )
-        if use_column_names:
-            if comment_lines is not None:
-                comment_lines += 1
-            if data_lines is not None:
-                data_lines -= 1
         dataset.metadata.data_lines = data_lines
         dataset.metadata.comment_lines = comment_lines
         dataset.metadata.column_types = column_types
         dataset.metadata.columns = len(column_types)
         dataset.metadata.delimiter = "\t"
-        if use_column_names:
+        if column_names is not None:
             dataset.metadata.column_names = column_names
-        elif existing_column_names:
-            dataset.metadata.column_names = existing_column_names
-        elif hasattr(dataset.metadata, "column_names"):
-            dataset.metadata.column_names = []
 
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
         return open(dataset.get_file_name(), "rb")
@@ -638,9 +585,6 @@ class SraManifest(Tabular):
 
     def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return first_line.strip().split("\t")
-
-    def use_column_names(self, column_names: Optional[list[str]], header_sample: str) -> bool:
-        return bool(column_names)
 
 
 class Taxonomy(Tabular):
@@ -1715,7 +1659,7 @@ class ConnectivityTable(Tabular):
             {
                 "ck_data": util.unicodify(ck_data),
                 "offset": last_read,
-                "data_line_offset": self._get_data_line_offset(dataset, offset, ck_data),
+                "data_line_offset": self._get_data_line_offset(dataset, offset),
             }
         )
 

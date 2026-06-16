@@ -23,6 +23,8 @@ def _dataset_protocol(dataset: MockDataset) -> DatasetProtocol:
 def _display_peek(datatype: TabularData, dataset: MockDataset, contents: str) -> str:
     metadata = cast(Any, dataset.metadata)
     metadata.spec = {}
+    if not hasattr(metadata, "column_names"):
+        metadata.column_names = []
     dataset_for_peek = cast(Any, dataset)
     dataset_for_peek.peek = contents
     return datatype.display_peek(_dataset_protocol(dataset))
@@ -45,24 +47,7 @@ def test_tabular_set_meta_large_file():
         assert not hasattr(dataset.metadata, "column_names")
 
 
-def test_tabular_set_meta_with_header():
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write("TMB\tSystemic_therapy_history\tAlbumin\n")
-        test_file.write("32.5\t1\t4.3\n")
-        test_file.write("19.3\t1\t3.8\n")
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        Tabular().set_meta(_dataset_protocol(dataset))
-        assert dataset.metadata.data_lines == 2
-        assert dataset.metadata.comment_lines == 1
-        assert dataset.metadata.column_types == ["float", "int", "float"]
-        assert dataset.metadata.columns == 3
-        assert dataset.metadata.delimiter == "\t"
-        assert dataset.metadata.column_names == ["TMB", "Systemic_therapy_history", "Albumin"]
-
-
-def test_tabular_quick_view_uses_column_names_only_as_headers():
+def test_tabular_quick_view_keeps_header_like_first_row_as_data():
     contents = "question_id\tcurator_name\nensembl-grab-q1\tLG\nbam-infer-read-length-q1\tSN\n"
     with tempfile.NamedTemporaryFile(mode="w") as test_file:
         test_file.write(contents)
@@ -71,11 +56,13 @@ def test_tabular_quick_view_uses_column_names_only_as_headers():
         dataset.set_file_name(test_file.name)
         datatype = Tabular()
         datatype.set_meta(_dataset_protocol(dataset))
+        assert not hasattr(dataset.metadata, "column_names")
         html = _display_peek(datatype, dataset, contents)
-        assert "<th>1.question_id</th>" in html
-        assert "<th>2.curator_name</th>" in html
-        assert "<td>question_id</td>" not in html
-        assert "<td>curator_name</td>" not in html
+        assert "<th>1</th>" in html
+        assert "<th>2</th>" in html
+        assert "<th>1.question_id</th>" not in html
+        assert "<td>question_id</td>" in html
+        assert "<td>curator_name</td>" in html
 
 
 def test_headerless_numeric_tabular_set_meta_does_not_promote_first_row_to_header():
@@ -123,24 +110,6 @@ def test_tabular_set_meta_preserves_existing_column_names_for_headerless_data():
         assert dataset.metadata.column_names == ["First", "2.tabular"]
 
 
-def test_tabular_set_meta_replaces_existing_column_names_when_header_is_detected():
-    with tempfile.NamedTemporaryFile(mode="w") as header_file, tempfile.NamedTemporaryFile(mode="w") as data_file:
-        header_file.write("name\tvalue\nA\t1\nB\t2\n")
-        header_file.flush()
-        data_file.write("sample\tcount\nC\t3\nD\t4\n")
-        data_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(header_file.name)
-        datatype = Tabular()
-        datatype.set_meta(_dataset_protocol(dataset))
-        assert dataset.metadata.column_names == ["name", "value"]
-        dataset.set_file_name(data_file.name)
-        datatype.set_meta(_dataset_protocol(dataset))
-        assert dataset.metadata.data_lines == 2
-        assert dataset.metadata.comment_lines == 1
-        assert dataset.metadata.column_names == ["sample", "count"]
-
-
 def test_tabular_set_meta_does_not_use_comment_line_as_column_names():
     contents = "#comment\tthing\n1\t2\n3\t4\n"
     with tempfile.NamedTemporaryFile(mode="w") as test_file:
@@ -154,66 +123,6 @@ def test_tabular_set_meta_does_not_use_comment_line_as_column_names():
         assert dataset.metadata.column_types == ["int", "int"]
         assert dataset.metadata.columns == 2
         assert not hasattr(dataset.metadata, "column_names")
-
-
-def test_tabular_quick_view_skips_header_when_line_counts_are_unset():
-    contents = "name\tvalue\nA\t1\nB\t2\nC\t3\n"
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = Tabular()
-        datatype.set_meta(_dataset_protocol(dataset), max_data_lines=2)
-        html = _display_peek(datatype, dataset, contents)
-        assert dataset.metadata.data_lines is None
-        assert dataset.metadata.comment_lines is None
-        assert dataset.metadata.column_names == ["name", "value"]
-        assert "<th>1.name</th>" in html
-        assert "<th>2.value</th>" in html
-        assert "<td>name</td>" not in html
-        assert "<td>value</td>" not in html
-
-
-def test_tabular_quick_view_skips_header_after_comments_when_line_counts_are_unset():
-    contents = "# generated\nname\tvalue\nA\t1\nB\t2\nC\t3\n"
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = Tabular()
-        datatype.set_meta(_dataset_protocol(dataset), max_data_lines=2)
-        html = _display_peek(datatype, dataset, contents)
-        assert dataset.metadata.data_lines is None
-        assert dataset.metadata.comment_lines is None
-        assert dataset.metadata.column_names == ["name", "value"]
-        assert "<th>1.name</th>" in html
-        assert "<th>2.value</th>" in html
-        assert "<td># generated</td>" not in html
-        assert "<td>name</td>" not in html
-        assert "<td>A</td>" in html
-
-
-def test_tabular_quick_view_uses_peek_for_unset_line_count_offset():
-    contents = "name\tvalue\nA\t1\nB\t2\nC\t3\n"
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = Tabular()
-        datatype.set_meta(_dataset_protocol(dataset), max_data_lines=2)
-
-        def fail_get_file_name(sync_cache=True):
-            raise AssertionError("quick view should not open the dataset file")
-
-        dataset_for_peek = cast(Any, dataset)
-        dataset_for_peek.get_file_name = fail_get_file_name
-        html = _display_peek(datatype, dataset, contents)
-        assert "<th>1.name</th>" in html
-        assert "<td>name</td>" not in html
-        assert "<td>A</td>" in html
 
 
 def test_csv_quick_view_uses_column_names_only_as_headers():
@@ -291,22 +200,6 @@ def test_csv_chunked_view_skips_header_only_in_first_chunk():
         trans = SimpleNamespace(app=SimpleNamespace(config=SimpleNamespace(display_chunk_size=6)))
         first_chunk = json.loads(datatype.get_chunk(trans, _dataset_protocol(dataset), 0, 6))
         next_chunk = json.loads(datatype.get_chunk(trans, _dataset_protocol(dataset), first_chunk["offset"], 6))
-        assert first_chunk["data_line_offset"] == 1
-        assert next_chunk["data_line_offset"] == 0
-
-
-def test_tabular_chunked_view_skips_header_only_in_first_chunk():
-    contents = "TMB\tSystemic_therapy_history\n32.5\t1\n19.3\t1\n10.5\t1\n"
-    with tempfile.NamedTemporaryFile(mode="w") as test_file:
-        test_file.write(contents)
-        test_file.flush()
-        dataset = MockDataset(id=1)
-        dataset.set_file_name(test_file.name)
-        datatype = Tabular()
-        datatype.set_meta(_dataset_protocol(dataset))
-        trans = SimpleNamespace(app=SimpleNamespace(config=SimpleNamespace(display_chunk_size=18)))
-        first_chunk = json.loads(datatype.get_chunk(trans, _dataset_protocol(dataset), 0, 18))
-        next_chunk = json.loads(datatype.get_chunk(trans, _dataset_protocol(dataset), first_chunk["offset"], 18))
         assert first_chunk["data_line_offset"] == 1
         assert next_chunk["data_line_offset"] == 0
 
