@@ -97,8 +97,7 @@ class NotificationService(ServiceBase):
             str(sender_context.url_builder("/", qualified=True)).rstrip("/") if sender_context.url_builder else None
         )
         request = self._build_user_sender_request(sender_context, payload, galaxy_url)
-        force_sync = payload.notification.category in _USER_ALLOWED_CATEGORIES
-        return self.send_internal_notification(request, force_sync=force_sync)
+        return self.send_internal_notification(request, force_sync=False)
 
     def _build_user_sender_request(
         self,

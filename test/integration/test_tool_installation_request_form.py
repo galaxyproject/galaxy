@@ -4,6 +4,7 @@ import os
 from typing import ClassVar
 
 from galaxy_test.base.api_util import ADMIN_TEST_USER
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY = {
@@ -28,6 +29,8 @@ TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY = {
 class ToolInstallationRequestFormIntegrationBase(IntegrationTestCase):
     """Base class with configuration for tool installation request form tests."""
 
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -39,6 +42,7 @@ class ToolInstallationRequestFormIntegrationBase(IntegrationTestCase):
         super().setUp()
         # Ensure the admin user exists in the database so notifications can be sent to them.
         self._setup_user(ADMIN_TEST_USER)
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
 
 class TestToolInstallationRequestFormIntegration(ToolInstallationRequestFormIntegrationBase):
@@ -252,7 +256,17 @@ class TestToolInstallationRequestFormEmailDeliveryIntegration(ToolInstallationRe
             response = self._post("notifications", data=TOOL_INSTALLATION_REQUEST_NOTIFICATION_BODY, json=True)
             self._assert_status_code_is(response, 200)
             data = response.json()
-            assert data["notification"]["id"]
+            task_id = data["id"]
+            assert task_id
+
+            self.dataset_populator.wait_on_task_id(task_id)
+
+            # verify the notification was created
+            notifications = self._get("notifications").json()
+            tool_installation_request_notifications = [
+                n for n in notifications if n.get("category") == "tool_installation_request"
+            ]
+            assert len(tool_installation_request_notifications) >= 1
 
         assert not os.path.exists(os.path.join(self.email_directory, "email.json"))
 
