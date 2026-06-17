@@ -124,7 +124,7 @@ config-rebuild: ## Rebuild all sample YAML, RST files, and type stubs from confi
 config-lint: ## lint galaxy YAML configuration file
 	$(CONFIG_MANAGE) lint galaxy
 
-client-gen-markdown-directives: ## Regenerate the Galaxy Markdown directive reference from directives.yml
+client-gen-markdown-directives: ## Regenerate Galaxy Markdown directive artifacts from directives.yml (reference, requirements, validator registry)
 	$(IN_VENV) python scripts/markdown_directives_doc.py
 
 release-ensure-upstream: ## Ensure upstream branch for release commands setup

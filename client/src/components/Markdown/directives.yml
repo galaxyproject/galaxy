@@ -18,7 +18,10 @@
 #   parameter_set   name of a shared bundle under _parameter_sets to include
 #   parameters      directive-specific arguments (name -> type/default/context/description)
 #   dynamic_parameters  true when arbitrary arguments are accepted (not validated)
-# The shared "collapse" argument is valid on every directive and is documented globally.
+# The shared arguments below are valid on every directive and documented globally.
+
+_shared_arguments:
+  - collapse
 
 _parameter_sets:
   dataset_addressing:
