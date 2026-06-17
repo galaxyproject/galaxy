@@ -112,3 +112,16 @@ def test_tabular_column_types_override():
         assert dataset.metadata.columns == 6
         assert dataset.metadata.delimiter == "\t"
         assert not hasattr(dataset.metadata, "column_names")
+
+
+def test_tabular_display_peek_does_not_render_table_header():
+    dataset = MockDataset(id=1)
+    dataset.peek = "question_id\tcurator_name\nensembl-grab-q1\tLG\n"
+    dataset.metadata.columns = 2
+    dataset.metadata.delimiter = "\t"
+
+    html = Tabular().display_peek(dataset)  # type: ignore [arg-type]
+
+    assert "<th>" not in html
+    assert "<td>question_id</td>" in html
+    assert "<td>curator_name</td>" in html
