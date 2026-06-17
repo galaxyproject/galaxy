@@ -267,9 +267,6 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "instance_citation_link":
                 url = trans.app.config.citation_url
                 rval = self.handle_instance_citation_link(line, url)
-            elif container == "instance_citation_bibtex":
-                url = trans.app.config.citation_bibtex
-                rval = self.handle_instance_citation_bibtex(line, url)
             elif container == "instance_terms_link":
                 url = trans.app.config.terms_url
                 rval = self.handle_instance_terms_link(line, url)
@@ -505,10 +502,6 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_instance_citation_bibtex(self, line, url):
-        pass
-
-    @abc.abstractmethod
     def handle_instance_terms_link(self, line, url):
         pass
 
@@ -614,9 +607,6 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_instance_citation_link(self, line, url):
-        pass
-
-    def handle_instance_citation_bibtex(self, line, url):
         pass
 
     def handle_instance_terms_link(self, line, url):
@@ -885,9 +875,6 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return self._handle_link(url)
 
     def handle_instance_citation_link(self, line, url):
-        return self._handle_link(url)
-
-    def handle_instance_citation_bibtex(self, line, url):
         return self._handle_link(url)
 
     def handle_instance_terms_link(self, line, url):
