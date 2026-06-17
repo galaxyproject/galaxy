@@ -32,6 +32,7 @@ from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
+MAX_LINE_LEN = 100
 
 
 class Wiff(Binary):
@@ -1078,7 +1079,7 @@ class Msp(Text):
     def _count_spectra(self, path: str) -> int:
         count = 0
         with open(path, encoding="utf-8") as handle:
-            for line in handle:
+            for line in util.iter_start_of_line(handle, MAX_LINE_LEN):
                 stripped = line.strip()
                 lower_line = stripped.split(":", 1)[0].strip().lower()
                 if lower_line in self.num_peaks_keys:
