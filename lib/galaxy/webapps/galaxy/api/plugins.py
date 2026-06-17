@@ -134,6 +134,7 @@ class FastAPIPlugins:
         request: Request,
         payload: ChatCompletionRequest = Body(...),
         user: User = DependsOnUser,
+        trans: SessionRequestContext = DependsOnTrans,
         plugin_name: str = Path(
             ...,
             title="Plugin Name",
@@ -150,7 +151,7 @@ class FastAPIPlugins:
             plugin_specs = plugin and plugin.config.get("specs")
             plugin_ai_prompt = plugin_specs and plugin_specs.get("ai_prompt")
             if plugin_ai_prompt:
-                return await self._open_ai_adapter(payload, plugin_ai_prompt, plugin_name)
+                return await self._open_ai_adapter(trans, payload, plugin_ai_prompt, plugin_name)
             else:
                 return self._create_error("Selected plugin has no AI prompt.")
         else:
@@ -183,6 +184,7 @@ class FastAPIPlugins:
 
     async def _open_ai_adapter(
         self,
+        trans: SessionRequestContext,
         payload: ChatCompletionRequest,
         prompt: str,
         plugin_name: str,
@@ -258,6 +260,14 @@ class FastAPIPlugins:
         except Exception as e:
             log.debug("Failed to initialize OpenAI client.", exc_info=e)
             return self._create_error("Failed to initialize OpenAI client.", 500)
+
+        # Release the request-scoped DB session before the (potentially long)
+        # upstream call. All DB work for this request is done; proxying to the AI
+        # provider and streaming its response back never touches the database, so
+        # holding the pooled connection open for the whole exchange would needlessly
+        # pin a connection per in-flight chat request. Capture the concrete Session
+        # now, while the request-id ContextVar keying scoped_session is in scope.
+        trans.sa_session().close()
 
         # Connect to ai provider
         log.info(f"Proxying to {ai_model}, tokens: {max_tokens}.")

@@ -48,7 +48,18 @@ class EventsService(ServiceBase):
         user_id = user_context.user.id if not user_context.anonymous else None
         session_id = user_context.galaxy_session.id if user_context.galaxy_session else None
         catch_up = self.notifications.build_status_catchup(user_context, last_event_id)
-        return self.sse_manager.stream(is_disconnected, user_id, catch_up=catch_up, galaxy_session_id=session_id)
+        # Capture the concrete request-scoped Session now, while the request-id
+        # ContextVar that keys ``scoped_session`` is still in scope. Its
+        # ``close()`` returns the pooled connection; the long-lived stream loop
+        # never needs the database again. See ``SSEConnectionManager.stream``.
+        sa_session = user_context.sa_session()
+        return self.sse_manager.stream(
+            is_disconnected,
+            user_id,
+            catch_up=catch_up,
+            galaxy_session_id=session_id,
+            release_db_session=sa_session.close,
+        )
 
     def subscribe_history_viewer(self, user_context: ProvidesUserContext, history_ids: list[str]) -> None:
         """Register the requesting user/session as a viewer for each history.

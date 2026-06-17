@@ -280,6 +280,7 @@ class SSEConnectionManager:
         self,
         is_disconnected: IsDisconnected,
         user_id: Optional[int],
+        release_db_session: Callable[[], None],
         catch_up: Optional[SSEEvent] = None,
         keepalive: float = 30.0,
         galaxy_session_id: Optional[int] = None,
@@ -291,10 +292,23 @@ class SSEConnectionManager:
         ``disconnect`` in ``finally``. The ``is_disconnected`` callable is
         what the service passes in (typically ``request.is_disconnected`` from
         starlette) so the manager stays framework-agnostic.
+
+        ``release_db_session`` is required and called once, right before
+        entering the keepalive loop. All database work needed to open the stream
+        (auth, catch-up) has happened by then, and the loop below never touches
+        the database. FastAPI otherwise keeps the request-scoped SQLAlchemy
+        session — and its pooled connection — checked out until this
+        StreamingResponse finishes, i.e. until the client disconnects, which for
+        an SSE stream can be hours. Releasing it here avoids pinning one DB
+        connection per connected browser tab and exhausting the pool / server
+        slots. It is mandatory (rather than optional) precisely so a future
+        caller cannot silently reintroduce that leak; callers with nothing to
+        release pass a no-op.
         """
         queue = self.connect(user_id, galaxy_session_id)
         if catch_up is not None:
             await queue.put(catch_up)
+        release_db_session()
         try:
             while True:
                 if await is_disconnected():
