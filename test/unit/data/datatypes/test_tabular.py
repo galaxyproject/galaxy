@@ -1,4 +1,8 @@
 import tempfile
+from typing import (
+    Any,
+    cast,
+)
 
 from galaxy.datatypes.tabular import (
     MAX_DATA_LINES,
@@ -116,9 +120,11 @@ def test_tabular_column_types_override():
 
 def test_tabular_display_peek_does_not_render_table_header():
     dataset = MockDataset(id=1)
-    setattr(dataset, "peek", "question_id\tcurator_name\nensembl-grab-q1\tLG\n")
-    setattr(dataset.metadata, "columns", 2)
-    setattr(dataset.metadata, "delimiter", "\t")
+    dataset_for_peek = cast(Any, dataset)
+    metadata = cast(Any, dataset.metadata)
+    dataset_for_peek.peek = "question_id\tcurator_name\nensembl-grab-q1\tLG\n"
+    metadata.columns = 2
+    metadata.delimiter = "\t"
 
     html = Tabular().display_peek(dataset)  # type: ignore [arg-type]
 
