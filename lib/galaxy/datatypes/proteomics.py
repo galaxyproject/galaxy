@@ -266,15 +266,17 @@ class MzSpecLibJson(Json):
         if not header or not header.lstrip().startswith("{"):
             return False
 
+        found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
+        if not all(key in found_keys for key in self._required_keys):
+            return False
+
         if not file_prefix.truncated:
             try:
-                payload = json.loads(header)
+                json.loads(header)
             except Exception:
                 return False
-            return isinstance(payload, dict) and all(key in payload for key in self._required_keys)
 
-        found_keys = {match.group(1) for match in self._key_pattern.finditer(header)}
-        return all(key in found_keys for key in self._required_keys)
+        return True
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
@@ -293,11 +295,11 @@ class MzSpecLibJson(Json):
             dataset.blurb = "file purged from disk"
 
     def _count_spectra(self, path: str) -> int:
+        """Count spectra using ijson's ItemsParser without parsing the entire JSON."""
         count = 0
         with open(path, "rb") as handle:
-            for prefix, event, _ in ijson.parse(handle):
-                if prefix == "spectra.item" and event == "start_map":
-                    count += 1
+            for _ in ijson.items(handle, "spectra.item"):
+                count += 1
         return count
 
 
@@ -367,8 +369,8 @@ class MzSpecLibTxt(Text):
 
     def _count_spectra(self, path: str) -> int:
         count = 0
-        with open(path, "r", encoding="utf-8", errors="ignore") as handle:
-            for line in handle:
+        with open(path, encoding="utf-8") as handle:
+            for line in util.iter_start_of_line(handle, MAX_LINE_LEN):
                 if self._spectrum_line_re.match(line):
                     count += 1
         return count
