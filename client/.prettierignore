@@ -13,3 +13,5 @@ src/libs
 *.json
 *.yml
 *.yaml
+# Generated from directives.yml by scripts/markdown_directives_doc.py
+src/components/Markdown/directives.md
