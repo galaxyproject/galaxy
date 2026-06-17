@@ -116,9 +116,9 @@ def test_tabular_column_types_override():
 
 def test_tabular_display_peek_does_not_render_table_header():
     dataset = MockDataset(id=1)
-    dataset.peek = "question_id\tcurator_name\nensembl-grab-q1\tLG\n"
-    dataset.metadata.columns = 2
-    dataset.metadata.delimiter = "\t"
+    setattr(dataset, "peek", "question_id\tcurator_name\nensembl-grab-q1\tLG\n")
+    setattr(dataset.metadata, "columns", 2)
+    setattr(dataset.metadata, "delimiter", "\t")
 
     html = Tabular().display_peek(dataset)  # type: ignore [arg-type]
 
