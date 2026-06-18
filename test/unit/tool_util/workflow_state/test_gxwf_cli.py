@@ -146,29 +146,25 @@ def test_gxwf_convert_tree_requires_to(tmp_path):
     assert exc_info.value.code != 0
 
 
-def test_gxwf_viz_missing_binary(monkeypatch):
-    """viz with no gxwf-viz installed should exit 1 with a helpful message."""
-    import shutil as _shutil
-
-    monkeypatch.setattr(_shutil, "which", lambda name: None)
-    code = _run(["viz", "somefile.ga"])
-    assert code == 1
+def test_gxwf_viz_dispatches_in_process(tmp_path):
+    """viz dispatches in-process to gxformat2 cytoscape and writes the graph."""
+    out = str(tmp_path / "wf.html")
+    _run(["viz", CLEAN_WF, out], expected_exit=0)
+    assert os.path.getsize(out) > 0
 
 
-def test_gxwf_abstract_export_missing_binary(monkeypatch):
-    import shutil as _shutil
+def test_gxwf_abstract_export_dispatches_in_process(tmp_path):
+    """abstract-export dispatches in-process to gxformat2 abstract."""
+    out = str(tmp_path / "wf.abstract.cwl")
+    _run(["abstract-export", CLEAN_WF, out], expected_exit=0)
+    assert os.path.getsize(out) > 0
 
-    monkeypatch.setattr(_shutil, "which", lambda name: None)
-    code = _run(["abstract-export", "somefile.ga"])
-    assert code == 1
 
-
-def test_gxwf_mermaid_missing_binary(monkeypatch):
-    import shutil as _shutil
-
-    monkeypatch.setattr(_shutil, "which", lambda name: None)
-    code = _run(["mermaid", "somefile.ga"])
-    assert code == 1
+def test_gxwf_mermaid_dispatches_in_process(tmp_path):
+    """mermaid dispatches in-process to gxformat2 mermaid and writes a diagram."""
+    out = str(tmp_path / "wf.mmd")
+    _run(["mermaid", CLEAN_WF, out], expected_exit=0)
+    assert os.path.getsize(out) > 0
 
 
 def test_gxwf_convert_to_native_compact_warns(capsys):
