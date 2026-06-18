@@ -110,7 +110,7 @@ jobs:
           package-manager-cache: false
           registry-url: 'https://registry.npmjs.org'
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v6.0.8
       # TODO(post-26.1): the @galaxyproject/galaxy-client npm publish is now
       # redundant with the galaxy-web-client PyPI wheel used by
       # scripts/common_startup.sh and the install-client make target.  Keep
