@@ -111,4 +111,31 @@ describe("ToolForm", () => {
 
         expect(userStore.recentTools).toEqual(["tool_id"]);
     });
+
+    it("preserves client-side validation errors on input change (does not wipe formConfig.errors when only validationInternal is set)", async () => {
+        await flushPromises();
+        // Simulate steady state: no backend errors, but a client-side validation error
+        // raised by FormDisplay (e.g. a required field was cleared).
+        await wrapper.setData({
+            formConfigInitialized: true,
+            validationInternal: ["multi_required", "Please provide a value for this option."],
+        });
+        wrapper.vm.formConfig.errors = {};
+
+        wrapper.vm.onChange({ multi_required: null }, false);
+
+        // Should NOT have been assigned null — that would cascade through props.errors
+        // and wipe the client-side validation error before it can render.
+        expect(wrapper.vm.formConfig.errors).toEqual({});
+    });
+
+    it("still wipes formConfig.errors when there are actual backend errors to clear on input change", async () => {
+        await flushPromises();
+        await wrapper.setData({ formConfigInitialized: true });
+        wrapper.vm.formConfig.errors = { multi_required: "Backend rejected this value." };
+
+        wrapper.vm.onChange({ multi_required: "alpha" }, false);
+
+        expect(wrapper.vm.formConfig.errors).toBeNull();
+    });
 });

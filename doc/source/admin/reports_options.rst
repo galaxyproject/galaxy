@@ -16,7 +16,7 @@
 :Description:
     Database connection. Galaxy Reports are intended for production
     Galaxy instances, so sqlite (and the default value below) is not
-    supported. An SQLAlchemy connection string should be used specify
+    supported. An SQLAlchemy connection string should be used to specify
     an external database.
 :Default: ``sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE``
 :Type: str

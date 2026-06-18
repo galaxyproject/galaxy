@@ -32,6 +32,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faGoogleDrive,
         message: "This is a  repository plugin that connects with the commercial Google Drive service.",
     },
+    mavedb: {
+        icon: faNetworkWired,
+        message: "This is a repository plugin that connects with MaveDB score set files.",
+    },
     onedrive: {
         icon: faCloud,
         message: "This is a repository plugin that connects with Microsoft OneDrive.",
@@ -73,6 +77,10 @@ export const templateTypes: FileSourceTypesDetail = {
     dataverse: {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with a Dataverse.org instance.",
+    },
+    cbioportal: {
+        icon: faNetworkWired,
+        message: "This is a read-only file repository plugin that connects with a cBioPortal instance.",
     },
     huggingface: {
         icon: faHubspot,

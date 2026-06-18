@@ -1180,6 +1180,238 @@ def get_mcp_app(gx_app):
             ops_manager = get_operations_manager(api_key, ctx)
             return ops_manager.import_workflow_from_iwc(trs_id)
 
+    # ==================== Pages (notebooks and reports) ====================
+
+    @mcp.tool()
+    def list_pages(
+        api_key: str,
+        ctx: MCPContext,
+        history_id: str | None = None,
+        search: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+        show_published: bool = False,
+        show_shared: bool = False,
+    ) -> dict[str, Any]:
+        """List Galaxy pages (markdown documents) viewable by the user.
+
+        A page attached to a history is a "Galaxy Notebook"; a standalone page is
+        a "Report". Pass history_id to list only that history's notebooks.
+
+        Args:
+            history_id: Encoded history id. When set, returns only notebooks
+                attached to that history.
+            search: Freetext filter over title/content.
+            limit: Max pages to return (default 100).
+            offset: Pagination offset.
+            show_published: Also include pages published by other users (default False).
+            show_shared: Also include pages shared with the user (default False).
+
+        Returns:
+            Dict with `pages` (summaries incl. encoded id, title, history_id,
+            latest_revision_id), `count`, and `total_matches`.
+
+        NEXT STEPS:
+        - Read one: get_page(page_id)
+        - Create a notebook: create_page(history_id=...)
+        """
+        with _mcp_error_handler("list_pages"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_pages(
+                history_id=history_id,
+                search=search,
+                limit=limit,
+                offset=offset,
+                show_published=show_published,
+                show_shared=show_shared,
+            )
+
+    @mcp.tool()
+    def get_page(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        include_rendered: bool = False,
+    ) -> dict[str, Any]:
+        """Get a page and the content of its latest revision.
+
+        Returns `content_editor`: the editable Galaxy-flavored markdown, with
+        ENCODED ids in directives (e.g. `history_dataset_id=f2db41e1fa331b3e`).
+        This is the form to edit and pass back to update_page.
+
+        Args:
+            page_id: Encoded id of the page (from list_pages / create_page).
+            include_rendered: When True, also return `content` -- the
+                embed-expanded render form (inlined dataset previews). Can be
+                large; omit unless you need the rendered output.
+
+        Returns:
+            Page details including `content_editor`, metadata, and `edit_source`
+            of the latest revision.
+
+        NEXT STEPS:
+        - Edit it: update_page(page_id, content=...)
+        - See history: list_page_revisions(page_id)
+        """
+        with _mcp_error_handler("get_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_page(page_id, include_rendered=include_rendered)
+
+    @mcp.tool()
+    def create_page(
+        api_key: str,
+        ctx: MCPContext,
+        history_id: str | None = None,
+        title: str | None = None,
+        content: str | None = None,
+        annotation: str | None = None,
+        slug: str | None = None,
+    ) -> dict[str, Any]:
+        """Create a markdown page (Galaxy Notebook or Report).
+
+        Pass history_id to create a history-attached notebook (title auto-fills
+        from the history if omitted). Omit history_id to create a standalone
+        report -- reports REQUIRE both a title and a unique slug
+        (lowercase/digits/hyphens).
+
+        Content is Galaxy-flavored markdown. To embed a dataset, use a directive
+        with the ENCODED dataset id, e.g.
+        `history_dataset_display(history_dataset_id=f2db41e1fa331b3e)` or
+        `history_dataset_collection_display(history_dataset_collection_id=...)`.
+        Get encoded ids from get_history_contents / get_dataset_details.
+
+        Args:
+            history_id: Encoded history id to attach the page to (notebook).
+            title: Page title.
+            content: Initial markdown content.
+            annotation: Optional annotation attached to the page.
+            slug: URL slug (required for standalone reports).
+
+        Returns:
+            Created page details including encoded id and content_editor.
+
+        NEXT STEPS:
+        - Edit it: update_page(page_id, content=...)
+        """
+        with _mcp_error_handler("create_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.create_page(
+                history_id=history_id,
+                title=title,
+                content=content,
+                annotation=annotation,
+                slug=slug,
+            )
+
+    @mcp.tool()
+    def update_page(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        content: str | None = None,
+        title: str | None = None,
+    ) -> dict[str, Any]:
+        """Update a page, creating a new revision when content changes.
+
+        Content is Galaxy-flavored markdown using ENCODED ids in directives
+        (e.g. `history_dataset_id=f2db41e1fa331b3e`) -- never raw integer ids or
+        HIDs. Get encoded ids from get_history_contents / get_dataset_details.
+        Edits made through this tool are recorded with edit_source="agent".
+
+        Args:
+            page_id: Encoded id of the page.
+            content: New markdown content. Omit to leave content unchanged.
+            title: New title. Omit to leave unchanged.
+
+        Returns:
+            Updated page details including content_editor.
+
+        NEXT STEPS:
+        - Inspect revisions: list_page_revisions(page_id)
+        - Roll back: revert_page_revision(page_id, revision_id)
+        """
+        with _mcp_error_handler("update_page"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.update_page(page_id, content=content, title=title)
+
+    @mcp.tool()
+    def list_page_revisions(
+        page_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        sort_desc: bool = False,
+    ) -> dict[str, Any]:
+        """List the revision history of a page.
+
+        Each revision carries an `edit_source` ("user", "agent", or "restore")
+        recording who made the edit.
+
+        Args:
+            page_id: Encoded id of the page.
+            sort_desc: Newest-first when True (default oldest-first).
+
+        Returns:
+            Dict with `revisions` (encoded id, page_id, edit_source, timestamps)
+            and `count`.
+
+        NEXT STEPS:
+        - Read a revision: get_page_revision(page_id, revision_id)
+        - Roll back: revert_page_revision(page_id, revision_id)
+        """
+        with _mcp_error_handler("list_page_revisions"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.list_page_revisions(page_id, sort_desc=sort_desc)
+
+    @mcp.tool()
+    def get_page_revision(
+        page_id: str,
+        revision_id: str,
+        api_key: str,
+        ctx: MCPContext,
+        include_rendered: bool = False,
+    ) -> dict[str, Any]:
+        """Get the content of a single page revision.
+
+        Mirrors get_page: returns `content_editor` (the editable Galaxy-flavored
+        markdown with ENCODED ids in directives) -- the form to compare against
+        get_page or pass back to update_page.
+
+        Args:
+            page_id: Encoded id of the page.
+            revision_id: Encoded id of the revision (from list_page_revisions).
+            include_rendered: When True, also return `content` -- the
+                embed-expanded render form. Can be large; omit unless needed.
+
+        Returns:
+            Revision details including `content_editor`, `edit_source`, and timestamps.
+        """
+        with _mcp_error_handler("get_page_revision"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.get_page_revision(page_id, revision_id, include_rendered=include_rendered)
+
+    @mcp.tool()
+    def revert_page_revision(
+        page_id: str,
+        revision_id: str,
+        api_key: str,
+        ctx: MCPContext,
+    ) -> dict[str, Any]:
+        """Roll a page back to an earlier revision.
+
+        Creates a NEW revision from the target revision's content, recorded with
+        edit_source="restore" (the history is append-only -- nothing is deleted).
+
+        Args:
+            page_id: Encoded id of the page.
+            revision_id: Encoded id of the revision to restore.
+
+        Returns:
+            The new restored revision's details.
+        """
+        with _mcp_error_handler("revert_page_revision"):
+            ops_manager = get_operations_manager(api_key, ctx)
+            return ops_manager.revert_page_revision(page_id, revision_id)
+
     mcp_app = mcp.http_app(path="/")
     mcp_app.state.mcp_server = mcp
 

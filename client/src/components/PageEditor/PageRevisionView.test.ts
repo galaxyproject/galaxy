@@ -16,6 +16,7 @@ const REVISION: PageRevisionDetails = {
     update_time: "2025-01-01T00:00:00Z",
     title: "Test Revision",
     content: "# Title\nOld line 1\nOld line 2",
+    content_editor: "# Title\nOld line 1\nOld line 2",
     content_format: "markdown",
 };
 

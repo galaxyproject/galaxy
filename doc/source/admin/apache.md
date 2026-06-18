@@ -35,7 +35,7 @@ These modules must be enabled in the Apache config. The main proxy directives, `
 Additionally, these directions are written for Apache 2.4+. Apache 2.4 for EL 6 can be obtained from the [CentOS SCLo
 SIG Repo][sclo-sig-repo]. Otherwise, your system package manager's version of Apache should be suitable.
 
-Ensure that the `mod_headers`, `mod_rewrite` and `mod_proxy`modules are loaded. Although not
+Ensure that the `mod_headers`, `mod_rewrite` and `mod_proxy` modules are loaded. Although not
 required, the configuration examples also use `mod_deflate` and `mod_expires` for increased client/server performance,
 so these should also be enabled.
 

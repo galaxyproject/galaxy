@@ -1,7 +1,7 @@
 # Carbon Emissions Reporting
 
 Galaxy can estimate the carbon footprint of each job you run. The carbon emissions reporting can be 
-configured for each galaxy instance to allow for more accurate results. The following options can
+configured for each Galaxy instance to allow for more accurate results. The following options can
 be set:
 
 * [Geographical server location](#geographical-server-location)
@@ -15,7 +15,7 @@ United States [Environmental Protection Agency (EPA)](https://www.epa.gov/energy
 
 ## Geographical server location
 The `geographical_server_location_code` flag is an [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2) string specifying the
-location of your galaxy instance, with the only exception being `GLOBAL`, which specifies that global average values are to be used.
+location of your Galaxy instance, with the only exception being `GLOBAL`, which specifies that global average values are to be used.
 Each valid code corresponds to a location name and a specific carbon intensity value. The corresponding flags 
 (`geographical_server_location_name` and `carbon_intensity`) are automatically set and will be displayed to the client when carbon 
 emissions are reported. The more accurate the location the better the estimates. In all cases, it is assumed that all jobs are run on
@@ -25,7 +25,7 @@ a server in the same location as the one specified in `geographical_server_locat
 
 ## Power usage effectiveness
 [Power usage effectiveness](https://en.wikipedia.org/wiki/Power_usage_effectiveness), or PUE for short, is a ratio specifying
-how efficiently the data centre hosting your galaxy server used energy. It is essentially your server's 'indirect' energy usage.
+how efficiently the data centre hosting your Galaxy server used energy. It is essentially your server's 'indirect' energy usage.
 Galaxy uses a default PUE of `1.67`. If you would like to set a custom value, you can [calculate a PUE value as follows](https://en.wikipedia.org/wiki/Power_usage_effectiveness).
 
 ## Feature toggling

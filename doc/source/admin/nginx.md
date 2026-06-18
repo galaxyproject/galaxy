@@ -27,7 +27,7 @@ Instructions for [proxying with Apache](apache.md) are also available.
 ```{include} _inc_proxy_prereq.md
 ```
 
-### NGINX Proxy Prerequisities
+### NGINX Proxy Prerequisites
 
 If you are **not** planning to use the recommended [tus.io method](#receiving-files-via-the-tus-protocol) to handle file uploads but want to use nginx to handle uploads, you will (most likely) not be able to use your package manager's version of nginx. The [Receiving Files With NGINX](#receiving-files-with-nginx-legacy) section explains this in detail and provides some options for installing *nginx + upload module* packages maintained by the Galaxy Committers Team.
 

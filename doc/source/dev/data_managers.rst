@@ -508,7 +508,7 @@ Data Manager can add entries to one or more Tool Data Tables. For
 each Tool Data Table under consideration, the expected output entry
 columns, and how to handle the Data Manager Tool results, are defined.
 
-Upon installation, Galaxy will recursivly search for data_manager_conf.xml in the repository.
+Upon installation, Galaxy will recursively search for data_manager_conf.xml in the repository.
 data_manager_conf.xml should be located in the root of the repository but can be located in a sub-directory.
 The first instance of data_manager_conf.xml found will be used.
 This file defines the paths to the data manager tools within the repository directory structure.
@@ -648,7 +648,7 @@ the ``extra_files_path`` of ``out_file``.
                 </when>
                 <when value="directory">
                     <param type="text" name="fasta_filename" value="" label="Full path to FASTA File on disk" optional="False" />
-                    <param type="boolean" name="create_symlink" truevalue="create_symlink" falsevalue="copy_file" label="Create symlink to orignal data instead of copying" checked="False" />
+                    <param type="boolean" name="create_symlink" truevalue="create_symlink" falsevalue="copy_file" label="Create symlink to original data instead of copying" checked="False" />
                 </when>
             </conditional>
         </inputs>

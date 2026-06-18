@@ -49,8 +49,10 @@ FileSourceTemplateType = Literal[
     "zenodo",
     "rspace",
     "dataverse",
+    "cbioportal",
     "huggingface",
     "iiif",
+    "mavedb",
     "omero",
     "ssh",
 ]
@@ -414,6 +416,22 @@ class DataverseFileSourceConfiguration(StrictModel):
     writable: bool = True
 
 
+class CBioPortalFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["cbioportal"]
+    api_url: Union[str, TemplateExpansion]
+    datahub_url: Union[str, TemplateExpansion]
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class CBioPortalFileSourceConfiguration(StrictModel):
+    type: Literal["cbioportal"]
+    api_url: str
+    datahub_url: str
+    writable: bool = False
+
+
 class HuggingFaceFileSourceTemplateConfiguration(StrictModel):
     type: Literal["huggingface"]
     token: Union[str, TemplateExpansion, None] = None
@@ -438,6 +456,22 @@ class IIIFFileSourceTemplateConfiguration(StrictModel):
 class IIIFFileSourceConfiguration(StrictModel):
     type: Literal["iiif"]
     manifest_url: str
+
+
+class MaveDBFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["mavedb"]
+    base_url: Union[str, TemplateExpansion] = "https://api.mavedb.org/api/v1"
+    api_key: Union[str, TemplateExpansion, None] = None
+    timeout: Union[float, TemplateExpansion] = 30.0
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class MaveDBFileSourceConfiguration(StrictModel):
+    type: Literal["mavedb"]
+    base_url: str = "https://api.mavedb.org/api/v1"
+    api_key: Optional[str] = None
+    timeout: float = 30.0
 
 
 class OmeroFileSourceTemplateConfiguration(StrictModel):
@@ -478,8 +512,10 @@ FileSourceTemplateConfiguration = Annotated[
         ZenodoFileSourceTemplateConfiguration,
         RSpaceFileSourceTemplateConfiguration,
         DataverseFileSourceTemplateConfiguration,
+        CBioPortalFileSourceTemplateConfiguration,
         HuggingFaceFileSourceTemplateConfiguration,
         IIIFFileSourceTemplateConfiguration,
+        MaveDBFileSourceTemplateConfiguration,
         OmeroFileSourceTemplateConfiguration,
         SshFileSourceTemplateConfiguration,
     ],
@@ -504,8 +540,10 @@ FileSourceConfiguration = Annotated[
         ZenodoFileSourceConfiguration,
         RSpaceFileSourceConfiguration,
         DataverseFileSourceConfiguration,
+        CBioPortalFileSourceConfiguration,
         HuggingFaceFileSourceConfiguration,
         IIIFFileSourceConfiguration,
+        MaveDBFileSourceConfiguration,
         OmeroFileSourceConfiguration,
         SshFileSourceConfiguration,
     ],
@@ -588,8 +626,10 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "zenodo": ZenodoFileSourceConfiguration,
     "rspace": RSpaceFileSourceConfiguration,
     "dataverse": DataverseFileSourceConfiguration,
+    "cbioportal": CBioPortalFileSourceConfiguration,
     "huggingface": HuggingFaceFileSourceConfiguration,
     "iiif": IIIFFileSourceConfiguration,
+    "mavedb": MaveDBFileSourceConfiguration,
     "omero": OmeroFileSourceConfiguration,
     "ssh": SshFileSourceConfiguration,
 }

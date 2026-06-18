@@ -11,7 +11,7 @@ jobs:
     outputs:
       commit-id: ${{ steps.client-commit.outputs.commit }}
     steps:
-      - uses: actions/checkout@v6.0.2
+      - uses: actions/checkout@v6.0.3
         with:
           path: 'galaxy root'
           persist-credentials: false
@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: ${{ steps.node-version.outputs.version }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v5
+        uses: pnpm/action-setup@v6
         with:
           package_json_file: 'galaxy root/client/package.json'
       - name: get client commit

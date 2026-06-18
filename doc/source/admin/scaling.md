@@ -411,7 +411,7 @@ If you omit the `processes` argument this will default to a single process.
 You can further customize the handler names using the `name_template` section,
 for a complete example see [this gravity test case](https://github.com/galaxyproject/gravity/blob/a00df1c671fdc01e3fbc42f64a851a45a37a1870/tests/test_process_manager.py#L28).
 
-You can define arbitrary environment variables for dynamic handlers using the ``environnment`` key on a handler
+You can define arbitrary environment variables for dynamic handlers using the ``environment`` key on a handler
 definition:
 
 ```yaml
