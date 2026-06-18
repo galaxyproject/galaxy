@@ -10,6 +10,9 @@ Uses the real sqlite ``database_app`` fixture and inserts real ``WorkerProcess``
 rows so the SQL filter is exercised, not mocked.
 """
 
+import pytest
+from sqlalchemy import delete
+
 import galaxy.web_stack as stack
 from galaxy.model import WorkerProcess
 from galaxy.model.database_heartbeat import (
@@ -20,11 +23,27 @@ from galaxy.queues import all_control_queues_for_declare
 from galaxy.util import now
 
 
-def _make_app(database_app):
+@pytest.fixture
+def app(database_app):
+    """Build an app and guarantee the shared ``worker_process`` table is clean.
+
+    The ``postgres_app`` fixture reuses one session-scoped database, so rows left
+    behind by a prior test would otherwise collide on insert and leak into other
+    tests. Clear the table before and after each test to keep it isolated.
+    """
     app = database_app()
     app.config.attach_to_pools = False
     app.application_stack = stack.application_stack_instance(app=app)
-    return app
+    _clear_processes(app)
+    try:
+        yield app
+    finally:
+        _clear_processes(app)
+
+
+def _clear_processes(app):
+    with app.model.new_session() as session, session.begin():
+        session.execute(delete(WorkerProcess))
 
 
 def _insert_processes(app):
@@ -42,8 +61,7 @@ def _queue_names(queues):
     return {q.name for q in queues}
 
 
-def test_general_declare_excludes_sse_monitor(database_app):
-    app = _make_app(database_app)
+def test_general_declare_excludes_sse_monitor(app):
     _insert_processes(app)
 
     names = _queue_names(all_control_queues_for_declare(app.application_stack))
@@ -52,8 +70,7 @@ def test_general_declare_excludes_sse_monitor(database_app):
     assert names == {"control.web.1@h", "control.handler.1@h"}
 
 
-def test_webapp_only_declare_returns_only_webapps(database_app):
-    app = _make_app(database_app)
+def test_webapp_only_declare_returns_only_webapps(app):
     _insert_processes(app)
 
     names = _queue_names(all_control_queues_for_declare(app.application_stack, webapp_only=True))
