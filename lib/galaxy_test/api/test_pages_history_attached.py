@@ -7,14 +7,13 @@ from galaxy_test.base.populators import (
     skip_without_tool,
 )
 from .test_pages import BasePagesApiTestCase
+from .test_workflow_extraction import _ExtractionHelpersMixin
 
 
 class TestHistoryPagesApi(BasePagesApiTestCase):
     """API tests for history-attached pages (pages created with history_id)."""
 
     dataset_populator: DatasetPopulator
-
-    # --- A1: CRUD ---
 
     def test_create_page_with_history_id(self):
         history_id = self.dataset_populator.new_history()
@@ -125,8 +124,6 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
         ids = {p["id"] for p in pages}
         assert ids == {p1["id"], p2["id"], p3["id"]}
 
-    # --- A2: edit_source Tracking ---
-
     def test_update_with_edit_source_user(self):
         history_id = self.dataset_populator.new_history()
         page = self.dataset_populator.new_history_page(history_id, content="# V1")
@@ -168,8 +165,6 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
         assert revisions[3]["edit_source"] is None
         for rev in revisions:
             self._assert_has_keys(rev, "id", "page_id", "create_time")
-
-    # --- A3: Revision Endpoints ---
 
     def test_get_single_revision(self):
         history_id = self.dataset_populator.new_history()
@@ -236,8 +231,6 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
         result = self.dataset_populator.revert_page_revision(page["id"], v1_revision_id)
         assert result["edit_source"] == "restore"
         assert hda_id in result["content"]
-
-    # --- A4: Permissions ---
 
     def test_history_page_403_on_unowned_history_read(self):
         history_id = self.dataset_populator.new_history()
@@ -321,8 +314,6 @@ steps:
                 self._assert_status_code_is(create_response, 200)
                 assert create_response.json()["history_id"] == history_id
 
-    # --- A5: Cross-Type Validation ---
-
     def test_history_page_ignores_slug(self):
         history_id = self.dataset_populator.new_history()
         payload = {
@@ -348,8 +339,6 @@ steps:
         # content_format only in detail response
         details = self.dataset_populator.get_history_page(page["id"])
         assert details["content_format"] in ("html", "markdown")
-
-    # --- A6: Page Chat ---
 
     @skip_without_agents
     def test_page_chat_create_exchange(self):
@@ -420,7 +409,7 @@ steps:
             self._assert_status_code_is(response, 403)
 
 
-class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
+class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesApiTestCase):
     """GET /api/pages/{id}/workflow_extraction_summary — seeded from referenced outputs."""
 
     dataset_populator: DatasetPopulator
@@ -445,24 +434,6 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
         run = self.dataset_populator.run_tool(tool_id="random_lines1", inputs=inputs, history_id=history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         return input_hdca, run["implicit_collections"][0], run["jobs"][0]["id"]
-
-    def _copy_hdca_to_history(self, history_id, hdca):
-        response = self._post(
-            f"histories/{history_id}/contents/dataset_collections",
-            {"source": "hdca", "content": hdca["id"]},
-            json=True,
-        )
-        self._assert_status_code_is(response, 200)
-        return response.json()
-
-    def _rows_by_type(self, summary, *step_types):
-        return [j for j in summary["jobs"] if j["step_type"] in step_types]
-
-    def _row_with_output_id(self, summary, content_id):
-        for job in summary["jobs"]:
-            if any(o["id"] == content_id for o in job["outputs"]):
-                return job
-        return None
 
     @skip_without_tool("random_lines1")
     def test_referenced_map_over_output_seeds_subgraph(self):
@@ -534,12 +505,12 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
         inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
         run = self.dataset_populator.run_tool("cat1", inputs, history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        return run["outputs"][0]["id"]
+        return run["outputs"][0]["id"], run["jobs"][0]["id"]
 
     @skip_without_tool("cat1")
     def test_referenced_output_seeds_producer_and_exposes_output(self):
         with self.dataset_populator.test_history() as history_id:
-            output_id = self._cat1_history(history_id)
+            output_id, _ = self._cat1_history(history_id)
             page = self.dataset_populator.new_notebook_referencing(history_id, [output_id])
 
             summary = self._extraction_summary(page["id"])
@@ -601,12 +572,7 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
         """A notebook that references a job via job_metrics seeds the producing
         job (and its upstream inputs) but does NOT expose its outputs."""
         with self.dataset_populator.test_history() as history_id:
-            hda1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
-            hda2 = self.dataset_populator.new_dataset(history_id, content="baz", wait=True)
-            inputs = {"input1": {"src": "hda", "id": hda1["id"]}, "queries_0|input2": {"src": "hda", "id": hda2["id"]}}
-            run = self.dataset_populator.run_tool("cat1", inputs, history_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-            cat1_job_id = run["jobs"][0]["id"]
+            _, cat1_job_id = self._cat1_history(history_id)
             page = self.dataset_populator.new_notebook_referencing(history_id, job_ids=[cat1_job_id])
 
             summary = self._extraction_summary(page["id"])
@@ -678,7 +644,7 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
             source_history_id, contents=["a\n", "b\n"], wait=True
         ).json()["outputs"][0]
         with self.dataset_populator.test_history() as history_id:
-            copied = self._copy_hdca_to_history(history_id, source_hdca)
+            copied = self._copy_content_to_history(history_id, source_hdca)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             page = self.dataset_populator.new_notebook_referencing(history_id, collection_ids=[copied["id"]])
 
@@ -710,7 +676,7 @@ class TestNotebookWorkflowExtractionSummary(BasePagesApiTestCase):
     @skip_without_tool("cat1")
     def test_403_for_other_user_without_history_access(self):
         with self.dataset_populator.test_history() as history_id:
-            output_id = self._cat1_history(history_id)
+            output_id, _ = self._cat1_history(history_id)
             page = self.dataset_populator.new_notebook_referencing(history_id, [output_id])
             # publish the page so a different user can resolve it...
             self._put(f"pages/{page['id']}/publish", json=True)
