@@ -2,7 +2,14 @@
 
 Auto-discovers gxformat2 workflow fixtures and validates them.
 ok_* workflows must validate, fail_* must not.
-Sidecar YAML files in expected/ provide targeted assertions via dict_verify_each.
+Sidecar YAML files in a sibling expected/ dir provide targeted assertions via
+dict_verify_each.
+
+Fixtures live in two tiers under connection_workflows/: top-level fixtures back
+collection_semantics.yml examples (algebra claims); standalone/ holds
+validator-only regression fixtures with no semantics example. Both tiers are
+discovered and validated here; the split is enforced by
+test_collection_semantics_coverage.py.
 """
 
 from pathlib import Path
@@ -18,13 +25,12 @@ from .functional_tool_info import FunctionalGetToolInfo
 from ..util import dict_verify_each
 
 WORKFLOW_DIR = Path(__file__).parent / "connection_workflows"
-EXPECTED_DIR = WORKFLOW_DIR / "expected"
 
 
 def discover_workflows():
     if not WORKFLOW_DIR.exists():
         return []
-    return sorted(WORKFLOW_DIR.glob("*.gxwf.yml"))
+    return sorted(p for p in WORKFLOW_DIR.glob("**/*.gxwf.yml") if "expected" not in p.parts)
 
 
 def workflow_ids():
@@ -59,8 +65,8 @@ def test_connection_workflow(workflow_path, tool_info):
     else:
         pytest.skip(f"Unknown prefix for {stem}")
 
-    # Check sidecar expectations if present
-    expected_path = EXPECTED_DIR / f"{stem}.yml"
+    # Check sidecar expectations if present (sibling expected/ of the fixture)
+    expected_path = workflow_path.parent / "expected" / f"{stem}.yml"
     if expected_path.exists():
         raw = yaml.safe_load(expected_path.read_text())
         expectations = [(e["target"], e["value"]) for e in raw]

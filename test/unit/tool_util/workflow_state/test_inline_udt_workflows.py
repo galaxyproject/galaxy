@@ -137,7 +137,7 @@ def test_inline_udt_output_format_source_resolves_to_inline_input():
 
 
 # Consumer-attribution lock for UDT producers is now covered behaviorally
-# by connection_workflows/fail_udt_dataset_to_collection_consumer.gxwf.yml.
+# by connection_workflows/standalone/fail_udt_dataset_to_collection_consumer.gxwf.yml.
 
 
 # -- §9.2 clean: tool_representation is read-only --------------------------------
