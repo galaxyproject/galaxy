@@ -358,7 +358,7 @@ def run_add_local(options: AddLocalOptions):
 
     version = options.version or parsed_tool.version
     if version is None:
-        print("Cannot determine version. Use --version.", file=sys.stderr)
+        print("Cannot determine version. Use --tool-version.", file=sys.stderr)
         sys.exit(1)
 
     tool_info.populate_from_parsed_tool(tool_id, version, parsed_tool, source="local", source_url=str(options.xml_path))
@@ -456,7 +456,7 @@ def run_schema(options: SchemaOptions):
         sys.exit(1)
 
     if len(matches) > 1:
-        print(f"Multiple matches for '{options.trs_tool_id}' — use --version to disambiguate:", file=sys.stderr)
+        print(f"Multiple matches for '{options.trs_tool_id}' — use --tool-version to disambiguate:", file=sys.stderr)
         for entry in matches:
             print(f"  {entry.get('tool_id', '?')} {entry.get('tool_version', '?')}", file=sys.stderr)
         sys.exit(1)

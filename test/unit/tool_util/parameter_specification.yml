@@ -82,6 +82,8 @@ gx_int:
   workflow_step_invalid:
     - parameterx: 5
     - parameter: 'foobar'
+    # stringified numerics are native encoding, not valid decoded format2 state
+    - parameter: "5"
   workflow_step_linked_valid:
     - parameter: 5
     - parameter: {__class__: 'ConnectedValue'}
@@ -1189,6 +1191,9 @@ gx_float:
   workflow_step_invalid:
     - parameterx: 5
     - parameter: 'foobar'
+    # stringified numerics are native encoding, not valid decoded format2 state
+    - parameter: "0.01"
+    - parameter: "5.0"
   workflow_step_linked_valid:
     - parameter: 5
     - parameter: 5.4
