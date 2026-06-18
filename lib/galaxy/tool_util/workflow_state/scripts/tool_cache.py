@@ -50,7 +50,7 @@ def build_parser():
     # add
     p_add = subparsers.add_parser("add", help="Cache a single tool")
     p_add.add_argument("tool_id", help="Full tool_id, TRS-style ID, or stock tool ID")
-    p_add.add_argument("--version", help="Tool version (if not embedded in tool_id)")
+    p_add.add_argument("--tool-version", dest="version", help="Tool version (if not embedded in tool_id)")
     add_tool_source_arg(p_add)
 
     # add-local
@@ -61,7 +61,7 @@ def build_parser():
         dest="tool_id",
         help="Full toolshed tool_id (e.g. toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.74+galaxy0)",
     )
-    p_local.add_argument("--version", help="Tool version (overrides parsed version)")
+    p_local.add_argument("--tool-version", dest="version", help="Tool version (overrides parsed version)")
 
     # list
     p_list = subparsers.add_parser("list", help="List cached tools")
@@ -70,7 +70,7 @@ def build_parser():
     # info
     p_info = subparsers.add_parser("info", help="Show cached tool details")
     p_info.add_argument("trs_tool_id", help="TRS tool ID or substring to match")
-    p_info.add_argument("--version", help="Filter by version")
+    p_info.add_argument("--tool-version", dest="version", help="Filter by version")
 
     # clear
     p_clear = subparsers.add_parser("clear", help="Clear cache")
@@ -79,7 +79,7 @@ def build_parser():
     # schema
     p_schema = subparsers.add_parser("schema", help="Export JSON Schema for a cached tool's state model")
     p_schema.add_argument("trs_tool_id", help="TRS tool ID or substring to match")
-    p_schema.add_argument("--version", help="Filter by version")
+    p_schema.add_argument("--tool-version", dest="version", help="Filter by version")
     p_schema.add_argument(
         "--representation",
         default="workflow_step",

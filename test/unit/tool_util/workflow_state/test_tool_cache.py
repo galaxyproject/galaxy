@@ -448,7 +448,7 @@ class TestCLIParser:
 
     def test_add(self):
         parser = build_parser()
-        args = parser.parse_args(["add", "devteam~fastqc~fastqc", "--version", "0.74+galaxy0"])
+        args = parser.parse_args(["add", "devteam~fastqc~fastqc", "--tool-version", "0.74+galaxy0"])
         assert args.command == "add"
         assert args.tool_id == "devteam~fastqc~fastqc"
         assert args.version == "0.74+galaxy0"

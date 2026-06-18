@@ -132,7 +132,7 @@ class TestCLIParserSchema:
             [
                 "schema",
                 "devteam~fastqc~fastqc",
-                "--version",
+                "--tool-version",
                 "0.74+galaxy0",
                 "--representation",
                 "workflow_step_linked",
