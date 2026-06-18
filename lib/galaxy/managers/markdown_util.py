@@ -554,13 +554,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         self.trans = trans
         self.extra_rendering_data = extra_rendering_data
 
-    # Object directives are no-ops here. The interactive client resolves every
-    # referenced object live from its own store/API (datasets, collections, jobs,
-    # workflows, histories, invocations), and PDF/HTML export renders inline via
-    # ToBasicMarkdownDirectiveHandler. The export markdown carries the (encoded-id)
-    # directive, so nothing needs to be baked into extra_rendering_data. Handlers
-    # are spelled out rather than defaulted on the base class so a new directive
-    # must still be considered here explicitly.
+    # Object directives are no-ops: the client resolves objects live and PDF/HTML export
+    # renders inline via ToBasicMarkdownDirectiveHandler, so nothing is baked into
+    # extra_rendering_data. Spelled out (not defaulted) so each new directive is considered here.
     def handle_dataset_display(self, line, hda):
         pass
 
@@ -760,10 +756,8 @@ class _ReferencedContentCollector(GalaxyInternalMarkdownDirectiveHandler):
         self.content.warnings.append(f"Skipped a [{container}] reference while scanning the page: {error}")
         return (line, False)
 
-    # The remaining handlers no-op because they reference no dataset content. They are spelled out
-    # rather than defaulted on the base class on purpose (see the note on the abstract handlers): a
-    # new content-bearing directive must force this collector to decide whether to record it, instead
-    # of silently dropping it from the seed set.
+    # The remaining handlers no-op: they reference no dataset content. Spelled out (not defaulted)
+    # so a new content-bearing directive must decide whether to seed it rather than be dropped.
     def handle_history_link(self, line, history):
         pass
 

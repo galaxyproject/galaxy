@@ -428,6 +428,7 @@ history_dataset_display(history_dataset_id=1)
 """
         with self._expect_get_hda(hda):
             _, export_markdown, extra_data = self._ready_export(example)
+        assert "history_dataset_display" in export_markdown
         assert "history_datasets" not in extra_data
 
     def test_ready_export_two_datasets_not_baked(self):
@@ -445,6 +446,7 @@ history_dataset_display(history_dataset_id=2)
 """
         self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
         _, export_markdown, extra_data = self._ready_export(example)
+        assert export_markdown.count("history_dataset_display") == 2
         assert "history_datasets" not in extra_data
 
     def test_export_dataset_collection_not_baked(self):
@@ -462,6 +464,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
 ```
 """
         _, export, extra_data = self._ready_export(example)
+        assert "history_dataset_collection_display" in export
         assert "history_dataset_collections" not in extra_data
 
     def test_galaxy_version(self):
@@ -492,6 +495,7 @@ invocation_time(invocation_id=1)
 ```
 """
         _, result, extra_data = self._ready_export(example)
+        assert "invocation_time" in result
         assert "invocations" not in extra_data
 
     def test_export_replaces_embedded_history_dataset_type(self):

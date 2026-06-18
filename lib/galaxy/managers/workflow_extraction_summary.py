@@ -69,8 +69,7 @@ class ClosureResult:
     """Result of walking backward from a page's referenced outputs.
 
     Identity-space-neutral content refs plus the producing job/ICJ ids the
-    summary uses to flag ``seeded`` rows. Keeping content refs here lets a
-    future graph view hydrate the same highlight set from the same endpoint.
+    summary uses to flag ``seeded`` rows.
     """
 
     job_ids: set[int] = field(default_factory=set)
@@ -156,7 +155,6 @@ def _backward_job_closure(
     Stops at boundary inputs: datasets with no creating job, jobs whose tool is
     not workflow-compatible (upload, data fetch, ...), and cross-history
     producers. Within-history copies are followed via the original HDA/HDCA.
-    Producers are resolved per-seed (no batched queries) for V1.
     """
     result = ClosureResult()
     queue: deque[HistoryItem] = deque()
@@ -184,9 +182,9 @@ def _backward_job_closure(
             queue.append(content)
 
     for icj_id in icj_refs:
-        # Access was enforced at the collector via Phase-1's get_accessible_job before this id
-        # entered icj_refs; this bare fetch is safe only under that precondition. Do not call
-        # _backward_job_closure with an externally-supplied, unchecked ICJ id.
+        # ICJ ids here were access-checked at collection time (get_accessible_job on the
+        # representative job); this bare fetch is safe only for such pre-checked ids. Never pass
+        # externally-supplied ICJ ids to _backward_job_closure.
         icj = trans.sa_session.get(ImplicitCollectionJobs, icj_id)
         if icj is None:
             result.warnings.append(f"A referenced collection job ({icj_id}) is no longer available and was skipped.")
