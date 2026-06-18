@@ -43,9 +43,6 @@ def _hda(id_):
     return SimpleNamespace(id=id_)
 
 
-# --- rewriter mechanics -----------------------------------------------------
-
-
 def test_rewrite_dataset_to_output_label():
     rewriter = _ReportLabelRewriter(FakeIndex(content_args={("hda", 7): 'output="aligned"'}))
     line, whole_block = rewriter.handle_dataset_display("history_dataset_display(history_dataset_id=abc123)\n", _hda(7))
@@ -98,9 +95,6 @@ def test_idless_directive_passthrough():
     assert line == "generate_time()\n"
     assert whole_block is False
     assert rewriter.warnings == []
-
-
-# --- label index resolution -------------------------------------------------
 
 
 def _input_step(label, type_="data_input"):
@@ -164,9 +158,6 @@ def test_index_mapped_job_folds_to_icj_step_label():
     index = ExtractionLabelIndex(content_to_step={}, job_to_step={}, icj_to_step={4: step})
     job = SimpleNamespace(id=9, implicit_collection_jobs_association=SimpleNamespace(implicit_collection_jobs_id=4))
     assert index.job_label_arg(cast(Job, job)) == 'step="mapped_step"'
-
-
-# --- reconcile --------------------------------------------------------------
 
 
 def _referenced(refs=None, job_refs=None, icj_refs=None):

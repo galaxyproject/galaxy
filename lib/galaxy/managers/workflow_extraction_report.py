@@ -6,9 +6,8 @@ the page references to the labeled workflow steps/outputs it built. This module
 turns the page's internal-id markdown into a portable workflow report:
 
 1. :func:`reconcile_report_labels` auto-labels/exposes any referenced item the
-   user left unlabeled, so every directive can resolve (decided design: the
-   report is always complete, at the cost of exposing outputs the notebook
-   displays but the user did not explicitly star).
+   user left unlabeled, so every directive can resolve. This can expose outputs
+   the notebook displays but the user did not explicitly star.
 2. :class:`_ReportLabelRewriter` does the pure id -> label rewrite against the
    now-complete index, reusing the directive-walk taxonomy and access checks of
    the shared markdown directive handler.
