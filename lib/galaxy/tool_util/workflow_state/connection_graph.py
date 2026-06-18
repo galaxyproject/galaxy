@@ -414,14 +414,13 @@ def _collect_outputs(outputs: list) -> Dict[str, ResolvedOutput]:
                 format_source=output.format_source,
             )
         elif isinstance(output, ToolOutputCollection):
-            structure = output.structure
             result[output.name] = ResolvedOutput(
                 name=output.name,
                 type="collection",
-                collection_type=structure.collection_type,
-                collection_type_source=structure.collection_type_source,
-                collection_type_from_rules=structure.collection_type_from_rules,
-                structured_like=structure.structured_like,
+                collection_type=output.collection_type,
+                collection_type_source=output.collection_type_source,
+                collection_type_from_rules=output.collection_type_from_rules,
+                structured_like=output.structured_like,
             )
         elif isinstance(output, (ToolOutputText, ToolOutputInteger, ToolOutputFloat, ToolOutputBoolean)):
             result[output.name] = ResolvedOutput(
