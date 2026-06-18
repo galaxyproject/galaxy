@@ -9,7 +9,6 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util_models import ParsedTool
 from galaxy.tool_util_models.tool_outputs import (
     ToolOutputCollection,
-    ToolOutputCollectionStructure,
     ToolOutputDataset,
     ToolOutputText,
 )
@@ -73,11 +72,9 @@ def make_collection_output(name="out1", collection_type=None, collection_type_so
         name=name,
         type="collection",
         hidden=False,
-        structure=ToolOutputCollectionStructure(
-            collection_type=collection_type,
-            collection_type_source=collection_type_source,
-            structured_like=structured_like,
-        ),
+        collection_type=collection_type,
+        collection_type_source=collection_type_source,
+        structured_like=structured_like,
     )
 
 
