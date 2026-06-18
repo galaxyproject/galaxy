@@ -88,6 +88,33 @@ KNOWN_ORPHANS = {
     # about sample_sheet (the catalog claims live under SAMPLE_SHEET_*
     # examples covered by algebra).
     "ok_sample_sheet_to_multi_data",
+    # Inline user-defined-tool (UDT) fixtures. Each defines its tool
+    # inline via ``class: GalaxyUserTool`` (or ``GalaxyWorkflow``) rather
+    # than referencing a ``tool_id``; they exercise inline tool/subworkflow
+    # resolution in the connection graph. The collection algebra in each is
+    # mundane and already covered by built-in-tool examples — the catalog
+    # has no vocabulary for inline tool definitions, so these stay orphans.
+    # dataset -> inline UDT -> dataset; data->data passthrough algebra.
+    "ok_udt_to_regular_dataset",
+    # regular tool -> inline UDT dataset input; data->data passthrough.
+    "ok_regular_to_udt_dataset",
+    # inline UDT -> inline UDT dataset chain; data->data forwarding.
+    "ok_udt_chain",
+    # list collection into an inline UDT's data_collection(list) input;
+    # direct list->list match, no map-over.
+    "ok_udt_collection_input",
+    # list mapped over an inline UDT's scalar data input; scalar output
+    # promoted to list (BASIC_MAPPING algebra, inline-tool variant).
+    "ok_udt_map_over_list",
+    # inline UDT nested in an inline subworkflow; data passthrough +
+    # subworkflow output resolution, not a catalog claim.
+    "ok_udt_in_subworkflow",
+    # inline UDT dataset output into a list-required consumer; locks
+    # consumer-side error attribution for a reduction mismatch.
+    "fail_udt_dataset_to_collection_consumer",
+    # paired collection into an inline UDT's list-collection input;
+    # incompatible-feed rejection, inline-tool variant.
+    "fail_paired_to_udt_list_collection",
 }
 
 # Examples intentionally covered by neither ``tests.algebra`` nor
