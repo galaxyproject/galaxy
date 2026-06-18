@@ -1,4 +1,4 @@
-- doc: Outer list:paired with inner Collection using legacy `type:` sugar
+- doc: Inner Collection using legacy `type:` sugar instead of collection_type — not modeled, should error
   job:
     input:
       class: Collection

@@ -18,7 +18,6 @@ POSITIVE = [
     "collection_list.yml",
     "collection_paired.yml",
     "collection_nested.yml",
-    "collection_paired_type_sugar.yml",
     "scalars.yml",
     "list_of_files.yml",
     "list_of_scalars.yml",
@@ -33,6 +32,7 @@ NEGATIVE = [
     "neg_bad_collection_type.yml",
     "neg_top_level_not_list.yml",
     "neg_collection_type_conflict.yml",
+    "neg_collection_type_sugar.yml",
 ]
 
 
