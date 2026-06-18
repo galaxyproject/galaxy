@@ -403,7 +403,11 @@ export function validateInputs(index, values, rejectEmptyRequiredInputs = false)
             continue;
         }
         if (isRequired && inputDef.type != "hidden") {
-            if (!isDefined(inputValue) || (rejectEmptyRequiredInputs && inputValue === "")) {
+            if (
+                !isDefined(inputValue) ||
+                (rejectEmptyRequiredInputs && inputValue === "") ||
+                (Array.isArray(inputValue) && inputValue.length === 0)
+            ) {
                 return [inputId, "Please provide a value for this option."];
             }
         }

@@ -120,6 +120,23 @@ describe("form component utilities", () => {
         expect(JSON.stringify(result)).toEqual('["input_c","Please provide data for this input."]');
     });
 
+    it("rejects empty array for required multi-select but allows it when optional", () => {
+        const index = { multi: {} };
+
+        // Required (default) + empty array → fails
+        let result = validateInputs(index, { multi: [] });
+        expect(JSON.stringify(result)).toEqual('["multi","Please provide a value for this option."]');
+
+        // Required + non-empty array → passes
+        result = validateInputs(index, { multi: ["alpha"] });
+        expect(result).toEqual(null);
+
+        // Optional + empty array → passes
+        index.multi.optional = true;
+        result = validateInputs(index, { multi: [] });
+        expect(result).toEqual(null);
+    });
+
     it("test error matching", () => {
         const index = {
             input_a: {},

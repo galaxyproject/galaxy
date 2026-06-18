@@ -78,6 +78,10 @@ export const templateTypes: FileSourceTypesDetail = {
         icon: faNetworkWired,
         message: "This is a repository plugin that connects with a Dataverse.org instance.",
     },
+    cbioportal: {
+        icon: faNetworkWired,
+        message: "This is a read-only file repository plugin that connects with a cBioPortal instance.",
+    },
     huggingface: {
         icon: faHubspot,
         message: "This is a file repository plugin that connects with the Hugging Face Hub.",

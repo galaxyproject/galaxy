@@ -109,8 +109,8 @@ function onChange(refreshOnChange?: boolean): void {
     rebuildIndex();
     const params = buildFormData();
     if (JSON.stringify(params) != JSON.stringify(formData.value)) {
-        formData.value = params;
         resetErrors();
+        formData.value = params;
         emit("onChange", params, refreshOnChange);
     }
 }

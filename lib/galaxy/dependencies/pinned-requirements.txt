@@ -8,7 +8,7 @@ aiofile==3.9.0 ; python_full_version < '3.11'
 aiofile==3.11.1 ; python_full_version >= '3.11'
 aiofiles==25.1.0
 aiohappyeyeballs==2.6.2
-aiohttp==3.14.0
+aiohttp==3.14.1
 aioitertools==0.13.0
 aiosignal==1.4.0
 alembic==1.18.4
@@ -59,7 +59,7 @@ cohere==7.0.3 ; sys_platform != 'emscripten'
 colorama==0.4.6 ; sys_platform == 'win32'
 coloredlogs==15.0.1
 conda-package-streaming==0.12.0
-cryptography==48.0.0
+cryptography==48.0.1
 ct3==3.4.0.post5
 cwl-upgrader==1.2.15
 cwl-utils==0.42

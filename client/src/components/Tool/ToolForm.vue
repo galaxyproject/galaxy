@@ -299,7 +299,7 @@ export default {
         hasConfigOrValErrors() {
             return (
                 (this.formConfig.errors && Object.values(this.formConfig.errors).length > 0) ||
-                this.validationInternal?.length
+                this.validationInternal?.length > 0
             );
         },
     },
@@ -342,9 +342,13 @@ export default {
             this.formData = newData;
             if (refreshRequest) {
                 this.onUpdate();
-            } else if (this.formConfigInitialized && this.hasConfigOrValErrors) {
-                // After the first manual change to a form input, for every change, if there isn't a request to refresh,
-                // we reset the errors since we haven't received a tool form update via the backend.
+            } else if (
+                this.formConfigInitialized &&
+                this.formConfig.errors &&
+                Object.values(this.formConfig.errors).length > 0
+            ) {
+                // Clear stale backend errors when the user edits. Scoped to backend errors only;
+                // client-side validation errors are not wiped here.
                 this.formConfig.errors = null;
             }
             this.formConfigInitialized = true;

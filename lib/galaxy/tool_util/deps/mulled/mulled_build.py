@@ -79,6 +79,32 @@ DEFAULT_WORKING_DIR = "/source/"
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.2.0"
 DEST_BASE_IMAGE = os.environ.get("DEST_BASE_IMAGE", None)
+# Explicit Docker build targets use OCI platform notation. This is separate
+# from conda_platform(), which detects the native host OS and architecture.
+DockerPlatform = Literal[
+    "linux/amd64",
+    "linux/arm64",
+    "linux/arm/v7",
+    "linux/ppc64le",
+    "linux/riscv64",
+]
+
+DOCKER_TO_CONDA_PLATFORM: Dict[DockerPlatform, str] = {
+    "linux/amd64": "linux-64",
+    "linux/arm64": "linux-aarch64",
+    "linux/arm/v7": "linux-armv7l",
+    "linux/ppc64le": "linux-ppc64le",
+    "linux/riscv64": "linux-riscv64",
+}
+MACHINE_TO_DOCKER_PLATFORM: Dict[str, DockerPlatform] = {
+    "x86_64": "linux/amd64",
+    "amd64": "linux/amd64",
+    "aarch64": "linux/arm64",
+    "arm64": "linux/arm64",
+    "armv7l": "linux/arm/v7",
+    "ppc64le": "linux/ppc64le",
+    "riscv64": "linux/riscv64",
+}
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: %(base_image)s
@@ -177,6 +203,7 @@ def conda_versions(pkg_name, file_name):
 
 
 def conda_platform() -> str:
+    """Return the conda subdir for the native host OS and architecture."""
     machine = _platform_module.machine().lower()
     if IS_OS_X:
         conda_arch_map = {
@@ -191,24 +218,62 @@ def conda_platform() -> str:
             "aarch64": "linux-aarch64",
             "arm64": "linux-aarch64",
             "armv7l": "linux-armv7l",
+            "ppc64le": "linux-ppc64le",
         }
         default_platform = "linux-64"
     return conda_arch_map.get(machine, default_platform)
 
 
-def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
-    platform = conda_platform()
+def docker_platform_to_conda_subdir(target_docker_platform: Optional[DockerPlatform]) -> str:
+    """Return the conda subdir for an explicit Docker target, or for the host when unset."""
+    if target_docker_platform is None:
+        return conda_platform()
+    try:
+        return DOCKER_TO_CONDA_PLATFORM[target_docker_platform]
+    except KeyError:
+        raise ValueError(f"Unsupported target platform '{target_docker_platform}'") from None
+
+
+def docker_platform_tag_suffix(target_platform: Optional[DockerPlatform]) -> Optional[str]:
+    """Return an image-tag suffix, preserving unsuffixed tags for legacy amd64 images."""
+    target_platform = target_platform or MACHINE_TO_DOCKER_PLATFORM.get(
+        _platform_module.machine().lower(), "linux/amd64"
+    )
+    if target_platform == "linux/amd64":
+        return None
+    return target_platform[len("linux/") :].replace("/", "-")
+
+
+def apply_platform_tag_suffix(image: str, target_platform: Optional[DockerPlatform]) -> str:
+    suffix = docker_platform_tag_suffix(target_platform)
+    if suffix is None:
+        return image
+    last_slash = image.rfind("/")
+    last_colon = image.rfind(":")
+    if last_colon > last_slash:
+        image_name, tag = image.rsplit(":", 1)
+    else:
+        image_name, tag = image, "latest"
+    return f"{image_name}:{tag}-{suffix}"
+
+
+def get_conda_hits_for_targets(
+    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    platform = conda_platform_str or conda_platform()
     search_results = (best_search_result(t, conda_context, platform=platform)[0] for t in targets)
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> str:
+def base_image_for_targets(
+    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: Optional[str] = None
+) -> str:
     """
     determine base image (DEFAULT_BASE_IMAGE/DEFAULT_EXTENDED_BASE_IMAGE) for a
     list of targets by inspecting the conda package (i.e. if the use of an
     extended image is indicated in info/about.json or info/recipe/meta.yaml
     """
-    hits = get_conda_hits_for_targets(targets, conda_context)
+    hits = get_conda_hits_for_targets(targets, conda_context, conda_platform_str)
     for hit in hits:
         try:
             content_dict = get_files_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
@@ -264,7 +329,16 @@ def mull_targets(
     determine_base_image: bool = True,
     invfile: str = INVFILE,
     strict_channel_priority: bool = True,
+    target_platform: Optional[DockerPlatform] = None,
 ) -> int:
+    conda_platform_str = docker_platform_to_conda_subdir(target_platform)
+    if singularity and target_platform:
+        # Singularity build (invfile.lua:110-118) runs `singularity build` locally from a
+        # .def file.  Singularity has `--arch` only for remote builds (--remote); there is
+        # no --platform flag for local builds.  The resulting .sif is always the host arch,
+        # so cross-platform builds would produce a .sif for the wrong architecture.
+        raise ValueError("--target-platform cannot be used with --singularity")
+
     if involucro_context is None:
         involucro_context = InvolucroContext()
 
@@ -276,7 +350,9 @@ def mull_targets(
 
     repo_template_kwds = {
         "namespace": namespace,
-        "image": image_function(targets, image_build=image_build, name_override=name_override),
+        "image": apply_platform_tag_suffix(
+            image_function(targets, image_build=image_build, name_override=name_override), target_platform
+        ),
     }
     repo = string.Template(repository_template).safe_substitute(repo_template_kwds)
 
@@ -318,6 +394,8 @@ def mull_targets(
         "-set",
         f"BINDS={bind_str}",
     ]
+    if target_platform:
+        involucro_args = ["--platform", target_platform] + involucro_args
     dest_base_image = None
     if base_image:
         dest_base_image = base_image
@@ -325,7 +403,7 @@ def mull_targets(
         dest_base_image = DEST_BASE_IMAGE
     elif determine_base_image:
         conda_context = CondaInDockerContext(ensure_channels=channels)
-        dest_base_image = base_image_for_targets(targets, conda_context)
+        dest_base_image = base_image_for_targets(targets, conda_context, conda_platform_str)
 
     if dest_base_image:
         involucro_args.extend(["-set", f"DEST_BASE_IMAGE={dest_base_image}"])
@@ -429,7 +507,8 @@ class InvolucroContext(installable.InstallableContext):
         self.verbose = verbose
 
     def build_command(self, involucro_args: List[str]) -> List[str]:
-        return [self.involucro_bin, f"-v={self.verbose}"] + involucro_args
+        cmd = [self.involucro_bin, f"-v={self.verbose}"]
+        return cmd + involucro_args
 
     def exec_command(self, involucro_args: List[str]) -> int:
         cmd = self.build_command(involucro_args)
@@ -490,6 +569,13 @@ def add_build_arguments(parser):
         "--dry-run", dest="dry_run", action="store_true", help="Just print commands instead of executing them."
     )
     parser.add_argument("--verbose", dest="verbose", action="store_true", help="Cause process to be verbose.")
+    parser.add_argument(
+        "--target-platform",
+        dest="target_platform",
+        default=None,
+        choices=sorted(DOCKER_TO_CONDA_PLATFORM),
+        help="Target platform for Docker/Involucro builds (e.g. 'linux/arm64'). Requires binfmt/QEMU support on the Docker daemon host.",
+    )
     parser.add_argument("--singularity", action="store_true", help="Additionally build a singularity image.")
     parser.add_argument(
         "--singularity-image-dir", dest="singularity_image_dir", help="Directory to write singularity images too."
@@ -498,7 +584,7 @@ def add_build_arguments(parser):
     parser.add_argument("-n", "--namespace", dest="namespace", default="biocontainers", help="quay.io namespace.")
     parser.add_argument(
         "-r",
-        "--repository_template",
+        "--repository-template",
         dest="repository_template",
         default=DEFAULT_REPOSITORY_TEMPLATE,
         help="Docker repository target for publication (only quay.io or compat. API is currently supported).",
@@ -511,7 +597,7 @@ def add_build_arguments(parser):
         help="Comma separated list of target conda channels.",
     )
     parser.add_argument(
-        "--disable_strict_channel_priority",
+        "--disable-strict-channel-priority",
         dest="strict_channel_priority",
         default=True,
         action="store_false",
@@ -614,6 +700,8 @@ def args_to_mull_targets_kwds(args):
         kwds["invfile"] = args.invfile
     if hasattr(args, "verbose"):
         kwds["verbose"] = args.verbose
+    if hasattr(args, "target_platform"):
+        kwds["target_platform"] = args.target_platform
     kwds["strict_channel_priority"] = args.strict_channel_priority
 
     kwds["involucro_context"] = context_from_args(args)
