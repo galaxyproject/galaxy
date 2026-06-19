@@ -17,5 +17,25 @@
         </test>
     </tests>
     <help>
+What it does
+------------
+Converts Parquet files to tabular format.
+
+All columns are converted to strings, with nested structures serialized as JSON.
+
+Supported Data Types
+--------------------
+The following Parquet data types are supported:
+
+- **integer**: Converted to integer strings (e.g., "42")
+- **floating-point**: Converted to floating-point strings (e.g., "3.14")
+- **boolean**: Converted to "True" or "False" strings
+- **string**: Preserved as-is
+- **date, time, timestamp**: Converted to string representation
+- **list/array**: Serialized as JSON array (e.g., "[1,2,3]")
+- **struct/map/dict**: Serialized as JSON object (e.g., '{"key":"value"}')
+- **null**: Converted to empty string
+
+Note: JSON arrays/objects are quoted in the output to protect internal tabs and commas.
     </help>
 </tool>

@@ -45,6 +45,7 @@ def _stringify_all_columns(table):
         new_columns.append(pa.array(stringified_values, type=pa.string()))
     return pa.Table.from_arrays(new_columns, names=table.schema.names)
 
+
 def _write_tabular(table, outfile):
     """
     Write a PyArrow table as tabular file.
