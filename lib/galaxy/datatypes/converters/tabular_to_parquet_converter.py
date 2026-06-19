@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Input: tabular
-Output: parquet
+Converts tabular files to Parquet format.
+Parse tabular files with a header row and convert to Parquet format using PyArrow.
 """
 
 import os
@@ -23,7 +23,7 @@ def __main__():
         sys.stderr.write(f"Input file {infile!r} not found\n")
         sys.exit(1)
     if pyarrow is None:
-        raise Exception("Cannot run conversion, pyarrow is not installed.")
+        raise ImportError("Cannot run conversion, pyarrow is not installed.")
 
     with open(infile, encoding="utf-8") as f:
         lines = f.readlines()
@@ -32,11 +32,11 @@ def __main__():
         sys.stderr.write(f"Input file {infile!r} is empty\n")
         sys.exit(1)
 
-    header = lines[0].strip().split("\t")
+    header = lines[0].rstrip("\r\n").split("\t")
 
     rows = []
     for line in lines[1:]:
-        line = line.strip()
+        line = line.rstrip("\r\n")
         if line:
             row = line.split("\t")
             rows.append(row)
@@ -48,11 +48,14 @@ def __main__():
             if value == "" or value.lower() == "na":
                 column_data[col].append(None)
             else:
-                try:
-                    column_data[col].append(int(value))
-                except ValueError:
+                if "." in value or "e" in value.lower():
                     try:
                         column_data[col].append(float(value))
+                    except ValueError:
+                        column_data[col].append(value)
+                else:
+                    try:
+                        column_data[col].append(int(value))
                     except ValueError:
                         column_data[col].append(value)
 
