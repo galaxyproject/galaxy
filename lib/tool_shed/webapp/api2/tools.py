@@ -68,6 +68,7 @@ class FastAPITools:
     @router.get(
         "/api/tools",
         operation_id="tools__index",
+        allow_cors=True,
     )
     def index(
         self,
@@ -146,6 +147,7 @@ class FastAPITools:
         "/api/tools/{tool_id}/versions/{tool_version}",
         operation_id="tools__parameter_model",
         summary="Return Galaxy's meta model description of the tool's inputs",
+        allow_cors=True,
     )
     def show_tool(
         self,
