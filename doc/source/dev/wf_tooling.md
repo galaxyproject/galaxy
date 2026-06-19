@@ -40,7 +40,19 @@ Galaxy's workflow CLI tooling spans three packages at different abstraction leve
 | `gxwf-viz`                   | gxformat2        | Cytoscape graph visualization                                |
 | `gxwf-abstract-export`       | gxformat2        | Abstract CWL export                                          |
 
-Each `gxwf` subcommand is also available as a standalone binary (`gxwf-state-validate`, `gxwf-state-clean`, `gxwf-roundtrip-validate`, `gxwf-lint-stateful`, `gxwf-to-format2-stateful`, `gxwf-to-native-stateful`). The `gxwf` unified interface is preferred.
+The schema-aware state operations are _also_ registered as standalone `console_scripts` (14 of them — each single-file op plus its `-tree` variant). Note the standalone names predate the unified CLI and do **not** follow a `gxwf-<subcommand>` pattern:
+
+| `gxwf` subcommand                        | Standalone binary                                            |
+| ---------------------------------------- | ------------------------------------------------------------ |
+| `validate` / `validate-tree`             | `gxwf-state-validate` / `gxwf-state-validate-tree`           |
+| `validate-tests` / `validate-tests-tree` | `gxwf-validate-tests` / `gxwf-validate-tests-tree`           |
+| `clean` / `clean-tree`                   | `gxwf-state-clean` / `gxwf-state-clean-tree`                 |
+| `lint` / `lint-tree`                     | `gxwf-lint-stateful` / `gxwf-lint-stateful-tree`             |
+| `roundtrip` / `roundtrip-tree`           | `gxwf-roundtrip-validate` / `gxwf-roundtrip-validate-tree`   |
+| `convert --to format2` / `-tree`         | `gxwf-to-format2-stateful` / `gxwf-to-format2-stateful-tree` |
+| `convert --to native` / `-tree`          | `gxwf-to-native-stateful` / `gxwf-to-native-stateful-tree`   |
+
+The `convert` dispatch, the Tool Shed search subcommands, and the gxformat2 passthroughs (`viz`, `abstract-export`, `mermaid`) are available **only** through the unified `gxwf` interface, which is preferred in all cases.
 
 ## Part 1: Using the Tools
 
@@ -69,6 +81,14 @@ galaxy-tool-cache info fastqc              # TRS ID or substring match
 # Clear cache
 galaxy-tool-cache clear                    # everything
 galaxy-tool-cache clear toolshed.g2.bx.psu  # by prefix
+
+# Export JSON Schemas (for offline json-schema validation / external tooling)
+galaxy-tool-cache schema <tool_id>          # WorkflowStepToolState schema for one cached tool
+galaxy-tool-cache structural-schema         # gxformat2 GalaxyWorkflow JSON Schema
+
+# Inline / user-defined tool (UDT) inspection
+galaxy-tool-cache list-inline-tools my-workflow.ga         # inventory of inline GalaxyUserTool/GalaxyTool steps
+galaxy-tool-cache embedded-schema my-workflow.ga -o ./schemas/  # per-step JSON Schemas (-o/--output-dir required)
 ```
 
 Cache defaults to `$GALAXY_TOOL_CACHE_DIR` or `~/.galaxy/tool_info_cache/`.
@@ -106,7 +126,13 @@ gxwf lint --skip-best-practices my-workflow.ga
 # With connection type validation
 gxwf lint --connections my-workflow.ga
 
-# Strict: treat missing tool defs as failures
+# Summary counts only (no per-step detail)
+gxwf lint --summary my-workflow.ga
+
+# Training workflow — enable training-topic best-practice checks
+gxwf lint --training-topic transcriptomics my-workflow.ga
+
+# Strict (see "Strictness" below)
 gxwf lint --strict my-workflow.ga
 
 # Structured output
@@ -114,7 +140,20 @@ gxwf lint --report-json report.json my-workflow.ga
 gxwf lint --report-markdown report.md my-workflow.ga
 ```
 
-Runs gxformat2's full structural lint pipeline (format validation, pydantic schema checks, best practices) followed by per-step tool state validation. Output groups results under "Structural Lint" and "State Validation" headers. Exit codes: 0 = clean, 1 = errors/failures, 2 = skips (with `--strict`).
+Runs gxformat2's full structural lint pipeline (format validation, pydantic schema checks, best practices) followed by per-step tool state validation. Output groups results under "Structural Lint" and "State Validation" headers. Exit codes: 0 = clean, 1 = errors/failures, 2 = skips (with `--strict-state`).
+
+#### Strictness
+
+`--strict` is shorthand for four orthogonal axes that can also be set individually:
+
+| Flag                     | Fails on                                                    |
+| ------------------------ | ----------------------------------------------------------- |
+| `--strict-structure`     | unknown keys at the workflow-envelope / step level          |
+| `--strict-encoding`      | legacy JSON-string `tool_state` where a dict is expected    |
+| `--strict-state`         | any tool step whose state can't be validated (no skips)     |
+| `--strict-inline-source` | inline `tool_representation` that fails pydantic validation |
+
+These flags are wired through every schema-aware command (`validate`, `lint`, `clean`, `roundtrip`, `convert`, and their `-tree` variants). The `--output-schema` flag (also shared) prints the JSON Schema for the `--report-json` model and exits.
 
 **Schema-aware validation** — type-checks every parameter against the tool definition:
 
@@ -129,13 +168,22 @@ gxwf validate-tree ./workflows/
 # Auto-fetch tool defs, strict mode (skips = failures)
 gxwf validate-tree --populate-cache --strict ./workflows/
 
+# Clean stale/bookkeeping keys before validating (uncleaned workflows)
+gxwf validate --clean my-workflow.ga
+
+# JSON Schema backend instead of pydantic (default: pydantic)
+gxwf validate --mode json-schema my-workflow.ga
+
+# Offline: validate against pre-exported per-tool JSON Schemas, no network
+gxwf validate --mode json-schema --tool-schema-dir ./schemas/ my-workflow.ga
+
 # Structured output
 gxwf validate --report-json report.json my-workflow.ga
 gxwf validate --report-markdown report.md my-workflow.ga
 gxwf validate-tree --summary ./workflows/
 ```
 
-Validates parameter names, types (integers, floats, selects against declared options, booleans, data columns), conditional branch consistency, and connection completeness. Recurses into subworkflows. Use `--connections` to also validate inter-step connection type compatibility. Exit codes: 0 = pass, 1 = failures, 2 = skips (with `--strict`).
+Validates parameter names, types (integers, floats, selects against declared options, booleans, data columns), conditional branch consistency, and connection completeness. Recurses into subworkflows. Use `--connections` to also validate inter-step connection type compatibility. The `--mode` flag selects the validation backend: `pydantic` (default) or `json-schema` (validate against exported JSON Schema — combine with `--tool-schema-dir` for fully offline runs); `--clean` runs the stale-key cleaner first. Exit codes: 0 = pass, 1 = failures, 2 = skips (with `--strict-state`).
 
 **Validating workflow-test files** — schema-checks `*-tests.yml` / `*.gxwf-tests.yml` against `galaxy.tool_util_models.Tests` (job block, File/Collection discriminators, assertions). Schema-only; no tool cache required.
 
@@ -188,6 +236,9 @@ gxwf clean --output-template "{path}" my-workflow.ga
 gxwf clean \
   --output-template "{dir}/{stem}.cleaned{ext}" \
   my-workflow.ga
+
+# Preserve step uuids (stripped by default)
+gxwf clean --skip-uuid my-workflow.ga
 
 # Sweep a directory in-place
 gxwf clean-tree \
@@ -367,9 +418,10 @@ Workflow CLI tooling is split across three packages, each with a distinct scope.
 │  Schema-aware · uses ParsedTool from ToolShed 2.0 · no runtime     │
 │                                                                     │
 │  gxwf <subcommand>                                                    │
-│    validate · clean · lint · roundtrip · convert                    │
-│    validate-tree · clean-tree · lint-tree · roundtrip-tree          │
-│    convert-tree · viz · abstract-export · mermaid                   │
+│    validate · clean · lint · roundtrip · convert · validate-tests   │
+│    *-tree variants (validate/clean/lint/roundtrip/convert/tests)    │
+│    tool-search · repo-search · tool-versions · tool-revisions       │
+│    viz · abstract-export · mermaid (gxformat2 passthroughs)         │
 │  galaxy-tool-cache                                                   │
 │                                                                     │
 │  Protocols: GetToolInfo · ToolInputs                               │
