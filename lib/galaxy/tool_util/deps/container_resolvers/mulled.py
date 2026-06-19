@@ -52,7 +52,7 @@ from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
     DEFAULT_CHANNELS,
     default_mulled_conda_channels_from_env,
-    mulled_tags_for,
+    find_remote_mulled_name,
     split_tag,
     v1_image_name,
     v2_image_name,
@@ -412,64 +412,24 @@ def targets_to_mulled_name(
 
     if len(targets) == 1:
         target = targets[0]
-        target_version = target.version
-        cache_key = f"ns[{namespace}]__single__{target.package}__@__{target_version}"
-        if cache_key in unresolved_cache:
-            return None
-        name = cached_name(cache_key)
-        if name:
-            return name
-
-        tags = mulled_tags_for(namespace, target.package, resolution_cache=resolution_cache, session=session)
-
-        if tags:
-            for tag in tags:
-                if "--" in tag:
-                    version, _ = split_tag(tag)
-                else:
-                    version = tag
-                if target_version and version == target_version:
-                    name = f"{target.package}:{tag}"
-                    break
-
+        cache_key = f"ns[{namespace}]__single__{target.package}__@__{target.version}"
+    elif hash_func == "v2":
+        cache_key = f"ns[{namespace}]__{hash_func}__{v2_image_name(targets)}"
+    elif hash_func == "v1":
+        cache_key = f"ns[{namespace}]__{hash_func}__{v1_image_name(targets)}"
     else:
+        raise Exception(f"Unimplemented mulled hash_func [{hash_func}]")
 
-        def first_tag_if_available(image_name):
-            if ":" in image_name:
-                repo_name, tag_prefix = image_name.split(":", 2)
-            else:
-                repo_name = image_name
-                tag_prefix = None
-            tags = mulled_tags_for(
-                namespace, repo_name, tag_prefix=tag_prefix, resolution_cache=resolution_cache, session=session
-            )
-            return tags[0] if tags else None
+    if cache_key in unresolved_cache:
+        return None
+    name = cached_name(cache_key)
+    if name:
+        return name
 
-        if hash_func == "v2":
-            base_image_name = v2_image_name(targets)
-        elif hash_func == "v1":
-            base_image_name = v1_image_name(targets)
-        else:
-            raise Exception(f"Unimplemented mulled hash_func [{hash_func}]")
-
-        cache_key = f"ns[{namespace}]__{hash_func}__{base_image_name}"
-        if cache_key in unresolved_cache:
-            return None
-        name = cached_name(cache_key)
-        if name:
-            return name
-
-        tag = first_tag_if_available(base_image_name)
-        if tag:
-            if ":" in base_image_name:
-                assert hash_func != "v1"
-                # base_image_name of form <package_hash>:<version_hash>, expand tag
-                # to include build number in tag.
-                name = f"{base_image_name.split(':')[0]}:{tag}"
-            else:
-                # base_image_name of form <package_hash>, simply add build number
-                # as tag to fully qualify image.
-                name = f"{base_image_name}:{tag}"
+    # Shared with the recommender: resolve targets to an exact remote mulled image name
+    # (or None). allow_newest_fallback stays off here -- the resolver wants exact matches only.
+    match = find_remote_mulled_name(targets, namespace, hash_func, resolution_cache=resolution_cache, session=session)
+    name = match.name if match else None
 
     if name and mulled_resolution_cache:
         mulled_resolution_cache.put(cache_key, name)

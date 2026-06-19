@@ -551,6 +551,31 @@ Options:
   package's ``meta.yaml`` or ``run_test.sh``.
 
 
+mulled-recommend
+----------------
+
+The ``mulled-recommend`` command resolves the best ``quay.io/biocontainers`` image for one or
+more Conda packages, verified against quay.io rather than guessed. It is handy when wrapping a
+tool by hand or debugging which image a set of requirements maps to (it also backs the custom
+tool authoring assistant's container resolution).
+
+For a single, pinned package:
+
+.. code-block:: bash
+
+   $ mulled-recommend samtools=1.17
+
+When the version is omitted the newest published tag is used; multiple packages resolve to a
+mulled-v2 image, and ``--json`` emits the full result (image, match quality, and notes):
+
+.. code-block:: bash
+
+   $ mulled-recommend bwa,samtools
+   $ mulled-recommend --json "samtools=1.3.1,bedtools=2.26.0"
+
+A missing package or a transient network error is reported without raising, so the command is
+safe to script.
+
 .. _IUC: https://galaxyproject.org/iuc/
 .. _container annotation:  https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/catDocker.xml#L4
 .. _BioContainers: https://github.com/biocontainers
