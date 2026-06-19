@@ -17,5 +17,16 @@
         </test>
     </tests>
     <help>
+What it does
+------------
+Converts a tabular file to Parquet format for efficient storage.
+
+The output Parquet file uses default compression setting.
+
+Usage Tips
+----------
+- Ensure your tabular file has a header row with column names
+- Empty cells are converted to null/None values in Parquet
+- Numeric-looking strings will be stored as their native types
     </help>
 </tool>
