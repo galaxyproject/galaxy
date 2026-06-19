@@ -4630,7 +4630,7 @@ class Parquet(Binary):
     """
 
     MetadataElement(
-        name="columns",
+        name="column_count",
         default=0,
         desc="Number of columns",
         readonly=True,
@@ -4645,6 +4645,15 @@ class Parquet(Binary):
         visible=False,
         optional=True,
         no_value=[],
+    )
+    MetadataElement(
+        name="line_count",
+        default=0,
+        desc="Number of lines",
+        readonly=True,
+        visible=False,
+        optional=True,
+        no_value=0,
     )
 
     file_ext = "parquet"
@@ -4662,13 +4671,15 @@ class Parquet(Binary):
         parquet_file = parquet.ParquetFile(dataset.get_file_name())
         column_names = list(parquet_file.schema_arrow.names)
         dataset.metadata.column_names = column_names
-        dataset.metadata.columns = len(column_names)
+        dataset.metadata.column_count = len(column_names)
+        dataset.metadata.line_count = parquet_file.metadata.num_rows
 
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
-            label = "column" if dataset.metadata.columns == 1 else "columns"
-            dataset.peek = f"Parquet file with {dataset.metadata.columns} {label} ({', '.join(dataset.metadata.column_names)})"
-            dataset.blurb = nice_size(dataset.get_size())
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            col_label = "column" if dataset.metadata.column_count == 1 else "columns"
+            line_label = "line" if dataset.metadata.line_count == 1 else "lines"
+            dataset.blurb = f"{util.commaify(str(dataset.metadata.column_count))} {col_label}, {util.commaify(str(dataset.metadata.line_count))} {line_label}, {nice_size(dataset.get_size())}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
