@@ -528,6 +528,45 @@ class TestNotebookWorkflowExtractionSummary(_ExtractionHelpersMixin, BasePagesAp
             assert input_jobs, summary["jobs"]
             assert all(j["seeded"] for j in input_jobs), input_jobs
 
+    @skip_without_tool("cat1")
+    def test_referenced_output_seeds_subgraph_through_hidden_intermediate(self):
+        """An IWC-style analysis hides its intermediate datasets. A notebook that
+        references only the final output must still seed the whole producing
+        subgraph - both tool steps and the original input - even though the
+        dataset bridging the two tools is hidden."""
+        with self.dataset_populator.test_history() as history_id:
+            d1 = self.dataset_populator.new_dataset(history_id, content="foo\nbar", wait=True)
+            first_run = self.dataset_populator.run_tool("cat1", {"input1": {"src": "hda", "id": d1["id"]}}, history_id)
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            intermediate = first_run["outputs"][0]
+            self.dataset_populator.hide_dataset(intermediate["id"])
+            second_run = self.dataset_populator.run_tool(
+                "cat1", {"input1": {"src": "hda", "id": intermediate["id"]}}, history_id
+            )
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            final_output_id = second_run["outputs"][0]["id"]
+            page = self.dataset_populator.new_notebook_referencing(history_id, output_ids=[final_output_id])
+
+            summary = self._extraction_summary(page["id"])
+
+            # Both cat1 jobs are seeded even though the bridge dataset is hidden;
+            # before the fix the hidden intermediate's producing job was dropped
+            # from summarize() so the closure walk could not flag it seeded.
+            tool_rows = self._rows_by_type(summary, "tool")
+            assert len(tool_rows) == 2, summary["jobs"]
+            assert all(r["seeded"] for r in tool_rows), summary["jobs"]
+
+            # The consumer's output is the exposed workflow output...
+            consumer = self._row_with_output_id(summary, final_output_id)
+            assert consumer is not None and consumer["seeded"] is True, summary["jobs"]
+            assert any(o["exposed"] for o in consumer["outputs"]), consumer["outputs"]
+
+            # ...and walking back through the hidden intermediate reaches the
+            # original upload, which is seeded as an input.
+            input_row = self._row_with_output_id(summary, d1["id"])
+            assert input_row is not None, summary["jobs"]
+            assert input_row["step_type"] == "input_dataset" and input_row["seeded"] is True, input_row
+
     @skip_without_tool("collection_split_on_column")
     @skip_without_tool("cat_list")
     def test_referenced_output_seeds_collection_producing_tool(self):
