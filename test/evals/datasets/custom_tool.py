@@ -57,6 +57,43 @@ _PROTO_CASES: list[dict[str, Any]] = [
         ),
     },
     {
+        "name": "ggplot2_boxplot_configfile",
+        "query": (
+            "Can you write a tool that uses ggplot2 to create a boxplot from a tabular file. The "
+            "user should be able to select grouping column and numeric column. Place the script "
+            "inside a configfile."
+        ),
+        # configfiles: -> the R script is materialized in a configfile (not dropped, not inlined);
+        # ggplot2/Rscript -> R plotting wired through that script; quay.io/biocontainers -> a real
+        # biocontainer rather than rocker/a guessed image; $(inputs. + from_work_dir -> the two
+        # column selections are wired and the plot output is claimed.
+        "yaml_must_contain": [
+            "configfiles:",
+            "ggplot2",
+            "Rscript",
+            "quay.io/biocontainers",
+            "$(inputs.",
+            "from_work_dir",
+        ],
+        "rubric": (
+            "A correct tool plots a ggplot2 boxplot from a tabular input and is shaped exactly as "
+            "asked:\n"
+            "- The R script lives INSIDE a configfile: a `configfiles` entry whose filename holds "
+            "the ggplot2 script as its content, and `shell_command` runs that file by name (e.g. "
+            "`Rscript boxplot.R`). It must NOT run a script by name with no configfile that creates "
+            "it (a dropped configfile), and -- since the user explicitly asked for a configfile -- "
+            "must NOT inline the script with `Rscript -e`.\n"
+            "- The container is an EXISTING biocontainer that bundles R + ggplot2 (a "
+            "quay.io/biocontainers image, e.g. r-ggplot2). rocker/tidyverse, bare r-base, or a "
+            "fabricated image/tag is incorrect.\n"
+            "- There are TWO user-selectable inputs -- one for the grouping column and one for the "
+            "numeric column (text/select/integer column references passed to the script) -- NOT "
+            "hardcoded columns.\n"
+            "- The tabular dataset is a data input and the plot image is an output claimed via "
+            "from_work_dir."
+        ),
+    },
+    {
         "name": "head_n_lines",
         "query": (
             "Make a Galaxy tool that returns the first N lines of an uploaded text file, where N "
