@@ -2,11 +2,18 @@
 Custom tool creation agent for Galaxy.
 """
 
+import asyncio
 import logging
+import re
+from collections.abc import (
+    Callable,
+    Sequence,
+)
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
     Any,
+    Literal,
     Optional,
 )
 
@@ -26,8 +33,17 @@ from pydantic_ai.exceptions import (
 )
 
 from galaxy.schema.agents import ConfidenceLevel
+from galaxy.tool_util.deps.mulled.recommend import (
+    biocontainer_tag_built,
+    ContainerRecommendation,
+    MatchQuality,
+    PackageSpec,
+    QUAY_BIOCONTAINERS_PREFIX,
+    recommend_container,
+)
 from galaxy.tool_util.lint import lint_user_tool_source
 from galaxy.tool_util_models import (
+    CondaPackage,
     format_validation_errors,
     UserToolSource,
     UserToolSourceAuthoringView,
@@ -43,6 +59,16 @@ from .base import (
 )
 
 log = logging.getLogger(__name__)
+
+# Matches an interpreter invoking a script *file by name* in a shell_command, e.g.
+# ``Rscript boxplot.R`` / ``python script.py`` / ``bash run.sh``. Deliberately
+# conservative -- the script must immediately follow the interpreter (no flags in
+# between), so inline-code forms like ``python -c "..."`` / ``Rscript -e "..."`` do
+# NOT match (their flag isn't a filename). Under-matching is safe here (we'd just
+# skip a check); over-matching would reject valid tools, so we don't.
+_SCRIPT_INVOCATION_RE = re.compile(
+    r"\b(?:python3?|Rscript|bash|sh|perl|ruby)\s+['\"]?(?P<script>[\w./-]+\.(?:py|R|r|sh|bash|pl|rb))\b"
+)
 
 
 def _find_validation_error(exc: BaseException) -> Optional[ValidationError]:
@@ -90,19 +116,57 @@ def _invalid_attempt_yaml(messages: list[Any]) -> Optional[str]:
     return None
 
 
+class InferredDependencies(BaseModel):
+    """Output of the dedicated container critic.
+
+    The container critic reads only a tool's ``shell_command`` and configfiles and
+    returns the conda packages needed to run them, so a verified biocontainer can
+    be resolved from ``packages`` without the producer guessing an image tag.
+    """
+
+    packages: list[CondaPackage] = Field(default_factory=list)
+
+
+class ToolEdit(BaseModel):
+    """A single field-level fix the critic supplies so it can be applied
+    deterministically -- no full re-roll of the tool.
+
+    ``target`` selects what to edit; ``name`` identifies the input/output by its
+    declared ``name`` (ignored for ``tool``); ``attribute`` is the field to set and
+    ``value`` its new (string) text. Only a fixed, safe set of (target, attribute)
+    pairs is applied (see ``CustomToolAgent._apply_one_edit``) -- anything else is a
+    structural change the critic must route through ``needs_full_refine`` instead.
+    """
+
+    target: Literal["tool", "input", "output"]
+    name: Optional[str] = None
+    attribute: Literal["label", "help", "description", "name", "shell_command"]
+    value: str
+    reason: str = ""
+
+
 class CritiqueReport(BaseModel):
-    """Structured critique returned by the LLM critic.
+    """Structured critique returned by the quality critic.
 
     Issues are split between *clarity* (text the user reads -- description,
     labels, help text) and *idiomaticity* (tool shape -- defaults, exposed
-    options, container choice). The producer is re-rolled only when
-    ``should_refine`` is true, which the critic should reserve for issues
-    significant enough to be worth another model call.
+    options). Container choice is out of scope -- the dedicated container critic
+    owns it.
+
+    The critic also supplies the *fixes*, not just the diagnosis:
+
+    - ``edits`` are field-level patches applied deterministically to the validated
+      tool, so the common clarity polish (labels, help, description) needs no
+      second producer call and cannot regress unflagged fields.
+    - ``needs_full_refine`` signals a change that can't be expressed as a field
+      edit (adding an input/output, exposing a new parameter, ...); those fall
+      back to a full producer re-roll using ``clarity_issues``/``idiomaticity_issues``.
     """
 
     clarity_issues: list[str] = Field(default_factory=list)
     idiomaticity_issues: list[str] = Field(default_factory=list)
-    should_refine: bool = False
+    edits: list[ToolEdit] = Field(default_factory=list)
+    needs_full_refine: bool = False
     summary: str = ""
 
 
@@ -143,10 +207,17 @@ class CustomToolAgent(BaseGalaxyAgent):
       re-rolled once with the critique. Cap of one refine; if refinement
       breaks validation, the original tool is kept.
 
-    Both loops are gated on per-deployment config under
-    ``inference_services.custom_tool``: ``validator_retry_enabled`` and
-    ``quality_critic_enabled``. Default to validator-only behavior --
-    operators turn the critic on when they're willing to pay for it.
+    Container selection is a separate, opt-in concern (default off): the
+    producer prompt says nothing about choosing an image. Instead a dedicated
+    **container critic** infers the conda packages from the tool's
+    ``shell_command``/configfiles alone, a verified ``quay.io/biocontainers``
+    image is resolved from them, and a deterministic gate applies it.
+
+    The loops are gated on per-deployment config under
+    ``inference_services.custom_tool``: ``validator_retry_enabled``,
+    ``quality_critic_enabled``, and ``container_recommendation_enabled``.
+    Default to validator-only behavior -- operators turn the critics on when
+    they're willing to pay for the extra model calls.
     """
 
     agent_type = AgentType.CUSTOM_TOOL
@@ -155,9 +226,19 @@ class CustomToolAgent(BaseGalaxyAgent):
     )
     DEFAULT_MAX_TOKENS = 16384
 
-    def __init__(self, deps: GalaxyAgentDependencies):
+    def __init__(
+        self,
+        deps: GalaxyAgentDependencies,
+        recommender: Callable[[Sequence[PackageSpec]], ContainerRecommendation] = recommend_container,
+        tag_verifier: Callable[[str], Optional[bool]] = biocontainer_tag_built,
+    ):
         super().__init__(deps)
         self._critic_agent: Optional[Agent[GalaxyAgentDependencies, CritiqueReport]] = None
+        self._container_critic_agent: Optional[Agent[GalaxyAgentDependencies, InferredDependencies]] = None
+        # Injected so tests can supply fakes instead of patching the module globals
+        # (and to keep unit tests off the network).
+        self._recommender = recommender
+        self._tag_verifier = tag_verifier
 
     def _requires_structured_output(self) -> bool:
         return True
@@ -199,9 +280,18 @@ class CustomToolAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "custom_tool_critic.md"
         return prompt_path.read_text()
 
+    def _get_container_critic_system_prompt(self) -> str:
+        prompt_path = Path(__file__).parent / "prompts" / "custom_tool_container_critic.md"
+        return prompt_path.read_text()
+
     def _get_critic_agent(self) -> Agent[GalaxyAgentDependencies, CritiqueReport]:
-        """Lazily build the critic agent. Same model as the producer by default;
-        operators can override via ``inference_services.custom_tool.critic_model``."""
+        """Lazily build the quality critic. Same model as the producer by default;
+        operators can override via ``inference_services.custom_tool.critic_model``.
+
+        The critic has no tools and stays single-shot: it reviews clarity /
+        idiomaticity only. Container choice is owned by the dedicated container
+        critic + deterministic recommender gate, not by this critic.
+        """
         if self._critic_agent is None:
             self._critic_agent = Agent(
                 self._get_model(),
@@ -212,11 +302,40 @@ class CustomToolAgent(BaseGalaxyAgent):
             )
         return self._critic_agent
 
+    def _get_container_critic_agent(self) -> Agent[GalaxyAgentDependencies, InferredDependencies]:
+        """Lazily build the container critic.
+
+        A focused, single-shot agent: its only input is the tool's
+        ``shell_command``/configfiles and its only output is the conda packages
+        needed to run them. No tools -- the deterministic recommender does the
+        quay.io resolution from its package list.
+        """
+        if self._container_critic_agent is None:
+            self._container_critic_agent = Agent(
+                self._get_model(),
+                deps_type=GalaxyAgentDependencies,
+                output_type=InferredDependencies,
+                system_prompt=self._get_container_critic_system_prompt(),
+                retries=self._get_retries(),
+            )
+        return self._container_critic_agent
+
     def _validator_retry_enabled(self) -> bool:
         return bool(self._get_agent_config("validator_retry_enabled", True))
 
     def _quality_critic_enabled(self) -> bool:
         return bool(self._get_agent_config("quality_critic_enabled", False))
+
+    def _container_recommendation_enabled(self) -> bool:
+        """Resolve the tool's container against quay.io biocontainers.
+
+        Off by default and independent of the quality critic. When on, the
+        dedicated container critic infers the conda packages from the tool's
+        ``shell_command``/configfiles, the recommender resolves a verified image,
+        and a deterministic gate applies it. Enabling it adds a focused model call
+        plus an outbound network call (to quay.io) during the agent turn.
+        """
+        return bool(self._get_agent_config("container_recommendation_enabled", False))
 
     async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
         validation_error = self._validate_query(query)
@@ -274,23 +393,39 @@ class CustomToolAgent(BaseGalaxyAgent):
             else:
                 tool, tool_yaml, result = produced
 
-            # Quality critic: only refine on significant issues, never re-critique.
+            # Quality critic: clarity/idiomaticity only (container is resolved below).
+            # The critic supplies the fixes, not just the diagnosis:
+            #   - field-level ``edits`` are applied deterministically -- no second
+            #     producer call, and they can't regress fields the critic didn't name.
+            #   - a structural change (``needs_full_refine``) or a patch that fails to
+            #     apply/validate falls back to a full producer re-roll.
             if self._quality_critic_enabled():
                 critique = await self._run_critic(tool_yaml, query)
-                if critique is not None and critique.should_refine:
+                if critique is not None and critique.needs_full_refine:
                     log.info(
-                        "CustomTool: critic flagged %d clarity / %d idiomaticity issues; refining once",
+                        "CustomTool: critic requested full refine (%d clarity / %d idiomaticity issues)",
                         len(critique.clarity_issues),
                         len(critique.idiomaticity_issues),
                     )
-                    refined = await self._produce_tool(query, critique=critique, prior_yaml=tool_yaml)
-                    if isinstance(refined, tuple):
-                        tool, tool_yaml, result = refined
-                    elif isinstance(refined, _ProducerFailure):
-                        log.warning(
-                            "CustomTool: refinement broke validation (%d issue(s)); keeping pre-refine tool",
-                            len(refined.errors),
+                    tool, tool_yaml, result = await self._full_refine(query, critique, tool, tool_yaml, result)
+                elif critique is not None and critique.edits:
+                    patched = self._apply_edits(tool, critique.edits)
+                    if patched is not None:
+                        tool, tool_yaml = patched
+                        log.info(
+                            "CustomTool: applied %d deterministic critic edit(s); no refine call",
+                            len(critique.edits),
                         )
+                    else:
+                        log.info("CustomTool: critic edits not applicable; falling back to full refine")
+                        tool, tool_yaml, result = await self._full_refine(query, critique, tool, tool_yaml, result)
+
+            # Container selection (opt-in, critic-independent). The producer prompt
+            # says nothing about images; instead a dedicated container critic infers
+            # the conda packages from the final tool's shell_command/configfiles, the
+            # recommender resolves a verified quay.io image, and the deterministic
+            # gate applies it. Run last so it sees the post-refine command.
+            tool, tool_yaml = await self._resolve_container(tool, tool_yaml)
 
             return self._success_response(tool, tool_yaml, result, query, attempts=attempts)
 
@@ -335,14 +470,17 @@ class CustomToolAgent(BaseGalaxyAgent):
                 # full UserToolSource so linting, serialization, and storage operate on
                 # the canonical model. The view is a strict subset, so this never fails.
                 tool = UserToolSource.model_validate(authored.model_dump(by_alias=True))
-                tool_dict = tool.model_dump(by_alias=True, exclude_none=True)
-                tool_yaml = yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
-                lint_errors = lint_user_tool_source(tool)
-                if lint_errors:
-                    log.debug("CustomToolAgent lint failure: %s", lint_errors)
+                tool_yaml = self._render_tool_yaml(tool)
+                # Lint + an agent-side check that any script the command runs by name
+                # is actually materialized by a configfile (a common producer miss the
+                # canonical validators don't catch -- e.g. `Rscript boxplot.R` with no
+                # configfile, which would fail at runtime).
+                issues = lint_user_tool_source(tool) + self._unmaterialized_scripts(tool)
+                if issues:
+                    log.debug("CustomToolAgent lint/script failure: %s", issues)
                     # The tool validated, so we have its rendered YAML -- carry it so a
                     # retry can show the model exactly what to fix in place.
-                    return _ProducerFailure(lint_errors, prior_yaml=tool_yaml)
+                    return _ProducerFailure(issues, prior_yaml=tool_yaml)
                 return tool, tool_yaml, result
             except UnexpectedModelBehavior as e:
                 pydantic_error = _find_validation_error(e)
@@ -413,8 +551,9 @@ class CustomToolAgent(BaseGalaxyAgent):
             f"{query}\n\n"
             "Tool definition produced (already structurally validated):\n\n"
             f"```yaml\n{tool_yaml}```\n\n"
-            "Critique this tool for clarity and idiomaticity. Set should_refine "
-            "only if the issues are significant enough to be worth another model call."
+            "Critique this tool for clarity and idiomaticity, and supply the fixes: "
+            "provide an `edits` entry for every field-level issue, or set "
+            "`needs_full_refine` if a structural change is required."
         )
         try:
             result = await critic.run(critic_prompt, deps=self.deps)
@@ -426,6 +565,235 @@ class CustomToolAgent(BaseGalaxyAgent):
         except (OSError, ValueError, ModelHTTPError, UnexpectedModelBehavior) as e:
             log.warning("CustomTool: critic call failed (%s); skipping refine", e)
             return None
+
+    async def _full_refine(
+        self, query: str, critique: CritiqueReport, tool: UserToolSource, tool_yaml: str, result: Any
+    ) -> tuple[UserToolSource, str, Any]:
+        """Re-roll the whole tool to address ``critique``; keep the prior tool on failure.
+
+        The fallback for changes the critic can't express as deterministic field
+        edits (structural fixes) or when a patch fails to validate.
+        """
+        refined = await self._produce_tool(query, critique=critique, prior_yaml=tool_yaml)
+        if isinstance(refined, tuple):
+            return refined
+        if isinstance(refined, _ProducerFailure):
+            log.warning(
+                "CustomTool: refinement broke validation (%d issue(s)); keeping pre-refine tool",
+                len(refined.errors),
+            )
+        return tool, tool_yaml, result
+
+    def _apply_edits(self, tool: UserToolSource, edits: list[ToolEdit]) -> Optional[tuple[UserToolSource, str]]:
+        """Apply the critic's field-level ``edits`` deterministically.
+
+        Mutates a dict copy of ``tool``, re-validates, and returns the patched
+        ``(tool, yaml)``. Returns None if no edit applied or the result fails
+        validation -- the caller then falls back to a full refine. Because only the
+        named fields change, the patch can't regress anything the critic didn't flag.
+        """
+        data = tool.model_dump(by_alias=True)
+        applied = sum(int(self._apply_one_edit(data, edit)) for edit in edits)
+        if not applied:
+            return None
+        try:
+            patched = UserToolSource.model_validate(data)
+        except ValidationError as e:
+            log.warning("CustomTool: critic edits failed validation (%s); falling back", e)
+            return None
+        return patched, self._render_tool_yaml(patched)
+
+    # (target, attribute) pairs we apply deterministically. All are string-valued;
+    # anything outside this set is a structural change the critic must route through
+    # needs_full_refine instead.
+    _PATCHABLE = {
+        ("tool", "description"),
+        ("tool", "name"),
+        ("tool", "shell_command"),
+        ("input", "label"),
+        ("input", "help"),
+        ("output", "label"),
+    }
+
+    @classmethod
+    def _apply_one_edit(cls, data: dict[str, Any], edit: ToolEdit) -> bool:
+        """Set a single field on the tool dict in place. Returns True if applied."""
+        if (edit.target, edit.attribute) not in cls._PATCHABLE:
+            return False
+        if edit.target == "tool":
+            data[edit.attribute] = edit.value
+            return True
+        # input / output: locate the entry by its declared name.
+        collection = data.get("inputs" if edit.target == "input" else "outputs") or []
+        for entry in collection:
+            if isinstance(entry, dict) and entry.get("name") == edit.name:
+                entry[edit.attribute] = edit.value
+                return True
+        return False
+
+    async def _resolve_container(self, tool: UserToolSource, tool_yaml: str) -> tuple[UserToolSource, str]:
+        """Pick a verified biocontainer for ``tool`` and apply it if warranted.
+
+        No-op unless ``container_recommendation_enabled``. Otherwise: the container
+        critic infers the conda packages from the command/configfiles, the
+        recommender resolves an image, and the deterministic gate
+        (``_should_override_container``) decides whether to rewrite. Returns the
+        possibly-updated ``(tool, tool_yaml)``; the original pair on any miss.
+        """
+        if not self._container_recommendation_enabled():
+            return tool, tool_yaml
+
+        packages = await self._infer_packages(tool)
+        if not packages:
+            return tool, tool_yaml
+
+        recommendation = await self._lookup_container(packages)
+        if (
+            recommendation.image is not None
+            and self._container_differs(tool.container, recommendation.image)
+            and await self._should_override_container(tool.container, recommendation.match_quality)
+        ):
+            rewritten = self._rewrite_container(tool, recommendation.image)
+            if rewritten is not None:
+                log.info("CustomTool: rewrote container to verified biocontainer %s", recommendation.image)
+                return rewritten
+        return tool, tool_yaml
+
+    async def _infer_packages(self, tool: UserToolSource) -> list[CondaPackage]:
+        """Infer the tool's conda packages via the dedicated container critic.
+
+        The critic sees only the ``shell_command`` and configfiles -- nothing else
+        about the tool. Returns an empty list on any failure or when the command
+        wraps no recognizable package, in which case the container is left as the
+        producer wrote it.
+        """
+        critic = self._get_container_critic_agent()
+        sections = [f"shell_command:\n\n{tool.shell_command}"]
+        for configfile in tool.configfiles or []:
+            name = configfile.filename or configfile.name or "configfile"
+            sections.append(f"configfile ({name}):\n\n{configfile.content}")
+        prompt = "Infer the conda packages required to run the following.\n\n" + "\n\n".join(sections)
+        try:
+            result = await critic.run(prompt, deps=self.deps)
+            output = getattr(result, "output", None)
+            if isinstance(output, InferredDependencies):
+                return output.packages
+            log.warning("CustomTool: container critic returned %r; skipping container resolution", type(output))
+        except (OSError, ValueError, ModelHTTPError, UnexpectedModelBehavior) as e:
+            log.warning("CustomTool: container critic failed (%s); skipping container resolution", e)
+        return []
+
+    async def _lookup_container(self, packages: Sequence[CondaPackage]) -> ContainerRecommendation:
+        """Resolve a verified biocontainer for ``packages`` off the event loop.
+
+        ``recommend_container`` is synchronous (``requests``) and never raises for
+        a missing container or transient network error, so it is safe to offload.
+        """
+        specs = [PackageSpec(p.name, p.version) for p in packages]
+        return await asyncio.to_thread(self._recommender, specs)
+
+    async def _should_override_container(self, current: Optional[str], match_quality: MatchQuality) -> bool:
+        """Decide whether to deterministically replace ``current`` with the recommendation.
+
+        An ``EXACT_VERSION`` match always wins. A ``NAME_ONLY`` match wins unless
+        ``current`` is a *verified-present* biocontainer (a deliberate, working pin
+        we respect). So it overrides both a broken biocontainer tag AND an image
+        that isn't a biocontainer at all (``rocker/...``, ``ubuntu``, ...) -- when
+        container resolution is on, a verified biocontainer is preferred over an
+        arbitrary registry image.
+        """
+        if match_quality == MatchQuality.EXACT_VERSION:
+            return True
+        if match_quality == MatchQuality.NAME_ONLY:
+            if not self._is_biocontainer_ref(current):
+                return True
+            return await self._container_tag_missing(current)
+        return False
+
+    @staticmethod
+    def _is_biocontainer_ref(container: Optional[str]) -> bool:
+        """True if ``container`` is a ``quay.io/biocontainers`` image reference."""
+        return container is not None and container.strip().startswith(f"{QUAY_BIOCONTAINERS_PREFIX}/")
+
+    async def _container_tag_missing(self, container: Optional[str]) -> bool:
+        """True only when ``container`` is positively verified absent from biocontainers.
+
+        Offloads the synchronous ``requests``-based verifier and collapses its
+        tri-state result: an unverifiable container (non-biocontainer image or a
+        transient lookup failure) yields ``False`` so we never override on a guess.
+        """
+        if not container:
+            return False
+        verified = await asyncio.to_thread(self._tag_verifier, container)
+        return verified is False
+
+    @staticmethod
+    def _container_differs(current: Optional[str], recommended: Optional[str]) -> bool:
+        if not recommended:
+            return False
+        return (current or "").strip() != recommended.strip()
+
+    def _rewrite_container(self, tool: UserToolSource, image: str) -> Optional[tuple[UserToolSource, str]]:
+        """Return ``(tool, yaml)`` with the container replaced, or None if that breaks validation."""
+        updated = tool.model_copy(update={"container": image})
+        lint_errors = lint_user_tool_source(updated)
+        if lint_errors:
+            log.warning(
+                "CustomTool: recommended container %s failed validation (%d issue(s)); keeping original",
+                image,
+                len(lint_errors),
+            )
+            return None
+        return updated, self._render_tool_yaml(updated)
+
+    @staticmethod
+    def _render_tool_yaml(tool: UserToolSource) -> str:
+        """Render a tool as the minimal YAML shown to and saved by the user.
+
+        ``exclude_defaults`` drops fields left at their schema default
+        (``optional: false``, ``multiple: false``, ``precreate_directory: false``,
+        empty ``requirements``, default ``format``, ...) so the output carries only
+        what the author actually chose. The defaults reapply on load, so the
+        stripped YAML round-trips to an identical tool -- it's purely cosmetic.
+        ``exclude_none`` additionally drops unset optional fields.
+        """
+        tool_dict = tool.model_dump(by_alias=True, exclude_none=True, exclude_defaults=True)
+        return yaml.dump(tool_dict, default_flow_style=False, sort_keys=False)
+
+    @staticmethod
+    def _unmaterialized_scripts(tool: UserToolSource) -> list[str]:
+        """Flag scripts the command runs by name that no configfile creates.
+
+        ``shell_command: Rscript boxplot.R`` with no ``configfiles`` entry naming
+        ``boxplot.R`` is a runtime failure (the file never exists) that the schema
+        validators don't catch. Returns one issue per missing script so the retry
+        loop makes the producer add the configfile (or inline the script). Scripts
+        referenced via ``$(inputs...)`` are real inputs, not missing files.
+        """
+        command = tool.shell_command or ""
+        provided = {
+            name.strip().lstrip("./").rsplit("/", 1)[-1]
+            for configfile in (tool.configfiles or [])
+            for name in (configfile.filename, configfile.name)
+            if name
+        }
+        errors: list[str] = []
+        seen: set[str] = set()
+        for match in _SCRIPT_INVOCATION_RE.finditer(command):
+            token = match.group("script")
+            if "$(" in token or "inputs." in token:
+                continue
+            base = token.lstrip("./").rsplit("/", 1)[-1]
+            if base in seen:
+                continue
+            seen.add(base)
+            if base not in provided:
+                errors.append(
+                    f"shell_command runs '{token}' but no configfile creates it. Add a configfiles "
+                    f"entry with filename '{base}' containing the script, or inline the script with an "
+                    "interpreter flag (e.g. `python -c` / `Rscript -e`)."
+                )
+        return errors
 
     def _capability_error_response(self, message: str, query: str) -> AgentResponse:
         return self._build_response(
