@@ -26,7 +26,7 @@ dependencies = [
     "galaxy-web-apps",
     "a2wsgi",
     "alembic",
-    "fastapi>=0.133.0",
+    "fastapi>=0.137.2",
     "Mako",
     "MarkupSafe",
     "mercurial>=7.2",
