@@ -353,7 +353,10 @@ class YamlToolSource(ToolSource):
         return parameter_bundle
 
     def parse_profile(self) -> str:
-        return self.root_dict.get("profile") or "24.2"
+        # str(): YAML/JSON tool sources (and UserToolSource) carry ``profile`` as a
+        # number (e.g. 24.2), but callers -- the linters' ``Version(profile)`` -- need
+        # a string. The ``-> str`` annotation was previously violated for numeric input.
+        return str(self.root_dict.get("profile") or "24.2")
 
     def parse_license(self) -> Optional[str]:
         return self.root_dict.get("license")
