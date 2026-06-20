@@ -30,9 +30,7 @@ class TestSelectToolParameter(BaseParameterTestCase):
     def test_dict_value_is_invalid_option(self):
         # A dict value is unhashable; checking it against the set of legal
         # values used to raise an opaque "unhashable type: 'dict'" TypeError.
-        param = self._parameter_for(
-            xml="""<param name="my_name" type="select"><option value="a">A</option></param>"""
-        )
+        param = self._parameter_for(xml="""<param name="my_name" type="select"><option value="a">A</option></param>""")
         with pytest.raises(ValueError) as exc_info:
             param.from_json({"not": "valid"}, self.trans)
         assert "an invalid option" in str(exc_info.value)
