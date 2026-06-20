@@ -1116,6 +1116,17 @@ class SelectToolParameter(ToolParameter):
                         )
             if is_runtime_value(value):
                 return None
+            if isinstance(value, dict):
+                # A dict is unhashable and can never be a legal value, but
+                # testing membership against the set of legal values would
+                # raise an opaque "unhashable type" TypeError. Treat it as an
+                # invalid option instead.
+                raise ParameterValueError(
+                    f"an invalid option ({value!r}) was selected (valid options: {','.join(iter_to_string(legal_values))})",
+                    self.name,
+                    value,
+                    is_dynamic=self.is_dynamic,
+                )
             if value in legal_values:
                 return value
             elif value in fallback_values:

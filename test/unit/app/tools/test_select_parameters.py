@@ -27,6 +27,16 @@ class TestSelectToolParameter(BaseParameterTestCase):
             self.param.from_json("42", self.trans)
         assert str(exc_info.value) == "Parameter 'my_name': requires a value, but no legal values defined"
 
+    def test_dict_value_is_invalid_option(self):
+        # A dict value is unhashable; checking it against the set of legal
+        # values used to raise an opaque "unhashable type: 'dict'" TypeError.
+        param = self._parameter_for(
+            xml="""<param name="my_name" type="select"><option value="a">A</option></param>"""
+        )
+        with pytest.raises(ValueError) as exc_info:
+            param.from_json({"not": "valid"}, self.trans)
+        assert "an invalid option" in str(exc_info.value)
+
     def test_unvalidated_values(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         self.trans.workflow_building_mode = True
