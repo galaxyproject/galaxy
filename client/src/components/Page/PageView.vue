@@ -8,6 +8,7 @@ import { computed, onMounted, ref } from "vue";
 import type { PublishedItem as PublishedItemType } from "@/components/Common/models/PublishedItem";
 import { PAGE_LABELS, PUBLISHED_LABELS } from "@/components/Page/constants";
 import { useConfig } from "@/composables/config";
+import { useEmbedBridge } from "@/composables/embedBridge";
 import { useUserStore } from "@/stores/userStore";
 import { urlData } from "@/utils/url";
 
@@ -27,12 +28,14 @@ interface PageData extends PublishedItemType {
 interface Props {
     pageId: string;
     embed?: boolean;
+    embedOrigin?: string;
     showHeading?: boolean;
     displayOnly?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     embed: false,
+    embedOrigin: undefined,
     showHeading: true,
     displayOnly: false,
 });
@@ -92,6 +95,18 @@ function onEdit() {
 /** Whether to render chrome-free (embed or displayOnly). */
 const isChromeFree = computed(() => props.embed || props.displayOnly);
 
+const contentRoot = ref<HTMLElement>();
+const pageTitle = computed(() => page.value?.title || page.value?.name);
+
+// Notify an external embedder (e.g. Loom/Orbit) of lifecycle/size/navigation.
+useEmbedBridge({
+    enabled: isChromeFree.value,
+    pageId: props.pageId,
+    title: pageTitle,
+    root: contentRoot,
+    explicitOrigin: props.embedOrigin,
+});
+
 function stsUrl(config: any) {
     return `${dataUrl.value}/prepare_download`;
 }
@@ -99,7 +114,7 @@ function stsUrl(config: any) {
 
 <template>
     <div v-if="isChromeFree" id="columns" class="page-view embed">
-        <div id="center" class="container-root">
+        <div id="center" ref="contentRoot" class="container-root">
             <div
                 v-if="props.displayOnly && page && !loading"
                 class="page-display-toolbar d-flex align-items-center p-2 border-bottom">

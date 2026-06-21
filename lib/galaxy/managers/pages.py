@@ -69,7 +69,10 @@ from galaxy.schema.schema import (
     UpdatePagePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util import unicodify
+from galaxy.util import (
+    now,
+    unicodify,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.search import (
     FilteredTerm,
@@ -141,6 +144,15 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
         """ """
         super().__init__(app)
         self.workflow_manager = app.workflow_manager
+
+    def resolve_embed_token(self, token: str) -> Optional[model.PageEmbedToken]:
+        """Return the embed-token record if it exists and has not expired, else None."""
+        if not token:
+            return None
+        record = self.session().get(model.PageEmbedToken, token)
+        if record is None or record.expiration_time is None or not record.expiration_time > now():
+            return None
+        return record
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False

@@ -1,6 +1,9 @@
 """API tests for history-attached pages (pages created with history_id)."""
 
+import requests
+
 from galaxy_test.base.populators import (
+    DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_agents,
 )
@@ -60,6 +63,17 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
         assert len(pages_h1) == 1
         assert len(pages_h2) == 1
         assert pages_h1[0]["id"] != pages_h2[0]["id"]
+
+    def test_history_page_details_embed_url(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Embeddable")
+        details = self.dataset_populator.get_history_page(page["id"])
+        self._assert_has_keys(details, "embed_url")
+        embed_url = details["embed_url"]
+        assert embed_url, "embed_url should be populated in a request context"
+        assert "/published/page?id=" in embed_url
+        assert "embed=true" in embed_url
+        assert page["id"] in embed_url
 
     def test_get_history_page_details(self):
         history_id = self.dataset_populator.new_history()
@@ -262,6 +276,210 @@ class TestHistoryPagesApi(BasePagesApiTestCase):
             # document actual behavior — may be 200 or 403 depending on
             # whether history sharing propagates to page access
             assert response.status_code in (200, 403)
+
+    # --- A5: Embed token ---
+
+    def test_create_embed_token(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Hello")
+        response = self._post(f"pages/{page['id']}/embed_token", data={}, json=True)
+        self._assert_status_code_is(response, 200)
+        body = response.json()
+        self._assert_has_keys(body, "token", "expires_at")
+        assert body["token"]
+        assert body["expires_at"]
+
+    def test_embed_token_403_on_unowned_page(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Private")
+        with self._different_user():
+            response = self._post(f"pages/{page['id']}/embed_token", data={}, json=True)
+            self._assert_status_code_is(response, 403)
+
+    # --- A6: Embed token scoped read (1b) ---
+
+    def _mint_embed_token(self, page_id: str) -> str:
+        response = self._post(f"pages/{page_id}/embed_token", data={}, json=True)
+        self._assert_status_code_is(response, 200)
+        return response.json()["token"]
+
+    def _embed_get(self, route: str, token: str) -> requests.Response:
+        """GET with ONLY the embed token header -- no API key (truly scoped)."""
+        return requests.get(self._api_url(route), headers={"x-galaxy-embed-token": token})
+
+    def test_embed_token_reads_own_page(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Embed me")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get(f"pages/{page['id']}", token)
+        self._assert_status_code_is(response, 200)
+        assert "Embed me" in response.json()["content"]
+
+    def test_embed_token_denies_other_users_page(self):
+        # The recovered user is access-controlled: the token cannot read a page
+        # owned by a different user.
+        history_id = self.dataset_populator.new_history()
+        page_a = self.dataset_populator.new_history_page(history_id, content="# A")
+        token = self._mint_embed_token(page_a["id"])
+        with self._different_user():
+            other_history = self.dataset_populator.new_history()
+            page_b = self.dataset_populator.new_history_page(other_history, content="# B")
+        response = self._embed_get(f"pages/{page_b['id']}", token)
+        self._assert_status_code_is(response, 403)
+
+    def test_embed_token_invalid_rejected(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# A")
+        response = self._embed_get(f"pages/{page['id']}", "not-a-real-token")
+        self._assert_status_code_is(response, 401)
+
+    def test_embed_token_rejected_on_account_endpoint(self):
+        # Q5: the embed token must NOT authenticate the api-key endpoint (or any
+        # route not marked embed_allowed) -- otherwise an exfiltrated token could
+        # read the user's permanent API key.
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# A")
+        token = self._mint_embed_token(page["id"])
+        user_id = self.dataset_populator.user_id()
+        response = self._embed_get(f"users/{user_id}/api_key", token)
+        assert response.status_code in (401, 403), f"expected denial, got {response.status_code}"
+
+    def test_embed_token_cannot_mint_more_tokens(self):
+        # Read-only invariant: the token authenticates only GET/HEAD routes. The
+        # mint endpoint is a POST and is not marked, so the embed token alone
+        # cannot ride it -- it cannot escalate by minting fresh tokens.
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# A")
+        token = self._mint_embed_token(page["id"])
+        response = requests.post(
+            self._api_url(f"pages/{page['id']}/embed_token"),
+            headers={"x-galaxy-embed-token": token},
+            json={},
+        )
+        assert response.status_code in (401, 403), f"expected denial, got {response.status_code}"
+
+    def test_embed_token_head_on_display(self):
+        # The display route marks HEAD as well as GET; the token must authenticate
+        # the HEAD probe plugins use before fetching.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="col1\tcol2\n1\t2\n", wait=True)
+        page = self.dataset_populator.new_history_page(history_id, content="# Embed")
+        token = self._mint_embed_token(page["id"])
+        response = requests.head(
+            self._api_url(f"datasets/{hda['id']}/display?preview=True"),
+            headers={"x-galaxy-embed-token": token},
+        )
+        self._assert_status_code_is(response, 200)
+
+    def test_embed_token_reads_dataset(self):
+        # The token recovers the full owning user; on the marked display route it
+        # reads the user's own dataset.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="col1\tcol2\n1\t2\n", wait=True)
+        page = self.dataset_populator.new_history_page(history_id, content="# Embed")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get(f"datasets/{hda['id']}/display?preview=True", token)
+        self._assert_status_code_is(response, 200)
+
+    def test_embed_token_denies_other_users_dataset(self):
+        # The recovered user is still access-controlled -- the token is not a
+        # super-user: it cannot read another user's *private* dataset. (Public
+        # datasets are readable by anyone by design, so the dataset must be made
+        # private to exercise the ACL boundary.)
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Mine")
+        token = self._mint_embed_token(page["id"])
+        with self._different_user():
+            other_history = self.dataset_populator.new_history()
+            other_hda = self.dataset_populator.new_dataset(other_history, content="secret\n", wait=True)
+            self.dataset_populator.make_private(other_history, other_hda["id"])
+        response = self._embed_get(f"datasets/{other_hda['id']}/display?preview=True", token)
+        self._assert_status_code_is(response, 403)
+
+    def _new_collection(self, history_id: str) -> str:
+        dccp = DatasetCollectionPopulator(self.galaxy_interactor)
+        return dccp.create_list_in_history(
+            history_id, contents=[("e1", "data1\n"), ("e2", "data2\n")], wait=True
+        ).json()["outputs"][0]["id"]
+
+    def test_embed_token_reads_collection(self):
+        history_id = self.dataset_populator.new_history()
+        hdca_id = self._new_collection(history_id)
+        page = self.dataset_populator.new_history_page(history_id, content="# Collection")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get(f"dataset_collections/{hdca_id}", token)
+        self._assert_status_code_is(response, 200)
+
+    def test_embed_token_denies_other_users_collection(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Mine")
+        token = self._mint_embed_token(page["id"])
+        with self._different_user():
+            other_history = self.dataset_populator.new_history()
+            other_hdca = self._new_collection(other_history)
+        response = self._embed_get(f"dataset_collections/{other_hdca}", token)
+        self._assert_status_code_is(response, 403)
+
+    def test_embed_token_reads_plugin_metadata(self):
+        # The embedded VisualizationFrame fetches GET /api/plugins/{name} for plugin
+        # metadata (static config: entry_point, href). That route is NOT marked
+        # embed_allowed -- plugin metadata is public config, served anonymously, so
+        # the embed token falls through to anonymous and still reads it.
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Viz")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get("plugins/example", token)
+        self._assert_status_code_is(response, 200)
+        assert "entry_point" in response.json()
+
+    def test_embed_token_cannot_enumerate_plugin_history(self):
+        # Invariant: the embed token must not reach the plugin show route's
+        # ?history_id= enumeration branch (lists all viz-compatible datasets in a
+        # history). The route is unmarked, so the token is ignored -> anonymous ->
+        # get_owned(history_id, None) is refused. The enumeration never runs.
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Viz")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get(f"plugins/example?history_id={history_id}", token)
+        assert response.status_code != 200, f"enumeration branch leaked: {response.status_code}"
+        assert "hdas" not in response.text
+
+    def test_embed_token_reads_dataset_metadata(self):
+        # Most embeddable viz plugins fetch GET /api/datasets/{id} for dataset
+        # metadata (column types, etc.) before fetching /display. The route is
+        # marked embed_allowed so the recovered user reads its own dataset.
+        history_id = self.dataset_populator.new_history()
+        hda = self.dataset_populator.new_dataset(history_id, content="col1\tcol2\n1\t2\n", wait=True)
+        page = self.dataset_populator.new_history_page(history_id, content="# Viz")
+        token = self._mint_embed_token(page["id"])
+        response = self._embed_get(f"datasets/{hda['id']}", token)
+        self._assert_status_code_is(response, 200)
+        assert response.json()["id"] == hda["id"]
+
+    def test_embed_token_denies_other_users_dataset_metadata(self):
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Mine")
+        token = self._mint_embed_token(page["id"])
+        with self._different_user():
+            other_history = self.dataset_populator.new_history()
+            other_hda = self.dataset_populator.new_dataset(other_history, content="secret\n", wait=True)
+            self.dataset_populator.make_private(other_history, other_hda["id"])
+        response = self._embed_get(f"datasets/{other_hda['id']}", token)
+        self._assert_status_code_is(response, 403)
+
+    def test_embed_token_denies_other_users_metadata_file(self):
+        # The metadata_file route is marked (igv fetches it). Access control fires
+        # before the file lookup, so a cross-user private dataset is refused --
+        # proving the marked route does not leak.
+        history_id = self.dataset_populator.new_history()
+        page = self.dataset_populator.new_history_page(history_id, content="# Mine")
+        token = self._mint_embed_token(page["id"])
+        with self._different_user():
+            other_history = self.dataset_populator.new_history()
+            other_hda = self.dataset_populator.new_dataset(other_history, content="secret\n", wait=True)
+            self.dataset_populator.make_private(other_history, other_hda["id"])
+        response = self._embed_get(f"datasets/{other_hda['id']}/metadata_file?metadata_file=bam_index", token)
+        self._assert_status_code_is(response, 403)
 
     def test_history_page_shared_history_no_write(self):
         history_id = self.dataset_populator.new_history()

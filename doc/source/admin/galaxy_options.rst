@@ -697,7 +697,7 @@
 :Description:
     Location of files available for a short time as downloads (short
     term storage). This directory is exclusively used for serving
-    dynamically generated downloadable content. Galaxy may use the
+    dynamically generated downloadable content. Galaxy may uses the
     new_file_path parameter as a general temporary directory and that
     directory should be monitored by a tool such as tmpwatch in
     production environments. short_term_storage_dir on the other hand
@@ -1008,7 +1008,7 @@
 
 :Description:
     XML config file that contains data table entries for the
-    ToolDataTableManager.  This file is manually maintained by the
+    ToolDataTableManager.  This file is manually # maintained by the
     Galaxy administrator (.sample used if default does not exist).
     The value of this option will be resolved with respect to
     <config_dir>.
@@ -1288,7 +1288,7 @@
     destination level for heterogeneous clusters. conda job resolution
     requires bash or zsh so if this is switched to /bin/sh for
     instance - conda resolution should be disabled. Containerized jobs
-    always use /bin/sh - for maximum portability tool authors
+    always use /bin/sh - so more maximum portability tool authors
     should assume generated commands run in sh.
 :Default: ``/bin/bash``
 :Type: str
@@ -1302,6 +1302,24 @@
     Directory in which the toolbox search index is stored. The value
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_tag_mappings_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Optional YAML file mapping tool ids to curated tag names. Tags
+    drive the `tag:` autocompletion, the favorite-tags grouping in the
+    My Tools panel, and the `tool_tags` Whoosh search field. If unset,
+    Galaxy ships a small example covering the tools used by its own
+    integration tests; admins who want production-grade tag coverage
+    can generate a snapshot for their instance with
+    `scripts/extract_tool_sections_from_api.py`. The file must be a
+    YAML document with a top-level `tool_tags:` mapping from tool id
+    to a list of tag names.
+:Default: ``None``
 :Type: str
 
 
@@ -1323,7 +1341,7 @@
 
 :Description:
     Set this to true to attempt to resolve bio.tools metadata for
-    tools for tool not resolved via biotools_content_directory.
+    tools for tool not resovled via biotools_content_directory.
 :Default: ``false``
 :Type: bool
 
@@ -2750,6 +2768,26 @@
     intact to protect your users.  Uncomment and leave empty to not
     set the `X-Frame-Options` header.
 :Default: ``SAMEORIGIN``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``embed_allowed_origins``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Space-separated list of origins permitted to embed Galaxy's
+    chrome-free embed surfaces (`/published/*?embed=true`) in an
+    iframe. When set, Galaxy emits a `Content-Security-Policy:
+    frame-ancestors <origins>` header on those embed responses,
+    restricting which parent sites may frame them (for example a
+    Loom/Orbit desktop shell). This is the framing (`frame-ancestors`)
+    control and is intentionally distinct from
+    `allowed_origin_hostnames` (the CORS allow-list) -- they govern
+    unrelated browser mechanisms. Leave unset to emit no
+    `frame-ancestors` CSP (embed responses simply omit
+    `X-Frame-Options` as before).
+:Default: ``None``
 :Type: str
 
 
@@ -5663,9 +5701,57 @@
     false }, jupyterlite: { model: gpt-4o } } Set static_responses to
     a YAML file path to replace all LLM calls with deterministic
     responses for testing: inference_services: { static_responses:
-    test/integration/static_agents.yml }
+    test/integration/static_agents.yml } Per-agent or default-block
+    ``structured_output_override: true|false`` beats the model
+    capability table -- see ``agent_model_capabilities_file`` for the
+    table's location and contents.
 :Default: ``None``
 :Type: any
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``agent_model_capabilities_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    YAML file with capability hints for agent inference models. Maps
+    fnmatch-style globs against model names to features such as
+    structured-output (tool-calling / JSON-mode) support. Galaxy ships
+    a sample populated with common model families; admins can drop a
+    file named ``agent_model_capabilities.yml`` in ``config_dir`` to
+    override the shipped table for private models.
+    ``inference_services`` ``structured_output_override`` overrides
+    this table for a specific agent or default block.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``agent_model_capabilities.yml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``gtn_database_path``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Path to the SQLite FTS5 database used by the GTN training agent.
+    Resolves against ``data_dir`` so admins can place it in a
+    mutable-data directory. The file is downloaded automatically on
+    first use from ``gtn_database_url`` if it does not exist.
+    The value of this option will be resolved with respect to
+    <data_dir>.
+:Default: ``gtn/gtn_search.db``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``gtn_database_url``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL used to download the GTN search database when the local file
+    at ``gtn_database_path`` is missing.
+:Default: ``https://depot.galaxyproject.org/chatgxy/gtn_search.db``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -6163,6 +6249,3 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
-
-

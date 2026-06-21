@@ -20,6 +20,7 @@ from galaxy.schema.schema import (
     AsyncFile,
     CreatePagePayload,
     PageDetails,
+    PageEmbedToken,
     PageIndexQueryPayload,
     PageRevisionDetails,
     PageRevisionList,
@@ -237,6 +238,7 @@ class FastAPIPages:
         "/api/pages/{id}",
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
+        embed_allowed=True,
     )
     def show(
         self,
@@ -245,6 +247,18 @@ class FastAPIPages:
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
         return self.service.show(trans, id)
+
+    @router.post(
+        "/api/pages/{id}/embed_token",
+        summary="Create a short-lived, page-scoped token for embedding this page's rendered view.",
+    )
+    def create_embed_token(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PageEmbedToken:
+        """Mint a short-lived token authenticating a read-only embedded render of this page."""
+        return self.service.create_embed_token(trans, id)
 
     @router.get(
         "/api/pages/{id}/sharing",

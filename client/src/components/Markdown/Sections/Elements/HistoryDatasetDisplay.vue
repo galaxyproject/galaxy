@@ -171,7 +171,7 @@ const dataContent = computed(() => getContentById(props.datasetId));
 const dataError = computed(() => getContentLoadError(props.datasetId));
 const dataLoading = computed(() => isLoadingContent(props.datasetId));
 const downloadUrl = computed(() => `${getAppRoot()}dataset/display?dataset_id=${props.datasetId}`);
-const displayUrl = computed(() => `${getAppRoot()}datasets/${props.datasetId}/display/?preview=True`);
+const displayUrl = computed(() => `${getAppRoot()}api/datasets/${props.datasetId}/display?preview=True`);
 const importUrl = computed(() => `${getAppRoot()}dataset/imp?dataset_id=${props.datasetId}`);
 const metaContent = computed(() => getDataset(props.datasetId) as Dataset);
 const metaError = computed(() => getDatasetError(props.datasetId));

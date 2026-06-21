@@ -325,10 +325,12 @@ class FastAPIDatasets:
         "/api/datasets/{history_content_id}/display",
         summary="Displays (preview) or downloads dataset content.",
         response_class=StreamingResponse,
+        embed_allowed=True,
     )
     @router.head(
         "/api/datasets/{history_content_id}/display",
         summary="Check if dataset content can be previewed or downloaded.",
+        embed_allowed=True,
     )
     def display(
         self,
@@ -408,10 +410,12 @@ class FastAPIDatasets:
         summary="Returns the metadata file associated with this history item.",
         response_class=GalaxyFileResponse,
         operation_id="datasets__get_metadata_file",
+        embed_allowed=True,
     )
     @router.head(
         "/api/datasets/{history_content_id}/metadata_file",
         summary="Check if metadata file can be downloaded.",
+        embed_allowed=True,
     )
     def get_metadata_file_datasets(
         self,
@@ -436,6 +440,7 @@ class FastAPIDatasets:
     @router.get(
         "/api/datasets/{dataset_id}",
         summary="Displays information about and/or content of a dataset.",
+        embed_allowed=True,
     )
     def show(
         self,

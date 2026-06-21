@@ -2,6 +2,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import (
     Any,
+    Optional,
     TYPE_CHECKING,
 )
 from urllib.parse import urljoin
@@ -130,9 +131,19 @@ class GalaxyCORSMiddleware(CORSMiddleware):
 
 
 class XFrameOptionsMiddleware:
-    def __init__(self, app, x_frame_options: str):
+    """Controls iframe-embedding headers.
+
+    On non-embed responses, sets ``X-Frame-Options`` (clickjacking protection). On
+    embed responses (``/published/*?embed=true``) it omits ``X-Frame-Options`` and,
+    when ``embed_allowed_origins`` is configured, emits
+    ``Content-Security-Policy: frame-ancestors <origins>`` so framing is restricted
+    to a supported allow-list (e.g. a Loom/Orbit shell) rather than wide-open.
+    """
+
+    def __init__(self, app, x_frame_options: Optional[str] = None, embed_allowed_origins: Optional[str] = None):
         self.app = app
         self.x_frame_options = x_frame_options
+        self.embed_allowed_origins = embed_allowed_origins
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -143,17 +154,26 @@ class XFrameOptionsMiddleware:
 
         async def send_with_header(message):
             if message["type"] == "http.response.start":
+                headers = MutableHeaders(scope=message)
                 if not _is_embed_request(request.url.path, str(request.url.query)):
-                    headers = MutableHeaders(scope=message)
-                    headers.append("X-Frame-Options", self.x_frame_options)
+                    if self.x_frame_options:
+                        headers.append("X-Frame-Options", self.x_frame_options)
+                elif self.embed_allowed_origins:
+                    headers.append("Content-Security-Policy", f"frame-ancestors {self.embed_allowed_origins}")
             await send(message)
 
         await self.app(scope, receive, send_with_header)
 
 
 def add_galaxy_middleware(app: FastAPI, gx_app):
-    if x_frame_options := gx_app.config.x_frame_options:
-        app.add_middleware(XFrameOptionsMiddleware, x_frame_options=x_frame_options)
+    x_frame_options = gx_app.config.x_frame_options
+    embed_allowed_origins = gx_app.config.get("embed_allowed_origins", None)
+    if x_frame_options or embed_allowed_origins:
+        app.add_middleware(
+            XFrameOptionsMiddleware,
+            x_frame_options=x_frame_options,
+            embed_allowed_origins=embed_allowed_origins,
+        )
 
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile

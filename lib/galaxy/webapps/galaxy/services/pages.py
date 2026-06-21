@@ -1,9 +1,13 @@
 import logging
 from typing import (
+    Optional,
     Union,
 )
 
-from galaxy import exceptions
+from galaxy import (
+    exceptions,
+    model,
+)
 from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import prepare_pdf_download
 from galaxy.managers import base
@@ -25,6 +29,7 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
     PageDetails,
+    PageEmbedToken,
     PageIndexQueryPayload,
     PageRevisionDetails,
     PageRevisionList,
@@ -93,8 +98,21 @@ class PagesService(ServiceBase):
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         rval["edit_source"] = page.latest_revision.edit_source
+        rval["embed_url"] = self._embed_url(trans, trans.security.encode_id(page.id))
         self.manager.rewrite_content_for_export(trans, rval)
         return PageDetails(**rval)
+
+    def _embed_url(self, trans, encoded_id: str) -> Optional[str]:
+        """Chrome-free, frame-embeddable URL for the page's latest revision.
+
+        Lets Loom/Orbit avoid hand-constructing the URL. None outside a request
+        context (e.g. internal serialization without a request).
+        """
+        request = getattr(trans, "request", None)
+        if request is None:
+            return None
+        base = request.url_path.rstrip("/")
+        return f"{base}/published/page?id={encoded_id}&embed=true"
 
     def create(self, trans, payload: CreatePagePayload) -> PageDetails:
         """
@@ -135,6 +153,20 @@ class PagesService(ServiceBase):
         """
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         return self._page_to_details(trans, page)
+
+    def create_embed_token(self, trans, id: DecodedDatabaseIdField) -> PageEmbedToken:
+        """Mint a short-lived, page-scoped token for embedding this page's rendered view.
+
+        Ownership is required to mint -- a token grants read access to the page and
+        the datasets/visualizations it references, so only the owner should issue one.
+        (A shared-page minting path can be added later once shared-resource scope is
+        settled; ownership-only is the safe v1 subset.)
+        """
+        page = base.get_object(trans, id, "Page", check_ownership=True)
+        token = model.PageEmbedToken(page, trans.user)
+        trans.sa_session.add(token)
+        trans.sa_session.commit()
+        return PageEmbedToken(token=token.token, expires_at=token.expiration_time)
 
     def show_pdf(self, trans, id: DecodedDatabaseIdField):
         """

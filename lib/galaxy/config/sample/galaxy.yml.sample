@@ -1,21 +1,21 @@
 # Galaxy is configured by default to be usable in a single-user development
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
-# 
+#
 #  https://docs.galaxyproject.org/en/master/admin/production.html
-# 
+#
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
 # values are set to the default value.  Relative paths are relative to the root
 # Galaxy directory.
-# 
+#
 # Examples of many of these options are explained in more detail in the Galaxy
 # Community Hub.
-# 
+#
 #   https://galaxyproject.org/admin/config
-# 
+#
 # Config hackers are encouraged to check there before asking for help.
-# 
+#
 # Configuration for Gravity process manager.
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
@@ -1007,6 +1007,17 @@ galaxy:
   # this option will be resolved with respect to <data_dir>.
   #tool_search_index_dir: tool_search_index
 
+  # Optional YAML file mapping tool ids to curated tag names. Tags drive
+  # the `tag:` autocompletion, the favorite-tags grouping in the My
+  # Tools panel, and the `tool_tags` Whoosh search field. If unset,
+  # Galaxy ships a small example covering the tools used by its own
+  # integration tests; admins who want production-grade tag coverage can
+  # generate a snapshot for their instance with
+  # `scripts/extract_tool_sections_from_api.py`. The file must be a YAML
+  # document with a top-level `tool_tags:` mapping from tool id to a
+  # list of tag names.
+  #tool_tag_mappings_file: null
+
   # Point Galaxy at a repository consisting of a copy of the bio.tools
   # database (e.g. https://github.com/bio-tools/content/) to resolve
   # bio.tools data for tool metadata.
@@ -1673,6 +1684,18 @@ galaxy:
   # to protect your users.  Uncomment and leave empty to not set the
   # `X-Frame-Options` header.
   #x_frame_options: SAMEORIGIN
+
+  # Space-separated list of origins permitted to embed Galaxy's
+  # chrome-free embed surfaces (`/published/*?embed=true`) in an iframe.
+  # When set, Galaxy emits a `Content-Security-Policy: frame-ancestors
+  # <origins>` header on those embed responses, restricting which parent
+  # sites may frame them (for example a Loom/Orbit desktop shell). This
+  # is the framing (`frame-ancestors`) control and is intentionally
+  # distinct from `allowed_origin_hostnames` (the CORS allow-list) --
+  # they govern unrelated browser mechanisms. Leave unset to emit no
+  # `frame-ancestors` CSP (embed responses simply omit `X-Frame-Options`
+  # as before).
+  #embed_allowed_origins: null
 
   # nginx can also handle file uploads (user-to-Galaxy) via
   # nginx_upload_module. Configuration for this is complex and explained
@@ -3330,4 +3353,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-

@@ -1399,6 +1399,37 @@ class PasswordResetToken(Base):
         self.expiration_time = now() + timedelta(hours=24)
 
 
+EMBED_TOKEN_TTL = timedelta(minutes=15)
+
+
+class PageEmbedToken(Base):
+    """Short-lived credential for embedding a Page's rendered view.
+
+    Minted by the page owner; presented by an external embedder (e.g. Loom/Orbit)
+    via the ``x-galaxy-embed-token`` header. It authenticates as the owning user
+    but is only honored on routes explicitly marked ``embed_allowed=True`` (all
+    read-only, single-resource GET/HEAD routes), so it is a read scoped to that
+    allow-list rather than a full-account credential. Short TTL bounds exposure.
+    """
+
+    __tablename__ = "page_embed_token"
+
+    token: Mapped[str] = mapped_column(String(32), primary_key=True, unique=True, index=True)
+    page_id: Mapped[int] = mapped_column(ForeignKey("page.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id", ondelete="CASCADE"), index=True)
+    expiration_time: Mapped[datetime]
+
+    page: Mapped["Page"] = relationship()
+    user: Mapped["User"] = relationship()
+
+    def __init__(self, page, user, token=None):
+        # CSPRNG bearer credential (parity with API keys); 16 bytes -> 32 hex chars.
+        self.token = token or token_hex(16)
+        self.page = page
+        self.user = user
+        self.expiration_time = now() + EMBED_TOKEN_TTL
+
+
 class ToolSource(Base, Dictifiable, RepresentById):
     __tablename__ = "tool_source"
     __table_args__ = (UniqueConstraint("hash", "source_class", "identity_hash"),)

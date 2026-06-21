@@ -195,6 +195,7 @@ export function getRouter(Galaxy) {
                 props: (route) => ({
                     pageId: route.query.id,
                     embed: route.query.embed ? parseBool(route.query.embed) : undefined,
+                    embedOrigin: route.query.embed_origin || undefined,
                     showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
                     displayOnly: route.query.displayOnly === "true",
                 }),

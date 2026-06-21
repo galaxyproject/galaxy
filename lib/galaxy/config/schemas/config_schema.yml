@@ -2061,6 +2061,20 @@ mapping:
           to protect your users.  Uncomment and leave empty to not set the
           `X-Frame-Options` header.
 
+      embed_allowed_origins:
+        type: str
+        required: false
+        desc: |
+          Space-separated list of origins permitted to embed Galaxy's chrome-free
+          embed surfaces (`/published/*?embed=true`) in an iframe. When set, Galaxy
+          emits a `Content-Security-Policy: frame-ancestors <origins>` header on those
+          embed responses, restricting which parent sites may frame them (for example a
+          Loom/Orbit desktop shell). This is the framing (`frame-ancestors`) control and
+          is intentionally distinct from `allowed_origin_hostnames` (the CORS
+          allow-list) -- they govern unrelated browser mechanisms. Leave unset to emit
+          no `frame-ancestors` CSP (embed responses simply omit `X-Frame-Options` as
+          before).
+
       nginx_upload_store:
         type: str
         required: false

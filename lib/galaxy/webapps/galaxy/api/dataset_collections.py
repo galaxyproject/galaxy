@@ -189,6 +189,7 @@ class FastAPIDatasetCollections:
     @router.get(
         "/api/dataset_collections/{hdca_id}",
         summary="Returns detailed information about the given collection.",
+        embed_allowed=True,
     )
     def show(
         self,

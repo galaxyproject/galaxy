@@ -4348,6 +4348,14 @@ class PageDetails(PageSummary):
     )
     generate_version: Optional[str] = GenerateVersionField
     generate_time: Optional[str] = GenerateTimeField
+    embed_url: Optional[str] = Field(
+        default=None,
+        title="Embed URL",
+        description=(
+            "Chrome-free, frame-embeddable URL for rendering this page's latest revision "
+            "(e.g. in Loom/Orbit). None when no request context is available."
+        ),
+    )
     model_config = ConfigDict(extra="allow")
 
 
@@ -4382,6 +4390,19 @@ class PageRevisionDetails(PageRevisionSummary):
 
 class PageRevisionList(RootModel):
     root: list[PageRevisionSummary] = Field(default=[])
+
+
+class PageEmbedToken(Model):
+    token: str = Field(
+        ...,
+        title="Embed Token",
+        description="Short-lived, page-scoped token authenticating a read-only embedded render of the page.",
+    )
+    expires_at: datetime = Field(
+        ...,
+        title="Expiration Time",
+        description="UTC time after which the embed token is no longer valid.",
+    )
 
 
 class LandingRequestState(str, Enum):

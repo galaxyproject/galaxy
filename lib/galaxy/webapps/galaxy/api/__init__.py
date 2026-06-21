@@ -75,9 +75,11 @@ from galaxy import (
 )
 from galaxy.exceptions import (
     AdminRequiredException,
+    AuthenticationFailed,
     UserCannotRunAsException,
     UserRequiredException,
 )
+from galaxy.managers.pages import PageManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
@@ -102,6 +104,7 @@ api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
 api_bearer_token = HTTPBearer(auto_error=False)
+embed_token_header = APIKeyHeader(name="x-galaxy-embed-token", auto_error=False)
 
 
 def get_app() -> StructuredApp:
@@ -161,6 +164,7 @@ def get_session(
 
 
 def get_api_user(
+    request: Request,
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
@@ -174,6 +178,13 @@ def get_api_user(
         ),
     ),
 ) -> Optional[User]:
+    # An embed-token route dependency (added via `embed_allowed=True`) runs before
+    # this and, on success, stashes the recovered user here. The embed token is
+    # *only* honored on routes that opt in -- on every other route this attribute
+    # is unset, so an embed token is silently ignored (default-deny).
+    embed_user = getattr(request.state, "embed_user", None)
+    if embed_user is not None:
+        return embed_user
     if api_key := key or x_api_key:
         user = user_manager.by_api_key(api_key=api_key)
     elif bearer_token:
@@ -186,6 +197,30 @@ def get_api_user(
         else:
             raise UserCannotRunAsException
     return user
+
+
+def embed_token_dependency(
+    request: Request,
+    embed_token: Optional[str] = Security(embed_token_header),
+    page_manager: PageManager = depends(PageManager),
+) -> None:
+    """Authenticate a page embed token on routes that opt in via `embed_allowed=True`.
+
+    A valid `x-galaxy-embed-token` header recovers the token's user and stashes it on
+    `request.state` for `get_api_user`, so the request runs with that user's normal
+    access control. The token is honored *only* on opted-in routes (the decorator is
+    the allow-list); on every other route it is silently ignored -> default-deny. It
+    grants no extra privilege: it is read-only by virtue of which routes are marked,
+    and account/admin/mutation routes are simply never marked (keeps the api-key sink
+    closed). The marked set must never include a listing/enumeration route. Absent
+    token -> no-op (normal auth applies); present-but-invalid -> 401.
+    """
+    if not embed_token:
+        return
+    record = page_manager.resolve_embed_token(embed_token)
+    if record is None:
+        raise AuthenticationFailed("Invalid or expired embed token.")
+    request.state.embed_user = record.user
 
 
 def get_user(
@@ -552,6 +587,16 @@ class FrameworkRouter(APIRouter):
                 kwd["dependencies"].append(self.admin_user_dependency)
             else:
                 kwd["dependencies"] = [self.admin_user_dependency]
+
+        # embed_allowed=True opts a route into page-embed-token auth (read-only
+        # allow-list). Never mark a listing/enumeration route.
+        embed_allowed = kwd.pop("embed_allowed", False)
+        if embed_allowed:
+            embed_dependency = Depends(embed_token_dependency)
+            if "dependencies" in kwd:
+                kwd["dependencies"].append(embed_dependency)
+            else:
+                kwd["dependencies"] = [embed_dependency]
 
         public = kwd.pop("public", False)
         openapi_extra = kwd.pop("openapi_extra", {})
