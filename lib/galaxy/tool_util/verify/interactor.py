@@ -151,6 +151,7 @@ class ValidToolTestDict(TypedDict):
     error: Literal[False]
     tool_id: str
     tool_version: str
+    profile: NotRequired[Optional[str]]
     test_index: int
     value_state_representation: NotRequired[ValueStateRepresentationT]
 
@@ -159,6 +160,7 @@ class InvalidToolTestDict(TypedDict):
     error: Literal[True]
     tool_id: str
     tool_version: str
+    profile: NotRequired[Optional[str]]
     test_index: int
     inputs: Any
     exception: str
@@ -336,7 +338,13 @@ class GalaxyInteractorApi:
         return response.json()
 
     def verify_output_collection(
-        self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
+        self,
+        output_collection_def,
+        output_collection_id,
+        history,
+        tool_id,
+        tool_version=None,
+        profile: Optional[str] = None,
     ):
         data_collection = self._get(
             f"dataset_collections/{output_collection_id}", data={"instance_type": "history"}
@@ -352,6 +360,7 @@ class GalaxyInteractorApi:
                     attributes=element_attrib,
                     tool_id=tool_id,
                     tool_version=tool_version,
+                    profile=profile,
                 )
             except AssertionError as e:
                 raise AssertionError(
@@ -360,7 +369,17 @@ class GalaxyInteractorApi:
 
         verify_collection(output_collection_def, data_collection, verify_dataset)
 
-    def verify_output(self, history_id, jobs, output_data, output_testdef, tool_id, maxseconds, tool_version=None):
+    def verify_output(
+        self,
+        history_id,
+        jobs,
+        output_data,
+        output_testdef,
+        tool_id,
+        maxseconds,
+        tool_version=None,
+        profile: Optional[str] = None,
+    ):
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
@@ -377,6 +396,7 @@ class GalaxyInteractorApi:
                 attributes=attributes,
                 tool_id=tool_id,
                 tool_version=tool_version,
+                profile=profile,
             )
         except AssertionError as e:
             raise AssertionError(f"Output {name}: {str(e)}")
@@ -421,6 +441,7 @@ class GalaxyInteractorApi:
                     primary_attributes,
                     tool_id=tool_id,
                     tool_version=tool_version,
+                    profile=profile,
                 )
             except AssertionError as e:
                 raise AssertionError(f"Primary output {name}: {str(e)}")
@@ -429,7 +450,9 @@ class GalaxyInteractorApi:
         for job in jobs:
             self.wait_for_job(job["id"], history_id, maxseconds)
 
-    def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
+    def verify_output_dataset(
+        self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None, profile: Optional[str] = None
+    ):
         fetcher = self.__dataset_fetcher(history_id)
         test_data_downloader = self.__test_data_downloader(tool_id, tool_version, attributes)
         verify_hid(
@@ -439,6 +462,7 @@ class GalaxyInteractorApi:
             dataset_fetcher=fetcher,
             test_data_downloader=test_data_downloader,
             keep_outputs_dir=self.keep_outputs_dir,
+            profile=profile,
         )
         self._verify_metadata(history_id, hda_id, attributes)
 
@@ -1471,6 +1495,7 @@ def verify_hid(
     test_data_downloader,
     dataset_fetcher=None,
     keep_outputs_dir: Optional[str] = None,
+    profile: Optional[str] = None,
 ):
     assert dataset_fetcher is not None
 
@@ -1493,6 +1518,7 @@ def verify_hid(
         get_filecontent=test_data_downloader,
         keep_outputs_dir=keep_outputs_dir,
         verify_extra_files=verify_extra_files,
+        profile=profile,
     )
 
 
@@ -1947,6 +1973,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
                     tool_id=job["tool_id"],
                     maxseconds=maxseconds,
                     tool_version=testdef.tool_version,
+                    profile=testdef.profile,
                 )
             except Exception as e:
                 register_exception(e)
@@ -1976,7 +2003,11 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             # the job completed so re-hit the API for more information.
             data_collection_id = data_collection_list[name]["id"]
             galaxy_interactor.verify_output_collection(
-                output_collection_def, data_collection_id, history, job["tool_id"]
+                output_collection_def,
+                data_collection_id,
+                history,
+                job["tool_id"],
+                profile=testdef.profile,
             )
         except Exception as e:
             register_exception(e)
@@ -2163,6 +2194,7 @@ class ToolTestDescription:
     name: str
     tool_id: str
     tool_version: Optional[str]
+    profile: Optional[str]
     test_index: int
     num_outputs: Optional[int]
     stdout: Optional[AssertionList]
@@ -2215,6 +2247,7 @@ class ToolTestDescription:
         self.request_schema = json_dict.get("request_schema", None)
         self.tool_id = json_dict["tool_id"]
         self.tool_version = json_dict.get("tool_version")
+        self.profile = json_dict.get("profile")
         self.maxseconds = json_dict.get("maxseconds")
         self.value_state_representation = json_dict.get("value_state_representation", "test_case_xml")
         self.credentials = json_dict.get("credentials")
@@ -2243,6 +2276,7 @@ class ToolTestDescription:
             "test_index": self.test_index,
             "tool_id": self.tool_id,
             "tool_version": self.tool_version,
+            "profile": self.profile,
             "required_files": self.required_files,
             "required_data_tables": self.required_data_tables,
             "required_loc_files": self.required_loc_files,
