@@ -12,8 +12,8 @@ try:
     import pyarrow as pa
     import pyarrow.parquet
 except ImportError:
-    pyarrow = None
-    pa = None
+    pa = None  # type: ignore[assignment]
+    pyarrow = None  # type: ignore[assignment]
 
 
 def _stringify_all_columns(table):
