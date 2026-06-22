@@ -1,3 +1,12 @@
+# Each theme is a nested map that is flattened into CSS custom properties applied at
+# the app root (e.g. ``masthead: {text: {color: ...}}`` -> ``--masthead-text-color``).
+#
+# A ``content:`` block flattens to ``--content-*`` variables consumed by the page /
+# markdown render surfaces (background, text, links, code, borders), so a theme can
+# darken page content -- not just the masthead. When a content var is omitted the
+# render stack falls back to its built-in light default, so existing themes are
+# unaffected. See the built-in ``orbit`` theme (galaxy.util.themes) for a full dark
+# content example; it is always available even without this file.
 blue:
   masthead:
     color: "#2c3143"
@@ -12,6 +21,16 @@ blue:
     logo:
       img: "/static/favicon.svg"
       img-secondary: null
+  # Light content surface (matches the default render colors -- shown for reference).
+  content:
+    background: "#ffffff"
+    surface: "#f8f9fa"
+    text: "#2c3143"
+    text-muted: "#5a6072"
+    heading: "#2c3143"
+    border: "#dee2e6"
+    link: "#2077b3"
+    link-hover: "#14507a"
 
 lightblue:
   masthead:

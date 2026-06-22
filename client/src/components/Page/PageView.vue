@@ -197,3 +197,85 @@ function stsUrl(config: any) {
     }
 }
 </style>
+
+<!--
+  Themed-embed dark content rules. Deliberately NOT ``scoped``: App.vue tags the app
+  root ``embed-themed`` only when an embedded theme is active, and that gate (plus the
+  ``.page-view.embed`` chrome-free container) scopes these tightly enough. A scoped
+  block can't express this -- ``:global(#app.embed-themed) .page-view.embed`` is
+  mis-compiled by the scoped transform (the descendant is dropped), landing the rules
+  on ``#app`` itself. Colors come from the theme's ``--content-*`` variables; the rules
+  simply don't exist without the gate, so un-themed embeds are byte-identical to before.
+-->
+<style lang="scss">
+#app.embed-themed .page-view.embed {
+    background: var(--content-background);
+    color: var(--content-text);
+
+    .container-root {
+        background: var(--content-background);
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        color: var(--content-heading);
+        border-color: var(--content-border);
+    }
+
+    a {
+        color: var(--content-link);
+
+        &:hover,
+        &:focus {
+            color: var(--content-link-hover);
+        }
+    }
+
+    code,
+    pre,
+    kbd,
+    samp {
+        background-color: var(--content-surface);
+        color: var(--content-text);
+        border-color: var(--content-border);
+    }
+
+    blockquote {
+        color: var(--content-text-muted);
+        border-color: var(--content-border);
+    }
+
+    hr {
+        border-color: var(--content-border);
+    }
+
+    table {
+        color: var(--content-text);
+
+        th,
+        td {
+            border-color: var(--content-border);
+        }
+    }
+
+    .text-muted {
+        color: var(--content-text-muted) !important;
+    }
+
+    // Bootstrap background utilities hardcode light surfaces with !important (e.g. the
+    // markdown title's sticky ``bg-white`` header), so they need !important to retint.
+    .bg-white,
+    .bg-light {
+        background-color: var(--content-surface) !important;
+    }
+
+    // Heading separator segments (``.stripe``) are a light Bootstrap border color.
+    .stripe {
+        background-color: var(--content-border) !important;
+    }
+}
+</style>

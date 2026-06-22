@@ -54,7 +54,10 @@ from galaxy.util.resources import (
     as_file,
     resource_path,
 )
-from galaxy.util.themes import flatten_theme
+from galaxy.util.themes import (
+    flatten_theme,
+    flattened_builtin_themes,
+)
 from galaxy.version import (
     VERSION_MAJOR,
     VERSION_MINOR,
@@ -1299,14 +1302,17 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
                     for key, val in themes.items():
                         theme_dict[key] = flatten_theme(val)
 
-        self.themes = {}
+        # Seed built-in themes (e.g. ``orbit``) so they are always available even when
+        # no themes_config_file exists; admin config below may override them by key.
+        builtin_themes = flattened_builtin_themes()
+        self.themes = dict(builtin_themes)
 
         if "themes_config_file_by_host" in self.config_dict:
             self.themes_by_host = {}
             resolve_to_dir = self.schema.paths_to_resolve["themes_config_file"]
             resolve_dir_path = getattr(self, resolve_to_dir)
             for host, file_name in self.config_dict["themes_config_file_by_host"].items():
-                self.themes_by_host[host] = {}
+                self.themes_by_host[host] = dict(builtin_themes)
                 file_path = self._in_dir(resolve_dir_path, file_name)
                 _load_theme(file_path, self.themes_by_host[host])
         else:

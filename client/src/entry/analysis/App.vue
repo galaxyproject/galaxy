@@ -1,5 +1,5 @@
 <template>
-    <div id="app" :style="theme">
+    <div id="app" :style="theme" :class="{ 'embed-themed': embedded && !!theme }">
         <div id="everything">
             <div id="background" />
             <template v-if="!embedded">
@@ -68,6 +68,8 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useTourStore } from "@/stores/tourStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWindowManagerStore } from "@/stores/windowManagerStore";
+
+import { resolveTheme } from "./resolveTheme";
 
 import Alert from "@/components/Alert.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
@@ -195,17 +197,12 @@ export default {
             return true;
         },
         theme() {
-            if (this.embedded) {
-                return null;
-            }
-
-            const themeKeys = Object.keys(this.config.themes);
-            if (themeKeys.length > 0) {
-                const foundTheme = themeKeys.includes(this.currentTheme);
-                const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
-                return this.config.themes[selectedTheme];
-            }
-            return null;
+            return resolveTheme({
+                embedded: this.embedded,
+                themes: this.config.themes,
+                queryTheme: this.$route.query.theme,
+                currentTheme: this.currentTheme,
+            });
         },
         windowTab() {
             return this.windowManagerStore.getTab();
