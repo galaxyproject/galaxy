@@ -11,8 +11,8 @@ try:
     import pyarrow as pa
     import pyarrow.parquet
 except ImportError:
-    pyarrow = None
-    pa = None
+    pa = None  # type: ignore[assignment]
+    pyarrow = None  # type: ignore[assignment]
 
 
 def __main__():
@@ -41,7 +41,7 @@ def __main__():
             row = line.split("\t")
             rows.append(row)
 
-    column_data = {col: [] for col in header}
+    column_data: dict[str, list] = {col: [] for col in header}
     for row in rows:
         for i, col in enumerate(header):
             value = row[i] if i < len(row) else ""
