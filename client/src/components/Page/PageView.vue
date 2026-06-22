@@ -146,6 +146,7 @@ function stsUrl(config: any) {
                         :markdown-config="page"
                         :download-endpoint="stsUrl(config)"
                         :read-only="true"
+                        hide-header
                         class="page-markdown" />
                     <PageHtml v-else :page="page" />
                 </div>

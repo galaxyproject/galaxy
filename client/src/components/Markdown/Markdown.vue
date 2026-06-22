@@ -33,6 +33,9 @@ const props = defineProps<{
     exportLink?: string;
     showIdentifier?: boolean;
     directDownloadLink?: boolean;
+    // Hide the sticky title/toolbar header. Chrome-free hosts (e.g. PageView's
+    // embedded/displayOnly views) render their own title, so this avoids a duplicate.
+    hideHeader?: boolean;
 }>();
 
 // Refs and data
@@ -93,7 +96,7 @@ onMounted(() => {
     <div class="markdown-wrapper px-2">
         <LoadingSpan v-if="loading" />
         <div v-else class="d-flex flex-column">
-            <div class="d-flex flex-column sticky-top bg-white">
+            <div v-if="!hideHeader" class="d-flex flex-column sticky-top bg-white">
                 <div class="d-flex">
                     <Heading v-localize h1 separator inline size="md" class="flex-grow-1">
                         {{ pageTitle }}
