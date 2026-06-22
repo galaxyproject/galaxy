@@ -1,0 +1,28 @@
+- id: arc
+  version: 0
+  name: ARC
+  description: |
+    Connect to a DataHub/GitLab instance using arcfs-fsspec.
+  variables:
+    base_url:
+      label: ARC DataHub URL
+      type: string
+      help: |
+        The ARC DataHub instance URL. This should be the full URL including the protocol.
+    writable:
+      label: Writable?
+      type: boolean
+      optional: true
+      default: false
+      help: Allow Galaxy to write data to this ARC DataHub instance.
+  secrets:
+    token:
+      label: ARC Access Token
+      optional: true
+      help: |
+        The access token to use to connect to the ARC DataHub instance.
+  configuration:
+    type: arc
+    base_url: "{{ variables.base_url }}"
+    token: "{{ secrets.token }}"
+    writable: "{{ variables.writable }}"

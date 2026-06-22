@@ -1,4 +1,6 @@
 from typing import (
+    Optional,
+    Union,
     Annotated,
     Any,
     Literal,
@@ -34,6 +36,7 @@ FileSourceTemplateType = Literal[
     "ftp",
     "posix",
     "s3fs",
+    "arc",
     "azure",
     "azureflat",
     "irods",
@@ -306,6 +309,22 @@ class OnedataFileSourceConfiguration(StrictModel):
     writable: bool = False
 
 
+class ArcFileSourceTemplateConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: Union[str, TemplateExpansion]
+    token: Union[str, TemplateExpansion, None] = None
+    writable: Union[bool, TemplateExpansion] = False
+    template_start: Optional[str] = None
+    template_end: Optional[str] = None
+
+
+class ArcFileSourceConfiguration(StrictModel):
+    type: Literal["arc"]
+    base_url: str
+    token: Optional[str] = None
+    writable: bool = False
+
+
 class WebdavConfigMixin:
     @model_validator(mode="before")
     @classmethod
@@ -550,6 +569,7 @@ FileSourceTemplateConfiguration = Annotated[
     | AzureFlatFileSourceTemplateConfiguration
     | IrodsFileSourceTemplateConfiguration
     | OnedataFileSourceTemplateConfiguration
+    | ArcFileSourceTemplateConfiguration
     | WebdavFileSourceTemplateConfiguration
     | DropboxFileSourceTemplateConfiguration
     | GoogleDriveFileSourceTemplateConfiguration
@@ -578,6 +598,7 @@ FileSourceConfiguration = Annotated[
     | AzureFlatFileSourceConfiguration
     | IrodsFileSourceConfiguration
     | OnedataFileSourceConfiguration
+    | ArcFileSourceConfiguration
     | WebdavFileSourceConfiguration
     | DropboxFileSourceConfiguration
     | GoogleDriveFileSourceConfiguration
@@ -666,6 +687,7 @@ TypesToConfigurationClasses: dict[FileSourceTemplateType, type[FileSourceConfigu
     "azureflat": AzureFlatFileSourceConfiguration,
     "irods": IrodsFileSourceConfiguration,
     "onedata": OnedataFileSourceConfiguration,
+    "arc": ArcFileSourceConfiguration,
     "webdav": WebdavFileSourceConfiguration,
     "dropbox": DropboxFileSourceConfiguration,
     "googledrive": GoogleDriveFileSourceConfiguration,
