@@ -12,8 +12,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" ftype="parquet" value="parq_conv.parquet"/>
-            <output name="output" ftype="tabular" value="parq_conv.tabular"/>
+            <param name="input" ftype="parquet" value="parq_to_tabular_conv.parquet"/>
+            <output name="output" ftype="tabular" value="parq_to_tabular_conv.tabular"/>
         </test>
     </tests>
     <help>
