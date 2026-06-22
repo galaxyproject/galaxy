@@ -110,7 +110,11 @@ try:
 except ModuleNotFoundError:
     # If astropy cannot be found FITS datatype will work with minimal metadata support
     pass
-import pyarrow.parquet as parquet
+
+try:
+    import pyarrow.parquet as parquet
+except ModuleNotFoundError:
+    parquet = None
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
@@ -4668,6 +4672,8 @@ class Parquet(Binary):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not os.path.isfile(dataset.get_file_name()):
             return
+        if parquet is None:
+            return
         parquet_file = parquet.ParquetFile(dataset.get_file_name())
         column_names = list(parquet_file.schema_arrow.names)
         dataset.metadata.column_names = column_names
@@ -4677,9 +4683,12 @@ class Parquet(Binary):
     def set_peek(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.get_file_name())
-            col_label = "column" if dataset.metadata.column_count == 1 else "columns"
-            line_label = "line" if dataset.metadata.line_count == 1 else "lines"
-            dataset.blurb = f"{util.commaify(str(dataset.metadata.column_count))} {col_label}, {util.commaify(str(dataset.metadata.line_count))} {line_label}, {nice_size(dataset.get_size())}"
+            if parquet is not None and dataset.metadata.column_count:
+                col_label = "column" if dataset.metadata.column_count == 1 else "columns"
+                line_label = "line" if dataset.metadata.line_count == 1 else "lines"
+                dataset.blurb = f"{util.commaify(str(dataset.metadata.column_count))} {col_label}, {util.commaify(str(dataset.metadata.line_count))} {line_label}, {nice_size(dataset.get_size())}"
+            else:
+                dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
