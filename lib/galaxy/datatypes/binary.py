@@ -111,10 +111,11 @@ except ModuleNotFoundError:
     # If astropy cannot be found FITS datatype will work with minimal metadata support
     pass
 
+parquet: Optional[Any] = None
 try:
     import pyarrow.parquet as parquet
 except ModuleNotFoundError:
-    parquet = None
+    pass
 
 if TYPE_CHECKING:
     from galaxy.managers.context import ProvidesUserContext
