@@ -101,6 +101,12 @@ class SSEEventDispatcher:
         # Only fan out to webapp processes — job handlers and workflow schedulers
         # don't have browser SSE connections to push to.
         declare_queues = self._get_declare_queues()
+        log.debug(
+            "SSE dispatch task=%s addressed to %d webapp worker(s): %s",
+            task,
+            len(declare_queues),
+            ", ".join(q.name for q in declare_queues) or "<none>",
+        )
         control_task = self._control_task_factory(self._queue_worker)
         start_time = time.perf_counter() if self._statsd_client is not None else 0.0
         try:
