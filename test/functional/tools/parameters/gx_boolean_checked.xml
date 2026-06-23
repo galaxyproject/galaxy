@@ -1,0 +1,36 @@
+<tool id="gx_boolean_checked" name="gx_boolean_checked" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="boolean" truevalue="mytrue" falsevalue="myfalse" checked="true" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="mytrue" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value_json="false" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="myfalse" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value_json="true" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="mytrue" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

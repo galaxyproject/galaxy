@@ -1,98 +1,69 @@
-<template>
-    <b-row class="ml-3 mb-1">
-        <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
-        <div class="pref-content pr-1">
-            <a
-                id="select-preferred-object-store"
-                v-b-modal.modal-select-preferred-object-store
-                class="preferred-storage"
-                href="javascript:void(0)"
-                ><b v-localize>Preferred Object Store</b></a
-            >
-            <div v-localize class="form-text text-muted">
-                Select a preferred default object store for the outputs of new jobs to be created in.
-            </div>
-            <b-modal
-                id="modal-select-preferred-object-store"
-                ref="modal"
-                v-model="showModal"
-                centered
-                title="Preferred Object Store"
-                :title-tag="titleTag"
-                hide-footer
-                static
-                :size="modalSize"
-                @show="resetModal"
-                @hidden="resetModal">
-                <SelectObjectStore
-                    :parent-error="error"
-                    :for-what="newDatasetsDescription"
-                    :selected-object-store-id="selectedObjectStoreId"
-                    :default-option-title="galaxySelectionDefaultTitle"
-                    :default-option-description="galaxySelectionDefaultDescription"
-                    @onSubmit="handleSubmit" />
-            </b-modal>
-        </div>
-    </b-row>
-</template>
-
-<script>
+<script setup lang="ts">
 import axios from "axios";
-import { prependPath } from "utils/redirect";
-import Vue from "vue";
-import { BModal, BRow, VBModal } from "bootstrap-vue";
-import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
-import { errorMessageAsString } from "utils/simple-error";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-Vue.use(VBModal);
+import { isRegisteredUser } from "@/api";
+import { useConfigStore } from "@/stores/configurationStore";
+import { useUserStore } from "@/stores/userStore";
+import { prependPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
-export default {
-    components: {
-        BModal,
-        BRow,
-        SelectObjectStore,
-    },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        preferredObjectStoreId: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            error: null,
-            popoverPlacement: "left",
-            newDatasetsDescription: "New dataset outputs from tools and workflows",
-            titleTag: "h3",
-            modalSize: "sm",
-            showModal: false,
-            selectedObjectStoreId: this.preferredObjectStoreId,
-            galaxySelectionDefaultTitle: "Use Galaxy Defaults",
-            galaxySelectionDefaultDescription:
-                "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
-        };
-    },
-    methods: {
-        resetModal() {},
-        async handleSubmit(preferredObjectStoreId) {
-            const payload = { preferred_object_store_id: preferredObjectStoreId };
-            const url = prependPath("api/users/current");
-            try {
-                await axios.put(url, payload);
-            } catch (e) {
-                this.error = errorMessageAsString(e);
-            }
-            this.selectedObjectStoreId = preferredObjectStoreId;
-            this.showModal = false;
-        },
-    },
-};
+import GModal from "../BaseComponents/GModal.vue";
+import SelectObjectStore from "@/components/ObjectStore/SelectObjectStore.vue";
+
+const emit = defineEmits<{
+    (e: "reset"): void;
+}>();
+
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
+
+const error = ref();
+const selectedObjectStoreId = ref(
+    isRegisteredUser(currentUser.value) ? (currentUser.value?.preferred_object_store_id ?? null) : null,
+);
+
+const title = computed(() => {
+    return `${preferredOrEmptyString.value} Galaxy Storage`;
+});
+const preferredOrEmptyString = computed(() => {
+    if (isConfigLoaded && config.value?.object_store_always_respect_user_selection) {
+        return "";
+    } else {
+        return "Preferred";
+    }
+});
+
+function resetModal() {
+    error.value = null;
+    emit("reset");
+}
+
+async function handleSubmit(preferred: string | null) {
+    const payload = { preferred_object_store_id: preferred };
+    const url = prependPath("api/users/current");
+
+    try {
+        await axios.put(url, payload);
+
+        selectedObjectStoreId.value = preferred;
+    } catch (e) {
+        error.value = errorMessageAsString(e);
+    }
+}
 </script>
 
-<style scoped>
-@import "user-styles.scss";
-</style>
+<template>
+    <GModal id="modal-select-preferred-object-store" :title="title" show size="medium" @close="resetModal">
+        <SelectObjectStore
+            :parent-error="error"
+            :selected-object-store-id="selectedObjectStoreId"
+            for-what="New dataset outputs from tools and workflows"
+            default-option-title="Galaxy Defaults"
+            default-option-description="Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator."
+            @onSubmit="handleSubmit" />
+    </GModal>
+</template>

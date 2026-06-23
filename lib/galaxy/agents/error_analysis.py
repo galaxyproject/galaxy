@@ -1,0 +1,290 @@
+"""
+Error analysis agent for tool error diagnosis.
+"""
+
+import logging
+import re
+from functools import partial
+from pathlib import Path
+from typing import (
+    Any,
+    Optional,
+)
+
+import anyio
+from pydantic import BaseModel
+from pydantic_ai import Agent
+
+from galaxy.schema.agents import ConfidenceLevel
+from .base import (
+    ActionSuggestion,
+    ActionType,
+    AgentResponse,
+    AgentRunState,
+    AgentType,
+    BaseGalaxyAgent,
+    ConfidenceLiteral,
+    extract_result_content,
+    extract_structured_output,
+    GalaxyAgentDependencies,
+    normalize_llm_text,
+)
+
+log = logging.getLogger(__name__)
+
+
+class ErrorAnalysisResult(BaseModel):
+    """Structured result from error analysis."""
+
+    error_category: str  # e.g., "tool_configuration", "input_data", "parameters"
+    error_severity: str  # "low", "medium", "high", "critical"
+    likely_cause: str
+    solution_steps: list[str]
+    alternative_approaches: list[str] = []
+    confidence: ConfidenceLiteral
+    requires_admin: bool = False
+
+
+class ErrorAnalysisAgent(BaseGalaxyAgent):
+    """Agent for diagnosing tool failures and providing solutions."""
+
+    agent_type = AgentType.ERROR_ANALYSIS
+    capability_blurb = "Troubleshoot a failed job when you share its error message or job details."
+
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
+        if self._supports_structured_output():
+            agent = Agent(
+                self._get_model(),
+                deps_type=GalaxyAgentDependencies,
+                output_type=ErrorAnalysisResult,
+                system_prompt=self.get_system_prompt(),
+                retries=self._get_retries(),
+            )
+        else:
+            agent = Agent(
+                self._get_model(),
+                deps_type=GalaxyAgentDependencies,
+                system_prompt=self._get_simple_system_prompt(),
+                retries=self._get_retries(),
+            )
+
+        return agent
+
+    def get_system_prompt(self) -> str:
+        prompt_path = Path(__file__).parent / "prompts" / "error_analysis.md"
+        return prompt_path.read_text()
+
+    async def get_job_details(self, job_id: int) -> dict[str, Any]:
+        try:
+            if not self.deps.job_manager:
+                return {"error": "Job manager not available"}
+
+            job = await anyio.to_thread.run_sync(
+                partial(self.deps.job_manager.get_accessible_job, self.deps.trans, job_id)
+            )
+            if not job:
+                return {"error": f"Job {job_id} not found or not accessible"}
+
+            return {
+                "job_id": job.id,
+                "tool_id": job.tool_id,
+                "tool_version": job.tool_version,
+                "state": job.state,
+                "exit_code": job.exit_code,
+                "stderr": job.stderr[:2000] if job.stderr else "",
+                "stdout": job.stdout[:1000] if job.stdout else "",
+                "command_line": job.command_line,
+                "parameters": job.get_param_values(self.deps.trans.app) if hasattr(job, "get_param_values") else {},
+                "create_time": job.create_time.isoformat() if job.create_time else None,
+                "update_time": job.update_time.isoformat() if job.update_time else None,
+                "external_id": job.job_runner_external_id,
+                "destination_id": job.destination_id,
+            }
+        except (AttributeError, KeyError, TypeError) as e:
+            log.warning(f"Error getting job details for {job_id}: {e}")
+            return {"error": f"Failed to retrieve job details: {str(e)}"}
+
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
+        try:
+            log.info(f"ErrorAnalysis: Received query (length={len(query)})")
+            log.info(f"ErrorAnalysis: Query preview: {query[:800]}...")
+
+            enhanced_query = query
+            run_state = context.get("run_state") if context else None
+            if isinstance(run_state, AgentRunState):
+                prior = run_state.get_prior(AgentType.HISTORY)
+                if prior is not None:
+                    log.info("ErrorAnalysis: Found prior history analysis in run_state")
+                    enhanced_query += f"\n\nContext from history analysis:\n{prior.content}"
+
+            if context and context.get("job_id"):
+                job_details = await self.get_job_details(context["job_id"])
+                if "error" not in job_details:
+                    enhanced_query += f"\n\nJob Details:\n{self._format_job_context(job_details)}"
+
+            result = await self._run_with_retry(enhanced_query)
+
+            if self._supports_structured_output():
+                analysis_result = extract_structured_output(result, ErrorAnalysisResult, log)
+
+                if analysis_result is None:
+                    content = extract_result_content(result)
+                    return self._build_response(
+                        content=content,
+                        confidence=ConfidenceLevel.MEDIUM,
+                        method="text_fallback",
+                        result=result,
+                        query=query,
+                    )
+
+                content = self._format_analysis_response(analysis_result)
+                suggestions = self._create_suggestions(analysis_result)
+
+                return self._build_response(
+                    content=content,
+                    confidence=ConfidenceLevel(analysis_result.confidence),
+                    method="structured",
+                    result=result,
+                    query=query,
+                    suggestions=suggestions,
+                    agent_data={
+                        "error_category": analysis_result.error_category,
+                        "requires_admin": analysis_result.requires_admin,
+                        "has_alternatives": bool(analysis_result.alternative_approaches),
+                    },
+                )
+            else:
+                response_text = extract_result_content(result)
+                parsed_result = self._parse_simple_response(response_text)
+
+                return self._build_response(
+                    content=parsed_result.get("content", response_text),
+                    confidence=parsed_result.get("confidence", ConfidenceLevel.MEDIUM),
+                    method="simple_text",
+                    result=result,
+                    query=query,
+                    suggestions=parsed_result.get("suggestions", []),
+                    agent_data={"error_category": parsed_result.get("error_category", "unknown")},
+                )
+
+        except (OSError, ValueError) as e:
+            log.warning(f"Error analysis failed: {e}")
+            return self._get_fallback_response(query, str(e))
+
+    def _format_job_context(self, job_details: dict[str, Any]) -> str:
+        parts = []
+
+        if job_details.get("tool_id"):
+            parts.append(f"Tool: {job_details['tool_id']}")
+        if job_details.get("state"):
+            parts.append(f"State: {job_details['state']}")
+        if job_details.get("exit_code") is not None:
+            parts.append(f"Exit Code: {job_details['exit_code']}")
+        if job_details.get("stderr"):
+            parts.append(f"Error Output: {job_details['stderr'][:500]}...")
+
+        return "\n".join(parts)
+
+    def _format_analysis_response(self, analysis: ErrorAnalysisResult) -> str:
+        parts = []
+
+        parts.append(f"**Error Type**: {analysis.error_category.replace('_', ' ').title()}")
+        parts.append(f"**Severity**: {analysis.error_severity.title()}")
+
+        parts.append(f"\n**Likely Cause**: {analysis.likely_cause}")
+
+        if analysis.solution_steps:
+            parts.append("\n**Recommended Solution**:")
+            for i, step in enumerate(analysis.solution_steps, 1):
+                parts.append(f"{i}. {step}")
+
+        if analysis.alternative_approaches:
+            parts.append("\n**Alternative Approaches**:")
+            for approach in analysis.alternative_approaches:
+                parts.append(f"• {approach}")
+
+        if analysis.requires_admin:
+            parts.append("\n⚠️ **Note**: This issue may require administrator assistance.")
+
+        return "\n".join(parts)
+
+    def _create_suggestions(self, analysis: ErrorAnalysisResult) -> list[ActionSuggestion]:
+        """Create suggestions for concrete, executable Galaxy actions."""
+        suggestions = []
+
+        if analysis.requires_admin:
+            suggestions.append(
+                ActionSuggestion(
+                    action_type=ActionType.CONTACT_SUPPORT,
+                    description="Contact Galaxy administrator for assistance",
+                    confidence=ConfidenceLevel.HIGH,
+                    priority=1,
+                )
+            )
+
+        return suggestions
+
+    def _get_simple_system_prompt(self) -> str:
+        return """
+        You are a Galaxy platform error analysis expert. Analyze the error and provide a helpful response.
+
+        IMPORTANT: If the query includes "Previous analysis from history:" that context ALREADY CONTAINS the error details. Use that information directly to provide a SPECIFIC solution. Do NOT ask for more details or give generic advice.
+
+        Example: If previous analysis says "AssertionError because the input file only contained 2 lines and user requested 3", respond with:
+        CAUSE: The tool was asked to select more lines (3) than exist in the input file (2)
+        SOLUTION: Reduce the "number of lines" parameter to 2 or fewer, or use a larger input file
+        CONFIDENCE: high
+
+        CRITICAL: Never invent URLs or external references. Only state facts you are certain about.
+
+        Respond in this exact format:
+        ERROR_TYPE: [category like tool_failure, parameter_error, resource_exhausted, etc.]
+        CAUSE: [brief explanation of what went wrong]
+        SOLUTION: [step-by-step fix]
+        CONFIDENCE: [high/medium/low]
+        """
+
+    def _strip_metadata_markers(self, text: str) -> str:
+        cleaned = text
+        for marker in ["ERROR_TYPE:", "CAUSE:", "SOLUTION:", "CONFIDENCE:"]:
+            cleaned = re.sub(rf"{re.escape(marker)}[^\n]*\n?", "", cleaned, flags=re.IGNORECASE)
+        return cleaned.strip()
+
+    def _parse_simple_response(self, response_text: str) -> dict[str, Any]:
+        normalized_text = normalize_llm_text(response_text)
+
+        error_type = re.search(r"ERROR_TYPE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        cause = re.search(r"CAUSE:\s*([^\n]+)", normalized_text, re.IGNORECASE)
+        solution = re.search(
+            r"SOLUTION:\s*([^\n]+(?:\n\s*\d+\..*)?)",
+            normalized_text,
+            re.IGNORECASE | re.DOTALL,
+        )
+        confidence = re.search(r"CONFIDENCE:\s*(\w+)", normalized_text, re.IGNORECASE)
+
+        content_parts = []
+        if cause and cause.group(1).strip():
+            content_parts.append(f"**Likely cause:** {cause.group(1).strip()}")
+
+        if solution and solution.group(1).strip():
+            content_parts.append(f"**Solution:**\n{solution.group(1).strip()}")
+
+        if not content_parts:
+            content_parts = [self._strip_metadata_markers(response_text)]
+
+        conf_str = confidence.group(1).lower() if confidence else "medium"
+        confidence_level = ConfidenceLevel(conf_str)
+
+        return {
+            "content": "\n\n".join(content_parts),
+            "confidence": confidence_level,
+            "error_category": error_type.group(1).strip() if error_type else "unknown",
+            "suggestions": [],
+        }
+
+    def _get_fallback_content(self) -> str:
+        return "Unable to complete error analysis at this time."

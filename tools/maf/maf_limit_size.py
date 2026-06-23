@@ -3,6 +3,7 @@
 """
 Removes blocks that fall outside of specified size range.
 """
+
 from __future__ import print_function
 
 import sys

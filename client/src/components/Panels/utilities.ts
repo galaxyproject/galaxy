@@ -1,0 +1,698 @@
+/**
+ * Utilities file for Panel Searches (panel/client search + advanced/backend search)
+ * Note: Any mention of "DL" in this file refers to the Demerau-Levenshtein distance algorithm
+ */
+import {
+    faFilter,
+    faGraduationCap,
+    faNewspaper,
+    faProjectDiagram,
+    faSitemap,
+    faStar,
+    faUndo,
+    type IconDefinition,
+} from "@fortawesome/free-solid-svg-icons";
+import { orderBy } from "lodash";
+
+import { isTool, isToolSection } from "@/api/tools";
+import type {
+    FilterSettings as ToolFilters,
+    Tool,
+    ToolPanelItem,
+    ToolSection,
+    ToolSectionLabel,
+} from "@/stores/toolStore";
+import levenshteinDistance from "@/utils/levenshtein";
+
+export const FAVORITES_KEYS = ["#favs", "#favorites", "#favourites"];
+
+/** Build a ToolSection object */
+export function buildToolSection(id: string, name: string, tools: string[]): ToolSection {
+    return {
+        model_class: "ToolSection",
+        id,
+        name,
+        tools,
+    };
+}
+
+/** Build a ToolSectionLabel object */
+export function buildToolLabel(id: string, text: string): ToolSectionLabel {
+    return {
+        model_class: "ToolSectionLabel",
+        id,
+        text,
+    };
+}
+
+/** Build an array of [toolId, tool] entries from tool IDs and tools by ID map */
+export function buildToolEntries(toolIds: string[], toolsById: Record<string, Tool>): Array<[string, Tool]> {
+    return toolIds.map((id) => [id, toolsById[id]] as [string, Tool]).filter(([, tool]) => tool !== undefined);
+}
+
+/** Filter panel to only include tools matching the provided tool IDs */
+export function filterPanelByToolIds(
+    panel: Record<string, ToolPanelItem>,
+    toolIds: Set<string>,
+): Record<string, Tool | ToolSection> {
+    const filtered: Record<string, Tool | ToolSection> = {};
+    for (const [key, item] of Object.entries(panel)) {
+        if ("tools" in item && item?.tools) {
+            const tools = item.tools.filter((toolId) => typeof toolId === "string" && toolIds.has(toolId));
+            if (tools.length > 0) {
+                filtered[key] = { ...item, tools };
+            }
+        } else if (isTool(item) && toolIds.has(item.id)) {
+            filtered[key] = item;
+        }
+    }
+    return filtered;
+}
+
+const FILTER_KEYS = {
+    id: ["id", "tool_id"],
+    panel_section_name: ["section", "panel_section_name"],
+    labels: ["label", "labels", "tag"],
+};
+const STRING_REPLACEMENTS: string[] = [" ", "-", "\\(", "\\)", "'", ":", `"`];
+const MINIMUM_DL_LENGTH = 5; // for Demerau-Levenshtein distance
+const MINIMUM_WORD_MATCH = 2; // for word match
+export const UNSECTIONED_SECTION: ToolSection = {
+    // to return a section for unsectioned tools
+    model_class: "ToolSection",
+    id: "unsectioned",
+    name: "Unsectioned Tools",
+    description: "Tools that don't appear under any section in the unsearched panel",
+} as const;
+
+// Whoosh's `tool_tags` field analyzer lowercases at index time
+// (KeywordAnalyzer(lowercase=True, commas=True) — see lib/galaxy/tools/search/__init__.py).
+// We lowercase the search clause too so a query for `tag:"Get Data"` matches an
+// indexed `get data` regardless of how the parser handles case folding.
+export function escapeQuotedWhooshToken(value: string) {
+    return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+/** Strip surrounding quotes/whitespace from a user-typed tag value. */
+export function normalizeToolTagValue(tag: string | string[]): string {
+    return String(tag)
+        .trim()
+        .replace(/^"(.*)"$/, "$1")
+        .replace(/^'(.*)'$/, "$1");
+}
+
+/** Quote a tag for inline filter text (`tag:foo` vs `tag:"foo bar"`) without lowercasing. */
+export function quoteToolTagValue(tag: string | string[]): string {
+    const normalizedValue = normalizeToolTagValue(tag);
+    return /\s/.test(normalizedValue) ? `"${escapeQuotedWhooshToken(normalizedValue)}"` : normalizedValue;
+}
+
+function normalizeToolTagQueryValue(tag: string): string {
+    const lowered = normalizeToolTagValue(tag).toLowerCase();
+    return /\s/.test(lowered) ? `"${escapeQuotedWhooshToken(lowered)}"` : lowered;
+}
+
+export function buildToolTagClause(tag: string): string {
+    // Always wrap in parens — Whoosh accepts both `field:"phrase"` and
+    // `field:("phrase")`, but the consistent grouped form composes cleanly
+    // when the clause is concatenated with `AND` siblings.
+    const normalizedTag = normalizeToolTagQueryValue(tag);
+    return `tool_tags:(${normalizedTag})`;
+}
+
+export interface SearchCommonKeys {
+    [key: string]: number | undefined;
+    /** The `name` key must exist on the objects */
+    name?: number;
+    /** property has exact match with query */
+    exact?: number;
+    /** property starts with query */
+    startsWith?: number;
+    /** query contains matches of combined keys (e.g.: `Tool.name + Tool.description`) */
+    combined?: number;
+    /** e.g.: `Tool.name + Tool.description` contains at least
+     * `MINIMUM_WORD_MATCH` words from query
+     */
+    wordMatch?: number;
+}
+
+interface SearchMatch {
+    id: string;
+    /** The order of the match, higher number = higher rank in results */
+    order: number;
+}
+
+const TOOL_SEARCH_KEYS: SearchCommonKeys = {
+    exact: 5,
+    startsWith: 4,
+    name: 3,
+    description: 2,
+    combined: 1,
+    wordMatch: 0,
+};
+const TOOL_SECTION_SEARCH_KEYS: SearchCommonKeys = { exact: 4, startsWith: 3, name: 2, wordMatch: 1, description: 0 };
+
+/** Returns icon for tool panel `view_type` */
+export const types_to_icons = {
+    default: faUndo,
+    favorites: faStar,
+    generic: faFilter,
+    ontology: faSitemap,
+    activity: faProjectDiagram,
+    publication: faNewspaper,
+    training: faGraduationCap,
+} as const satisfies Record<string, IconDefinition>;
+
+// Converts filterSettings { key: value } to query = "key:value"
+export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
+    let query = "";
+    query = Object.entries(filterSettings)
+        .filter(([, value]) => value)
+        .map(([filter, value]) => {
+            if (value === true) {
+                return `is:${filter}`;
+            }
+            return `${filter}:${value}`;
+        })
+        .join(" ");
+    if (Object.keys(filterSettings).length == 1 && filterSettings.name) {
+        return filterSettings.name as string;
+    }
+    return query;
+}
+
+/** Converts filters into tool search backend whoosh query.
+ * @param filterSettings e.g.: {"name": "Tool Name", "section": "Collection", ...}
+ * @returns parsed Whoosh `query`
+ * @example
+ *      createWhooshQuery(filterSettings = {"name": "skew", "ontology": "topic_0797"})
+ *      return query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
+ */
+export function createWhooshQuery(filterSettings: ToolFilters) {
+    const nameClauses: string[] = [];
+    const filterClauses: string[] = [];
+
+    const name = filterSettings["name"];
+    if (typeof name === "string" && name) {
+        nameClauses.push(`name:(${name})`);
+        nameClauses.push(`name_exact:(${name})`);
+        nameClauses.push(`description:(${name})`);
+    }
+
+    for (const [key, filterValue] of Object.entries(filterSettings)) {
+        if (!filterValue || key === "name") {
+            continue;
+        }
+
+        if (key === "tag") {
+            const tags = Array.isArray(filterValue) ? filterValue : [filterValue];
+            const validTags = tags.filter((tag) => !!tag);
+            if (validTags.length > 0) {
+                filterClauses.push(...validTags.map((tag) => buildToolTagClause(tag)));
+            }
+        } else if (typeof filterValue === "string") {
+            if (key === "ontology" && filterValue.includes("operation")) {
+                filterClauses.push(`edam_operations:(${filterValue})`);
+            } else if (key === "ontology" && filterValue.includes("topic")) {
+                filterClauses.push(`edam_topics:(${filterValue})`);
+            } else if (key === "id") {
+                filterClauses.push(`id_exact:(${filterValue})`);
+            } else {
+                filterClauses.push(`${key}:(${filterValue})`);
+            }
+        }
+    }
+
+    if (nameClauses.length > 0 && filterClauses.length > 0) {
+        return `(${nameClauses.join(" ")}) AND (${filterClauses.join(" AND ")})`;
+    }
+
+    if (nameClauses.length > 0) {
+        return `(${nameClauses.join(" ")})`;
+    }
+
+    if (filterClauses.length > 0) {
+        return `(${filterClauses.join(" AND ")})`;
+    }
+
+    return "";
+}
+
+// Determines width given the root and draggable element, smallest and largest size and the current position
+export function determineWidth(
+    rectRoot: { left: number; right: number },
+    rectDraggable: { left: number },
+    minWidth: number,
+    maxWidth: number,
+    direction: string,
+    positionX: number,
+) {
+    let newWidth = null;
+    if (direction === "right") {
+        const offset = rectRoot.left - rectDraggable.left;
+        newWidth = rectRoot.right - positionX - offset;
+    } else {
+        const offset = rectRoot.right - rectDraggable.left;
+        newWidth = positionX - rectRoot.left + offset;
+    }
+    return Math.max(minWidth, Math.min(maxWidth, newWidth));
+}
+
+/**
+ * @param toolsById - all tools, keyed by id
+ * @param results - list of result tool ids
+ * @returns filtered tool results (by id)
+ */
+export function filterTools(toolsById: Record<string, Tool>, results: string[]) {
+    const filteredTools: Record<string, Tool> = {};
+    for (const id of results) {
+        const localTool = toolsById[id];
+        if (localTool !== undefined) {
+            filteredTools[id] = localTool;
+        }
+    }
+    return filteredTools;
+}
+
+/** Returns a `toolsById` object containing tools that meet required conditions such as:
+ * - Not `hidden`
+ * - Not `disabled`
+ * - If in workflow editor panel, only tools that are `is_workflow_compatible`
+ * - Not in an excluded section (if `excludedSectionIds` provided)
+ * @param toolsById object of tools, keyed by id
+ * @param isWorkflowPanel whether or not the ToolPanel is in Workflow Editor
+ * @param excludedSectionIds ids for sections whose tools will be excluded
+ */
+export function getVisibleTools(
+    toolsById: Record<string, Tool>,
+    isWorkflowPanel = false,
+    excludedSectionIds: string[] = [],
+) {
+    const excludeSet = new Set(excludedSectionIds);
+    const validTools: Record<string, Tool> = {};
+
+    for (const [toolId, tool] of Object.entries(toolsById)) {
+        const { panel_section_id, hidden, disabled, is_workflow_compatible } = tool;
+        if (
+            !excludeSet.has(panel_section_id) &&
+            !hidden &&
+            disabled !== true &&
+            !(isWorkflowPanel && !is_workflow_compatible)
+        ) {
+            validTools[toolId] = tool;
+        }
+    }
+
+    return validTools;
+}
+
+/** Looks in each section of `currentPanel` and filters `section.tools` on `validToolIdsInCurrentView` */
+export function getValidToolsInEachSection(
+    validToolIdsInCurrentView: Set<string>,
+    currentPanel: Record<string, ToolPanelItem>,
+): Array<[string, ToolPanelItem]> {
+    return Object.entries(currentPanel).map(([id, section]) => {
+        if (isToolSection(section)) {
+            const validatedSection = { ...section };
+            // assign sectionTools to avoid repeated getter access
+            const sectionTools = validatedSection.tools;
+            if (sectionTools && Array.isArray(sectionTools)) {
+                // filter on valid tools and panel labels in this section
+                validatedSection.tools = sectionTools.filter((toolId) => {
+                    if (typeof toolId === "string" && validToolIdsInCurrentView.has(toolId)) {
+                        return true;
+                    } else if (typeof toolId !== "string") {
+                        // is a special case where there is a label within a section
+                        return true;
+                    }
+                });
+            }
+            return [id, validatedSection];
+        }
+        return [id, section];
+    });
+}
+
+/**
+ * @param items - `[id, PanelItem]` entries (from the `currentPanel` object)
+ * @param validToolIdsInCurrentView - tool ids that are valid in current view
+ * @param excludedSectionIds - any section ids to exclude
+ * @returns a `currentPanel` object containing sections/tools/labels that meet required conditions
+ */
+export function getValidPanelItems(
+    items: Array<[string, ToolPanelItem]>,
+    validToolIdsInCurrentView: Set<string>,
+    excludedSectionIds: string[] = [],
+) {
+    const validEntries = items.filter(([id, item]) => {
+        if (isTool(item) && validToolIdsInCurrentView.has(id)) {
+            // is a `Tool` and is in `localToolsById`
+            return true;
+        } else if (!isToolSection(item)) {
+            // is neither a `Tool` nor a `ToolSection`, maybe a `ToolSectionLabel`
+            return true;
+        } else if ("tools" in item && item.tools?.length && !excludedSectionIds.includes(id)) {
+            // is a `ToolSection` with tools; is not an excluded section
+            return true;
+        } else {
+            return false;
+        }
+    });
+    return Object.fromEntries(validEntries);
+}
+
+/**
+ * Given toolbox, keys to sort/search results by and a search query,
+ * Does a direct string.match() comparison to find results,
+ * If that produces nothing, runs Damerau-Levenshtein distance algorithm to allow misspells
+ *
+ * @param tools - toolbox
+ * @param query - a search query
+ * @param currentPanel - current ToolPanel with { section_id: { tools: [tool ids] }, ... }
+ * @returns an object containing
+ * - results: array of tool ids that match the query
+ * - resultPanel: a ToolPanel with only the results for the currentPanel
+ * - closestTerm: Optional: closest matching term for DL (in case no match with query)
+ *
+ * all sorted by order of keys that are being searched (+ closest matching term if DL)
+ */
+export function searchTools(
+    tools: Tool[],
+    query: string,
+    currentPanel: Record<string, ToolPanelItem>,
+): {
+    results: string[];
+    resultPanel: Record<string, Tool | ToolSection>;
+    closestTerm: string | null;
+} {
+    const { matchedResults, closestTerm } = searchObjectsByKeys<Tool>(tools, TOOL_SEARCH_KEYS, query, [
+        "name",
+        "description",
+    ]);
+    const { idResults, resultPanel } = createSortedResultPanel(matchedResults, currentPanel);
+    return { results: idResults, resultPanel: resultPanel, closestTerm: closestTerm };
+}
+
+export function searchSections(sections: ToolSection[], query: string) {
+    const sectionsById = sections.reduce(
+        (acc, section) => {
+            acc[section.id] = section;
+            return acc;
+        },
+        {} as Record<string, ToolSection>,
+    );
+
+    const { matchedResults, closestTerm } = searchObjectsByKeys<ToolSection>(sections, TOOL_SECTION_SEARCH_KEYS, query);
+
+    const filteredSectionEntries = orderBy(matchedResults, ["order"], ["desc"])
+        .map((match) => sectionsById[match.id])
+        .filter((section) => section !== undefined);
+
+    return { sections: filteredSectionEntries, closestTerm };
+}
+
+/**
+ * Given an array of typed objects, searches for matches based on specified keys and a query.
+ *
+ * @param objects Array of objects to search through
+ * @param keys Keys of the object to search by (and some other special keys), ordered by result priority
+ * @param query The search query _(will be sanitized in this method)_
+ * @param nameKeys Keys to use for name matching and DL algorithm _(values for keys will be concatenated if a `combined` key is provided)_
+ * @param usesDL Boolean used for a recursive call with Damerau-Levenshtein distance check activated
+ * @returns An object containing results with sort order, as well as a _"Did you mean?"_ `closestTerm`
+ */
+export function searchObjectsByKeys<T extends { id: string }>(
+    objects: T[],
+    keys: SearchCommonKeys,
+    query: string,
+    nameKeys: string[] = ["name"],
+    usesDL = false,
+): {
+    /** An object containing the ids and sort `order` of each result.
+     * @example [{ id: "tool1", order: 1 }, { id: "tool2", order: 2 }]
+     */
+    matchedResults: SearchMatch[];
+    closestTerm: string | null;
+} {
+    const matchedResults: SearchMatch[] = [];
+    let closestTerm = null;
+
+    // check if query is of the form "property:value" and then ONLY filter on that property
+    const { filteredQuery, filteredKeys } = filterOnKeys(query, FILTER_KEYS);
+    if (filteredQuery) {
+        query = filteredQuery;
+        keys = filteredKeys;
+    }
+
+    const queryWords = query.trim().toLowerCase().split(" ");
+    const queryValue = sanitizeString(query.trim().toLowerCase(), STRING_REPLACEMENTS);
+    for (const searchedObj of objects) {
+        for (const key of Object.keys(keys)) {
+            if (searchedObj[key as keyof T] || key === "combined") {
+                let actualValue = "";
+                // key = "combined" is a special case (e.g.: for searching name + description)
+                if (key === "combined" && nameKeys.length > 1) {
+                    actualValue = nameKeys
+                        .map((k) => searchedObj[k as keyof T])
+                        .join(" ")
+                        .trim()
+                        .toLowerCase();
+                } else {
+                    const valAtKey = searchedObj[key as keyof T];
+                    if (typeof valAtKey === "string") {
+                        actualValue = valAtKey.trim().toLowerCase();
+                    } else if (Array.isArray(valAtKey)) {
+                        actualValue = valAtKey.join(" ").trim().toLowerCase();
+                    } else if (typeof valAtKey === "number") {
+                        actualValue = valAtKey.toString().trim().toLowerCase();
+                    }
+                }
+
+                // get all (space separated) words in actualValue for searchedObj (for DL)
+                const actualValueWords = actualValue.split(" ");
+                actualValue = sanitizeString(actualValue, STRING_REPLACEMENTS);
+
+                // do we care for exact matches && is it an exact match ?
+                let order =
+                    keys.exact !== undefined && actualValue === queryValue
+                        ? (keys.exact as number)
+                        : (keys[key] as number);
+                // do we care for startsWith && does it actualValue start with query ?
+                order =
+                    keys.startsWith !== undefined &&
+                    order !== keys.exact &&
+                    key === "name" &&
+                    actualValue.startsWith(queryValue)
+                        ? keys.startsWith
+                        : order;
+
+                const wordMatches = Array.from(new Set(actualValueWords.filter((word) => queryWords.includes(word))));
+                if (!usesDL) {
+                    if (actualValue.match(queryValue)) {
+                        // if string.match() returns true, matching searchedObj found
+                        matchedResults.push({ id: searchedObj.id, order });
+                        break;
+                    } else if (
+                        key === "combined" &&
+                        keys.wordMatch !== undefined &&
+                        wordMatches.length >= MINIMUM_WORD_MATCH
+                    ) {
+                        // we are looking at combined name+description, and there are enough word matches
+                        matchedResults.push({ id: searchedObj.id, order: keys.wordMatch });
+                        break;
+                    }
+                } else if (usesDL) {
+                    // if string.match() returns false, try DL distance once to see if there is a closestSubstring
+                    let substring = null;
+                    if (nameKeys.includes(key) && queryValue.length >= MINIMUM_DL_LENGTH) {
+                        substring = closestSubstring(queryValue, actualValue);
+                    }
+                    // there is a closestSubstring: matching searchedObj found
+                    if (substring) {
+                        // get the closest matching term for substring
+                        const foundTerm = matchingTerm(actualValueWords, substring);
+                        if (foundTerm && (!closestTerm || (closestTerm && foundTerm.length < closestTerm.length))) {
+                            closestTerm = foundTerm;
+                        }
+                        matchedResults.push({ id: searchedObj.id, order });
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // no results with string.match(): recursive call with usesDL
+    if (!filteredQuery && !usesDL && matchedResults.length == 0) {
+        return searchObjectsByKeys(objects, keys, query, nameKeys, true);
+    }
+    return {
+        matchedResults,
+        closestTerm,
+    };
+}
+
+function getOrCreateSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+): ToolSection {
+    return acc[sectionId] && isToolSection(acc[sectionId])
+        ? (acc[sectionId] as ToolSection)
+        : buildToolSection(sectionId, sectionName, []);
+}
+
+function addToolToSection(
+    acc: Record<string, Tool | ToolSection>,
+    sectionId: string,
+    sectionName: string,
+    toolId: string,
+): boolean {
+    const section = getOrCreateSection(acc, sectionId, sectionName);
+    section.tools?.push(toolId);
+    acc[sectionId] = section;
+    return true;
+}
+
+/**
+ * Orders the matchedTools by order of keys that are being searched, and creates a resultPanel
+ * @param matchedTools containing { id: tool id, order: order }
+ * @param currentPanel current ToolPanel for current view
+ * @returns an object containing
+ * - idResults: array of tool ids that match the query
+ * - resultPanel: a ToolPanel with only the results
+ */
+export function createSortedResultPanel(matchedTools: SearchMatch[], currentPanel: Record<string, ToolPanelItem>) {
+    const idResults: string[] = [];
+
+    // creating a sectioned results object ({section_id: [tool ids], ...}), keeping
+    // track unique ids of each tool, and also sorting by indexed order of keys
+    const resultPanel = orderBy(matchedTools, ["order"], ["desc"]).reduce(
+        (acc: Record<string, Tool | ToolSection>, match: SearchMatch) => {
+            // we need to search all sections in panel for this tool id
+            const panelItems = Object.keys(currentPanel);
+            for (const itemId of panelItems) {
+                const existingPanelItem = currentPanel[itemId];
+                if (!existingPanelItem) {
+                    continue;
+                }
+
+                let toolAdded = false;
+
+                if ("tools" in existingPanelItem && existingPanelItem.tools?.includes(match.id)) {
+                    // it has tools so is a section, and it has the tool we're looking for
+                    toolAdded = addToolToSection(acc, itemId, existingPanelItem.name, match.id);
+                } else if (isTool(existingPanelItem) && existingPanelItem.id === match.id) {
+                    // it is a tool, and it is the tool we're looking for
+                    // put it in the "Unsectioned Tools" section
+                    toolAdded = addToolToSection(acc, UNSECTIONED_SECTION.id, UNSECTIONED_SECTION.name, match.id);
+                }
+
+                if (toolAdded && !idResults.includes(match.id)) {
+                    idResults.push(match.id);
+                }
+            }
+            return acc;
+        },
+        {},
+    );
+    return { idResults, resultPanel };
+}
+
+/**
+ *
+ * @param query
+ * @param actualStr
+ * @returns substring with smallest DL distance, or null
+ */
+function closestSubstring(query: string, actualStr: string) {
+    // Create max distance
+    // Max distance a query and substring can be apart
+    const maxDistance = Math.floor(query.length / 5);
+    // Create an array of all actualStr substrings that are query length, query length -1, and query length + 1
+    const substrings = Array.from({ length: actualStr.length - query.length + maxDistance }, (_, i) =>
+        actualStr.substr(i, query.length),
+    );
+    if (query.length > 1) {
+        substrings.push(
+            ...Array.from({ length: actualStr.length - query.length + maxDistance + 1 }, (_, i) =>
+                actualStr.substr(i, query.length - maxDistance),
+            ),
+        );
+    }
+    if (actualStr.length > query.length) {
+        substrings.push(
+            ...Array.from({ length: actualStr.length - query.length }, (_, i) =>
+                actualStr.substr(i, query.length + maxDistance),
+            ),
+        );
+    }
+    // check to see if any substrings have a levenshtein distance less than the max distance
+    for (const substring of substrings) {
+        if (levenshteinDistance(query, substring, true) <= maxDistance) {
+            return substring;
+        }
+    }
+    return null;
+}
+
+// given array and a substring, get the closest matching term for substring
+function matchingTerm(termArray: string[], substring: string) {
+    const sanitized = sanitizeString(substring);
+
+    for (const i in termArray) {
+        const term = termArray[i];
+        if (term?.match(sanitized)) {
+            return term;
+        }
+    }
+    return null;
+}
+
+/**
+ *
+ * @param value - to be sanitized
+ * @param targets - Optional: characters to replace
+ * @param substitute - Optional: replacement character
+ * @returns sanitized string
+ */
+function sanitizeString(value: string, targets: string[] = [], substitute = "") {
+    let sanitized = value;
+    targets.forEach((rep) => {
+        sanitized = sanitized.replace(new RegExp(rep, "g"), substitute);
+    });
+
+    return sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * If the query is of the form "property:value", return the value and keys which
+ * ONLY filter on that property.
+ * Otherwise, return null/empty object.
+ * @param query - the raw query
+ * @param keys - keys to filter for
+ */
+function filterOnKeys(query: string, keys: Record<string, string[]>) {
+    for (const key in keys) {
+        const filteredQuery = processForProperty(query, keys[key] || []);
+        if (filteredQuery) {
+            return { filteredQuery, filteredKeys: { [key]: 1 } };
+        }
+    }
+    return { filteredQuery: null, filteredKeys: {} };
+}
+
+/**
+ * If the query is of the form "property:value", return the value.
+ * Otherwise, return null.
+ * @param query - the raw query
+ * @param keys - keys to check for
+ * @returns value or null
+ */
+function processForProperty(query: string, keys: string[]) {
+    for (const key of keys) {
+        if (query.trim().startsWith(`${key}:`)) {
+            return query.split(`${key}:`)[1]?.trim();
+        }
+    }
+    return null;
+}

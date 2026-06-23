@@ -1,118 +1,83 @@
 <template>
-    <div id="columns" class="d-flex">
-        <FlexPanel side="left">
-            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
-        </FlexPanel>
-        <div id="center" class="overflow-auto w-100">
-            <div class="markdown-editor h-100">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons">
-                            <slot name="buttons" />
-                            <b-button
-                                v-b-tooltip.hover.bottom
-                                title="Help"
-                                variant="link"
-                                role="button"
-                                @click="onHelp">
-                                <font-awesome-icon icon="question" />
-                            </b-button>
-                        </div>
-                        <div class="my-1">
-                            {{ title }}
-                        </div>
+    <div id="columns">
+        <div id="center" class="d-flex flex-column h-100 w-100">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <div class="my-1">
+                        {{ title }}
+                    </div>
+                    <div>
+                        <b-form-radio-group
+                            v-if="!hasLabels"
+                            v-model="editor"
+                            v-g-tooltip.hover.bottom
+                            button-variant="outline-primary"
+                            buttons
+                            size="sm"
+                            title="Editor"
+                            :options="editorOptions" />
+                        <slot name="buttons" />
+                        <b-button v-g-tooltip.hover.bottom title="Help" variant="link" role="button" @click="onHelp">
+                            <FontAwesomeIcon :icon="faQuestion" />
+                        </b-button>
                     </div>
                 </div>
-                <div class="unified-panel-body d-flex">
-                    <textarea
-                        id="workflow-report-editor"
-                        ref="text-area"
-                        v-model="content"
-                        class="markdown-textarea"
-                        @input="onUpdate" />
-                </div>
+            </div>
+            <div class="unified-panel-body">
+                <TextEditor
+                    v-if="editor === 'text'"
+                    :title="title"
+                    :markdown-text="markdownText"
+                    :steps="steps"
+                    :mode="mode"
+                    :hide-toolbox="hideToolbox"
+                    @update="$emit('update', $event)" />
+                <CellEditor v-else :markdown-text="markdownText" :labels="labels" @update="$emit('update', $event)" />
             </div>
         </div>
-        <MarkdownHelp ref="help" />
+        <GModal
+            :show.sync="showHelpModal"
+            size="medium"
+            fixed-height
+            :title="mode === 'page' ? 'Markdown Help for Pages' : 'Markdown Help for Invocation Reports'">
+            <MarkdownHelp :mode="mode" />
+        </GModal>
     </div>
 </template>
 
-<script>
-import _ from "underscore";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
-import MarkdownToolBox from "./MarkdownToolBox";
-import FlexPanel from "components/Panels/FlexPanel";
-import MarkdownHelp from "./MarkdownHelp";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, ref } from "vue";
 
-Vue.use(BootstrapVue);
+import type { DirectiveMode } from "./directives";
+import type { WorkflowLabel } from "./Editor/types";
 
-library.add(faQuestion);
+import GModal from "../BaseComponents/GModal.vue";
+import CellEditor from "./Editor/CellEditor.vue";
+import TextEditor from "./Editor/TextEditor.vue";
+import MarkdownHelp from "@/components/Markdown/MarkdownHelp.vue";
 
-const FENCE = "```";
+const props = defineProps<{
+    markdownText: string;
+    mode: DirectiveMode;
+    labels?: Array<WorkflowLabel>;
+    steps?: Record<string, any>;
+    title: string;
+    hideToolbox?: boolean;
+}>();
 
-export default {
-    components: {
-        MarkdownToolBox,
-        FlexPanel,
-        FontAwesomeIcon,
-        MarkdownHelp,
-    },
-    props: {
-        markdownText: {
-            type: String,
-            default: null,
-        },
-        markdownConfig: {
-            type: Object,
-            default: null,
-        },
-        steps: {
-            type: Object,
-            default: null,
-        },
-        title: {
-            type: String,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            content: this.markdownText,
-        };
-    },
-    watch: {
-        markdownText() {
-            const textArea = this.$refs["text-area"];
-            const textCursor = textArea.selectionEnd;
-            this.content = this.markdownText;
-            Vue.nextTick(() => {
-                textArea.selectionEnd = textCursor;
-                textArea.focus();
-            });
-        },
-    },
-    methods: {
-        onInsert(markdown) {
-            markdown = markdown.replace(")(", ", ");
-            markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
-            const textArea = this.$refs["text-area"];
-            textArea.focus();
-            const cursorPosition = textArea.selectionStart;
-            let newContent = this.content.substr(0, cursorPosition);
-            newContent += `\r\n${markdown.trim()}\r\n`;
-            newContent += this.content.substr(cursorPosition);
-            this.$emit("onUpdate", newContent);
-        },
-        onUpdate: _.debounce(function (e) {
-            this.$emit("onUpdate", this.content);
-        }, 300),
-        onHelp() {
-            this.$refs.help.showMarkdownHelp();
-        },
-    },
-};
+const showHelpModal = ref<boolean>(false);
+
+const hasLabels = computed(() => props.labels !== undefined);
+
+const editor = ref("text");
+const editorOptions = ref([
+    { text: "Editor", value: "editor" },
+    { text: "Text", value: "text" },
+]);
+
+function onHelp() {
+    showHelpModal.value = true;
+}
 </script>

@@ -1,45 +1,50 @@
-<template>
-    <iframe
-        :id="id"
-        :name="id"
-        :src="srcWithRoot"
-        class="center-frame"
-        frameborder="0"
-        title="galaxy frame"
-        width="100%"
-        height="100%"
-        @load="onLoad" />
-</template>
-<script>
-import { withPrefix } from "utils/redirect";
-export default {
-    props: {
-        id: {
-            type: String,
-            default: "frame",
-        },
-        src: {
-            type: String,
-            default: "",
-        },
+<script setup lang="ts">
+import { computed, ref } from "vue";
+
+import { withPrefix } from "@/utils/redirect";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+const emit = defineEmits(["load"]);
+const props = withDefaults(
+    defineProps<{
+        id?: string;
+        src?: string;
+    }>(),
+    {
+        id: "frame",
+        src: "",
     },
-    computed: {
-        srcWithRoot() {
-            return withPrefix(this.src);
-        },
-    },
-    methods: {
-        onLoad(ev) {
-            const iframe = ev.currentTarget;
-            const location = iframe.contentWindow && iframe.contentWindow.location;
-            try {
-                if (location && location.host && location.pathname != "/") {
-                    this.$emit("load");
-                }
-            } catch (err) {
-                console.warn("CenterFrame - onLoad location access forbidden.", ev, location);
-            }
-        },
-    },
-};
+);
+
+const srcWithRoot = computed(() => withPrefix(props.src));
+const isLoading = ref(true);
+
+function onLoad(ev: Event) {
+    isLoading.value = false;
+    const iframe = ev.currentTarget as HTMLIFrameElement;
+    const location = iframe?.contentWindow && iframe.contentWindow.location;
+    try {
+        if (location && location.host && location.pathname != "/") {
+            emit("load");
+        }
+    } catch (err) {
+        console.warn("[CenterFrame] onLoad location access forbidden.", ev, location);
+    }
+}
 </script>
+<template>
+    <div class="h-100 overflow-hidden">
+        <LoadingSpan v-if="isLoading">Loading ...</LoadingSpan>
+        <iframe
+            :id="id"
+            :name="id"
+            :src="srcWithRoot"
+            class="center-frame"
+            frameborder="0"
+            title="galaxy frame"
+            width="100%"
+            height="100%"
+            @load="onLoad" />
+    </div>
+</template>

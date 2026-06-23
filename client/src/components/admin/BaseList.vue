@@ -1,44 +1,55 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
+        <BAlert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </BAlert>
+
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
-            <b-button
-                size="sm"
+            <GButton
+                size="small"
+                tooltip
+                tooltip-placement="bottom"
                 :disabled="busy"
                 :title="tooltipAll"
-                data-placement="bottom"
                 @click.prevent="executeAll()">
                 <span :class="icon" />
-            </b-button>
+            </GButton>
             {{ plural }} available.
         </div>
-        <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
+
+        <GTable v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
-                <b-button
-                    size="sm"
+                <GButton
+                    size="small"
+                    tooltip
+                    tooltip-placement="bottom"
                     :disabled="busy"
                     :title="tooltip"
-                    data-placement="bottom"
                     @click.prevent="execute([data.item.id])">
                     <span :class="icon" />
-                </b-button>
+                </GButton>
             </template>
+
             <template v-slot:cell(links)="data">
                 <li v-for="link in data.item.links" :key="link.name">
                     {{ link.name }}
                 </li>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
-<script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
 
-Vue.use(BootstrapVue);
+<script>
+import { BAlert } from "bootstrap-vue";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
+    components: {
+        BAlert,
+        GButton,
+        GTable,
+    },
     props: {
         icon: {
             type: String,

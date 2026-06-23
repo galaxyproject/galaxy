@@ -31,26 +31,26 @@
                 <b-card id="data-managers-card" no-body header="Installed Data Managers">
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
-                            <b-button-group vertical>
-                                <b-button
+                            <GButtonGroup vertical>
+                                <GButton
                                     :id="kebabCase(dataManager['name'])"
                                     :href="dataManager['toolUrl']"
                                     target="_blank"
-                                    variant="primary">
+                                    color="blue">
                                     <div>{{ dataManager["name"] }}</div>
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
-                                </b-button>
-                                <b-button
+                                </GButton>
+                                <GButton
                                     :id="kebabCase(dataManager['name']) + '-jobs'"
                                     :to="{
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
                                     }">
                                     Jobs
-                                </b-button>
-                            </b-button-group>
+                                </GButton>
+                            </GButtonGroup>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
@@ -75,14 +75,20 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Alert from "components/Alert.vue";
-import { debounce } from "underscore";
+import { debounce } from "lodash";
+
+import { getAppRoot } from "@/onload/loadConfig";
+
+import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
 
 export default {
     components: {
         Alert,
+        GButton,
+        GButtonGroup,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");

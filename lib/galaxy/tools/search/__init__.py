@@ -24,13 +24,13 @@ Filters - various filters are available for processing content as the index is
     stemming -> stem; opened -> open; philosophy -> philosoph.
 
 """
+
 import logging
 import os
 import re
 import shutil
 from typing import (
-    Dict,
-    List,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -57,8 +57,18 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import ExecutionTimer
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.util import (
+    ExecutionTimer,
+    unicodify,
+)
+
+if TYPE_CHECKING:
+    from galaxy.tools import (
+        Tool,
+        ToolBox,
+    )
+    from galaxy.tools.cache import ToolCache
+    from galaxy.util.path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -66,10 +76,9 @@ CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
 
 
-def get_or_create_index(index_dir, schema):
+def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
     """Get or create a reference to the index."""
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
+    os.makedirs(index_dir, exist_ok=True)
     if index.exists_in(index_dir):
         idx = index.open_dir(index_dir)
         if idx.schema == schema:
@@ -88,8 +97,8 @@ class ToolBoxSearch:
     Search is delegated off to ToolPanelViewSearch for each panel object.
     """
 
-    def __init__(self, toolbox, index_dir: str, index_help: bool = True):
-        panel_searches = {}
+    def __init__(self, toolbox: "ToolBox", index_dir: str, index_help: bool = True) -> None:
+        panel_searches: dict[str, ToolPanelViewSearch] = {}
         for panel_view in toolbox.panel_views():
             panel_view_id = panel_view.id
             panel_index_dir = os.path.join(index_dir, panel_view_id)
@@ -106,17 +115,16 @@ class ToolBoxSearch:
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         self.index_count += 1
         for panel_search in self.panel_searches.values():
             panel_search.build_index(tool_cache, toolbox, index_help=index_help)
 
-    def search(self, *args, **kwd) -> List[str]:
-        panel_view = kwd.pop("panel_view")
+    def search(self, q: str, panel_view: str, config: GalaxyAppConfiguration) -> list[str]:
         if panel_view not in self.panel_searches:
             raise KeyError(f"Unknown panel_view specified {panel_view}")
         panel_search = self.panel_searches[panel_view]
-        return panel_search.search(*args, **kwd)
+        return panel_search.search(q, config)
 
 
 class ToolPanelViewSearch:
@@ -131,7 +139,7 @@ class ToolPanelViewSearch:
         index_dir: str,
         config: GalaxyAppConfiguration,
         index_help: bool = True,
-    ):
+    ) -> None:
         """Build the schema and validate against the index."""
         schema_conf = {
             # The stored ID field is not searchable
@@ -169,6 +177,10 @@ class ToolPanelViewSearch:
             # Help text parsed from the tool XML
             "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
             "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
+            "tool_tags": TEXT(
+                field_boost=float(config.tool_label_boost),
+                analyzer=analysis.KeywordAnalyzer(lowercase=True, commas=True),
+            ),
         }
 
         if config.tool_enable_ngram_search:
@@ -196,11 +208,11 @@ class ToolPanelViewSearch:
         self.panel_view_id = panel_view_id
         self.index = self._index_setup()
 
-    def _index_setup(self) -> index.Index:
+    def _index_setup(self) -> index.FileIndex:
         """Get or create a reference to the index."""
         return get_or_create_index(self.index_dir, self.schema)
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(self, tool_cache: "ToolCache", toolbox: "ToolBox", index_help: bool = True) -> None:
         """Prepare search index for tools loaded in toolbox.
 
         Use `tool_cache` to determine which tools need indexing and which
@@ -230,9 +242,9 @@ class ToolPanelViewSearch:
                 # Add tool document to index (or overwrite if existing)
                 writer.update_document(**add_doc_kwds)
 
-        log.debug(f"Toolbox index of panel {self.panel_view_id}" f" finished {execution_timer}")
+        log.debug("Toolbox index of panel %s finished %s", self.panel_view_id, execution_timer)
 
-    def _get_tools_to_remove(self, tool_cache) -> list:
+    def _get_tools_to_remove(self, tool_cache: "ToolCache") -> list[str]:
         """Return list of tool IDs to be removed from index."""
         tool_ids_to_remove = (self.indexed_tool_ids - set(tool_cache._tool_paths_by_id.keys())).union(
             tool_cache._removed_tool_ids
@@ -250,9 +262,9 @@ class ToolPanelViewSearch:
 
         return list(tool_ids_to_remove)
 
-    def _get_tool_list(self, toolbox, tool_cache) -> list:
+    def _get_tool_list(self, toolbox: "ToolBox", tool_cache: "ToolCache") -> list["Tool"]:
         """Return list of tools to add and remove from index."""
-        tools_to_index = []
+        tools_to_index: list[Tool] = []
 
         for tool_id in tool_cache._new_tool_ids - self.indexed_tool_ids:
             tool = toolbox.get_tool(tool_id)
@@ -265,6 +277,8 @@ class ToolPanelViewSearch:
                             tool = tool_cache.get_tool_by_id(tool_version.id)
                             if tool and not tool.hidden:
                                 break
+                        else:
+                            continue
                     else:
                         continue
                 tools_to_index.append(tool)
@@ -273,30 +287,30 @@ class ToolPanelViewSearch:
 
     def _create_doc(
         self,
-        tool,
+        tool: "Tool",
         index_help: bool = True,
-    ) -> Dict[str, str]:
-        def clean(string):
+    ) -> dict[str, Union[str, list[str]]]:
+        def clean(s: str) -> str:
             """Remove hyphens as they are Whoosh wildcards."""
-            if "-" in string:
-                return (" ").join(token.text for token in self.rex(to_unicode(tool.name)))
+            if "-" in s:
+                return " ".join(token.text for token in self.rex(s))
             else:
-                return string
+                return s
 
         if tool.tool_type == "manage_data":
             #  Do not add data managers to the public index
             return {}
-        add_doc_kwds = {
-            "id": to_unicode(tool.id),
-            "id_exact": to_unicode(tool.id),
+        add_doc_kwds: dict[str, Union[str, list[str]]] = {
+            "id": unicodify(tool.id),
+            "id_exact": unicodify(tool.id),
             "name": clean(tool.name),
-            "description": to_unicode(tool.description),
-            "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
-            "edam_operations": clean(tool.edam_operations),
-            "edam_topics": clean(tool.edam_topics),
-            "repository": to_unicode(tool.repository_name),
-            "owner": to_unicode(tool.repository_owner),
-            "help": to_unicode(""),
+            "description": unicodify(tool.description),
+            "section": tool.get_panel_section()[1] or "",
+            "edam_operations": [clean(_) for _ in tool.edam_operations or []],
+            "edam_topics": [clean(_) for _ in tool.edam_topics or []],
+            "repository": unicodify(tool.repository_name),
+            "owner": unicodify(tool.repository_owner),
+            "help": unicodify(""),
         }
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
@@ -304,14 +318,16 @@ class ToolPanelViewSearch:
             id_stub = tool.guid[(slash_indexes[1] + 1) : slash_indexes[4]]
             add_doc_kwds["stub"] = clean(id_stub)
         else:
-            add_doc_kwds["stub"] = to_unicode(id)
+            add_doc_kwds["stub"] = unicodify(tool.id)
         if tool.labels:
-            add_doc_kwds["labels"] = to_unicode(" ".join(tool.labels))
+            add_doc_kwds["labels"] = unicodify(" ".join(tool.labels))
+        if tool.tool_tags:
+            add_doc_kwds["tool_tags"] = unicodify(",".join(tool.tool_tags))
         if index_help:
             raw_help = tool.raw_help
             if raw_help:
                 try:
-                    add_doc_kwds["help"] = to_unicode(raw_help)
+                    add_doc_kwds["help"] = unicodify(raw_help)
                 except Exception:
                     # Don't fail to build index when help fails to parse
                     pass
@@ -324,7 +340,7 @@ class ToolPanelViewSearch:
         self,
         q: str,
         config: GalaxyAppConfiguration,
-    ) -> List[str]:
+    ) -> list[str]:
         """Perform search on the in-memory index."""
         # Change field boosts for searcher
         self.searcher = self.index.searcher(
@@ -346,6 +362,7 @@ class ToolPanelViewSearch:
             "owner",
             "help",
             "labels",
+            "tool_tags",
             "stub",
         ]
         self.parser = MultifieldParser(

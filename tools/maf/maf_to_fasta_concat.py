@@ -4,6 +4,7 @@ Read a maf and output a single block fasta file, concatenating blocks
 
 usage %prog species1,species2 maf_file out_file
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

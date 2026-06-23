@@ -28,8 +28,13 @@ class StatsdMiddleware:
         start_time = time.time()
         req = self.application(environ, start_response)
         dt = int((time.time() - start_time) * 1000)
-        page = environ.get("controller_action_key", None) or environ.get("PATH_INFO", "NOPATH").strip("/").replace(
-            "/", "."
+        page = (
+            environ.get("controller_action_key", None)
+            or environ.get("PATH_INFO", "NOPATH")
+            .strip("/")
+            .replace("/", ".")
+            .encode("ascii", errors="replace")
+            .decode()
         )
         self.galaxy_stasd_client.timing(page, dt)
         try:

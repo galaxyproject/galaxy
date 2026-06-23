@@ -1,0 +1,21 @@
+class: GalaxyWorkflow
+inputs:
+  test_input_1: data
+  test_input_2: data
+outputs:
+  out:
+    outputSource: concat_pair/out1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: test_input_1
+  zip_it:
+    tool_id: "__ZIP_COLLECTION__"
+    in:
+      input_forward: first_cat/out_file1
+      input_reverse: test_input_2
+  concat_pair:
+    tool_id: collection_paired_test
+    in:
+      f1: zip_it/output

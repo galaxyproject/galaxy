@@ -5,19 +5,24 @@ Pages are markup created and saved by users that can contain Galaxy objects
 (such as datasets) and are often used to describe or present an analysis
 from within Galaxy.
 """
+
 import logging
 import re
+from collections.abc import Callable
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
-    Callable,
-    List,
-    Tuple,
+    Optional,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import (
+    desc,
     false,
+    func,
     or_,
+    select,
     true,
 )
 from sqlalchemy.orm import aliased
@@ -38,7 +43,17 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
-from galaxy.model.base import transaction
+from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
+    Page,
+    PageRevision,
+    PageTagAssociation,
+    PageUserShareAssociation,
+    StoredWorkflow,
+    User,
+    Visualization,
+)
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -46,10 +61,12 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
     PageIndexQueryPayload,
+    UpdatePagePayload,
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import unicodify
@@ -59,6 +76,9 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine import ScalarResult
 
 log = logging.getLogger(__name__)
 
@@ -102,10 +122,11 @@ INDEX_SEARCH_FILTERS = {
     "s": "slug",
     "t": "tag",
     "is": "is",
+    "type": "type",
 }
 
 
-class PageManager(sharable.SharableModelManager, UsesAnnotations):
+class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
     """Provides operations for managing a Page."""
 
     model_class = model.Page
@@ -123,47 +144,55 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> Tuple[List[model.Page], int]:
+    ) -> tuple["ScalarResult[model.Page]", Union[int, None]]:
         show_deleted = payload.deleted
+        show_own = payload.show_own
+        show_published = payload.show_published
         show_shared = payload.show_shared
         is_admin = trans.user_is_admin
         user = trans.user
 
-        if show_shared is None:
-            show_shared = not show_deleted
-
-        if show_shared and show_deleted:
+        if show_shared and show_deleted and not is_admin:
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        query = trans.sa_session.query(model.Page)
+        if not user and not show_published:
+            message = "Requires user to log in."
+            raise exceptions.RequestParameterInvalidException(message)
 
-        if not is_admin:
-            filters = [model.Page.user == trans.user]
-            if payload.show_published:
-                filters.append(model.Page.published == true())
-            if user and show_shared:
-                filters.append(model.PageUserShareAssociation.user == user)
-                query = query.outerjoin(model.Page.users_shared_with)
-            query = query.filter(or_(*filters))
+        stmt = select(self.model_class)
 
-        if not show_deleted:
-            query = query.filter(model.Page.deleted == false())
-        elif not is_admin:
-            # don't let non-admins see other user's deleted pages
-            query = query.filter(or_(model.Page.deleted == false(), model.Page.user == user))
+        # Do not include pages authored by deleted users
+        if show_published:
+            stmt = stmt.join(Page.user).where(User.deleted == false())
+
+        filters = []
+        if show_own or (not show_published and not show_shared and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if user and show_shared:
+            filters.append(self.user_share_model.user == user)
+            stmt = stmt.outerjoin(self.model_class.users_shared_with)
+        stmt = stmt.where(or_(*filters))
 
         if payload.user_id:
-            query = query.filter(model.Page.user_id == payload.user_id)
+            stmt = stmt.where(self.model_class.user_id == payload.user_id)
+
+        if payload.invocation_id:
+            stmt = stmt.where(self.model_class.source_invocation_id == payload.invocation_id)
+
+        if payload.history_id:
+            stmt = stmt.where(self.model_class.history_id == payload.history_id)
 
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
 
             def p_tag_filter(term_text: str, quoted: bool):
-                nonlocal query
-                alias = aliased(model.PageTagAssociation)
-                query = query.outerjoin(model.Page.tags.of_type(alias))
+                nonlocal stmt
+                alias = aliased(PageTagAssociation)
+                stmt = stmt.outerjoin(Page.tags.of_type(alias))
                 return tag_filter(alias, term_text, quoted)
 
             for term in parsed_search.terms:
@@ -172,108 +201,200 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
                     q = term.text
                     if key == "tag":
                         pg = p_tag_filter(term.text, term.quoted)
-                        query = query.filter(pg)
+                        stmt = stmt.where(pg)
                     elif key == "title":
-                        query = query.filter(text_column_filter(model.Page.title, term))
+                        stmt = stmt.where(text_column_filter(Page.title, term))
                     elif key == "slug":
-                        query = query.filter(text_column_filter(model.Page.slug, term))
+                        stmt = stmt.where(text_column_filter(Page.slug, term))
                     elif key == "user":
-                        query = append_user_filter(query, model.Page, term)
+                        stmt = append_user_filter(stmt, Page, term)
                     elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
                         if q == "published":
-                            query = query.filter(model.Page.published == true())
+                            stmt = stmt.where(Page.published == true())
                         if q == "importable":
-                            query = query.filter(model.Page.importable == true())
+                            stmt = stmt.where(Page.importable == true())
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
-                            query = query.filter(model.PageUserShareAssociation.user == user)
+                            stmt = stmt.where(PageUserShareAssociation.user == user)
+                    elif key == "type":
+                        page_types = set(q.split(","))
+                        valid_types = {"standalone", "history_attached", "all"}
+                        if not page_types.issubset(valid_types):
+                            invalid = page_types - valid_types
+                            raise exceptions.RequestParameterInvalidException(
+                                f"Invalid page type(s): {invalid}. Valid: standalone, history_attached, all"
+                            )
+                        if "all" not in page_types:
+                            type_filters = []
+                            if "standalone" in page_types:
+                                type_filters.append(Page.history_id.is_(None))
+                            if "history_attached" in page_types:
+                                type_filters.append(Page.history_id.is_not(None))
+                            if type_filters:
+                                stmt = stmt.where(or_(*type_filters))
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
-                    alias = aliased(model.User)
-                    query = query.outerjoin(model.Page.user.of_type(alias))
-                    query = query.filter(
+                    alias = aliased(User)
+                    stmt = stmt.outerjoin(Page.user.of_type(alias))
+                    stmt = stmt.where(
                         raw_text_column_filter(
                             [
-                                model.Page.title,
-                                model.Page.slug,
+                                Page.title,
+                                Page.slug,
                                 tf,
                                 alias.username,
                             ],
                             term,
                         )
                     )
+
+        if (show_published or show_shared) and not is_admin:
+            show_deleted = False
+
+        stmt = stmt.where(self.model_class.deleted == (true() if show_deleted else false())).distinct()
+
         if include_total_count:
-            total_matches = query.count()
+            total_matches = get_count(trans.sa_session, stmt)
         else:
             total_matches = None
-        sort_column = getattr(model.Page, payload.sort_by)
+        sort_column = getattr(Page, payload.sort_by)
         if payload.sort_desc:
             sort_column = sort_column.desc()
-        query = query.order_by(sort_column)
+        stmt = stmt.order_by(sort_column)
         if payload.limit is not None:
-            query = query.limit(payload.limit)
+            stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
-            query = query.offset(payload.offset)
-        return query, total_matches
+            stmt = stmt.offset(payload.offset)
+        return trans.sa_session.scalars(stmt), total_matches
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
+        if not user:
+            raise exceptions.AuthenticationRequired("You must be logged in to create pages.")
+        history_id = getattr(payload, "history_id", None)
 
-        if not payload.title:
-            raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.slug:
-            raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not base.is_valid_slug(payload.slug):
-            raise exceptions.ObjectAttributeInvalidException(
-                "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
+        # When creating from an invocation, automatically attach to its history
+        if payload.invocation_id and not history_id:
+            invocation = self.workflow_manager.get_invocation(
+                trans, payload.invocation_id, check_ownership=False, check_accessible=True
             )
-        elif (
-            trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload.slug, deleted=False).first()
-        ):
-            raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+            history_id = invocation.history_id
 
+        # Slug validation: required for non-history pages
+        if history_id:
+            # Get the accessible history
+            history = trans.sa_session.get(model.History, history_id)
+            if not history:
+                raise exceptions.ObjectNotFound("History not found")
+            base.security_check(trans, history, check_ownership=False, check_accessible=True)
+
+            # History-attached pages don't need a slug
+            content_format = payload.content_format or "markdown"
+            content = payload.content or ""
+            # Auto-title from history name if not provided
+            if not payload.title or payload.title == "":
+                payload.title = "Untitled Notebook"
+        else:
+            if not payload.title:
+                raise exceptions.RequestParameterMissingException("title is required for non-history pages")
+            if not payload.slug:
+                raise exceptions.RequestParameterMissingException("slug is required for non-history pages")
+            if page_exists(trans.sa_session, user, payload.slug):
+                raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+            content_format = payload.content_format
+            content = payload.content or ""
+
+        # Populate content from invocation if specified
         if payload.invocation_id:
             invocation_id = payload.invocation_id
             invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
             content = invocation_report.get("markdown")
             content_format = "markdown"
-        else:
-            content = payload.content
-            content_format = payload.content_format
+
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
-        page = trans.app.model.Page()
+        page = model.Page()
         page.title = payload.title
         page.slug = payload.slug
-        page_annotation = payload.annotation
-        if page_annotation is not None:
-            page_annotation = sanitize_html(page_annotation)
-            self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
-
         page.user = user
-        # And the first (empty) page revision
-        page_revision = trans.app.model.PageRevision()
+        if payload.invocation_id:
+            page.source_invocation_id = payload.invocation_id
+        if history_id:
+            page.history_id = history_id
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
+
+        # First page revision
+        page_revision = model.PageRevision()
         page_revision.title = payload.title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content
         page_revision.content_format = content_format
+
         # Persist
         session = trans.sa_session
         session.add(page)
-        with transaction(session):
-            session.commit()
+        session.commit()
+        return page
+
+    def update_page(self, trans, id: int, payload: UpdatePagePayload):
+        user = trans.get_user()
+        if not user:
+            raise exceptions.AuthenticationRequired("You must be logged in to update pages.")
+
+        # Load page from database
+        page = trans.sa_session.get(model.Page, id)
+        if not page:
+            raise exceptions.ObjectNotFound("Page not found")
+        page = base.security_check(trans, page, check_ownership=True, check_accessible=True)
+
+        # Validate slug changes (only for non-history pages)
+        if payload.slug is not None and payload.slug != page.slug:
+            if page_exists(trans.sa_session, user, payload.slug):
+                raise exceptions.DuplicatedSlugException("Page identifier must be unique")
+            page.slug = payload.slug
+
+        # Update page attributes
+        if payload.title:
+            page.title = payload.title
+        if payload.annotation is not None:
+            self.add_item_annotation(trans.sa_session, trans.get_user(), page, payload.annotation)
+
+        # If content provided, create a new revision
+        if payload.content is not None:
+            content_format = payload.content_format or (
+                page.latest_revision.content_format if page.latest_revision else PageContentFormat.html.value
+            )
+            self.save_new_revision(
+                trans,
+                page,
+                {
+                    "content": payload.content,
+                    "content_format": content_format,
+                    "title": payload.title or page.title,
+                    "edit_source": payload.edit_source,
+                },
+            )
+
+        # Persist
+        session = trans.sa_session
+        session.add(page)
+        session.commit()
         return page
 
     def save_new_revision(self, trans, page, payload):
         # Assumes security has already been checked by caller.
         content = payload.get("content", None)
         content_format = payload.get("content_format", None)
-        if not content:
-            raise exceptions.ObjectAttributeMissingException("content undefined or empty")
+        edit_source = payload.get("edit_source", None)
+        if content is None:
+            raise exceptions.ObjectAttributeMissingException("content undefined")
         if content_format not in [None, PageContentFormat.html.value, PageContentFormat.markdown.value]:
             raise exceptions.RequestParameterInvalidException(
                 f"content_format [{content_format}], if specified, must be either html or markdown"
@@ -288,17 +409,43 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             content_format = page.latest_revision.content_format
         content = self.rewrite_content_for_import(trans, content, content_format=content_format)
 
-        page_revision = trans.app.model.PageRevision()
+        page_revision = model.PageRevision()
         page_revision.title = title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content
         page_revision.content_format = content_format
+        page_revision.edit_source = edit_source
 
         # Persist
         session = trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
+        return page_revision
+
+    def list_revisions(self, trans, page, sort_desc: bool = False):
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
+        return sorted(page.revisions, key=lambda r: r.create_time, reverse=sort_desc)
+
+    def get_revision(self, trans, page, revision_id):
+        page = base.security_check(trans, page, check_ownership=False, check_accessible=True)
+        revision = trans.sa_session.get(model.PageRevision, revision_id)
+        if not revision or revision.page_id != page.id:
+            raise exceptions.ObjectNotFound("Page revision not found")
+        return revision
+
+    def restore_revision(self, trans, page, revision_id):
+        page = base.security_check(trans, page, check_ownership=True, check_accessible=True)
+        old_revision = self.get_revision(trans, page, revision_id)
+        # Build revision directly — content is already in internal format
+        # (IDs decoded), so we must NOT run rewrite_content_for_import again.
+        page_revision = model.PageRevision()
+        page_revision.title = old_revision.title
+        page_revision.page = page
+        page.latest_revision = page_revision
+        page_revision.content = old_revision.content
+        page_revision.content_format = old_revision.content_format
+        page_revision.edit_source = "restore"
+        trans.sa_session.commit()
         return page_revision
 
     def rewrite_content_for_import(self, trans, content, content_format: str):
@@ -330,8 +477,9 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             content = unicodify(processor.output(), "utf-8")
             as_dict["content"] = content
         elif content_format == PageContentFormat.markdown.value:
-            content, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
-            as_dict["content"] = content
+            content, content_embed_expanded, extra_attributes = ready_galaxy_markdown_for_export(trans, content)
+            as_dict["content"] = content_embed_expanded
+            as_dict["content_editor"] = content
             as_dict.update(extra_attributes)
         else:
             raise exceptions.RequestParameterInvalidException(
@@ -591,23 +739,27 @@ def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id)
 
 def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
-    item_name = ""
+    item_name: Optional[str] = ""
     if item_class == "History":
-        history = trans.sa_session.query(model.History).get(decoded_item_id)
+        history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
+        assert history
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
+        assert hda
         item_name = hda.name
     elif item_class == "StoredWorkflow":
-        wf = trans.sa_session.query(model.StoredWorkflow).get(decoded_item_id)
+        wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
+        assert wf
         item_name = wf.name
     elif item_class == "Visualization":
-        visualization = trans.sa_session.query(model.Visualization).get(decoded_item_id)
+        visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
+        assert visualization
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     if encode:
@@ -621,3 +773,38 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
         item_id=item_id,
         item_name=item_name,
     )
+
+
+def get_page_revision(session: galaxy_scoped_session, page_id: int):
+    stmt = select(PageRevision).filter_by(page_id=page_id)
+    return session.scalars(stmt)
+
+
+def get_shared_pages(session: galaxy_scoped_session, user: User):
+    stmt = (
+        select(PageUserShareAssociation)
+        .where(PageUserShareAssociation.user == user)
+        .join(Page)
+        .where(Page.deleted == false())
+        .order_by(desc(Page.update_time))
+    )
+    return session.scalars(stmt)
+
+
+def get_page(session: galaxy_scoped_session, user: User, slug: str):
+    stmt = _build_page_query(select(Page), user, slug)
+    return session.scalars(stmt).first()
+
+
+def page_exists(session: galaxy_scoped_session, user: User, slug: str) -> bool:
+    stmt = _build_page_query(select(Page.id), user, slug)
+    return session.scalars(stmt).first() is not None
+
+
+def _build_page_query(select_clause, user: User, slug: str):
+    return select_clause.where(Page.user == user).where(Page.slug == slug).where(Page.deleted == false()).limit(1)
+
+
+def get_count(session, statement):
+    stmt = select(func.count()).select_from(statement.subquery())
+    return session.scalar(stmt)

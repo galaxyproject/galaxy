@@ -1,0 +1,12 @@
+- doc: |
+    INLINE_UDT_BASIC: Cat through a single inline user-defined tool step.
+    Input file content round-trips to the workflow output unchanged.
+  job:
+    input1:
+      class: File
+      contents: "hello inline udt\n"
+  outputs:
+    wf_output:
+      asserts:
+        - that: has_text
+          text: "hello inline udt"

@@ -1,0 +1,26 @@
+{
+  "collection_operations": {
+    "tools": [
+      "__UNZIP_COLLECTION__", "__ZIP_COLLECTION__", "__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"
+    ],
+    "model_class": "ToolSection",
+    "version": "",
+    "id": "collection_operations",
+    "name": "Collection Operations"
+  },
+  "liftOver": {
+    "tools": ["liftOver1"],
+    "model_class": "ToolSection",
+    "version": "",
+    "id": "liftOver",
+    "name": "Lift-Over"
+  },
+  "testlabel1": {
+    "model_class": "ToolSectionLabel",
+    "id": "testlabel1",
+    "text": null,
+    "version": "",
+    "description": null,
+    "links": null
+  }
+}

@@ -1,0 +1,462 @@
+<script setup lang="ts">
+import { faLink, faPlus, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormInput } from "bootstrap-vue";
+import { computed, nextTick, ref, watch } from "vue";
+
+import type { TableField } from "@/components/Common/GTable.types";
+import { urlUploadOptionVisibility } from "@/components/Panels/Upload/shared/uploadOptionVisibility";
+import { getUploadSettingsColumnWidth } from "@/components/Panels/Upload/shared/uploadTableOptionsWidth";
+import { useBulkUploadOperations } from "@/composables/upload/bulkUploadOperations";
+import { useCollectionCreation } from "@/composables/upload/collectionCreation";
+import { useUploadAdvancedMode } from "@/composables/upload/uploadAdvancedMode";
+import { useUploadDefaults } from "@/composables/upload/uploadDefaults";
+import { useUploadItemValidation } from "@/composables/upload/uploadItemValidation";
+import { useUploadOptionBindings } from "@/composables/upload/uploadOptionBindings";
+import { useUploadReadyState } from "@/composables/upload/uploadReadyState";
+import { useUploadStaging } from "@/composables/upload/useUploadStaging";
+import { buildPreparedUpload } from "@/utils/upload";
+import { mapToPasteUrlUpload } from "@/utils/upload/itemMappers";
+import { extractNameFromUrl, isValidUrl, validateUrl } from "@/utils/url";
+
+import type { PreparedUpload, UploadMethodComponent, UploadMethodConfig } from "../types";
+import type { PasteUrlItem } from "../types/uploadItem";
+
+import CollectionCreationConfig from "../CollectionCreationConfig.vue";
+import UploadTableBulkDbKeyHeader from "../shared/UploadTableBulkDbKeyHeader.vue";
+import UploadTableBulkExtensionHeader from "../shared/UploadTableBulkExtensionHeader.vue";
+import UploadTableDbKeyCell from "../shared/UploadTableDbKeyCell.vue";
+import UploadTableExtensionCell from "../shared/UploadTableExtensionCell.vue";
+import UploadTableNameCell from "../shared/UploadTableNameCell.vue";
+import UploadTableOptionsCell from "../shared/UploadTableOptionsCell.vue";
+import UploadTableOptionsHeader from "../shared/UploadTableOptionsHeader.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
+
+interface Props {
+    method: UploadMethodConfig;
+    /** History ID where uploaded datasets will be added. */
+    targetHistoryId: string;
+    /** Allow creating dataset collections from pasted URLs. */
+    allowCollections?: boolean;
+    /** Optional list of allowed formats to constrain selectable extensions. */
+    formats?: string[];
+    /** When false, restrict to a single URL entry. */
+    multiple?: boolean;
+    /** When true, do not persist staging to the shared store (modal use). */
+    transient?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    allowCollections: true,
+    formats: undefined,
+    multiple: true,
+    transient: false,
+});
+
+const emit = defineEmits<{
+    (e: "ready", ready: boolean): void;
+}>();
+
+const { advancedMode } = useUploadAdvancedMode();
+
+const optionVisibility = computed(() => urlUploadOptionVisibility(advancedMode.value));
+
+const { effectiveExtensions, listDbKeys, configurationsReady, createItemDefaults } = useUploadDefaults(props.formats);
+
+const tableContainerRef = ref<HTMLElement | null>(null);
+const collectionConfigComponent = ref<InstanceType<typeof CollectionCreationConfig> | null>(null);
+
+const { buildCollectionConfig, collectionState, handleCollectionStateChange, resetCollection } =
+    useCollectionCreation(collectionConfigComponent);
+
+let nextId = 1;
+
+function createPasteUrlItem(id: number, url: string, name: string): PasteUrlItem {
+    return {
+        id,
+        url,
+        name,
+        ...createItemDefaults(),
+        deferred: false,
+    };
+}
+
+const urlItems = ref<PasteUrlItem[]>([]);
+const urlText = ref("");
+const showInputOverride = ref(false);
+const showInputArea = computed(() => {
+    if (urlItems.value.length > 0) {
+        return showInputOverride.value;
+    }
+    return true;
+});
+const { clear: clearStaging } = useUploadStaging<PasteUrlItem>(props.method.id, urlItems, {
+    disableStore: props.transient,
+});
+
+const placeholder = "https://example.org/data1.txt\nhttps://example.org/data2.txt";
+
+const hasItems = computed(() => urlItems.value.length > 0);
+const isSingleMode = computed(() => props.multiple === false);
+const addMoreUrlsTitle = computed(() =>
+    isSingleMode.value ? "Change selected URL" : "Add more URLs to the upload list",
+);
+const addMoreUrlsLabel = computed(() => (isSingleMode.value ? "Change selected URL" : "Add More URLs"));
+
+const { isNameValid, restoreOriginalName } = useUploadItemValidation();
+
+const bulk = useBulkUploadOperations(urlItems, effectiveExtensions);
+const { headerOptionProps, headerOptionEvents, getRowOptionProps, getRowOptionEvents } = useUploadOptionBindings(
+    bulk,
+    optionVisibility,
+);
+
+// Additional validation for URL items
+const hasInvalidUrls = computed(() => urlItems.value.some((item) => !isValidUrl(item.url)));
+
+const { isReadyToUpload } = useUploadReadyState(
+    hasItems,
+    collectionState,
+    computed(() => !hasInvalidUrls.value),
+);
+
+watch(isReadyToUpload, (ready) => emit("ready", ready), { immediate: true });
+
+function getUrlValidationMessage(url: string): string {
+    return validateUrl(url).message || url;
+}
+
+function addUrlsFromText() {
+    if (!urlText.value.trim()) {
+        return;
+    }
+
+    const urls = urlText.value
+        .split(/\r?\n/)
+        .map((u) => u.trim())
+        .filter((u) => u.length > 0);
+
+    // Enforce single URL when multiple is false
+    const urlsToAdd = isSingleMode.value ? urls.slice(0, 1) : urls;
+
+    if (isSingleMode.value) {
+        urlItems.value = [];
+    }
+
+    for (const url of urlsToAdd) {
+        urlItems.value.push(createPasteUrlItem(nextId++, url, extractNameFromUrl(url)));
+    }
+
+    urlText.value = "";
+    showInputOverride.value = false;
+    scrollToBottom();
+}
+
+function showUrlInput() {
+    showInputOverride.value = true;
+}
+
+function showUrlList() {
+    showInputOverride.value = false;
+}
+
+function scrollToBottom() {
+    nextTick(() => {
+        if (tableContainerRef.value) {
+            const container = tableContainerRef.value;
+            container.scrollTop = container.scrollHeight;
+        }
+    });
+}
+
+function removeItem(id: number) {
+    urlItems.value = urlItems.value.filter((item) => item.id !== id);
+
+    if (urlItems.value.length === 0) {
+        showInputOverride.value = false;
+        resetCollection();
+    }
+}
+
+const tableFields = computed<TableField[]>(() => [
+    {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        width: "200px",
+        class: "url-name-cell",
+    },
+    {
+        key: "url",
+        label: "URL",
+        sortable: false,
+        class: "url-column",
+    },
+    {
+        key: "extension",
+        label: "Type",
+        sortable: false,
+        width: "180px",
+        align: "center",
+    },
+    {
+        key: "dbKey",
+        label: "Reference",
+        sortable: false,
+        width: "200px",
+        align: "center",
+    },
+    {
+        key: "options",
+        label: "Upload Settings",
+        sortable: false,
+        width: getUploadSettingsColumnWidth(optionVisibility.value),
+        align: "center",
+    },
+    {
+        key: "actions",
+        label: "",
+        sortable: false,
+        width: "50px",
+        align: "center",
+    },
+]);
+
+function reset() {
+    urlItems.value = [];
+    urlText.value = "";
+    clearStaging();
+    showInputOverride.value = false;
+    resetCollection();
+}
+
+function prepareUpload(): PreparedUpload | null {
+    const validItems = urlItems.value.filter((item) => item.url.trim().length > 0);
+    if (validItems.length === 0) {
+        return null;
+    }
+
+    const uploads = validItems.map((item) => mapToPasteUrlUpload(item, props.targetHistoryId));
+    return buildPreparedUpload(uploads, buildCollectionConfig(props.targetHistoryId));
+}
+
+defineExpose<UploadMethodComponent>({ prepareUpload, reset });
+</script>
+
+<template>
+    <div class="paste-links-upload">
+        <!-- URL Input Area -->
+        <div v-if="showInputArea" class="url-input-area">
+            <label for="paste-links-textarea" class="font-weight-bold mb-0">
+                Paste URLs
+                <small class="text-muted ml-2">One URL per line</small>
+                <GButton v-if="hasItems" size="small" inline class="ui-link p-0 ml-2" @click="showUrlList">
+                    {{ urlItems.length }} URL(s) added
+                </GButton>
+            </label>
+            <textarea
+                id="paste-links-textarea"
+                v-model="urlText"
+                class="form-control mb-2 url-textarea"
+                rows="8"
+                :placeholder="placeholder"></textarea>
+            <div class="d-flex justify-content-end align-items-center">
+                <GButton v-if="hasItems" class="mr-2" @click="showUrlList">View Added URLs</GButton>
+                <GButton color="blue" :disabled="!urlText.trim()" data-test-id="add-urls" @click="addUrlsFromText">
+                    <FontAwesomeIcon :icon="faLink" class="mr-1" />
+                    Add URLs
+                </GButton>
+            </div>
+        </div>
+
+        <!-- URL Table with Metadata Editing -->
+        <div v-else class="url-list">
+            <div class="url-list-header mb-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="font-weight-bold">{{ urlItems.length }} URL(s) added</span>
+                </div>
+            </div>
+
+            <div ref="tableContainerRef" class="url-table-container">
+                <GTable hover striped fixed compact :items="urlItems" :fields="tableFields" class="url-table">
+                    <!-- Name column -->
+                    <template v-slot:cell(name)="{ item, index }">
+                        <UploadTableNameCell
+                            :data-test-id="`upload-row-${index + 1}-name`"
+                            :value="item.name"
+                            :state="isNameValid(item.name)"
+                            @input="item.name = $event"
+                            @blur="restoreOriginalName(item, extractNameFromUrl(item.url))" />
+                    </template>
+
+                    <!-- URL column -->
+                    <template v-slot:cell(url)="{ item }">
+                        <div class="d-flex align-items-center">
+                            <BFormInput
+                                v-model="item.url"
+                                v-g-tooltip.hover
+                                size="sm"
+                                :state="isValidUrl(item.url)"
+                                :title="getUrlValidationMessage(item.url)"
+                                class="url-input" />
+                        </div>
+                    </template>
+
+                    <!-- Extension column with bulk operations -->
+                    <template v-slot:head(extension)>
+                        <UploadTableBulkExtensionHeader
+                            :value="bulk.bulkExtension.value"
+                            :extensions="effectiveExtensions"
+                            :warning="bulk.bulkExtensionWarning.value"
+                            :disabled="!configurationsReady"
+                            tooltip="Set file format for all URLs"
+                            @input="bulk.setAllExtensions" />
+                    </template>
+
+                    <template v-slot:cell(extension)="{ item, index }">
+                        <UploadTableExtensionCell
+                            :data-test-id="`upload-row-${index + 1}-extension`"
+                            :value="item.extension"
+                            :extensions="effectiveExtensions"
+                            :warning="bulk.getExtensionWarning(item.extension)"
+                            :disabled="!configurationsReady"
+                            @input="item.extension = $event" />
+                    </template>
+
+                    <!-- DbKey column with bulk operations -->
+                    <template v-slot:head(dbKey)>
+                        <UploadTableBulkDbKeyHeader
+                            :value="bulk.bulkDbKey.value"
+                            :db-keys="listDbKeys"
+                            :disabled="!configurationsReady"
+                            tooltip="Set database key for all URLs"
+                            @input="bulk.setAllDbKeys" />
+                    </template>
+
+                    <template v-slot:cell(dbKey)="{ item, index }">
+                        <UploadTableDbKeyCell
+                            :data-test-id="`upload-row-${index + 1}-dbkey`"
+                            :value="item.dbkey"
+                            :db-keys="listDbKeys"
+                            :disabled="!configurationsReady"
+                            @input="item.dbkey = $event" />
+                    </template>
+
+                    <!-- Options column with bulk checkboxes -->
+                    <template v-slot:head(options)>
+                        <UploadTableOptionsHeader v-bind="headerOptionProps" v-on="headerOptionEvents" />
+                    </template>
+
+                    <template v-slot:cell(options)="{ item }">
+                        <UploadTableOptionsCell v-bind="getRowOptionProps(item)" v-on="getRowOptionEvents(item)" />
+                    </template>
+
+                    <!-- Actions column -->
+                    <template v-slot:cell(actions)="{ item, index }">
+                        <GButton
+                            v-g-tooltip.hover
+                            class="remove-btn"
+                            :data-test-id="`upload-row-${index + 1}-remove`"
+                            outline
+                            transparent
+                            title="Remove URL from list"
+                            @click="removeItem(item.id)">
+                            <FontAwesomeIcon :icon="faTrash" />
+                        </GButton>
+                    </template>
+                </GTable>
+            </div>
+
+            <!-- Collection Creation Section -->
+            <CollectionCreationConfig
+                v-if="props.allowCollections !== false"
+                ref="collectionConfigComponent"
+                :files="urlItems"
+                @update:state="handleCollectionStateChange" />
+
+            <div class="url-list-actions mt-2">
+                <GButton color="grey" tooltip tooltip-placement="top" :title="addMoreUrlsTitle" @click="showUrlInput">
+                    <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+                    {{ addMoreUrlsLabel }}
+                </GButton>
+                <GButton
+                    outline
+                    color="grey"
+                    tooltip
+                    tooltip-placement="top"
+                    title="Remove all URLs from the upload list"
+                    @click="reset">
+                    Clear All
+                </GButton>
+            </div>
+        </div>
+    </div>
+</template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+@import "../shared/upload-table-shared.scss";
+
+.paste-links-upload {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.url-input-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+
+    .url-textarea {
+        font-family: monospace;
+        font-size: 0.9rem;
+        flex: 1;
+        resize: none;
+    }
+}
+
+.url-list {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.url-list-header {
+    @include upload-list-header;
+}
+
+.url-table-container {
+    @include upload-table-container;
+
+    :deep(.url-table thead) {
+        @include upload-table-header;
+    }
+
+    :deep(.url-name-cell) {
+        min-width: 200px;
+    }
+
+    :deep(.url-column) {
+        width: 100%;
+        max-width: 400px;
+        overflow: hidden;
+
+        .url-input {
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+    }
+}
+
+.url-list-actions {
+    @include upload-list-actions;
+}
+</style>

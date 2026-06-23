@@ -1,25 +1,22 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
-import Details from "./Details";
+import { createLocalVue, shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
-jest.mock("app");
+import Details from "./Details.vue";
 
-import { getAppRoot } from "onload/loadConfig";
-jest.mock("onload/loadConfig");
-getAppRoot.mockImplementation(() => "/");
-
-import { Services } from "../services";
-jest.mock("../services");
-
-Services.mockImplementation(() => {
-    return {
+vi.mock("app");
+vi.mock("onload/loadConfig", () => ({
+    getAppRoot: vi.fn(() => "/"),
+}));
+vi.mock("../services", () => ({
+    Services: class Services {
         async getRepositoryByName(url, name, owner) {
             expect(url).toBe("tool_shed_url");
             expect(name).toBe("name");
             expect(owner).toBe("owner");
             return {};
-        },
-    };
-});
+        }
+    },
+}));
 
 describe("Details", () => {
     const localVue = createLocalVue();
@@ -34,11 +31,11 @@ describe("Details", () => {
             },
             localVue,
         });
-        expect(wrapper.findAll("loading-span-stub").length).toBe(1);
-        expect(wrapper.find("loading-span-stub").attributes("message")).toBe("Loading installed repository details");
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(1);
+        expect(wrapper.find("loadingspan-stub").attributes("message")).toBe("Loading installed repository details");
         expect(wrapper.findAll("repositorydetails-stub").length).toBe(0);
         await localVue.nextTick();
-        expect(wrapper.findAll("loading-span-stub").length).toBe(0);
+        expect(wrapper.findAll("loadingspan-stub").length).toBe(0);
         expect(wrapper.findAll(".alert").length).toBe(0);
         expect(wrapper.findAll("repositorydetails-stub").length).toBe(1);
     });

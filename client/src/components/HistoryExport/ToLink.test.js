@@ -1,24 +1,33 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import ToLink from "./ToLink.vue";
 import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
-import { waitOnJob } from "components/JobStates/wait";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { waitOnJob } from "@/components/JobStates/wait";
+
+import ToLink from "./ToLink.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
+
 const TEST_HISTORY_ID = "hist1235";
 const TEST_EXPORTS_URL = `/api/histories/${TEST_HISTORY_ID}/exports`;
 const TEST_JOB_ID = "test1234job";
 
-jest.mock("components/JobStates/wait");
+vi.mock("@/components/JobStates/wait", () => ({
+    waitOnJob: vi.fn(),
+}));
 
 describe("ToLink.vue", () => {
-    let axiosMock;
     let wrapper;
 
     async function mountWithInitialExports(exports) {
-        axiosMock.onGet(TEST_EXPORTS_URL).reply(200, exports);
+        server.use(
+            http.untyped.get(TEST_EXPORTS_URL, () => {
+                return HttpResponse.json(exports);
+            }),
+        );
         wrapper = shallowMount(ToLink, {
             propsData: {
                 historyId: TEST_HISTORY_ID,
@@ -26,26 +35,26 @@ describe("ToLink.vue", () => {
             localVue,
         });
         await wrapper.vm.$nextTick();
-        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
+        expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();
         await flushPromises();
     }
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
+        // Reset before each test
     });
 
     it("should display a link if no exports ever generated", async () => {
         await mountWithInitialExports([]);
         expect(wrapper.find(".export-link")).toBeTruthy();
-        expect(wrapper.find("loading-span-stub").exists()).toBeFalsy(); // loading span gone
+        expect(wrapper.find("loadingspan-stub").exists()).toBeFalsy(); // loading span gone
     });
 
     it("should start polling if latest export is preparing", async () => {
         let then = null;
-        waitOnJob.mockReturnValue(
+        vi.mocked(waitOnJob).mockReturnValue(
             new Promise((then_) => {
                 then = then_;
-            })
+            }),
         );
         await mountWithInitialExports([
             {
@@ -55,10 +64,6 @@ describe("ToLink.vue", () => {
         ]);
         expect(then).toBeTruthy();
         expect(wrapper.vm.waitingOnJob).toBeTruthy();
-        expect(wrapper.find("loading-span-stub").exists()).toBeTruthy();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        expect(wrapper.find("loadingspan-stub").exists()).toBeTruthy();
     });
 });

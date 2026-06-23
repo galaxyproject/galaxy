@@ -1,0 +1,36 @@
+<tool id="gx_data_column" name="gx_data_column" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <command><![CDATA[
+echo 'parameter: $parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data" format="tabular" />
+        <param name="parameter" type="data_column" data_ref="ref_parameter" />
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <param name="parameter" value="1" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 1"/>
+            </expand>
+        </test>
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <param name="parameter" value="2" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 2"/>
+            </expand>
+        </test>
+        <!-- these parameters are implicitly optional -->
+        <test>
+            <param name="ref_parameter" value="2.tabular" />
+            <expand macro="assert_output">
+                <has_line line="parameter: 1"/>
+            </expand>
+        </test>
+    </tests>
+</tool>

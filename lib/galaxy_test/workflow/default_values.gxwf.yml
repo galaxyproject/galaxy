@@ -1,0 +1,17 @@
+class: GalaxyWorkflow
+inputs:
+  required_int_with_default:
+    type: int
+    default: 1
+outputs:
+  out:
+    outputSource: integer_default/out_file1
+steps:
+  integer_default:
+    tool_id: integer_default
+    tool_state:
+      input1: 0
+      input2: 0
+    in:
+      input3:
+        source: required_int_with_default

@@ -50,7 +50,7 @@ Although any FTP server should work, our public site uses ProFTPD.  You'll need 
 * mod_sql_postgres or mod_sql_mysql
 * mod_sql_passwd
 
-We compile by hand using the following configure arguments (OpenSSL is prebuilt and statically linked), you should read the INSTALL file that come with the proftpd source distribution. At least you should consider if you need to use any of these options "install_user=<user> install_group=<group> ./configure --sysconfdir=/etc --localstatedir=/var":
+We compile by hand using the following configure arguments (OpenSSL is prebuilt and statically linked), you should read the INSTALL file that comes with the proftpd source distribution. At least you should consider if you need to use any of these options "install_user=<user> install_group=<group> ./configure --sysconfdir=/etc --localstatedir=/var":
 
 ```console
 ./configure --prefix=/foo --disable-auth-file --disable-ncurses --disable-ident --disable-shadow --enable-openssl --with-modules=mod_sql:mod_sql_postgres:mod_sql_passwd --with-includes=/usr/postgres/9.1-pgdg/include:`pwd`/../openssl/.openssl/include --with-libraries=/usr/postgres/9.1-pgdg/lib/64:`pwd`/../openssl/.openssl/lib

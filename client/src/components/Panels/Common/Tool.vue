@@ -1,88 +1,143 @@
+<script setup lang="ts">
+import { faGripLines } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+
+import type { Tool as ToolType } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
+import ariaAlert from "@/utils/ariaAlert";
+
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
+
+interface Props {
+    tool: ToolType;
+    hideName?: boolean;
+    showFavoriteButton?: boolean;
+    showDragHandle?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    hideName: false,
+    showFavoriteButton: false,
+    showDragHandle: false,
+});
+
+const emit = defineEmits<{
+    (e: "onClick", tool: ToolType, evt: MouseEvent): void;
+}>();
+
+const toolStore = useToolStore();
+const userStore = useUserStore();
+const { currentFavorites } = storeToRefs(userStore);
+
+const isFavorite = computed(() => currentFavorites.value.tools?.includes(props.tool.id));
+
+const toolLink = computed(() => toolStore.getLinkById(props.tool.id));
+const toolTarget = computed(() => toolStore.getTargetById(props.tool.id));
+
+function onClick(evt: MouseEvent) {
+    ariaAlert(`${props.tool.name} selected from panel`);
+    emit("onClick", props.tool, evt);
+}
+</script>
+
 <template>
     <div class="toolTitle">
-        <a v-if="tool.disabled" :data-tool-id="tool.id" class="title-link name text-muted">
-            <span v-if="!hideName">{{ tool.name }}</span>
-            <span class="description">{{ tool.description }}</span>
+        <div v-if="props.showDragHandle" class="favorite-top-level-drag-target">
+            <FontAwesomeIcon :icon="faGripLines" />
+        </div>
+        <a
+            v-if="props.tool.disabled"
+            class="title-link name text-muted tool-link"
+            :data-tool-id="props.tool.id"
+            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null">
+            <span v-if="!props.hideName">{{ props.tool.name }}</span>
+            <span class="description">{{ props.tool.description }}</span>
         </a>
-        <a v-else :class="targetClass" :data-tool-id="tool.id" :href="tool.link" :target="tool.target" @click="onClick">
-            <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
+        <a
+            v-else
+            class="title-link cursor-pointer tool-link"
+            :data-tool-id="props.tool.id"
+            :data-description="props.showDragHandle ? 'favorite-top-level-drag-target' : null"
+            :href="toolLink"
+            :target="toolTarget"
+            :title="props.tool.help"
+            @click="onClick">
             <span class="labels">
                 <span
-                    v-for="(label, index) in tool.labels"
+                    v-for="(label, index) in props.tool.labels"
                     :key="index"
                     :class="['badge', 'badge-primary', `badge-${label}`]">
                     {{ label }}
                 </span>
             </span>
-            <span v-if="!hideName" class="name font-weight-bold">{{ tool.name }}</span>
-            <span class="description">{{ tool.description }}</span>
-            <span
-                v-b-tooltip.hover
-                :class="['operation', 'float-right', operationIcon]"
-                :title="operationTitle"
-                @click.stop.prevent="onOperation" />
+            <span v-if="!props.hideName" class="name font-weight-bold">{{ props.tool.name }}</span>
+            <span class="description">{{ props.tool.description }}</span>
         </a>
+        <div v-if="props.showFavoriteButton || isFavorite" class="toolTitleActions">
+            <ToolFavoriteButton
+                v-if="props.showFavoriteButton || isFavorite"
+                :id="props.tool.id"
+                :class="['tool-favorite-button', { 'tool-favorite-button-hover': isFavorite }]"
+                :data-tool-id="props.tool.id"
+                color="grey" />
+        </div>
     </div>
 </template>
 
-<script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import ariaAlert from "utils/ariaAlert";
-
-Vue.use(BootstrapVue);
-
-export default {
-    name: "Tool",
-    props: {
-        tool: {
-            type: Object,
-            required: true,
-        },
-        operationTitle: {
-            type: String,
-            default: "",
-        },
-        operationIcon: {
-            type: String,
-            default: "",
-        },
-        hideName: {
-            type: Boolean,
-            default: false,
-        },
-        toolKey: {
-            type: String,
-            default: "",
-        },
-    },
-    computed: {
-        targetClass() {
-            if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;
-            } else {
-                return `title-link cursor-pointer`;
-            }
-        },
-    },
-    methods: {
-        onClick(evt) {
-            ariaAlert(`${this.tool.name} selected from panel`);
-            this.$emit("onClick", this.tool, evt);
-        },
-        onOperation(evt) {
-            ariaAlert(`${this.tool.name} operation selected from panel`);
-            this.$emit("onOperation", this.tool, evt);
-        },
-    },
-};
-</script>
-
-<style scoped>
+<style scoped lang="scss">
 .toolTitle {
+    display: flex;
+    align-items: center;
     overflow-wrap: anywhere;
 }
-.logo {
-    width: 2.5rem;
+.tool-link {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.toolTitleActions {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: auto;
+}
+.tool-favorite-button {
+    margin-left: 0;
+}
+.tool-favorite-button-hover {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    transition-delay: 0s;
+    pointer-events: none;
+}
+.toolTitle:hover .tool-favorite-button-hover {
+    opacity: 1;
+    transition-delay: 0.5s;
+    pointer-events: auto;
+}
+.toolTitle:focus-within .tool-favorite-button-hover {
+    opacity: 1;
+    transition-delay: 0s;
+    pointer-events: auto;
+}
+.tool-favorite-button-hover:focus {
+    opacity: 1;
+    transition-delay: 0s;
+    pointer-events: auto;
+}
+.favorite-top-level-drag-target {
+    cursor: grab;
+    user-select: none;
+    margin-left: var(--spacing-2);
+    opacity: 0.5;
+
+    &:active {
+        cursor: grabbing;
+    }
+    &:hover {
+        opacity: 1;
+    }
 }
 </style>

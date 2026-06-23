@@ -10,43 +10,57 @@ from datetime import (
     datetime,
 )
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
 
 from fastapi import (
+    Body,
     Depends,
+    Path,
     Query,
 )
+from fastapi.responses import PlainTextResponse
+from pydantic import Field
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.managers import hdas
+from galaxy import exceptions
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import (
-    JobLock,
     JobManager,
-    JobSearch,
     summarize_destination_params,
     summarize_job_metrics,
     summarize_job_parameters,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import JobIndexSortByEnum
-from galaxy.schema.types import OffsetNaiveDatetime
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous,
-    require_admin,
+from galaxy.schema.jobs import (
+    DeleteJobPayload,
+    EncodedJobDetails,
+    JobConsoleOutput,
+    JobDestinationParams,
+    JobDisplayParametersSummary,
+    JobErrorSummary,
+    JobInputAssociation,
+    JobInputSummary,
+    JobOutputAssociation,
+    JobOutputCollectionAssociation,
+    ReportJobErrorPayload,
+    SearchJobsPayload,
 )
+from galaxy.schema.schema import (
+    DatasetSourceType,
+    JobIndexSortByEnum,
+    JobMetric,
+    JobMetricCollection,
+    JobSummary,
+)
+from galaxy.schema.types import OffsetNaiveDatetime
+from galaxy.tool_util.output_checker import AnyJobMessage
+from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
@@ -58,11 +72,14 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import query_parameter_as_list
 from galaxy.webapps.galaxy.services.jobs import (
+    JobCreateResponse,
     JobIndexPayload,
     JobIndexViewEnum,
+    JobRequest,
     JobsService,
 )
-from galaxy.work.context import WorkRequestContext
+from galaxy.work.context import proxy_work_context_for_history
+from .tools import validate_not_protected
 
 log = logging.getLogger(__name__)
 
@@ -89,7 +106,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 ViewQueryParam: JobIndexViewEnum = Query(
-    default="collection",
+    default=JobIndexViewEnum.collection,
     title="View",
     description="Determines columns to return. Defaults to 'collection'.",
 )
@@ -140,16 +157,29 @@ InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     description="Limit listing of jobs to those that match the specified workflow invocation ID. If none, jobs from any workflow invocation (or from no workflows) may be returned.",
 )
 
+ImplicitCollectionJobsIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Implicit Collection Jobs ID",
+    description="Limit listing of jobs to those that match the specified implicit collection job ID. If none, jobs from any implicit collection execution (or from no implicit collection execution) may be returned.",
+)
+
+ToolRequestIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Tool Request ID",
+    description="Limit listing of jobs to those that were created from the supplied tool request ID. If none, jobs from any tool request (or from no workflows) may be returned.",
+)
+
 SortByQueryParam: JobIndexSortByEnum = Query(
     default=JobIndexSortByEnum.update_time,
     title="Sort By",
     description="Sort results by specified field.",
 )
 
-LimitQueryParam: int = Query(default=500, title="Limit", description="Maximum number of jobs to return.")
+LimitQueryParam: int = Query(default=500, ge=1, title="Limit", description="Maximum number of jobs to return.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Offset",
     description="Return jobs starting from this specified position. For example, if ``limit`` is set to 100 and ``offset`` to 200, jobs 200-299 will be returned.",
 )
@@ -157,7 +187,7 @@ OffsetQueryParam: int = Query(
 query_tags = [
     IndexQueryTag("user", "The user email of the user that executed the Job.", "u"),
     IndexQueryTag("tool_id", "The tool ID corresponding to the job.", "t"),
-    IndexQueryTag("runner", "The job runner name used to execte the job.", "r", admin_only=True),
+    IndexQueryTag("runner", "The job runner name used to execute the job.", "r", admin_only=True),
     IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
 ]
 
@@ -167,48 +197,111 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
+FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
+DeprecatedHdaLddaQueryParam: Optional[DatasetSourceType] = Query(
+    deprecated=True,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
+HdaLddaQueryParam: DatasetSourceType = Query(
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
+
+
+JobIdPathParam = Annotated[DecodedDatabaseIdField, Path(title="Job ID", description="The ID of the job")]
+DatasetIdPathParam = Annotated[DecodedDatabaseIdField, Path(title="Dataset ID", description="The ID of the dataset")]
+
+ReportErrorBody = Body(default=..., title="Report error", description="The values to report an Error")
+SearchJobBody = Body(default=..., title="Search job", description="The values to search an Job")
+DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
+
+
+class ShowFullJobResponse(EncodedJobDetails):
+    tool_stdout: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Output",
+        description="The captured standard output of the tool executed by the job.",
+    )
+    tool_stderr: Optional[str] = Field(
+        default=None,
+        title="Tool Standard Error",
+        description="The captured standard error of the tool executed by the job.",
+    )
+    job_stdout: Optional[str] = Field(
+        default=None,
+        title="Job Standard Output",
+        description="The captured standard output of the job execution.",
+    )
+    job_stderr: Optional[str] = Field(
+        default=None,
+        title="Job Standard Error",
+        description="The captured standard error of the job execution.",
+    )
+    stdout: Optional[str] = Field(  # Legacy (tool_stdout + "\n" + job_stdout)
+        default=None,
+        title="Standard Output",
+        description="Combined tool and job standard output streams.",
+    )
+    stderr: Optional[str] = Field(  # Legacy (tool_stderr + "\n" + job_stderr)
+        default=None,
+        title="Standard Error",
+        description="Combined tool and job standard error streams.",
+    )
+    job_messages: Optional[list[AnyJobMessage]] = Field(
+        default=None,
+        title="Job Messages",
+        description="List with additional information and possible reasons for a failed job.",
+    )
+    dependencies: Optional[list[Any]] = Field(
+        default=None,
+        title="Job dependencies",
+        description="The dependencies of the job.",
+    )
+    job_metrics: Optional[JobMetricCollection] = Field(
+        default=None,
+        title="Job Metrics",
+        description=(
+            "Collections of metrics provided by `JobInstrumenter` plugins on a particular job. "
+            "Only administrators can see these metrics."
+        ),
+    )
+
 
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
 
-    @router.get("/api/jobs/{id}")
-    def show(
-        self,
-        id: DecodedDatabaseIdField,
-        trans: ProvidesUserContext = DependsOnTrans,
-        full: Optional[bool] = False,
-    ) -> Dict[str, Any]:
-        """
-        Return dictionary containing description of job data
-
-        Parameters
-        - id: ID of job to return
-        - full: Return extra information ?
-        """
-        return self.service.show(trans, id, bool(full))
+    @router.post("/api/jobs")
+    def create(
+        self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
+    ) -> JobCreateResponse:
+        validate_not_protected(job_request.tool_id)
+        return self.service.create(trans, job_request)
 
     @router.get("/api/jobs")
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        states: Optional[List[str]] = Depends(query_parameter_as_list(StateQueryParam)),
+        states: Optional[list[str]] = Depends(query_parameter_as_list(StateQueryParam)),
         user_details: bool = UserDetailsQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
         view: JobIndexViewEnum = ViewQueryParam,
-        tool_ids: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
-        tool_ids_like: Optional[List[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
+        tool_ids: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdQueryParam)),
+        tool_ids_like: Optional[list[str]] = Depends(query_parameter_as_list(ToolIdLikeQueryParam)),
         date_range_min: Optional[Union[datetime, date]] = DateRangeMinQueryParam,
         date_range_max: Optional[Union[datetime, date]] = DateRangeMaxQueryParam,
         history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
         workflow_id: Optional[DecodedDatabaseIdField] = WorkflowIdQueryParam,
         invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+        implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = ImplicitCollectionJobsIdQueryParam,
+        tool_request_id: Optional[DecodedDatabaseIdField] = ToolRequestIdQueryParam,
         order_by: JobIndexSortByEnum = SortByQueryParam,
         search: Optional[str] = SearchQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-    ) -> List[Dict[str, Any]]:
-        payload = JobIndexPayload.construct(
+    ) -> list[Union[ShowFullJobResponse, EncodedJobDetails, JobSummary]]:
+        payload = JobIndexPayload.model_construct(
             states=states,
             user_details=user_details,
             user_id=user_id,
@@ -220,6 +313,8 @@ class FastAPIJobs:
             history_id=history_id,
             workflow_id=workflow_id,
             invocation_id=invocation_id,
+            implicit_collection_jobs_id=implicit_collection_jobs_id,
+            tool_request_id=tool_request_id,
             order_by=order_by,
             search=search,
             limit=limit,
@@ -227,19 +322,17 @@ class FastAPIJobs:
         )
         return self.service.index(trans, payload)
 
-
-class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
-    job_manager = depends(JobManager)
-    job_search = depends(JobSearch)
-    hda_manager = depends(hdas.HDAManager)
-
-    @expose_api
-    def common_problems(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        * GET /api/jobs/{id}/common_problems
-            check inputs and job for common potential problems to aid in error reporting
-        """
-        job = self.__get_job(trans, id)
+    @router.get(
+        "/api/jobs/{job_id}/common_problems",
+        name="check_common_problems",
+        summary="Check inputs and job for common potential problems to aid in error reporting",
+    )
+    def common_problems(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobInputSummary:
+        job = self.service.get_job(trans=trans, job_id=job_id)
         seen_ids = set()
         has_empty_inputs = False
         has_duplicate_inputs = False
@@ -257,148 +350,322 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
         # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
         # TODO: sniff inputs (add flag to allow checking files?)
-        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
+        return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
 
-    @expose_api
-    def inputs(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
-        """
-        GET /api/jobs/{id}/inputs
-
-        returns input datasets created by job
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     list of dicts
-        :returns:   list of dictionaries containing input dataset associations
-        """
-        job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.input_datasets, job.input_library_datasets)
-
-    @expose_api
-    def outputs(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
-        """
-        outputs( trans, id )
-        * GET /api/jobs/{id}/outputs
-            returns output datasets created by job
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     list of dicts
-        :returns:   list of dictionaries containing output dataset associations
-        """
-        job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
-
-    @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        delete( trans, id )
-        * Delete /api/jobs/{id}
-            cancels specified job
-
-        :type   id: string
-        :param  id: Encoded job id
-        :type   message: string
-        :param  message: Stop message.
-        """
-        payload = kwd.get("payload") or {}
-        job = self.__get_job(trans, id)
-        message = payload.get("message", None)
-        return self.job_manager.stop(job, message=message)
-
-    @expose_api
-    def resume(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
-        """
-        * PUT /api/jobs/{id}/resume
-            Resumes a paused job
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     list of dicts
-        :returns:   list of dictionaries containing output dataset associations
-        """
-        job = self.__get_job(trans, id)
+    @router.put(
+        "/api/jobs/{job_id}/resume",
+        name="resume_paused_job",
+        summary="Resumes a paused job.",
+    )
+    def resume(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[JobOutputAssociation]:
+        job = self.service.get_job(trans, job_id=job_id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
-        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        # Maybe just return 202 ? What's the point of this ?
+        associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        output_associations = []
+        for association in associations:
+            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+        return output_associations
 
-    @expose_api_anonymous
-    def metrics(self, trans: ProvidesUserContext, **kwd):
+    @router.post(
+        "/api/jobs/{job_id}/error",
+        name="report_error",
+        summary="Submits a bug report via the API.",
+    )
+    def error(
+        self,
+        payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobErrorSummary:
+        # Get dataset on which this error was triggered
+        dataset_id = payload.dataset_id
+        dataset = self.service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+        # Get job
+        job = self.service.get_job(trans, job_id)
+        if not dataset.creating_job or dataset.creating_job.id != job.id:
+            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
+        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        email = payload.email
+        if not email and not trans.anonymous:
+            email = trans.user.email
+        messages = trans.app.error_reports.default_error_plugin.submit_report(
+            dataset=dataset,
+            job=job,
+            tool=tool,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=payload.message,
+        )
+        return JobErrorSummary(messages=messages)
+
+    @router.get(
+        "/api/jobs/{job_id}/inputs",
+        name="get_inputs",
+        summary="Returns input datasets created by a job.",
+    )
+    def inputs(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[JobInputAssociation]:
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        associations = self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+        input_associations = []
+        for association in associations:
+            input_associations.append(JobInputAssociation(name=association.name, dataset=association.dataset))
+        return input_associations
+
+    @router.get(
+        "/api/jobs/{job_id}/outputs",
+        name="get_outputs",
+        summary="Returns output datasets created by a job.",
+    )
+    def outputs(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[Union[JobOutputAssociation, JobOutputCollectionAssociation]]:
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        output_associations: list[Union[JobOutputAssociation, JobOutputCollectionAssociation]] = []
+        for association in associations:
+            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+
+        output_associations.extend(self.service.dictify_output_collection_associations(trans, job))
+        return output_associations
+
+    @router.get(
+        "/api/jobs/{job_id}/console_output",
+        name="get_console_output",
+        summary="Returns STDOUT and STDERR from the tool running in a specific job.",
+    )
+    def console_output(
+        self,
+        job_id: JobIdPathParam,
+        stdout_position: int,
+        stdout_length: int,
+        stderr_position: int,
+        stderr_length: int,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobConsoleOutput:
         """
-        * GET /api/jobs/{job_id}/metrics
-        * GET /api/datasets/{dataset_id}/metrics
-            Return job metrics for specified job. Job accessibility checks are slightly
-            different than dataset checks, so both methods are available.
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :type   dataset_id: string
-        :param  dataset_id: Encoded HDA or LDDA id
-
-        :type   hda_ldda: string
-        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
-                          it is an ldda id.
-
-        :rtype:     list
-        :returns:   list containing job metrics
+        Get the stdout and/or stderr from the tool running in a specific job. The position parameters are the index
+        of where to start reading stdout/stderr. The length parameters control how much
+        stdout/stderr is read.
         """
-        job = self.__get_job(trans, **kwd)
-        return summarize_job_metrics(trans, job)
+        job = self.service.get_job(trans, job_id)
+        output = self.service.job_manager.get_job_console_output(
+            trans,
+            job,
+            int(stdout_position),
+            int(stdout_length),
+            int(stderr_position),
+            int(stderr_length),
+        )
+        return JobConsoleOutput(state=output["state"], stdout=output["stdout"], stderr=output["stderr"])
 
-    @require_admin
-    @expose_api
-    def destination_params(self, trans: ProvidesUserContext, **kwd):
+    @router.get(
+        "/api/jobs/{job_id}/parameters_display",
+        name="resolve_parameters_display",
+        summary="Resolve parameters as a list for nested display.",
+        unstable=True,
+    )
+    def parameters_display_by_job(
+        self,
+        job_id: JobIdPathParam,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobDisplayParametersSummary:
+        """Resolve parameters as a list for nested display."""
+        hda_ldda_str = hda_ldda or "hda"
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
+
+    @router.get(
+        "/api/datasets/{dataset_id}/parameters_display",
+        name="resolve_parameters_display",
+        summary="Resolve parameters as a list for nested display.",
+        deprecated=True,
+        unstable=True,
+    )
+    def parameters_display_by_dataset(
+        self,
+        dataset_id: DatasetIdPathParam,
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobDisplayParametersSummary:
+        """Resolve parameters as a list for nested display."""
+        job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
+        return JobDisplayParametersSummary(**summarize_job_parameters(trans, job))
+
+    @router.get(
+        "/api/jobs/{job_id}/metrics",
+        name="get_metrics",
+        summary="Return job metrics for specified job.",
+    )
+    def metrics_by_job(
+        self,
+        job_id: JobIdPathParam,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[Optional[JobMetric]]:
+        hda_ldda_str = hda_ldda or "hda"
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
+        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
+
+    @router.get(
+        "/api/datasets/{dataset_id}/metrics",
+        name="get_metrics",
+        summary="Return job metrics for specified job.",
+        deprecated=True,
+    )
+    def metrics_by_dataset(
+        self,
+        dataset_id: DatasetIdPathParam,
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> list[Optional[JobMetric]]:
+        job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
+        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
+
+    @router.get(
+        "/api/jobs/{job_id}/destination_params",
+        name="destination_params_job",
+        summary="Return destination parameters for specified job.",
+        require_admin=True,
+    )
+    def destination_params(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobDestinationParams:
+        job = self.service.get_job(trans, job_id=job_id)
+        return JobDestinationParams(**summarize_destination_params(trans, job))
+
+    @router.post(
+        "/api/jobs/search",
+        name="search_jobs",
+        summary="Return jobs for current user",
+    )
+    def search(
+        self,
+        payload: Annotated[SearchJobsPayload, SearchJobBody],
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> list[EncodedJobDetails]:
         """
-        * GET /api/jobs/{job_id}/destination_params
-            Return destination parameters for specified job.
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :rtype:     list
-        :returns:   list containing job destination parameters
+        This method is designed to scan the list of previously run jobs and find records of jobs that had
+        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+        recycle the old results.
         """
-        job = self.__get_job(trans, **kwd)
-        return summarize_destination_params(trans, job)
+        tool_id = payload.tool_id
 
-    @expose_api_anonymous
-    def parameters_display(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/jobs/{job_id}/parameters_display
-        * GET /api/datasets/{dataset_id}/parameters_display
+        tool = trans.app.toolbox.get_tool(tool_id)
+        if tool is None:
+            raise exceptions.ObjectNotFound("Requested tool not found")
+        inputs = payload.inputs
+        # Find files coming in as multipart file data and add to inputs.
+        for k, v in payload.__annotations__.items():
+            if k.startswith("files_") or k.startswith("__files_"):
+                inputs[k] = v
+        request_context = proxy_work_context_for_history(trans)
+        all_params, all_errors, _, _ = tool.expand_incoming(request_context, incoming=inputs)
+        if any(all_errors):
+            return []
+        params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
+        jobs = []
+        assert trans.user
+        for param_dump, param in zip(params_dump, all_params):
+            job = self.service.job_search.by_tool_input(
+                user=trans.user,
+                tool_id=tool_id,
+                tool_version=tool.version,
+                param=param,
+                param_dump=param_dump,
+                job_state=payload.state,
+                history_id=payload.history_id,
+            )
+            if job:
+                jobs.append(job)
+        return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
-            Resolve parameters as a list for nested display. More client logic
-            here than is ideal but it is hard to reason about tool parameter
-            types on the client relative to the server. Job accessibility checks
-            are slightly different than dataset checks, so both methods are
-            available.
+    @router.get(
+        "/api/jobs/{job_id}",
+        name="show_job",
+        summary="Return dictionary containing description of job data.",
+    )
+    def show(
+        self,
+        job_id: JobIdPathParam,
+        full: Annotated[Optional[bool], FullShowQueryParam] = False,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> Union[ShowFullJobResponse, EncodedJobDetails]:
+        if full:
+            return ShowFullJobResponse(**self.service.show(trans, job_id, bool(full)))
+        else:
+            return EncodedJobDetails(**self.service.show(trans, job_id, bool(full)))
 
-            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-            this endpoint will change frequently.
+    @router.get(
+        "/api/jobs/{job_id}/stdout",
+        name="get_job_stdout",
+        summary="Return stdout from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stdout(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stdout as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stdout or ""
 
-        :type   job_id: string
-        :param  job_id: Encoded job id
+    @router.get(
+        "/api/jobs/{job_id}/stderr",
+        name="get_job_stderr",
+        summary="Return stderr from job execution",
+        response_class=PlainTextResponse,
+    )
+    def stderr(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> str:
+        """Return job stderr as plain text."""
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        return job.stderr or ""
 
-        :type   dataset_id: string
-        :param  dataset_id: Encoded HDA or LDDA id
+    @router.delete(
+        "/api/jobs/{job_id}",
+        name="cancel_job",
+        summary="Cancels specified job",
+    )
+    def delete(
+        self,
+        job_id: JobIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
+    ) -> bool:
+        job = self.service.get_job(trans=trans, job_id=job_id)
+        if payload:
+            message = payload.message
+        else:
+            message = None
+        return self.service.job_manager.stop(job, message=message)
 
-        :type   hda_ldda: string
-        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
-                          it is an ldda id.
 
-        :rtype:     list
-        :returns:   job parameters for for display
-        """
-        job = self.__get_job(trans, **kwd)
-        return summarize_job_parameters(trans, job)
+class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    job_manager = depends(JobManager)
 
     @expose_api_anonymous
     def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
@@ -418,28 +685,14 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
-        tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
+        tool = self.app.toolbox.tool_for_job(
+            job, exact=False, check_access=True, user=trans.user, tool_version=kwd.get("tool_version")
+        )
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
         if not tool.is_workflow_compatible:
             raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
-
-    def __dictify_associations(self, trans, *association_lists) -> List[dict]:
-        rval: List[dict] = []
-        for association_list in association_lists:
-            rval.extend(self.__dictify_association(trans, a) for a in association_list)
-        return rval
-
-    def __dictify_association(self, trans, job_dataset_association) -> dict:
-        dataset_dict = None
-        dataset = job_dataset_association.dataset
-        if dataset:
-            if isinstance(dataset, model.HistoryDatasetAssociation):
-                dataset_dict = dict(src="hda", id=trans.security.encode_id(dataset.id))
-            else:
-                dataset_dict = dict(src="ldda", id=trans.security.encode_id(dataset.id))
-        return dict(name=job_dataset_association.name, dataset=dataset_dict)
 
     def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
         if job_id is not None:
@@ -450,120 +703,3 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             # Following checks dataset accessible
             dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
             return dataset_instance.creating_job
-
-    @expose_api
-    def create(self, trans: ProvidesUserContext, payload, **kwd):
-        """See the create method in tools.py in order to submit a job."""
-        raise exceptions.NotImplemented("Please POST to /api/tools instead.")
-
-    @expose_api
-    def search(self, trans: ProvidesHistoryContext, payload: dict, **kwd):
-        """
-        search( trans, payload )
-        * POST /api/jobs/search:
-            return jobs for current user
-
-        :type   payload: dict
-        :param  payload: Dictionary containing description of requested job. This is in the same format as
-            a request to POST /apt/tools would take to initiate a job
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
-
-        This method is designed to scan the list of previously run jobs and find records of jobs that had
-        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-        recycle the old results.
-        """
-        tool_id = payload.get("tool_id")
-        if tool_id is None:
-            raise exceptions.RequestParameterMissingException("No tool id")
-        tool = trans.app.toolbox.get_tool(tool_id)
-        if tool is None:
-            raise exceptions.ObjectNotFound("Requested tool not found")
-        if "inputs" not in payload:
-            raise exceptions.RequestParameterMissingException("No inputs defined")
-        inputs = payload.get("inputs", {})
-        # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.items():
-            if k.startswith("files_") or k.startswith("__files_"):
-                inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
-        if any(all_errors):
-            return []
-        params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
-        jobs = []
-        for param_dump, param in zip(params_dump, all_params):
-            job = self.job_search.by_tool_input(
-                trans=trans,
-                tool_id=tool_id,
-                tool_version=tool.version,
-                param=param,
-                param_dump=param_dump,
-                job_state=payload.get("state"),
-            )
-            if job:
-                jobs.append(job)
-        return [self.encode_all_ids(trans, single_job.to_dict("element"), True) for single_job in jobs]
-
-    @expose_api_anonymous
-    def error(self, trans: ProvidesUserContext, id, payload, **kwd):
-        """
-        error( trans, id )
-        * POST /api/jobs/{id}/error
-            submits a bug report via the API.
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     dictionary
-        :returns:   dictionary containing information regarding where the error report was sent.
-        """
-        # Get dataset on which this error was triggered
-        dataset_id = payload.get("dataset_id")
-        if not dataset_id:
-            raise exceptions.RequestParameterMissingException("No dataset_id")
-        decoded_dataset_id = self.decode_id(dataset_id)
-        dataset = self.hda_manager.get_accessible(decoded_dataset_id, trans.user)
-
-        # Get job
-        job = self.__get_job(trans, id)
-        if dataset.creating_job.id != job.id:
-            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        email = payload.get("email")
-        if not email and not trans.anonymous:
-            email = trans.user.email
-        messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset=dataset,
-            job=job,
-            tool=tool,
-            user_submission=True,
-            user=trans.user,
-            email=email,
-            message=payload.get("message"),
-        )
-
-        return {"messages": messages}
-
-    @require_admin
-    @expose_api
-    def show_job_lock(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/job_lock
-            return boolean indicating if job lock active.
-        """
-        return self.job_manager.job_lock()
-
-    @require_admin
-    @expose_api
-    def update_job_lock(self, trans: ProvidesUserContext, payload, **kwd):
-        """
-        * PUT /api/job_lock
-            return boolean indicating if job lock active.
-        """
-        active = payload.get("active")
-        job_lock = JobLock(active=active)
-        return self.job_manager.update_job_lock(job_lock)

@@ -1,14 +1,35 @@
 import json
 import logging
 import os
+from typing import Optional
 
 from galaxy.exceptions import RequestParameterMissingException
-from galaxy.model.base import transaction
+from galaxy.job_execution.output_collect import copy_collection_metadata_from_target_dict
+from galaxy.model import (
+    History,
+    Job,
+)
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import UninitializedTree
+from galaxy.schema.credentials import CredentialsContext
+from galaxy.tools._types import ToolStateJobInstancePopulatedT
 from galaxy.tools.actions import upload_common
+from galaxy.tools.execute import (
+    DatasetCollectionElementsSliceT,
+    DEFAULT_DATASET_COLLECTION_ELEMENTS,
+    DEFAULT_JOB_CALLBACK,
+    DEFAULT_PREFERRED_OBJECT_STORE_ID,
+    DEFAULT_RERUN_REMAP_JOB_ID,
+    DEFAULT_SET_OUTPUT_HID,
+    JobCallbackT,
+)
+from galaxy.tools.execution_helpers import ToolExecutionCache
 from galaxy.util import ExecutionTimer
 from galaxy.util.bunch import Bunch
-from . import ToolAction
+from . import (
+    ToolAction,
+    ToolActionExecuteResult,
+)
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +37,25 @@ log = logging.getLogger(__name__)
 class BaseUploadToolAction(ToolAction):
     produces_real_jobs = True
 
-    def execute(self, tool, trans, incoming=None, history=None, **kwargs):
+    def execute(
+        self,
+        tool,
+        trans,
+        incoming: Optional[ToolStateJobInstancePopulatedT] = None,
+        history: Optional[History] = None,
+        job_params=None,
+        rerun_remap_job_id: Optional[int] = DEFAULT_RERUN_REMAP_JOB_ID,
+        execution_cache: Optional[ToolExecutionCache] = None,
+        dataset_collection_elements: Optional[DatasetCollectionElementsSliceT] = DEFAULT_DATASET_COLLECTION_ELEMENTS,
+        completed_job: Optional[Job] = None,
+        collection_info: Optional[MatchingCollections] = None,
+        job_callback: Optional[JobCallbackT] = DEFAULT_JOB_CALLBACK,
+        preferred_object_store_id: Optional[str] = DEFAULT_PREFERRED_OBJECT_STORE_ID,
+        credentials_context: Optional[CredentialsContext] = None,
+        set_output_hid: bool = DEFAULT_SET_OUTPUT_HID,
+        flush_job: bool = True,
+        skip: bool = False,
+    ) -> ToolActionExecuteResult:
         trans.check_user_activation()
         incoming = incoming or {}
         dataset_upload_inputs = []
@@ -28,10 +67,10 @@ class BaseUploadToolAction(ToolAction):
         persisting_uploads_timer = ExecutionTimer()
         incoming = upload_common.persist_uploads(incoming, trans)
         log.debug(f"Persisted uploads {persisting_uploads_timer}")
-        rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history)
+        rval = self._setup_job(tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id)
         return rval
 
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
         """Take persisted uploads and create a job for given tool."""
 
     def _create_job(self, *args, **kwds):
@@ -43,7 +82,7 @@ class BaseUploadToolAction(ToolAction):
 
 
 class UploadToolAction(BaseUploadToolAction):
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
         check_timer = ExecutionTimer()
         uploaded_datasets = upload_common.get_uploaded_datasets(
             trans, "", incoming, dataset_upload_inputs, history=history
@@ -55,11 +94,19 @@ class UploadToolAction(BaseUploadToolAction):
         json_file_path = upload_common.create_paramfile(trans, uploaded_datasets)
         data_list = [ud.data for ud in uploaded_datasets]
         log.debug(f"Checked uploads {check_timer}")
-        return self._create_job(trans, incoming, tool, json_file_path, data_list, history=history)
+        return self._create_job(
+            trans,
+            incoming,
+            tool,
+            json_file_path,
+            data_list,
+            history=history,
+            preferred_object_store_id=preferred_object_store_id,
+        )
 
 
 class FetchUploadToolAction(BaseUploadToolAction):
-    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history):
+    def _setup_job(self, tool, trans, incoming, dataset_upload_inputs, history, preferred_object_store_id):
         # Now replace references in requests with these.
         files = incoming.get("files", [])
         files_iter = iter(files)
@@ -104,7 +151,15 @@ class FetchUploadToolAction(BaseUploadToolAction):
                 _precreate_fetched_collection_instance(trans, history, target, outputs)
 
         incoming["request_json"] = json.dumps(request)
-        return self._create_job(trans, incoming, tool, None, outputs, history=history)
+        return self._create_job(
+            trans,
+            incoming,
+            tool,
+            None,
+            outputs,
+            history=history,
+            preferred_object_store_id=preferred_object_store_id,
+        )
 
 
 def _precreate_fetched_hdas(trans, history, target, outputs):
@@ -149,8 +204,8 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     hdca = collections_manager.precreate_dataset_collection_instance(
         trans, history, name, structure=structure, tags=tags
     )
+    copy_collection_metadata_from_target_dict(hdca, target)
     outputs.append(hdca)
     # Following flushed needed for an ID.
-    with transaction(trans.sa_session):
-        trans.sa_session.commit()
+    trans.sa_session.commit()
     target["destination"]["object_id"] = hdca.id

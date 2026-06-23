@@ -1,32 +1,51 @@
-import ToolsJson from "./ToolsJson";
 // test response
-import testToolsListResponse from "../testData/toolsList";
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+
+import testToolsListResponse from "../testData/toolsList";
+import testToolsListInPanelResponse from "../testData/toolsListInPanel";
+
+import ToolsJson from "./ToolsJson.vue";
 
 const localVue = getLocalVue();
+const { server, http } = useServerMock();
 
 describe("ToolSchemaJson/ToolsView.vue", () => {
     let wrapper;
-    let axiosMock;
     const defaultSchemaElementTag = "application/ld+json";
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
+        server.use(
+            http.untyped.get("/api/tools", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("in_panel") === "False" && url.searchParams.get("tool_help") === "True") {
+                    return HttpResponse.json(testToolsListResponse);
+                }
+                return HttpResponse.json([]);
+            }),
+            http.untyped.get("/api/tool_panels/default", () => {
+                return HttpResponse.json(testToolsListInPanelResponse);
+            }),
+        );
         wrapper = shallowMount(ToolsJson, { localVue });
         await flushPromises();
     });
 
     it("schema.org script element is created", async () => {
-        const tools = wrapper.vm.createToolsJson(testToolsListResponse);
+        const toolsList = testToolsListResponse.reduce((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {});
+        const toolsListInPanel = testToolsListInPanelResponse;
+        const tools = wrapper.vm.createToolsJson(toolsList, toolsListInPanel);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);
-        expect(tools["@graph"].length === 5).toBeTruthy();
-        expect(schemaText["@graph"].length === 5).toBeTruthy();
-        expect(schemaElement.type === defaultSchemaElementTag).toBeTruthy();
+        expect(tools["@graph"].length).toBe(5);
+        expect(schemaText["@graph"].length).toBe(5);
+        expect(schemaElement.type).toBe(defaultSchemaElementTag);
     });
 });

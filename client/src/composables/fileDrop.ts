@@ -1,24 +1,44 @@
-import { computed, ref, unref, type Ref } from "vue";
-import { useEventListener, type MaybeComputedRef } from "@vueuse/core";
+import { type MaybeRefOrGetter, useEventListener } from "@vueuse/core";
+import { computed, type Ref, ref, unref } from "vue";
 
 export type FileDropHandler = (event: DragEvent) => void;
 
+export interface FileDropOptions {
+    /** Element which files should be dropped on. */
+    dropZone: MaybeRefOrGetter<EventTarget | null | undefined>;
+    /** Callback function called when drop occurs. */
+    onDrop: Ref<FileDropHandler> | FileDropHandler;
+    /** Callback function called when drop cancelled. */
+    onDropCancel: Ref<FileDropHandler> | FileDropHandler;
+    /** When true, only reacts if no modal is open. */
+    solo: MaybeRefOrGetter<boolean>;
+    /** How long to wait until state resets (ms). By default, 800ms. */
+    idleTime?: number;
+    /** When true, dragging over child elements keeps isFileOverDropZone true. Default is false. */
+    ignoreChildrenOnLeave?: boolean;
+}
+
 /**
  * Custom File-Drop composable
- * @param dropZone Element which files should be dropped on
- * @param onDrop callback function called when drop occurs
- * @param solo when true, only reacts if no modal is open
- * @param idleTime how long to wait until state resets
+ * @param options configuration for file-drop handling
  */
-export function useFileDrop(
-    dropZone: MaybeComputedRef<EventTarget | null | undefined>,
-    onDrop: Ref<FileDropHandler> | FileDropHandler,
-    solo: MaybeComputedRef<boolean>,
-    idleTime = 800
-) {
-    /** returns if any bootstrap modal is open */
-    function isAnyModalOpen() {
-        return document.querySelectorAll(".modal.show").length > 0;
+export function useFileDrop({
+    dropZone,
+    onDrop,
+    onDropCancel,
+    solo,
+    idleTime = 800,
+    ignoreChildrenOnLeave = false,
+}: FileDropOptions) {
+    /** returns true if any other more specific file drop target is on the screen and should
+     *  supersede the global file drop or if an existing modal is present and should likewise
+     *  take precedent.
+     */
+    function disableGlobalDropTargetTarget() {
+        return (
+            document.querySelectorAll(".modal.show").length > 0 ||
+            document.querySelectorAll("[data-galaxy-file-drop-target]").length > 0
+        );
     }
 
     type State = "idle" | "blocked" | "fileDragging";
@@ -41,7 +61,7 @@ export function useFileDrop(
                 case "dragstart":
                     return "blocked";
                 case "dragenter":
-                    if (!(unref(solo) && isAnyModalOpen())) {
+                    if (!(unref(solo) && disableGlobalDropTargetTarget())) {
                         return "fileDragging";
                     }
                     break;
@@ -65,13 +85,19 @@ export function useFileDrop(
             switch (event.type) {
                 case "dragover":
                     event.preventDefault();
-                    idleTimer = setTimeout(() => (currentState.value = "idle"), idleTime);
+                    idleTimer = setTimeout(() => {
+                        currentState.value = "idle";
+                        isFileOverDropZone.value = false;
+                    }, idleTime);
                     break;
                 case "drop":
                     event.preventDefault();
                     if (isFileOverDropZone.value) {
                         const dropHandler = unref(onDrop);
                         dropHandler(event as DragEvent);
+                    } else {
+                        const dropCancelHandler = unref(onDropCancel);
+                        dropCancelHandler(event as DragEvent);
                     }
                     return "idle";
                 case "dragend":
@@ -111,17 +137,42 @@ export function useFileDrop(
         () => {
             isFileOverDropZone.value = true;
         },
-        true
+        true,
     );
 
     useEventListener(
         dropZone,
         "dragleave",
+        (event: DragEvent) => {
+            if (ignoreChildrenOnLeave) {
+                if (isDragLeaveToChild(dropZone, event)) {
+                    return;
+                }
+            }
+
+            isFileOverDropZone.value = false;
+        },
+        true,
+    );
+
+    useEventListener(
+        dropZone,
+        "drop",
         () => {
             isFileOverDropZone.value = false;
         },
-        true
+        true,
     );
 
     return { isFileOverDocument, isFileOverDropZone };
+}
+
+/**
+ * Returns true when a dragleave event moves into a descendant, meaning the drop zone is still active.
+ */
+function isDragLeaveToChild(dropZone: MaybeRefOrGetter<EventTarget | null | undefined>, event: DragEvent) {
+    const target = unref(dropZone) as HTMLElement | null;
+    const relatedTarget = event.relatedTarget as Node | null;
+
+    return Boolean(target && relatedTarget && target.contains(relatedTarget));
 }

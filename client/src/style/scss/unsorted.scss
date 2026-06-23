@@ -384,16 +384,6 @@ div.debug {
 .grid .current {
     background-color: lighten($brand-success, 20%);
 }
-
-// Pulled out of grid base
-.count-box {
-    min-width: 1.1em;
-    padding: 5px;
-    border-width: 1px;
-    border-style: solid;
-    text-align: center;
-    display: inline-block;
-}
 .text-filter-val {
     border: solid 1px #aaaaaa;
     padding: 1px 2px 1px 3px;
@@ -642,18 +632,6 @@ div.permissionContainer {
     padding: 0;
 }
 
-.fa-icon-button {
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    width: 16px;
-    height: 16px;
-    &:hover {
-        color: $brand-info;
-    }
-}
-
 .editable-text {
     cursor: pointer;
 }
@@ -711,7 +689,7 @@ div.permissionContainer {
 
 div.toolSectionTitle {
     font-weight: 500;
-    font-size: $h4-font-size;
+    font-size: $font-size-base;
 }
 
 div.toolTitle,
@@ -935,7 +913,9 @@ div.toolSectionTitle {
     justify-content: center;
 
     /* transition effect. not necessary */
-    transition: opacity 0.2s, visibility 0.2s;
+    transition:
+        opacity 0.2s,
+        visibility 0.2s;
 }
 
 .hidden_description_layer.dragover {
@@ -944,7 +924,6 @@ div.toolSectionTitle {
 }
 
 /* Toolshed, reports custom styles from mako templates */
-body.toolshed,
 body.reports {
     margin: 0;
     padding: 0;

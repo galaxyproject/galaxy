@@ -1,21 +1,33 @@
-import { ref } from "vue";
 import { defineStore } from "pinia";
 
-export const useUserFlagsStore = defineStore(
-    "userFlagsStore",
-    () => {
-        const showSelectionQueryBreakWarning = ref(true);
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
-        function ignoreSelectionQueryBreakWarning() {
-            showSelectionQueryBreakWarning.value = false;
-        }
+export type PreferredFormSelect = "none" | "multi" | "many";
 
-        return {
-            showSelectionQueryBreakWarning,
-            ignoreSelectionQueryBreakWarning,
-        };
-    },
-    {
-        persist: true,
+export const useUserFlagsStore = defineStore("userFlagsStore", () => {
+    const showSelectionQueryBreakWarning = useUserLocalStorage("user-flags-store-show-break-warning", true);
+    const preferredFormSelectElement = useUserLocalStorage(
+        "user-flags-store-preferred-form-select",
+        "none" as PreferredFormSelect,
+    );
+    const showStorageOperationsHelperPopover = useUserLocalStorage(
+        "user-flags-store-show-storage-operations-helper-popover",
+        true,
+    );
+
+    function ignoreSelectionQueryBreakWarning() {
+        showSelectionQueryBreakWarning.value = false;
     }
-);
+
+    function ignoreStorageOperationsHelperPopover() {
+        showStorageOperationsHelperPopover.value = false;
+    }
+
+    return {
+        showSelectionQueryBreakWarning,
+        ignoreSelectionQueryBreakWarning,
+        preferredFormSelectElement,
+        showStorageOperationsHelperPopover,
+        ignoreStorageOperationsHelperPopover,
+    };
+});

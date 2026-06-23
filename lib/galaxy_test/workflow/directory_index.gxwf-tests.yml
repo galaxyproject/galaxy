@@ -1,0 +1,22 @@
+- doc: |
+    Test that passing directory indexes works
+  job:
+    reference:
+      class: File
+      path: 1.fasta
+      filetype: fasta
+  outputs:
+    output:
+      class: File
+      file: 1.fasta
+- doc: |
+    Test that uploading index works
+  job:
+    reference:
+      class: Directory
+      path: bwa_mem2_index
+      filetype: bwa_mem2_index
+  outputs:
+    output:
+      class: File
+      file: 1.fasta

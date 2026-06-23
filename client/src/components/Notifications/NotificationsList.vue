@@ -1,24 +1,33 @@
 <script setup lang="ts">
+import { faCheck, faCog, faRetweet, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useNotificationsStore } from "@/stores/notificationsStore";
-import type { UserNotification } from "@/components/Notifications";
-import NotificationItem from "@/components/Notifications/NotificationItem.vue";
-import { faCircle, faHourglassHalf, faRetweet } from "@fortawesome/free-solid-svg-icons";
-import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
-import { BAlert, BRow, BCol, BFormCheckbox, BButton, BButtonGroup, BCard, BCollapse } from "bootstrap-vue";
 
-library.add(faCircle, faHourglassHalf, faRetweet);
+import type { UserNotification } from "@/api/notifications";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+
+import GCollapse from "@/components/BaseComponents/GCollapse.vue";
+import Heading from "@/components/Common/Heading.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import NotificationCard from "@/components/Notifications/NotificationCard.vue";
+import NotificationsPreferences from "@/components/User/Notifications/NotificationsPreferences.vue";
 
 const notificationsStore = useNotificationsStore();
 const { notifications, loadingNotifications } = storeToRefs(notificationsStore);
 
+interface Props {
+    shouldOpenPreferences?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    shouldOpenPreferences: false,
+});
+
 const showUnread = ref(false);
 const showShared = ref(false);
-const preferencesOpen = ref(false);
+const preferencesOpen = ref(props.shouldOpenPreferences);
 const selectedNotificationIds = ref<string[]>([]);
 
 const haveSelected = computed(() => selectedNotificationIds.value.length > 0);
@@ -26,7 +35,7 @@ const filteredNotifications = computed(() => {
     return notifications.value.filter(filterNotifications);
 });
 const allSelected = computed(
-    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length
+    () => haveSelected.value && selectedNotificationIds.value.length === notifications.value.length,
 );
 
 function filterNotifications(notification: UserNotification) {
@@ -63,20 +72,28 @@ function togglePreferences() {
 </script>
 
 <template>
-    <div aria-labelledby="notifications-list">
-        <div class="d-flex justify-content-between">
-            <h1 id="notifications-title" class="h-lg">Notifications</h1>
-            <BButton class="mb-2" variant="outline-primary" :pressed="preferencesOpen" @click="togglePreferences">
-                <FontAwesomeIcon icon="cog" />
+    <div aria-labelledby="notifications-list" class="notifications-list-container">
+        <div class="notifications-list-header">
+            <Heading id="notifications-title" h1 separator inline size="lg" class="flex-grow-1 mb-2">
+                Notifications
+            </Heading>
+
+            <BButton
+                class="mb-2"
+                size="sm"
+                variant="outline-primary"
+                :pressed="preferencesOpen"
+                @click="togglePreferences">
+                <FontAwesomeIcon :icon="faCog" />
                 Notifications preferences
             </BButton>
         </div>
 
-        <BCollapse v-model="preferencesOpen">
-            <BCard class="m-2">
-                <NotificationsPreferences v-if="preferencesOpen" header-size="h-md" />
-            </BCard>
-        </BCollapse>
+        <GCollapse v-slot="{ contentActive }" v-model="preferencesOpen">
+            <div class="notifications-list-preferences card-container">
+                <NotificationsPreferences v-if="contentActive" header-size="h-md" :embedded="false" />
+            </div>
+        </GCollapse>
 
         <BAlert v-if="loadingNotifications" show>
             <LoadingSpan message="Loading notifications" />
@@ -86,10 +103,10 @@ function togglePreferences() {
             No notifications to show.
         </BAlert>
 
-        <div v-else class="mx-1">
-            <BCard class="mb-2">
-                <BRow class="align-items-center" no-gutters>
-                    <BCol cols="1">
+        <div v-else class="notifications-list-body">
+            <div class="notifications-list-filter card-container">
+                <div class="notifications-list-filter-selection">
+                    <div>
                         <BFormCheckbox
                             :checked="allSelected"
                             :indeterminate="
@@ -99,83 +116,101 @@ function togglePreferences() {
                             @change="selectOrDeselectNotification(notifications)">
                             {{ haveSelected ? `${selectedNotificationIds.length} selected` : "Select all" }}
                         </BFormCheckbox>
-                    </BCol>
-                    <BCol v-if="haveSelected">
+                    </div>
+
+                    <div v-if="haveSelected">
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ seen: true })">
-                            <FontAwesomeIcon icon="check" />
+                            <FontAwesomeIcon :icon="faCheck" />
                             Mark as read
                         </BButton>
+
                         <BButton size="sm" variant="outline-primary" @click="updateNotifications({ deleted: true })">
-                            <FontAwesomeIcon icon="trash" />
+                            <FontAwesomeIcon :icon="faTrash" />
                             Delete
                         </BButton>
-                    </BCol>
-                    <BCol>
-                        <BRow align-h="end" align-v="center">
-                            <span class="mx-2"> Filters: </span>
-                            <BButtonGroup>
-                                <BButton
-                                    id="show-unread-filter"
-                                    size="sm"
-                                    :pressed="showUnread"
-                                    variant="outline-primary"
-                                    @click="showUnread = !showUnread">
-                                    <FontAwesomeIcon icon="check" />
-                                    Unread
-                                </BButton>
-                                <BButton
-                                    id="show-shared-filter"
-                                    size="sm"
-                                    :pressed="showShared"
-                                    variant="outline-primary"
-                                    @click="showShared = !showShared">
-                                    <FontAwesomeIcon icon="retweet" />
-                                    Shared
-                                </BButton>
-                            </BButtonGroup>
-                        </BRow>
-                    </BCol>
-                </BRow>
-            </BCard>
+                    </div>
+                </div>
+
+                <div align-h="end" align-v="center">
+                    <span class="mx-2"> Filters: </span>
+
+                    <BButtonGroup>
+                        <BButton
+                            id="show-unread-filter"
+                            size="sm"
+                            :pressed="showUnread"
+                            variant="outline-primary"
+                            @click="showUnread = !showUnread">
+                            <FontAwesomeIcon :icon="faCheck" />
+                            Unread
+                        </BButton>
+
+                        <BButton
+                            id="show-shared-filter"
+                            size="sm"
+                            :pressed="showShared"
+                            variant="outline-primary"
+                            @click="showShared = !showShared">
+                            <FontAwesomeIcon :icon="faRetweet" />
+                            Shared
+                        </BButton>
+                    </BButtonGroup>
+                </div>
+            </div>
 
             <BAlert v-show="filteredNotifications.length === 0" show variant="info">
                 No matching notifications with current filters.
             </BAlert>
 
-            <TransitionGroup name="notifications-list" tag="div">
-                <BCard
-                    v-for="item in filteredNotifications"
-                    v-show="filteredNotifications.length > 0"
-                    :key="item.id"
-                    class="my-2 notification-card"
-                    :class="!item.seen_time ? 'border-dark' : ''">
-                    <BRow align-h="start" align-v="center">
-                        <BCol cols="auto">
-                            <BButtonGroup>
-                                <FontAwesomeIcon
-                                    v-if="!item.seen_time"
-                                    size="sm"
-                                    class="unread-status position-absolute align-self-center mr-1"
-                                    icon="circle" />
-                                <BFormCheckbox
-                                    :checked="selectedNotificationIds.includes(item.id)"
-                                    @change="selectOrDeselectNotification([item])" />
-                            </BButtonGroup>
-                        </BCol>
-                        <NotificationItem :notification="item" />
-                    </BRow>
-                </BCard>
+            <TransitionGroup
+                v-show="filteredNotifications.length > 0"
+                name="notifications-list"
+                class="notifications-list"
+                tag="div">
+                <NotificationCard
+                    v-for="notification in filteredNotifications"
+                    :key="notification.id"
+                    selectable
+                    unread-border
+                    :notification="notification"
+                    :selected="selectedNotificationIds?.includes(notification.id)"
+                    @select="selectOrDeselectNotification" />
             </TransitionGroup>
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
-.unread-status {
-    left: -1rem;
-    color: $brand-primary;
+.notifications-list-container {
+    .notifications-list-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .notifications-list-preferences {
+        margin: 0 0.5rem 1rem 0.5rem;
+    }
+
+    .notifications-list-body {
+        .notifications-list {
+            padding-bottom: 0.5rem;
+        }
+
+        .notifications-list-filter {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            .notifications-list-filter-selection {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+        }
+    }
 }
 
 .notifications-list-enter-active {

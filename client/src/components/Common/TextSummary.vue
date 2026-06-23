@@ -1,64 +1,110 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faChevronUp, faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { computed, ref } from "vue";
 
-const props = defineProps({
-    description: {
-        type: String,
-        required: true,
-    },
-    showDetails: {
-        type: Boolean,
-        default: false,
-    },
-    maxLength: {
-        type: Number,
-        default: 150,
-    },
+interface Props {
+    /** The maximum length of the unexpanded text / summary */
+    maxLength?: number;
+    /** The text to summarize */
+    description: string;
+    /** If `true`, doesn't let unexpanded text go beyond height of one line
+     * and ignores `maxLength` */
+    oneLineSummary?: boolean;
+    /** If `true`, doesn't show expand/collapse buttons */
+    noExpand?: boolean;
+    /** The component to use for the summary, default = `<span>` */
+    component?: string;
+    /** If `true`, shows the full text */
+    showExpandText?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    maxLength: 150,
+    component: "span",
+    showExpandText: true,
 });
 
-const emit = defineEmits<{
-    (e: "update:show-details", showDetails: boolean): void;
-}>();
+const showDetails = ref(false);
+const refOneLineSummary = ref<HTMLElement | null>(null);
 
-const propShowDetails = computed({
-    get: () => {
-        return props.showDetails;
-    },
-    set: (val) => {
-        emit("update:show-details", val);
-    },
+const textTooLong = computed(() => {
+    if (!props.oneLineSummary) {
+        return props.description.length > props.maxLength;
+    } else if (refOneLineSummary.value) {
+        return refOneLineSummary.value.scrollWidth > refOneLineSummary.value.clientWidth;
+    } else {
+        return false;
+    }
 });
-
-library.add(faChevronUp, faChevronDown);
-const collapsedEnableIcon = "fas fa-chevron-down";
-const collapsedDisableIcon = "fas fa-chevron-up";
-
-// summarized length
-const x = Math.round(props.maxLength - props.maxLength / 2);
-
-const summary = computed(() => props.description.length > props.maxLength);
-const text = computed(() =>
-    props.description.length > props.maxLength ? props.description.slice(0, x) : props.description
-);
 </script>
 
 <template>
-    <div>
-        {{ text }}
-        <span v-if="summary">
-            <a
-                v-if="!propShowDetails"
-                class="text-summary-expand"
-                href="javascript:void(0)"
-                @click.stop="propShowDetails = true">
-                ... <FontAwesomeIcon :icon="collapsedEnableIcon" />
-            </a>
-            <a v-else href="javascript:void(0)" @click.stop="propShowDetails = false">
-                ... <FontAwesomeIcon :icon="collapsedDisableIcon" />
-            </a>
+    <div class="text-summary" :class="{ 'text-summary-short': !showDetails || props.oneLineSummary }">
+        <component :is="props.component" ref="refOneLineSummary">
+            <div class="html-paragraph d-inline-block overflow-hidden w-100" v-html="props.description" />
+        </component>
+
+        <span
+            v-if="!noExpand && textTooLong"
+            v-g-tooltip.hover
+            class="text-summary-expand-button"
+            :class="{ 'text-summary-expand-float': !props.showExpandText }"
+            :title="showDetails ? 'Show less' : 'Show more'"
+            role="button"
+            tabindex="0"
+            @keyup.enter="showDetails = !showDetails"
+            @click.prevent.stop="showDetails = !showDetails">
+            <template v-if="showExpandText">
+                <template v-if="showDetails">Show less</template>
+                <template v-else>Show more</template>
+            </template>
+
+            <FontAwesomeIcon :icon="showDetails ? faChevronUp : faChevronDown" />
         </span>
     </div>
 </template>
+
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
+
+.text-summary {
+    &.text-summary-short {
+        .html-paragraph {
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            :deep(p) {
+                white-space: nowrap;
+                margin: 0;
+            }
+        }
+    }
+
+    &:deep(p) {
+        margin: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+        margin: 0;
+
+        &:not(:first-child) {
+            display: none;
+        }
+    }
+}
+
+.text-summary-expand-button {
+    cursor: pointer;
+    width: fit-content;
+    float: right;
+    color: $text-light;
+    margin-left: auto;
+
+    .text-summary-expand-float {
+        position: absolute;
+        right: 5px;
+        bottom: 0;
+    }
+}
+</style>

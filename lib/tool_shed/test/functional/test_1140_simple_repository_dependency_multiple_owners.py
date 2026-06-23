@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 datatypes_repository_name = "blast_datatypes_0120"
 datatypes_repository_description = "Galaxy applicable datatypes for BLAST"
@@ -29,7 +27,9 @@ Galaxy side:
 running_standalone = False
 
 
-class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
+class TestInstallRepositoryMultipleOwners(ShedTestCase):
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user.
 
@@ -58,16 +58,10 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             strings_displayed=strings_displayed,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="blast/blast_datatypes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "blast/blast_datatypes.tar",
                 commit_message="Uploaded blast_datatypes tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_verify_datatypes_repository(self):
@@ -77,18 +71,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        repository = self._get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_2_name)
-        strings_displayed = [
-            "BlastXml",
-            "BlastNucDb",
-            "BlastProtDb",
-            "application/xml",
-            "text/html",
-            "blastxml",
-            "blastdbn",
-            "blastdbp",
-        ]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
@@ -110,16 +92,10 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="blast/blastxml_to_top_descr.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "blast/blastxml_to_top_descr.tar",
                 commit_message="Uploaded blastxml_to_top_descr tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0020_verify_tool_repository(self):
@@ -130,7 +106,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         """
         repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
-        strings_displayed.extend(["0.0.1", "Valid tools"])
+        strings_displayed.extend(["0.0.1"])
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):
@@ -139,7 +115,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 3.
         Create a simple repository dependency for blastxml_to_top_descr_0120 that defines a dependency on blast_datatypes_0120.
         """
-        global running_standalone
         if running_standalone:
             datatypes_repository = self._get_repository_by_name_and_owner(
                 datatypes_repository_name, common.test_user_2_name
@@ -174,7 +149,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 1, Galaxy side.
         Install blastxml_to_top_descr_0120 to Galaxy, with repository dependencies, so that the datatypes repository is also installed.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             name="blastxml_to_top_descr_0120",
             owner=common.test_user_1_name,
@@ -191,8 +165,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         are now new datatypes in the registry matching the ones defined in blast_datatypes_0120. Also check that
         blast_datatypes_0120 is labeled as an installed repository dependency of blastxml_to_top_descr_0120.
         """
-        tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            tool_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_installed_repository_by_name_owner(tool_repository_name, common.test_user_1_name)
         self._assert_has_valid_tool_with_name("BLAST top hit")
         self._assert_repo_has_tool_with_id(tool_repository, "blastxml_to_top_descr")

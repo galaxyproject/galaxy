@@ -1,5 +1,7 @@
-import { visitInputs, validateInputs, matchCase, matchInputs } from "./utilities";
+import { describe, expect, it } from "vitest";
+
 import toolModel from "./test-data/tool";
+import { buildNestedState, matchCase, matchInputs, validateInputs, visitAllInputs, visitInputs } from "./utilities";
 
 function visitInputsString(inputs) {
     let results = "";
@@ -118,6 +120,23 @@ describe("form component utilities", () => {
         expect(JSON.stringify(result)).toEqual('["input_c","Please provide data for this input."]');
     });
 
+    it("rejects empty array for required multi-select but allows it when optional", () => {
+        const index = { multi: {} };
+
+        // Required (default) + empty array → fails
+        let result = validateInputs(index, { multi: [] });
+        expect(JSON.stringify(result)).toEqual('["multi","Please provide a value for this option."]');
+
+        // Required + non-empty array → passes
+        result = validateInputs(index, { multi: ["alpha"] });
+        expect(result).toEqual(null);
+
+        // Optional + empty array → passes
+        index.multi.optional = true;
+        result = validateInputs(index, { multi: [] });
+        expect(result).toEqual(null);
+    });
+
     it("test error matching", () => {
         const index = {
             input_a: {},
@@ -133,5 +152,670 @@ describe("form component utilities", () => {
         expect(result["input_a"]).toEqual("error_a");
         expect(result["input_b_0"]).toEqual("error_b");
         expect(result["input_c|input_d"]).toEqual("error_d");
+    });
+
+    it("test multiple validators", () => {
+        const index = {
+            path: {
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^.*[^/]$",
+                        message: "Value cannot end with a trailing slash",
+                        negate: false,
+                    },
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$).*$",
+                        message: "Value cannot have leading or trailing whitespace",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Valid path
+        let values = { path: "clean/path" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Invalid: trailing slash
+        values = { path: "path/" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot end with a trailing slash"]);
+
+        // Invalid: trailing whitespace
+        values = { path: "path " };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["path", "Value cannot have leading or trailing whitespace"]);
+    });
+
+    it("test validators skip empty optional values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        const values = { optional_field: "" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators skip null values", () => {
+        const index = {
+            optional_field: {
+                optional: true, // Make it optional so null is allowed
+                validators: [
+                    {
+                        type: "regex",
+                        expression: "^(?!\\s)(?!.*\\s$)(?!.*/$).+$",
+                        message: "Value cannot have leading/trailing spaces or trailing slashes",
+                        negate: false,
+                    },
+                ],
+            },
+        };
+
+        // Null value should not trigger validator for optional fields
+        const values = { optional_field: null };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test length validator", () => {
+        const index = {
+            username: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: 20,
+                        message: "Username must be between 3 and 20 characters",
+                    },
+                ],
+            },
+        };
+
+        // Valid length
+        let values = { username: "john" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { username: "a".repeat(20) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too short
+        values = { username: "ab" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+
+        // Too long
+        values = { username: "a".repeat(21) };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["username", "Username must be between 3 and 20 characters"]);
+    });
+
+    it("test in_range validator", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Valid range
+        let values = { age: 25 };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 18 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { age: 120 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // Too small
+        values = { age: 17 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+
+        // Too large
+        values = { age: 121 };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Age must be between 18 and 120"]);
+    });
+
+    it("test in_range validator with non-numeric value", () => {
+        const index = {
+            age: {
+                validators: [
+                    {
+                        type: "in_range",
+                        min: 18,
+                        max: 120,
+                        message: "Age must be between 18 and 120",
+                    },
+                ],
+            },
+        };
+
+        // Non-numeric value
+        const values = { age: "not a number" };
+        const result = validateInputs(index, values);
+        expect(result).toEqual(["age", "Value must be numeric for range validation"]);
+    });
+
+    it("test validators run on optional fields with values", () => {
+        const index = {
+            optional_field: {
+                optional: true,
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Empty value should not trigger validator
+        let values = { optional_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // null value should not trigger validator
+        values = { optional_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // undefined should not trigger validator
+        values = { optional_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // But when optional field has a value, validator should run
+        values = { optional_field: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["optional_field", "Must be at least 3 characters"]);
+
+        // Valid value should pass
+        values = { optional_field: "valid" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+    });
+
+    it("test validators with undefined min or max values", () => {
+        const index = {
+            field_with_undefined_min: {
+                validators: [
+                    {
+                        type: "length",
+                        min: undefined,
+                        max: 10,
+                        message: "Must be at most 10 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate max when min is undefined
+        let values = { field_with_undefined_min: "a" }; // Very short but no min
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_undefined_min: "a".repeat(11) }; // Too long
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_undefined_min", "Must be at most 10 characters"]);
+    });
+
+    it("test validators with null min or max values", () => {
+        const index = {
+            field_with_null_max: {
+                validators: [
+                    {
+                        type: "length",
+                        min: 3,
+                        max: null,
+                        message: "Must be at least 3 characters",
+                    },
+                ],
+            },
+        };
+
+        // Should only validate min when max is null
+        let values = { field_with_null_max: "a".repeat(100) }; // Very long but no max
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        values = { field_with_null_max: "ab" }; // Too short
+        result = validateInputs(index, values);
+        expect(result).toEqual(["field_with_null_max", "Must be at least 3 characters"]);
+    });
+
+    it("test required field validation with empty string vs undefined vs null", () => {
+        const index = {
+            required_field: {
+                optional: false,
+            },
+        };
+
+        // Empty string should PASS for required field (default behavior - allowEmptyValueOnRequiredInput=false)
+        // Note: allowEmptyValueOnRequiredInput is misnamed - it should be rejectEmptyRequiredInputs
+        let values = { required_field: "" };
+        let result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // undefined should fail for required field
+        values = { required_field: undefined };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // null should fail for required field
+        values = { required_field: null };
+        result = validateInputs(index, values);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+
+        // Non-empty value should pass
+        values = { required_field: "value" };
+        result = validateInputs(index, values);
+        expect(result).toEqual(null);
+
+        // When allowEmptyValueOnRequiredInput=true (misnamed, really means reject empty strings too),
+        // empty string should also fail
+        values = { required_field: "" };
+        result = validateInputs(index, values, true);
+        expect(result).toEqual(["required_field", "Please provide a value for this option."]);
+    });
+
+    describe("visitAllInputs", () => {
+        it("should match visitInputs traversal order for non-conditional inputs", () => {
+            const inputs = [
+                { name: "a", type: "text", value: "a" },
+                {
+                    name: "r",
+                    type: "repeat",
+                    cache: [
+                        [
+                            { name: "x", type: "text", value: "x" },
+                            { name: "y", type: "text", value: "y" },
+                        ],
+                    ],
+                    inputs: [
+                        { name: "x", type: "text", value: "x" },
+                        { name: "y", type: "text", value: "y" },
+                    ],
+                },
+                {
+                    name: "s",
+                    type: "section",
+                    inputs: [
+                        { name: "p", type: "text", value: "p" },
+                        { name: "q", type: "text", value: "q" },
+                    ],
+                },
+            ];
+            const visitOrder = [];
+            const allOrder = [];
+            visitInputs(inputs, (node, name) => visitOrder.push(name));
+            visitAllInputs(inputs, (node, name) => allOrder.push(name));
+            expect(allOrder).toEqual(visitOrder);
+        });
+
+        it("should visit all conditional cases, not just the active one", () => {
+            const inputs = [
+                {
+                    name: "cond",
+                    type: "conditional",
+                    test_param: { name: "tp", type: "select", value: "a" },
+                    cases: [
+                        {
+                            value: "a",
+                            inputs: [{ name: "in_a", type: "text", value: "va" }],
+                        },
+                        {
+                            value: "b",
+                            inputs: [{ name: "in_b", type: "text", value: "vb" }],
+                        },
+                    ],
+                },
+            ];
+            const visitNames = [];
+            const allNames = [];
+            visitInputs(inputs, (node, name) => visitNames.push(name));
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            // visitInputs only visits active case (a)
+            expect(visitNames).toEqual(["cond|tp", "cond|in_a"]);
+            // visitAllInputs visits both cases
+            expect(allNames).toEqual(["cond|tp", "cond|in_a", "cond|in_b"]);
+        });
+
+        it("should visit nested conditional inside repeat", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [
+                        [
+                            {
+                                name: "nested_cond",
+                                type: "conditional",
+                                test_param: { name: "sel", type: "select", value: "x" },
+                                cases: [
+                                    {
+                                        value: "x",
+                                        inputs: [{ name: "leaf_x", type: "text", value: "1" }],
+                                    },
+                                    {
+                                        value: "y",
+                                        inputs: [{ name: "leaf_y", type: "text", value: "2" }],
+                                    },
+                                ],
+                            },
+                        ],
+                    ],
+                    inputs: [],
+                },
+            ];
+            const allNames = [];
+            visitAllInputs(inputs, (node, name) => allNames.push(name));
+            expect(allNames).toEqual(["rep_0|nested_cond|sel", "rep_0|nested_cond|leaf_x", "rep_0|nested_cond|leaf_y"]);
+        });
+    });
+
+    describe("buildNestedState", () => {
+        it("should build nested state for simple params", () => {
+            const inputs = [
+                { name: "a", type: "text" },
+                { name: "b", type: "integer" },
+                { name: "c", type: "boolean" },
+            ];
+            const formData = { a: "hello", b: 42, c: true };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                a: "hello",
+                b: 42,
+                c: true,
+            });
+        });
+
+        it("should build nested state for sections", () => {
+            const inputs = [
+                {
+                    name: "sect",
+                    type: "section",
+                    inputs: [
+                        { name: "p", type: "text" },
+                        { name: "q", type: "integer" },
+                    ],
+                },
+            ];
+            const formData = { "sect|p": "val_p", "sect|q": 10 };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                sect: { p: "val_p", q: 10 },
+            });
+        });
+
+        it("should build nested state for conditionals (active case only)", () => {
+            const inputs = [
+                {
+                    name: "cond",
+                    type: "conditional",
+                    test_param: { name: "tp", type: "select", value: "a" },
+                    cases: [
+                        { value: "a", inputs: [{ name: "in_a", type: "text" }] },
+                        { value: "b", inputs: [{ name: "in_b", type: "text" }] },
+                    ],
+                },
+            ];
+            const formData = { "cond|tp": "a", "cond|in_a": "val_a", "cond|in_b": "val_b" };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                cond: { tp: "a", in_a: "val_a" },
+            });
+        });
+
+        it("should build nested state for repeats as arrays", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [[{ name: "x", type: "text" }], [{ name: "x", type: "text" }]],
+                    inputs: [{ name: "x", type: "text" }],
+                },
+            ];
+            const formData = { "rep_0|x": "first", "rep_1|x": "second" };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                rep: [{ x: "first" }, { x: "second" }],
+            });
+        });
+
+        it("should produce empty array for repeats with no instances", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [],
+                    inputs: [{ name: "x", type: "text" }],
+                },
+            ];
+            expect(buildNestedState(inputs, {})).toEqual({ rep: [] });
+        });
+
+        it("should build nested state for nested repeats with conditionals", () => {
+            const inputs = [
+                {
+                    name: "rep",
+                    type: "repeat",
+                    cache: [
+                        [
+                            { name: "param", type: "text" },
+                            {
+                                name: "cond",
+                                type: "conditional",
+                                test_param: { name: "sel", type: "select", value: "x" },
+                                cases: [
+                                    { value: "x", inputs: [{ name: "leaf", type: "text" }] },
+                                    { value: "y", inputs: [{ name: "other", type: "text" }] },
+                                ],
+                            },
+                        ],
+                    ],
+                    inputs: [],
+                },
+            ];
+            const formData = {
+                "rep_0|param": "val",
+                "rep_0|cond|sel": "x",
+                "rep_0|cond|leaf": "leaf_val",
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                rep: [{ param: "val", cond: { sel: "x", leaf: "leaf_val" } }],
+            });
+        });
+
+        it("should wrap single dataset value as {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: { batch: false, product: false, values: [{ id: "abc123", src: "hda", map_over_type: null }] },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { src: "hda", id: "abc123" },
+            });
+        });
+
+        it("should wrap data_collection value as {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data_collection" }];
+            const formData = {
+                input1: {
+                    batch: false,
+                    product: false,
+                    values: [{ id: "col456", src: "hdca", map_over_type: null }],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { src: "hdca", id: "col456" },
+            });
+        });
+
+        it("should wrap multiple dataset values as array of {src, id}", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: {
+                    batch: false,
+                    product: false,
+                    values: [
+                        { id: "id1", src: "hda", map_over_type: null },
+                        { id: "id2", src: "hda", map_over_type: null },
+                    ],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: [
+                    { src: "hda", id: "id1" },
+                    { src: "hda", id: "id2" },
+                ],
+            });
+        });
+
+        it("should wrap batch dataset values with __class__: Batch", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = {
+                input1: {
+                    batch: true,
+                    product: false,
+                    values: [{ id: "id1", src: "hda", map_over_type: null }],
+                },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: { __class__: "Batch", values: [{ src: "hda", id: "id1" }] },
+            });
+        });
+
+        it("should wrap single dataset value as array when multiple is true", () => {
+            const inputs = [{ name: "input1", type: "data", multiple: true }];
+            const formData = {
+                input1: { batch: false, product: false, values: [{ id: "abc123", src: "hda", map_over_type: null }] },
+            };
+            expect(buildNestedState(inputs, formData)).toEqual({
+                input1: [{ src: "hda", id: "abc123" }],
+            });
+        });
+
+        it("should return null for empty dataset values", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = { input1: { batch: false, values: [] } };
+            expect(buildNestedState(inputs, formData)).toEqual({ input1: null });
+        });
+
+        it("should return null for null/undefined dataset values", () => {
+            const inputs = [{ name: "input1", type: "data" }];
+            const formData = { input1: null };
+            expect(buildNestedState(inputs, formData)).toEqual({ input1: null });
+        });
+
+        it("should coerce data_column string values to integers", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            const formData = { col: "3" };
+            expect(buildNestedState(inputs, formData)).toEqual({ col: 3 });
+        });
+
+        it("should coerce data_column array of strings to integers", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            const formData = { col: ["1", "2", "5"] };
+            expect(buildNestedState(inputs, formData)).toEqual({ col: [1, 2, 5] });
+        });
+
+        it("should convert cleared data_column values to null but keep undefined as-is", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            expect(buildNestedState(inputs, { col: null })).toEqual({ col: null });
+            expect(buildNestedState(inputs, { col: "" })).toEqual({ col: null });
+            expect(buildNestedState(inputs, { col: undefined })).toEqual({ col: undefined });
+        });
+
+        it("should preserve data_column already-numeric values", () => {
+            const inputs = [{ name: "col", type: "data_column" }];
+            expect(buildNestedState(inputs, { col: 5 })).toEqual({ col: 5 });
+            expect(buildNestedState(inputs, { col: [1, 2] })).toEqual({ col: [1, 2] });
+        });
+
+        it("should coerce integer string values to integers", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: "42" })).toEqual({ num: 42 });
+        });
+
+        it("should convert cleared integer values to null but keep undefined as-is", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: null })).toEqual({ num: null });
+            expect(buildNestedState(inputs, { num: "" })).toEqual({ num: null });
+            expect(buildNestedState(inputs, { num: undefined })).toEqual({ num: undefined });
+        });
+
+        it("should preserve integer already-numeric values", () => {
+            const inputs = [{ name: "num", type: "integer" }];
+            expect(buildNestedState(inputs, { num: 7 })).toEqual({ num: 7 });
+        });
+
+        it("should coerce float string values to floats", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: "3.14" })).toEqual({ val: 3.14 });
+        });
+
+        it("should convert cleared float values to null but keep undefined as-is", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: null })).toEqual({ val: null });
+            expect(buildNestedState(inputs, { val: "" })).toEqual({ val: null });
+            expect(buildNestedState(inputs, { val: undefined })).toEqual({ val: undefined });
+        });
+
+        it("should preserve float already-numeric values", () => {
+            const inputs = [{ name: "val", type: "float" }];
+            expect(buildNestedState(inputs, { val: 2.718 })).toEqual({ val: 2.718 });
+        });
+
+        it("should wrap multiple select string value as array", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: "a_check" })).toEqual({ sel: ["a_check"] });
+        });
+
+        it("should preserve multiple select array value", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: ["a", "b"] })).toEqual({ sel: ["a", "b"] });
+        });
+
+        it("should preserve multiple select null value", () => {
+            const inputs = [{ name: "sel", type: "select", multiple: true }];
+            expect(buildNestedState(inputs, { sel: null })).toEqual({ sel: null });
+        });
+
+        it("should handle the full tool model from test data", () => {
+            // Build formData from the tool model (mimics what visitInputs collects)
+            const formData = {};
+            visitInputs(toolModel.inputs, (input, name) => {
+                formData[name] = input.value;
+            });
+            const result = buildNestedState(toolModel.inputs, formData);
+            // Conditional "b" has test_param "c" with value "h" → case "h" is active
+            expect(result.b).toEqual({ c: "h", i: "i", j: "j" });
+            // Repeat "k" has one instance with conditional "m", test_param "n" with value "r" → case "r"
+            expect(result.k).toEqual([{ l: "l", m: { n: "r", s: "s", t: "t" } }]);
+        });
     });
 });

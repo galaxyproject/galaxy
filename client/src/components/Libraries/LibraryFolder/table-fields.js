@@ -1,14 +1,5 @@
 export const fields = [
     {
-        label: "",
-        key: "type_icon",
-    },
-    {
-        label: "&check;",
-        key: "selected",
-        sortable: false,
-    },
-    {
         label: "Name",
         key: "name",
         sortable: true,

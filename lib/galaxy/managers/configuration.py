@@ -4,12 +4,11 @@ and a more expanded set of data for admin in AdminConfigSerializer.
 
 Used by both the API and bootstrapped data.
 """
+
 import logging
 import sys
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.managers import base
@@ -17,9 +16,15 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
 from galaxy.structured_app import StructuredApp
-from galaxy.web.framework.base import server_starttime
 
 log = logging.getLogger(__name__)
+
+
+def _get_registry_type(config) -> str:
+    inference_config = getattr(config, "inference_services", None) or {}
+    if isinstance(inference_config, dict) and inference_config.get("static_responses"):
+        return "static"
+    return "default"
 
 
 class ConfigurationManager:
@@ -30,14 +35,14 @@ class ConfigurationManager:
 
     def get_configuration(
         self, trans: ProvidesUserContext, serialization_params: SerializationParams
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         is_admin = trans.user_is_admin
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.model_dump())
 
-    def version(self) -> Dict[str, Any]:
+    def version(self) -> dict[str, Any]:
         version_info = {
             "version_major": self._app.config.version_major,
             "version_minor": self._app.config.version_minor,
@@ -49,14 +54,21 @@ class ConfigurationManager:
     def decode_id(
         self,
         encoded_id: str,
-    ) -> Dict[str, int]:
+    ) -> dict[str, int]:
         # Handle the special case for library folders
         if (len(encoded_id) % 16 == 1) and encoded_id.startswith("F"):
             encoded_id = encoded_id[1:]
         decoded_id = self._app.security.decode_id(encoded_id)
         return {"decoded_id": decoded_id}
 
-    def tool_lineages(self) -> List[Dict[str, Dict]]:
+    def encode_id(
+        self,
+        decoded_id: int,
+    ) -> dict[str, str]:
+        encoded_id = self._app.security.encode_id(decoded_id)
+        return {"encoded_id": encoded_id}
+
+    def tool_lineages(self) -> list[dict[str, dict]]:
         rval = []
         for id, tool in self._app.toolbox.tools():
             try:
@@ -68,7 +80,7 @@ class ConfigurationManager:
                 rval.append(entry)
         return rval
 
-    def dynamic_tool_confs(self) -> List[Dict[str, str]]:
+    def dynamic_tool_confs(self) -> list[dict[str, str]]:
         # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
         # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
         # server. A dedicated endpoint should probably be added to do that instead.
@@ -89,7 +101,7 @@ class ConfigurationManager:
 #   but doesn't have a model like them. It might be better in config.py or a
 #   totally new area, but I'm leaving it in managers for now for class consistency.
 class ConfigSerializer(base.ModelSerializer):
-    """Configuration (galaxy.ini) settings viewable by all users"""
+    """Configuration (galaxy.yml) settings viewable by all users"""
 
     def __init__(self, app):
         super().__init__(app)
@@ -97,8 +109,8 @@ class ConfigSerializer(base.ModelSerializer):
         self.default_view = "all"
         self.add_view("all", list(self.serializers.keys()))
 
-    def default_serializer(self, config, key):
-        return getattr(config, key, None)
+    def default_serializer(self, item, key, **context):
+        return getattr(item, key, None)
 
     def add_serializers(self):
         def _defaults_to(default) -> base.Serializer:
@@ -113,7 +125,7 @@ class ConfigSerializer(base.ModelSerializer):
             return True if item.get(key) else False
 
         object_store = self.app.object_store
-        self.serializers: Dict[str, base.Serializer] = {
+        self.serializers: dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
             "brand": _use_config,
@@ -124,6 +136,7 @@ class ConfigSerializer(base.ModelSerializer):
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
+            "citation_bibtex": _use_config,
             "citations_export_message_html": _use_config,
             "support_url": _use_config,
             "quota_url": _use_config,
@@ -137,12 +150,13 @@ class ConfigSerializer(base.ModelSerializer):
             "overwrite_model_recommendations": _use_config,
             "topk_recommendations": _use_config,
             "allow_user_impersonation": _use_config,
-            "allow_user_creation": _defaults_to(False),  # schema default is True
+            "allow_local_account_creation": _defaults_to(False),  # schema default is True
+            "disable_local_accounts": _defaults_to(False),  # schema default is False
             "use_remote_user": _defaults_to(None),  # schema default is False; or config.single_user
             "single_user": _config_is_truthy,
             "enable_oidc": _use_config,
             "oidc": _use_config,
-            "prefer_custos_login": _use_config,
+            "prefer_oidc_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
             "post_user_logout_href": _use_config,
@@ -175,10 +189,15 @@ class ConfigSerializer(base.ModelSerializer):
             "visualizations_visible": _use_config,
             "interactivetools_enable": _use_config,
             "aws_estimate": _use_config,
+            "carbon_emission_estimates": _defaults_to(True),
+            "carbon_intensity": lambda item, key, **context: self.app.carbon_intensity,
+            "geographical_server_location_name": lambda item, key, **context: self.app.geographical_server_location_name,
+            "geographical_server_location_code": _use_config,
+            "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
-            "server_startttime": lambda item, key, **context: server_starttime,
+            "server_starttime": lambda item, key, **context: self.app.server_starttime,
             "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
             "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
             "registration_warning_message": _use_config,
@@ -196,11 +215,14 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "enable_tool_requests": _use_config,
             "quota_source_labels": lambda item, key, **context: list(
                 object_store.get_quota_source_map().get_quota_source_labels()
             ),
             "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
             "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
+            "object_store_always_respect_user_selection": _use_config,
+            "user_activation_on": _use_config,
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
@@ -208,7 +230,26 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
+            "enable_sse_updates": _use_config,
+            "instance_resource_url": _use_config,
+            "instance_access_url": _use_config,
+            "organization_name": _use_config,
+            "organization_url": _use_config,
             "fixed_delegated_auth": _defaults_to(False),
+            "help_forum_api_url": _use_config,
+            "enable_help_forum_tool_panel_integration": _use_config,
+            "llm_api_configured": lambda item, key, **context: bool(
+                item.ai_api_key or item.ai_api_base_url or getattr(item, "inference_services", None)
+            ),
+            "llm_registry_type": lambda item, key, **context: _get_registry_type(item),
+            "install_tool_dependencies": _use_config,
+            "install_repository_dependencies": _use_config,
+            "install_resolver_dependencies": _use_config,
+            "enable_tool_generated_tours": _use_config,
+            "sentry_dsn_public": lambda item, key, **context: item.sentry_dsn_public,
+            "sentry_client_traces_sample_rate": _use_config,
+            "enable_webhooks": lambda item, key, **context: hasattr(self.app, "webhooks_registry")
+            and bool(self.app.webhooks_registry.webhooks),
         }
 
 
@@ -229,5 +270,9 @@ class AdminConfigSerializer(ConfigSerializer):
                 "user_library_import_dir": _defaults_to(None),
                 "allow_library_path_paste": _defaults_to(False),
                 "allow_user_deletion": _defaults_to(False),
+                "tool_shed_urls": self._serialize_tool_shed_urls,
             }
         )
+
+    def _serialize_tool_shed_urls(self, item: Any, key: str, **context) -> list[str]:
+        return list(self.app.tool_shed_registry.tool_sheds.values()) if self.app.tool_shed_registry else []

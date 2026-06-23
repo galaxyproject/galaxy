@@ -17,9 +17,15 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="simple_line.txt"/>
-            <param name="input" value="simple_line.txt"/>
-            <param name="input2" value="simple_line_alternative.txt"/>
+            <repeat name="queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="queries">
+                <param name="input" value="simple_line.txt"/>
+            </repeat>
+            <repeat name="queries2">
+                <param name="input2" value="simple_line_alternative.txt"/>
+            </repeat>
             <output name="out_file1" file="simple_line_x2.txt"/>
             <output name="out_file2" file="simple_line_alternative.txt"/>
         </test>

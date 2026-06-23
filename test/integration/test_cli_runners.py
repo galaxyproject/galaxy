@@ -1,4 +1,5 @@
 """Integration tests for the CLI shell plugins and runners."""
+
 import os
 import string
 import subprocess
@@ -43,7 +44,7 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image="agaveapi
         "--rm",
         "--privileged",  # for torque
         "-v",
-        "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
+        f"{jobs_directory}:{jobs_directory}",
         "-v",
         f"{ssh_keys.public_key_file}:/home/testuser/.ssh/authorized_keys",
         "--ulimit",
@@ -67,8 +68,7 @@ def stop_ssh_docker(container_name, remote_connection):
 
 
 def cli_job_config(remote_connection, shell_plugin="ParamikoShell", job_plugin="Slurm"):
-    job_conf_template = string.Template(
-        """<job_conf>
+    job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" workers="1"/>
     </plugins>
@@ -86,8 +86,7 @@ def cli_job_config(remote_connection, shell_plugin="ParamikoShell", job_plugin="
         </destination>
     </destinations>
 </job_conf>
-"""
-    )
+""")
     job_conf_str = job_conf_template.substitute(
         shell_plugin=shell_plugin, job_plugin=job_plugin, **remote_connection._asdict()
     )
@@ -107,21 +106,17 @@ class AbstractTestCases:
         job_plugin: ClassVar[str]
 
         @classmethod
-        def setUpClass(cls):
-            cls.container_name = f"{cls.__name__}_container"
-            cls.jobs_directory = tempfile.mkdtemp()
-            cls.remote_connection = start_ssh_docker(
-                container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
-            )
-            super().setUpClass()
-
-        @classmethod
         def tearDownClass(cls):
             stop_ssh_docker(cls.container_name, cls.remote_connection)
             super().tearDownClass()
 
         @classmethod
         def handle_galaxy_config_kwds(cls, config):
+            cls.container_name = f"{cls.__name__}_container"
+            cls.jobs_directory = cls._test_driver.mkdtemp()
+            cls.remote_connection = start_ssh_docker(
+                container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
+            )
             config["jobs_directory"] = cls.jobs_directory
             config["file_path"] = cls.jobs_directory
             config["job_config_file"] = cli_job_config(

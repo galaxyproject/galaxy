@@ -53,20 +53,16 @@ class RevisionNotFoundError(Exception):
 
 class DatabaseDoesNotExistError(Exception):
     def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} does not exist. You must
+        super().__init__(f"""The database at {db_url} does not exist. You must
             create and initialize the database before running this script. You
             can do so by (a) running `create_db.sh`; or by (b) starting Galaxy,
             in which case Galaxy will create and initialize the database
-            automatically."""
-        )
+            automatically.""")
 
 
 class DatabaseNotInitializedError(Exception):
     def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} is empty. You must
+        super().__init__(f"""The database at {db_url} is empty. You must
             initialize the database before running this script. You can do so by
             (a) running `create_db.sh`; or by (b) starting Galaxy, in which case
-            Galaxy will initialize the database automatically."""
-        )
+            Galaxy will initialize the database automatically.""")

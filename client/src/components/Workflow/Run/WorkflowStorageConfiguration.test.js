@@ -1,12 +1,35 @@
-import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+import { createTestingPinia } from "@pinia/testing";
+import { findViaNavigation, getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, findViaNavigation } from "tests/jest/helpers";
-import { ROOT_COMPONENT } from "utils/navigation";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { ROOT_COMPONENT } from "@/utils/navigation";
+
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
 
 const localVue = getLocalVue(true);
 
+const { server, http } = useServerMock();
+
+vi.mock("@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue", () => ({
+    default: {
+        name: "HelpPopover",
+        render: (h) => h("div", "Mocked Popover"),
+    },
+}));
+
 describe("WorkflowStorageConfiguration.vue", () => {
     let wrapper;
+
+    beforeEach(() => {
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            }),
+        );
+    });
 
     async function doMount(split) {
         const propsData = {
@@ -17,6 +40,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
         wrapper = mount(WorkflowStorageConfiguration, {
             propsData,
             localVue,
+            pinia: createTestingPinia({ createSpy: vi.fn }),
         });
     }
 
@@ -27,9 +51,10 @@ describe("WorkflowStorageConfiguration.vue", () => {
             expect(primaryEl.exists()).toBeTruthy();
             const intermediateEl = findViaNavigation(
                 wrapper,
-                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
+                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator,
             );
             expect(intermediateEl.exists()).toBeTruthy();
+            await flushPromises();
         });
 
         it("should show one button on not splitObjectStore", async () => {
@@ -38,9 +63,10 @@ describe("WorkflowStorageConfiguration.vue", () => {
             expect(primaryEl.exists()).toBeTruthy();
             const intermediateEl = findViaNavigation(
                 wrapper,
-                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator
+                ROOT_COMPONENT.workflow_run.intermediate_storage_indciator,
             );
             expect(intermediateEl.exists()).toBeFalsy();
+            await flushPromises();
         });
     });
 
@@ -51,6 +77,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["updated"][0][0]).toEqual("storage123");
             expect(emitted["updated"][0][1]).toEqual(false);
+            await flushPromises();
         });
 
         it("should fire an update event when intermediate selection is updated", async () => {
@@ -59,6 +86,7 @@ describe("WorkflowStorageConfiguration.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["updated"][0][0]).toEqual("storage123");
             expect(emitted["updated"][0][1]).toEqual(true);
+            await flushPromises();
         });
     });
 });

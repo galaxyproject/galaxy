@@ -1,0 +1,68 @@
+<tool id="async_nested_conditional_shared_discriminator_bare" name="async_nested_conditional_shared_discriminator_bare" version="1.0.0" profile="22.01">
+    <description>async regression: bare (unqualified) discriminator must not resolve to a nested conditional of the same name</description>
+    <!--
+      Sibling of async_nested_conditional_shared_discriminator.xml. Same shape - an
+      OUTER and an INNER conditional whose discriminators share the name 'use' - but
+      the test supplies the outer discriminator by its BARE short name (no enclosing
+      <conditional> wrapper), as legacy tests commonly do.
+
+      The qualified sibling routes the consumed-discriminator exclusion through the
+      elided-subsequence fallback (input 'operation|use' is a subsequence of
+      operation|method|use). This bare variant routes it through the bare short-name
+      fallback instead (input 'use'), covering the other matcher tier.
+
+      Sync (POST /api/tools): bare 'use'=outer_a selects the outer when; the omitted
+      inner discriminator selects its default when (inner_a); the job runs.
+
+      Async (POST tool request): without excluding the consumed ancestor discriminator,
+      the omitted operation|method|use greedily picks up the bare 'use' (value
+      "outer_a"), which is not a valid 'method' when ->
+        Invalid conditional test value (outer_a) for parameter (use)
+      Excluding it lets the inner conditional fall back to its default when.
+    -->
+    <command><![CDATA[
+echo '$operation.use' > '$out_file1' &&
+#if str($operation.use) == "outer_a":
+echo '$operation.method.use' >> '$out_file1'
+#end if
+    ]]></command>
+    <inputs>
+        <conditional name="operation">
+            <param name="use" type="select" label="Operation">
+                <option value="outer_a" selected="true">Outer A</option>
+                <option value="outer_b">Outer B</option>
+            </param>
+            <when value="outer_a">
+                <conditional name="method">
+                    <param name="use" type="select" label="Method">
+                        <option value="inner_a" selected="true">Inner A</option>
+                        <option value="inner_b">Inner B</option>
+                    </param>
+                    <when value="inner_a">
+                        <param name="threshold" type="integer" value="3000" label="Threshold" />
+                    </when>
+                    <when value="inner_b">
+                        <param name="lower" type="integer" value="100" label="Lower" />
+                    </when>
+                </conditional>
+            </when>
+            <when value="outer_b">
+                <param name="rank" type="integer" value="1" label="Rank" />
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="use" value="outer_a" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="outer_a" />
+                    <has_line line="inner_a" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

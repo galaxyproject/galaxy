@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 
-import InvocationsList from "@/components/Workflow/InvocationsList.vue";
-import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import Alert from "@/components/Alert.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import GridInvocation from "@/components/Grid/GridInvocation.vue";
 
 interface HistoryInvocationProps {
     historyId: string;
@@ -12,16 +14,46 @@ interface HistoryInvocationProps {
 
 const props = defineProps<HistoryInvocationProps>();
 
-const { currentUser } = storeToRefs(useUserStore());
-const { getHistoryNameById } = useHistoryStore();
-const historyName = computed(() => getHistoryNameById(props.historyId));
+const historyStore = useHistoryStore();
+const loadError = ref<string | null>(null);
+
+const history = computed(() => historyStore.getHistoryById(props.historyId, false));
+const historyName = computed(() => history.value?.name ?? "...");
+
+watch(
+    () => props.historyId,
+    async (historyId) => {
+        loadError.value = null;
+        if (!historyStore.getHistoryById(historyId, false)) {
+            try {
+                await historyStore.loadHistoryById(historyId);
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true },
+);
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: historyName.value,
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Workflow Invocations" },
+]);
 </script>
+
 <template>
     <div>
-        <InvocationsList
-            v-if="currentUser && historyName"
-            :user-id="currentUser.id"
-            :history-id="historyId"
-            :history-name="historyName" />
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <GridInvocation
+            v-else
+            hide-heading
+            :filtered-for="{ type: 'History', id: props.historyId, name: historyName }" />
     </div>
 </template>

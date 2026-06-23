@@ -1,256 +1,356 @@
+<script setup lang="ts">
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import { BAlert } from "bootstrap-vue";
+import {
+    faBell,
+    faBroadcastTower,
+    faCubes,
+    faFile,
+    faHdd,
+    faIdCard,
+    faKey,
+    faLock,
+    faPalette,
+    faPerson,
+    faRadiation,
+    faSignOut,
+    faUsers,
+} from "font-awesome-6";
+import { computed, onMounted, ref } from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import { hasSingleOidcProfile, type OIDCConfig } from "@/components/User/ExternalIdentities/ExternalIDHelper";
+import { getUserPreferencesModel } from "@/components/User/UserPreferencesModel";
+import { useConfig } from "@/composables/config";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useToast } from "@/composables/toast";
+import { useFileSourceTemplatesStore } from "@/stores/fileSourceTemplatesStore";
+import { useObjectStoreTemplatesStore } from "@/stores/objectStoreTemplatesStore";
+import localize from "@/utils/localization";
+import { userLogoutAll } from "@/utils/logout";
+import QueryStringParsing from "@/utils/query-string-parsing";
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GLink from "../BaseComponents/GLink.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import Heading from "@/components/Common/Heading.vue";
+import UserBeaconSettings from "@/components/User/UserBeaconSettings.vue";
+import UserDeletion from "@/components/User/UserDeletion.vue";
+import UserDetailsElement from "@/components/User/UserDetailsElement.vue";
+import UserPickTheme from "@/components/User/UserPickTheme.vue";
+import UserPreferencesElement from "@/components/User/UserPreferencesElement.vue";
+import UserPreferredObjectStore from "@/components/User/UserPreferredObjectStore.vue";
+
+const breadcrumbItems = [{ title: "User Preferences" }];
+
+const { confirm } = useConfirmDialog();
+
+const { config, isConfigLoaded } = useConfig(true);
+
+const objectStoreTemplatesStore = useObjectStoreTemplatesStore();
+const fileSourceTemplatesStore = useFileSourceTemplatesStore();
+
+const Toast = useToast();
+
+const messageVariant = ref(null);
+const message = ref(null);
+const showBeaconModal = ref(false);
+const showPreferredStorageModal = ref(false);
+const showDeleteAccountModal = ref(false);
+const showDataPrivateModal = ref(false);
+const showThemPickerModal = ref(false);
+
+const activePreferences = computed(() => {
+    const userPreferencesEntries = getUserPreferencesModel();
+    const enabledPreferences = Object.entries(userPreferencesEntries).filter(([, value]) => !value.disabled);
+    return Object.fromEntries(enabledPreferences);
+});
+// Show the OIDC profile management widget if local account editing is disabled and OIDC profile is configured
+// through a single provider
+const showOidcProfile = computed<boolean>(() => {
+    if (isConfigLoaded.value) {
+        const oidcConfig: OIDCConfig = config.value.oidc;
+        return config.value.enable_oidc && !config.value.enable_account_interface && hasSingleOidcProfile(oidcConfig);
+    } else {
+        return false;
+    }
+});
+const hasLogout = computed(() => {
+    if (isConfigLoaded.value) {
+        const Galaxy = getGalaxyInstance();
+        return !!Galaxy.session_csrf_token && !config.value.single_user;
+    } else {
+        return false;
+    }
+});
+const hasThemes = computed(() => {
+    if (isConfigLoaded.value) {
+        const themes = Object.keys(config.value.themes);
+        return themes.length > 1;
+    } else {
+        return false;
+    }
+});
+
+async function makeDataPrivate() {
+    const confirmed = await confirm(
+        localize(
+            "WARNING: This will make all datasets (excluding library datasets) for which you have " +
+                "'management' permissions, in all of your histories " +
+                "private (including archived and purged), and will set permissions such that all " +
+                "of your new data in these histories is created as private.  Any " +
+                "datasets within that are currently shared will need " +
+                "to be re-shared or published.  Are you sure you " +
+                "want to do this?",
+        ),
+        {
+            title: "Do you want to make all data private?",
+            okText: "Yes, make all data private",
+            cancelText: "No, do not make data private",
+        },
+    );
+    if (confirmed) {
+        try {
+            await axios.post(withPrefix(`/history/make_private?all_histories=true`));
+            showDataPrivateModal.value = true;
+        } catch (error) {
+            Toast.error(errorMessageAsString(error), "Error making data private");
+        }
+    }
+}
+
+async function signOut() {
+    const confirmed = await confirm(localize("Do you want to continue and sign out of all active sessions?"), {
+        title: "Sign out of all sessions",
+        okText: "Yes, sign out",
+        okColor: "red",
+        okIcon: faSignOut,
+    });
+
+    if (confirmed) {
+        userLogoutAll();
+    }
+}
+
+function toggleThemeModal() {
+    showThemPickerModal.value = !showThemPickerModal.value;
+}
+
+function toggleBeaconModal() {
+    showBeaconModal.value = !showBeaconModal.value;
+}
+
+function togglePreferredStorageModal() {
+    showPreferredStorageModal.value = !showPreferredStorageModal.value;
+}
+
+function toggleUserDeletion() {
+    showDeleteAccountModal.value = !showDeleteAccountModal.value;
+}
+
+onMounted(async () => {
+    const msg = QueryStringParsing.get("message");
+    const status = QueryStringParsing.get("status");
+
+    if (msg && status) {
+        message.value = msg;
+        messageVariant.value = status;
+    }
+
+    objectStoreTemplatesStore.ensureTemplates();
+    fileSourceTemplatesStore.ensureTemplates();
+});
+</script>
+
 <template>
-    <b-container fluid class="p-0">
-        <h1 v-localize class="h-lg">User preferences</h1>
-        <b-alert :variant="messageVariant" :show="!!message">
+    <div class="d-flex flex-column">
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <Heading v-localize h2 size="sm">
+            Manage your user preferences on this page, including email address, password, and other settings.
+        </Heading>
+
+        <BAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
-        <p>
-            <span v-localize>You are signed in as</span>
-            <strong id="user-preferences-current-email">{{ email }}</strong>
-            <span v-localize>and you are using</span>
-            <strong>{{ diskUsage }}</strong>
-            <span v-localize>of disk space.</span>
-            <span v-localize>If this is more than expected, please visit the</span>
-            <router-link id="edit-preferences-cloud-auth" to="/storage">
-                <b v-localize>Storage Dashboard</b>
-            </router-link>
-            <span v-localize>to free up disk space.</span>
-            <span v-if="enableQuotas">
-                <span v-localize>Your disk quota is:</span>
-                <strong>{{ diskQuota }}</strong
-                >.
-            </span>
-        </p>
-        <user-preferences-element
-            v-for="(link, index) in activePreferences"
-            :id="link.id"
-            :key="index"
-            :icon="link.icon"
-            :title="link.title"
-            :description="link.description"
-            :to="`/user/${index}`" />
-        <user-preferences-element
-            id="edit-preferences-api-key"
-            icon="fa-key"
-            title="Manage API Key"
-            description="Access your current API key or create a new one."
-            to="/user/api_key" />
-        <user-preferences-element
-            id="edit-preferences-notifications"
-            icon="fa-bell"
-            title="Manage Notifications"
-            description="Manage your notification settings."
-            to="/user/notifications/preferences" />
-        <user-preferences-element
-            id="edit-preferences-cloud-auth"
-            icon="fa-cloud"
-            title="Manage Cloud Authorization"
-            description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
-            to="/user/cloud_auth" />
-        <ConfigProvider v-slot="{ config }">
-            <user-preferences-element
-                v-if="config.enable_oidc && !config.fixed_delegated_auth"
-                id="manage-third-party-identities"
-                icon="fa-id-card-o"
-                title="Manage Third-Party Identities"
-                description="Connect or disconnect access to your third-party identities."
-                to="/user/external_ids" />
-        </ConfigProvider>
-        <user-preferences-element
-            id="edit-preferences-custom-builds"
-            icon="fa-cubes"
-            title="Manage Custom Builds"
-            description="Add or remove custom builds using history datasets."
-            to="/custom_builds" />
-        <user-preferences-element
-            icon="fa-th-list"
-            title="Manage Activity Bar"
-            description="Click here to show or hide the activity bar."
-            badge="New!"
-            @click="toggleActivityBar = !toggleActivityBar">
-            <b-collapse v-model="toggleActivityBar">
-                <UserActivityBarSettings />
-            </b-collapse>
-        </user-preferences-element>
-        <user-preferences-element
-            v-if="hasThemes"
-            icon="fa-palette"
-            title="Pick a Color Theme"
-            description="Click here to change the user interface color theme."
-            badge="New!"
-            @click="toggleTheme = !toggleTheme">
-            <b-collapse v-model="toggleTheme">
-                <ThemeSelector />
-            </b-collapse>
-        </user-preferences-element>
-        <ConfigProvider v-slot="{ config }">
-            <user-preferences-element
-                v-if="!config.single_user"
-                id="edit-preferences-make-data-private"
-                icon="fa-lock"
-                title="Make All Data Private"
-                description="Click here to make all data private."
-                @click="makeDataPrivate" />
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
-            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId">
-            </UserBeaconSettings>
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
+        </BAlert>
+
+        <UserDetailsElement />
+
+        <div class="d-flex flex-gapy-1 flex-column">
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    v-if="showOidcProfile"
+                    id="oidc-profile"
+                    title="Manage my profile"
+                    :icon="faPerson"
+                    description="Manage my profile information (username, email, password)."
+                    to="/user/oidc-profile" />
+
+                <UserPreferencesElement
+                    v-for="(link, index) in activePreferences"
+                    :id="link.id"
+                    :key="index"
+                    :icon="link.icon"
+                    :title="link.title"
+                    :description="link.description"
+                    :to="`/user/${index}`" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user"
+                    id="edit-preferences-permissions"
+                    :icon="faUsers"
+                    :title="localize('Set Dataset Permissions for New Histories')"
+                    :description="
+                        localize(
+                            'Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored.',
+                        )
+                    "
+                    to="/user/permissions" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-api-key"
+                    :icon="faKey"
+                    :title="localize('Manage Galaxy API Key')"
+                    :description="localize('Access your current Galaxy API key or create a new one.')"
+                    to="/user/api_key" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-credentials"
+                    :icon="faKey"
+                    :title="localize('Manage Your Tools Credentials')"
+                    :description="localize('Manage your tools credentials groups for accessing external services.')"
+                    to="/user/credentials" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-notifications"
+                    :icon="faBell"
+                    :title="localize('Manage Notifications')"
+                    :description="localize('Manage your notification settings.')"
+                    to="/user/notifications/preferences" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
+                    id="manage-third-party-identities"
+                    :icon="faIdCard"
+                    :title="localize('Manage Third-Party Identities')"
+                    :description="localize('Connect or disconnect access to your third-party identities.')"
+                    to="/user/external_ids" />
+
+                <UserPreferencesElement
+                    id="edit-preferences-custom-builds"
+                    :icon="faCubes"
+                    :title="localize('Manage Custom Builds')"
+                    :description="localize('Add or remove custom builds using history datasets.')"
+                    to="/custom_builds" />
+
+                <UserPreferencesElement
+                    v-if="hasThemes"
+                    id="edit-preferences-theme"
+                    :icon="faPalette"
+                    :title="localize('Pick a Color Theme')"
+                    :description="localize('Click here to change the user interface color theme.')"
+                    @click="toggleThemeModal" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user"
+                    id="edit-preferences-make-data-private"
+                    :icon="faLock"
+                    :title="localize('Make All Data Private')"
+                    :description="localize('Click here to make all data private.')"
+                    @click="makeDataPrivate" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.enable_beacon_integration"
+                    id="edit-preferences-beacon"
+                    :icon="faBroadcastTower"
+                    :title="localize('Manage Beacon')"
+                    :description="localize('Contribute variants to Beacon')"
+                    @click="toggleBeaconModal" />
+
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && config.object_store_allows_id_selection"
+                    id="manage-preferred-object-store"
+                    :icon="faHdd"
+                    :title="localize('Manage Your Preferred Galaxy Storage')"
+                    :description="localize('Select a Preferred Galaxy storage for the outputs of new jobs.')"
+                    @click="togglePreferredStorageModal" />
+
+                <UserPreferencesElement
+                    v-if="objectStoreTemplatesStore.hasTemplates"
+                    id="manage-object-stores"
+                    class="manage-object-stores"
+                    :icon="faHdd"
+                    :title="localize('Manage Your Galaxy Storage')"
+                    :description="localize('Add, remove, or update your personally configured Galaxy storage.')"
+                    to="/object_store_instances/index" />
+
+                <UserPreferencesElement
+                    v-if="fileSourceTemplatesStore.hasTemplates"
+                    id="manage-file-sources"
+                    class="manage-file-sources"
+                    :icon="faFile"
+                    :title="localize('Manage Your Repositories')"
+                    :description="
+                        localize(
+                            'Add, remove, or update your personally configured location to find files from and write files to.',
+                        )
+                    "
+                    to="/file_source_instances/index" />
+            </div>
+
+            <div class="d-flex flex-wrap mb-4 user-preferences-cards">
+                <UserPreferencesElement
+                    v-if="isConfigLoaded && !config.single_user && config.enable_account_interface"
+                    id="delete-account"
+                    danger-zone
+                    :icon="faRadiation"
+                    :title="localize('Delete Account')"
+                    :description="localize('Click here to delete your account.')"
+                    @click="toggleUserDeletion" />
+
+                <UserPreferencesElement
+                    v-if="hasLogout"
+                    id="edit-preferences-sign-out"
+                    danger-zone
+                    :icon="faSignOut"
+                    :title="localize('Sign Out of All Sessions')"
+                    :description="localize('Click here to sign out of all sessions.')"
+                    @click="signOut" />
+            </div>
+
+            <GModal :show.sync="showDataPrivateModal" title="Datasets are now private" size="small">
+                <BAlert variant="info" show>
+                    All of your histories and datasets have been made private. If you'd like to make all
+                    <strong>future</strong>
+                    histories private please use the
+                    <GLink to="/user/permissions">
+                        <FontAwesomeIcon :icon="faUsers" />
+                        Set Permissions for New Histories
+                    </GLink>
+                    interface.
+                </BAlert>
+            </GModal>
+
+            <UserPickTheme v-if="hasThemes && showThemPickerModal" @reset="toggleThemeModal" />
+
+            <UserBeaconSettings
+                v-if="isConfigLoaded && config.enable_beacon_integration && showBeaconModal"
+                @reset="toggleBeaconModal" />
+
             <UserPreferredObjectStore
-                v-if="config && config.object_store_allows_id_selection && currentUser"
-                :preferred-object-store-id="currentUser.preferred_object_store_id"
-                :user-id="userId">
-            </UserPreferredObjectStore>
-        </ConfigProvider>
-        <ConfigProvider v-slot="{ config }">
-            <UserDeletion
-                v-if="config && !config.single_user && config.enable_account_interface"
-                :email="email"
-                :user-id="userId">
-            </UserDeletion>
-        </ConfigProvider>
-        <user-preferences-element
-            v-if="hasLogout"
-            id="edit-preferences-sign-out"
-            icon="fa-sign-out"
-            title="Sign Out"
-            description="Click here to sign out of all sessions."
-            @click="signOut" />
-    </b-container>
+                v-if="isConfigLoaded && config.object_store_allows_id_selection && showPreferredStorageModal"
+                @reset="togglePreferredStorageModal" />
+
+            <UserDeletion v-if="showDeleteAccountModal" @reset="toggleUserDeletion" />
+        </div>
+    </div>
 </template>
 
-<script>
-import Vue from "vue";
-import { mapState } from "pinia";
-import BootstrapVue from "bootstrap-vue";
-import ThemeSelector from "./ThemeSelector.vue";
-import { getGalaxyInstance } from "app";
-import { withPrefix } from "utils/redirect";
-import _l from "utils/localization";
-import axios from "axios";
-import QueryStringParsing from "utils/query-string-parsing";
-import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
-import ConfigProvider from "components/providers/ConfigProvider";
-import { userLogoutAll } from "utils/logout";
-import UserDeletion from "./UserDeletion";
-import UserActivityBarSettings from "./UserActivityBarSettings";
-import UserPreferencesElement from "./UserPreferencesElement";
-import UserPreferredObjectStore from "./UserPreferredObjectStore";
-
-import "@fortawesome/fontawesome-svg-core";
-import UserBeaconSettings from "./UserBeaconSettings";
-import { useUserStore } from "@/stores/userStore";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: {
-        ConfigProvider,
-        UserActivityBarSettings,
-        UserDeletion,
-        UserPreferencesElement,
-        ThemeSelector,
-        UserBeaconSettings,
-        UserPreferredObjectStore,
-    },
-    props: {
-        userId: {
-            type: String,
-            required: true,
-        },
-        enableQuotas: {
-            type: Boolean,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            email: "",
-            diskUsage: "",
-            diskQuota: "",
-            messageVariant: null,
-            message: null,
-            toggleActivityBar: false,
-            toggleTheme: false,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        activePreferences() {
-            const userPreferencesEntries = Object.entries(getUserPreferencesModel());
-            // Object.entries returns an array of arrays, where the first element
-            // is the key (string) and the second is the value (object)
-            const enabledPreferences = userPreferencesEntries.filter((f) => !f[1].disabled);
-            return Object.fromEntries(enabledPreferences);
-        },
-        hasLogout() {
-            const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !Galaxy.config.single_user;
-        },
-        hasThemes() {
-            const Galaxy = getGalaxyInstance();
-            const themes = Object.keys(Galaxy.config.themes);
-            return themes?.length > 1 ?? false;
-        },
-    },
-    created() {
-        const message = QueryStringParsing.get("message");
-        const status = QueryStringParsing.get("status");
-        if (message && status) {
-            this.message = message;
-            this.messageVariant = status;
-        }
-        axios.get(withPrefix(`/api/users/${this.userId}`)).then((response) => {
-            this.email = response.data.email;
-            this.diskUsage = response.data.nice_total_disk_usage;
-            this.diskQuota = response.data.quota;
-        });
-    },
-    methods: {
-        makeDataPrivate() {
-            const Galaxy = getGalaxyInstance();
-            if (
-                confirm(
-                    _l(
-                        "WARNING: This will make all datasets (excluding library datasets) for which you have " +
-                            "'management' permissions, in all of your histories " +
-                            "private, and will set permissions such that all " +
-                            "of your new data in these histories is created as private.  Any " +
-                            "datasets within that are currently shared will need " +
-                            "to be re-shared or published.  Are you sure you " +
-                            "want to do this?"
-                    )
-                )
-            ) {
-                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
-                    Galaxy.modal.show({
-                        title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
-                            "/user/permissions"
-                        )}">User Permissions</a> interface.`,
-                        buttons: {
-                            Close: () => {
-                                Galaxy.modal.hide();
-                            },
-                        },
-                    });
-                });
-            }
-        },
-        signOut() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.modal.show({
-                title: _l("Sign out"),
-                body: "Do you want to continue and sign out of all active sessions?",
-                buttons: {
-                    Cancel: function () {
-                        Galaxy.modal.hide();
-                    },
-                    "Sign out": userLogoutAll,
-                },
-            });
-        },
-    },
-};
-</script>
+<style scoped lang="scss">
+.user-preferences-cards {
+    container: cards-list / inline-size;
+}
+</style>

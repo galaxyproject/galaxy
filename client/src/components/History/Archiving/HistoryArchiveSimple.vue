@@ -23,8 +23,8 @@ function onArchiveHistory() {
             <i>active</i> histories.
         </p>
 
-        <b-button class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory">
+        <BButton class="archive-history-btn mt-3" variant="primary" @click="onArchiveHistory">
             Archive history
-        </b-button>
+        </BButton>
     </div>
 </template>

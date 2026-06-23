@@ -3,12 +3,11 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
-    List,
     Optional,
-    Sequence,
 )
 
 import sqlalchemy as sa
@@ -35,16 +34,13 @@ class DDLOperation(ABC):
                 return None
 
     @abstractmethod
-    def execute(self) -> Optional[Any]:
-        ...
+    def execute(self) -> Optional[Any]: ...
 
     @abstractmethod
-    def pre_execute_check(self) -> bool:
-        ...
+    def pre_execute_check(self) -> bool: ...
 
     @abstractmethod
-    def log_check_not_passed(self) -> None:
-        ...
+    def log_check_not_passed(self) -> None: ...
 
     def _is_repair_mode(self) -> bool:
         """`--repair` option has been passed to the command."""
@@ -82,12 +78,10 @@ class DDLAlterOperation(DDLOperation):
             return self.non_batch_execute()  # use regular op context for non-sqlite db
 
     @abstractmethod
-    def batch_execute(self, batch_op) -> Optional[Any]:
-        ...
+    def batch_execute(self, batch_op) -> Optional[Any]: ...
 
     @abstractmethod
-    def non_batch_execute(self) -> Optional[Any]:
-        ...
+    def non_batch_execute(self) -> Optional[Any]: ...
 
 
 class CreateTable(DDLOperation):
@@ -231,8 +225,8 @@ class CreateForeignKey(DDLAlterOperation):
         foreign_key_name: str,
         table_name: str,
         referent_table: str,
-        local_cols: List[str],
-        remote_cols: List[str],
+        local_cols: list[str],
+        remote_cols: list[str],
         **kw: Any,
     ) -> None:
         super().__init__(table_name)
@@ -263,7 +257,7 @@ class CreateForeignKey(DDLAlterOperation):
 class CreateUniqueConstraint(DDLAlterOperation):
     """Wraps alembic's create_unique_constraint directive."""
 
-    def __init__(self, constraint_name: str, table_name: str, columns: List[str]) -> None:
+    def __init__(self, constraint_name: str, table_name: str, columns: list[str]) -> None:
         super().__init__(table_name)
         self.constraint_name = constraint_name
         self.columns = columns
@@ -335,14 +329,14 @@ def create_foreign_key(
     foreign_key_name: str,
     table_name: str,
     referent_table: str,
-    local_cols: List[str],
-    remote_cols: List[str],
+    local_cols: list[str],
+    remote_cols: list[str],
     **kw: Any,
 ) -> None:
     CreateForeignKey(foreign_key_name, table_name, referent_table, local_cols, remote_cols, **kw).run()
 
 
-def create_unique_constraint(constraint_name: str, table_name: str, columns: List[str]) -> None:
+def create_unique_constraint(constraint_name: str, table_name: str, columns: list[str]) -> None:
     CreateUniqueConstraint(constraint_name, table_name, columns).run()
 
 

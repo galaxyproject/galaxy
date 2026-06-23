@@ -238,7 +238,7 @@ class Velvet(Html):
                 else:
                     rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
         rval.append("</ul></div></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 

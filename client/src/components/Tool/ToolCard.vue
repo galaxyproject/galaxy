@@ -1,19 +1,31 @@
 <script setup>
+import { faExclamationCircle, faHdd, faKey } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BPopover } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import FormMessage from "components/Form/FormMessage";
-import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
-import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
-import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
-import ToolFooter from "components/Tool/ToolFooter";
-import ToolHelp from "components/Tool/ToolHelp";
-import Heading from "components/Common/Heading";
-import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
-import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
-import { getAppRoot } from "onload/loadConfig";
-import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import { computed, onBeforeMount, ref, watch } from "vue";
 
-import { computed, ref, watch } from "vue";
+import { useStorageLocationConfiguration } from "@/composables/storageLocation";
+import { useConfigStore } from "@/stores/configurationStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
+
+import GButton from "../BaseComponents/GButton.vue";
+import GButtonGroup from "../BaseComponents/GButtonGroup.vue";
+import GModal from "../BaseComponents/GModal.vue";
+import ToolCredentials from "./ToolCredentials.vue";
+import ToolHelpForum from "./ToolHelpForum.vue";
+import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore.vue";
+import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover.vue";
+import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormCardSticky from "@/components/Form/FormCardSticky.vue";
+import FormMessage from "@/components/Form/FormMessage.vue";
+import ToolFavoriteButton from "@/components/Tool/Buttons/ToolFavoriteButton.vue";
+import ToolOptionsButton from "@/components/Tool/Buttons/ToolOptionsButton.vue";
+import ToolVersionsButton from "@/components/Tool/Buttons/ToolVersionsButton.vue";
+import ToolFooter from "@/components/Tool/ToolFooter.vue";
+import ToolHelp from "@/components/Tool/ToolHelp.vue";
 
 const props = defineProps({
     id: {
@@ -24,6 +36,10 @@ const props = defineProps({
         type: String,
         required: false,
         default: "1.0",
+    },
+    toolUuid: {
+        type: String,
+        default: null,
     },
     title: {
         type: String,
@@ -58,9 +74,20 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    /** If tool generated tours can be offered. */
+    allowGeneratedTours: {
+        type: Boolean,
+        default: false,
+    },
+    allowEditingCredentials: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
+
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
 
 function onChangeVersion(v) {
     emit("onChangeVersion", v);
@@ -72,19 +99,43 @@ watch(
     () => props.id,
     () => {
         errorText.value = null;
-    }
+    },
 );
 
-function onSetError(e) {
-    errorText.value = e;
-}
+const credentialToolTip = computed(() => {
+    const credentialNames = props.options.credentials?.map((service) => service.name);
+    if (!credentialNames.value) {
+        return "";
+    }
 
+    return `This tool requires the following credentials when running the workflow: ${credentialNames.value.join(
+        ", ",
+    )}`;
+});
+
+const { isOnlyPreference } = useStorageLocationConfiguration();
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { isLoaded: isConfigLoaded, config } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
-const versions = computed(() => props.options.versions);
-const showVersions = computed(() => props.options.versions?.length > 1);
+const versions = computed(() => props.options.versions ?? []);
+const hiddenVersions = computed(() => props.options.hidden_versions ?? []);
+const visibleVersions = computed(() => {
+    const filtered = versions.value.filter((v) => !hiddenVersions.value.includes(v));
+    if (props.version && !filtered.includes(props.version) && versions.value.includes(props.version)) {
+        filtered.push(props.version);
+    }
+    return filtered;
+});
+const showVersions = computed(() => visibleVersions.value.length > 1);
 
-const root = computed(() => getAppRoot());
+const storageLocationModalTitle = computed(() => {
+    if (isOnlyPreference.value) {
+        return "Tool Execution Preferred Storage";
+    } else {
+        return "Tool Execution Storage";
+    }
+});
+
 const showPreferredObjectStoreModal = ref(false);
 const toolPreferredObjectStoreId = ref(props.preferredObjectStoreId);
 
@@ -93,83 +144,118 @@ function onShowObjectStoreSelect() {
 }
 
 function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
-    showPreferredObjectStoreModal.value = false;
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
+
+const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
+
+const canGenerateTours = computed(() =>
+    Boolean(props.allowGeneratedTours && isConfigLoaded.value && config.value.enable_tool_generated_tours),
+);
+
+onBeforeMount(() => {
+    if (props.options.credentials) {
+        setToolServiceCredentialsDefinitionFor(props.id, props.version, props.options.credentials);
+    }
+});
 </script>
 
 <template>
-    <div class="position-relative">
-        <div class="underlay sticky-top" />
-        <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
-            <div class="d-flex justify-content-between">
-                <div class="py-1 d-flex flex-wrap flex-gapx-1">
-                    <span>
-                        <icon icon="wrench" class="fa-fw" />
-                        <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
-                    </span>
-                    <span itemprop="description">{{ props.description }}</span>
-                    <span>(Galaxy Version {{ props.version }})</span>
-                </div>
-                <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
-                    <b-button-group class="tool-card-buttons">
-                        <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
-                        <ToolVersionsButton
-                            v-if="showVersions"
-                            :version="props.version"
-                            :versions="versions"
-                            @onChangeVersion="onChangeVersion" />
-                        <ToolOptionsButton
-                            :id="props.id"
-                            :sharable-url="props.options.sharable_url"
-                            :options="props.options" />
-                        <b-button
-                            v-if="allowObjectStoreSelection"
-                            id="tool-storage"
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="float-right tool-storage"
-                            @click="onShowObjectStoreSelect">
-                            <span class="fa fa-hdd" />
-                        </b-button>
-                        <ToolTargetPreferredObjectStorePopover
-                            v-if="allowObjectStoreSelection"
-                            :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                            :user="currentUser">
-                        </ToolTargetPreferredObjectStorePopover>
-                        <b-modal
-                            v-model="showPreferredObjectStoreModal"
-                            title="Tool Execution Preferred Object Store"
-                            modal-class="tool-preferred-object-store-modal"
-                            title-tag="h3"
-                            size="sm"
-                            hide-footer>
-                            <ToolSelectPreferredObjectStore
-                                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
-                                :root="root"
-                                @updated="onUpdatePreferredObjectStoreId" />
-                        </b-modal>
-                    </b-button-group>
-                    <slot name="header-buttons" />
-                </div>
-            </div>
-        </div>
+    <FormCardSticky
+        :error-message="errorText || ''"
+        :description="props.description"
+        :name="props.title"
+        :version="props.version">
+        <template v-slot:buttons>
+            <GButtonGroup class="tool-card-buttons">
+                <ToolFavoriteButton v-if="hasUser" :id="props.id" />
+                <ToolVersionsButton
+                    v-if="showVersions"
+                    :version="props.version"
+                    :versions="visibleVersions"
+                    @onChangeVersion="onChangeVersion" />
+                <ToolOptionsButton
+                    :id="props.id"
+                    :allow-generated-tours="canGenerateTours"
+                    :tool-uuid="props.toolUuid"
+                    :sharable-url="props.options.sharable_url"
+                    :version="props.version"
+                    :options="props.options" />
+                <GButton
+                    v-if="allowObjectStoreSelection"
+                    id="tool-storage"
+                    transparent
+                    color="blue"
+                    size="small"
+                    class="float-right tool-storage"
+                    @click="onShowObjectStoreSelect">
+                    <FontAwesomeIcon :icon="faHdd" />
+                </GButton>
+            </GButtonGroup>
+            <ToolTargetPreferredObjectStorePopover
+                v-if="allowObjectStoreSelection"
+                :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                :user="currentUser" />
+            <GModal
+                id="modal-select-preferred-object-store"
+                :show.sync="showPreferredObjectStoreModal"
+                :title="storageLocationModalTitle"
+                size="small">
+                <ToolSelectPreferredObjectStore
+                    v-if="showPreferredObjectStoreModal"
+                    :tool-preferred-object-store-id="toolPreferredObjectStoreId"
+                    @updated="onUpdatePreferredObjectStoreId" />
+            </GModal>
+            <slot name="buttons" />
+        </template>
 
-        <div id="tool-card-body">
+        <template v-slot>
+            <template v-if="props.options.credentials?.length">
+                <ToolCredentials
+                    v-if="!props.allowEditingCredentials"
+                    class="mt-2"
+                    :tool-id="props.id"
+                    :tool-version="props.version"
+                    :job-credentials-context="props.options.job_credentials_context" />
+                <BAlert
+                    v-else-if="props.allowEditingCredentials"
+                    v-g-tooltip.hover
+                    variant="info"
+                    class="mt-2"
+                    show
+                    :title="credentialToolTip">
+                    <FontAwesomeIcon :icon="faKey" />
+                    Requires credentials to run this tool.
+
+                    <FontAwesomeIcon id="target" :icon="faExclamationCircle" fixed-width />
+                    <BPopover target="target" triggers="hover" boundary="window">
+                        <div class="d-flex flex-column">
+                            <span
+                                v-for="(service, index) in props.options.credentials"
+                                :key="index"
+                                class="d-flex flex-column">
+                                <b> {{ service.label }}: </b>
+                                {{ service.description }}
+                            </span>
+                        </div>
+                    </BPopover>
+                </BAlert>
+            </template>
+
             <FormMessage variant="danger" :message="errorText" :persistent="true" />
             <FormMessage :variant="props.messageVariant" :message="props.messageText" />
-            <slot name="body" />
+            <slot name="default" />
             <div v-if="props.disabled" class="portlet-backdrop" />
-        </div>
+        </template>
 
-        <slot name="buttons" />
-
-        <div>
+        <template v-slot:footer>
+            <div class="mt-2 mb-4">
+                <slot name="buttons" />
+            </div>
             <div v-if="props.options.help" class="mt-2 mb-4">
-                <Heading h2 separator bold size="sm"> Help </Heading>
-                <ToolHelp :content="props.options.help" />
+                <Heading v-localize h2 separator bold size="sm">Help</Heading>
+                <ToolHelp :content="props.options.help" :format="props.options.help_format" />
             </div>
 
             <ToolTutorialRecommendations
@@ -178,6 +264,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
 
+            <ToolHelpForum v-if="showHelpForum" :tool-id="props.id" :tool-name="props.title" />
+
             <ToolFooter
                 :id="props.id"
                 :has-citations="props.options.citations"
@@ -185,30 +273,18 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :license="props.options.license"
                 :creators="props.options.creator"
                 :requirements="props.options.requirements" />
-        </div>
-    </div>
+        </template>
+    </FormCardSticky>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
-.underlay::after {
-    content: "";
-    display: block;
-    position: absolute;
-    top: -$margin-h;
-    left: -0.5rem;
-    right: -0.5rem;
-    height: 50px;
-    background: linear-gradient($white 75%, change-color($white, $alpha: 0));
-}
-
 .fa-wrench {
     cursor: unset;
 }
 
-.tool-card-buttons {
-    height: 2em;
+.tool-card-buttons :deep(.dropdown .btn) {
+    display: flex;
+    border: none;
 }
 
 .portlet-backdrop {

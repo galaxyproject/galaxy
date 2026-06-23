@@ -1,6 +1,7 @@
 """
 Middleware for handling $REMOTE_USER if use_remote_user is enabled.
 """
+
 import logging
 import socket
 
@@ -66,7 +67,7 @@ class RemoteUser:
         if self.display_servers and "REMOTE_ADDR" in environ:
             try:
                 host = socket.gethostbyaddr(environ["REMOTE_ADDR"])[0]
-            except (OSError, socket.herror, socket.gaierror, socket.timeout):
+            except (OSError, socket.herror, socket.gaierror):
                 # in the event of a lookup failure, deny access
                 host = None
             if host in self.display_servers:
@@ -164,6 +165,7 @@ class RemoteUser:
                 "/user/api_key",
                 "/user/edit_username",
                 "/user/dbkeys",
+                "/user/information",
                 "/user/logout",
                 "/user/toolbox_filters",
                 "/user/set_default_permissions",
@@ -174,8 +176,6 @@ class RemoteUser:
                 "/user/logout",
                 "/user/manage_user_info",
                 "/user/edit_info",
-                "/userskeys/all_users",
-                "/userskeys/admin_api_keys",
             )
 
             if not path_info.startswith("/user"):

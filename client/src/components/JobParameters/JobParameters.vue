@@ -1,7 +1,9 @@
 <template>
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
-            <h2 v-if="includeTitle" class="h-md">Tool Parameters</h2>
+            <Heading v-if="includeTitle" id="tool-parameters-heading" h1 separator inline size="md">
+                Tool Parameters
+            </Heading>
             <table id="tool-parameters" class="tabletip info_data_table">
                 <thead>
                     <tr>
@@ -17,6 +19,9 @@
                         </td>
                         <td v-if="Array.isArray(parameter.value)">
                             <JobParametersArrayValue :parameter_value="parameter.value" />
+                        </td>
+                        <td v-else-if="isRequestJson(parameter)" class="tool-parameter-value">
+                            <DataFetchRequestParameter :parameter-value="parameter.value" />
                         </td>
                         <td v-else class="tool-parameter-value">
                             {{ parameter.value }}
@@ -39,24 +44,32 @@
                 {{ singleParam }}
             </td>
         </div>
-        <br />
-        <job-outputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
+        <template v-if="includeOutputs">
+            <br />
+            <JobOutputs :job-outputs="outputs" paginate :title="`Job Outputs`" />
+        </template>
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import JobOutputs from "../JobInformation/JobOutputs";
-import JobParametersArrayValue from "./JobParametersArrayValue";
+import Vue from "vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+import { useJobParametersStore } from "@/stores/jobParametersStore";
+
+import Heading from "../Common/Heading.vue";
+import JobOutputs from "../JobInformation/JobOutputs.vue";
+import DataFetchRequestParameter from "./DataFetchRequestParameter.vue";
+import JobParametersArrayValue from "./JobParametersArrayValue.vue";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
+        DataFetchRequestParameter,
+        Heading,
         JobOutputs,
         JobParametersArrayValue,
     },
@@ -81,6 +94,15 @@ export default {
             type: Boolean,
             default: true,
         },
+        /** Append the JobOutputs table at the bottom (set false when callers
+         *  already render outputs in a separate UI surface). */
+        includeOutputs: {
+            type: Boolean,
+            default: true,
+        },
+    },
+    setup() {
+        return { jobParametersStore: useJobParametersStore() };
     },
     data() {
         return {
@@ -108,17 +130,35 @@ export default {
             return parameter ? parameter.value : `Parameter "${this.param}" is not found!`;
         },
     },
+    watch: {
+        jobId: function (newValue) {
+            this.initJob();
+        },
+    },
     created: function () {
-        let url;
-        if (this.jobId) {
-            url = `${getAppRoot()}api/jobs/${this.jobId}/parameters_display`;
-        } else {
-            url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
-        }
-        this.ajaxCall(url);
-        this.isSingleParam = this.param !== undefined && this.param !== "undefined";
+        this.initJob();
     },
     methods: {
+        isRequestJson(parameter) {
+            return parameter.text == "request_json" && typeof parameter.value == "string";
+        },
+        async initJob() {
+            this.isSingleParam = this.param !== undefined && this.param !== "undefined";
+            if (this.jobId) {
+                try {
+                    await this.jobParametersStore.fetchJobParameters({ id: this.jobId });
+                    const data = this.jobParametersStore.getJobParameters(this.jobId);
+                    if (data) {
+                        this.applyData(data);
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            } else if (this.datasetId) {
+                const url = `${getAppRoot()}api/datasets/${this.datasetId}/parameters_display?hda_ldda=${this.datasetType}`;
+                this.ajaxCall(url);
+            }
+        },
         appRoot: function () {
             return getAppRoot();
         },
@@ -126,14 +166,15 @@ export default {
             axios
                 .get(url)
                 .then((response) => response.data)
-                .then((data) => {
-                    this.hasParameterErrors = data.has_parameter_errors;
-                    this.parameters = data.parameters;
-                    this.outputs = data.outputs || {};
-                })
+                .then((data) => this.applyData(data))
                 .catch((e) => {
                     console.error(e);
                 });
+        },
+        applyData(data) {
+            this.hasParameterErrors = data.has_parameter_errors;
+            this.parameters = data.parameters;
+            this.outputs = data.outputs || {};
         },
     },
 };

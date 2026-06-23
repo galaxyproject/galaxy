@@ -1,0 +1,31 @@
+- doc: |
+    Test that default value doesn't need to be supplied
+  job: {}
+  outputs:
+    out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "1"
+- doc: |
+    Test that explicit null is not replaced and fails
+  expect_failure: true
+  job:
+    optional_int_with_default: null
+  outputs:
+    out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "1"
+- doc: |
+    Test that empty string is not replaced and fails
+  expect_failure: true
+  job:
+    optional_int_with_default: ""
+  outputs:
+    out:
+      class: File
+      asserts:
+      - that: has_text
+        text: "1"

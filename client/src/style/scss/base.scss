@@ -1,8 +1,8 @@
 // Bootstrap variables and core framework
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
-@import "~bootstrap/scss/bootstrap.scss";
-@import "~bootstrap-vue/src/index.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
+@import "bootstrap/scss/bootstrap.scss";
+@import "bootstrap-vue/src/index.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
@@ -13,37 +13,32 @@
 //@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
-@import "~@fortawesome/fontawesome-free/scss/regular";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/v4-shims";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
+@import "@fortawesome/fontawesome-free/scss/fontawesome";
+@import "@fortawesome/fontawesome-free/scss/brands";
+@import "@fortawesome/fontawesome-free/scss/regular";
+@import "@fortawesome/fontawesome-free/scss/solid";
+@import "@fortawesome/fontawesome-free/scss/v4-shims";
+@import "@fortawesome/fontawesome-free/scss/_variables";
 
 @import "select2.scss";
-@import "jquery.rating.scss";
 
 // galaxy sub-components
 @import "reports";
-@import "windows.scss";
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
-@import "trackster.scss";
 @import "toastr.scss";
-@import "jstree.scss";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
 @import "message.scss";
-@import "markdown.scss";
-@import "toolshed.scss";
-@import "workflow.scss";
 @import "multiselect.scss";
 @import "icon-btn.scss";
 @import "peek-columns.scss";
 @import "dataset.scss";
 @import "list-item.scss";
+@import "panels.scss";
+@import "panels-divider.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -63,6 +58,11 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 }
 
 // ==== Basic styles ====
+html,
+body {
+    overscroll-behavior: none;
+}
+
 body {
     @extend .m-2;
 }
@@ -126,73 +126,6 @@ body {
     display: none;
 }
 
-// ==== Unified panel styles ====
-.unified-panel {
-    display: flex;
-    flex-flow: column;
-    background: $panel-bg-color;
-    height: 100%;
-    overflow: auto;
-}
-.unified-panel-header {
-    @extend .unselectable;
-    @extend .px-3;
-    @extend .d-flex;
-    height: $panel_header_height;
-    font-size: 1rem;
-    font-weight: bold;
-    align-items: center;
-    color: $panel-header-text-color;
-    background: $panel-bg-header-color;
-    a {
-        color: $panel-header-text-color;
-    }
-    .unified-panel-header-inner {
-        @extend .w-100;
-        min-width: max-content;
-        align-items: center;
-        justify-content: space-between;
-        display: flex;
-    }
-    .panel-header-buttons {
-        order: 9999;
-        @extend .d-flex;
-        .panel-header-button {
-            text-align: center;
-            &:not(:last-child) {
-                @extend .mr-2;
-            }
-            &:hover {
-                color: $brand-info;
-            }
-        }
-        .panel-header-button-toolbox {
-            color: $brand-dark;
-            flex: 1;
-            @extend .p-1;
-            text-align: center;
-            font-size: $h4-font-size;
-            align-items: center;
-            &:hover {
-                color: $brand-info;
-                background-color: $brand-light;
-                text-decoration: none !important;
-                border-color: $brand-light;
-            }
-        }
-    }
-}
-.unified-panel-controls {
-    @extend .px-3;
-}
-.unified-panel-body {
-    @extend .p-0;
-    @extend .w-100;
-    @extend .h-100;
-    @extend .overflow-auto;
-    flex: 1;
-}
-
 // State colors
 $galaxy-state-border: (
     "new": $state-default-border,
@@ -205,6 +138,8 @@ $galaxy-state-border: (
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
     "setting_metadata": $state-warning-border,
+    "inaccessible": darken($state-default-border, 10%),
+    "paused": $state-info-border,
 );
 
 $galaxy-state-bg: (
@@ -218,7 +153,35 @@ $galaxy-state-bg: (
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
     "setting_metadata": $state-warning-bg,
+    "inaccessible": darken($state-default-bg, 10%),
+    "paused": $state-info-bg,
+    "skipped": $state-default-bg,
+    "uninitialized": $gray-200,
+    // Some `JobState`s:
+    "resubmitted": $state-default-bg,
+    "failed": $state-danger-bg,
+    "deleting": darken($state-default-bg, 30%),
+    "stop": $state-default-border,
+    "stopped": darken($state-default-bg, 30%),
 );
+
+// Replace all occurrences of $search in $string with $replace.
+@function str-replace($string, $search, $replace: "") {
+    $index: str-index($string, $search);
+    @if $index {
+        @return str-slice($string, 1, $index - 1) + $replace +
+            str-replace(str-slice($string, $index + str-length($search)), $search, $replace);
+    }
+    @return $string;
+}
+
+// Expose state background colors as CSS custom properties so canvas-based
+// rendering (e.g. the workflow minimap) can read them without duplicating values.
+:root {
+    @each $state, $color in $galaxy-state-bg {
+        --state-color-#{str-replace($state, "_", "-")}: #{$color};
+    }
+}
 
 @each $state in map-keys($galaxy-state-border) {
     .state-color-#{$state},
@@ -255,6 +218,41 @@ $galaxy-state-bg: (
 [data-state="deleted"],
 [data-state="hidden"] {
     border-style: dotted;
+}
+
+.node-header-invocation {
+    color: $text-color;
+    @each $state in map-keys($galaxy-state-bg) {
+        &.header-#{$state} {
+            background-color: map-get($galaxy-state-bg, $state) !important;
+        }
+    }
+}
+
+// EDAM Ontology Badges (in ToolList)
+.edam-ontology-badge {
+    border: 1px solid;
+    &.operation {
+        color: var(--color-blue-600);
+        background-color: var(--color-blue-100);
+        border-color: var(--color-blue-600);
+
+        &:hover {
+            color: var(--color-blue-500);
+            background-color: var(--color-blue-200);
+        }
+    }
+
+    &.topic {
+        color: var(--color-green-600);
+        background-color: var(--color-green-100);
+        border-color: var(--color-green-600);
+
+        &:hover {
+            color: var(--color-green-500);
+            background-color: var(--color-green-200);
+        }
+    }
 }
 
 // Extra label colors

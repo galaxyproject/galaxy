@@ -1,4 +1,6 @@
-import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./states";
+import { describe, expect, it } from "vitest";
+
+import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./states";
 
 describe("States", () => {
     it("check if all reduced states exist and have a status set", async () => {

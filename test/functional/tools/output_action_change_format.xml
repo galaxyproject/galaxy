@@ -42,9 +42,13 @@
     </outputs>
     <tests>
         <test>
-            <param name="dispatch" value="dont" />
-            <param name="input" value="simple_line.txt" />
-            <param name="abool" value="true"/>
+            <conditional name="input_cond">
+                <param name="dispatch" value="dont" />
+                <param name="input" value="simple_line.txt" />
+            </conditional>
+            <section name="asection">
+                <param name="abool" value="true"/>
+            </section>
             <output name="out1" ftype="data">
                 <assert_contents>
                     <has_line line="1&#009;2" />
@@ -53,9 +57,13 @@
             </output>
         </test>
         <test>
-            <param name="dispatch" value="do" />
-            <param name="input" value="simple_line.txt" />
-            <param name="abool" value="false"/>
+            <conditional name="input_cond">
+                <param name="dispatch" value="do" />
+                <param name="input" value="simple_line.txt" />
+            </conditional>
+            <section name="asection">
+                <param name="abool" value="false"/>
+            </section>
             <output name="out1" ftype="txt">
                 <assert_contents>
                     <has_line line="1&#009;2" />

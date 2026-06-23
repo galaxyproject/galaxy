@@ -1,74 +1,107 @@
+<script setup lang="ts">
+import { faBurn, faCog, faEyeSlash, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
+import { toRef } from "vue";
+
+import type { HistorySummaryExtended } from "@/api";
+import {
+    deleteAllHiddenContent,
+    purgeAllDeletedContent,
+    unhideAllHiddenContent,
+} from "@/components/History/model/crud";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useHistoryContentStats } from "@/composables/historyContentStats";
+
+interface Props {
+    history: HistorySummaryExtended;
+}
+
+const props = defineProps<Props>();
+
+const emit = defineEmits(["update:operation-running"]);
+
+const { confirm } = useConfirmDialog();
+
+const { numItemsDeleted, numItemsHidden } = useHistoryContentStats(toRef(props, "history"));
+
+async function unhideAll() {
+    const confirmed = await confirm("Really unhide all hidden datasets?", {
+        title: "Show Hidden Datasets",
+        okText: "Unhide",
+        okIcon: faEyeSlash,
+    });
+    if (confirmed) {
+        runOperation(() => unhideAllHiddenContent(props.history));
+    }
+}
+
+async function deleteAllHidden() {
+    const confirmed = await confirm("Really delete all hidden datasets?", {
+        title: "Delete Hidden Datasets",
+        okText: "Delete",
+        okIcon: faTrash,
+        okColor: "red",
+    });
+    if (confirmed) {
+        runOperation(() => deleteAllHiddenContent(props.history));
+    }
+}
+
+async function purgeAllDeleted() {
+    const confirmed = await confirm(
+        "Really permanently delete all deleted datasets? Warning, this operation cannot be undone.",
+        {
+            title: "Permanently Delete Deleted Datasets",
+            okText: "Purge",
+            okIcon: faBurn,
+            okColor: "red",
+        },
+    );
+
+    if (confirmed) {
+        runOperation(() => purgeAllDeletedContent(props.history));
+    }
+}
+
+async function runOperation(operation: () => Promise<unknown>) {
+    emit("update:operation-running", props.history.update_time);
+    await operation();
+    emit("update:operation-running", props.history.update_time);
+}
+</script>
+
 <template>
-    <section>
-        <b-dropdown
+    <section v-if="numItemsHidden || numItemsHidden || numItemsDeleted">
+        <BDropdown
+            v-g-tooltip.hover
             no-caret
             size="sm"
             variant="link"
             class="rounded-0"
+            title="Operations"
             toggle-class="text-decoration-none rounded-0"
             data-description="history action menu">
             <template v-slot:button-content>
                 <span class="sr-only">History actions</span>
-                <Icon icon="cog" />
-            </template>
-            <b-dropdown-text id="history-op-all-content">
-                <span v-localize>With entire history...</span>
-            </b-dropdown-text>
-            <b-dropdown-item data-description="copy datasets" @click="onCopy">
-                <span v-localize>Copy Datasets</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
-                <span v-localize>Unhide All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
-                <span v-localize>Delete All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
-                <span v-localize>Purge All Deleted Content</span>
-            </b-dropdown-item>
-        </b-dropdown>
 
-        <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
-            <p v-localize>Really unhide all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
-            <p v-localize>Really delete all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
-            <p v-localize>Really permanently delete all deleted datasets?</p>
-            <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
+                <FontAwesomeIcon :icon="faCog" />
+            </template>
+
+            <BDropdownItem v-if="numItemsHidden" @click="unhideAll">
+                <FontAwesomeIcon :icon="faEyeSlash" />
+                <span v-localize>Unhide All Hidden Content</span>
+            </BDropdownItem>
+
+            <BDropdownItem v-if="numItemsHidden" @click="deleteAllHidden">
+                <FontAwesomeIcon :icon="faTrash" />
+                <span v-localize>Delete All Hidden Content</span>
+            </BDropdownItem>
+
+            <BDropdownItem v-if="numItemsDeleted" @click="purgeAllDeleted">
+                <FontAwesomeIcon :icon="faBurn" />
+                <span v-localize>Purge All Deleted Content</span>
+            </BDropdownItem>
+        </BDropdown>
     </section>
 </template>
-
-<script>
-import { unhideAllHiddenContent, deleteAllHiddenContent, purgeAllDeletedContent } from "components/History/model/crud";
-import { iframeRedirect } from "components/plugins/legacyNavigation";
-import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
-
-export default {
-    mixins: [usesDetailedHistoryMixin],
-    props: {
-        history: { type: Object, required: true },
-    },
-    methods: {
-        onCopy() {
-            iframeRedirect("/dataset/copy_datasets");
-        },
-        unhideAll() {
-            this.runOperation(() => unhideAllHiddenContent(this.history));
-        },
-        deleteAllHidden() {
-            this.runOperation(() => deleteAllHiddenContent(this.history));
-        },
-        purgeAllDeleted() {
-            this.runOperation(() => purgeAllDeletedContent(this.history));
-        },
-        async runOperation(operation) {
-            this.$emit("update:operation-running", this.history.update_time);
-            await operation();
-            this.$emit("update:operation-running", this.history.update_time);
-        },
-    },
-};
-</script>

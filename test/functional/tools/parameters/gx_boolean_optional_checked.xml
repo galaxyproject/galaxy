@@ -1,0 +1,58 @@
+<tool id="gx_boolean_optional_checked" name="gx_boolean_optional_checked" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output';
+cat '$inputs' >> $inputs_json;
+    ]]></command>
+    <inputs>
+        <param name="parameter" type="boolean" optional="true" checked="true" />
+    </inputs>
+    <configfiles>
+        <inputs name="inputs" filename="inputs.json" />
+    </configfiles>
+    <outputs>
+        <data name="output" format="txt" />
+        <data name="inputs_json" format="json" />
+    </outputs>
+    <tests>
+        <test>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="true" />
+                </assert_contents>
+            </output>
+            <!-- I wish this were null? It is somehow in expression_null_handling_boolean -->
+            <output name="inputs_json">
+                <assert_contents>
+                    <has_text text="&quot;parameter&quot;: true" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value_json="null" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="false" />
+                </assert_contents>
+            </output>
+            <!-- I wish this were null? It is somehow in expression_null_handling_boolean -->
+            <output name="inputs_json">
+                <assert_contents>
+                    <has_text text="&quot;parameter&quot;: null" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value_json="false" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="false" />
+                </assert_contents>
+            </output>
+            <output name="inputs_json">
+                <assert_contents>
+                    <has_text text="&quot;parameter&quot;: false" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

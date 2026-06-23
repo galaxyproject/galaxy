@@ -1,67 +1,13 @@
 <template>
-    <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
-    <page-editor-markdown
-        v-else
-        :title="title"
-        :page-id="pageId"
-        :public-url="publicUrl"
-        :content="content"
-        :content-data="contentData" />
+    <PageEditorView :page-id="pageId" :display-only="displayOnly" :hide-header="hideHeader" />
 </template>
 
-<script>
-import axios from "axios";
-import { Toast } from "composables/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
-import PageEditorMarkdown from "./PageEditorMarkdown";
+<script setup lang="ts">
+import PageEditorView from "./PageEditorView.vue";
 
-export default {
-    components: {
-        PageEditorMarkdown,
-        LoadingSpan,
-    },
-    props: {
-        pageId: {
-            required: true,
-            type: String,
-        },
-    },
-    data() {
-        return {
-            title: null,
-            contentFormat: null,
-            contentData: null,
-            content: null,
-            publicUrl: null,
-            loading: true,
-        };
-    },
-    created() {
-        this.getPage(this.pageId)
-            .then((data) => {
-                this.publicUrl = `${getAppRoot()}u/${data.username}/p/${data.slug}`;
-                this.content = data.content;
-                this.contentFormat = data.content_format;
-                this.contentData = data;
-                this.title = data.title;
-                this.loading = false;
-            })
-            .catch((error) => {
-                Toast.error(`Failed to load page: ${error}`);
-            });
-    },
-    methods: {
-        /** Page data request helper **/
-        async getPage(id) {
-            try {
-                const { data } = await axios.get(`${getAppRoot()}api/pages/${id}`);
-                return data;
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        },
-    },
-};
+defineProps<{
+    pageId: string;
+    displayOnly?: boolean;
+    hideHeader?: boolean;
+}>();
 </script>

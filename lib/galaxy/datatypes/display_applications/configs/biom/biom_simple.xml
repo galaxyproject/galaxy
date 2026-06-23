@@ -2,6 +2,6 @@
 <display id="biom_simple" version="1.0.0" name="view biom at">
     <dynamic_links from_data_table="biom_simple_display" skip_startswith="#" id="value" name="name">
         <url>${ url % { 'biom_file_url_qp': $biom_file.qp } }</url>
-        <param type="data" name="biom_file" url="galaxy_${DATASET_HASH}.biom" />
+        <param type="data" name="biom_file" url="galaxy_${DATASET_HASH}.biom" allow_cors="true" />
     </dynamic_links>
 </display>

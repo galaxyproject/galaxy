@@ -1,256 +1,287 @@
+<script setup lang="ts">
+import axios, { type AxiosError } from "axios";
+import { BAlert, BForm, BFormCheckbox, BFormGroup } from "bootstrap-vue";
+import { computed, onMounted, ref } from "vue";
+import Multiselect from "vue-multiselect";
+
+import {
+    getFilteredOIDCIdps,
+    getNeedShowCilogonInstitutionList,
+    type OIDCConfig,
+    submitCILogon,
+    submitOIDCLogon,
+} from "@/components/User/ExternalIdentities/ExternalIDHelper";
+import { useConfig } from "@/composables/config";
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { capitalizeFirstLetter } from "@/utils/strings";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import VerticalSeparator from "@/components/Common/VerticalSeparator.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Idp {
+    DisplayName: string;
+    EntityID: string;
+    OrganizationName: string;
+    RandS: boolean;
+}
+
+interface Props {
+    loginPage?: boolean;
+    excludeIdps?: string[];
+    columnDisplay?: boolean;
+    disableLocalAccounts?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    loginPage: false,
+    excludeIdps: () => [],
+    columnDisplay: true,
+    disableLocalAccounts: false,
+});
+
+const { config, isConfigLoaded } = useConfig();
+
+const loading = ref(false);
+const messageText = ref<string | null>(null);
+const messageVariant = ref<string | null>(null);
+const cILogonIdps = ref<Idp[]>([]);
+const selected = ref<Idp | null>(null);
+const rememberIdp = ref(false);
+
+const oIDCIdps = computed<OIDCConfig>(() => (isConfigLoaded.value ? config.value.oidc : {}));
+
+const filteredOIDCIdps = computed(() => getFilteredOIDCIdps(oIDCIdps.value, props.excludeIdps));
+
+const cILogonConfigured = computed(() => getNeedShowCilogonInstitutionList(oIDCIdps.value));
+
+onMounted(async () => {
+    rememberIdp.value = getIdpPreference() !== null;
+
+    // Only fetch CILogonIDPs if cilogon configured
+    if (cILogonConfigured.value) {
+        await getCILogonIdps();
+    }
+});
+
+async function clickOIDCLogin(idp: string) {
+    if (loading.value) {
+        return;
+    }
+    loading.value = true;
+
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get("redirect");
+        const redirectUri = await submitOIDCLogon(idp, redirectParam);
+        if (redirectUri) {
+            window.location.href = redirectUri;
+        }
+    } catch (e) {
+        messageVariant.value = "danger";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function clickCILogonLogin() {
+    if (loading.value) {
+        return;
+    }
+    if (props.loginPage) {
+        setIdpPreference();
+    }
+
+    if (!selected.value) {
+        messageVariant.value = "danger";
+        messageText.value = "Please select an institution.";
+        return;
+    }
+
+    loading.value = true;
+
+    try {
+        const redirectUri = await submitCILogon(true, selected.value.EntityID);
+
+        localStorage.setItem("galaxy-provider", "cilogon");
+
+        if (redirectUri) {
+            window.location.href = redirectUri;
+        }
+    } catch (e) {
+        messageVariant.value = "danger";
+        messageText.value = errorMessageAsString(e, "Login failed for an unknown reason.");
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function getCILogonIdps() {
+    try {
+        const { data } = await axios.get(withPrefix("/authnz/get_cilogon_idps"));
+
+        cILogonIdps.value = data;
+
+        if (cILogonIdps.value.length == 1) {
+            selected.value = cILogonIdps.value[0]!;
+        } else {
+            // List is originally sorted by OrganizationName which can be different from DisplayName
+            cILogonIdps.value.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
+        }
+
+        if (props.loginPage) {
+            const preferredIdp = getIdpPreference();
+
+            if (preferredIdp) {
+                const selectedIdp = cILogonIdps.value.find((idp) => idp.EntityID === preferredIdp);
+
+                if (selectedIdp) {
+                    selected.value = selectedIdp;
+                }
+            }
+        }
+    } catch (e) {
+        const error = e as AxiosError<{ err_msg?: string }>;
+        messageVariant.value = "danger";
+        const message = error.response?.data && error.response.data.err_msg;
+        messageText.value = message || "Failed to fetch CILogon IdPs.";
+    }
+}
+
+function setIdpPreference() {
+    if (rememberIdp.value && selected.value) {
+        localStorage.setItem("galaxy-remembered-idp", selected.value.EntityID);
+    } else {
+        localStorage.removeItem("galaxy-remembered-idp");
+    }
+}
+
+function getIdpPreference() {
+    return localStorage.getItem("galaxy-remembered-idp");
+}
+</script>
+
 <template>
-    <div>
-        <b-alert :show="messageShow" :variant="messageVariant">
+    <div class="h-100">
+        <BAlert v-if="messageText" class="text-nowrap" show :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
-        <b-form id="externalLogin">
-            <!-- OIDC login-->
-            <hr class="my-4" />
-            <div v-if="cilogonListShow" class="cilogon">
-                <div v-if="login_page">
-                    <!--Only Display if CILogon/Custos is configured-->
-                    <b-form-group label="Use existing institutional login">
-                        <multiselect
+        </BAlert>
+
+        <div :class="{ 'd-flex h-100': !props.columnDisplay }">
+            <BForm v-if="cILogonConfigured" id="externalLogin" class="cilogon">
+                <div>
+                    <BFormGroup :label="`Use ${props.loginPage ? `existing` : ``} institutional login`">
+                        <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
-                            :options="cilogon_idps"
+                            :options="cILogonIdps"
                             label="DisplayName"
-                            track-by="EntityID">
-                        </multiselect>
-                    </b-form-group>
+                            select-label=""
+                            deselect-label=""
+                            :allow-empty="false"
+                            track-by="EntityID" />
+                    </BFormGroup>
 
-                    <b-form-group v-if="login_page">
-                        <b-form-checkbox id="remember-idp" v-model="rememberIdp">
+                    <BFormGroup v-if="props.loginPage">
+                        <BFormCheckbox id="remember-idp" v-model="rememberIdp">
                             Remember institution selection
-                        </b-form-checkbox>
-                    </b-form-group>
+                        </BFormCheckbox>
+                    </BFormGroup>
 
-                    <b-button
-                        v-if="cilogon_enabled"
-                        :disabled="loading || selected === null"
-                        @click="submitCILogon('cilogon')">
+                    <GButton :disabled="loading || selected === null" @click="clickCILogonLogin">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
-                    </b-button>
-                    <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                    <b-button
-                        v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
-                        :disabled="loading || selected === null"
-                        @click="submitCILogon('custos')">
-                        <LoadingSpan v-if="loading" message="Signing In" />
-                        <span v-else>Sign in with Custos*</span>
-                    </b-button>
-                </div>
-
-                <div v-else>
-                    <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')">
-                        Sign in with Institutional Credentials*
-                    </b-button>
-
-                    <b-button v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</b-button>
-
-                    <b-form-group v-if="toggle_cilogon">
-                        <multiselect
-                            v-model="selected"
-                            placeholder="Select your institution"
-                            :options="cilogon_idps"
-                            label="DisplayName"
-                            track-by="EntityID">
-                        </multiselect>
-
-                        <b-button
-                            v-if="toggle_cilogon"
-                            :disabled="loading || selected === null"
-                            @click="submitCILogon(cilogonOrCustos)">
-                            Login*
-                        </b-button>
-                    </b-form-group>
+                    </GButton>
                 </div>
 
                 <p class="mt-3">
                     <small class="text-muted">
-                        * Galaxy uses CILogon via Custos to enable you to log in from this organization. By clicking
-                        'Sign In', you agree to the
+                        * Galaxy uses CILogon to enable you to log in from this organization. By clicking 'Sign In', you
+                        agree to the
                         <a href="https://ca.cilogon.org/policy/privacy">CILogon</a> privacy policy and you agree to
-                        share your username, email address, and affiliation with CILogon, Custos, and Galaxy.
+                        share your username, email address, and affiliation with CILogon and Galaxy.
                     </small>
                 </p>
-            </div>
+            </BForm>
 
-            <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
-                <span v-if="idp_info['icon']">
-                    <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                        <img :src="idp_info['icon']" height="45" :alt="idp" />
-                    </b-button>
-                </span>
-                <span v-else>
-                    <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                        <i :class="oidc_idps[idp]" />
+            <template v-if="cILogonConfigured && Object.keys(filteredOIDCIdps).length > 0">
+                <VerticalSeparator v-if="!props.columnDisplay">
+                    <span v-localize>or</span>
+                </VerticalSeparator>
+
+                <hr v-else class="w-100" />
+            </template>
+
+            <div
+                v-if="isConfigLoaded"
+                :class="!props.columnDisplay && props.loginPage ? 'oidc-idps-column' : 'oidc-idps-grid'">
+                <div v-for="(iDPInfo, idp) in filteredOIDCIdps" :key="idp">
+                    <GButton
+                        v-if="iDPInfo['icon']"
+                        transparent
+                        class="d-block oidc-button p-0"
+                        :disabled="loading"
+                        @click="clickOIDCLogin(idp)">
+                        <img :src="iDPInfo['icon']" height="35" :alt="`Sign in with ${capitalizeFirstLetter(idp)}`" />
+                    </GButton>
+                    <GButton
+                        v-else-if="iDPInfo['custom_button_text']"
+                        color="blue"
+                        outline
+                        class="d-block oidc-button"
+                        :disabled="loading"
+                        @click="clickOIDCLogin(idp)">
+                        <i :class="oIDCIdps[idp]" />
+                        Sign in with {{ iDPInfo["custom_button_text"] }}
+                    </GButton>
+                    <GButton
+                        v-else
+                        color="blue"
+                        outline
+                        class="d-block oidc-button"
+                        :disabled="loading"
+                        @click="clickOIDCLogin(idp)">
+                        <i :class="oIDCIdps[idp]" />
                         Sign in with
-                        {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-                    </b-button>
-                </span>
+                        <span v-if="iDPInfo['label']">
+                            {{ iDPInfo["label"].charAt(0).toUpperCase() + iDPInfo["label"].slice(1) }}
+                        </span>
+                        <span v-else>
+                            {{ capitalizeFirstLetter(idp) }}
+                        </span>
+                    </GButton>
+                </div>
             </div>
-        </b-form>
+        </div>
     </div>
 </template>
 
-<script>
-import axios from "axios";
-import Vue from "vue";
-import Multiselect from "vue-multiselect";
-import BootstrapVue from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-
-Vue.use(BootstrapVue);
-
-export default {
-    components: {
-        Multiselect,
-        LoadingSpan,
-    },
-    props: {
-        login_page: {
-            type: Boolean,
-            required: false,
-        },
-        exclude_idps: {
-            type: Array,
-            required: false,
-        },
-    },
-    data() {
-        const galaxy = getGalaxyInstance();
-        return {
-            loading: false,
-            messageText: null,
-            messageVariant: null,
-            enable_oidc: galaxy.config.enable_oidc,
-            oidc_idps: galaxy.config.oidc,
-            cilogon_idps: [],
-            selected: null,
-            rememberIdp: false,
-            cilogonOrCustos: null,
-            toggle_cilogon: false,
-        };
-    },
-    computed: {
-        filtered_oidc_idps() {
-            const exclude = ["cilogon", "custos"].concat(this.exclude_idps);
-            const filtered = Object.assign({}, this.oidc_idps);
-            exclude.forEach((idp) => {
-                delete filtered[idp];
-            });
-            return filtered;
-        },
-        cilogonListShow() {
-            return (
-                Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon") ||
-                Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos")
-            );
-        },
-        messageShow() {
-            return this.messageText != null;
-        },
-        cilogon_enabled() {
-            return Object.prototype.hasOwnProperty.call(this.oidc_idps, "cilogon");
-        },
-        custos_enabled() {
-            return Object.prototype.hasOwnProperty.call(this.oidc_idps, "custos");
-        },
-    },
-    created() {
-        this.rememberIdp = this.getIdpPreference() !== null;
-        /* Only fetch CILogonIDPs if custos/cilogon configured */
-        if (this.cilogonListShow) {
-            this.getCILogonIdps();
-        }
-    },
-    methods: {
-        toggleCILogon(idp) {
-            this.toggle_cilogon = !this.toggle_cilogon;
-            this.cilogonOrCustos = this.toggle_cilogon ? idp : null;
-        },
-        submitOIDCLogin(idp) {
-            const rootUrl = getAppRoot();
-            this.loading = true;
-            axios
-                .post(`${rootUrl}authnz/${idp}/login`)
-                .then((response) => {
-                    this.loading = false;
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                    this.loading = false;
-                });
-        },
-        submitCILogon(idp) {
-            const rootUrl = getAppRoot();
-            if (this.login_page) {
-                this.setIdpPreference();
-            }
-            this.loading = true;
-            axios
-                .post(`${rootUrl}authnz/${idp}/login/?idphint=${this.selected.EntityID}`)
-                .then((response) => {
-                    this.loading = false;
-                    localStorage.setItem("galaxy-provider", idp);
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-
-                    this.messageText = message || "Login failed for an unknown reason.";
-                    this.loading = false;
-                });
-        },
-        getCILogonIdps() {
-            const rootUrl = getAppRoot();
-            axios
-                .get(`${rootUrl}authnz/get_cilogon_idps`)
-                .then((response) => {
-                    this.cilogon_idps = response.data;
-                    if (this.cilogon_idps.length == 1) {
-                        this.selected = this.cilogon_idps[0];
-                    } else {
-                        //List is originally sorted by OrganizationName which can be different from DisplayName
-                        this.cilogon_idps.sort((a, b) => (a.DisplayName > b.DisplayName ? 1 : -1));
-                    }
-                })
-                .then(() => {
-                    if (this.login_page) {
-                        const preferredIdp = this.getIdpPreference();
-                        if (preferredIdp) {
-                            this.selected = this.cilogon_idps.find((idp) => idp.EntityID === preferredIdp);
-                        }
-                    }
-                });
-        },
-        setIdpPreference() {
-            if (this.rememberIdp) {
-                localStorage.setItem("galaxy-remembered-idp", this.selected.EntityID);
-            } else {
-                localStorage.removeItem("galaxy-remembered-idp");
-            }
-        },
-        getIdpPreference() {
-            return localStorage.getItem("galaxy-remembered-idp");
-        },
-    },
-};
-</script>
 <style scoped>
 .card-body {
     overflow: visible;
+}
+/* Enforce idps to appear in a column */
+.oidc-idps-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    height: 100%;
+    justify-content: center;
+    .oidc-button {
+        width: 100%;
+        display: flex !important;
+        justify-content: center;
+    }
+}
+/* Flexible grid for idps */
+.oidc-idps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
+    justify-items: center;
 }
 </style>

@@ -1,0 +1,31 @@
+- doc: |
+    Test to verify that mapping a list of a multi-select parameter maps over the job.
+    Ideally there would be a way to specify that the list should be reduced into the
+    parameter. It might work to have an expression tool to combine the list into a
+    string.
+  job:
+    input:
+      class: Collection
+      collection_type: list
+      elements:
+        - identifier: the_example_2
+          class: File
+          contents: '"ex2"'
+          filetype: 'expression.json'
+        - identifier: the_example_5
+          class: File
+          contents: '"ex5"'
+          filetype: 'expression.json'
+  outputs:
+    output:
+      class: Collection
+      collection_type: list
+      elements:
+        the_example_2:
+          asserts:
+          - that: has_text
+            text: 'ex2'
+        the_example_5:
+          asserts:
+          - that: has_text
+            text: 'ex5'

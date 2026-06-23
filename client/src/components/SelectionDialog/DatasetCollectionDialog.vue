@@ -1,88 +1,95 @@
+<script setup lang="ts">
+import axios from "axios";
+import { onMounted, ref } from "vue";
+
+import type { SelectionItem } from "@/components/SelectionDialog/selectionTypes";
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+interface HistoryItem {
+    id: string;
+    name: string;
+    created_time: string;
+    hid: number;
+    collection_type?: string;
+}
+
+interface Props {
+    callback?: (results: SelectionItem) => void;
+    history: string;
+    collectionTypes?: string[];
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    callback: () => {},
+});
+
+const emit = defineEmits<{
+    (e: "onCancel"): void;
+    (e: "onOk", results: SelectionItem): void;
+    (e: "onUpload"): void;
+}>();
+
+const errorMessage = ref("");
+const items = ref([]);
+const modalShow = ref(true);
+const optionsShow = ref(false);
+
+function onClick(record: SelectionItem) {
+    modalShow.value = false;
+    props.callback(record);
+    emit("onOk", record);
+}
+
+/** Called when the modal is hidden */
+function onCancel() {
+    modalShow.value = false;
+    emit("onCancel");
+}
+
+/** Performs server request to retrieve data records **/
+function load() {
+    optionsShow.value = false;
+    const url = withPrefix(`/api/histories/${props.history}/contents?type=dataset_collection`);
+    axios
+        .get(url)
+        .then((response) => {
+            let collection_instances = response.data.sort((a: HistoryItem, b: HistoryItem) => b.hid - a.hid);
+            if (props.collectionTypes?.length) {
+                collection_instances = collection_instances.filter(
+                    (item: HistoryItem) =>
+                        item.collection_type && props.collectionTypes!.includes(item.collection_type),
+                );
+            }
+            items.value = collection_instances.map((item: HistoryItem) => {
+                return {
+                    id: item.id,
+                    label: item.name,
+                    time: item.created_time,
+                    isLeaf: true,
+                };
+            });
+            optionsShow.value = true;
+        })
+        .catch((error) => {
+            errorMessage.value = errorMessageAsString(error);
+        });
+}
+
+onMounted(() => {
+    load();
+});
+</script>
+
 <template>
-    <selection-dialog
+    <SelectionDialog
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel">
-        <template v-slot:search>
-            <data-dialog-search v-model="filter" />
-        </template>
-        <template v-slot:options>
-            <data-dialog-table
-                v-if="optionsShow"
-                :items="items"
-                :multiple="false"
-                :filter="filter"
-                leaf-icon="fa fa-folder"
-                @clicked="clicked"
-                @load="load" />
-        </template>
-    </selection-dialog>
+        leaf-icon="fa fa-folder"
+        :items="items"
+        @onCancel="onCancel"
+        @onClick="onClick" />
 </template>
-
-<script>
-import axios from "axios";
-import SelectionDialogMixin from "./SelectionDialogMixin";
-import { getGalaxyInstance } from "app";
-import { errorMessageAsString } from "utils/simple-error";
-
-export default {
-    mixins: [SelectionDialogMixin],
-    props: {
-        history: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            errorMessage: null,
-            filter: null,
-            items: [],
-            modalShow: true,
-            optionsShow: false,
-            hasValue: false,
-        };
-    },
-    created: function () {
-        this.load();
-    },
-    methods: {
-        formatRows() {},
-        clicked: function (record) {
-            this.modalShow = false;
-            this.callback(record);
-            this.$emit("onOk", record);
-        },
-        /** Called when the modal is hidden */
-        onCancel() {
-            this.modalShow = false;
-            this.$emit("onCancel");
-        },
-        /** Performs server request to retrieve data records **/
-        load: function () {
-            this.filter = null;
-            this.optionsShow = false;
-            const Galaxy = getGalaxyInstance();
-            const url = `${Galaxy.root}api/histories/${this.history}/contents?type=dataset_collection`;
-            axios
-                .get(url)
-                .then((response) => {
-                    this.items = response.data.map((item) => {
-                        return {
-                            id: item.id,
-                            label: item.name,
-                            time: item.created_time,
-                            isLeaf: true,
-                        };
-                    });
-                    this.formatRows();
-                    this.optionsShow = true;
-                })
-                .catch((errorMessage) => {
-                    this.errorMessage = errorMessageAsString(errorMessage);
-                });
-        },
-    },
-};
-</script>

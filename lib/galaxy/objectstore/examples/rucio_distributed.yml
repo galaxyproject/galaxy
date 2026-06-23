@@ -1,0 +1,27 @@
+type: distributed
+backends:
+  - id: default
+    type: rucio
+    weight: 1
+    allow_selection: true
+    name: Rucio Object Storage
+    description: >
+      This is Galaxy's object store using Rucio
+    upload_rse_name: TEST
+    upload_scheme: file
+    scope: galaxy
+    account: root
+    auth_host: http://127.0.0.1:9000
+    username: rucio
+    password: rucio
+    auth_type: userpass
+    host: http://127.0.0.1:9000
+    register_only: false
+    download_schemes:
+      - rse: TEST
+        scheme: file
+        ignore_checksum: false
+    cache:
+      path: database/object_store_cache_rucio
+      size: 1000
+      cache_updated_data: true

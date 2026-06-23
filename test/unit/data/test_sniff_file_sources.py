@@ -1,7 +1,7 @@
 import os
 
 from galaxy.datatypes import sniff
-from galaxy.files import ConfiguredFileSourcesConfig
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
     TestConfiguredFileSources,
@@ -30,7 +30,7 @@ def _download_and_check_file(file_sources):
 
 def _configured_file_sources() -> TestConfiguredFileSources:
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig()
+    file_sources_config = FileSourcePluginsConfig()
     plugin = {
         "type": "posix",
     }

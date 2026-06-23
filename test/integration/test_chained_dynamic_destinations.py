@@ -1,7 +1,6 @@
 """Integration tests for chained dynamic job destinations."""
 
 import os
-import tempfile
 
 from galaxy_test.base.populators import skip_without_tool
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
@@ -14,7 +13,7 @@ class TestChainedDynamicDestinationIntegration(BaseJobEnvironmentIntegrationTest
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = CHAINED_DYNDESTS_JOB_CONFIG
 

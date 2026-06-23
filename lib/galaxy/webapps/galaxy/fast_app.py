@@ -1,25 +1,49 @@
+import logging
+from contextlib import asynccontextmanager
 from typing import (
     Any,
-    Dict,
+    TYPE_CHECKING,
 )
+from urllib.parse import urljoin
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
     FastAPI,
     Request,
 )
+from fastapi.openapi.constants import REF_TEMPLATE
+from slowapi import (
+    _rate_limit_exceeded_handler,
+    Limiter,
+)
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.datastructures import MutableHeaders
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import Response
+from tuspyserver import create_tus_router
 
+from galaxy.schema.generics import ref_to_name
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
+    add_raw_context_middlewares,
     add_request_id_middleware,
+    build_route_name_index,
     GalaxyFileResponse,
     include_all_package_routers,
 )
-from galaxy.webapps.base.webapp import config_allows_origin
+from galaxy.webapps.base.webapp import (
+    _is_embed_request,
+    config_allows_origin,
+)
+from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
+
+if TYPE_CHECKING:
+    from pydantic.json_schema import (
+        CoreModeRef,
+        DefsRef,
+    )
 
 # https://fastapi.tiangolo.com/tutorial/metadata/#metadata-for-tags
 api_tags_metadata = [
@@ -46,6 +70,10 @@ api_tags_metadata = [
         "description": "Operations with group roles.",
     },
     {
+        "name": "groups",
+        "description": "Operations with groups.",
+    },
+    {
         "name": "group_users",
         "description": "Operations with group users.",
     },
@@ -53,7 +81,6 @@ api_tags_metadata = [
     {"name": "libraries"},
     {"name": "data libraries folders"},
     {"name": "job_lock"},
-    {"name": "metrics"},
     {"name": "default"},
     {"name": "users"},
     {"name": "jobs"},
@@ -82,6 +109,14 @@ api_tags_metadata = [
         "description": "Operations with remote dataset sources.",
     },
     {"name": "undocumented", "description": "API routes that have not yet been ported to FastAPI."},
+    {
+        "name": "ai",
+        "description": "**BETA**: AI agent operations. This API is experimental and may change without notice.",
+    },
+    {
+        "name": "chat",
+        "description": "**BETA**: Chat interface for AI agents. This API is experimental and may change without notice.",
+    },
 ]
 
 
@@ -94,15 +129,31 @@ class GalaxyCORSMiddleware(CORSMiddleware):
         return config_allows_origin(origin, self.config)
 
 
-def add_galaxy_middleware(app: FastAPI, gx_app):
-    x_frame_options = gx_app.config.x_frame_options
-    if x_frame_options:
+class XFrameOptionsMiddleware:
+    def __init__(self, app, x_frame_options: str):
+        self.app = app
+        self.x_frame_options = x_frame_options
 
-        @app.middleware("http")
-        async def add_x_frame_options(request: Request, call_next):
-            response = await call_next(request)
-            response.headers["X-Frame-Options"] = x_frame_options
-            return response
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        request = Request(scope)
+
+        async def send_with_header(message):
+            if message["type"] == "http.response.start":
+                if not _is_embed_request(request.url.path, str(request.url.query)):
+                    headers = MutableHeaders(scope=message)
+                    headers.append("X-Frame-Options", self.x_frame_options)
+            await send(message)
+
+        await self.app(scope, receive, send_with_header)
+
+
+def add_galaxy_middleware(app: FastAPI, gx_app):
+    if x_frame_options := gx_app.config.x_frame_options:
+        app.add_middleware(XFrameOptionsMiddleware, x_frame_options=x_frame_options)
 
     GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
     GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
@@ -115,19 +166,16 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             allow_methods=["*"],
             max_age=600,
         )
-    else:
-        # handle CORS preflight requests - synchronize with wsgi behavior.
-        @app.options("/api/{rest_of_path:path}")
-        async def preflight_handler(request: Request, rest_of_path: str) -> Response:
-            response = Response()
-            response.headers["Access-Control-Allow-Headers"] = "*"
-            response.headers["Access-Control-Max-Age"] = "600"
-            return response
+
+    from galaxy.web.framework.middleware.aiocop_integration import aiocop_enabled
+
+    if aiocop_enabled():
+        from galaxy.web.framework.middleware.aiocop_integration import AiocopMiddleware
+
+        app.add_middleware(AiocopMiddleware)
 
 
-def include_legacy_openapi(app, gx_app):
-    if app.openapi_schema:
-        return app.openapi_schema
+def _build_merged_openapi(app, gx_app):
     openapi_schema = get_openapi(
         title="Galaxy API",
         version=VERSION,
@@ -137,11 +185,23 @@ def include_legacy_openapi(app, gx_app):
     legacy_openapi = gx_app.api_spec.to_dict()
     legacy_openapi["paths"].update(openapi_schema["paths"])
     openapi_schema["paths"] = legacy_openapi["paths"]
-    app.openapi_schema = openapi_schema
+    return openapi_schema
+
+
+def include_legacy_openapi(app, gx_app):
+    """Merge the legacy paste API spec into the FastAPI-generated schema.
+
+    Built eagerly so production workers can serve ``/openapi.json``
+    immediately on first request without paying a multi-second merge
+    latency on that request.
+    """
+    if app.openapi_schema:
+        return app.openapi_schema
+    app.openapi_schema = _build_merged_openapi(app, gx_app)
     return app.openapi_schema
 
 
-def get_fastapi_instance(root_path="") -> FastAPI:
+def get_fastapi_instance(root_path="", lifespan=None) -> FastAPI:
     return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
@@ -149,10 +209,22 @@ def get_fastapi_instance(root_path="") -> FastAPI:
         openapi_tags=api_tags_metadata,
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
         root_path=root_path,
+        lifespan=lifespan,
     )
 
 
-def get_openapi_schema() -> Dict[str, Any]:
+class CustomJsonSchema(GenerateJsonSchema):
+    def get_defs_ref(self, core_mode_ref: "CoreModeRef") -> "DefsRef":
+        full_def = super().get_defs_ref(core_mode_ref)
+        choices = self._prioritized_defsref_choices[full_def]
+        ref, mode = core_mode_ref
+        if ref in ref_to_name:
+            for i, choice in enumerate(choices):
+                choices[i] = choice.replace(choices[0], ref_to_name[ref])  # type: ignore[call-overload]
+        return full_def
+
+
+def get_openapi_schema() -> dict[str, Any]:
     """
     Dumps openAPI schema without starting a full app and webserver.
     """
@@ -165,26 +237,114 @@ def get_openapi_schema() -> Dict[str, Any]:
         description=app.description,
         routes=app.routes,
         license_info=app.license_info,
+        schema_generator=CustomJsonSchema(ref_template=REF_TEMPLATE),
     )
 
 
+def include_tus(app: FastAPI, gx_app):
+    config = gx_app.config
+    root_path = "" if config.galaxy_url_prefix == "/" else config.galaxy_url_prefix
+    upload_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/upload/resumable_upload"),
+        files_dir=config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    job_files_tus_router = create_tus_router(
+        prefix=urljoin(root_path, "api/job_files/resumable_upload"),
+        files_dir=config.tus_upload_store_job_files or config.tus_upload_store or config.new_file_path,
+        max_size=config.maximum_upload_file_size,
+    )
+    app.include_router(upload_tus_router)
+    app.include_router(job_files_tus_router)
+
+
+log = logging.getLogger(__name__)
+
+
+def get_mcp_lifespan(gx_app):
+    """Get MCP lifespan if enabled, or (None, None)."""
+    if not gx_app.config.enable_mcp_server:
+        return None, None
+
+    try:
+        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
+
+        mcp_app = get_mcp_app(gx_app)
+        return mcp_app, mcp_app.lifespan
+    except ImportError:
+        log.info("MCP server dependencies not installed (fastmcp), skipping")
+        return None, None
+    except Exception:
+        log.exception("Failed to initialize MCP server")
+        return None, None
+
+
+def include_mcp(app: FastAPI, gx_app, mcp_app):
+    """Mount the MCP server if it was initialized."""
+    if mcp_app is None:
+        return
+
+    try:
+        mcp_path = gx_app.config.mcp_server_path
+        # Requests served by the mounted sub-app see request.app == mcp_app, so
+        # share the parent's route name index for UrlBuilder._url_path_for.
+        mcp_app.state.route_name_index = app.state.route_name_index
+        app.mount(mcp_path, mcp_app)
+        log.info(f"MCP server (Streamable HTTP) mounted at {mcp_path}")
+    except Exception as e:
+        log.error(f"Failed to mount MCP server: {e}")
+
+
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
+    """Build the FastAPI app that fronts the Galaxy web server."""
     root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
-    app = get_fastapi_instance(root_path=root_path)
+    mcp_app, mcp_lifespan = get_mcp_lifespan(gx_app)
+
+    if mcp_lifespan:
+
+        @asynccontextmanager
+        async def combined_lifespan(app: FastAPI):
+            async with mcp_lifespan(app):
+                yield
+
+        app = get_fastapi_instance(root_path=root_path, lifespan=combined_lifespan)
+    else:
+        app = get_fastapi_instance(root_path=root_path)
+
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
-    add_request_id_middleware(app)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
+    if gx_app.config.use_access_logging_middleware:
+        add_raw_context_middlewares(app)
+    else:
+        add_request_id_middleware(app)
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
     include_legacy_openapi(app, gx_app)
     wsgi_handler = WSGIMiddleware(gx_wsgi_webapp)
     gx_app.haltables.append(("WSGI Middleware threadpool", wsgi_handler.executor.shutdown))
-    app.mount("/", wsgi_handler)
+    include_tus(app, gx_app)
+    app.state.route_name_index = build_route_name_index(app)
+    include_mcp(app, gx_app, mcp_app)
+    app.mount("/", wsgi_handler)  # type: ignore[arg-type]
     if gx_app.config.galaxy_url_prefix != "/":
         parent_app = FastAPI()
         parent_app.mount(gx_app.config.galaxy_url_prefix, app=app)
         return parent_app
     return app
 
+
+def galaxy_rate_limit_key(request: Request) -> str:
+    api_key = request.headers.get("x-api-key") or request.query_params.get("key")
+    if api_key:
+        return f"api_key:{api_key}"
+    session_key = request.cookies.get("galaxysession")
+    if session_key:
+        return f"session:{session_key}"
+    return get_remote_address(request)
+
+
+limiter = Limiter(key_func=galaxy_rate_limit_key)
 
 __all__ = (
     "add_galaxy_middleware",

@@ -1,9 +1,9 @@
 <template>
     <div>
-        <label v-b-tooltip.hover for="regular_expression" :title="title">{{ label }}</label>
-        <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
+        <label ref="helpTarget" v-g-tooltip.hover for="regular_expression">{{ label }}</label>
+        <HelpPopover :target="$refs.helpTarget" term="programming.python.regex" />
         <input
-            v-b-tooltip.hover.left
+            v-g-tooltip.hover.left
             :title="title"
             name="regular_expression"
             class="rule-regular-expression"
@@ -14,9 +14,12 @@
 </template>
 
 <script>
-import _l from "utils/localization";
+import _l from "@/utils/localization";
+
+import HelpPopover from "@/components/Help/HelpPopover.vue";
 
 export default {
+    components: { HelpPopover },
     props: {
         target: {
             required: true,
@@ -31,11 +34,6 @@ export default {
         },
         popoverTitle() {
             return _l("Regular Expressions");
-        },
-        popoverContent() {
-            return _l(
-                `Regular expressions are patterns used to match character combinations in strings. This input accepts Python-style regular expressions, find more information about these in <a href="https://pythonforbiologists.com/tutorial/regex.html">this Python for Biologists tutorial</a>.`
-            );
         },
     },
 };

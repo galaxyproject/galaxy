@@ -4,12 +4,13 @@ import os
 import time
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    TYPE_CHECKING,
 )
 
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.util import (
     Element,
     etree,
@@ -21,9 +22,6 @@ from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
 
-if TYPE_CHECKING:
-    from galaxy.tools.data_manager.manager import DataManager
-
 log = logging.getLogger(__name__)
 
 SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
@@ -33,9 +31,10 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 
 class DataManagerHandler:
+    app: InstallationTarget
     root: Optional[Element] = None
 
-    def __init__(self, app):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     @property
@@ -46,13 +45,12 @@ class DataManagerHandler:
             return root.get("tool_path", None)
         return None
 
-    def _data_manager_config_elems_to_xml_file(self, config_elems: List[Element], config_filename: StrPath) -> None:
+    def _data_manager_config_elems_to_xml_file(self, config_elems: list[Element], config_filename: StrPath) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        data_managers_path = self.data_managers_path
-        if data_managers_path:
+        if data_managers_path := self.data_managers_path:
             root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'
@@ -68,13 +66,13 @@ class DataManagerHandler:
     def install_data_managers(
         self,
         shed_data_manager_conf_filename: StrPath,
-        metadata_dict: Dict[str, Any],
-        shed_config_dict: Dict[str, Any],
+        metadata_dict: dict[str, Any],
+        shed_config_dict: dict[str, Any],
         relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ) -> List["DataManager"]:
-        rval: List["DataManager"] = []
+    ) -> list["DataManagerInterface"]:
+        rval: list[DataManagerInterface] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -92,7 +90,9 @@ class DataManagerHandler:
                     raise
             if tree is None:
                 return rval
-            config_elems = [elem for elem in tree.getroot()]
+            config_elems = list(
+                tree.getroot().__iter__()
+            )  # `.__iter__()` is a workaround for lxml-stubs declaring _Element a subclass of Iterable["_Element"]
             repo_data_manager_conf_filename = metadata_dict["data_manager"].get("config_filename", None)
             if repo_data_manager_conf_filename is None:
                 log.debug("No data_manager_conf.xml file has been defined.")
@@ -111,8 +111,8 @@ class DataManagerHandler:
                     data_manager_id = elem.get("id", None)
                     if data_manager_id is None:
                         log.error(
-                            "A data manager was defined that does not have an id and will not be installed:\n%s"
-                            % xml_to_string(elem)
+                            "A data manager was defined that does not have an id and will not be installed:\n%s",
+                            xml_to_string(elem),
                         )
                         continue
                     data_manager_dict = (
@@ -170,8 +170,8 @@ class DataManagerHandler:
                     )
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is etree.Comment:
-                    pass
+                elif elem.tag is etree.Comment:  # type: ignore[comparison-overlap]
+                    pass  # type: ignore[unreachable]
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")
                 config_elems.append(elem)

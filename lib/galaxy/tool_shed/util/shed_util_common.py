@@ -1,11 +1,10 @@
 import logging
 import re
+from urllib.parse import quote
 
 from galaxy import util
-from galaxy.model.base import transaction
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -47,8 +46,7 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
             session = trans.install_model.context
             session.delete(rrda)
-            with transaction(session):
-                session.commit()
+            session.commit()
 
 
 def generate_tool_guid(repository_clone_url, tool):
@@ -75,7 +73,9 @@ def get_ctx_rev(app, tool_shed_url, name, owner, changeset_revision):
     return ctx_rev
 
 
-def get_next_prior_import_or_install_required_dict_entry(prior_required_dict, processed_tsr_ids):
+def get_next_prior_import_or_install_required_dict_entry(
+    prior_required_dict: dict[str, list[str]], processed_tsr_ids: list[str]
+):
     """
     This method is used in the Tool Shed when exporting a repository and its dependencies, and in Galaxy
     when a repository and its dependencies are being installed.  The order in which the prior_required_dict
@@ -116,8 +116,8 @@ def get_tool_panel_config_tool_path_install_dir(app, repository):
     defined in a single shed-related tool panel config.
     """
     tool_shed = common_util.remove_port_from_tool_shed_url(str(repository.tool_shed))
-    relative_install_dir = "{}/repos/{}/{}/{}".format(
-        tool_shed, str(repository.owner), str(repository.name), str(repository.installed_changeset_revision)
+    relative_install_dir = (
+        f"{tool_shed}/repos/{repository.owner}/{repository.name}/{repository.installed_changeset_revision}"
     )
     # Get the relative tool installation paths from each of the shed tool configs.
     shed_config_dict = repository.get_shed_config_dict(app)
@@ -150,12 +150,9 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
             # We're in the tool shed.
             route_to_images = f"/repository/static/images/{encoded_repository_id}"
         elif tool_shed_repository and tool_id and tool_version:
-            route_to_images = "shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}".format(
-                shed=tool_shed_repository.tool_shed,
-                owner=tool_shed_repository.owner,
-                repo=tool_shed_repository.name,
-                tool=tool_id,
-                version=tool_version,
+            route_to_images = quote(
+                f"shed_tool_static/{tool_shed_repository.tool_shed}/{tool_shed_repository.owner}/{tool_shed_repository.name}/{tool_id}/{tool_version}",
+                safe="/",
             )
         else:
             raise Exception(
@@ -170,15 +167,8 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
         # settings like .. images:: http_files/images/help.png
         for match in re.findall(".. image:: (?!http)/?(.+)", text):
             text = text.replace(match, match.replace("/", "%2F"))
-        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", r".. image:: %s/\1" % route_to_images, text)
+        text = re.sub(r"\.\. image:: (?!https?://)/?(.+)", rf".. image:: {route_to_images}/\1", text)
     return text
-
-
-def tool_shed_is_this_tool_shed(toolshed_base_url):
-    """Determine if a tool shed is the current tool shed."""
-    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for("/", qualified=True)))
-    return cleaned_toolshed_base_url == cleaned_tool_shed
 
 
 __all__ = (
@@ -192,5 +182,4 @@ __all__ = (
     "get_user",
     "have_shed_tool_conf_for_install",
     "set_image_paths",
-    "tool_shed_is_this_tool_shed",
 )

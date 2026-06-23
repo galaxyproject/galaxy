@@ -49,12 +49,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         item.dbkey.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.screenshot("history_panel_edit_dbkey_post_click")
-        self.components.edit_dataset_attributes.database_build_dropdown.wait_for_and_click()
-        # choose database option from 'Database/Build' dropdown, that equals to dbkey_text
-        self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
-            dbkey_text=TEST_DBKEY_TEXT
-        ).wait_for_and_click()
-        self.components.edit_dataset_attributes.save_button.wait_for_and_click()
+        self.edit_dataset_dbkey(TEST_DBKEY_TEXT)
         self.sleep_for(self.wait_types.JOB_COMPLETION)
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
@@ -67,14 +62,13 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=one_hda_model_store_dict(include_source=False),
+            discarded_data="force",
         )
         # regression after 3/24/2022 - explicit refresh now required.
         self.home()
         self.history_panel_wait_for_hid_state(FIRST_HID, state="discarded", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_discarded")
-        # Next if is a hack for recent changes to beta history...
-        # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -127,7 +121,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     def _assert_downloadable(self, hid, is_downloadable=True):
         item = self.history_panel_item_component(hid=hid)
         item.dataset_operations.wait_for_visible()
-        item.info_button.wait_for_visible()
+        item.highlight_button.wait_for_visible()
         if is_downloadable:
             assert item.download_button.is_displayed
         else:

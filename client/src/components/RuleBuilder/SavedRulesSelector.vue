@@ -2,7 +2,7 @@
     <div class="btn-group dropdown">
         <span
             id="savedRulesButton"
-            v-b-tooltip.hover.bottom
+            v-g-tooltip.hover.bottom
             class="fas fa-history rule-builder-view-source"
             :class="{ disabled: numOfSavedRules == 0 }"
             :title="savedRulesMenu"
@@ -11,7 +11,7 @@
             <a
                 v-for="(session, index) in sortSavedRules"
                 :key="index"
-                v-b-tooltip.hover.right
+                v-g-tooltip.hover.right
                 class="rule-link dropdown-item saved-rule-item"
                 :title="formatPreview(session.rule)"
                 @click="$emit('update-rules', session.rule)"
@@ -23,11 +23,14 @@
 </template>
 
 <script>
-import Vue from "vue";
-import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
-import { RULES, MAPPING_TARGETS } from "./rule-definitions";
-import UtcDate from "components/UtcDate";
+import Vue from "vue";
+
+import _l from "@/utils/localization";
+
+import { MAPPING_TARGETS, RULES } from "./rule-definitions";
+
+import UtcDate from "@/components/UtcDate.vue";
 
 Vue.use(BootstrapVue);
 export default {

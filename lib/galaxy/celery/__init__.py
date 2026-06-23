@@ -1,4 +1,6 @@
 import os
+import uuid
+from collections.abc import Callable
 from functools import (
     lru_cache,
     wraps,
@@ -7,14 +9,13 @@ from multiprocessing import get_context
 from threading import local
 from typing import (
     Any,
-    Callable,
-    Dict,
 )
 
 import pebble
 from celery import (
     Celery,
     shared_task,
+    Task,
 )
 from celery.signals import (
     worker_init,
@@ -22,6 +23,10 @@ from celery.signals import (
 )
 from kombu import serialization
 
+from galaxy.celery.base_task import (
+    GalaxyTaskAfterReturn,
+    GalaxyTaskBeforeStart,
+)
 from galaxy.config import Configuration
 from galaxy.main_config import find_config
 from galaxy.util import ExecutionTimer
@@ -67,6 +72,32 @@ class GalaxyCelery(Celery):
         return module
 
 
+class GalaxyTask(Task):
+    """
+    Custom celery task used to enforce per-user rate limits and
+    concurrency limits on task executions.
+    """
+
+    def before_start(self, task_id, args, kwargs):
+        """
+        Set appropriate before start object from DI container.
+        """
+        app = get_galaxy_app()
+        assert app
+        app[GalaxyTaskBeforeStart](self, task_id, args, kwargs)
+
+    def after_return(self, status, retval, task_id, args, kwargs, einfo):
+        """
+        Called after task returns (success, failure, revoked, or retry).
+        Used to clean up concurrency tracking rows.
+        """
+        if status == "RETRY":
+            return  # Don't clean up on retry — the task will run again
+        app = get_galaxy_app()
+        if app:
+            app[GalaxyTaskAfterReturn](self, task_id, args, kwargs)
+
+
 def set_thread_app(app):
     APP_LOCAL.app = app
 
@@ -84,14 +115,16 @@ def get_galaxy_app():
 
 @lru_cache(maxsize=1)
 def build_app():
-    kwargs = get_app_properties()
-    if kwargs:
+    if kwargs := get_app_properties():
         kwargs["check_migrate_databases"] = False
         kwargs["use_display_applications"] = False
-        kwargs["use_converters"] = False
+        kwargs["use_converters"] = True
         import galaxy.app
 
         galaxy_app = galaxy.app.GalaxyManagerApplication(configure_logging=False, **kwargs)
+        # GalaxyManagerApplication has no toolbox, so the converter tools the async
+        # execution path relies on must be loaded directly into the datatypes registry.
+        galaxy_app.datatypes_registry.load_datatype_converters_without_toolbox(galaxy_app)
         return galaxy_app
 
 
@@ -142,13 +175,27 @@ def tear_down_pool(sig, how, exitcode, **kwargs):
 def galaxy_task(*args, action=None, **celery_task_kwd):
     if "serializer" not in celery_task_kwd:
         celery_task_kwd["serializer"] = PYDANTIC_AWARE_SERIALIZER_NAME
+    # Galaxy tasks rely on ``app.magic_partial(func)`` (below) to inject
+    # DI dependencies — typically ``sa_session`` and manager instances —
+    # at task-execution time. Celery's ``apply_async`` runs
+    # ``check_arguments`` against the wrapped function's *original*
+    # signature *before* the task body fires, so any DI-injected
+    # positional shows up as missing (``TypeError: set_job_metadata()
+    # missing 1 required positional argument: 'sa_session'``). Disabling
+    # ``typing`` for every Galaxy task lets the DI flow work as designed;
+    # individual call sites still pass their non-DI args explicitly.
+    celery_task_kwd.setdefault("typing", False)
 
     def decorate(func: Callable):
-        @shared_task(**celery_task_kwd)
+        @shared_task(base=GalaxyTask, **celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):
             app = get_galaxy_app()
             assert app
+
+            # Ensure sqlalchemy session registry scope is specific to this instance of the celery task
+            scoped_id = str(uuid.uuid4())
+            app.model.set_request_id(scoped_id)
 
             desc = func.__name__
             if action is not None:
@@ -165,8 +212,11 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
                 log.info(message)
                 return rval
             except Exception:
-                log.warning(f"Celery task execution failed for {desc} {timer}")
+                log.exception(f"Celery task execution failed for {desc} {timer} {args}, {kwds}")
                 raise
+            finally:
+                # Close and remove any open session this task has created
+                app.model.unset_request_id(scoped_id)
 
         return wrapper
 
@@ -177,7 +227,7 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
 
 
 def init_celery_app():
-    celery_app_kwd: Dict[str, Any] = {
+    celery_app_kwd: dict[str, Any] = {
         "include": TASKS_MODULES,
         "task_default_queue": DEFAULT_TASK_QUEUE,
         "task_create_missing_queues": True,
@@ -196,7 +246,7 @@ def config_celery_app(config, celery_app):
     if config.celery_conf:
         celery_app.conf.update(config.celery_conf)
     # Handle special cases
-    if not celery_app.conf.broker_url:
+    if not config.celery_conf.get("broker_url"):
         celery_app.conf.broker_url = config.amqp_internal_connection
 
 
@@ -211,13 +261,46 @@ def setup_periodic_tasks(config, celery_app):
                 "schedule": interval,
             }
 
-    beat_schedule: Dict[str, Dict[str, Any]] = {}
+    beat_schedule: dict[str, dict[str, Any]] = {}
     schedule_task("prune_history_audit_table", config.history_audit_table_prune_interval)
+    schedule_task("prune_expired_bulk_storage_operations", config.prune_expired_bulk_storage_operations_interval)
     schedule_task("cleanup_short_term_storage", config.short_term_storage_cleanup_interval)
-    schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+    schedule_task("prune_kombu_sqla_transport", config.kombu_sqla_transport_cleanup_interval)
+    schedule_task(
+        "recover_stale_bulk_storage_operation_runs", config.recover_stale_bulk_storage_operation_runs_interval
+    )
+
+    if config.statsd_host:
+        schedule_task("emit_queue_metrics_task", config.queue_metrics_interval)
+
+    if config.enable_notification_system:
+        schedule_task("cleanup_expired_notifications", config.expired_notifications_cleanup_interval)
+        schedule_task("dispatch_pending_notifications", config.dispatch_notifications_interval)
 
     if config.object_store_cache_monitor_driver in ["auto", "celery"]:
         schedule_task("clean_object_store_caches", config.object_store_cache_monitor_interval)
+
+    if config.enable_failed_jobs_working_directory_cleanup:
+        schedule_task("cleanup_jwds", config.failed_jobs_working_directory_cleanup_interval)
+
+    if config.vault_token_renewal_interval:
+        schedule_task("renew_vault_token", config.vault_token_renewal_interval)
+
+    # Only schedule if GalaxyAI infrastructure is configured -- the GTN database
+    # serves the gtn_training agent, which only functions when inference_services
+    # is set up. Without this gate every Galaxy install would pull from depot
+    # on the default interval, even ones that don't use the agent.
+    if config.inference_services and config.gtn_database_refresh_interval and config.gtn_database_path:
+        schedule_task("refresh_gtn_database", config.gtn_database_refresh_interval)
+
+    # IWC manifest pre-warm only matters when the agent-ops layer is exposed --
+    # same inference_services gate as the GTN refresh above.
+    if config.inference_services and config.iwc_manifest_refresh_interval:
+        schedule_task("refresh_iwc_manifest", config.iwc_manifest_refresh_interval)
+
+    if config.celery_user_concurrency_limit:
+        # Run cleanup every 5 minutes (300 seconds)
+        schedule_task("cleanup_stale_concurrency_slots", 300)
 
     if beat_schedule:
         celery_app.conf.beat_schedule = beat_schedule

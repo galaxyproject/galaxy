@@ -1,6 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
+import SavedRulesSelector from "@/components/RuleBuilder/SavedRulesSelector.vue";
 
 const localVue = getLocalVue();
 

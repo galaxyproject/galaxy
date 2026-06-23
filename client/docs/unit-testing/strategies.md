@@ -37,11 +37,12 @@ export function theThingYouReallyCareAbout() {
 
 ```js static
 // myModule.test.js
+import { vi } from "vitest";
 import { theThingYouReallyCareAbout, redirectTo } from "./myModule";
 
-// calling jest.mock on the appropriate import path wraps the exports and gives
+// calling vi.mock on the appropriate import path wraps the exports and gives
 // access to new testing methods like mockImplementation
-jest.mock("./myModule");
+vi.mock("./myModule");
 redirectTo.mockImplementation((url) => {
     console.log(`I would have gone to: ${url}`);
 });

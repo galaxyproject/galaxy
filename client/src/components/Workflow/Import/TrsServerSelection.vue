@@ -1,12 +1,19 @@
 <script setup lang="ts">
-import { Services } from "../services";
-import { computed, ref, watch, type Ref } from "vue";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BLink } from "bootstrap-vue";
+import { computed, type Ref, ref, watch } from "vue";
+
+import { Services } from "@/components/Workflow/services";
+
 import type { TrsSelection } from "./types";
 
-const props = defineProps<{
+interface Props {
     queryTrsServer?: string;
     trsSelection?: TrsSelection | null;
-}>();
+}
+
+const props = defineProps<Props>();
 
 const emit = defineEmits<{
     (e: "onError", errorMessage: string): void;
@@ -87,15 +94,16 @@ function possibleServeUrlsMatch(a: string, b: string) {
 <template>
     <span v-if="!loading" class="m-1 text-muted">
         <span v-if="showDropdown" class="dropdown">
-            <b-link
+            <BLink
                 id="dropdownTrsServer"
                 data-toggle="dropdown"
                 aria-haspopup="true"
                 aria-expanded="false"
                 class="font-weight-bold">
                 {{ selection?.label }}
-                <span class="fa fa-caret-down" />
-            </b-link>
+                <FontAwesomeIcon :icon="faCaretDown" />
+            </BLink>
+
             <div class="dropdown-menu" aria-labelledby="dropdownTrsServer">
                 <a
                     v-for="serverSelection in trsServers"
@@ -103,15 +111,15 @@ function possibleServeUrlsMatch(a: string, b: string) {
                     class="dropdown-item"
                     href="javascript:void(0)"
                     role="button"
-                    @click.prevent="onTrsSelection(serverSelection)"
-                    >{{ serverSelection.label }}</a
-                >
+                    @click.prevent="onTrsSelection(serverSelection)">
+                    {{ serverSelection.label }}
+                </a>
             </div>
         </span>
         <span v-else>
-            <b-link :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
+            <BLink :href="selection?.link_url" target="_blank" class="font-weight-bold" :title="selection?.doc">
                 {{ selection?.label }}
-            </b-link>
+            </BLink>
         </span>
     </span>
 </template>

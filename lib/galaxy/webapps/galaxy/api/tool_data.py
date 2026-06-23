@@ -1,3 +1,7 @@
+from functools import partial
+from typing import Optional
+
+import anyio
 from fastapi import (
     Body,
     Path,
@@ -7,7 +11,9 @@ from pydantic import (
     Field,
 )
 
+from galaxy.celery.helpers import async_task_summary
 from galaxy.celery.tasks import import_data_bundle
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.tool_data import ToolDataManager
 from galaxy.schema.schema import (
     AsyncTaskResultSummary,
@@ -20,9 +26,9 @@ from galaxy.tool_util.data._schema import (
     ToolDataItem,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
-from galaxy.webapps.galaxy.services.base import async_task_summary
 from . import (
     depends,
+    DependsOnTrans,
     Router,
 )
 
@@ -32,13 +38,19 @@ ToolDataTableName = Path(
     ...,  # Mark this field as required
     title="Data table name",
     description="The name of the tool data table",
-    example="all_fasta",
+    examples=["all_fasta"],
 )
 
 ToolDataTableFieldName = Path(
     ...,  # Mark this field as required
     title="Field name",
     description="The name of the tool data table field",
+)
+
+ToolDataTableFieldFileName = Path(
+    ...,
+    title="File name",
+    description="The name of a file associated with this data table field",
 )
 
 
@@ -54,7 +66,7 @@ class FastAPIToolData:
         "/api/tool_data",
         summary="Lists all available data tables",
         response_description="A list with details on individual data tables.",
-        require_admin=True,
+        public=True,
     )
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
@@ -65,23 +77,25 @@ class FastAPIToolData:
         summary="Import a data manager bundle",
         require_admin=True,
     )
-    async def create(
-        self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
+    def create(
+        self, tool_data_file_path: Optional[str] = None, import_bundle_model: ImportToolDataBundle = Body(...)
     ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
-        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.dict())
+        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.model_dump())
         summary = async_task_summary(result)
         return summary
 
     @router.get(
         "/api/tool_data/{table_name}",
-        summary="Get details of a given data table",
-        response_description="A description of the given data table and its content",
-        require_admin=True,
+        summary="Get details of a data table. For non-administrators, base directories in the path column are stripped, leaving only the basename.",
+        response_description="A description of the given data table and its content.",
+        public=True,
     )
-    async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+    async def show(
+        self, trans: ProvidesUserContext = DependsOnTrans, table_name: str = ToolDataTableName
+    ) -> ToolDataDetails:
         """Get details of a given tool data table."""
-        return self.tool_data_manager.show(table_name)
+        return self.tool_data_manager.show(trans, table_name)
 
     @router.get(
         "/api/tool_data/{table_name}/reload",
@@ -89,7 +103,7 @@ class FastAPIToolData:
         response_description="A description of the reloaded data table and its content",
         require_admin=True,
     )
-    async def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
+    def reload(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Reloads a data table and return its details."""
         return self.tool_data_manager.reload(table_name)
 
@@ -104,28 +118,25 @@ class FastAPIToolData:
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
     ) -> ToolDataField:
-        """Reloads a data table and return its details."""
-        return self.tool_data_manager.show_field(table_name, field_name)
+        """Displays information about a data table field."""
+        return await anyio.to_thread.run_sync(partial(self.tool_data_manager.show_field, table_name, field_name))
 
     @router.get(
         "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",
-        summary="Get information about a particular field in a tool data table",
-        response_description="Information about a data table field",
+        summary="Get files associated with a particular field in a tool data table",
+        response_description="Request file associated with tool data table entry",
         response_class=GalaxyFileResponse,
-        require_admin=True,
+        public=True,
     )
-    async def download_field_file(
+    def download_field_file(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,
         table_name: str = ToolDataTableName,
         field_name: str = ToolDataTableFieldName,
-        file_name: str = Path(
-            ...,  # Mark this field as required
-            title="File name",
-            description="The name of a file associated with this data table field",
-        ),
+        file_name: str = ToolDataTableFieldFileName,
     ):
         """Download a file associated with the data table field."""
-        path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
+        path = self.tool_data_manager.get_field_file_path(trans, table_name, field_name, file_name)
         return GalaxyFileResponse(str(path))
 
     @router.delete(
@@ -134,7 +145,7 @@ class FastAPIToolData:
         response_description="A description of the affected data table and its content",
         require_admin=True,
     )
-    async def delete(
+    def delete(
         self,
         payload: ToolDataItem,
         table_name: str = ToolDataTableName,

@@ -13,6 +13,7 @@ PROJECT_NAME?=galaxy-$(shell basename $(CURDIR))
 PROJECT_NAME:=$(subst _,-,$(PROJECT_NAME))
 BRANCH?=$(shell git rev-parse --abbrev-ref HEAD)
 TEST_DIR?=tests
+DIST=dist
 TESTS?=$(SOURCE_DIR) $(TEST_DIR)
 
 .PHONY: clean-pyc clean-build docs clean
@@ -30,8 +31,8 @@ clean: clean-build clean-pyc clean-tests
 
 clean-build:
 	rm -fr build/
-	rm -fr dist/
-	rm -fr galaxy_*.egg-info
+	rm -fr $(DIST)/
+	find . -name "*.egg-info" -type d -exec rm -rf {} +
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
@@ -43,39 +44,51 @@ clean-tests:
 	rm -fr .tox/
 
 setup-venv:
-	if [ ! -d $(VENV) ]; then virtualenv $(VENV); exit; fi;
-	$(IN_VENV) pip install -r dev-requirements.txt
+	uv sync --inexact --all-extras
 
-test:
-	$(IN_VENV) pytest $(TESTS)
+_test:
+	uv run pytest $(TESTS)
 
-develop:
-	python setup.py develop
+test: setup-venv _test
 
-dist: clean
-	$(IN_VENV) python -m build
-	ls -l dist
+_dist:
+	uv build -o $(DIST)
+	ls -l $(DIST)
 
-_twine-exists: ; @which twine > /dev/null
+dist: setup-venv clean _dist
 
-lint-dist: _twine-exists dist
-	$(IN_VENV) twine check dist/*
+_setup-mypy-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
-_release-test-artifacts:
-	$(IN_VENV) twine upload -r test dist/*
-	$(OPEN_RESOURCE) https://testpypi.python.org/pypi/$(PROJECT_NAME)
+_mypy:
+	uv run mypy .
 
-release-test-artifacts: lint-dist _release-test-artifacts
+mypy: _setup-mypy-venv _mypy
 
-_release-artifacts:
-	@while [ -z "$$CONTINUE" ]; do \
-	  read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
-	done ; \
-	[ $$CONTINUE = "y" ] || [ $$CONTINUE = "Y" ] || (echo "Exiting."; exit 1;)
-	@echo "Releasing"
-	$(IN_VENV) twine upload dist/*
+_setup-lint-venv: setup-venv
+	uv pip install -r ../../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
-release-artifacts: release-test-artifacts _release-artifacts
+_lint:
+	uv run ruff check .
+
+lint: _setup-lint-venv _lint
+
+_setup-dev-venv:
+	uv pip install -r dev-requirements.txt
+
+lint-dist: _setup-dev-venv
+	uv run twine check $(DIST)/*
+
+# black doesn't actually work on symlinked files because they are outside
+# the current directory
+
+#_setup-format-venv: setup-venv
+#	uv pip install isort black
+#_isort:
+#	uv run isort --sp ../../.isort.cfg . 
+#_black:
+#	uv run black --config ../pyproject.toml .
+#format: _setup-format-venv _isort _black
 
 commit-version:
 	$(IN_VENV) DEV_RELEASE=$(DEV_RELEASE) python $(BUILD_SCRIPTS_DIR)/commit_version.py $(VERSION)
@@ -91,6 +104,3 @@ push-release:
 	echo "Makefile doesn't manually push release."
 
 release: release-local push-release
-
-mypy:
-	mypy .

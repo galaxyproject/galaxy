@@ -1,10 +1,10 @@
 """The module defines the abstract interface for dealing tool dependency resolution plugins."""
+
 import errno
 import os.path
 from abc import (
     ABCMeta,
     abstractmethod,
-    abstractproperty,
 )
 from typing import (
     Any,
@@ -32,7 +32,7 @@ class DependencyResolver(Dictifiable, metaclass=ABCMeta):
         "can_uninstall_dependencies",
         "read_only",
     ]
-    # A "simple" dependency is one that does not depend on the the tool
+    # A "simple" dependency is one that does not depend on the tool
     # resolving the dependency. Classic tool shed dependencies are non-simple
     # because the repository install context is used in dependency resolution
     # so the same requirement tags in different tools will have very different
@@ -236,7 +236,8 @@ class SpecificationAwareDependencyResolver(metaclass=ABCMeta):
 class SpecificationPatternDependencyResolver(SpecificationAwareDependencyResolver):
     """Implement the :class:`SpecificationAwareDependencyResolver` with a regex pattern."""
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def _specification_pattern(self):
         """Pattern of URI to match against."""
 
@@ -274,7 +275,8 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
         Return shell commands to enable this dependency.
         """
 
-    @abstractproperty
+    @property
+    @abstractmethod
     def exact(self):
         """Return true if version information wasn't discarded to resolve
         the dependency.

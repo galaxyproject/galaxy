@@ -72,7 +72,8 @@ history_dataset_collection_display(output="Merged Bam")
 </template>
 
 <script>
-import { datasetCommandsHtml, markdownGeneralHelpHtml } from "components/Markdown/help";
+import { datasetCommandsHtml, markdownGeneralHelpHtml } from "@/components/Markdown/help";
+
 export default {
     data() {
         return {

@@ -1,0 +1,125 @@
+<script setup lang="ts">
+import { faChevronRight, faSearch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import type { SearchData } from "@/stores/workflowSearchStore";
+
+import GButton from "../BaseComponents/GButton.vue";
+import GraphSearch from "../Workflow/GraphSearch.vue";
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+
+const props = defineProps<{
+    invocationId: string;
+    workflowId: string;
+}>();
+
+const storeId = computed(() => `invocation-${props.invocationId}`);
+
+const { stateStore } = provideScopedWorkflowStores(storeId);
+
+const searchInput = ref<InstanceType<typeof DelayedInput> | null>(null);
+const toggled = ref(false);
+
+const currentQuery = ref("");
+
+const canvasContainerEl = ref<HTMLElement | null>(null);
+
+onMounted(() => {
+    canvasContainerEl.value = document.getElementById("canvas-container");
+});
+
+watch(toggled, (val) => {
+    if (val) {
+        canvasContainerEl.value = document.getElementById("canvas-container");
+    }
+});
+
+function onHighlightRegion(data: SearchData) {
+    stateStore.pendingHighlight = { bounds: data.bounds };
+    if ("stepId" in data) {
+        stateStore.activeNodeId = Number(data.stepId);
+    }
+}
+
+async function toggleSearch() {
+    toggled.value = !toggled.value;
+    if (toggled.value) {
+        await nextTick();
+        searchInput.value?.focusInput();
+    }
+}
+</script>
+
+<template>
+    <div class="search-container">
+        <div class="d-flex align-items-center flex-gapx-1">
+            <DelayedInput
+                v-if="toggled"
+                ref="searchInput"
+                placeholder="search workflow"
+                :delay="200"
+                @change="(v) => (currentQuery = v)" />
+            <GButton
+                tooltip
+                :title="toggled ? 'Close Search' : 'Search Invocation Graph'"
+                :transparent="toggled"
+                @click="toggleSearch">
+                <FontAwesomeIcon :icon="toggled ? faChevronRight : faSearch" fixed-width />
+            </GButton>
+        </div>
+
+        <Transition name="search-results">
+            <div v-if="toggled && canvasContainerEl" class="workflow-invocation-search-results">
+                <GraphSearch :current-query="currentQuery" @result-clicked="onHighlightRegion" />
+            </div>
+        </Transition>
+    </div>
+</template>
+
+<style lang="scss" scoped>
+.search-container {
+    position: relative;
+}
+
+.workflow-invocation-search-results {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: var(--spacing);
+    background: var(--color-grey-100);
+    border: 1px solid var(--color-grey-200);
+    border-radius: var(--spacing-2);
+    box-shadow: 0 4px 12px var(--color-grey-300);
+    padding: var(--spacing-3);
+    z-index: 9999;
+    min-width: 280px;
+
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.search-results-enter-active {
+    animation: search-drop-in 0.2s ease;
+}
+
+.search-results-leave-active {
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    transform-origin: top right;
+}
+
+.search-results-leave-to {
+    opacity: 0;
+    transform: translateY(-6px) scaleY(0.95);
+}
+
+@keyframes search-drop-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scaleY(0.95);
+    }
+}
+</style>

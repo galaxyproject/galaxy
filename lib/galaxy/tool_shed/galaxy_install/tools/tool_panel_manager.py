@@ -2,19 +2,17 @@ import errno
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.model.base import transaction
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
 from galaxy.util import (
-    etree,
+    Element,
     parse_xml_string,
+    SubElement,
     xml_to_string,
 )
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
@@ -25,12 +23,12 @@ log = logging.getLogger(__name__)
 
 
 class ToolPanelManager:
-    app: MinimalManagerApp
+    app: InstallationTarget
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
-    def add_to_shed_tool_config(self, shed_tool_conf_dict: Dict[str, Any], elem_list: list) -> None:
+    def add_to_shed_tool_config(self, shed_tool_conf_dict: dict[str, Any], elem_list: list) -> None:
         """
         "A tool shed repository is being installed so change the shed_tool_conf file.  Parse the
         config file to generate the entire list of config_elems instead of using the in-memory list
@@ -42,7 +40,6 @@ class ToolPanelManager:
             return
         old_toolbox = self.app.toolbox
         shed_tool_conf = shed_tool_conf_dict["config_filename"]
-        tool_cache_data_dir = shed_tool_conf_dict.get("tool_cache_data_dir")
         tool_path = shed_tool_conf_dict["tool_path"]
         config_elems = []
         # Ideally shed_tool_conf.xml would be created before the repo is cloned and added to the DB, but this is called
@@ -83,7 +80,7 @@ class ToolPanelManager:
                 else:
                     config_elems.append(elem_entry)
             # Persist the altered shed_tool_config file.
-            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path, tool_cache_data_dir)
+            self.config_elems_to_xml_file(config_elems, shed_tool_conf, tool_path)
             self.app.wait_for_toolbox_reload(old_toolbox)
         else:
             log.error(error_message)
@@ -135,16 +132,13 @@ class ToolPanelManager:
             self.app.toolbox.update_shed_config(shed_tool_conf_dict)
             self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
-    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path, tool_cache_data_dir=None):
+    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the
         value of config_filename.
         """
         try:
-            tool_cache_data_dir = f' tool_cache_data_dir="{tool_cache_data_dir}"' if tool_cache_data_dir else ""
-            root = parse_xml_string(
-                f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"{tool_cache_data_dir}></toolbox>'
-            )
+            root = parse_xml_string(f'<?xml version="1.0"?>\n<toolbox tool_path="{tool_path}"></toolbox>')
             for elem in config_elems:
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode="w") as fh:
@@ -154,27 +148,27 @@ class ToolPanelManager:
 
     def generate_tool_elem(
         self, tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section
-    ):
+    ) -> Element:
         """Create and return an ElementTree tool Element."""
         if tool_section is not None:
-            tool_elem = etree.SubElement(tool_section, "tool")
+            tool_elem = SubElement(tool_section, "tool")
         else:
-            tool_elem = etree.Element("tool")
+            tool_elem = Element("tool")
         tool_elem.attrib["file"] = tool_file_path
         if not tool.guid:
             raise ValueError("tool has no guid")
         tool_elem.attrib["guid"] = tool.guid
-        tool_shed_elem = etree.SubElement(tool_elem, "tool_shed")
+        tool_shed_elem = SubElement(tool_elem, "tool_shed")
         tool_shed_elem.text = tool_shed
-        repository_name_elem = etree.SubElement(tool_elem, "repository_name")
+        repository_name_elem = SubElement(tool_elem, "repository_name")
         repository_name_elem.text = repository_name
-        repository_owner_elem = etree.SubElement(tool_elem, "repository_owner")
+        repository_owner_elem = SubElement(tool_elem, "repository_owner")
         repository_owner_elem.text = owner
-        changeset_revision_elem = etree.SubElement(tool_elem, "installed_changeset_revision")
+        changeset_revision_elem = SubElement(tool_elem, "installed_changeset_revision")
         changeset_revision_elem.text = changeset_revision
-        id_elem = etree.SubElement(tool_elem, "id")
+        id_elem = SubElement(tool_elem, "id")
         id_elem.text = tool.id
-        version_elem = etree.SubElement(tool_elem, "version")
+        version_elem = SubElement(tool_elem, "version")
         version_elem.text = tool.version
         return tool_elem
 
@@ -184,7 +178,7 @@ class ToolPanelManager:
         currently be defined within the same tool section in the tool panel or
         outside of any sections.
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         if tool_section:
             section_id = tool_section.id
             section_name = tool_section.name
@@ -208,7 +202,7 @@ class ToolPanelManager:
 
     def generate_tool_panel_dict_for_tool_config(
         self, guid, tool_config, tool_sections=None
-    ) -> Dict[str, List[Dict[str, Any]]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """
         Create a dictionary of the following type for a single tool config file name.
         The intent is to call this method for every tool config in a repository and
@@ -224,13 +218,13 @@ class ToolPanelManager:
                     name : <TooSection name>}]}
 
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         file_name = strip_path(tool_config)
         tool_section_dicts = self.generate_tool_section_dicts(tool_config=file_name, tool_sections=tool_sections)
         tool_panel_dict[guid] = tool_section_dicts
         return tool_panel_dict
 
-    def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> Dict[str, List[Dict[str, Any]]]:
+    def generate_tool_panel_dict_from_shed_tool_conf_entries(self, repository) -> dict[str, list[dict[str, Any]]]:
         """
         Keep track of the section in the tool panel in which this repository's
         tools will be contained by parsing the shed_tool_conf in which the
@@ -239,14 +233,13 @@ class ToolPanelManager:
         repository is being deactivated or un-installed and allows for
         activation or re-installation using the original layout.
         """
-        tool_panel_dict: Dict[str, List[Dict[str, Any]]] = {}
+        tool_panel_dict: dict[str, list[dict[str, Any]]] = {}
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir(
             self.app, repository
         )
-        metadata = repository.metadata_
         # Create a dictionary of tool guid and tool config file name for each tool in the repository.
         guids_and_configs = {}
-        if "tools" in metadata:
+        if "tools" in (metadata := repository.metadata_):
             for tool_dict in metadata["tools"]:
                 guid = tool_dict["guid"]
                 tool_config = tool_dict["tool_config"]
@@ -260,7 +253,7 @@ class ToolPanelManager:
         for elem in root:
             if elem.tag == "tool":
                 guid = elem.get("guid")
-                if guid in guids_and_configs:
+                if guid and guid in guids_and_configs:
                     # The tool is displayed in the tool panel outside of any tool sections.
                     tool_section_dict = dict(tool_config=guids_and_configs[guid], id="", name="", version="")
                     if guid in tool_panel_dict:
@@ -274,7 +267,7 @@ class ToolPanelManager:
                 for section_elem in elem:
                     if section_elem.tag == "tool":
                         guid = section_elem.get("guid")
-                        if guid in guids_and_configs:
+                        if guid and guid in guids_and_configs:
                             # The tool is displayed in the tool panel inside the current tool section.
                             tool_section_dict = dict(
                                 tool_config=guids_and_configs[guid],
@@ -294,11 +287,11 @@ class ToolPanelManager:
         repository_clone_url: str,
         changeset_revision: str,
         tool_panel_dict: dict,
-        repository_tools_tups: List[tuple],
+        repository_tools_tups: list[tuple],
         owner="",
     ):
         """Generate a list of ElementTree Element objects for each section or tool."""
-        elem_list: List[etree.Element] = []
+        elem_list: list[Element] = []
         tool_elem = None
         cleaned_repository_clone_url = remove_protocol_and_user_from_clone_url(repository_clone_url)
         if not owner:
@@ -336,6 +329,7 @@ class ToolPanelManager:
                     tool_section if inside_section else None,
                 )
                 if inside_section:
+                    assert tool_section is not None
                     if section_in_elem_list is not None:
                         elem_list[section_in_elem_list] = tool_section
                     else:
@@ -344,8 +338,8 @@ class ToolPanelManager:
                     elem_list.append(tool_elem)
         return elem_list
 
-    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> List[Dict[str, Any]]:
-        tool_section_dicts: List[Dict[str, Any]] = []
+    def generate_tool_section_dicts(self, tool_config=None, tool_sections=None) -> list[dict[str, Any]]:
+        tool_section_dicts: list[dict[str, Any]] = []
         if tool_config is None:
             tool_config = ""
         if tool_sections:
@@ -367,17 +361,13 @@ class ToolPanelManager:
             tool_section_dicts.append(dict(tool_config=tool_config, id="", version="", name=""))
         return tool_section_dicts
 
-    def generate_tool_section_element_from_dict(self, tool_section_dict):
+    def generate_tool_section_element_from_dict(self, tool_section_dict: dict[str, str]) -> Element:
         # The value of tool_section_dict looks like the following.
         # { id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}
-        if tool_section_dict["id"]:
-            # Create a new tool section.
-            tool_section = etree.Element("section")
-            tool_section.attrib["id"] = tool_section_dict["id"]
-            tool_section.attrib["name"] = tool_section_dict["name"]
-            tool_section.attrib["version"] = tool_section_dict["version"]
-        else:
-            tool_section = None
+        tool_section = Element("section")
+        tool_section.attrib["id"] = tool_section_dict["id"]
+        tool_section.attrib["name"] = tool_section_dict["name"]
+        tool_section.attrib["version"] = tool_section_dict["version"]
         return tool_section
 
     def get_or_create_tool_section(self, toolbox, tool_panel_section_id, new_tool_panel_section_label=None):
@@ -518,8 +508,7 @@ class ToolPanelManager:
 
         session = self.app.install_model.context
         session.add(repository)
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.

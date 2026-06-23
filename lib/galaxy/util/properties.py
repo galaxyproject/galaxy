@@ -1,7 +1,8 @@
-""" Module used to blend ini, environment, and explicit dictionary properties
+"""Module used to blend ini, environment, and explicit dictionary properties
 to determine application configuration. Some hard coded defaults for Galaxy but
 this should be reusable by tool shed and pulsar as well.
 """
+
 import os
 import os.path
 import sys
@@ -99,10 +100,10 @@ def load_app_properties(
 ):
     if config_file is None:
         config_file = ini_file
-        config_section = ini_section
+        config_section = config_section or ini_section
 
     # read from file or init w/no file
-    if config_file:
+    if config_file and os.path.exists(config_file):
         properties = read_properties_from_file(config_file, config_section)
     else:
         properties = {"__file__": None}
@@ -195,7 +196,7 @@ class NicerConfigParser(ConfigParser):
 
 
 def _running_from_source():
-    paths = ["run.sh", "lib/galaxy/__init__.py", "scripts/common_startup.sh"]
+    paths = ["run.sh", "lib/galaxy", "scripts/common_startup.sh"]
     return all(map(os.path.exists, paths))
 
 
@@ -207,6 +208,8 @@ def get_data_dir(properties):
     if data_dir is None:
         if running_from_source:
             data_dir = "./database"
+        elif properties["__file__"] is None:
+            data_dir = "./data"
         else:
             config_dir = properties.get("config_dir", os.path.dirname(properties["__file__"]))
             data_dir = os.path.join(config_dir, "data")

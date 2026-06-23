@@ -1,22 +1,40 @@
 <script setup lang="ts">
-import { computed, ref, type Ref } from "vue";
+import { faCheckSquare, faChevronCircleRight, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed, type Ref, ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem.vue";
-import type { HistorySummary } from "@/stores/historyStore";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { useHistoryDragDrop } from "../../../composables/historyDragDrop";
+
+import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
+import MultipleViewItem from "./MultipleViewItem.vue";
+
+const historyStore = useHistoryStore();
 
 const props = withDefaults(
     defineProps<{
-        histories: HistorySummary[];
         selectedHistories: { id: string }[];
         filter?: string;
+        canLoadMore?: boolean;
     }>(),
     {
         filter: "",
-    }
+        canLoadMore: false,
+    },
 );
+
+const emit = defineEmits<{
+    (e: "update:show-modal", value: boolean): void;
+    (e: "load-more"): void;
+}>();
 
 const scrollContainer: Ref<HTMLElement | null> = ref(null);
 const { arrived } = useAnimationFrameScroll(scrollContainer);
@@ -28,39 +46,132 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
+
+async function createAndPin() {
+    try {
+        await historyStore.createNewHistory();
+        if (!historyStore.currentHistoryId) {
+            throw new Error("Error creating history");
+        }
+
+        if (historyStore.pinnedHistories.length > 0) {
+            historyStore.pinHistory(historyStore.currentHistoryId);
+        }
+    } catch (error: any) {
+        console.error(error);
+        Toast.error(errorMessageAsString(error), "Error creating and pinning history");
+    }
+}
+
+const { showDropZone, onDragEnter, onDragLeave, onDragOver, onDrop } = useHistoryDragDrop(undefined, true, true);
+
+async function onKeyDown(evt: KeyboardEvent) {
+    if (evt.key === "Enter" || evt.key === " ") {
+        const target = evt.target as HTMLElement;
+        if (target?.classList?.contains("create-picker")) {
+            await createAndPin();
+        } else if (target?.classList?.contains("select-picker")) {
+            emit("update:show-modal", true);
+        } else if (target?.classList?.contains("load-more-picker")) {
+            emit("load-more");
+        }
+    }
+}
 </script>
 
 <template>
+    <!-- eslint-disable vuejs-accessibility/no-static-element-interactions -->
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
-            <virtual-list
+            <VirtualList
                 v-if="props.selectedHistories.length"
-                :estimate-size="props.selectedHistories.length"
+                :estimate-size="240"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
                 :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
                 :extra-props="{ filter }"
-                :item-style="{ width: '15rem' }"
+                :item-style="{ width: '100%', minWidth: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
                 wrap-class="row flex-nowrap m-0">
-            </virtual-list>
+            </VirtualList>
 
             <div
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap"
-                @click.stop="$emit('update:show-modal', true)">
-                Select histories
+                class="history-picker"
+                @drop.prevent="onDrop"
+                @dragenter.prevent="onDragEnter"
+                @dragover="onDragOver"
+                @dragleave.prevent="onDragLeave">
+                <span v-if="!showDropZone" class="d-flex flex-column h-100">
+                    <div
+                        v-if="props.canLoadMore"
+                        class="history-picker-box load-more-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('load-more')">
+                        <FontAwesomeIcon :icon="faChevronCircleRight" class="mr-1" />
+                        {{ localize("Load more") }}
+                    </div>
+                    <div
+                        class="history-picker-box create-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="createAndPin">
+                        <FontAwesomeIcon :icon="faPlus" class="mr-1" />
+                        {{ localize("Create new history") }}
+                    </div>
+                    <div
+                        class="history-picker-box select-picker text-primary"
+                        tabindex="0"
+                        @keydown="onKeyDown"
+                        @click.stop="emit('update:show-modal', true)">
+                        <FontAwesomeIcon :icon="faCheckSquare" class="mr-1" />
+                        {{ localize("Select histories") }}
+                    </div>
+                </span>
+                <div v-else class="history-picker-box history-picker-drop-zone text-primary">
+                    {{ localize("Create new history with this item") }}
+                    <HistoryDropZone />
+                </div>
             </div>
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+@import "@/style/scss/theme/blue.scss";
 .list-container {
     .history-picker {
-        border: dotted lightgray;
-        cursor: pointer;
+        min-width: 15rem;
+        max-width: 15rem;
+        margin: 1rem;
+        .history-picker-box {
+            border: dotted lightgray;
+            cursor: pointer;
+            position: relative;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            text-wrap: none;
+            &.load-more-picker {
+                flex: 1;
+            }
+            &.create-picker {
+                flex: 1;
+            }
+            &.select-picker {
+                flex: 2;
+            }
+            &:not(.history-picker-drop-zone) {
+                &:hover {
+                    background-color: rgba($brand-info, 0.2);
+                }
+            }
+            &.history-picker-drop-zone {
+                height: 100%;
+            }
+        }
     }
 
     position: relative;

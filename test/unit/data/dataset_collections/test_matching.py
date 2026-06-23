@@ -1,5 +1,6 @@
 from galaxy.model.dataset_collections import (
     matching,
+    query,
     registry,
     type_description,
 )
@@ -17,14 +18,7 @@ def test_lists_of_same_cardinality_match():
 
 
 def test_nested_lists_match():
-    nested_list = list_instance(
-        elements=[
-            pair_element("data1"),
-            pair_element("data2"),
-            pair_element("data3"),
-        ],
-        collection_type="list:paired",
-    )
+    nested_list = nested_list = example_list_of_paired_datasets()
     assert_can_match(nested_list, nested_list)
 
 
@@ -42,17 +36,81 @@ def test_lists_of_different_cardinality_do_not_match():
 
 def test_valid_collection_subcollection_matching():
     flat_list = list_instance(ids=["data1", "data2", "data3"])
-    nested_list = list_instance(
-        elements=[
-            pair_element("data11"),
-            pair_element("data21"),
-            pair_element("data31"),
-        ],
-        collection_type="list:paired",
-    )
+    nested_list = example_list_of_paired_datasets()
     assert_cannot_match(flat_list, nested_list)
     assert_cannot_match(nested_list, flat_list)
     assert_can_match((nested_list, "paired"), flat_list)
+
+
+# Sibling matching is symmetric: paired and paired_or_unpaired can be
+# zipped under a common map-over regardless of arrival order. The
+# substitution-rejection sentiment (paired_or_unpaired cannot be
+# substituted *where paired is required*) is a connection-time concern
+# tested in test_type_descriptions.py::test_paired_accepts_relation.
+def test_paired_and_paired_or_unpaired_match_symmetric():
+    paired = pair_instance()
+    optional_paired = paired_or_unpaired_pair_instance()
+    assert_can_match(optional_paired, paired)
+    assert_can_match(paired, optional_paired)
+
+
+def test_paired_or_unpaired_with_one_element_rejected_against_paired():
+    """Cardinality safety: 1-element paired_or_unpaired cannot zip with 2-element paired."""
+    paired = pair_instance()
+    one_element_optional = collection_instance(
+        collection_type="paired_or_unpaired",
+        elements=[hda_element("unpaired")],
+    )
+    assert_cannot_match(paired, one_element_optional)
+    assert_cannot_match(one_element_optional, paired)
+
+
+def test_query_can_match_list_to_list():
+    flat_list = list_instance(ids=["data1", "data2", "data3"])
+    q = query.HistoryQuery.from_collection_types(["list"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(flat_list) is False
+    assert q.direct_match(flat_list) is True
+
+
+def test_query_can_match_list_of_paireds_to_paired():
+    list_of_paired_datasets = example_list_of_paired_datasets()
+    q = query.HistoryQuery.from_collection_types(["paired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_paired_datasets).collection_type == "paired"
+
+
+def test_query_can_match_list_of_lists_to_paired():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types(["paired"], TYPE_DESCRIPTION_FACTORY)
+    assert not q.can_map_over(list_of_lists)
+    assert not q.direct_match(list_of_lists)
+
+
+def test_query_can_match_list_of_lists_to_list():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types(["list"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_lists).collection_type == "list"
+    assert not q.direct_match(list_of_lists)
+
+
+def test_query_can_match_list_of_paireds_to_list_or_paired():
+    list_of_paired_datasets = example_list_of_paired_datasets()
+    q = query.HistoryQuery.from_collection_types(["list", "paired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_paired_datasets).collection_type == "paired"
+    assert q.direct_match(list_of_paired_datasets) is False
+
+
+def test_query_can_match_list_of_lists_to_list_or_paired():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types(["list", "paired"], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_lists).collection_type == "list"
+    assert q.direct_match(list_of_lists) is False
+
+
+def test_query_always_direct_match_if_no_collection_type_on_input_specified():
+    list_of_lists = example_list_of_lists()
+    q = query.HistoryQuery.from_collection_types([], TYPE_DESCRIPTION_FACTORY)
+    assert q.can_map_over(list_of_lists) is False
+    assert q.direct_match(list_of_lists) is True
 
 
 def assert_can_match(*items):
@@ -78,12 +136,46 @@ def build_collections_to_match(*items):
             collection_instance, subcollection_type = item
         else:
             collection_instance, subcollection_type = item, None
-        to_match.add("input_%d" % i, collection_instance, subcollection_type)
+        to_match.add(f"input_{i}", collection_instance, subcollection_type)
     return to_match
+
+
+def example_list_of_paired_datasets():
+    return list_instance(
+        elements=[
+            pair_element("data1"),
+            pair_element("data2"),
+            pair_element("data3"),
+        ],
+        collection_type="list:paired",
+    )
+
+
+def example_list_of_lists():
+    return list_instance(
+        elements=[
+            list_instance(),
+            list_instance(),
+        ],
+        collection_type="list:list",
+    )
 
 
 def pair_element(element_identifier):
     return collection_element(element_identifier, pair_instance().collection)
+
+
+def list_element(element_identifier, list_collection=None):
+    return collection_element(element_identifier, list_collection or list_instance().collection)
+
+
+def list_of_lists_instance():
+    return list_instance(
+        elements=[
+            list_element("outer1"),
+            list_element("outer2"),
+        ]
+    )
 
 
 def pair_instance():
@@ -92,6 +184,55 @@ def pair_instance():
         elements=[
             hda_element("left"),
             hda_element("right"),
+        ],
+    )
+    return paired_collection_instance
+
+
+def list_paired_instance():
+    return list_instance(
+        elements=[
+            pair_element("data1"),
+            pair_element("data2"),
+            pair_element("data3"),
+        ],
+        collection_type="list:paired",
+    )
+
+
+def list_of_paired_and_unpaired_instance():
+    return collection_instance(
+        collection_type="list:paired_or_unpaired",
+        elements=[
+            collection_element(
+                "el1",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("forward"),
+                        hda_element("reverse"),
+                    ],
+                ),
+            ),
+            collection_element(
+                "el2",
+                collection(
+                    "paired_or_unpaired",
+                    [
+                        hda_element("unpaired"),
+                    ],
+                ),
+            ),
+        ],
+    )
+
+
+def paired_or_unpaired_pair_instance():
+    paired_collection_instance = collection_instance(
+        collection_type="paired_or_unpaired",
+        elements=[
+            hda_element("forward"),
+            hda_element("reverse"),
         ],
     )
     return paired_collection_instance
@@ -116,6 +257,7 @@ class MockCollection:
         self.collection_type = collection_type
         self.elements = elements
         self.populated = True
+        self.column_definitions = None
 
 
 class MockCollectionElement:
@@ -123,6 +265,7 @@ class MockCollectionElement:
         self.element_identifier = element_identifier
         self.child_collection = collection
         self.hda = None
+        self.columns = None
 
 
 class MockHDAElement:
@@ -130,6 +273,7 @@ class MockHDAElement:
         self.element_identifier = element_identifier
         self.child_collection = False
         self.hda = object()
+        self.columns = None
 
 
 collection_instance = MockCollectionInstance

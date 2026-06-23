@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<tool name="metabolicMine" id="metabolicmine" tool_type="data_source" version="1.0.0">
+<tool name="metabolicMine" id="metabolicmine" tool_type="data_source" version="1.0.0" profile="20.09">
     <description>server</description>
     <edam_operations>
         <edam_operation>operation_0224</edam_operation>

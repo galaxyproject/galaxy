@@ -1,5 +1,4 @@
-"""Galaxy "safe" path functions forced to work with POSIX-style paths regardless of current platform
-"""
+"""Galaxy "safe" path functions forced to work with POSIX-style paths regardless of current platform"""
 
 import posixpath
 import sys

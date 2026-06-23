@@ -1,88 +1,87 @@
-<script setup>
-import { computed, ref, reactive, onMounted, watch } from "vue";
-import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
-import ExportRecordTable from "components/Common/ExportRecordTable.vue";
-import ExportOptions from "./ExportOptions.vue";
-import ExportForm from "components/Common/ExportForm.vue";
-import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { useFileSources } from "composables/fileSources";
-import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
-import { useConfirmDialog } from "composables/confirmDialog";
-import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "@/utils/redirect";
-import { faFileExport } from "@fortawesome/free-solid-svg-icons";
+<script setup lang="ts">
+import { faFileExport, faList } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { BAlert } from "bootstrap-vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+
+import type { AnyHistory } from "@/api";
+import {
+    exportHistoryToFileSource,
+    fetchHistoryExportRecords,
+    reimportHistoryFromRecord,
+} from "@/api/histories.export";
+import type { ColorVariant } from "@/components/Common";
+import type { ExportParams, ExportRecord } from "@/components/Common/models/exportRecordModel";
+import { useConfirmDialog } from "@/composables/confirmDialog";
+import { useDownloadTracker } from "@/composables/downloadTracker";
+import { useShortTermStorage } from "@/composables/shortTermStorage";
+import { useTaskMonitor } from "@/composables/taskMonitor";
 import { useHistoryStore } from "@/stores/historyStore";
+import { copy as sendToClipboard } from "@/utils/clipboard";
+import { absPath } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import type { HistoryExportData } from "./types";
+
+import HistoryExportWizard from "./HistoryExportWizard.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
+import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const {
     isRunning: isExportTaskRunning,
     waitForTask,
+    stopWaitingForTask,
     requestHasFailed: taskMonitorRequestFailed,
     hasFailed: taskHasFailed,
 } = useTaskMonitor();
-
-const { hasWritable: hasWritableFileSources } = useFileSources();
 
 const {
     isPreparing: isPreparingDownload,
     prepareHistoryDownload,
     downloadObjectByRequestId,
     getDownloadObjectUrl,
+    stopMonitoring: stopMonitoringShortTermStorage,
 } = useShortTermStorage();
+
+const downloadTracker = useDownloadTracker();
 
 const { confirm } = useConfirmDialog();
 
-const props = defineProps({
-    historyId: {
-        type: String,
-        required: true,
-    },
-});
+interface Props {
+    historyId: string;
+}
 
-library.add(faFileExport);
+const props = defineProps<Props>();
 
 const POLLING_DELAY = 3000;
 
-const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
-const exportRecords = ref(null);
+const exportRecords = ref<ExportRecord[]>([]);
+const history = ref<AnyHistory>();
+const isLoadingHistory = ref(true);
 
 const historyName = computed(() => history.value?.name ?? props.historyId);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
-const isLatestExportRecordReadyToDownload = computed(
-    () =>
-        latestExportRecord.value &&
-        latestExportRecord.value.isUpToDate &&
-        latestExportRecord.value.canDownload &&
-        latestExportRecord.value.exportParams?.equals(exportParams)
-);
-const canGenerateDownload = computed(() => !isPreparingDownload.value && !isLatestExportRecordReadyToDownload.value);
-const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
+const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : []));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
-const availableRecordsMessage = computed(() =>
-    isLoadingRecords.value
-        ? "Loading export records..."
-        : "This history has no export records yet. You can choose one of the export options above."
-);
+const isBusy = computed(() => isLoadingRecords.value || isPreparingDownload.value || isExportTaskRunning.value);
 
 const historyStore = useHistoryStore();
 
-const history = computed(() => {
-    const history = historyStore.getHistoryById(props.historyId);
-    console.log("HISTORY", history);
-    return history;
-});
-
-const errorMessage = ref(null);
-const actionMessage = ref(null);
-const actionMessageVariant = ref(null);
+const isFatalError = ref(false);
+const errorMessage = ref<string>();
+const actionMessage = ref<string>();
+const actionMessageVariant = ref<ColorVariant>();
+const showOldRecords = ref(false);
 
 onMounted(async () => {
-    updateExports();
+    if (await loadHistory()) {
+        updateExports();
+    }
 });
 
 watch(isExportTaskRunning, (newValue, oldValue) => {
@@ -92,11 +91,34 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
     }
 });
 
+async function loadHistory() {
+    isLoadingHistory.value = true;
+    try {
+        if (!historyStore.getHistoryById(props.historyId, false)) {
+            await historyStore.loadHistoryById(props.historyId);
+        }
+        history.value = historyStore.getHistoryById(props.historyId, false) ?? undefined;
+        if (!history.value) {
+            const loadError = historyStore.getHistoryLoadError(props.historyId);
+            if (loadError) {
+                throw loadError;
+            }
+        }
+        return true;
+    } catch (error) {
+        errorMessage.value = errorMessageAsString(error);
+        isFatalError.value = true;
+        return false;
+    } finally {
+        isLoadingHistory.value = false;
+    }
+}
+
 async function updateExports() {
     isLoadingRecords.value = true;
     try {
-        errorMessage.value = null;
-        exportRecords.value = await getExportRecords(props.historyId);
+        errorMessage.value = undefined;
+        exportRecords.value = await fetchHistoryExportRecords(props.historyId);
         const shouldWaitForTask =
             latestExportRecord.value?.isPreparing &&
             !isExportTaskRunning.value &&
@@ -112,149 +134,173 @@ async function updateExports() {
             errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
         }
     } catch (error) {
-        errorMessage.value = error;
+        errorMessage.value = errorMessageAsString(error);
     } finally {
         isLoadingRecords.value = false;
     }
 }
 
-async function doExportToFileSource(exportDirectory, fileName) {
-    await exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
-    updateExports();
-}
-
-async function prepareDownload() {
-    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
-    updateExports();
-}
-
-function downloadFromRecord(record) {
-    if (record.canDownload) {
-        downloadObjectByRequestId(record.stsDownloadId);
+async function onExportHistory(exportData: HistoryExportData) {
+    switch (exportData.destination) {
+        case "download":
+            await prepareDownload(exportData);
+            break;
+        case "remote-source":
+        case "rdm-repository":
+        case "zenodo-repository":
+            await exportToFileSource(exportData);
+            break;
     }
 }
 
-function copyDownloadLinkFromRecord(record) {
+async function exportToFileSource(exportData: HistoryExportData) {
+    await exportHistoryToFileSource(props.historyId, exportData.remoteUri, exportData.outputFileName, exportData);
+    updateExports();
+}
+
+async function prepareDownload(exportParams: ExportParams) {
+    const result = await prepareHistoryDownload(props.historyId, {
+        pollDelayInMs: POLLING_DELAY,
+        exportParams: exportParams,
+    });
+    if (result) {
+        downloadTracker.trackDownloadRequestWithData({
+            taskId: result.storageRequestId,
+            taskType: "short_term_storage",
+            request: {
+                source: "history-export",
+                taskType: "short_term_storage",
+                action: "export",
+                object: {
+                    id: props.historyId,
+                    type: "history",
+                    name: historyName.value,
+                },
+                description: `History export for ${historyName.value} for direct download`,
+            },
+            startedAt: new Date(),
+            isFinal: false,
+        });
+    }
+    updateExports();
+}
+
+function downloadFromRecord(record: ExportRecord) {
     if (record.canDownload) {
-        const relativeLink = getDownloadObjectUrl(record.stsDownloadId);
+        downloadObjectByRequestId(record.stsDownloadId!);
+    }
+}
+
+function copyDownloadLinkFromRecord(record: ExportRecord) {
+    if (record.canDownload) {
+        const relativeLink = getDownloadObjectUrl(record.stsDownloadId!);
         sendToClipboard(absPath(relativeLink), "Download link copied to your clipboard");
     }
 }
 
-async function reimportFromRecord(record) {
+async function reimportFromRecord(record: ExportRecord) {
     const confirmed = await confirm(
-        `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
+        `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`,
     );
     if (confirmed) {
-        reimportHistoryFromRecord(record)
-            .then(() => {
-                actionMessageVariant.value = "info";
-                actionMessage.value =
-                    "The history is being imported in the background. Check your histories after a while to find it.";
-            })
-            .catch((reason) => {
-                actionMessageVariant.value = "danger";
-                actionMessage.value = reason;
-            });
+        try {
+            await reimportHistoryFromRecord(record);
+            actionMessageVariant.value = "info";
+            actionMessage.value =
+                "The history is being imported in the background. Check your histories after a while to find it.";
+        } catch (error) {
+            actionMessageVariant.value = "danger";
+            actionMessage.value = errorMessageAsString(error);
+        }
     }
 }
 
 function onActionMessageDismissedFromRecord() {
-    actionMessage.value = null;
-    actionMessageVariant.value = null;
+    actionMessage.value = undefined;
+    actionMessageVariant.value = undefined;
 }
 
-function updateExportParams(newParams) {
-    exportParams.modelStoreFormat = newParams.modelStoreFormat;
-    exportParams.includeFiles = newParams.includeFiles;
-    exportParams.includeDeleted = newParams.includeDeleted;
-    exportParams.includeHidden = newParams.includeHidden;
+function onShowOldRecords() {
+    showOldRecords.value = true;
 }
+
+onUnmounted(() => {
+    stopWaitingForTask();
+    stopMonitoringShortTermStorage();
+});
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: historyName.value,
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Export", icon: faFileExport },
+]);
 </script>
+
 <template>
-    <span class="history-export-component">
-        <font-awesome-icon icon="file-export" size="2x" class="text-primary float-left mr-2" />
-        <h1 class="h-lg">
-            Export
-            <loading-span v-if="!history" spinner-only />
-            <b v-else id="history-name">{{ historyName }}</b>
-        </h1>
+    <div class="history-export-component">
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <GButton
+                v-if="hasPreviousExports"
+                id="show-old-records-button"
+                outline
+                color="blue"
+                @click="onShowOldRecords">
+                <FontAwesomeIcon :icon="faList" class="mr-1" />
+                Show old export records
+            </GButton>
+        </BreadcrumbHeading>
 
-        <export-options
-            id="history-export-options"
-            class="mt-3"
-            :export-params="exportParams"
-            @onValueChanged="updateExportParams" />
-
-        <h2 class="h-md mt-3">How do you want to export this history?</h2>
-        <b-card no-body class="mt-3">
-            <b-tabs pills card vertical>
-                <b-tab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
-                    <p>
-                        Here you can generate a temporal download for your history. When your download link expires or
-                        your history changes you can re-generate it again.
-                    </p>
-                    <b-alert show variant="warning">
-                        History archive downloads can expire and are removed at regular intervals. For permanent
-                        storage, export to a <b>remote file</b> or download and then import the archive on another
-                        Galaxy server.
-                    </b-alert>
-                    <b-button
-                        class="gen-direct-download-btn"
-                        :disabled="!canGenerateDownload"
-                        variant="primary"
-                        @click="prepareDownload">
-                        Generate direct download
-                    </b-button>
-                    <span v-if="isPreparingDownload">
-                        <loading-span message="Galaxy is preparing your download, this will likely take a while" />
-                    </span>
-                    <b-alert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
-                        The latest export record is ready. Use the download button below to download it or change the
-                        advanced export options above to generate a new one.
-                    </b-alert>
-                </b-tab>
-                <b-tab
-                    v-if="hasWritableFileSources"
-                    id="file-source-tab"
-                    title="to remote file"
-                    title-link-class="tab-export-to-file">
-                    <p>
-                        If you need a "more permanent" way of storing your history archive you can export it directly to
-                        one of the available remote file sources here. You will be able to re-import it later as long as
-                        it remains available on the remote server.
-                    </p>
-                    <export-form what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
-                </b-tab>
-            </b-tabs>
-        </b-card>
-
-        <b-alert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+        <BAlert v-if="isFatalError" id="fatal-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
-        </b-alert>
-        <div v-else-if="latestExportRecord">
-            <h2 class="h-md mt-3">Latest Export Record</h2>
-            <export-record-details
-                :record="latestExportRecord"
-                object-type="history"
+        </BAlert>
+
+        <div v-if="history">
+            <div v-if="latestExportRecord">
+                <ExportRecordDetails
+                    v-if="latestExportRecord"
+                    :record="latestExportRecord"
+                    :action-message="actionMessage"
+                    :action-message-variant="actionMessageVariant"
+                    object-type="history"
+                    @onDownload="downloadFromRecord"
+                    @onCopyDownloadLink="copyDownloadLinkFromRecord"
+                    @onReimport="reimportFromRecord"
+                    @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+
+                <Heading h2 size="md" class="mt-3">Export your history again</Heading>
+            </div>
+
+            <HistoryExportWizard
+                :history-id="props.historyId"
+                :history-name="history.name"
+                :is-busy="isBusy"
+                @onExport="onExportHistory" />
+
+            <BAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+                {{ errorMessage }}
+            </BAlert>
+        </div>
+
+        <GModal
+            :show.sync="showOldRecords"
+            :title="`Previous Export Records for ${historyName}`"
+            size="medium"
+            hide-header
+            fixed-height
+            class="history-export-old-records-modal"
+            centered>
+            <ExportRecordTable
+                v-if="hasPreviousExports"
+                id="previous-export-records"
+                :records="previousExportRecords"
                 class="mt-3"
-                :action-message="actionMessage"
-                :action-message-variant="actionMessageVariant"
                 @onDownload="downloadFromRecord"
                 @onCopyDownloadLink="copyDownloadLinkFromRecord"
-                @onReimport="reimportFromRecord"
-                @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-        </div>
-        <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
-            {{ availableRecordsMessage }}
-        </b-alert>
-
-        <export-record-table
-            v-if="hasPreviousExports"
-            id="previous-export-records"
-            :records="previousExportRecords"
-            class="mt-3"
-            @onDownload="downloadFromRecord"
-            @onReimport="reimportFromRecord" />
-    </span>
+                @onReimport="reimportFromRecord" />
+        </GModal>
+    </div>
 </template>

@@ -1,11 +1,11 @@
 """
 Proteomics Datatypes
 """
+
 import logging
 import re
 from typing import (
     IO,
-    List,
     Optional,
 )
 
@@ -13,6 +13,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
@@ -118,7 +119,7 @@ class Wiff2(Binary):
 @build_sniff_from_prefix
 class MzTab(Text):
     """
-    exchange format for proteomics and metabolomics results
+    exchange format for proteomics results
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.mztab')
@@ -148,7 +149,7 @@ class MzTab(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "mzTab Format"
         else:
             dataset.peek = "file does not exist"
@@ -177,7 +178,8 @@ class MzTab(Text):
 
 class MzTab2(MzTab):
     """
-    exchange format for proteomics and metabolomics results
+    This is version 2.x.x-M of mzTab (mzTab-M) a lightweight, tab-delimited file format for reporting mass spectrometry-based metabolomics results
+    https://github.com/HUPO-PSI/mzTab-M
 
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.mztab2')
@@ -188,19 +190,36 @@ class MzTab2(MzTab):
     False
     """
 
+    edam_data = "data_4058"
     file_ext = "mztab2"
+    # section names (except MTD)
     _sections = ["SMH", "SML", "SFH", "SMF", "SEH", "SME", "COM"]
-    _version_re = r"(2)(\.[0-9])?(\.[0-9])?-M$"
+    _version_re = r"(2)(\.[0-9]+)?(\.[0-9]+)?-M$"
+    # mandatory metadata fields and list of allowed entries (in lower case)
+    # (or None if everything is allowed)
     _man_mtd = {"mzTab-ID": None}
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
+    def display_data(
+        self,
+        trans,
+        dataset: DatasetHasHidProtocol,
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
+        if to_ext == self.file_ext:
+            to_ext = "mztab"
+        return super().display_data(trans, dataset, preview=preview, filename=filename, to_ext=to_ext, **kwd)
+
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = "mzTab2 Format"
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
+            dataset.blurb = "mzTab-M Format"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -435,10 +454,10 @@ class Dta(TabularData):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
-        data_row: List = []
+        data_row: list = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name) as dtafile:
+            with open(dataset.get_file_name()) as dtafile:
                 for _ in dtafile:
                     data_lines += 1
 
@@ -481,7 +500,7 @@ class Dta2d(TabularData):
     file_ext = "dta2d"
     comment_lines = 0
 
-    def _parse_header(self, line: List) -> Optional[List]:
+    def _parse_header(self, line: list) -> Optional[list]:
         if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
             return None
         line[0] = line[0].lstrip("#")
@@ -497,7 +516,7 @@ class Dta2d(TabularData):
             return "\t"
         return None
 
-    def _parse_dataline(self, line: List) -> bool:
+    def _parse_dataline(self, line: list) -> bool:
         try:
             line = [float(_) for _ in line]
         except ValueError:
@@ -510,7 +529,7 @@ class Dta2d(TabularData):
         data_lines = 0
         delim = None
         if dataset.has_data():
-            with open(dataset.file_name) as dtafile:
+            with open(dataset.get_file_name()) as dtafile:
                 for line in dtafile:
                     if delim is None:
                         delim = self._parse_delimiter(line)
@@ -592,7 +611,7 @@ class Edta(TabularData):
             return "\t"
         return None
 
-    def _parse_type(self, line: List) -> Optional[int]:
+    def _parse_type(self, line: list) -> Optional[int]:
         """
         parse the type from the header line
         types 1-3 as in the class docs, 0: type 1 wo/wrong header
@@ -612,7 +631,7 @@ class Edta(TabularData):
         else:
             return 3
 
-    def _parse_dataline(self, line: List, tpe: Optional[int]) -> bool:
+    def _parse_dataline(self, line: list, tpe: Optional[int]) -> bool:
         if tpe == 2 or tpe == 3:
             idx = 4
         else:
@@ -625,7 +644,7 @@ class Edta(TabularData):
             return False
         return True
 
-    def _clean_header(self, line: List) -> List:
+    def _clean_header(self, line: list) -> list:
         for idx, el in enumerate(line):
             el = el.lower()
             if el.startswith("rt"):
@@ -647,7 +666,7 @@ class Edta(TabularData):
         delim = None
         tpe = None
         if dataset.has_data():
-            with open(dataset.file_name) as dtafile:
+            with open(dataset.get_file_name()) as dtafile:
                 for idx, line in enumerate(dtafile):
                     if idx == 0:
                         delim = self._parse_delimiter(line)
@@ -713,13 +732,13 @@ class ProteomicsXml(GenericXml):
             if not line.startswith("<?"):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = r"<(\w*:)?%s" % self.root
+        pattern = rf"<(\w*:)?{self.root}"
         return re.search(pattern, line) is not None
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "ProteomicsXML data"
         else:
             dataset.peek = "file does not exist"
@@ -888,7 +907,7 @@ class Mgf(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "mgf Mascot Generic Format"
         else:
             dataset.peek = "file does not exist"
@@ -918,7 +937,7 @@ class MascotDat(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "mascotdat Mascot Search Results"
         else:
             dataset.peek = "file does not exist"
@@ -1004,7 +1023,7 @@ class SPLibNoIndex(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "Spectral Library without index files"
         else:
             dataset.peek = "file does not exist"
@@ -1046,7 +1065,7 @@ class SPLib(Msp):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             dataset.blurb = "splib Spectral Library Format"
         else:
             dataset.peek = "file does not exist"

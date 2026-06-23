@@ -1,16 +1,18 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
-import type { components } from "@/schema";
 
-type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
-
-export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
-export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+import type {
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
+    ModelStoreFormat,
+    ObjectExportTaskResponse,
+    StoreExportPayload,
+} from "@/api";
 
 export interface ExportParams {
-    readonly modelStoreFormat: string;
-    readonly includeFiles: boolean;
-    readonly includeDeleted: boolean;
-    readonly includeHidden: boolean;
+    modelStoreFormat: ModelStoreFormat;
+    includeFiles: boolean;
+    includeDeleted: boolean;
+    includeHidden: boolean;
 }
 
 export interface ExportRecord {
@@ -27,20 +29,22 @@ export interface ExportRecord {
     readonly stsDownloadId?: string;
     readonly isStsDownload: boolean;
     readonly canDownload: boolean;
-    readonly modelStoreFormat: string;
-    readonly exportParams?: ExportParams;
-    readonly duration?: number;
+    readonly modelStoreFormat: ModelStoreFormat;
+    readonly exportParams?: Readonly<ExportParams>;
+    readonly duration?: number | null;
     readonly canExpire: boolean;
     readonly isPermanent: boolean;
     readonly expirationDate?: Date;
     readonly expirationElapsedTime?: string;
     readonly hasExpired: boolean;
-    readonly errorMessage?: string;
+    readonly errorMessage?: string | null;
+    readonly objectType?: string;
+    readonly objectId?: string;
 }
 
 export class ExportParamsModel implements ExportParams {
-    private _params: StoreExportPayload;
-    constructor(data: StoreExportPayload = {}) {
+    private _params: Partial<StoreExportPayload>;
+    constructor(data: Partial<StoreExportPayload> = {}) {
         this._params = data;
     }
 
@@ -60,29 +64,38 @@ export class ExportParamsModel implements ExportParams {
         return Boolean(this._params?.include_hidden);
     }
 
-    public equals(otherExportParams?: ExportParamsModel) {
+    public equals(otherExportParams?: ExportParams) {
         if (!otherExportParams) {
             return false;
         }
-        return (
-            this.modelStoreFormat === otherExportParams.modelStoreFormat &&
-            this.includeFiles === otherExportParams.includeFiles &&
-            this.includeDeleted === otherExportParams.includeDeleted &&
-            this.includeHidden === otherExportParams.includeHidden
-        );
+        return areEqual(this, otherExportParams);
     }
+}
+
+export function areEqual(params1?: ExportParams, params2?: ExportParams): boolean {
+    if (!params1 || !params2) {
+        return false;
+    }
+    return (
+        params1.modelStoreFormat === params2.modelStoreFormat &&
+        params1.includeFiles === params2.includeFiles &&
+        params1.includeDeleted === params2.includeDeleted &&
+        params1.includeHidden === params2.includeHidden
+    );
 }
 
 export class ExportRecordModel implements ExportRecord {
     private _data: ObjectExportTaskResponse;
     private _expirationDate?: Date;
     private _requestMetadata?: ExportObjectRequestMetadata;
+    private _resultMetadata?: ExportObjectResultMetadata | null;
     private _exportParameters?: ExportParamsModel;
 
     constructor(data: ObjectExportTaskResponse) {
         this._data = data;
         this._expirationDate = undefined;
         this._requestMetadata = data.export_metadata?.request_data;
+        this._resultMetadata = data.export_metadata?.result_data;
         this._exportParameters = this._requestMetadata?.payload
             ? new ExportParamsModel(this._requestMetadata?.payload)
             : undefined;
@@ -122,7 +135,9 @@ export class ExportRecordModel implements ExportRecord {
 
     get importUri() {
         const payload = this._requestMetadata?.payload;
-        return payload && "target_uri" in payload ? payload.target_uri : undefined;
+        const requestUri = payload && "target_uri" in payload ? payload.target_uri : undefined;
+        const resultUri = this._resultMetadata?.uri;
+        return resultUri || requestUri;
     }
 
     get canReimport() {
@@ -184,5 +199,13 @@ export class ExportRecordModel implements ExportRecord {
 
     get errorMessage() {
         return this._data?.export_metadata?.result_data?.error;
+    }
+
+    get objectType() {
+        return this._requestMetadata?.object_type;
+    }
+
+    get objectId() {
+        return this._requestMetadata?.object_id;
     }
 }

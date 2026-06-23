@@ -4,12 +4,13 @@ from contextlib import contextmanager
 from unittest import mock
 
 from galaxy import model
+from galaxy.exceptions import ItemAccessibilityException
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     to_basic_markdown,
 )
-from galaxy.model.orm.now import now
+from galaxy.util import now
 from .base import BaseTestCase
 
 
@@ -46,15 +47,15 @@ class BaseExportTestCase(BaseTestCase):
 
     @contextmanager
     def _expect_get_history(self, history):
-        self.app.history_manager.get_accessible.return_value = history  # type: ignore[attr-defined,union-attr]
+        self.app.history_manager.get_accessible.return_value = history
         yield
-        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)  # type: ignore[attr-defined,union-attr]
+        self.app.history_manager.get_accessible.assert_called_once_with(history.id, self.trans.user)
 
     @contextmanager
     def _expect_get_hda(self, hda, hda_id=1):
-        self.app.hda_manager.get_accessible.return_value = hda  # type: ignore[attr-defined,union-attr]
+        self.app.hda_manager.get_accessible.return_value = hda
         yield
-        self.app.hda_manager.get_accessible.assert_called_once_with(hda.id, self.trans.user)  # type: ignore[attr-defined,union-attr]
+        self.app.hda_manager.get_accessible.assert_called_once_with(hda.id, self.trans.user)
 
     def _new_pair_collection(self):
         hda_forward = self._new_hda(contents="Forward dataset.")
@@ -222,7 +223,7 @@ history_dataset_type(history_dataset_id=1)
         hdca.collection = self._new_pair_collection()
         hdca.id = 1
 
-        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca  # type: ignore[attr-defined,union-attr]
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
@@ -243,7 +244,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
         stored_workflow.latest_workflow = workflow
         workflow_step_0 = model.WorkflowStep()
         workflow.steps = [workflow_step_0]
-        self.trans.app.workflow_manager.get_stored_accessible_workflow.return_value = stored_workflow  # type: ignore[attr-defined,union-attr]
+        self.trans.app.workflow_manager.get_stored_accessible_workflow.return_value = stored_workflow
         example = """# Example
 ```galaxy
 workflow_display(workflow_id=1)
@@ -278,9 +279,10 @@ invocation_time(invocation_id=1)
 ```
 """
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation, invocation]
         result = self._to_basic(example)
-        assert f"\n    {invocation.create_time.isoformat()}" in result
+        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S UTC")
+        assert f"\n    {expectedtime}" in result
 
     def test_job_parameters(self):
         job = model.Job()
@@ -325,12 +327,89 @@ job_metrics(job_id=1)
         assert "| Cores Allocated | 1 |\n" in result
         assert "| GALAXY_HOME | /path/to/home |\n" in result
 
+    def _mapped_job_and_icj(self, count=3):
+        """A representative job standing in for an N-element map-over (ICJ)."""
+        job = model.Job()
+        job.id = 1
+        icj = mock.MagicMock()
+        icj.representative_job = job
+        icj.job_list = [job] + [mock.MagicMock() for _ in range(count - 1)]
+        icj_assoc = mock.MagicMock()
+        icj_assoc.implicit_collection_jobs = icj
+        job.implicit_collection_jobs_association = icj_assoc
+        return job, icj
+
+    def test_tool_stdout_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=3)
+        job.tool_stdout = "mapped stdout"
+        example = """# Example
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                result = self._to_basic(example)
+        assert "**Standard Output:** mapped stdout" in result
+        assert "Representative job of 3 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_job_metrics_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=4)
+        example = """# Example
+```galaxy
+job_metrics(implicit_collection_jobs_id=7)
+```
+"""
+        metrics = [{"plugin": "core", "title": "Cores Allocated", "value": 1}]
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                with mock.patch("galaxy.managers.markdown_util.summarize_job_metrics", return_value=metrics):
+                    result = self._to_basic(example)
+        assert "| Cores Allocated | 1 |\n" in result
+        assert "Representative job of 4 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_job_parameters_implicit_collection_jobs(self):
+        job, icj = self._mapped_job_and_icj(count=2)
+        example = """# Example
+```galaxy
+job_parameters(implicit_collection_jobs_id=7)
+```
+"""
+        response = {"parameters": [{"text": "Num Lines", "value": "6", "depth": 1}]}
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", return_value=job):
+                with mock.patch("galaxy.managers.markdown_util.summarize_job_parameters", return_value=response):
+                    result = self._to_basic(example)
+        assert "| Num Lines |" in result
+        assert "Representative job of 2 mapped jobs" in result
+        assert "implicit_collection_jobs_id" not in result
+
+    def test_implicit_collection_jobs_access_denied_does_not_leak(self):
+        job, icj = self._mapped_job_and_icj()
+        job.tool_stdout = "SECRET stdout"
+        example = """# Example
+```galaxy
+tool_stdout(implicit_collection_jobs_id=7)
+```
+"""
+        with mock.patch.object(self.trans, "sa_session") as sa_session:
+            sa_session.get.return_value = icj
+            with mock.patch.object(JobManager, "get_accessible_job", side_effect=ItemAccessibilityException("nope")):
+                result = self._to_basic(example)
+        assert "SECRET stdout" not in result
+
     def _to_basic(self, example):
         return to_basic_markdown(self.trans, example)
 
 
 class TestReadyExport(BaseExportTestCase):
-    def test_ready_dataset_display(self):
+    def test_ready_dataset_display_not_baked(self):
+        # The client resolves datasets live; nothing is baked into the report.
         hda = self._new_hda()
         example = """
 ```galaxy
@@ -338,11 +417,10 @@ history_dataset_display(history_dataset_id=1)
 ```
 """
         with self._expect_get_hda(hda):
-            export_markdown, extra_data = self._ready_export(example)
-        assert "history_datasets" in extra_data
-        assert len(extra_data["history_datasets"]) == 1
+            _, export_markdown, extra_data = self._ready_export(example)
+        assert "history_datasets" not in extra_data
 
-    def test_ready_export_two_datasets(self):
+    def test_ready_export_two_datasets_not_baked(self):
         hda = self._new_hda()
         hda2 = self._new_hda()
         hda2.id = 2
@@ -355,12 +433,11 @@ history_dataset_display(history_dataset_id=1)
 history_dataset_display(history_dataset_id=2)
 ```
 """
-        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]  # type: ignore[attr-defined,union-attr]
-        export_markdown, extra_data = self._ready_export(example)
-        assert "history_datasets" in extra_data
-        assert len(extra_data["history_datasets"]) == 2
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
+        _, export_markdown, extra_data = self._ready_export(example)
+        assert "history_datasets" not in extra_data
 
-    def test_export_dataset_collection_paired(self):
+    def test_export_dataset_collection_not_baked(self):
         hdca = model.HistoryDatasetCollectionAssociation()
         hdca.name = "cool name"
         hdca.collection = self._new_pair_collection()
@@ -368,19 +445,14 @@ history_dataset_display(history_dataset_id=2)
         hdca.history_id = 1
         hdca.collection_id = hdca.collection.id
 
-        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca  # type: ignore[attr-defined,union-attr]
+        self.trans.app.dataset_collection_manager.get_dataset_collection_instance.return_value = hdca
         example = """# Example
 ```galaxy
 history_dataset_collection_display(history_dataset_collection_id=1)
 ```
 """
-        # Patch out url_for since we haven't initialized an app.
-        from galaxy.managers.hdcas import HDCASerializer
-
-        with mock.patch.object(HDCASerializer, "url_for", return_value="http://google.com"):
-            export, extra_data = self._ready_export(example)
-        assert "history_dataset_collections" in extra_data
-        assert len(extra_data.get("history_dataset_collections")) == 1
+        _, export, extra_data = self._ready_export(example)
+        assert "history_dataset_collections" not in extra_data
 
     def test_galaxy_version(self):
         example = """# Example
@@ -388,7 +460,7 @@ history_dataset_collection_display(history_dataset_collection_id=1)
 generate_galaxy_version()
 ```
 """
-        result, extra_data = self._ready_export(example)
+        _, result, extra_data = self._ready_export(example)
         assert "generate_version" in extra_data
         assert extra_data["generate_version"] == "19.09"
 
@@ -398,21 +470,86 @@ generate_galaxy_version()
 generate_time()
 ```
 """
-        result, extra_data = self._ready_export(example)
+        _, result, extra_data = self._ready_export(example)
         assert "generate_time" in extra_data
 
-    def test_get_invocation_time(self):
+    def test_invocation_time_not_baked(self):
         invocation = self._new_invocation()
-        self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
+        self.app.workflow_manager.get_invocation.side_effect = [invocation]
         example = """# Example
 ```galaxy
 invocation_time(invocation_id=1)
 ```
 """
-        result, extra_data = self._ready_export(example)
-        assert "invocations" in extra_data
-        assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.isoformat()
+        _, result, extra_data = self._ready_export(example)
+        assert "invocations" not in extra_data
 
-    def _ready_export(self, example):
+    def test_export_replaces_embedded_history_dataset_type(self):
+        hda = self._new_hda()
+        hda.extension = "fasta"
+        hda2 = self._new_hda()
+        hda2.extension = "fastqsanger"
+        hda2.id = 2
+        example = """
+I ran a cool analysis with two inputs of types ${galaxy history_dataset_type(history_dataset_id=1)} and ${galaxy history_dataset_type(history_dataset_id=2)}.
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown == """
+I ran a cool analysis with two inputs of types fasta and fastqsanger.
+"""
+
+    def test_export_replaces_embedded_history_dataset_name(self):
+        hda = self._new_hda()
+        hda.name = "foo bar"
+        hda2 = self._new_hda()
+        hda2.name = "cow dog"
+        hda2.id = 2
+        example = """
+I ran a cool analysis with two inputs of types ${galaxy history_dataset_name(history_dataset_id=1)} and ${galaxy history_dataset_name(history_dataset_id=2)}.
+"""
+        self.app.hda_manager.get_accessible.side_effect = [hda, hda2]
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown == """
+I ran a cool analysis with two inputs of types foo bar and cow dog.
+"""
+
+    def test_export_replaces_embedded_generate_time(self):
+        example = """
+I ran a cool analysis at ${galaxy generate_time()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown.startswith("""
+I ran a cool analysis at 2""")
+
+    def test_export_replaces_embedded_invocation_time(self):
+        invocation = self._new_invocation()
+        self.app.workflow_manager.get_invocation.side_effect = [invocation]
+        example = """
+I ran a cool analysis at ${galaxy invocation_time(invocation_id=1)}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown.startswith("""
+I ran a cool analysis at 2""")
+
+    def test_export_replaces_embedded_galaxy_version(self):
+        example = """
+I ran a cool analysis with Galaxy ${galaxy generate_galaxy_version()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown == """
+I ran a cool analysis with Galaxy 19.09.
+"""
+
+    def test_export_replaces_embedded_access_link(self):
+        self.trans.app.config.instance_access_url = "http://mycoolgalaxy.org"
+        example = """
+I ran a cool analysis at ${galaxy instance_access_link()}.
+"""
+        _, export_markdown, _ = self._ready_export(example)
+        assert export_markdown == """
+I ran a cool analysis at [http://mycoolgalaxy.org](http://mycoolgalaxy.org).
+"""
+
+    def _ready_export(self, example: str):
         return ready_galaxy_markdown_for_export(self.trans, example)

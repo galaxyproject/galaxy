@@ -1,8 +1,4 @@
 import os
-from typing import (
-    List,
-    Tuple,
-)
 
 from paste import request
 from paste.fileapp import FileApp
@@ -18,10 +14,7 @@ class CacheableStaticURLParser(StaticURLParser):
 
     def __call__(self, environ, start_response):
         path_info = environ.get("PATH_INFO", "")
-        script_name = environ.get("SCRIPT_NAME", "")
-        if script_name == "/robots.txt" or script_name == "/favicon.ico":
-            filename = script_name.replace("/", "")
-        elif not path_info:
+        if not path_info:
             # See if this is a static file hackishly mapped.
             if os.path.exists(self.directory) and os.path.isfile(self.directory):
                 app = FileApp(self.directory)
@@ -55,14 +48,13 @@ class CacheableStaticURLParser(StaticURLParser):
             return self.__class__(full)(environ, start_response)
         if environ.get("PATH_INFO") and environ.get("PATH_INFO") != "/":
             return self.error_extra_path(environ, start_response)
-        if_none_match = environ.get("HTTP_IF_NONE_MATCH")
-        if if_none_match:
+        if if_none_match := environ.get("HTTP_IF_NONE_MATCH"):
             mytime = os.stat(full).st_mtime
             if str(mytime) == if_none_match:
-                headers: List[Tuple[str, str]] = []
+                headers: list[tuple[str, str]] = []
                 ETAG.update(headers, mytime)
                 start_response("304 Not Modified", headers)
-                return [""]  # empty body
+                return [b""]  # empty body
         app = FileApp(full)
         if self.cache_seconds:
             app.cache_control(max_age=int(self.cache_seconds))

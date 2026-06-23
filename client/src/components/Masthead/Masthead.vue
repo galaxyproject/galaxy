@@ -1,38 +1,78 @@
 <script setup>
-import { storeToRefs } from "pinia";
+import { faQuestion, faSignOutAlt, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
-import MastheadItem from "./MastheadItem";
-import { loadWebhookMenuItems } from "./_webhooks";
-import QuotaMeter from "./QuotaMeter";
-import { withPrefix } from "utils/redirect";
-import { getActiveTab } from "./utilities";
-import { watch, ref, reactive } from "vue";
-import { onMounted, onBeforeMount } from "vue";
+import { faGear } from "font-awesome-6";
+import { storeToRefs } from "pinia";
+import { computed, onMounted, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import {
+    getOIDCIdpsWithRegistration,
+    isOnlyOneOIDCProviderConfigured,
+    redirectToSingleProvider,
+} from "@/components/User/ExternalIdentities/ExternalIDHelper";
 import { useConfig } from "@/composables/config";
-import { useRoute } from "vue-router/composables";
 import { useUserStore } from "@/stores/userStore";
-import { useEntryPointStore } from "stores/entryPointStore";
-import NotificationsBell from "@/components/Notifications/NotificationsBell.vue";
+import { userLogout } from "@/utils/logout";
+import { withPrefix } from "@/utils/redirect";
 
-const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
+import { loadMastheadWebhooks } from "./_webhooks";
 
-const route = useRoute();
-const { config } = useConfig();
+import MastheadDropdown from "./MastheadDropdown.vue";
+import MastheadItem from "./MastheadItem.vue";
+import QuotaMeter from "./QuotaMeter.vue";
 
-const emit = defineEmits(["open-url"]);
+const { isAnonymous, currentUser } = storeToRefs(useUserStore());
+
+const router = useRouter();
+const { config, isConfigLoaded } = useConfig();
+
+const hasOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration) {
+        return Object.keys(oIDCIdpsWithRegistration).length > 0;
+    } else {
+        return false;
+    }
+});
+
+const hasExactlyOneOIDCRegistration = computed(() => {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+    if (oIDCIdpsWithRegistration) {
+        return Object.keys(oIDCIdpsWithRegistration).length === 1;
+    } else {
+        return false;
+    }
+});
+
+async function performLogin() {
+    const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+    if (config.value.disable_local_accounts && isOnlyOneOIDCProviderConfigured(oIDCIdps)) {
+        const redirectUri = await redirectToSingleProvider(oIDCIdps);
+        window.location = redirectUri;
+    } else {
+        openUrl("/login/start");
+    }
+}
+
+function performRegistration() {
+    if (!config.value.allow_local_account_creation && hasExactlyOneOIDCRegistration.value) {
+        const oIDCIdps = isConfigLoaded.value ? config.value.oidc : {};
+        const oIDCIdpsWithRegistration = getOIDCIdpsWithRegistration(oIDCIdps);
+        window.location =
+            oIDCIdpsWithRegistration[Object.keys(oIDCIdpsWithRegistration)[0]].end_user_registration_endpoint;
+    } else {
+        openUrl("/register/start");
+    }
+}
 
 const props = defineProps({
-    tabs: {
-        type: Array,
-        default: () => [],
-    },
     brand: {
         type: String,
         default: null,
-    },
-    initialActiveTab: {
-        type: String,
-        default: "analysis",
     },
     logoUrl: {
         type: String,
@@ -52,110 +92,147 @@ const props = defineProps({
     },
 });
 
-const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
-let entryPointStore;
-const itsMenu = reactive({
-    id: "interactive",
-    url: "/interactivetool_entry_points/list",
-    tooltip: "See Running Interactive Tools",
-    icon: "fa-cogs",
-    hidden: true,
-});
+function openUrl(url, target = null) {
+    if (!target) {
+        router.push(url);
+    } else {
+        url = withPrefix(url);
+        if (target == "_blank") {
+            window.open(url);
+        } else {
+            window.location = url;
+        }
+    }
+}
 
-function setActiveTab() {
-    const currentRoute = route.path;
-    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+function extensionTabClick(tab) {
+    if (tab.url) {
+        openUrl(tab.url, tab.target);
+    } else if (typeof tab.onclick === "function") {
+        tab.onclick();
+    }
 }
 
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
-}
-function updateVisibility(isActive) {
-    itsMenu.hidden = !isActive;
+    props.windowTab.onclick();
 }
 
-watch(
-    () => route.path,
-    () => {
-        setActiveTab();
-    }
-);
-
-/* lifecyle */
-onBeforeMount(() => {
-    entryPointStore = useEntryPointStore();
-    entryPointStore.ensurePollingEntryPoints();
-    entryPointStore.$subscribe((mutation, state) => {
-        updateVisibility(state.entryPoints.length > 0);
-    });
-});
 onMounted(() => {
-    loadWebhookMenuItems(extensionTabs.value);
-    setActiveTab();
+    loadMastheadWebhooks(extensionTabs.value);
 });
 </script>
 
 <template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
-        <b-navbar-nav>
-            <b-navbar-brand
-                v-b-tooltip.hover
-                class="ml-2 mr-2"
+    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <BNavbarNav>
+            <BNavbarBrand
+                id="analysis"
+                v-g-tooltip.hover
+                class="ml-2 mr-2 p-0"
                 title="Home"
                 aria-label="homepage"
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
-            </b-navbar-brand>
-            <span v-if="brand" class="navbar-text px-2">
+            </BNavbarBrand>
+            <span v-if="brand" class="navbar-text py-0 px-2">
                 {{ brand }}
             </span>
-        </b-navbar-nav>
-        <b-navbar-nav>
-            <masthead-item
-                v-for="(tab, idx) in props.tabs"
-                v-show="tab.hidden !== true"
-                :key="`tab-${idx}`"
-                :tab="tab"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <masthead-item
-                v-show="itsMenu.hidden !== true"
-                :key="`its-tab`"
-                :tab="itsMenu"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <masthead-item
+        </BNavbarNav>
+        <BNavbarNav v-if="isConfigLoaded" class="mr-1">
+            <MastheadItem
+                v-if="windowTab"
+                :id="windowTab.id"
+                :icon="windowTab.icon"
+                :toggle="windowToggle"
+                :tooltip="windowTab.tooltip"
+                @click="onWindowToggle" />
+            <MastheadItem
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
+                :id="tab.id"
                 :key="`extension-tab-${idx}`"
-                :tab="tab"
-                :active-tab="activeTab"
-                @open-url="emit('open-url', $event)" />
-            <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem
-                v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
-                id="notifications-bell">
-                <NotificationsBell tooltip-placement="bottom" />
-            </BNavItem>
-        </b-navbar-nav>
-        <quota-meter />
-    </b-navbar>
+                :title="tab.title"
+                :icon="tab.icon"
+                :url="tab.url"
+                :tooltip="tab.tooltip"
+                :target="tab.target"
+                @click="extensionTabClick(tab)" />
+            <MastheadItem
+                id="help"
+                :icon="faQuestion"
+                url="/about"
+                tooltip="Support, Contact, and Community"
+                @click="openUrl('/about')" />
+            <QuotaMeter />
+            <MastheadItem
+                v-if="isAnonymous"
+                id="user"
+                class="loggedout-only"
+                data-description="login masthead button"
+                title="Login"
+                @click="performLogin()" />
+            <MastheadItem
+                v-if="isAnonymous && (config.allow_local_account_creation || hasOIDCRegistration)"
+                id="user-register"
+                class="loggedout-only"
+                data-description="register masthead button"
+                title="Register"
+                @click="performRegistration()" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && !config.single_user"
+                id="user"
+                class="loggedin-only"
+                :icon="faUser"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: faGear,
+                        handler: () => openUrl('/user'),
+                    },
+                    {
+                        title: 'Sign Out',
+                        icon: faSignOutAlt,
+                        handler: () => userLogout(),
+                    },
+                ]"
+                @click="userLogout" />
+            <MastheadDropdown
+                v-if="currentUser && !isAnonymous && config.single_user"
+                id="user"
+                class="loggedin-only"
+                :icon="faUser"
+                :title="currentUser.username"
+                tooltip="User Preferences"
+                :menu="[
+                    {
+                        title: 'Preferences',
+                        icon: faGear,
+                        handler: () => openUrl('/user'),
+                    },
+                ]"
+                @click="user" />
+        </BNavbarNav>
+        <FontAwesomeIcon v-else :icon="faSpinner" class="fa-spin mr-2 text-light" />
+    </BNavbar>
 </template>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 #masthead {
     padding: 0;
     margin-bottom: 0;
     background: var(--masthead-color);
-    height: $masthead-height;
+    height: var(--masthead-height);
     &:deep(.navbar-nav) {
-        height: $masthead-height;
+        height: var(--masthead-height);
         & > li {
             // This allows the background color to fill the full height of the
             // masthead, while still keeping the contents centered (using flex)
@@ -178,15 +255,17 @@ onMounted(() => {
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
+                margin-right: 0.25rem;
+                margin-left: 0.25rem;
                 &:hover {
                     color: var(--masthead-text-hover);
                 }
                 &.nav-icon {
-                    font-size: 1.3em;
+                    font-size: 1.2em;
                     .nav-note {
                         position: absolute;
-                        left: 1.9rem;
-                        top: 1.9rem;
+                        left: 1.6rem;
+                        top: 1.6rem;
                         font-size: 0.6rem;
                         font-weight: bold;
                     }
@@ -199,11 +278,13 @@ onMounted(() => {
     }
     .navbar-brand {
         cursor: pointer;
+        line-height: var(--masthead-height);
         img {
             filter: $text-shadow;
             display: inline;
             border: none;
-            height: 2.3rem;
+            height: var(--masthead-logo-height);
+            padding: inherit;
         }
     }
     .navbar-text {
@@ -211,7 +292,7 @@ onMounted(() => {
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: 1rem;
-        line-height: 2rem;
+        line-height: var(--masthead-height);
         color: var(--masthead-text-color);
     }
 }

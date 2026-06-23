@@ -30,8 +30,13 @@ class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestC
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
 
+    def _wait_for_files_dialog_ready(self):
+        """Wait for the files dialog to finish loading and display its options."""
+        self.components.files_dialog.options_ready.wait_for_visible()
+
     def _export_to_ftp_with_filename(self, filename: str):
         self.components.history_export.directory_input.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
         self.components.files_dialog.ftp_label.wait_for_and_click()
         self.components.upload.file_dialog_ok.wait_for_and_click()
         self.components.history_export.name_input.wait_for_and_send_keys(filename)
@@ -71,6 +76,8 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         gx_selenium_context.components.histories.import_button.wait_for_and_click()
         history_import = gx_selenium_context.components.history_import
         history_import.radio_button_remote_files.wait_for_and_click()
+        history_import.open_files_dialog.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
         files_dialog.ftp_label.wait_for_and_click()
         files_dialog.row(uri="gxftp://my_export.tar.gz").wait_for_and_click()
 
@@ -81,8 +88,10 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         history_import.success_message.wait_for_visible()
 
         gx_selenium_context.navigate_to_histories_page()
-        newest_history_name = gx_selenium_context.histories_get_history_names()[0]
-        assert newest_history_name.startswith("imported from archive")
+
+        gx_selenium_context.wait_for_selector(".history-card-list")
+        history_names = gx_selenium_context.components.histories.history_card_title.all()
+        assert history_names[0].text.strip().startswith("imported from archive")
 
 
 class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportExportFtpSeleniumIntegrationBase):
@@ -101,21 +110,43 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
 
         # Export to direct download link
         export_format = "rocrate.zip"
+        destination = "download"
         history_export_tasks = self.components.history_export_tasks
-        history_export_tasks.direct_download.wait_for_and_click()
+        # Select export format
+        history_export_tasks.select_format(format=export_format).wait_for_and_click()
+        history_export_tasks.next_button.wait_for_and_click()
+        # Select destination
+        history_export_tasks.select_destination(destination=destination).wait_for_and_click()
+        history_export_tasks.next_button.wait_for_and_click()
+        # Confirm export
+        history_export_tasks.export_button.wait_for_and_click()
 
         self._verify_last_export_record(expected_format=export_format, is_download=True)
 
         # Change export format
         export_format = "tar.gz"
-        history_export_tasks.toggle_options_link.wait_for_and_click()
-        history_export_tasks.export_format_selector.wait_for_visible()
+        destination = "remote-source"
         history_export_tasks.select_format(format=export_format).wait_for_and_click()
-        history_export_tasks.toggle_options_link.wait_for_and_click()
+        history_export_tasks.next_button.wait_for_and_click()
+        # Select destination
+        history_export_tasks.select_destination(destination=destination).wait_for_and_click()
+        history_export_tasks.next_button.wait_for_and_click()
 
-        # Export to FTP file source
-        history_export_tasks.file_source_tab.wait_for_and_click()
-        self._export_to_ftp_with_filename("my_export.tar.gz")
+        # Select FTP file source
+        self.components.history_export.directory_input.wait_for_and_click()
+        self._wait_for_files_dialog_ready()
+        self.components.files_dialog.ftp_label.wait_for_and_click()
+        self.components.upload.file_dialog_ok.wait_for_and_click()
+
+        # Go to Summary step
+        history_export_tasks.next_button.wait_for_and_click()
+
+        # Set filename
+        filename = "my_export.tar.gz"
+        history_export_tasks.exported_file_name.wait_for_and_send_keys(filename)
+
+        # Confirm export
+        history_export_tasks.export_button.wait_for_and_click()
 
         self._verify_last_export_record(expected_format=export_format)
 
@@ -123,8 +154,8 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         self, expected_format: str, expect_up_to_date: bool = True, is_download: bool = False
     ):
         last_export_record = self.components.last_export_record
-        last_export_record.preparing_export.wait_for_visible()
-        last_export_record.preparing_export.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
+        last_export_record.preparing_export_badge.wait_for_visible()
+        last_export_record.preparing_export_badge.wait_for_absent(wait_type=self.wait_types.DATABASE_OPERATION)
 
         last_export_record.details.wait_for_visible()
         format_element = last_export_record.export_format.wait_for_visible()
@@ -136,7 +167,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
             last_export_record.outdated_icon.wait_for_visible()
 
         if is_download:
-            last_export_record.expiration_warning_icon.wait_for_visible()
+            last_export_record.expiration_warning_badge.wait_for_visible()
             last_export_record.download_btn.wait_for_visible()
         else:
             last_export_record.reimport_btn.wait_for_visible()

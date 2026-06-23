@@ -1,0 +1,80 @@
+<script setup lang="ts">
+import { ref } from "vue";
+
+import { isDefined } from "@/utils/validation";
+
+import type { FormEntry } from "./formUtil";
+
+import ForceActionButton from "./ForceActionButton.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Props {
+    title: string;
+    inputs?: Array<FormEntry>; // not fully reactive so make sure to not mutate this array
+    submitTitle: string;
+    loadingMessage: string;
+    busy: boolean;
+    showForceActionButton?: boolean;
+}
+
+withDefaults(defineProps<Props>(), {
+    inputs: undefined,
+    showForceActionButton: false,
+});
+
+const emit = defineEmits<{
+    (e: "onSubmit", formData: any): void;
+    (e: "onForceSubmit", formData: any): void;
+}>();
+
+let formData: any;
+const hasValidationErrors = ref(false);
+
+function onChange(incoming: any) {
+    formData = incoming;
+}
+
+function onValidation(validation: any) {
+    hasValidationErrors.value = isDefined(validation);
+}
+
+async function handleSubmit() {
+    emit("onSubmit", formData);
+}
+
+async function handleForceSubmit() {
+    emit("onForceSubmit", formData);
+}
+</script>
+<template>
+    <div>
+        <LoadingSpan v-if="inputs == undefined" :message="loadingMessage" />
+        <div v-else>
+            <FormCard :title="title">
+                <template v-slot:body>
+                    <FormDisplay
+                        :inputs="inputs"
+                        :reject-empty-required-inputs="true"
+                        @onChange="onChange"
+                        @onValidation="onValidation" />
+                </template>
+            </FormCard>
+            <div class="mt-3">
+                <GButton
+                    id="submit"
+                    color="blue"
+                    class="mr-1 mb-3"
+                    :disabled="busy || hasValidationErrors"
+                    disabled-title="Please fix validation errors before submitting"
+                    @click="handleSubmit">
+                    {{ submitTitle }}
+                </GButton>
+                <ForceActionButton v-show="showForceActionButton" :action="submitTitle" @click="handleForceSubmit">
+                </ForceActionButton>
+            </div>
+        </div>
+    </div>
+</template>

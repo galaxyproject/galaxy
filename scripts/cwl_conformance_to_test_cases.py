@@ -8,8 +8,7 @@ THIS_DIRECTORY = os.path.dirname(os.path.realpath(__file__))
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(THIS_DIRECTORY, os.pardir))
 CWL_API_TESTS_DIRECTORY = os.path.join(GALAXY_ROOT_DIR, "lib", "galaxy_test", "api", "cwl")
 
-TEST_FILE_TEMPLATE = string.Template(
-    '''"""Test CWL conformance for version ${version}."""
+TEST_FILE_TEMPLATE = string.Template('''"""Test CWL conformance for version ${version}."""
 
 import pytest
 
@@ -18,12 +17,10 @@ from ..test_workflows_cwl import BaseCwlWorkflowsApiTestCase
 
 class TestCwlConformance(BaseCwlWorkflowsApiTestCase):
     """Test case mapping to CWL conformance tests for version ${version}."""
-$tests'''
-)
+$tests''')
 
-TEST_TEMPLATE = string.Template(
-    '''
-${marks}    def test_conformance_${version_simple}_${label}(self):
+TEST_TEMPLATE = string.Template('''
+${marks}    def test_conformance_${version_simple}_${id_}(self):
         """${doc}
 
         Generated from::
@@ -31,8 +28,7 @@ ${marks}    def test_conformance_${version_simple}_${label}(self):
 ${cwl_test_def}
         """  # noqa: W293
         self.cwl_populator.run_conformance_test("""${version}""", """${doc}""")
-'''
-)
+''')
 
 RED_TESTS = {
     "v1.0": [
@@ -314,9 +310,9 @@ def main():
         del test_with_doc["doc"]
         cwl_test_def = yaml.dump(test_with_doc, default_flow_style=False)
         cwl_test_def = "\n".join(f"            {line}" for line in cwl_test_def.splitlines())
-        label = conformance_test.get("label", str(i))
+        id_ = conformance_test.get("id", str(i))
         tags = conformance_test.get("tags", [])
-        is_red = label in red_tests_list
+        is_red = id_ in red_tests_list
 
         marks = "    @pytest.mark.cwl_conformance\n"
         marks += f"    @pytest.mark.cwl_conformance_{version_simple}\n"
@@ -329,7 +325,7 @@ def main():
 
         if not {"command_line_tool", "expression_tool", "workflow"}.intersection(tags):
             print(
-                f"PROBLEM - test [{label}] tagged with neither command_line_tool, expression_tool, nor workflow",
+                f"PROBLEM - test [{id_}] tagged with neither command_line_tool, expression_tool, nor workflow",
                 file=sys.stderr,
             )
 
@@ -338,17 +334,17 @@ def main():
             "version": version,
             "doc": conformance_test["doc"],
             "cwl_test_def": cwl_test_def,
-            "label": label.replace("-", "_"),
+            "id_": id_.replace("-", "_"),
             "marks": marks,
         }
         test_body = TEST_TEMPLATE.safe_substitute(template_kwargs)
         tests += test_body
 
-        if label in all_tests_found:
-            print(f"PROBLEM - Duplicate label found [{label}]", file=sys.stderr)
-        all_tests_found.add(label)
+        if id_ in all_tests_found:
+            print(f"PROBLEM - Duplicate id found [{id_}]", file=sys.stderr)
+        all_tests_found.add(id_)
         if is_red:
-            red_tests_found.add(label)
+            red_tests_found.add(id_)
 
     test_file_contents = TEST_FILE_TEMPLATE.safe_substitute(
         {

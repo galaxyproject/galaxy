@@ -1,11 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { BBadge } from "bootstrap-vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faCheck, faTimes);
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
+import { computed } from "vue";
 
 interface Props {
     itemName: string;
@@ -20,9 +17,9 @@ const variant = computed(() => {
 </script>
 
 <template>
-    <b-badge :variant="variant">
-        <FontAwesomeIcon v-if="props.included" icon="check" />
-        <FontAwesomeIcon v-else icon="times" />
+    <BBadge :variant="variant">
+        <FontAwesomeIcon v-if="props.included" :icon="faCheck" />
+        <FontAwesomeIcon v-else :icon="faTimes" />
         {{ props.itemName }}
-    </b-badge>
+    </BBadge>
 </template>

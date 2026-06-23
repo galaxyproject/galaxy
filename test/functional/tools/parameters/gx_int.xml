@@ -1,0 +1,29 @@
+<tool id="gx_int" name="gx_int" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <param name="parameter" value="1" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="parameter" value_json="12456" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="12456" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="parameter" value="12456" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="12456" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>

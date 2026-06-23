@@ -22,8 +22,9 @@ def test_common_base_config(appconfig):
     if running_from_source:
         expected_path = os.path.join(appconfig.root, "lib", "galaxy", "config", "sample")
     else:
-        expected_path = os.path.join(appconfig.root, "galaxy", "config", "sample")
+        expected_path = os.path.join(os.path.dirname(config.__file__), "sample")
     assert appconfig.sample_config_dir == expected_path
+    assert os.path.isfile(os.path.join(appconfig.sample_config_dir, "job_conf.xml.sample_advanced"))
 
 
 def test_base_config_if_running_from_source(monkeypatch):
@@ -65,6 +66,44 @@ def test_error_if_database_connection_contains_brackets(bracket):
 
     with pytest.raises(ConfigurationError):
         config.GalaxyAppConfiguration(override_tempdir=False, amqp_internal_connection=uri)
+
+
+def test_error_if_interactivetoolsproxy_map_matches_other_database_connections():
+    """
+    The setting `interactivetoolsproxy_map` allows storing the session map in a
+    database supported by SQLAlchemy. This database must be different from the Galaxy database
+    and the tool shed database.
+
+    Motivation for this constraint:
+    https://github.com/galaxyproject/galaxy/pull/18481#issuecomment-2218493956
+    """
+    database_connection = "dbscheme://user:password@host/db"
+    install_database_connection = "dbscheme://user:password@host/install_db"
+    settings = dict(
+        override_tempdir=False,
+        database_connection=database_connection,
+        install_database_connection=install_database_connection,
+    )
+
+    with pytest.raises(ConfigurationError):
+        # interactivetoolsproxy_map matches database_connection
+        config.GalaxyAppConfiguration(
+            **settings,
+            interactivetoolsproxy_map=database_connection,
+        )
+
+    with pytest.raises(ConfigurationError):
+        # interactivetoolsproxy_map matches install_database_connection
+        config.GalaxyAppConfiguration(
+            **settings,
+            interactivetoolsproxy_map=install_database_connection,
+        )
+
+    # interactivetoolsproxy_map differs from database_connection, install_database_connection
+    config.GalaxyAppConfiguration(
+        **settings,
+        interactivetoolsproxy_map="dbscheme://user:password@host/gxitproxy",
+    )
 
 
 class TestIsFetchWithCeleryEnabled:

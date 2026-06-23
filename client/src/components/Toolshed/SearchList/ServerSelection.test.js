@@ -1,6 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import ServerSelection from "./ServerSelection";
+import { describe, expect, it } from "vitest";
+
+import ServerSelection from "./ServerSelection.vue";
 
 const localVue = getLocalVue();
 

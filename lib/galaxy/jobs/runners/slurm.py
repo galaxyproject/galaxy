@@ -1,13 +1,24 @@
 """
 SLURM job control via the DRMAA API.
 """
+
 import os
 import time
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.util import commands
+from galaxy.util import (
+    commands,
+    unicodify,
+)
 from galaxy.util.custom_logging import get_logger
+
+if TYPE_CHECKING:
+    from galaxy.jobs.runners.drmaa import DRMAAJobState
 
 log = get_logger(__name__)
 
@@ -36,7 +47,7 @@ class SlurmJobRunner(DRMAAJobRunner):
     runner_name = "SlurmRunner"
     restrict_job_name_length = False
 
-    def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
+    def _complete_terminal_job(self, ajs: "DRMAAJobState", drmaa_state: str, **kwargs) -> Union[bool, None]:
         def _get_slurm_state_with_sacct(job_id, cluster):
             cmd = ["sacct", "-n", "-o", "state%-32"]
             if cluster:
@@ -56,7 +67,8 @@ class SlurmJobRunner(DRMAAJobRunner):
             # Strip whitespaces and the final '+' (if present), only return the first word
             return first_line.strip().rstrip("+").split()[0]
 
-        def _get_slurm_state():
+        def _get_slurm_state() -> str:
+            assert ajs.job_id is not None
             cmd = ["scontrol", "-o"]
             if "." in ajs.job_id:
                 # custom slurm-drmaa-with-cluster-support job id syntax
@@ -134,16 +146,8 @@ class SlurmJobRunner(DRMAAJobRunner):
                         ajs.job_wrapper.get_id_tag(),
                         ajs.job_id,
                     )
-                    ajs.job_wrapper.change_state(
-                        model.Job.states.QUEUED, info="Job was resubmitted due to node failure"
-                    )
-                    try:
-                        self.queue_job(ajs.job_wrapper)
-                        return
-                    except Exception:
-                        ajs.fail_message = (
-                            "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
-                        )
+                    self.mark_as_resubmitted(ajs, info="Job was resubmitted due to node failure")
+                    return None
                 elif slurm_state == "OUT_OF_MEMORY":
                     log.info(
                         "(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)",
@@ -193,7 +197,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     ajs.fail_message += "\nPlease click the bug icon to report this problem if you need help."
                     ajs.stop_job = False
                     self.work_queue.put((self.fail_job, ajs))
-                    return
+                    return None
         except Exception:
             log.exception(
                 "(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s",
@@ -211,16 +215,19 @@ class SlurmJobRunner(DRMAAJobRunner):
         """
         try:
             log.debug("Checking %s for exceeded memory message from SLURM", efile_path)
-            with open(efile_path) as f:
+            with open(efile_path, "rb") as f:
                 if os.path.getsize(efile_path) > 2048:
                     f.seek(-2048, os.SEEK_END)
                     f.readline()
                 for line in f.readlines():
-                    stripped_line = line.strip()
+                    stripped_line = unicodify(line.strip())
                     if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
                         return OUT_OF_MEMORY_MSG
                     elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
                         return PROBABLY_OUT_OF_MEMORY_MSG
+        except FileNotFoundError:
+            # Entirely expected, as __check_memory_limit is only called if the job state is CANCELLED
+            return False
         except Exception:
             log.exception("Error reading end of %s:", efile_path)
 

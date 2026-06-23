@@ -1,42 +1,63 @@
 <template>
-    <QuotaSourceUsageProvider
-        v-if="objectStore.quota.enabled"
-        v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
-        :quota-source-label="objectStore.quota.source">
-        <LoadingSpan v-if="isLoadingUsage" :message="loadingMessage | localize" />
-        <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" :compact="true" />
-    </QuotaSourceUsageProvider>
+    <div v-if="objectStore.quota.enabled">
+        <LoadingSpan v-if="isLoadingUsage" :message="loadingMessage" />
+        <QuotaUsageBar
+            v-else-if="quotaUsage"
+            :quota-usage="quotaUsage"
+            :embedded="props.embedded"
+            :compact="props.compact" />
+    </div>
 </template>
 
-<script>
-import LoadingSpan from "components/LoadingSpan";
-import QuotaUsageBar from "./QuotaUsageBar";
-import { QuotaSourceUsageProvider } from "./QuotaUsageProvider";
+<script setup lang="ts">
+import { computed, watch } from "vue";
 
-export default {
-    components: {
-        LoadingSpan,
-        QuotaUsageBar,
-        QuotaSourceUsageProvider,
+import type { ConcreteObjectStoreModel } from "@/api";
+import { useQuotaUsageStore } from "@/stores/quotaUsageStore";
+
+import QuotaUsageBar from "./QuotaUsageBar.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+interface Props {
+    objectStore: ConcreteObjectStoreModel;
+    embedded?: boolean;
+    compact?: boolean;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    embedded: true,
+    compact: false,
+});
+
+const loadingMessage = "Loading Galaxy storage information";
+
+const quotaUsageStore = useQuotaUsageStore();
+
+const quotaSourceLabel = computed(() => props.objectStore.quota.source ?? null);
+const quotaSourceKey = computed(() => quotaSourceLabel.value ?? "__null__");
+
+const quotaUsage = computed(() => quotaUsageStore.getQuotaUsageBySourceLabel(quotaSourceLabel.value) ?? null);
+const isLoadingUsage = computed(
+    () => quotaUsageStore.loadingAll || Boolean(quotaUsageStore.loadingBySource[quotaSourceKey.value]),
+);
+
+watch(
+    () => [props.objectStore.quota.enabled, quotaSourceLabel.value] as const,
+    ([enabled, sourceLabel]) => {
+        if (!enabled) {
+            return;
+        }
+
+        // Load all usages in a single bulk request first, then read per-source from cache.
+        // This avoids N individual /api/users/current/usage/{label} requests when
+        // multiple ProvidedQuotaSourceUsageBar instances mount simultaneously (e.g. in
+        // a dropdown with many object store options).
+        if (!quotaUsageStore.isLoaded) {
+            void quotaUsageStore.loadQuotaUsages();
+        } else {
+            void quotaUsageStore.loadQuotaUsageForSource(sourceLabel, false);
+        }
     },
-    props: {
-        objectStore: {
-            type: Object,
-            required: true,
-        },
-        embedded: {
-            type: Boolean,
-            default: true,
-        },
-        compact: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            loadingMessage: "Loading object store information",
-        };
-    },
-};
+    { immediate: true },
+);
 </script>

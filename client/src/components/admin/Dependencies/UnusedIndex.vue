@@ -1,33 +1,48 @@
 <template>
-    <dependency-index-wrapper
+    <DependencyIndexWrapper
         :loading="loading"
         :error="error"
         loading-message="Loading tool dependency resolver information">
         <template v-slot:body>
-            <b-table id="unused-paths-table" striped :fields="fields" :items="items">
+            <GTable id="unused-paths-table" striped :fields="fields" :items="items" class="mb-3">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <BFormCheckbox v-model="data.item.selected" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
+
         <template v-slot:actions>
             <div>
-                <b-button @click="deleteSelected"> Delete Selected Environments </b-button>
+                <GButton @click="deleteSelected"> Delete Selected Environments </GButton>
             </div>
         </template>
-    </dependency-index-wrapper>
+    </DependencyIndexWrapper>
 </template>
+
 <script>
-import DependencyIndexWrapper from "./DependencyIndexWrapper";
-import { getDependencyUnusedPaths, deletedUnusedPaths } from "../AdminServices";
+import { BFormCheckbox } from "bootstrap-vue";
+
+import { deletedUnusedPaths, getDependencyUnusedPaths } from "../AdminServices";
+
+import DependencyIndexWrapper from "./DependencyIndexWrapper.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
-    components: { DependencyIndexWrapper },
+    components: {
+        BFormCheckbox,
+        DependencyIndexWrapper,
+        GButton,
+        GTable,
+    },
     data() {
         return {
             error: null,
             loading: true,
-            fields: [{ key: "selected", label: "" }, { key: "path" }],
+            fields: [
+                { key: "selected", label: "" },
+                { key: "path", label: "Path" },
+            ],
             paths: [],
         };
     },

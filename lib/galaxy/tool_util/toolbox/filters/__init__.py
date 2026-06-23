@@ -17,8 +17,7 @@ class FilterFactory:
         self.toolbox = toolbox
 
         # Prepopulate dict containing filters that are always checked,
-        # other filters that get checked depending on context (e.g. coming from
-        # trackster or no user found are added in build filters).
+        # other filters that get checked depending on context.
         self.default_filters = dict(tool=[_not_hidden, _handle_authorization], section=[], label=[])
         # Add dynamic filters to these default filters.
         config = toolbox.app.config
@@ -48,8 +47,6 @@ class FilterFactory:
                     if category:
                         validate = getattr(trans.app.config, f"user_tool_{category}_filters", [])
                         self.__init_filters(category, user_filters, filters, validate=validate)
-        if kwds.get("trackster", False):
-            filters["tool"].append(_has_trackster_conf)
 
         return filters
 
@@ -69,7 +66,7 @@ class FilterFactory:
         """
         if ":" in filter_name:
             # Should be a submodule of filters (e.g. examples:restrict_development_tools)
-            (module_name, function_name) = filter_name.rsplit(":", 1)
+            module_name, function_name = filter_name.rsplit(":", 1)
             function = self._import_filter(module_name, function_name)
         else:
             # No module found, just load a function from this file or
@@ -103,7 +100,3 @@ def _handle_authorization(context, tool):
     if not tool.allow_user_access(user, attempting_access=False):
         return False
     return True
-
-
-def _has_trackster_conf(context, tool):
-    return tool.trackster_conf

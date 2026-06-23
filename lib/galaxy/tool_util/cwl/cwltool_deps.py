@@ -4,16 +4,24 @@ Use this as the import interface for cwltool and just call
 :func:`ensure_cwltool_available` before using any of the imported
 functionality at runtime.
 """
+
 import re
 import warnings
 
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
-import requests
+from galaxy.util import requests
+
+try:
+    from cwl_utils.types import CWLObjectType
+except ImportError:
+    try:
+        from cwltool.utils import CWLObjectType  # type: ignore[assignment, attr-defined, unused-ignore]
+    except ImportError:
+        CWLObjectType = object  # type: ignore[assignment, misc]
 
 try:
     from cwltool import (
-        job,
         main,
         pathmapper,
         process,
@@ -22,7 +30,6 @@ try:
 except ImportError:
     main = None  # type: ignore[assignment]
     workflow = None  # type: ignore[assignment]
-    job = None  # type: ignore[assignment]
     process = None  # type: ignore[assignment]
     pathmapper = None  # type: ignore[assignment]
 
@@ -62,18 +69,22 @@ except ImportError:
     resolve_and_validate_document = None  # type: ignore[assignment]
 
 try:
+    from cwltool.process import Process
+except ImportError:
+    Process = None  # type: ignore[assignment, misc]
+
+try:
     from cwltool.utils import (
+        JobsType,
         normalizeFilesDirs,
+        OutputCallbackType,
         visit_class,
     )
 except ImportError:
+    JobsType = object  # type: ignore[misc, unused-ignore]
     visit_class = None  # type: ignore[assignment]
     normalizeFilesDirs = None  # type: ignore[assignment]
-
-try:
-    import shellescape
-except ImportError:
-    shellescape = None
+    OutputCallbackType = None  # type: ignore[misc]
 
 try:
     import schema_salad
@@ -104,7 +115,7 @@ def ensure_cwltool_available():
 
     Throw an ImportError with a description of the problem if they do not exist.
     """
-    if main is None or workflow is None or shellescape is None:
+    if main is None or workflow is None:
         message = "This feature requires cwltool and dependencies to be available, they are not."
         if main is None:
             message += " cwltool is not unavailable."
@@ -112,8 +123,6 @@ def ensure_cwltool_available():
             message += " cwltool.load_tool.resolve_and_validate_document is unavailable - cwltool version is too old."
         if requests is None:
             message += " Library 'requests' unavailable."
-        if shellescape is None:
-            message += " Library 'shellescape' unavailable."
         if schema_salad is None:
             message += " Library 'schema_salad' unavailable."
         raise ImportError(message)
@@ -121,22 +130,25 @@ def ensure_cwltool_available():
 
 __all__ = (
     "CommentedMap",
+    "CWLObjectType",
     "default_loader",
     "ensure_cwltool_available",
     "getdefault",
+    "JobsType",
     "load_tool",
     "LoadingContext",
     "main",
     "needs_shell_quoting",
     "normalizeFilesDirs",
+    "OutputCallbackType",
     "pathmapper",
     "process",
+    "Process",
     "ref_resolver",
     "relink_initialworkdir",
     "resolve_and_validate_document",
     "RuntimeContext",
     "schema_salad",
-    "shellescape",
     "sourceline",
     "StdFsAccess",
     "visit_class",

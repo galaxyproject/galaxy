@@ -5,6 +5,7 @@ import pytest
 import sqlalchemy
 from sqlalchemy import (
     false,
+    select,
     true,
 )
 
@@ -12,6 +13,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.app_unittest_utils.galaxy_mock import mock_url_builder
 from galaxy.managers import (
     base,
     hdas,
@@ -22,7 +24,6 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.model.base import transaction
 from .base import BaseTestCase
 
 default_password = "123456"
@@ -52,14 +53,22 @@ class TestHistoryManager(BaseTestCase):
         assert isinstance(history1, model.History)
         assert history1.name == "history1"
         assert history1.user == user2
-        assert history1 == self.trans.sa_session.query(model.History).get(history1.id)
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.name == "history1").one()
-        assert history1 == self.trans.sa_session.query(model.History).filter(model.History.user == user2).one()
+        assert history1 == self.trans.sa_session.get(model.History, history1.id)
+        assert (
+            history1
+            == self.trans.sa_session.execute(
+                select(model.History).filter(model.History.name == "history1")
+            ).scalar_one()
+        )
+        assert (
+            history1
+            == self.trans.sa_session.execute(select(model.History).filter(model.History.user == user2)).scalar_one()
+        )
 
-        history2 = self.history_manager.copy(history1, user=user3)
+        history2 = history1.copy(target_user=user3)
 
         self.log("should be able to query")
-        histories = self.trans.sa_session.query(model.History).all()
+        histories = self.trans.sa_session.scalars(select(model.History)).all()
         assert self.history_manager.one(filters=(model.History.id == history1.id)) == history1
         assert self.history_manager.list() == histories
         assert self.history_manager.by_id(history1.id) == history1
@@ -75,7 +84,10 @@ class TestHistoryManager(BaseTestCase):
 
         self.log("should be able to order")
         history3 = self.history_manager.create(name="history3", user=user2)
-        name_first_then_time = (model.History.name, sqlalchemy.desc(model.History.create_time))
+        name_first_then_time = (
+            model.History.name,
+            sqlalchemy.desc(model.History.create_time),
+        )
         assert self.history_manager.list(order_by=name_first_then_time) == [history2, history1, history3]
 
     def test_copy(self):
@@ -95,10 +107,10 @@ class TestHistoryManager(BaseTestCase):
         self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
-        history2 = self.history_manager.copy(history1, user=user3)
+        history2 = history1.copy(target_user=user3)
         assert isinstance(history2, model.History)
         assert history2.user == user3
-        assert history2 == self.trans.sa_session.query(model.History).get(history2.id)
+        assert history2 == self.trans.sa_session.get(model.History, history2.id)
         assert history2.name == history1.name
         assert history2 != history1
 
@@ -257,7 +269,7 @@ class TestHistoryManager(BaseTestCase):
         assert len(self.history_manager.get_share_assocs(item1, user=non_owner)) == 1
         assert isinstance(item1.slug, str)
 
-        self.log("should be able to unshare with specific users")
+        self.log("should be able to unshare with specific users")  # type: ignore[unreachable]
         share_assoc = self.history_manager.unshare_with(item1, non_owner)
         assert isinstance(share_assoc, model.HistoryUserShareAssociation)
         assert not self.history_manager.is_accessible(item1, non_owner)
@@ -382,14 +394,8 @@ class TestHistoryManager(BaseTestCase):
         assert manager.ratings_count(item) == 2
 
 
-# =============================================================================
-# web.url_for doesn't work well in the framework
-def testable_url_for(*a, **k):
-    return f"(fake url): {a}, {k}"
-
-
-@mock.patch("galaxy.managers.histories.HistorySerializer.url_for", testable_url_for)
-@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
+@mock.patch("galaxy.managers.histories.HistorySerializer.url_for", mock_url_builder)
+@mock.patch("galaxy.managers.hdas.HDASerializer.url_for", mock_url_builder)
 class TestHistorySerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
@@ -497,15 +503,14 @@ class TestHistorySerializer(BaseTestCase):
             job = model.Job()
             job.state = model.Job.states.PAUSED
             jobs = [job]
-            self.trans.sa_session.add(jobs[0])
             session = self.trans.sa_session
-            with transaction(session):
-                session.commit()
+            session.add(jobs[0])
+            session.commit()
             assert job.state == model.Job.states.PAUSED
             mock_paused_jobs.return_value = jobs
             history.resume_paused_jobs()
             mock_paused_jobs.assert_called_once()
-            assert job.state == model.Job.states.NEW, job.state
+            assert job.state == model.Job.states.NEW, job.state  # type: ignore[comparison-overlap]  # https://github.com/python/mypy/issues/15509
 
     def _history_state_from_states_and_deleted(self, user, hda_state_and_deleted_tuples):
         history = self.history_manager.create(name="name", user=user)
@@ -786,10 +791,57 @@ class TestHistoryFilters(BaseTestCase):
 
     def test_fn_filter_parsing(self):
         user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
         history1 = self.history_manager.create(name="history1", user=user2)
         history2 = self.history_manager.create(name="history2", user=user2)
         history3 = self.history_manager.create(name="history3", user=user2)
+        history4 = self.history_manager.create(name="history4", user=user3)
 
+        # test username eq filter
+        filters_2 = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user2"),
+            ]
+        )
+        filters_3 = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user3"),
+            ]
+        )
+        username_filter_2 = filters_2[0].filter
+        username_filter_3 = filters_3[0].filter
+
+        assert username_filter_2(history1)
+        assert username_filter_2(history2)
+        assert username_filter_2(history3)
+        assert not username_filter_2(history4)
+        assert not username_filter_3(history1)
+        assert not username_filter_3(history2)
+        assert not username_filter_3(history3)
+        assert username_filter_3(history4)
+
+        assert self.history_manager.list(filters=filters_2) == [history1, history2, history3]
+        assert self.history_manager.list(filters=filters_3) == [history4]
+
+        # test username contains filter
+        filters = self.filter_parser.parse_filters(
+            [
+                ("username", "contains", "user"),
+            ]
+        )
+
+        assert self.history_manager.list(filters=filters) == [history1, history2, history3, history4]
+
+        # test username eq filter (inequality)
+        filters = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user"),
+            ]
+        )
+
+        assert self.history_manager.list(filters=filters) == []
+
+        # test annotation filter
         filters = self.filter_parser.parse_filters(
             [
                 ("annotation", "has", "no play"),
@@ -799,8 +851,7 @@ class TestHistoryFilters(BaseTestCase):
 
         history3.add_item_annotation(self.trans.sa_session, user2, history3, "All work and no play")
         session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         assert anno_filter(history3)
         assert not anno_filter(history2)
@@ -811,9 +862,7 @@ class TestHistoryFilters(BaseTestCase):
         self.history_manager.update(history3, dict(importable=True))
         self.history_manager.update(history2, dict(importable=True))
         history1.add_item_annotation(self.trans.sa_session, user2, history1, "All work and no play")
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        session.commit()
 
         shining_examples = self.history_manager.list(
             filters=self.filter_parser.parse_filters(
@@ -866,18 +915,13 @@ class TestHistoryFilters(BaseTestCase):
         self.history_manager.delete(history3)
 
         test_annotation = "testing"
-        history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
         session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
-        history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
-        history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
-        session = self.trans.sa_session
-        with transaction(session):
-            session.commit()
+        history2.add_item_annotation(session, user2, history2, test_annotation)
+        session.commit()
+        history3.add_item_annotation(session, user2, history3, test_annotation)
+        session.commit()
+        history3.add_item_annotation(session, user2, history4, test_annotation)
+        session.commit()
 
         all_histories = [history1, history2, history3, history4]
         deleted_and_annotated = [history2, history3]

@@ -1,0 +1,58 @@
+<!-- functional tool test for the dataset_metadata_equal validator -->
+<tool id="metadata_check_eq" name="metadata_check_eq" version="1.0.0" profile="23.1">
+    <description>Tests whether asserting metadata equals something works.</description>
+    <command><![CDATA[
+        #if $input or $input_negate
+            echo "sucess" >> '$output' &&
+        #end if
+        #if $input
+            echo "columns $input.metadata.columns" >> '$output' &&
+            echo "column_names $input.metadata.column_names" >> '$output'
+        #else 
+            echo "columns $input_negate.metadata.columns" >> '$output' &&
+            echo "column_names $input_negate.metadata.column_names" >> '$output'
+        #end if
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" optional="true" multiple="false" format="tabular,csv">
+            <validator type="dataset_metadata_equal" metadata_name="columns" value_json="12" />
+            <validator type="dataset_metadata_equal" metadata_name="column_names" value_json="[&quot;Transaction_date&quot; ,&quot;Product&quot;, &quot;Price&quot;, &quot;Payment_Type&quot;, &quot;Name&quot;, &quot;City&quot;, &quot;State&quot;, &quot;Country&quot;, &quot;Account_Created&quot;, &quot;Last_Login&quot;, &quot;Latitude&quot;, &quot;Longitude&quot;]" />
+        </param>
+        <param name="input_negate" type="data" optional="true" multiple="false" format="tabular,csv">
+            <validator type="dataset_metadata_equal" metadata_name="columns" negate="true"  value_json="12"/>
+            <validator type="dataset_metadata_equal" metadata_name="column_names" negate="true" value_json="[&quot;Transaction_date&quot; ,&quot;Product&quot;, &quot;Price&quot;, &quot;Payment_Type&quot;, &quot;Name&quot;, &quot;City&quot;, &quot;State&quot;, &quot;Country&quot;, &quot;Account_Created&quot;, &quot;Last_Login&quot;, &quot;Latitude&quot;, &quot;Longitude&quot;]" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test expect_failure="true">
+            <param name="input" value="1.tabular" ftype="tabular" />
+        </test>
+        <test>
+            <param name="input" value="1.csv" ftype="csv" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sucess"/>
+                    <has_text text="columns 12"/>
+                    <has_text text="Transaction_date"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="input_negate" value="1.tabular" ftype="tabular" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="sucess"/>
+                    <has_text text="columns 3"/>
+                    <!-- tabular has no column names -->
+                    <has_text text="Transaction_date" negate="true"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="input_negate" value="1.csv" ftype="csv" />
+        </test>
+    </tests>
+</tool>

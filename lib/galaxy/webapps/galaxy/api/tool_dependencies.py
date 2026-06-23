@@ -1,6 +1,7 @@
 """
 API operations allowing clients to manage tool dependencies.
 """
+
 import logging
 from typing import Optional
 

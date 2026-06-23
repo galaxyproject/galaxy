@@ -7,7 +7,8 @@
 </template>
 
 <script>
-import { withPrefix } from "utils/redirect";
+import { withPrefix } from "@/utils/redirect";
+
 export default {
     props: {
         page: {
@@ -31,7 +32,7 @@ export default {
             if (content) {
                 const vDom = document.createElement("div");
                 vDom.innerHTML = content;
-                const children = vDom.children;
+                const children = Array.from(vDom.children);
                 children.forEach((child) => {
                     if (child.classList.contains("embedded-item")) {
                         const splitId = child.id.split("-");

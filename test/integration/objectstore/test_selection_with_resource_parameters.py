@@ -3,6 +3,8 @@
 import os
 import string
 
+from sqlalchemy import select
+
 from galaxy.model import Dataset
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -17,8 +19,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_conf.xml")
 JOB_RESOURCE_PARAMETERS_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "selection_job_resource_parameters_conf.xml")
 
-DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
-    """<?xml version="1.0"?>
+DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template("""<?xml version="1.0"?>
 <object_store type="distributed" id="primary" order="0">
     <backends>
         <backend id="default" type="disk" weight="1" name="Default Store">
@@ -46,8 +47,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
         </backend>
     </backends>
 </object_store>
-"""
-)
+""")
 
 
 class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIntegrationTestCase):
@@ -87,7 +87,7 @@ class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIn
 
     def _assert_no_external_filename(self):
         # Should maybe be its own test case ...
-        for external_filename_tuple in self._app.model.session.query(Dataset.external_filename).all():
+        for external_filename_tuple in self._app.model.session.execute(select(Dataset.external_filename)).all():
             assert external_filename_tuple[0] is None
 
     def test_objectstore_selection(self):
@@ -181,5 +181,7 @@ class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIn
 
     @property
     def _latest_dataset(self):
-        latest_dataset = self._app.model.session.query(Dataset).order_by(Dataset.table.c.id.desc()).first()
+        latest_dataset = self._app.model.session.scalars(
+            select(Dataset).order_by(Dataset.table.c.id.desc()).limit(1)
+        ).first()
         return latest_dataset

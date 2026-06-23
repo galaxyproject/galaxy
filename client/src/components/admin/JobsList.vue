@@ -8,18 +8,21 @@
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
         <p>
-            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
-            completed jobs (in 'error' or 'ok' states).
+            Unfinished jobs (in the 'new', 'queued', 'running', or 'waiting' states) and finished jobs (in 'error' or
+            'ok' states) are displayed below.
         </p>
         <p>
-            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
-            will be displayed to the user as: "This job was stopped by an administrator:
+            You may choose to stop some of the unfinished jobs and provide the user with a message. Your stop message
+            will be displayed to the user as:
+        </p>
+        <p>
+            "This job was stopped by an administrator:
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
+                <b-form-group>
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
@@ -35,8 +38,66 @@
                         </b-input-group>
                     </b-form-group>
                 </b-form>
-                <b-form-group description="Use strings or regular expressions to search jobs.">
-                    <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
+                <b-form-group>
+                    <FilterMenu
+                        id="job-search"
+                        name="jobs"
+                        placeholder="search jobs"
+                        :filter-class="filterClass"
+                        :filter-text.sync="filter"
+                        has-help
+                        :loading="busy"
+                        :show-advanced.sync="showAdvanced">
+                        <template v-slot:menu-help-text>
+                            <div>
+                                <p>This textbox box can be used to filter the jobs displayed.</p>
+
+                                <p>
+                                    Text entered here will be searched against job user, tool ID, job runner, and
+                                    handler. Additionally, advanced filtering tags can be used to refine the search more
+                                    precisely. Tags are of the form
+                                    <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
+                                    <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to search just for
+                                    jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
+                                    Notice by default the search is not case-sensitive.
+                                </p>
+
+                                <p>
+                                    If the quoted version of tag is used, the search is case sensitive and only full
+                                    matches will be returned. So <code>tool:'cat1'</code> would show only jobs from the
+                                    <code>cat1</code> tool exactly.
+                                </p>
+
+                                <p>The available tags are:</p>
+                                <dl>
+                                    <dt><code>user</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed by matching user(s).
+                                        You may also just click on a user in the list of jobs to filter on that exact
+                                        user using this directly.
+                                    </dd>
+                                    <dt><code>handler</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed on matching handler(s).
+                                        You may also just click on a handler in the list of jobs to filter on that exact
+                                        user using this directly.
+                                    </dd>
+                                    <dt><code>runner</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs executed on matching job
+                                        runner(s). You may also just click on a runner in the list of jobs to filter on
+                                        that exact user using this directly.
+                                    </dd>
+                                    <dt><code>tool</code></dt>
+                                    <dd>
+                                        This filters the job index to contain only jobs from the matching tool(s). You
+                                        may also just click on a tool in the list of jobs to filter on that exact user
+                                        using this directly.
+                                    </dd>
+                                </dl>
+                            </div>
+                        </template>
+                    </FilterMenu>
                 </b-form-group>
             </b-col>
         </b-row>
@@ -51,6 +112,12 @@
                         </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
+                <b-form-group
+                    description="Only one notification will be sent for each user containing the reason and the list of affected jobs.">
+                    <b-form-checkbox id="send-notification" v-model="sendNotification" switch>
+                        Send a warning notification to users
+                    </b-form-checkbox>
+                </b-form-group>
             </b-form>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
@@ -61,7 +128,11 @@
             :table-caption="runningTableCaption"
             :no-items-message="runningNoJobsMessage"
             :loading="loading"
-            :busy="busy">
+            :busy="busy"
+            @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
+            @runner-clicked="(runner) => appendTagFilter('runner', runner)"
+            @handler-clicked="(handler) => appendTagFilter('handler', handler)"
+            @user-clicked="(user) => appendTagFilter('user', user)">
             <template v-slot:head(selected)>
                 <b-form-checkbox
                     v-model="allSelected"
@@ -96,51 +167,50 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import JobsTable from "components/admin/JobsTable";
-import JobLock from "./JobLock";
-import JOB_STATES_MODEL from "utils/job-states-model";
+import { ref } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { deleteJob, NON_TERMINAL_STATES } from "@/api/jobs";
+import { jobsProvider } from "@/components/providers/JobProvider";
+import { getAppRoot } from "@/onload/loadConfig";
+import Filtering, { contains } from "@/utils/filtering";
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import { commonJobFields } from "./JobFields";
-import { errorMessageAsString } from "utils/simple-error";
-import { jobsProvider } from "components/providers/JobProvider";
-import Heading from "components/Common/Heading";
-import filtersMixin from "components/Indices/filtersMixin";
 
-function cancelJob(jobId, message) {
-    const url = `${getAppRoot()}api/jobs/${jobId}`;
-    return axios.delete(url, { data: { message: message } });
-}
-
-const helpHtml = `<div>
-<p>This textbox box can be used to filter the jobs displayed.
-
-<p>Text entered here will be searched against job user, tool ID, job runner, and handler. Additionally,
-advanced filtering tags can be used to refine the search more precisely. Tags are of the form
-<code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>.
-For instance to search just for jobs with <code>cat1</code> in the tool name, <code>tool:cat1</code> can be used.
-Notice by default the search is not case-sensitive.
-
-<p>If the quoted version of tag is used, the search is case sensitive and only full matches will be
-returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</code> tool exactly.</p>
-
-<p>The available tags are:
-<dl>
-    <dt><code>user</code></dt>
-    <dd>This filters the job index to contain only jobs executed by matching user(s). You may also just click on a user in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>handler</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching handler(s).  You may also just click on a handler in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>runner</code></dt>
-    <dd>This filters the job index to contain only jobs executed on matching job runner(s).  You may also just click on a runner in the list of jobs to filter on that exact user using this directly.</dd>
-    <dt><code>tool</code></dt>
-    <dd>This filters the job index to contain only jobs from the matching tool(s).  You may also just click on a tool in the list of jobs to filter on that exact user using this directly.</dd>
-</dl>
-</div>
-`;
+import JobLock from "./JobLock.vue";
+import JobsTable from "@/components/admin/JobsTable.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 export default {
-    components: { JobLock, JobsTable, Heading },
-    mixins: [filtersMixin],
+    components: { FilterMenu, JobLock, JobsTable, Heading },
+    setup() {
+        const filter = ref("");
+        const showAdvanced = ref(false);
+
+        const filterClass = new Filtering(
+            {
+                user: { placeholder: "user email", type: String, handler: contains("user"), menuItem: true },
+                handler: { placeholder: "handler", type: String, handler: contains("handler"), menuItem: true },
+                runner: { placeholder: "job runner", type: String, handler: contains("runner"), menuItem: true },
+                tool: { placeholder: "tool id", type: String, handler: contains("tool"), menuItem: true },
+            },
+            undefined,
+            false,
+        );
+
+        function appendTagFilter(filterName, filterVal) {
+            filter.value = filterClass.setFilterValue(filter.value, filterName, `'${filterVal}'`);
+        }
+
+        return {
+            appendTagFilter,
+            filter,
+            filterClass,
+            showAdvanced,
+        };
+    },
     data() {
         return {
             jobs: [],
@@ -165,7 +235,7 @@ export default {
             cutoffMin: 5,
             showAllRunning: false,
             titleSearch: `search jobs`,
-            helpHtml: helpHtml,
+            sendNotification: false,
         };
     },
     computed: {
@@ -173,7 +243,12 @@ export default {
             return `These jobs have completed in the previous ${this.cutoffMin} minutes.`;
         },
         runningTableCaption() {
-            return `These jobs are unfinished and have had their state updated in the previous ${this.cutoffMin} minutes. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+            let message = `These jobs are unfinished`;
+            if (!this.showAllRunning) {
+                message += ` and have had their state updated in the previous ${this.cutoffMin} minutes`;
+            }
+            message += `. For currently running jobs, the "Last Update" column should indicate the runtime so far.`;
+            return message;
         },
         finishedNoJobsMessage() {
             return `There are no recently finished jobs to show with current cutoff time of ${this.cutoffMin} minutes.`;
@@ -210,7 +285,7 @@ export default {
             const unfinishedJobs = [];
             const finishedJobs = [];
             newVal.forEach((item) => {
-                if (JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(item.state)) {
+                if (NON_TERMINAL_STATES.includes(item.state)) {
                     unfinishedJobs.push(item);
                 } else {
                     finishedJobs.push(item);
@@ -228,7 +303,7 @@ export default {
             this.busy = true;
             const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.state = "running";
+                params.state = NON_TERMINAL_STATES;
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
@@ -256,12 +331,72 @@ export default {
         onRefresh() {
             this.update();
         },
-        onStopJobs() {
-            axios.all(this.selectedStopJobIds.map((jobId) => cancelJob(jobId, this.stopMessage))).then((res) => {
-                this.update();
-                this.selectedStopJobIds = [];
-                this.stopMessage = "";
-            });
+        async sendNotificationToUsers() {
+            const cancelReason = this.stopMessage || "No reason provided";
+            const jobsToCancel = this.unfinishedJobs.filter((job) => this.selectedStopJobIds.includes(job.id));
+            // Group jobs by user
+            const userJobsMap = jobsToCancel.reduce((acc, job) => {
+                if (job.user_id) {
+                    if (!acc[job.user_id]) {
+                        acc[job.user_id] = [];
+                    }
+                    acc[job.user_id].push(job);
+                }
+                return acc;
+            }, {});
+            const userIds = Object.keys(userJobsMap);
+            const totalUsers = userIds.length;
+            let numSuccess = 0;
+            const errors = [];
+            for (const userId of userIds) {
+                const jobs = userJobsMap[userId];
+                const notificationMessage = `The following jobs (${jobs
+                    .map((job) => `**[${job.tool_id || job.id}](${this.getJobViewLink(job.id)})**`)
+                    .join(", ")}) were cancelled by an administrator. Reason: **${cancelReason}**.`;
+
+                const { error } = await GalaxyApi().POST("/api/notifications", {
+                    body: {
+                        notification: {
+                            source: "admin",
+                            variant: "warning",
+                            category: "message",
+                            content: {
+                                category: "message",
+                                subject: "Jobs Cancelled by Admin",
+                                message: notificationMessage,
+                            },
+                        },
+                        recipients: {
+                            user_ids: [userId],
+                        },
+                    },
+                });
+                if (error) {
+                    errors.push(error);
+                } else {
+                    numSuccess++;
+                }
+            }
+
+            if (errors.length) {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users. ${errors.length} errors occurred.`;
+                this.status = "warning";
+            } else {
+                this.message = `Notification sent to ${numSuccess} out of ${totalUsers} users.`;
+                this.status = "success";
+            }
+        },
+        getJobViewLink(jobId) {
+            return `${getAppRoot()}jobs/${jobId}/view`;
+        },
+        async onStopJobs() {
+            await Promise.all(this.selectedStopJobIds.map((jobId) => deleteJob(jobId, this.stopMessage)));
+            if (this.sendNotification) {
+                this.sendNotificationToUsers();
+            }
+            this.update();
+            this.selectedStopJobIds = [];
+            this.stopMessage = "";
         },
         toggleAll(checked) {
             this.selectedStopJobIds = checked ? this.jobsItemsModel.reduce((acc, j) => [...acc, j["id"]], []) : [];

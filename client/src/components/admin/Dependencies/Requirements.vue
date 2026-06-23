@@ -4,12 +4,12 @@
             <i>no requirements defined</i>
         </span>
         <div v-for="(requirement, index) in requirements" v-else :key="index">
-            <requirement :requirement="requirement" />
+            <Requirement :requirement="requirement" />
         </div>
     </span>
 </template>
 <script>
-import Requirement from "./Requirement";
+import Requirement from "./Requirement.vue";
 
 export default {
     components: { Requirement },

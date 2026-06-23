@@ -1,48 +1,53 @@
 <script setup lang="ts">
-import { BButton, VBTooltip } from "bootstrap-vue";
+import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faShareAlt, faGlobe, faLink } from "@fortawesome/free-solid-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-
-library.add(faGlobe, faShareAlt, faLink);
+import { BButton } from "bootstrap-vue";
 
 interface SharingIndicatorsProps {
-    object: Object;
+    object: {
+        deleted?: boolean;
+        importable?: boolean;
+        published?: boolean;
+        purged?: boolean;
+        shared?: boolean;
+    };
 }
 const props = defineProps<SharingIndicatorsProps>();
 </script>
 
 <template>
-    <span>
-        <b-button
+    <span v-if="props.object.purged" v-localize> Purged </span>
+    <span v-else-if="props.object.deleted" v-localize> Deleted </span>
+    <span v-else>
+        <BButton
             v-if="props.object.published"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="sharing-indicator-published"
             size="sm"
             variant="link"
-            :title="'Find all published items' | localize"
-            @click.prevent="$emit('filter', 'is:published')">
-            <font-awesome-icon icon="globe" />
-        </b-button>
-        <b-button
+            title="Find all published items"
+            @click.prevent="$emit('filter', 'published')">
+            <FontAwesomeIcon :icon="faGlobe" />
+        </BButton>
+        <BButton
             v-if="props.object.importable"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="sharing-indicator-importable"
             size="sm"
             variant="link"
-            :title="'Find all importable items' | localize"
-            @click.prevent="$emit('filter', 'is:importable')">
-            <font-awesome-icon icon="link" />
-        </b-button>
-        <b-button
+            title="Find all importable items"
+            @click.prevent="$emit('filter', 'importable')">
+            <FontAwesomeIcon :icon="faLink" />
+        </BButton>
+        <BButton
             v-if="props.object.shared"
-            v-b-tooltip.hover
+            v-g-tooltip.hover
             class="sharing-indicator-shared"
             size="sm"
             variant="link"
-            :title="'Find all items shared with me' | localize"
-            @click.prevent="$emit('filter', 'is:shared_with_me')">
-            <font-awesome-icon icon="share-alt" />
-        </b-button>
+            title="Find all items shared with me"
+            @click.prevent="$emit('filter', 'shared_with_me')">
+            <FontAwesomeIcon :icon="faShareAlt" />
+        </BButton>
     </span>
 </template>

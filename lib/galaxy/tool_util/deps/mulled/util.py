@@ -9,6 +9,7 @@ import sys
 import threading
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -18,17 +19,21 @@ from typing import (
     Union,
 )
 
-import requests
 from conda_package_streaming.package_streaming import stream_conda_info
 from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 from packaging.version import Version
 from requests import Session
 
-from galaxy.tool_util.deps.conda_util import CondaTarget
+from galaxy.tool_util.deps.conda_util import (
+    CondaContext,
+    CondaTarget,
+)
+from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.tool_util.version import (
     LegacyVersion,
     parse_version,
 )
+from galaxy.util import requests
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
@@ -41,6 +46,7 @@ MULLED_SOCKET_TIMEOUT = 12
 QUAY_VERSIONS_CACHE_EXPIRY = 300
 NAMESPACE_HAS_REPO_NAME_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:namespace_repo_names"
 TAG_CACHE_KEY = "galaxy.tool_util.deps.container_resolvers.mulled.util:tag_cache"
+CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:latest")
 
 
 class PARSED_TAG(NamedTuple):
@@ -57,6 +63,36 @@ def default_mulled_conda_channels_from_env() -> Optional[List[str]]:
         return None
 
 
+DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "bioconda"]
+
+
+class CondaInDockerContext(CondaContext):
+    def __init__(
+        self,
+        conda_prefix: Optional[str] = None,
+        conda_exec: Optional[Union[str, List[str]]] = None,
+        shell_exec: Optional[Callable[..., int]] = None,
+        debug: bool = False,
+        ensure_channels: Union[str, List[str]] = DEFAULT_CHANNELS,
+        condarc_override: Optional[str] = None,
+    ):
+        if not conda_exec:
+            binds = []
+            for channel in ensure_channels:
+                if channel.startswith("file://"):
+                    bind_path = channel[7:]
+                    binds.extend(["-v", f"{bind_path}:{bind_path}"])
+            conda_exec = docker_command_list("run", binds + [CONDA_IMAGE, "conda"])
+        super().__init__(
+            conda_prefix=conda_prefix,
+            conda_exec=conda_exec,
+            shell_exec=shell_exec,
+            debug=debug,
+            ensure_channels=ensure_channels,
+            condarc_override=condarc_override,
+        )
+
+
 def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
     assert oauth_token
     headers = {"Authorization": f"Bearer {oauth_token}"}
@@ -66,7 +102,8 @@ def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
         "description": "",
         "visibility": "public",
     }
-    requests.post("https://quay.io/api/v1/repository", json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
+    response = requests.post(QUAY_REPOSITORY_API_ENDPOINT, json=data, headers=headers, timeout=MULLED_SOCKET_TIMEOUT)
+    response.raise_for_status()
 
 
 def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = None) -> List[str]:
@@ -85,10 +122,11 @@ def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = No
 def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = None) -> Dict[str, Any]:
     assert namespace is not None
     assert pkg_name is not None
-    url = f"https://quay.io/api/v1/repository/{namespace}/{pkg_name}"
+    url = f"{QUAY_REPOSITORY_API_ENDPOINT}/{namespace}/{pkg_name}"
     if not session:
-        session = requests.session()
+        session = requests.Session()
     response = session.get(url, timeout=MULLED_SOCKET_TIMEOUT)
+    response.raise_for_status()
     data = response.json()
     return data
 
@@ -103,6 +141,7 @@ def _get_namespace(namespace: str) -> List[str]:
         repos_response = requests.get(
             QUAY_REPOSITORY_API_ENDPOINT, headers=repos_headers, params=repos_parameters, timeout=MULLED_SOCKET_TIMEOUT
         )
+        repos_response.raise_for_status()
         repos_response_json = repos_response.json()
         repos = repos_response_json["repositories"]
         repo_names += [r["name"] for r in repos]
@@ -335,7 +374,11 @@ def v2_image_name(
     >>> multi_targets_versionless = [build_target("samtools"), build_target("bwa")]
     >>> v2_image_name(multi_targets_versionless)
     'mulled-v2-fe8faa35dbf6dc65a0f7f5d4ea12e31a79f73e40'
+    >>> targets_version_with_build = [build_target("samtools", version="1.3.1", build="h9071d68_10"), build_target("bedtools", version="2.26.0", build="0")]
+    >>> v2_image_name(targets_version_with_build)
+    'mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619'
     """
+
     if name_override is not None:
         print(
             "WARNING: Overriding mulled image name, auto-detection of 'mulled' package attributes will fail to detect result."
@@ -347,14 +390,14 @@ def v2_image_name(
         return _simple_image_name(targets, image_build=image_build)
     else:
         targets_order = sorted(targets, key=lambda t: t.package)
-        package_name_buffer = "\n".join(map(lambda t: t.package, targets_order))
+        package_name_buffer = "\n".join(t.package for t in targets_order)
         package_hash = hashlib.sha1()
         package_hash.update(package_name_buffer.encode())
 
-        versions = map(lambda t: t.version, targets_order)
+        versions = (t.version for t in targets_order)
         if any(versions):
             # Only hash versions if at least one package has versions...
-            version_name_buffer = "\n".join(map(lambda t: t.version or "null", targets_order))
+            version_name_buffer = "\n".join(t.version or "null" for t in targets_order)
             version_hash = hashlib.sha1()
             version_hash.update(version_name_buffer.encode())
             version_hash_str = version_hash.hexdigest()
@@ -436,7 +479,10 @@ image_name = v1_image_name  # deprecated
 
 __all__ = (
     "build_target",
+    "CONDA_IMAGE",
     "conda_build_target_str",
+    "CondaInDockerContext",
+    "DEFAULT_CHANNELS",
     "get_files_from_conda_package",
     "image_name",
     "mulled_tags_for",

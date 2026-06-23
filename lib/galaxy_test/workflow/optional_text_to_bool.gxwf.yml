@@ -1,0 +1,29 @@
+class: GalaxyWorkflow
+doc: |
+  Test that an omitted optional text parameter connected to an expression
+  tool (text→boolean conversion, like map_param_value) produces false,
+  allowing conditional (when) steps to be correctly skipped.
+  Regression test for https://github.com/galaxyproject/iwc/pull/1128
+inputs:
+  required_input:
+    type: data
+  optional_text:
+    type: text
+    optional: true
+outputs:
+  out:
+    outputSource: cat/out_file1
+steps:
+  text_to_bool:
+    tool_id: expression_text_to_bool
+    in:
+      text_input:
+        source: optional_text
+  cat:
+    tool_id: cat
+    in:
+      input1:
+        source: required_input
+      when:
+        source: text_to_bool/bool_out
+    when: $(inputs.when)

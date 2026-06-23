@@ -15,6 +15,7 @@ from galaxy.util import (
     ElementTree,
     parse_xml_string_to_etree,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.yaml_util import ordered_load
 from .cwl import (
     CwlToolSource,
@@ -38,7 +39,12 @@ log = logging.getLogger(__name__)
 
 
 def build_xml_tool_source(xml_string: str) -> XmlToolSource:
-    return XmlToolSource(parse_xml_string_to_etree(xml_string))
+    # Preserve significant whitespace (e.g. a leading space in a <validator> regex such as
+    # " *(\\d+, *)*\\d+ *$") to match how tools are parsed from a file (xml_macros.load uses
+    # strip_whitespace=False). Stripping it here corrupts such regexes when a tool is
+    # re-parsed from its stored raw source (async tool requests), which then raised a 500
+    # while statically validating the request.
+    return XmlToolSource(parse_xml_string_to_etree(xml_string, strip_whitespace=False))
 
 
 def build_cwl_tool_source(yaml_string: str) -> CwlToolSource:
@@ -59,7 +65,7 @@ TOOL_SOURCE_FACTORIES: Dict[str, Callable[[str], ToolSource]] = {
 
 
 def get_tool_source(
-    config_file: Optional[str] = None,
+    config_file: Optional[StrPath] = None,
     xml_tree: Optional[ElementTree] = None,
     enable_beta_formats: bool = True,
     tool_location_fetcher: Optional[ToolLocationFetcher] = None,
@@ -85,7 +91,8 @@ def get_tool_source(
         tool_location_fetcher = ToolLocationFetcher()
 
     assert config_file
-    config_file = tool_location_fetcher.to_tool_path(config_file)
+
+    config_file = str(tool_location_fetcher.to_tool_path(config_file))
     if not enable_beta_formats:
         tree, macro_paths = load_tool_with_refereces(config_file)
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
@@ -105,28 +112,22 @@ def get_tool_source(
         return XmlToolSource(tree, source_path=config_file, macro_paths=macro_paths)
 
 
-def get_tool_source_from_representation(tool_format, tool_representation):
-    # TODO: make sure whatever is consuming this method uses ordered load.
-    log.info("Loading dynamic tool - this is experimental - tool may not function in future.")
-    if tool_format == "GalaxyTool":
-        if "version" not in tool_representation:
-            tool_representation["version"] = "1.0.0"  # Don't require version for embedded tools.
-        return YamlToolSource(tool_representation)
-    else:
-        raise Exception(f"Unknown tool representation format [{tool_format}].")
-
-
-def get_input_source(content):
+def get_input_source(content, trusted: bool = True):
     """Wrap dicts or XML elements as InputSource if needed.
 
     If the supplied content is already an InputSource object,
     it is simply returned. This allow Galaxy to uniformly
     consume using the tool input source interface.
+
+    Setting trusted to false indicates that no dynamic code should be
+    executed - no eval. This should be used for user-defined tools (in
+    the future) and for workflow inputs.
     """
     if not isinstance(content, InputSource):
         if isinstance(content, dict):
-            content = YamlInputSource(content)
+            content = YamlInputSource(content, trusted=trusted)
         else:
+            assert trusted  # trust is not implemented for XML inputs
             content = XmlInputSource(content)
     return content
 

@@ -30,7 +30,6 @@ class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
         cls.temp_tool_data_dir = cls.temp_config_dir("tool-data")
         cls.temp_tool_data_tables_file = os.path.join(cls.temp_tool_data_dir, "sample_tool_data_tables.xml")
         shutil.copytree(SOURCE_TOOL_DATA_DIRECTORY, cls.temp_tool_data_dir)
-        cls._test_driver.temp_directories.append(cls.temp_tool_data_dir)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

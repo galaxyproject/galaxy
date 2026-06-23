@@ -1,57 +1,126 @@
-<script setup>
-import { computed } from "vue";
-import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
-import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+<script setup lang="ts">
 import {
+    faCheckCircle,
+    faDownload,
     faExclamationCircle,
     faExclamationTriangle,
-    faCheckCircle,
-    faClock,
+    faFileImport,
+    faHourglassEnd,
     faLink,
+    faSpinner,
 } from "@fortawesome/free-solid-svg-icons";
-import { ExportRecordModel } from "./models/exportRecordModel";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert } from "bootstrap-vue";
+import { computed } from "vue";
 
-library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
+import type { ColorVariant } from "@/components/Common";
+import type { CardAction, CardBadge } from "@/components/Common/GCard.types";
+import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 
-const props = defineProps({
-    record: {
-        type: ExportRecordModel,
-        required: true,
-    },
-    objectType: {
-        type: String,
-        required: true,
-    },
-    actionMessage: {
-        type: String,
-        default: null,
-    },
-    actionMessageVariant: {
-        type: String,
-        default: "info",
-    },
+import GCard from "@/components/Common/GCard.vue";
+import Heading from "@/components/Common/Heading.vue";
+
+interface Props {
+    record: ExportRecord;
+    objectType: string;
+    actionMessage?: string;
+    actionMessageVariant?: ColorVariant;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    actionMessage: undefined,
+    actionMessageVariant: "info",
 });
 
-const emit = defineEmits(["onReimport", "onDownload", "onCopyDownloadLink", "onActionMessageDismissed"]);
+const emit = defineEmits<{
+    (e: "onActionMessageDismissed"): void;
+    (e: "onReimport", record: ExportRecord): void;
+    (e: "onDownload", record: ExportRecord): void;
+    (e: "onCopyDownloadLink", record: ExportRecord): void;
+}>();
 
-const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
-const preparingMessage = computed(
-    () => `Preparing export. This may take some time depending on the size of your ${props.objectType}`
-);
+const primaryActions = computed<CardAction[]>(() => {
+    const actions: CardAction[] = [];
 
-async function reimportObject() {
-    emit("onReimport", props.record);
-}
+    if (props.record.canDownload) {
+        actions.push({
+            id: "copy-download-link",
+            label: "Copy Link",
+            icon: faLink,
+            title: "Copy the download link to clipboard",
+            variant: "outline-primary",
+            handler: () => emit("onCopyDownloadLink", props.record),
+        });
+        actions.push({
+            id: "download",
+            label: "Download",
+            icon: faDownload,
+            title: "Download the result",
+            variant: "primary",
+            handler: () => emit("onDownload", props.record),
+        });
+    }
 
-function downloadObject() {
-    emit("onDownload", props.record);
-}
+    if (props.record.canReimport) {
+        actions.push({
+            id: "reimport",
+            label: "Reimport",
+            icon: faFileImport,
+            title: `Reimport the ${props.objectType} from this export record`,
+            variant: "primary",
+            handler: () => emit("onReimport", props.record),
+        });
+    }
 
-function copyDownloadLink() {
-    emit("onCopyDownloadLink", props.record);
-}
+    return actions;
+});
+
+const badges = computed<CardBadge[]>(() => {
+    const badges: CardBadge[] = [];
+    if (props.record.isPreparing) {
+        badges.push({
+            id: "in-progress",
+            title: `${props.objectType} is being prepared for download`,
+            label: "In Progress",
+            variant: "info",
+        });
+    }
+    if (props.record.canDownload) {
+        badges.push({
+            id: "ready-to-download",
+            title: `${props.objectType} is ready to download`,
+            label: "Ready to Download",
+            variant: "success",
+        });
+    }
+    if (props.record.hasFailed) {
+        badges.push({
+            id: "failed",
+            title: `Failed to prepare ${props.objectType} for download`,
+            label: "Failed",
+            variant: "danger",
+        });
+    } else if (props.record.canExpire) {
+        if (props.record.hasExpired) {
+            badges.push({
+                id: "expired",
+                title: `The ${props.objectType} has expired and can no longer be downloaded. Please generate a new export.`,
+                label: "Expired",
+                variant: "warning",
+                icon: faHourglassEnd,
+            });
+        } else {
+            badges.push({
+                id: "expires-soon",
+                label: `Expires ${props.record.expirationElapsedTime}`,
+                title: `The ${props.objectType} was exported ${props.record.elapsedTime} and this download link will expire in ${props.record.expirationElapsedTime}`,
+                variant: "warning",
+                icon: faHourglassEnd,
+            });
+        }
+    }
+    return badges;
+});
 
 function onMessageDismissed() {
     emit("onActionMessageDismissed");
@@ -59,87 +128,68 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <b-card class="export-record-details">
-        <b-card-title>
-            <b>{{ title }}</b> {{ props.record.elapsedTime }}
-        </b-card-title>
-        <p v-if="!props.record.isPreparing">
-            Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
-        </p>
-        <span v-if="props.record.isPreparing">
-            <loading-span :message="preparingMessage" />
-        </span>
-        <div v-else>
-            <div v-if="props.record.hasFailed">
-                <font-awesome-icon
-                    icon="exclamation-circle"
+    <GCard id="latest-export-record" class="export-record-details" :primary-actions="primaryActions" :badges="badges">
+        <template v-slot:title>
+            <Heading h3 size="sm">
+                <span v-if="props.record.isPreparing">
+                    <FontAwesomeIcon :icon="faSpinner" spin class="mr-1" />
+                    Preparing {{ props.objectType }} for download...
+                </span>
+                <span v-else>
+                    This {{ props.objectType }} was exported <b>{{ props.record.elapsedTime }}</b>
+                </span>
+            </Heading>
+        </template>
+        <template v-slot:description>
+            <span v-if="props.record.hasFailed">
+                <FontAwesomeIcon
+                    :icon="faExclamationCircle"
                     class="text-danger record-failed-icon"
                     title="Export failed" />
+
                 <span>
-                    Something failed during this export. Please try again and if the problem persist contact your
+                    Something failed during the export process. Please try again and if the problem persist contact your
                     administrator.
                 </span>
-                <b-alert show variant="danger">{{ props.record.errorMessage }}</b-alert>
-            </div>
-            <div v-else-if="props.record.isUpToDate" title="Up to date">
-                <font-awesome-icon icon="check-circle" class="text-success record-up-to-date-icon" />
-                <span> This export record contains the latest changes of the {{ props.objectType }}. </span>
-            </div>
-            <div v-else>
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning record-outdated-icon" />
+
+                <BAlert :show="props.record.errorMessage" variant="danger">{{ props.record.errorMessage }}</BAlert>
+            </span>
+            <span v-if="props.record.isUpToDate" title="Up to date">
+                <FontAwesomeIcon :icon="faCheckCircle" class="text-success record-up-to-date-icon" />
+                <span>
+                    This export record contains the latest changes of the {{ props.objectType }} in
+                    <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b> format.
+                </span>
+            </span>
+            <span v-else>
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-warning record-outdated-icon" />
                 <span>
                     This export is outdated and contains the changes of this {{ props.objectType }} from
                     {{ props.record.elapsedTime }}.
                 </span>
-            </div>
+            </span>
 
-            <p v-if="props.record.canExpire" class="mt-3">
+            <span v-if="props.record.canExpire" class="mt-3">
                 <span v-if="props.record.hasExpired">
-                    <font-awesome-icon icon="clock" class="text-danger record-expired-icon" /> This download link has
-                    expired.
+                    <FontAwesomeIcon :icon="faHourglassEnd" class="text-danger record-expired-icon" />
+                    This download link has expired, and the result is no longer available. You can generate a new export
+                    before downloading it again.
                 </span>
                 <span v-else>
-                    <font-awesome-icon icon="clock" class="text-warning record-expiration-warning-icon" /> This download
-                    link expires {{ props.record.expirationElapsedTime }}.
+                    <FontAwesomeIcon :icon="faHourglassEnd" class="text-warning record-expiration-warning-icon" />
+                    This download link expires {{ props.record.expirationElapsedTime }}.
                 </span>
-            </p>
+            </span>
 
-            <div v-if="props.record.isReady">
-                <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
-                <b-alert
-                    v-if="props.actionMessage !== null"
-                    :variant="props.actionMessageVariant"
-                    show
-                    fade
-                    dismissible
-                    @dismissed="onMessageDismissed">
-                    {{ props.actionMessage }}
-                </b-alert>
-                <div v-else class="actions">
-                    <b-button
-                        v-if="props.record.canDownload"
-                        class="record-download-btn"
-                        variant="primary"
-                        @click="downloadObject">
-                        Download
-                    </b-button>
-                    <b-button
-                        v-if="props.record.canDownload"
-                        title="Copy Download Link"
-                        size="sm"
-                        variant="link"
-                        @click.stop="copyDownloadLink">
-                        <font-awesome-icon icon="link" />
-                    </b-button>
-                    <b-button
-                        v-if="props.record.canReimport"
-                        class="record-reimport-btn"
-                        variant="primary"
-                        @click="reimportObject">
-                        Reimport
-                    </b-button>
-                </div>
-            </div>
-        </div>
-    </b-card>
+            <BAlert
+                v-if="props.actionMessage !== undefined"
+                :variant="props.actionMessageVariant"
+                show
+                fade
+                dismissible
+                @dismissed="onMessageDismissed">
+                {{ props.actionMessage }}
+            </BAlert>
+        </template>
+    </GCard>
 </template>

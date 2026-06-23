@@ -1,8 +1,9 @@
 <template>
     <div>
         <div v-for="(elVal, pvIndex) in parameter_value" :key="pvIndex">
-            <generic-history-item
-                v-if="['hda', 'hdca', 'dce'].includes(elVal.src)"
+            <span v-if="elVal === null">No input provided</span>
+            <GenericHistoryItem
+                v-else-if="['hda', 'hdca', 'dce'].includes(elVal.src)"
                 :item-id="elVal.id"
                 :item-src="elVal.src" />
             <span v-else> {{ elVal.hid }}: {{ elVal.name }} </span>
@@ -11,7 +12,7 @@
 </template>
 
 <script>
-import GenericHistoryItem from "components/History/Content/GenericItem";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 export default {
     components: {

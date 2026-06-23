@@ -2,86 +2,103 @@
     <div id="app" :style="theme">
         <div id="everything">
             <div id="background" />
-            <Masthead
-                v-if="showMasthead"
-                id="masthead"
-                :brand="config.brand"
-                :logo-url="config.logo_url"
-                :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
-                :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
-                :tabs="tabs"
-                :window-tab="windowTab"
-                @open-url="openUrl" />
-            <Alert
-                v-if="config.message_box_visible && config.message_box_content"
-                id="messagebox"
-                class="rounded-0 m-0 p-2"
-                :variant="config.message_box_class || 'info'">
-                <span class="fa fa-fw mr-1 fa-exclamation" />
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                <span v-html="config.message_box_content"></span>
-            </Alert>
-            <Alert
-                v-if="config.show_inactivity_warning && config.inactivity_box_content"
-                id="inactivebox"
-                class="rounded-0 m-0 p-2"
-                variant="warning">
-                <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
-                <span>{{ config.inactivity_box_content }}</span>
-                <span>
-                    <a class="ml-1" :href="resendUrl">Resend Verification</a>
-                </span>
-            </Alert>
+            <template v-if="!embedded">
+                <Masthead
+                    v-if="showMasthead"
+                    id="masthead"
+                    :brand="config.brand"
+                    :logo-url="config.logo_url"
+                    :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                    :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
+                    :window-tab="windowTab" />
+                <Alert
+                    v-if="config.message_box_visible && config.message_box_content"
+                    id="messagebox"
+                    class="rounded-0 m-0 p-2"
+                    :variant="config.message_box_class || 'info'">
+                    <span class="fa fa-fw mr-1 fa-exclamation" />
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-html="config.message_box_content"></span>
+                </Alert>
+                <Alert
+                    v-if="showInactivityWarning && config.inactivity_box_content"
+                    id="inactivebox"
+                    class="rounded-0 m-0 p-2"
+                    variant="warning">
+                    <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
+                    <span>{{ config.inactivity_box_content }}</span>
+                    <span>
+                        <a class="ml-1" :href="resendUrl">Resend Verification</a>
+                    </span>
+                </Alert>
+            </template>
+
             <router-view @update:confirmation="confirmation = $event" />
         </div>
-        <div id="dd-helper" />
-        <Toast ref="toastRef" />
-        <ConfirmDialog ref="confirmDialogRef" />
-        <UploadModal ref="uploadModal" />
-        <BroadcastsOverlay />
-        <DragGhost />
+        <template v-if="!embedded">
+            <div id="dd-helper" />
+            <Toast ref="toastRef" />
+            <ConfirmDialog ref="confirmDialogRef" />
+            <UploadModal ref="uploadModal" />
+            <BroadcastsOverlay />
+            <DragGhost />
+            <template v-if="showMasthead">
+                <WindowManagerWindow v-for="win in windowManagerStore.windows" :key="win.id" :window="win" />
+            </template>
+            <TourRunner v-if="currentTour?.id" :key="currentTour.id" :tour-id="currentTour.id" />
+        </template>
     </div>
 </template>
 <script>
-import Alert from "@/components/Alert.vue";
-import DragGhost from "@/components/DragGhost.vue";
-import Modal from "mvc/ui/ui-modal";
-import Masthead from "components/Masthead/Masthead.vue";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import { fetchMenu } from "entry/analysis/menu";
-import { WindowManager } from "layout/window-manager";
-import { withPrefix } from "utils/redirect";
-import Toast from "components/Toast";
-import ConfirmDialog from "components/ConfirmDialog";
-import UploadModal from "components/Upload/UploadModal.vue";
-import { ref } from "vue";
 import { storeToRefs } from "pinia";
-import { useUserStore } from "@/stores/userStore";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
+
+import { getGalaxyInstance } from "@/app";
+import short from "@/components/plugins/short";
+import Toast from "@/components/Toast";
+import { setConfirmDialogComponentRef } from "@/composables/confirmDialog";
+import { setGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useRouteQueryBool } from "@/composables/route";
+import { setToastComponentRef } from "@/composables/toast";
+import { getAppRoot } from "@/onload";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 import { useHistoryStore } from "@/stores/historyStore";
-import { setToastComponentRef } from "composables/toast";
-import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { setGlobalUploadModal } from "composables/globalUploadModal";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import { useTourStore } from "@/stores/tourStore";
+import { useUserStore } from "@/stores/userStore";
+import { useWindowManagerStore } from "@/stores/windowManagerStore";
+
+import Alert from "@/components/Alert.vue";
+import ConfirmDialog from "@/components/ConfirmDialog.vue";
+import DragGhost from "@/components/DragGhost.vue";
+import Masthead from "@/components/Masthead/Masthead.vue";
 import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import TourRunner from "@/components/Tour/TourRunner.vue";
+import UploadModal from "@/components/Upload/UploadModal.vue";
+import WindowManagerWindow from "@/components/WindowManager/WindowManagerWindow.vue";
 
 export default {
     components: {
         Alert,
         DragGhost,
         Masthead,
+        WindowManagerWindow,
         Toast,
         ConfirmDialog,
         UploadModal,
         BroadcastsOverlay,
+        TourRunner,
+    },
+    directives: {
+        short,
     },
     setup() {
+        const tourStore = useTourStore();
+        const { currentTour } = storeToRefs(tourStore);
+
         const userStore = useUserStore();
         const { currentTheme } = storeToRefs(userStore);
-        const { currentHistory } = storeToRefs(useHistoryStore());
-
-        userStore.loadUser();
 
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
@@ -92,19 +109,83 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
+        const windowManagerStore = useWindowManagerStore();
+
+        // Treat any iframe context as embedded: scratchbook pops dataset
+        // displays into ``WinBox`` iframes that hit the same routes without
+        // an ``embed`` query param, and each one would otherwise open its own
+        // SSE + polling traffic, quickly saturating the HTTP/1.1 per-origin
+        // connection pool (e.g. ``test_scratchbook_window_persistence`` hangs
+        // indefinitely after two windows are open).
+        const inIframe = (() => {
+            if (typeof window === "undefined") {
+                return false;
+            }
+            try {
+                return window.top !== window.self;
+            } catch {
+                // Cross-origin access throws — that's definitely an iframe.
+                return true;
+            }
+        })();
+        const embeddedQuery = useRouteQueryBool("embed");
+        const embedded = computed(() => embeddedQuery.value || inIframe);
+        const historyStore = useHistoryStore();
+        if (!embedded.value) {
+            historyStore.startWatchingHistory();
+        }
+
+        watch(
+            () => embedded.value,
+            () => {
+                if (embedded.value) {
+                    userStore.$reset();
+                } else {
+                    userStore.loadUser();
+                }
+            },
+            { immediate: true },
+        );
+
+        const confirmation = ref(null);
+        const route = useRoute();
+        watch(
+            () => route.fullPath,
+            (newVal, oldVal) => {
+                // sometimes, the confirmation is not cleared when the route changes
+                // and the confirmation alert is shown needlessly
+                if (confirmation.value) {
+                    confirmation.value = null;
+                }
+
+                // if we are on a tour route, start a tour if it wasn't already started or change tours
+                if ("tourId" in route.params && route.params.tourId && route.params.tourId !== currentTour.value?.id) {
+                    tourStore.setTour(route.params.tourId);
+                }
+            },
+            { immediate: true },
+        );
+
+        return {
+            confirmation,
+            toastRef,
+            confirmDialogRef,
+            uploadModal,
+            currentTheme,
+            embedded,
+            currentTour,
+            windowManagerStore,
+        };
     },
     data() {
         return {
             config: getGalaxyInstance().config,
-            confirmation: null,
             resendUrl: `${getAppRoot()}user/resend_verification`,
-            windowManager: new WindowManager(),
         };
     },
     computed: {
-        tabs() {
-            return fetchMenu(this.config);
+        showInactivityWarning() {
+            return this.config.user_activation_on && this.Galaxy?.user?.id && !this.Galaxy.user.get("active");
         },
         showMasthead() {
             const masthead = this.$route.query.hide_masthead;
@@ -114,6 +195,10 @@ export default {
             return true;
         },
         theme() {
+            if (this.embedded) {
+                return null;
+            }
+
             const themeKeys = Object.keys(this.config.themes);
             if (themeKeys.length > 0) {
                 const foundTheme = themeKeys.includes(this.currentTheme);
@@ -123,7 +208,7 @@ export default {
             return null;
         },
         windowTab() {
-            return this.windowManager.getTab();
+            return this.windowManagerStore.getTab();
         },
     },
     watch: {
@@ -131,47 +216,44 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
-        currentHistory() {
-            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
-        },
     },
     mounted() {
-        this.Galaxy = getGalaxyInstance();
-        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        this.Galaxy.modal = new Modal.View();
-        this.Galaxy.frame = this.windowManager;
-        if (this.Galaxy.config.enable_notification_system) {
-            this.startNotificationsPolling();
+        if (!this.embedded) {
+            this.Galaxy = getGalaxyInstance();
+            if (this.showMasthead) {
+                this.Galaxy.frame = this.windowManagerStore;
+                this.windowManagerStore.restore();
+            }
+            if (this.Galaxy.config.interactivetools_enable) {
+                this.startWatchingEntryPoints();
+            }
+            if (this.Galaxy.config.enable_notification_system) {
+                this.startWatchingNotifications();
+            }
         }
     },
     created() {
-        window.onbeforeunload = () => {
-            if (this.confirmation || this.windowManager.beforeUnload()) {
-                return "Are you sure you want to leave the page?";
-            }
-        };
+        if (!this.embedded) {
+            window.onbeforeunload = () => {
+                if (this.confirmation || this.windowManagerStore.beforeUnload()) {
+                    return "Are you sure you want to leave the page?";
+                }
+            };
+        }
     },
     methods: {
-        startNotificationsPolling() {
-            const notificationsStore = useNotificationsStore();
-            notificationsStore.startPollingNotifications();
+        startWatchingEntryPoints() {
+            const entryPointStore = useEntryPointStore();
+            entryPointStore.startWatchingEntryPoints();
         },
-        openUrl(urlObj) {
-            if (!urlObj.target) {
-                this.$router.push(urlObj.url);
-            } else {
-                const url = withPrefix(urlObj.url);
-                if (urlObj.target == "_blank") {
-                    window.open(url);
-                } else {
-                    window.location = url;
-                }
-            }
+        startWatchingNotifications() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startWatchingNotifications();
         },
     },
 };
 </script>
 
 <style lang="scss">
-@import "custom_theme_variables.scss";
+@import "../../style/scss/custom_theme_variables.scss";
 </style>

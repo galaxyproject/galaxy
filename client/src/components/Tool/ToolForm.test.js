@@ -1,48 +1,71 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
+import "@tests/vitest/mockHelpPopovers";
+
+import { getFakeRegisteredUser } from "@tests/test-data";
+import { getLocalVue, injectTestRouter, suppressBootstrapVueWarnings } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import ToolForm from "./ToolForm";
-import MockConfigProvider from "../providers/MockConfigProvider";
-import MockCurrentHistory from "components/providers/MockCurrentHistory";
-import Vue from "vue";
-import Vuex from "vuex";
+import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
-import { useHistoryStore } from "stores/historyStore";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import MockCurrentHistory from "@/components/providers/MockCurrentHistory";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+
+import ToolForm from "./ToolForm.vue";
+
+const { server, http } = useServerMock();
 
 const localVue = getLocalVue();
+const router = injectTestRouter(localVue);
 const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
     let historyStore;
 
     beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
+        // I tried using the useConfig mock and this component seems to bypass that, it would be
+        // better if it didn't. We shouldn't have to stub out an API request to get a particular config.
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response.untyped(
+                    HttpResponse.json({
+                        enable_tool_source_display: false,
+                        object_store_allows_id_selection: false,
+                    }),
+                );
+            }),
+            http.untyped.get("/api/tools/tool_id/build", ({ request }) => {
+                const url = new URL(request.url);
+                if (url.searchParams.get("tool_version") === "version") {
+                    return HttpResponse.json({
+                        id: "tool_id",
+                        name: "tool_name",
+                        version: "version",
+                        inputs: [],
+                        help: "help_text",
+                        help_format: "restructuredtext",
+                        creator: [
+                            { class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" },
+                        ],
+                    });
+                }
+                return HttpResponse.json({});
+            }),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+            http.untyped.get("/api/tools/tool_id/citations", () => {
+                return HttpResponse.json([]);
+            }),
+        );
 
-        const toolData = {
-            id: "tool_id",
-            name: "tool_name",
-            version: "version",
-            inputs: [],
-            help: "help_text",
-            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
-        };
-        axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
-
-        const citations = [];
-        axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
-
-        const store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-            },
-        });
+        // the PersonViewer component uses a BPopover that doesn't work in the test environment. It would be
+        // better to break PersonViewer and OrganizationViewer out into smaller subcomponents and just
+        // stub out the Popover piece.
+        suppressBootstrapVueWarnings();
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -50,36 +73,69 @@ describe("ToolForm", () => {
                 version: "version",
             },
             localVue,
+            router,
             stubs: {
                 UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 FormDisplay: true,
             },
-            store,
-            provide: { store },
             pinia,
         });
         userStore = useUserStore();
-        userStore.currentUser = { id: "fakeUser" };
+        userStore.currentUser = getFakeRegisteredUser({ id: "fakeUser" });
+
         historyStore = useHistoryStore();
         historyStore.setHistories([{ id: "fakeHistory" }]);
         historyStore.setCurrentHistoryId("fakeHistory");
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-        axiosMock.reset();
+        historyStore.startWatchingHistory = () => {};
     });
 
     it("shows props", async () => {
-        await Vue.nextTick();
-        const button = wrapper.find(".btn-primary");
-        expect(button.attributes("title")).toBe("Run tool: tool_name (version)");
+        await flushPromises();
+        const button = wrapper.find("[data-description='run tool button']");
+        expect(button.attributes("data-title")).toBe("Run tool: tool_name (version)");
         const dropdown = wrapper.findAll(".dropdown-item");
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
         const creator = wrapper.find(".creative-work-creator");
         expect(creator.text()).toContain("FakeName FakeSurname");
+    });
+
+    it("adds the executed tool to recent tools", async () => {
+        await flushPromises();
+        await wrapper.setData({ formData: {} });
+
+        const button = wrapper.find("[data-description='run tool button']");
+        await button.trigger("click");
+        await flushPromises();
+
+        expect(userStore.recentTools).toEqual(["tool_id"]);
+    });
+
+    it("preserves client-side validation errors on input change (does not wipe formConfig.errors when only validationInternal is set)", async () => {
+        await flushPromises();
+        // Simulate steady state: no backend errors, but a client-side validation error
+        // raised by FormDisplay (e.g. a required field was cleared).
+        await wrapper.setData({
+            formConfigInitialized: true,
+            validationInternal: ["multi_required", "Please provide a value for this option."],
+        });
+        wrapper.vm.formConfig.errors = {};
+
+        wrapper.vm.onChange({ multi_required: null }, false);
+
+        // Should NOT have been assigned null — that would cascade through props.errors
+        // and wipe the client-side validation error before it can render.
+        expect(wrapper.vm.formConfig.errors).toEqual({});
+    });
+
+    it("still wipes formConfig.errors when there are actual backend errors to clear on input change", async () => {
+        await flushPromises();
+        await wrapper.setData({ formConfigInitialized: true });
+        wrapper.vm.formConfig.errors = { multi_required: "Backend rejected this value." };
+
+        wrapper.vm.onChange({ multi_required: "alpha" }, false);
+
+        expect(wrapper.vm.formConfig.errors).toBeNull();
     });
 });

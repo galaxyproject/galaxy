@@ -152,7 +152,7 @@ def main(old_revision, new_revision=None):
             old_contents = yaml.load(load_at_time(real_path, old_revision), Loader=MockOrderedLoader)
             new_contents = yaml.load(load_at_time(real_path, new_revision), Loader=MockOrderedLoader)
 
-            (a, r, c) = diff_files(old_contents, new_contents)
+            a, r, c = diff_files(old_contents, new_contents)
             if a:
                 added[filename] = sorted(a)
 

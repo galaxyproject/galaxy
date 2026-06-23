@@ -11,25 +11,33 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+permissions: {}
 jobs:
   client-unit-test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node: [18]
     steps:
-      - uses: actions/checkout@v3
-      - name: Setup node
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@v6.0.3
         with:
-          node-version: ${{ matrix.node}}
-          cache: 'yarn'
-          cache-dependency-path: 'client/yarn.lock'
-      - run: yarn install --frozen-lockfile
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: client/package.json
+      - run: pnpm install --frozen-lockfile
         working-directory: client
       - name: Run ESLint
-        run: yarn run eslint
+        run: pnpm run eslint
         working-directory: client
       - name: Run prettier checks
-        run: yarn run format-check
+        run: pnpm run format-check
         working-directory: client
+      - name: Run vue-tsc
+        working-directory: client
+        run: pnpm type-check

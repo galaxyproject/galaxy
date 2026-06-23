@@ -1,6 +1,6 @@
 <tool id="md5sum" name="md5sum" version="1.0.0">
     <command>
-        cp $input $output
+        cp '$input.file_name' '$output'
     </command>
     <inputs>
         <param name="input" type="data" format="txt" />

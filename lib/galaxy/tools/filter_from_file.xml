@@ -38,8 +38,10 @@
                     <element name="i2" value="simple_line_alternative.txt" />
                 </collection>
             </param>
-            <param name="how_filter" value="remove_if_present" />
-            <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_filter" value="remove_if_present" />
+                <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            </conditional>
             <output_collection name="output_filtered" type="list">
                 <element name="i1">
                   <assert_contents>
@@ -62,8 +64,10 @@
                     <element name="i2" value="simple_line_alternative.txt" />
                 </collection>
             </param>
-            <param name="how_filter" value="remove_if_absent" />
-            <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            <conditional name="how">
+                <param name="how_filter" value="remove_if_absent" />
+                <param name="filter_source" value="filter_labels_1.txt" ftype="txt" />
+            </conditional>
             <output_collection name="output_filtered" type="list">
                 <element name="i2">
                   <assert_contents>

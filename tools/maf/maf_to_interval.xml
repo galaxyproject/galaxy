@@ -1,9 +1,10 @@
-<tool id="MAF_To_Interval1" name="MAF to Interval" version="1.0.0">
+<tool id="MAF_To_Interval1" name="MAF to Interval" version="1.0.0" profile="24.2">
   <description>Converts a MAF formatted file to the Interval format</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/maf_to_interval.py' '${input1}' '${out_file1}' '${out_file1.id}' '.' '${input1.dbkey}' '${species}' '${input1.metadata.species}' ${complete_blocks} ${remove_gaps}</command>
+  <expand macro="requirements" />
+  <command>python '$__tool_directory__/maf_to_interval.py' '${input1}' '${out_file1}' '${out_file1.id}' '.' '${input1.dbkey}' '${species}' '${input1.metadata.species}' '${complete_blocks}' '${remove_gaps}'</command>
   <inputs>
     <param format="maf" name="input1" type="data" label="MAF file to convert"/>
     <param name="species" type="select" label="Select additional species" display="checkboxes" multiple="true" help="The species matching the dbkey of the alignment is always included. A separate history item will be created for each species.">

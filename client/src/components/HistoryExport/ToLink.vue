@@ -9,22 +9,22 @@
                 :job="jobError" />
         </b-alert>
         <div v-if="loadingExports">
-            <loading-span message="Loading history export information from Galaxy server." />
+            <LoadingSpan message="Loading history export information from Galaxy server." />
         </div>
         <div v-else-if="waitingOnJob">
-            <loading-span message="Galaxy server is preparing history for download, this will likely take a while." />
+            <LoadingSpan message="Galaxy server is preparing history for download, this will likely take a while." />
         </div>
         <div v-else-if="latestExportReady">
             Link for download ready
-            <export-link :history-export="latestExport" />
+            <ExportLink :history-export="latestExport" />
             <p>Use this link to download the archive or import it on another Galaxy server.</p>
             <b-alert show variant="warning"
                 >History archives are removed at regular intervals. For permanent storage download the archive, export
-                to a remote file or import the archive on another Galaxy server.
+                to a repository or import the archive on another Galaxy server.
             </b-alert>
         </div>
         <div v-else-if="hasReadyExport">
-            <p>An out of date export is ready <export-link :history-export="latestReadyExport" />.</p>
+            <p>An out of date export is ready <ExportLink :history-export="latestReadyExport" />.</p>
 
             <p>
                 The history has changed since this export was generated,
@@ -47,15 +47,17 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { errorMessageAsString } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
+import Vue from "vue";
+
+import { waitOnJob } from "@/components/JobStates/wait";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+
 import ExportLink from "./ExportLink.vue";
-import { waitOnJob } from "components/JobStates/wait";
-import JobError from "components/JobInformation/JobError";
+import JobError from "@/components/JobInformation/JobError.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 Vue.use(BootstrapVue);
 
@@ -144,7 +146,7 @@ export default {
                     } else {
                         // error ....
                         this.errorMessage = `Unexpected error while polling history export ${errorMessageAsString(
-                            response
+                            response,
                         )}`;
                     }
                 })

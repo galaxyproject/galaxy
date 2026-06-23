@@ -1,12 +1,14 @@
-import { useConfig } from "./config";
-import { computed, ref, watch, type Ref } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
+
 import { escapeRegExp } from "@/utils/regExp";
+
+import { useConfig } from "./config";
 
 type TrainingDetails = {
     tool_id: Array<
         [
             string, // toolshed tool ID
-            string // Version
+            string, // Version
         ]
     >;
     tutorials: Array<
@@ -14,19 +16,13 @@ type TrainingDetails = {
             string, // tutorial ID (unused)
             string, // Title
             string, // Category
-            string // URL
+            string, // URL
         ]
     >;
 };
 
 type TrainingMaterialResponse = {
     [id: string]: TrainingDetails;
-};
-
-type Config = {
-    tool_training_recommendations: boolean;
-    tool_training_recommendations_api_url: string;
-    tool_training_recommendations_link: string;
 };
 
 export type TutorialDetails = {
@@ -59,21 +55,21 @@ function mapToolIds() {
 
 /** Training information about given tool */
 export function useToolTrainingMaterial(id: string, name: string, version: string, owner?: string) {
-    const { config, isLoaded }: { config: Ref<Config>; isLoaded: Ref<boolean> } = useConfig();
+    const { config, isConfigLoaded } = useConfig();
     const apiEnabled = computed(() => {
         return Boolean(
-            isLoaded.value &&
+            isConfigLoaded.value &&
                 config.value.tool_training_recommendations &&
-                config.value.tool_training_recommendations_api_url
+                config.value.tool_training_recommendations_api_url,
         );
     });
 
     const cacheLoaded = ref(false);
 
     watch(
-        () => isLoaded.value,
+        () => isConfigLoaded.value,
         async () => {
-            if (!isLoaded.value) {
+            if (!isConfigLoaded.value) {
                 return;
             }
 
@@ -88,7 +84,7 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
 
             cacheLoaded.value = true;
         },
-        { immediate: true }
+        { immediate: true },
     );
 
     const identifier = computed(() => {

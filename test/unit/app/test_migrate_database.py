@@ -1,5 +1,6 @@
 import pytest
 
+from galaxy.model.database_utils import is_postgres
 from galaxy.model.migrations import AlembicManager
 from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noqa: F401 - contains fixtures we have to import explicitly
     run_command,
@@ -8,7 +9,6 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     create_and_drop_database,
     disposing_engine,
-    is_postgres,
     sqlite_url_factory,
     url_factory,
 )

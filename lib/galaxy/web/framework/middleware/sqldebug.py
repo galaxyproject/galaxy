@@ -1,6 +1,7 @@
 """
 Per-request SQL debugging middleware.
 """
+
 import logging
 
 from galaxy.model.orm.engine_factory import (

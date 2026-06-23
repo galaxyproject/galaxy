@@ -1,6 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import FormHidden from "./FormHidden";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import FormHidden from "./FormHidden.vue";
 
 const localVue = getLocalVue();
 

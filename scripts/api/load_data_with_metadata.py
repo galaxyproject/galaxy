@@ -39,7 +39,7 @@ def load_file(fullpath, api_key, api_url, library_id, library_folder_id, uuid_fi
     if uuid_field is not None and uuid_field in ext_meta:
         data["uuid"] = ext_meta[uuid_field]
 
-    libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=True)
+    libset = submit(api_key, api_url + f"libraries/{library_id}/contents", data, return_formatted=True)
     print(libset)
 
 
@@ -54,7 +54,7 @@ def main(api_key, api_url, in_folder, data_library, uuid_field=None):
         lib_create_data = {"name": data_library}
         library = submit(api_key, api_url + "libraries", lib_create_data, return_formatted=False)
         library_id = library["id"]
-    folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
+    folders = display(api_key, api_url + f"libraries/{library_id}/contents", return_formatted=False)
     for f in folders:
         if f["name"] == "/":
             library_folder_id = f["id"]

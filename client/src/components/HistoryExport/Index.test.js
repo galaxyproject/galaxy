@@ -1,33 +1,32 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import Index from "./Index.vue";
-import { getLocalVue } from "tests/jest/helpers";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { describe, expect, it, vi } from "vitest";
 
-const TEST_PLUGINS_URL = "/api/remote_files/plugins";
+import { useFileSources } from "@/composables/fileSources";
+
+import Index from "./Index.vue";
+
+vi.mock("@/composables/fileSources");
 
 const localVue = getLocalVue();
 
+useFileSources.mockReturnValue({ isLoading: false, hasWritable: true });
+
 describe("Index.vue", () => {
-    let axiosMock;
-
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
-    });
-
-    it("should render tabs", () => {
+    it("should render tabs", async () => {
         // just make sure the component renders to catch obvious big errors
+        const pinia = createTestingPinia({ createSpy: vi.fn });
         const wrapper = shallowMount(Index, {
             propsData: {
                 historyId: "test_id",
             },
             localVue,
+            pinia,
         });
-        expect(wrapper.exists("b-tabs-stub")).toBeTruthy();
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
+        await flushPromises();
+        const tabs = wrapper.findComponent(".history-export-tabs");
+        expect(tabs.exists()).toBeTruthy();
     });
 });

@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: collection
+    collection_type: list:paired
+outputs:
+  out:
+    outputSource: list_handling/out1
+steps:
+  list_handling:
+    tool_id: collection_paired_or_list_paired_input
+    in:
+      f1: input

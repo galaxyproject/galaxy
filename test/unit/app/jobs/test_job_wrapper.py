@@ -3,15 +3,18 @@ import os
 from contextlib import contextmanager
 from typing import (
     cast,
-    Dict,
-    Type,
+    TYPE_CHECKING,
 )
 
-from galaxy.app_unittest_utils.tools_support import UsesApp
+from galaxy.app_unittest_utils.tools_support import (
+    MockContext,
+    UsesApp,
+)
 from galaxy.jobs import (
     JobWrapper,
     TaskWrapper,
 )
+from galaxy.jobs.handler import BaseJobHandlerQueue
 from galaxy.model import (
     Base,
     Job,
@@ -22,6 +25,9 @@ from galaxy.objectstore import BaseObjectStore
 from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -47,14 +53,14 @@ class AbstractTestCases:
             job.tool_id = TEST_TOOL_ID
             job.user = User()
             job.object_store_id = "foo"
-            self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
-            self.app.model.session = MockContext(self.model_objects)
+            self.model_objects: dict[type[Base], dict[int, Base]] = {Job: {345: job}}
+            self.app.model.session = cast("scoped_session", MockContext(self.model_objects))
 
-            self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
+            self.app._toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
             self.working_directory = os.path.join(self.test_directory, "working")
             self.app.object_store = cast(BaseObjectStore, MockObjectStore(self.working_directory))
 
-            self.queue = MockJobQueue(self.app)
+            self.queue = cast(BaseJobHandlerQueue, MockJobQueue(self.app))
             self.job = job
 
         def tearDown(self):
@@ -63,7 +69,7 @@ class AbstractTestCases:
         @contextmanager
         def _prepared_wrapper(self):
             wrapper = self._wrapper()
-            wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
+            wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[method-assign]
             wrapper.prepare()
             yield wrapper
 
@@ -88,7 +94,7 @@ class AbstractTestCases:
 
 class TestJobWrapper(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
-        return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
+        return JobWrapper(self.job, self.queue)
 
 
 class TestTaskWrapper(AbstractTestCases.BaseWrapperTestCase):
@@ -109,15 +115,13 @@ class MockEvaluator:
         self.job = job
         self.local_working_directory = local_working_directory
         self.param_dict = {}
-
-    def populate_interactivetools(self):
-        return []
+        self.use_cached_job = False
 
     def set_compute_environment(self, *args, **kwds):
         pass
 
     def build(self):
-        return TEST_COMMAND, "", [], []
+        return TEST_COMMAND, "", [], [], []
 
 
 class MockJobQueue:
@@ -132,39 +136,6 @@ class MockJobDispatcher:
 
     def url_to_destination(self):
         pass
-
-
-class MockContext:
-    def __init__(self, model_objects):
-        self.expunged_all = False
-        self.model_objects = model_objects
-        self.created_objects = []
-
-    def expunge_all(self):
-        self.expunged_all = True
-
-    def query(self, clazz):
-        return MockQuery(self.model_objects.get(clazz))
-
-    def flush(self):
-        pass
-
-    def commit(self):
-        pass
-
-    def add(self, object):
-        self.created_objects.append(object)
-
-
-class MockQuery:
-    def __init__(self, class_objects):
-        self.class_objects = class_objects
-
-    def filter_by(self, **kwds):
-        return Bunch(first=lambda: None)
-
-    def get(self, id):
-        return self.class_objects.get(id, None)
 
 
 class MockTool:
@@ -195,6 +166,10 @@ class MockToolbox:
 
     def get_tool(self, tool_id, tool_version, exact=False):
         tool = self.get(tool_id)
+        return tool
+
+    def tool_for_job(self, job, exact, check_access=True, user=None):
+        tool = self.get(job.tool_id)
         return tool
 
 

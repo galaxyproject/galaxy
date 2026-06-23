@@ -1,55 +1,66 @@
-<template>
-    <b-form-input v-model="localValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile">
-    </b-form-input>
-</template>
-
-<script>
+<script setup lang="ts">
 import { BFormInput } from "bootstrap-vue";
-import { filesDialog } from "utils/data";
+import { computed } from "vue";
+import { useRouter } from "vue-router/composables";
 
-export default {
-    components: { BFormInput },
-    props: {
-        value: {
-            type: String,
-        },
-        mode: {
-            type: String,
-            default: "file",
-        },
-        requireWritable: {
-            type: Boolean,
-            default: false,
-        },
+import type { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/remoteFiles";
+import { filesDialog } from "@/utils/dataModals";
+
+import type { SelectionItem } from "../SelectionDialog/selectionTypes";
+
+interface Props {
+    value: string;
+    mode?: FileSourceBrowsingMode;
+    requireWritable?: boolean;
+    filterOptions?: FilterFileSourcesOptions;
+    selectedItem?: SelectionItem;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    mode: "file",
+    requireWritable: false,
+    filterOptions: undefined,
+    selectedItem: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "input", value: string): void;
+    (e: "navigated"): void;
+}>();
+
+const router = useRouter();
+
+const currentValue = computed({
+    get() {
+        return props.value;
     },
-    data() {
-        return {
-            localValue: this.value,
-        };
+    set(newValue) {
+        emit("input", newValue);
     },
-    computed: {
-        placeholder() {
-            return `Click to select ${this.mode}`;
+});
+
+const selectFile = () => {
+    const dialogProps = {
+        mode: props.mode,
+        requireWritable: props.requireWritable,
+        filterOptions: props.filterOptions,
+        selectedItem: props.selectedItem,
+    };
+    filesDialog(
+        (selected: SelectionItem) => {
+            currentValue.value = selected.url;
         },
-    },
-    watch: {
-        localValue(newValue) {
-            this.$emit("input", newValue);
+        dialogProps,
+        (route: string) => {
+            router.push(route);
+            emit("navigated");
         },
-        value(newValue) {
-            this.localValue = newValue;
-        },
-    },
-    methods: {
-        selectFile() {
-            const props = {
-                mode: this.mode,
-                requireWritable: this.requireWritable,
-            };
-            filesDialog((selected) => {
-                this.localValue = selected?.url;
-            }, props);
-        },
-    },
+    );
 };
+
+const placeholder = `Click to select ${props.mode}`;
 </script>
+
+<template>
+    <BFormInput v-model="currentValue" class="directory-form-input" :placeholder="placeholder" @click="selectFile" />
+</template>

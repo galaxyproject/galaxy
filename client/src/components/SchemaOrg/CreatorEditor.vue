@@ -10,12 +10,24 @@
             <div v-for="(creator, index) in creatorsCurrent" :key="index">
                 <CreatorViewer :creator="creator">
                     <template v-slot:buttons>
-                        <span v-b-tooltip.hover title="Edit Creator"
-                            ><font-awesome-icon icon="edit" @click="onEdit(index)"
-                        /></span>
-                        <span v-b-tooltip.hover title="Remove Creator">
-                            <font-awesome-icon icon="times" @click="onRemove(index)" />
-                        </span>
+                        <BButton
+                            v-g-tooltip.hover
+                            class="inline-icon-button"
+                            variant="link"
+                            size="sm"
+                            title="Edit Creator"
+                            @click="onEdit(index)">
+                            <FontAwesomeIcon :icon="faEdit" />
+                        </BButton>
+                        <BButton
+                            v-g-tooltip.hover
+                            class="inline-icon-button"
+                            variant="link"
+                            size="sm"
+                            title="Remove Creator"
+                            @click="onRemove(index)">
+                            <FontAwesomeIcon :icon="faTimes" />
+                        </BButton>
                     </template>
                 </CreatorViewer>
             </div>
@@ -31,16 +43,12 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faTimes);
-library.add(faEdit);
-
-import PersonForm from "./PersonForm";
-import CreatorViewer from "./CreatorViewer";
-import OrganizationForm from "./OrganizationForm";
+import CreatorViewer from "./CreatorViewer.vue";
+import OrganizationForm from "./OrganizationForm.vue";
+import PersonForm from "./PersonForm.vue";
 
 export default {
     components: {
@@ -52,17 +60,23 @@ export default {
     props: {
         creators: {
             type: Array,
+            default: () => [],
         },
     },
     data() {
         return {
+            faEdit,
+            faTimes,
             creatorsCurrent: [],
             editIndex: null,
         };
     },
     watch: {
-        creators() {
-            this.creatorsCurrent = this.creators;
+        creators: {
+            handler(newCreators) {
+                this.creatorsCurrent = newCreators;
+            },
+            immediate: true,
         },
     },
     methods: {

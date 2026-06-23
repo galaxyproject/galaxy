@@ -1,130 +1,90 @@
 <template>
-    <div>
-        <component :is="referenceIs" v-bind="referenceProps" ref="reference">
+    <span>
+        <span v-if="!referenceEl" ref="reference" class="popper-reference-container">
             <slot name="reference" />
-        </component>
-        <component
-            :is="popperIs"
-            v-show="visible"
-            v-bind="popperProps"
-            ref="popper"
-            class="popper-element mt-1"
-            :class="{ 'popper-element-dark': darkMode, 'popper-element-light': !darkMode }">
-            <div v-if="darkMode" class="popper-arrow" data-popper-arrow />
+        </span>
+        <div v-show="!disabled && visible" ref="popper" class="popper-element" :class="`popper-element-${mode}`">
+            <div v-if="arrow" class="popper-arrow" data-popper-arrow />
+            <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
+                <span class="px-1">{{ title }}</span>
+                <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
+                    <FontAwesomeIcon :icon="faTimesCircle" />
+                </span>
+            </div>
             <slot />
-        </component>
-    </div>
+        </div>
+    </span>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref, toRef, watch } from "vue";
-import type { UnwrapRef, PropType } from "vue";
-import { usePopperjs } from "./usePopper";
+<script setup lang="ts">
+import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import type { Placement } from "@popperjs/core";
+import { ref } from "vue";
 
-export default defineComponent({
-    components: {},
+import { DEFAULT_TOOLTIP_HOVER_DELAY_MS } from "@/utils/tooltipTiming";
 
-    props: {
-        // hook options
-        delayOnMouseout: Number,
-        delayOnMouseover: Number,
-        trigger: String as PropType<
-            Exclude<UnwrapRef<Required<Parameters<typeof usePopperjs>>["2"]["trigger"]>, "manual">
-        >,
-        forceShow: Boolean,
-        modifiers: Array as PropType<Required<Parameters<typeof usePopperjs>>["2"]["modifiers"]>,
-        onFirstUpdate: Function as PropType<Required<Parameters<typeof usePopperjs>>["2"]["onFirstUpdate"]>,
-        placement: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["placement"]>,
-        strategy: String as PropType<Required<Parameters<typeof usePopperjs>>["2"]["strategy"]>,
+import { type Trigger, usePopper } from "./usePopper";
 
-        // component props
-        popperIs: {
-            default: "div",
-            type: String,
-        },
-        popperProps: {
-            type: Object,
-        },
-        referenceIs: {
-            default: "div",
-            type: String,
-        },
-        referenceProps: {
-            type: Object,
-        },
-        disabled: {
-            type: Boolean,
-            default: false,
-        },
-        darkMode: {
-            type: Boolean,
-            default: true,
-        },
-    },
+interface Props {
+    arrow?: boolean;
+    disabled?: boolean;
+    hoverDelay?: number;
+    interactive?: boolean;
+    mode?: string;
+    placement?: Placement;
+    referenceEl?: HTMLElement;
+    title?: string;
+    trigger?: Trigger;
+}
 
-    emits: [
-        "show",
-        "hide",
-        "before-enter",
-        "enter",
-        "after-enter",
-        "enter-cancelled",
-        "before-leave",
-        "leave",
-        "after-leave",
-        "leave-cancelled",
-    ],
+const props = withDefaults(defineProps<Props>(), {
+    arrow: true,
+    disabled: false,
+    hoverDelay: DEFAULT_TOOLTIP_HOVER_DELAY_MS,
+    interactive: false,
+    mode: "dark",
+    placement: "bottom",
+    referenceEl: undefined,
+    title: undefined,
+    trigger: "hover",
+});
 
-    setup(props, { emit }) {
-        const reference = ref();
-        const popper = ref();
-        const { visible } = usePopperjs(reference, popper, {
-            ...props,
-            trigger: toRef(props, "trigger"),
-            forceShow: toRef(props, "forceShow"),
-            disabled: toRef(props, "disabled"),
-            delayOnMouseover: toRef(props, "delayOnMouseover"),
-            delayOnMouseout: toRef(props, "delayOnMouseout"),
-            onShow: () => emit("show"),
-            onHide: () => emit("hide"),
-        });
+const reference = props.referenceEl ? ref(props.referenceEl) : ref();
 
-        watch(
-            () => [visible.value, props.disabled],
-            () => {
-                if (props.disabled && visible.value) {
-                    visible.value = false;
-                }
-            },
-            { flush: "sync" }
-        );
+const popper = ref();
 
-        const handle =
-            (event: Parameters<typeof emit>[0]) =>
-            (...args: any[]) => {
-                return emit(event, ...args);
-            };
+const { visible } = usePopper(reference, popper, {
+    hoverDelay: props.hoverDelay,
+    interactive: props.interactive,
+    placement: props.placement,
+    trigger: props.trigger,
+});
 
-        return {
-            visible,
-            reference,
-            popper,
-            handle,
-        };
-    },
+defineExpose({
+    visible,
+    reference,
+    popper,
 });
 </script>
 
 <style scoped lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
+
+@function popper-border($border-color) {
+    @return 1px solid $border-color;
+}
 
 .popper-element {
     z-index: 9999;
-    border-radius: $border-radius-base;
+    border-radius: $border-radius-large;
+    pointer-events: auto;
 }
 
+/** Available variants */
 .popper-element-dark {
     background: $brand-dark;
+    border: popper-border($brand-dark);
     color: $brand-light;
     max-width: 12rem;
     opacity: 0.95;
@@ -132,38 +92,58 @@ export default defineComponent({
 
 .popper-element-light {
     background: $white;
+    border: popper-border($border-color);
     color: $brand-dark;
-    border: $border-default;
-    box-shadow: 0 $border-radius-base $border-radius-base $brand-dark;
 }
 
-.popper-arrow,
-.popper-arrow:before {
-    height: 10px;
-    width: 10px;
+.popper-element-primary-title {
+    background: $white;
+    border: popper-border($border-color);
+    color: $brand-dark;
+    .popper-header {
+        background: $brand-primary;
+        color: $white;
+    }
+}
+
+/** Triangle Arrow */
+.popper-arrow {
     position: absolute;
-    z-index: -1;
+    width: 0;
+    height: 0;
+    border-style: solid;
 }
 
-.popper-arrow:before {
-    background: $brand-dark;
-    content: "";
-    transform: rotate(45deg);
-}
-
+/** Arrow positioning based on placement */
 .popper-element[data-popper-placement^="top"] > .popper-arrow {
-    bottom: -5px;
+    bottom: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: $brand-dark transparent transparent transparent;
 }
 
 .popper-element[data-popper-placement^="bottom"] > .popper-arrow {
-    top: -5px;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 7px;
+    border-color: transparent transparent $brand-dark transparent;
 }
 
 .popper-element[data-popper-placement^="left"] > .popper-arrow {
-    right: -5px;
+    right: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent transparent transparent $brand-dark;
 }
 
 .popper-element[data-popper-placement^="right"] > .popper-arrow {
-    left: -5px;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    border-width: 7px;
+    border-color: transparent $brand-dark transparent transparent;
 }
 </style>

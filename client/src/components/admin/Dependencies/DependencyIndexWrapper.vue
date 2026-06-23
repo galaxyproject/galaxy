@@ -3,7 +3,7 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <slot name="header"></slot>
-            <loading-span v-if="loading" :message="loadingMessage" />
+            <LoadingSpan v-if="loading" :message="loadingMessage" />
             <div v-else>
                 <slot name="actions"></slot>
                 <slot name="body"></slot>
@@ -13,7 +13,7 @@
     </div>
 </template>
 <script>
-import LoadingSpan from "components/LoadingSpan";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {

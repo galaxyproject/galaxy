@@ -1,98 +1,240 @@
 /**
  * Stores the Activity Bar state
  */
+import { useDebounceFn, watchImmediate } from "@vueuse/core";
+import { computed, type Ref, ref, set } from "vue";
 
-import { ref, type Ref } from "vue";
-import { defineStore } from "pinia";
+import { useHashedUserId } from "@/composables/hashedUserIdFromUserStore";
+import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { ensureDefined } from "@/utils/assertions";
 
-import { Activities } from "./activitySetup";
+import { defaultActivities } from "./activitySetup";
+import type { Activity } from "./activityStoreTypes";
+import { defineScopedStore } from "./scopedStore";
 
-export interface Activity {
-    description: string;
-    id: string;
-    icon: string;
-    mutable: boolean;
-    optional: boolean;
-    title: string;
-    to: string | null;
-    tooltip: string;
-    visible: boolean;
+export interface ActivityMeta {
+    disabled: boolean;
 }
 
-export const useActivityStore = defineStore(
-    "activityStore",
-    () => {
-        const activities: Ref<Array<Activity>> = ref([]);
+function defaultActivityMeta(): ActivityMeta {
+    return {
+        disabled: false,
+    };
+}
 
-        /**
-         * The set of built-in activities is defined in activitySetup.js.
-         * This helper function applies changes of the built-in activities,
-         * to the user stored activities which are persisted in local cache.
-         */
-        function sync() {
-            // create a map of built-in activities
-            const activitiesMap: Record<string, Activity> = {};
-            Activities.forEach((a) => {
-                activitiesMap[a.id] = a;
-            });
-            // create an updated array of activities
-            const newActivities: Array<Activity> = [];
-            const foundActivity = new Set();
-            activities.value.forEach((a: Activity) => {
-                if (a.mutable) {
-                    // existing custom activity
-                    newActivities.push({ ...a });
-                } else {
-                    // update existing built-in activity attributes
-                    // skip legacy built-in activities
-                    const sourceActivity = activitiesMap[a.id];
-                    if (sourceActivity) {
-                        foundActivity.add(a.id);
-                        newActivities.push({
-                            ...sourceActivity,
-                            visible: a.visible,
-                        });
-                    }
-                }
-            });
-            // add new built-in activities
-            Activities.forEach((a) => {
-                if (!foundActivity.has(a.id)) {
-                    newActivities.push({ ...a });
-                }
-            });
-            // update activities stored in local cache only if changes were applied
-            if (JSON.stringify(activities.value) !== JSON.stringify(newActivities)) {
-                activities.value = newActivities;
-            }
-        }
+export const useActivityStore = defineScopedStore("activityStore", (scope) => {
+    const activities: Ref<Array<Activity>> = useUserLocalStorage(`activity-store-activities-${scope}`, []);
+    const activityMeta: Ref<Record<string, ActivityMeta>> = ref({});
 
-        function getAll() {
-            return activities.value;
-        }
+    const { hashedUserId } = useHashedUserId();
 
-        function setAll(newActivities: Array<Activity>) {
-            activities.value = newActivities;
-        }
+    const customDefaultActivities = ref<Activity[] | null>(null);
+    const currentDefaultActivities = computed(() => customDefaultActivities.value ?? defaultActivities);
+    const isSideBarOpen = computed(() => toggledSideBar.value !== "" && toggledSideBar.value !== "closed");
 
-        function remove(activityId: string) {
-            const findIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
-            if (findIndex !== -1) {
-                activities.value.splice(findIndex, 1);
-            }
-        }
+    const specialPanelActivityIds = ref<Set<string>>(new Set());
 
-        return {
-            activities,
-            getAll,
-            remove,
-            setAll,
-            sync,
-        };
-    },
-    {
-        persist: {
-            paths: ["activities"],
-        },
+    function setSpecialPanelActivityIds(ids: string[]) {
+        specialPanelActivityIds.value = new Set(ids);
     }
-);
+
+    const toggledSideBar = useUserLocalStorage(`activity-store-current-side-bar-${scope}`, "tools");
+    const sidePanelWidth = useUserLocalStorage(`activity-store-side-panel-width-${scope}`, 300);
+
+    function toggleSideBar(currentOpen = "") {
+        toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
+    }
+
+    function closeSideBar() {
+        toggledSideBar.value = "closed";
+    }
+
+    function overrideDefaultActivities(activities: Activity[]) {
+        customDefaultActivities.value = activities;
+        sync();
+    }
+
+    function resetDefaultActivities() {
+        customDefaultActivities.value = null;
+        sync();
+    }
+
+    /**
+     * Restores the default activity bar items
+     */
+    function restore() {
+        activities.value = currentDefaultActivities.value.slice();
+    }
+
+    /**
+     * The set of built-in activities is defined in activitySetup.js.
+     * This helper function applies changes of the built-in activities,
+     * to the user stored activities which are persisted in local cache.
+     */
+    const sync = useDebounceFn(() => {
+        // create a map of built-in activities
+        const activitiesMap: Record<string, Activity> = {};
+
+        currentDefaultActivities.value.forEach((a) => {
+            activitiesMap[a.id] = a;
+        });
+
+        // create an updated array of activities
+        const newActivities: Array<Activity> = [];
+        const foundActivity = new Set();
+
+        activities.value.forEach((a: Activity) => {
+            if (a.mutable) {
+                // existing custom activity
+                newActivities.push({ ...a });
+            } else {
+                // update existing built-in activity attributes
+                // skip legacy built-in activities
+                const sourceActivity = activitiesMap[a.id];
+
+                if (sourceActivity) {
+                    foundActivity.add(a.id);
+                    newActivities.push({
+                        ...sourceActivity,
+                        visible: a.visible,
+                    });
+                }
+            }
+        });
+
+        // add new built-in activities
+        currentDefaultActivities.value.forEach((a) => {
+            if (!foundActivity.has(a.id)) {
+                newActivities.push({ ...a });
+            }
+        });
+
+        activities.value = newActivities;
+
+        // if toggled side-bar does not exist, choose the first option
+        if (isSideBarOpen.value) {
+            const allSideBars = activities.value.flatMap((activity) => {
+                if (activity.panel) {
+                    return [activity.id];
+                } else {
+                    return [];
+                }
+            });
+
+            const allSideBarsSet = new Set([...allSideBars, ...specialPanelActivityIds.value]);
+            const firstSideBar = allSideBars[0];
+
+            if (firstSideBar && !allSideBarsSet.has(toggledSideBar.value)) {
+                toggledSideBar.value = firstSideBar;
+            }
+        }
+    }, 10);
+
+    function getAll() {
+        return activities.value;
+    }
+
+    function setAll(newActivities: Array<Activity>) {
+        activities.value = [...newActivities];
+    }
+
+    function remove(activityId: string) {
+        const findIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+
+        if (findIndex !== -1) {
+            activities.value.splice(findIndex, 1);
+        }
+    }
+
+    const metaForId = computed(() => (activityId: string) => {
+        let meta = activityMeta.value[activityId];
+
+        if (!meta) {
+            set(activityMeta.value, activityId, defaultActivityMeta());
+            meta = ensureDefined(activityMeta.value[activityId]);
+        }
+
+        return meta;
+    });
+
+    function setMeta<K extends keyof ActivityMeta>(activityId: string, metaKey: K, value: ActivityMeta[K]) {
+        let meta = activityMeta.value[activityId];
+
+        if (!meta) {
+            set(activityMeta.value, activityId, defaultActivityMeta());
+            meta = ensureDefined(activityMeta.value[activityId]);
+        }
+
+        set(meta, metaKey, value);
+    }
+
+    function findById(activityId: string): Activity | undefined {
+        return activities.value.find((a: Activity) => a.id === activityId);
+    }
+
+    function setPosition(activityId: string, position: number) {
+        const currentIndex = activities.value.findIndex((a: Activity) => a.id === activityId);
+        if (currentIndex === -1) {
+            return;
+        }
+        const boundedPosition = Math.max(0, Math.min(position, activities.value.length - 1));
+        const spliced = activities.value.splice(currentIndex, 1);
+        const activity = spliced[0];
+        if (!activity) {
+            return;
+        }
+        activities.value.splice(boundedPosition, 0, activity);
+        activities.value = [...activities.value];
+    }
+
+    function ensureSideBarOpen(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity || !activity.panel) {
+            return;
+        }
+        if (toggledSideBar.value !== activityId) {
+            toggledSideBar.value = activityId;
+        }
+    }
+
+    function ensureVisible(activityId: string) {
+        const activity = findById(activityId);
+        if (!activity) {
+            return;
+        }
+        activity.visible = true;
+    }
+
+    watchImmediate(
+        () => hashedUserId.value,
+        () => {
+            sync();
+        },
+    );
+
+    return {
+        toggledSideBar,
+        sidePanelWidth,
+        toggleSideBar,
+        closeSideBar,
+        ensureSideBarOpen,
+        ensureVisible,
+        isSideBarOpen,
+        activities,
+        activityMeta,
+        metaForId,
+        setMeta,
+        getAll,
+        findById,
+        remove,
+        setPosition,
+        setAll,
+        restore,
+        sync,
+        customDefaultActivities,
+        currentDefaultActivities,
+        overrideDefaultActivities,
+        resetDefaultActivities,
+        setSpecialPanelActivityIds,
+    };
+});

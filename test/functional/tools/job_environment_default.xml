@@ -1,6 +1,6 @@
 <tool id="job_environment_default" name="job_environment_default" version="0.1.0" profile="18.01">
     <requirements>
-        <container type="docker">busybox:ubuntu-14.04</container>
+        <container type="docker">busybox:1.36.1-glibc</container>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
 mktemp -d &&

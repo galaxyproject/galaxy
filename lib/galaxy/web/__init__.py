@@ -2,10 +2,7 @@
 The Galaxy web application framework
 """
 
-from .framework import (
-    legacy_url_for,
-    url_for,
-)
+from .framework import url_for
 from .framework.base import httpexceptions
 from .framework.decorators import (
     do_not_cache,
@@ -48,6 +45,5 @@ __all__ = (
     "legacy_expose_api_raw_anonymous",
     "require_admin",
     "require_login",
-    "legacy_url_for",
     "url_for",
 )

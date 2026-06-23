@@ -1,213 +1,831 @@
+<script setup lang="ts">
+import { faReadme } from "@fortawesome/free-brands-svg-icons";
+import { faArrowRight, faCog, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BFormInput } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, onBeforeMount, ref, watch } from "vue";
+
+import type { WriteStoreToPayload } from "@/api/exports";
+import type { WorkflowInvocationRequestInputs } from "@/api/invocations";
+import type { ToolIdentifier } from "@/api/tools";
+import type { DataOption } from "@/components/Form/Elements/FormData/types";
+import type { FormParameterTypes } from "@/components/Form/parameterTypes";
+import { isWorkflowInput } from "@/components/Workflow/constants";
+import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
+import { usePersistentToggle } from "@/composables/persistentToggle";
+import { usePanels } from "@/composables/usePanels";
+import { useUserMultiToolCredentials } from "@/composables/userMultiToolCredentials";
+import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useToolsServiceCredentialsDefinitionsStore } from "@/stores/toolsServiceCredentialsDefinitionsStore";
+import { useUserStore } from "@/stores/userStore";
+import type { Step } from "@/stores/workflowStepStore";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { invokeWorkflow, searchHistoryContents } from "./services";
+
+import WorkflowAnnotation from "../WorkflowAnnotation.vue";
+import WorkflowNavigationTitle from "../WorkflowNavigationTitle.vue";
+import ExportOnCompleteWizard from "./ExportOnCompleteWizard.vue";
+import WorkflowHelpDisplay from "./WorkflowHelpDisplay.vue";
+import WorkflowRunGraph from "./WorkflowRunGraph.vue";
+import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GCheckbox from "@/components/BaseComponents/GCheckbox.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GOverlay from "@/components/BaseComponents/GOverlay.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import HelpText from "@/components/Help/HelpText.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowCredentials from "@/components/Workflow/Run/WorkflowCredentials.vue";
+
+interface Props {
+    model: Record<string, any>;
+    targetHistory?: string;
+    useJobCache?: boolean;
+    canMutateCurrentHistory: boolean;
+    requestState?: WorkflowInvocationRequestInputs;
+    isRerun?: boolean;
+    landingUuid?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    targetHistory: "current",
+    useJobCache: false,
+    requestState: undefined,
+    isRerun: false,
+    landingUuid: undefined,
+});
+
+const emit = defineEmits<{
+    (e: "showAdvanced"): void;
+    (e: "submissionSuccess", invocations: any): void;
+    (e: "submissionError", error: string): void;
+}>();
+
+const { currentUser } = storeToRefs(useUserStore());
+const { currentHistoryId, changingCurrentHistory } = storeToRefs(useHistoryStore());
+
+const { stateStore } = provideScopedWorkflowStores(props.model.workflowId);
+const { activeNodeId } = storeToRefs(stateStore);
+
+const { config, isConfigLoaded } = useConfig(true);
+const { showPanels } = usePanels();
+
+const formData = ref<Record<string, any>>({});
+const inputTypes = ref<Record<string, string>>({});
+const stepValidation = ref<[string, string] | null>(null);
+const sendToNewHistory = ref(props.targetHistory === "new" || props.targetHistory === "prefer_new");
+const newHistoryName = ref(props.model.name);
+const useCachedJobs = ref(props.useJobCache);
+const splitObjectStore = ref(false);
+const preferredObjectStoreId = ref<string | null>(null);
+const preferredIntermediateObjectStoreId = ref<string | null>(null);
+const waitingForRequest = ref(false);
+const showRightPanel = ref<"help" | "graph" | null>(null);
+const checkInputMatching = ref(props.requestState !== undefined);
+const sendNotificationOnComplete = ref(false);
+const showExportWizard = ref(false);
+const exportCheckboxKey = ref(0);
+const exportOnCompleteConfig = ref<WriteStoreToPayload | null>(null);
+
+const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
+
+const showGraph = computed(() => showRightPanel.value === "graph");
+const showHelp = computed(() => showRightPanel.value === "help");
+
+const { toggled: showRuntimeSettingsPanel, toggle: toggleRuntimeSettings } =
+    usePersistentToggle("workflow-run-settings-panel");
+
+// Workflow REAME/help panel setup
+const { workflow, loading: workflowLoading } = useWorkflowInstance(props.model.runData.workflow_id);
+watch(
+    () => workflow.value,
+    (workflow) => {
+        if (workflow) {
+            // once the workflow loads, and if we are not showing panels, show the help if it exists by default
+            showRightPanel.value = !showPanels.value && workflow.readme ? "help" : null;
+        }
+    },
+    { immediate: true },
+);
+
+watch(
+    () => showGraph.value,
+    (show) => {
+        if (!show) {
+            activeNodeId.value = null;
+        }
+    },
+);
+const computedActiveNodeId = computed<number | undefined>(() => {
+    if (showGraph.value) {
+        if (activeNodeId.value !== null && activeNodeId.value !== undefined) {
+            return activeNodeId.value;
+        }
+    }
+    return undefined;
+});
+
+// Build the form inputs once into a stable ref so paginated mutations
+// (``onLoadMore`` / ``onSearchChange`` set ``input.options`` / ``options_meta``
+// on the matching step-input object below) don't rebuild the array. Vue's
+// ``v-for`` in the child ``FormDisplay`` then doesn't unmount the dropdown's
+// ``<input>`` element across paginated refreshes — important for selenium
+// tests like ``test_workflow_rerun`` that ``select_set_value`` against the
+// dropdown (type → wait UX_RENDER → send Enter on the same element ref).
+//
+// ``stepInputByIndex`` maps ``step.step_index`` (as string) to the live
+// step-input object inside ``formInputs.value`` so the paginated-fetch
+// handlers can locate and mutate it in O(1) without walking the array.
+const formInputs = ref<any[]>([]);
+const stepInputByIndex = new Map<string, any>();
+
+function buildFormInputs() {
+    const inputs: any[] = [];
+    stepInputByIndex.clear();
+    // Add workflow parameters.
+    Object.values(props.model.wpInputs).forEach((input) => {
+        const inputCopy = Object.assign({}, input) as any;
+        // do we want to keep the color if we're not showing steps?
+        inputCopy.color = undefined;
+        inputs.push(inputCopy);
+        inputTypes.value[inputCopy.name] = "replacement_parameter";
+    });
+    // Add actual input modules.
+    props.model.steps.forEach((step: any, i: number) => {
+        if (isWorkflowInput(step.step_type)) {
+            const stepName = new String(step.step_index) as any;
+            const stepLabel = step.step_label || new String(step.step_index + 1);
+
+            // For the `WorkflowInvocationRequestModel`, (used in `WorkflowRerun`) if there is no step_label, it does not have
+            // `step.step_index + 1` as a label, and has `step.step_index` instead.
+            const rerunStateIndex = !step.step_label ? new String(step.step_index) : stepLabel;
+
+            const stepType = step.step_type;
+            const help = step.annotation;
+            const longFormInput = step.inputs[0];
+            const stepAsInput = Object.assign({}, longFormInput, {
+                name: stepName,
+                help: help,
+                label: stepLabel,
+            });
+
+            if (props.requestState) {
+                if (props.isRerun) {
+                    const requestStateKeys = Object.keys(props.requestState);
+                    const stateKey = String(rerunStateIndex);
+
+                    let value;
+                    if (stateKey in props.requestState) {
+                        // request state has the step_label as key
+                        value = props.requestState[stateKey];
+                    } else if (requestStateKeys[i] === "") {
+                        // request state has "" as key on the `i` position
+                        value = Object.values(props.requestState)[i];
+                    }
+
+                    if (value !== undefined) {
+                        if (stepType === "data_input" || stepType === "data_collection_input") {
+                            // Note: This is different from workflow landings because `WorkflowInvocationRequestModel`
+                            //       does not provide an object with `values` property.
+                            // Optional data inputs left empty on the original run come back as `null` (or
+                            // arrays containing `null`). Filter those out so we don't poison FormData with
+                            // `{values: [null]}`, which crashes its `onMounted` hook on `"src" in null` and
+                            // leaves the bad wrapper in formData to be sent to the server.
+                            const valuesArray = (Array.isArray(value) ? value : [value]).filter(
+                                (v) => v !== null && v !== undefined,
+                            );
+                            if (valuesArray.length > 0) {
+                                stepAsInput.value = {
+                                    values: valuesArray,
+                                };
+                            }
+                        } else {
+                            stepAsInput.value = value;
+                        }
+                    }
+                } else if (String(stepLabel) in props.requestState) {
+                    stepAsInput.value = props.requestState[String(stepLabel)];
+                }
+            }
+
+            // disable collection mapping...
+            stepAsInput.flavor = "module";
+            inputs.push(stepAsInput);
+            stepInputByIndex.set(String(step.step_index), stepAsInput);
+            inputTypes.value[stepName] = stepType;
+        }
+    });
+    formInputs.value = inputs;
+}
+
+buildFormInputs();
+watch(() => [props.model, props.requestState], buildFormInputs);
+
+/**
+ * Returns the list of steps that do not match the workflow rerun `props.requestState`.
+ *
+ * TODO: Until form elements are typed better, this is a little shady.
+ * We do not compare values for the types in the last `else if` statement.
+ * And for the `select` type, we assume that the values are arrays of strings or numbers.
+ * @returns {string[]} The list of steps indices that do not match the request state.
+ */
+const stepsNotMatchingRequest = computed<string[]>(() => {
+    if (!props.isRerun || !checkInputMatching.value || !props.requestState) {
+        return [];
+    }
+
+    const inputs = formInputs.value;
+    const data = formData.value;
+    const notMatching: string[] = [];
+
+    for (const input of inputs) {
+        if (input.name in data) {
+            const type = input.type as FormParameterTypes;
+
+            if ((type === "data" || type === "data_collection") && input.value?.values && data[input.name]?.values) {
+                const expectedValues = input.value.values as DataOption[];
+                const actualValues = data[input.name].values as DataOption[];
+
+                const matches =
+                    Array.isArray(expectedValues) &&
+                    Array.isArray(actualValues) &&
+                    expectedValues?.length === actualValues?.length &&
+                    expectedValues.every((value, index) => {
+                        return value.src === actualValues[index]?.src && value.id === actualValues[index].id;
+                    });
+
+                if (!matches) {
+                    notMatching.push(input.name as string);
+                }
+            } else if (type === "select") {
+                const expectedValues = (Array.isArray(input.value) ? input.value : [input.value]) as (
+                    | string
+                    | number
+                )[];
+                const actualValues = (Array.isArray(data[input.name]) ? data[input.name] : [data[input.name]]) as (
+                    | string
+                    | number
+                )[];
+
+                const matches =
+                    expectedValues.length === actualValues.length &&
+                    expectedValues.every((value, index) => {
+                        return value === actualValues[index];
+                    });
+
+                if (!matches) {
+                    notMatching.push(input.name as string);
+                }
+            } else if (
+                !["drill_down", "group_tag", "ftpfile", "upload", "rules", "tags"].includes(type) &&
+                input.value !== data[input.name]
+            ) {
+                notMatching.push(input.name as string);
+            }
+        }
+    }
+    return notMatching;
+});
+
+const isValidRerun = computed(
+    () => Boolean(props.isRerun) && checkInputMatching.value && stepsNotMatchingRequest.value.length === 0,
+);
+
+const hasValidationErrors = computed(() => stepValidation.value !== null);
+
+const canRunOnHistory = computed(() => props.canMutateCurrentHistory || sendToNewHistory.value);
+
+function onValidation(validation: [string, string] | null) {
+    if (validation && validation.length == 2) {
+        stepValidation.value = [validation[0], validation[1]];
+    } else {
+        stepValidation.value = null;
+    }
+}
+
+function onChange(data: any) {
+    formData.value = data;
+}
+
+function shapeContentsRow(row: any) {
+    const src = row.history_content_type === "dataset_collection" ? "hdca" : "hda";
+    return {
+        id: row.id,
+        src,
+        name: row.name,
+        hid: row.hid,
+        keep: false,
+        tags: row.tags || [],
+    };
+}
+
+async function fetchStepOptions(
+    name: string,
+    src: string,
+    payload: { offset?: number; limit?: number; search?: string } = {},
+    mode: "append" | "replace" = "append",
+) {
+    // Locate the live step-input object inside ``formInputs.value`` and
+    // mutate it in place — ``formInputs`` is a stable ref built once, so
+    // mutating ``input.options`` / ``input.options_meta`` doesn't rebuild
+    // the array and doesn't unmount the dropdown's ``<input>`` element.
+    // (``stepAsInput`` is a local copy built in ``buildFormInputs``; this
+    // is not prop mutation.)
+    const input = stepInputByIndex.get(String(name));
+    if (!input) {
+        return;
+    }
+    const type = src === "hdca" ? "dataset_collection" : "dataset";
+    const extensions = (input.acceptable_extensions || []) as string[];
+    const limit = payload.limit || 50;
+    const offset = payload.offset || 0;
+    try {
+        const rows = await searchHistoryContents(props.model.historyId, {
+            extensions,
+            type,
+            search: payload.search,
+            offset,
+            limit,
+        });
+        const shaped = (rows || []).map(shapeContentsRow);
+        let merged: any[];
+        if (mode === "replace") {
+            merged = shaped;
+        } else {
+            const seen = new Set<string>();
+            const base = (input.options?.[src] as any[]) || [];
+            merged = [...base, ...shaped].filter((item) => {
+                const k = `${item.id}_${item.src}`;
+                if (seen.has(k)) {
+                    return false;
+                }
+                seen.add(k);
+                return true;
+            });
+        }
+        input.options = { ...(input.options || {}), [src]: merged };
+        input.options_meta = {
+            ...(input.options_meta || {}),
+            [src]: { offset, limit, has_more: shaped.length === limit },
+        };
+    } catch (e) {
+        // intentionally silent — paging failures don't block the rest of the form
+        console.warn("history-contents pagination failed", e);
+    }
+}
+
+function onLoadMore({
+    name,
+    src,
+    offset,
+    limit,
+    search,
+}: {
+    name: string;
+    src: string;
+    offset: number;
+    limit: number;
+    search?: string;
+}) {
+    fetchStepOptions(name, src, { offset, limit, search }, "append");
+}
+
+function onSearchChange({ name, src, query, limit }: { name: string; src: string; query: string; limit?: number }) {
+    fetchStepOptions(name, src, { offset: 0, limit: limit || 50, search: query }, "replace");
+}
+
+function onStorageUpdate(objectStoreId: string, intermediate: boolean) {
+    if (intermediate) {
+        preferredIntermediateObjectStoreId.value = objectStoreId;
+    } else {
+        preferredObjectStoreId.value = objectStoreId;
+    }
+}
+
+function updateActiveNodeId(nodeId: number | null) {
+    activeNodeId.value = nodeId;
+}
+
+function onExportConfigured(config: typeof exportOnCompleteConfig.value) {
+    exportOnCompleteConfig.value = config;
+    showExportWizard.value = false;
+}
+
+function clearExportConfig() {
+    exportOnCompleteConfig.value = null;
+}
+
+function onExportWizardCancel() {
+    showExportWizard.value = false;
+    // Force checkbox to re-render and reset to unchecked state if no config was set
+    if (exportOnCompleteConfig.value === null) {
+        exportCheckboxKey.value++;
+    }
+}
+
+const exportEnabled = computed({
+    get: () => exportOnCompleteConfig.value !== null,
+    set: (value: boolean) => {
+        if (value) {
+            // User wants to enable - open wizard, don't actually enable yet
+            showExportWizard.value = true;
+        } else {
+            // User wants to disable - clear the config
+            clearExportConfig();
+        }
+    },
+});
+
+async function onExecute() {
+    waitingForRequest.value = true;
+
+    const replacementParams: Record<string, any> = {};
+    const inputs: Record<string, any> = {};
+    for (const inputName in formData.value) {
+        const value = formData.value[inputName];
+        const inputType = inputTypes.value[inputName];
+        if (inputType == "replacement_parameter") {
+            replacementParams[inputName] = value;
+        } else if (inputType && isWorkflowInput(inputType as Step["type"])) {
+            // Unset optional `data` / `data_collection` inputs surface here as `null`
+            // (FormData.vue's createValue returns null for `undefined`). Omit them so
+            // the server-side workflow scheduler sees a missing key rather than `None`,
+            // matching the working API submission shape and the rerun-branch filter above.
+            const isData = inputType === "data_input" || inputType === "data_collection_input";
+            if (isData && (value === null || value === undefined)) {
+                continue;
+            }
+            inputs[inputName] = value;
+        }
+    }
+    const onCompleteActions: any[] = [];
+    if (sendNotificationOnComplete.value) {
+        onCompleteActions.push({ send_notification: {} });
+    }
+    if (exportOnCompleteConfig.value) {
+        onCompleteActions.push({ export_to_file_source: exportOnCompleteConfig.value });
+    }
+
+    const data: Record<string, any> = {
+        replacement_dict: replacementParams,
+        inputs: inputs,
+        inputs_by: "step_index",
+        batch: true,
+        use_cached_job: useCachedJobs.value,
+        require_exact_tool_versions: false,
+        version: props.model.runData.version,
+        on_complete: onCompleteActions.length > 0 ? onCompleteActions : null,
+    };
+    if (props.landingUuid) {
+        data.landing_uuid = props.landingUuid;
+    }
+    if (sendToNewHistory.value) {
+        data.new_history_name = newHistoryName.value;
+    } else {
+        data.history_id = props.model.historyId;
+    }
+    if (splitObjectStore.value) {
+        if (preferredObjectStoreId.value != null) {
+            data.preferred_outputs_object_store_id = preferredObjectStoreId.value;
+        }
+        if (preferredIntermediateObjectStoreId.value != null && splitObjectStore.value) {
+            data.preferred_intermediate_object_store_id = preferredIntermediateObjectStoreId.value;
+        }
+    } else {
+        if (preferredObjectStoreId.value != null) {
+            data.preferred_object_store_id = preferredObjectStoreId.value;
+        }
+    }
+
+    try {
+        const invocations = await invokeWorkflow(props.model.workflowId, data);
+        emit("submissionSuccess", invocations);
+    } catch (error) {
+        emit("submissionError", errorMessageAsString(error));
+    } finally {
+        waitingForRequest.value = false;
+    }
+}
+
+const { setToolServiceCredentialsDefinitionFor } = useToolsServiceCredentialsDefinitionsStore();
+
+const credentialTools = computed<ToolIdentifier[]>(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+
+    const toolIdentifiers: ToolIdentifier[] = [];
+
+    credentialSteps.forEach((step: any) => {
+        setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials);
+        toolIdentifiers.push({
+            toolId: step.id,
+            toolVersion: step.version,
+        });
+    });
+
+    return toolIdentifiers;
+});
+
+const hasCredentialErrors = computed(() => {
+    if (credentialTools.value.length) {
+        const { hasUserProvidedAllRequiredToolsServiceCredentials } = useUserMultiToolCredentials(
+            credentialTools.value,
+        );
+        return !hasUserProvidedAllRequiredToolsServiceCredentials.value;
+    }
+    return false;
+});
+
+onBeforeMount(() => {
+    const credentialSteps = props.model.steps.filter(
+        (step: any) => step.step_type === "tool" && step.credentials?.length,
+    );
+    if (credentialSteps.length) {
+        const promises = credentialSteps.map((step: any) =>
+            setToolServiceCredentialsDefinitionFor(step.id, step.version, step.credentials),
+        );
+        return Promise.all(promises);
+    }
+});
+</script>
+
 <template>
-    <div>
-        <div v-if="configIsLoaded" class="h4 clearfix mb-3">
-            <b>Workflow: {{ model.name }}</b>
-            <ButtonSpinner
-                id="run-workflow"
-                :wait="waitingForRequest"
-                :disabled="hasValidationErrors"
-                class="float-right"
-                title="Run Workflow"
-                @onClick="onExecute" />
-            <b-dropdown
-                v-if="showRuntimeSettings(currentUser)"
-                id="dropdown-form"
-                ref="dropdown"
-                class="workflow-run-settings float-right"
-                style="margin-right: 10px"
-                title="Workflow Run Settings"
-                no-caret>
-                <template v-slot:button-content>
-                    <span class="fa fa-cog" />
-                </template>
-                <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                        >Send results to a new history</b-form-checkbox
-                    >
-                    <b-form-checkbox
-                        v-if="reuseAllowed(currentUser)"
-                        v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run."
-                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                    >
-                    <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
-                        >Send outputs and intermediate to different object stores?</b-form-checkbox
-                    >
-                    <WorkflowStorageConfiguration
-                        v-if="config.object_store_allows_id_selection"
-                        :split-object-store="splitObjectStore"
-                        :invocation-preferred-object-store-id="preferredObjectStoreId"
-                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                        @updated="onStorageUpdate">
-                    </WorkflowStorageConfiguration>
-                </b-dropdown-form>
-            </b-dropdown>
+    <div
+        v-if="currentUser && currentHistoryId"
+        class="d-flex flex-column h-100 workflow-run-form-simple"
+        data-galaxy-file-drop-target>
+        <div v-if="!showRightPanel" class="ui-form-header-underlay sticky-top" />
+        <div v-if="isConfigLoaded" :class="{ 'sticky-top': !showRightPanel }">
+            <BAlert v-if="!canRunOnHistory" variant="warning" show>
+                <span v-localize>
+                    The workflow cannot run because the current history is immutable. Please select a different history
+                    or send the results to a new one using the run settings ⚙️
+                </span>
+            </BAlert>
+            <div class="mb-2">
+                <WorkflowNavigationTitle
+                    :workflow-id="model.runData.workflow_id"
+                    :run-disabled="hasValidationErrors || !canRunOnHistory || hasCredentialErrors"
+                    :run-waiting="waitingForRequest"
+                    :valid-rerun="isValidRerun"
+                    @on-execute="onExecute">
+                    <template v-slot:workflow-title-actions>
+                        <GButtonGroup>
+                            <GButton
+                                tooltip
+                                size="small"
+                                :title="localize(!showGraph ? 'Show workflow graph' : 'Hide workflow graph')"
+                                transparent
+                                color="blue"
+                                :pressed="showGraph"
+                                @click="showRightPanel = showGraph ? null : 'graph'">
+                                <FontAwesomeIcon :icon="faSitemap" fixed-width />
+                            </GButton>
+                            <GButton
+                                v-if="workflow?.readme || workflow?.help"
+                                tooltip
+                                size="small"
+                                :title="localize(!showHelp ? 'Show workflow help' : 'Hide workflow help')"
+                                transparent
+                                color="blue"
+                                :pressed="showHelp"
+                                @click="showRightPanel = showHelp ? null : 'help'">
+                                <FontAwesomeIcon :icon="faReadme" fixed-width />
+                            </GButton>
+                        </GButtonGroup>
+                        <GButton
+                            tooltip
+                            size="small"
+                            :title="localize('Workflow Run Settings')"
+                            transparent
+                            color="blue"
+                            class="workflow-run-settings"
+                            data-test-id="workflow-run-settings-button"
+                            :pressed="showRuntimeSettingsPanel"
+                            @click="toggleRuntimeSettings">
+                            <FontAwesomeIcon :icon="faCog" fixed-width />
+                        </GButton>
+                    </template>
+                </WorkflowNavigationTitle>
+
+                <!-- Runtime Settings Panel -->
+                <div v-if="showRuntimeSettingsPanel" class="workflow-runtime-settings-panel p-3 rounded-bottom">
+                    <!-- Send to new history -->
+                    <div class="settings-row">
+                        <GCheckbox id="send-to-new-history" v-model="sendToNewHistory" toggle>
+                            Send results to a new history
+                            <HelpText uri="galaxy.workflows.runtimeSettings.sendToNewHistory" info-icon />
+                        </GCheckbox>
+                        <div v-if="sendToNewHistory" class="settings-detail">
+                            <BFormInput
+                                v-model="newHistoryName"
+                                size="sm"
+                                placeholder="New history name"
+                                class="history-name-input" />
+                        </div>
+                    </div>
+
+                    <!-- Use cached jobs -->
+                    <div class="settings-row">
+                        <GCheckbox v-model="useCachedJobs" toggle>
+                            Re-use jobs with identical parameters
+                            <HelpText uri="galaxy.workflows.runtimeSettings.useCachedJobs" info-icon />
+                        </GCheckbox>
+                    </div>
+
+                    <!-- Send notification -->
+                    <div v-if="isConfigLoaded && config.enable_notification_system" class="settings-row">
+                        <GCheckbox
+                            v-model="sendNotificationOnComplete"
+                            toggle
+                            data-test-id="send-notification-checkbox">
+                            Notify me when complete
+                            <HelpText uri="galaxy.workflows.runtimeSettings.sendNotification" info-icon />
+                        </GCheckbox>
+                    </div>
+
+                    <!-- Export on completion -->
+                    <div v-if="hasWritableFileSources" class="settings-row">
+                        <GCheckbox :key="exportCheckboxKey" v-model="exportEnabled" toggle>
+                            Export results when complete
+                            <HelpText uri="galaxy.workflows.runtimeSettings.exportOnComplete" info-icon />
+                        </GCheckbox>
+                        <div v-if="exportOnCompleteConfig" class="settings-detail">
+                            <span class="export-summary">
+                                <span class="text-muted">
+                                    {{ exportOnCompleteConfig.target_uri.split("/").pop() }}
+                                </span>
+                                <GButton
+                                    tooltip
+                                    transparent
+                                    color="blue"
+                                    size="small"
+                                    title="Edit export configuration"
+                                    @click="showExportWizard = true">
+                                    <span class="fa fa-edit" />
+                                </GButton>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Storage options -->
+                    <template v-if="isConfigLoaded && config.object_store_allows_id_selection">
+                        <div class="settings-row">
+                            <GCheckbox v-model="splitObjectStore" toggle>
+                                Send outputs and intermediate to different storage
+                                <HelpText uri="galaxy.workflows.runtimeSettings.splitObjectStore" info-icon />
+                            </GCheckbox>
+                        </div>
+                        <div class="settings-row">
+                            <WorkflowStorageConfiguration
+                                :split-object-store="splitObjectStore"
+                                :invocation-preferred-object-store-id="preferredObjectStoreId ?? undefined"
+                                :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                                @updated="onStorageUpdate" />
+                        </div>
+                    </template>
+
+                    <!-- Expanded form link -->
+                    <div class="settings-row mt-2 pt-2 border-top">
+                        <GButton
+                            tooltip
+                            transparent
+                            color="blue"
+                            size="small"
+                            class="workflow-expand-form-link"
+                            title="Switch to the legacy workflow form"
+                            @click="$emit('showAdvanced')">
+                            Expanded workflow form <FontAwesomeIcon :icon="faArrowRight" />
+                        </GButton>
+                    </div>
+                </div>
+            </div>
         </div>
-        <FormDisplay
-            :inputs="formInputs"
-            :allowEmptyValueOnRequiredInput="true"
-            @onChange="onChange"
-            @onValidation="onValidation" />
-        <!-- Options to default one way or the other, disable if admins want, etc.. -->
-        <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
+
+        <WorkflowAnnotation
+            :workflow-id="model.runData.workflow_id"
+            :history-id="model.historyId"
+            show-details
+            :hide-hr="Boolean(showRightPanel)" />
+
+        <WorkflowCredentials v-if="credentialTools?.length" :tool-identifiers="credentialTools" />
+
+        <div class="overflow-auto h-100">
+            <div class="d-flex h-100">
+                <div
+                    :class="showRightPanel ? 'w-50 flex-grow-1' : 'w-100'"
+                    :style="{ 'overflow-y': 'auto', 'overflow-x': 'hidden' }">
+                    <div v-if="showRightPanel" class="ui-form-header-underlay sticky-top" />
+                    <Heading v-if="showRightPanel" class="sticky-top" h2 separator bold size="sm"> Parameters </Heading>
+                    <GOverlay :show="changingCurrentHistory" no-fade :opacity="0.5">
+                        <template v-slot:overlay>
+                            <LoadingSpan message="Changing your current history" />
+                        </template>
+                        <FormDisplay
+                            :inputs="formInputs"
+                            :reject-empty-required-inputs="true"
+                            :sync-with-graph="showGraph"
+                            :active-node-id="computedActiveNodeId"
+                            workflow-run
+                            :steps-not-matching-request="stepsNotMatchingRequest"
+                            @onChange="onChange"
+                            @onValidation="onValidation"
+                            @load-more="onLoadMore"
+                            @search-change="onSearchChange"
+                            @stop-flagging="checkInputMatching = false"
+                            @update:active-node-id="updateActiveNodeId" />
+                    </GOverlay>
+                </div>
+                <div v-if="showRightPanel" class="h-100 w-50 d-flex flex-shrink-0">
+                    <WorkflowRunGraph
+                        v-if="isConfigLoaded && showGraph"
+                        :workflow-id="model.workflowId"
+                        :step-validation="stepValidation || undefined"
+                        :stored-id="model.runData.workflow_id"
+                        :version="model.runData.version"
+                        :inputs="formData"
+                        :form-inputs="formInputs" />
+                    <div v-else-if="showHelp" class="d-flex flex-column">
+                        <Heading class="sticky-top" h2 separator bold size="sm"> Help </Heading>
+                        <WorkflowHelpDisplay :workflow="workflow" :loading="workflowLoading" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <GModal
+            :show.sync="showExportWizard"
+            title="Configure Export on Completion"
+            size="medium"
+            @close="onExportWizardCancel">
+            <ExportOnCompleteWizard
+                :initial-config="exportOnCompleteConfig || undefined"
+                @configured="onExportConfigured"
+                @cancel="onExportWizardCancel" />
+        </GModal>
     </div>
 </template>
 
-<script>
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-import { storeToRefs } from "pinia";
-import FormDisplay from "components/Form/FormDisplay";
-import ButtonSpinner from "components/Common/ButtonSpinner";
-import { invokeWorkflow } from "./services";
-import { isWorkflowInput } from "components/Workflow/constants";
-import { errorMessageAsString } from "utils/simple-error";
-import { allowCachedJobs } from "components/Tool/utilities";
-import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
-import Vue from "vue";
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
 
-export default {
-    components: {
-        ButtonSpinner,
-        FormDisplay,
-        WorkflowStorageConfiguration,
-    },
-    props: {
-        model: {
-            type: Object,
-            required: true,
-        },
-        targetHistory: {
-            type: String,
-            default: "current",
-        },
-        useJobCache: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    setup() {
-        const { config, isLoaded: configIsLoaded } = useConfig(true);
-        const { currentUser } = storeToRefs(useUserStore());
-        return { config, configIsLoaded, currentUser };
-    },
-    data() {
-        const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
-        return {
-            formData: {},
-            inputTypes: {},
-            stepValidations: {},
-            sendToNewHistory: newHistory,
-            useCachedJobs: this.useJobCache, // TODO:
-            splitObjectStore: false,
-            preferredObjectStoreId: null,
-            preferredIntermediateObjectStoreId: null,
-            waitingForRequest: false,
-        };
-    },
-    computed: {
-        formInputs() {
-            const inputs = [];
-            // Add workflow parameters.
-            Object.values(this.model.wpInputs).forEach((input) => {
-                const inputCopy = Object.assign({}, input);
-                // do we want to keep the color if we're not showing steps?
-                inputCopy.color = undefined;
-                inputs.push(inputCopy);
-                this.inputTypes[inputCopy.name] = "replacement_parameter";
-            });
-            // Add actual input modules.
-            this.model.steps.forEach((step, i) => {
-                if (!isWorkflowInput(step.step_type)) {
-                    return;
-                }
-                const stepName = new String(step.step_index);
-                const stepLabel = step.step_label || new String(step.step_index + 1);
-                const help = step.annotation;
-                const longFormInput = step.inputs[0];
-                const stepAsInput = Object.assign({}, longFormInput, { name: stepName, help: help, label: stepLabel });
-                // disable collection mapping...
-                stepAsInput.flavor = "module";
-                inputs.push(stepAsInput);
-                this.inputTypes[stepName] = step.step_type;
-            });
-            return inputs;
-        },
-        hasValidationErrors() {
-            return Boolean(Object.values(this.stepValidations).find((value) => value !== null && value !== undefined));
-        },
-    },
-    methods: {
-        onValidation(validation) {
-            if (validation) {
-                Vue.set(this.stepValidations, validation[0], validation[1]);
-            } else {
-                this.stepValidations = {};
-            }
-        },
-        reuseAllowed(user) {
-            return user && allowCachedJobs(user.preferences);
-        },
-        showRuntimeSettings(user) {
-            return this.targetHistory.indexOf("prefer") >= 0 || (user && this.reuseAllowed(user));
-        },
-        onChange(data) {
-            this.formData = data;
-        },
-        onStorageUpdate: function (objectStoreId, intermediate) {
-            if (intermediate) {
-                this.preferredIntermediateObjectStoreId = objectStoreId;
-            } else {
-                this.preferredObjectStoreId = objectStoreId;
-            }
-        },
-        onExecute() {
-            const replacementParams = {};
-            const inputs = {};
-            for (const inputName in this.formData) {
-                const value = this.formData[inputName];
-                const inputType = this.inputTypes[inputName];
-                if (inputType == "replacement_parameter") {
-                    replacementParams[inputName] = value;
-                } else if (isWorkflowInput(inputType)) {
-                    inputs[inputName] = value;
-                }
-            }
-            const data = {
-                replacement_dict: replacementParams,
-                inputs: inputs,
-                inputs_by: "step_index",
-                batch: true,
-                use_cached_job: this.useCachedJobs,
-                require_exact_tool_versions: false,
-            };
-            if (this.sendToNewHistory) {
-                data.new_history_name = this.model.name;
-            } else {
-                data.history_id = this.model.historyId;
-            }
-            if (this.splitObjectStore) {
-                if (this.preferredObjectStoreId != null) {
-                    data.preferred_outputs_object_store_id = this.preferredObjectStoreId;
-                }
-                if (this.preferredIntermediateObjectStoreId != null && this.splitObjectStore) {
-                    data.preferred_intermediate_object_store_id = this.preferredIntermediateObjectStoreId;
-                }
-            } else {
-                if (this.preferredObjectStoreId != null) {
-                    data.preferred_object_store_id = this.preferredObjectStoreId;
-                }
-            }
-            this.waitingForRequest = true;
-            invokeWorkflow(this.model.workflowId, data)
-                .then((invocations) => {
-                    this.$emit("submissionSuccess", invocations);
-                })
-                .catch((error) => {
-                    this.$emit("submissionError", errorMessageAsString(error));
-                })
-                .finally(() => (this.waitingForRequest = false));
-        },
-    },
-};
-</script>
+.workflow-runtime-settings-panel {
+    background-color: $brand-light;
+    border-left: 1px solid $gray-200;
+    border-right: 1px solid $gray-200;
+    border-bottom: 1px solid $gray-200;
+    animation: slideDown 0.2s ease-in-out;
+}
+
+.settings-row {
+    padding: 0.4rem 0;
+    position: relative;
+
+    &:first-child {
+        padding-top: 0;
+    }
+
+    // Ensure popovers from this row appear above subsequent rows
+    &:hover {
+        z-index: 10;
+    }
+}
+
+.settings-detail {
+    margin-left: 2.5rem;
+    margin-top: 0.25rem;
+}
+
+.history-name-input {
+    max-width: 300px;
+}
+
+.export-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9em;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: scaleY(0);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+        max-height: 400px;
+    }
+}
+</style>

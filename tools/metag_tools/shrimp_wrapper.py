@@ -42,6 +42,7 @@ SHRiMP output:
 >7:2:1147:982/1 chr3    +   95338194    95338225    4   35  36  2700    9T7C14
 >7:2:587:93/1   chr3    +   14913541    14913577    1   35  36  2960    19--16
 """
+
 from __future__ import print_function
 
 import os

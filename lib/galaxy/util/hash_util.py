@@ -6,19 +6,20 @@ introduced hashlib which replaced sha in Python 2.4 and previous versions.
 import hashlib
 import hmac
 import logging
-import os
 from enum import Enum
 from typing import (
     Any,
     Callable,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
 )
 
 from . import smart_str
+from .path import StrPath
 
 log = logging.getLogger(__name__)
 
@@ -34,12 +35,17 @@ md5 = hashlib.md5
 
 
 class HashFunctionNameEnum(str, Enum):
-    """Particular pieces of information that can be requested for a dataset."""
+    """Hash function names that can be used to generate checksums for files."""
 
     md5 = "MD5"
     sha1 = "SHA-1"
     sha256 = "SHA-256"
     sha512 = "SHA-512"
+
+
+# IMPORTANT: Keep this literal type in sync with HashFunctionNameEnum values above
+# as well as with HASH_NAME_ALIAS and HASH_NAME_MAP below.
+HashFunctionNames = Literal["MD5", "SHA-1", "SHA-256", "SHA-512"]
 
 
 HASH_NAME_ALIAS: Dict[str, str] = {
@@ -55,6 +61,18 @@ HASH_NAME_MAP: Dict[HashFunctionNameEnum, HashFunctionT] = {
     HashFunctionNameEnum.sha512: sha512,
 }
 HASH_NAMES: List[HashFunctionNameEnum] = list(HASH_NAME_MAP.keys())
+
+
+def as_hash_function_name(hash_name: str) -> Optional[HashFunctionNames]:
+    """Convert a hash name string to a HashFunctionName.
+
+    Considering possible aliases and returning None if the name is not recognized."""
+    hash_name = hash_name.upper()
+    if hash_name in HASH_NAME_ALIAS:
+        hash_name = HASH_NAME_ALIAS[hash_name]
+    if hash_name not in HASH_NAMES:
+        return None
+    return HashFunctionNameEnum(hash_name).value
 
 
 def memory_bound_hexdigest(
@@ -82,7 +100,7 @@ def memory_bound_hexdigest(
         file.close()
 
 
-def md5_hash_file(path: Union[str, os.PathLike]) -> Optional[str]:
+def md5_hash_file(path: StrPath) -> Optional[str]:
     """
     Return a md5 hashdigest for a file or None if path could not be read.
     """
@@ -151,6 +169,14 @@ def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
     if hash_name not in HASH_NAMES:
         raise ValueError(f"Unsupported hash function '{hash_name}'. Supported functions: [{','.join(HASH_NAMES)}]")
     return HashFunctionNameEnum(hash_name), hash_value
+
+
+def verify_hash(path: str, hash_func_name: HashFunctionNameEnum, hash_value: str, what: str = "path"):
+    calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_func_name, path=path)
+    if calculated_hash_value != hash_value:
+        raise Exception(
+            f"Failed to validate {what} with [{hash_func_name}] - expected [{hash_value}] got [{calculated_hash_value}]"
+        )
 
 
 __all__ = (

@@ -1,0 +1,22 @@
+name: Validate CITATION.cff
+
+on:
+  push:
+    paths:
+      - "CITATION.cff"
+  pull_request:
+    paths:
+      - "CITATION.cff"
+
+permissions: {}
+
+jobs:
+  validate-citation-cff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
+      - name: Validate CITATION.cff
+        uses: dieghernan/cff-validator@v5

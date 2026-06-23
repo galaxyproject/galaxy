@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from galaxy.config.schema import AppSchema
 from galaxy.util.yaml_util import (
     ordered_load,
@@ -46,7 +48,7 @@ def test_schema_is_loaded(monkeypatch):
     monkeypatch.setattr(AppSchema, "_read_schema", mock_read_schema)
     monkeypatch.setattr(OrderedLoader, "__init__", mock_init)
 
-    schema = AppSchema("no path", "mockgalaxy")
+    schema = AppSchema(Path("no path"), "mockgalaxy")
     data = ordered_load(MOCK_YAML)
 
     assert schema.description == data["desc"]
@@ -60,10 +62,10 @@ def test_schema_is_loaded(monkeypatch):
     assert schema.defaults["property5"] is None
     assert schema.defaults["property6"] is None
 
-    assert type(schema.defaults["property1"]) is str
-    assert type(schema.defaults["property2"]) is int
-    assert type(schema.defaults["property3"]) is float
-    assert type(schema.defaults["property4"]) is bool
+    assert isinstance(schema.defaults["property1"], str)
+    assert isinstance(schema.defaults["property2"], int)
+    assert isinstance(schema.defaults["property3"], float)
+    assert isinstance(schema.defaults["property4"], bool)
 
     assert len(schema.reloadable_options) == 2
     assert "property2" in schema.reloadable_options

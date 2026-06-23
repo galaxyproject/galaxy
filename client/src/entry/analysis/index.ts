@@ -1,32 +1,44 @@
-import Vue, { provide } from "vue";
-import { PiniaVuePlugin, createPinia } from "pinia";
-import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
-import App from "./App.vue";
+// index.ts
+import { createPinia, PiniaVuePlugin } from "pinia";
+import Vue from "vue";
+
+import { installPendingRequestsInterceptor } from "@/api/pendingRequests";
+import { initGalaxyInstance } from "@/app";
+import { initSentry } from "@/app/addons/sentry";
+import { initWebhooks } from "@/app/addons/webhooks";
+
 import { getRouter } from "./router";
-import { addInitialization, standardInit } from "@/onload";
-import store from "@/store";
+
+import App from "./App.vue";
 
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
-pinia.use(piniaPluginPersistedstate);
 
-addInitialization((Galaxy: any) => {
-    console.log("App setup");
+// Attach the shared AbortController signal to every outgoing axios request
+// so we can cancel in-flight anonymous-cookie requests before login/register
+// navigates — otherwise their late ``Set-Cookie: galaxysession=<anon>`` can
+// clobber the authenticated cookie.
+installPendingRequestsInterceptor();
+
+window.addEventListener("load", async () => {
+    // Create Galaxy object
+    const Galaxy = await initGalaxyInstance();
+
+    // Build router
     const router = getRouter(Galaxy);
-    // When initializing the primary app we bind the routing back to Galaxy for
-    // external use (e.g. gtn webhook) -- longer term we discussed plans to
-    // parameterize webhooks and initialize them explicitly with state.
+    // Keep router available on the global app object for legacy integrations
+    // such as webhooks that are injected outside of Vue component context.
     Galaxy.router = router;
+
+    // Initialize globals
+    initSentry(Galaxy, router);
+    await initWebhooks(Galaxy);
+
+    // Mount application
     new Vue({
         el: "#app",
-        setup() {
-            provide("store", store);
-        },
         render: (h) => h(App),
-        router: router,
-        store: store,
-        pinia: pinia,
+        router,
+        pinia,
     });
 });
-
-window.addEventListener("load", () => standardInit("app"));

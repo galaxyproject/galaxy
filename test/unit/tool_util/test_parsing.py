@@ -3,10 +3,27 @@ import os.path
 import shutil
 import tempfile
 from math import isinf
-from typing import Optional
+from typing import (
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+)
 
 from galaxy.tool_util.parser.factory import get_tool_source
+from galaxy.tool_util.parser.output_objects import from_tool_source
+from galaxy.tool_util.parser.yaml import YamlToolSource
+from galaxy.tool_util.unittest_utils import functional_test_tool_path
+from galaxy.tool_util_models.tool_outputs import (
+    ToolOutput,
+    ToolOutputCollection,
+    ToolOutputDataset,
+)
 from galaxy.util import galaxy_directory
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+)
 from galaxy.util.unittest import TestCase
 
 TOOL_XML_1 = """
@@ -36,6 +53,13 @@ TOOL_XML_1 = """
         <resource type="gpu_memory_min">4042</resource>
         <resource type="cuda_device_count_min">1</resource>
         <resource type="cuda_device_count_max">2</resource>
+        <resource type="shm_size">67108864</resource>
+        <resource type="timelimit">60</resource>
+        <credentials name="Apollo" version="gmod.org/apollo" label="Apollo credential set" description="Please provide credentials for Apollo">
+            <variable name="server" inject_as_env="apollo_url" optional="true" label="Your Apollo server" description="URL of your Apollo server" />
+            <secret name="username" inject_as_env="apollo_user" optional="true" label="Your Apollo username" description="Username for Apollo" />
+            <secret name="password" inject_as_env="apollo_pass" optional="true" label="Your Apollo password" description="Password for Apollo" />
+        </credentials>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -140,9 +164,33 @@ requirements:
     cuda_device_count_min: 1
   - type: resource
     cuda_device_count_max: 2
+  - type: resource
+    shm_size: 67108864
+  - type: resource
+    timelimit: 60
 containers:
   - type: docker
     identifier: "awesome/bowtie"
+credentials:
+  - name: Apollo
+    version: gmod.org/apollo
+    secrets:
+      - name: username
+        label: Your Apollo username
+        description: Username for Apollo
+        inject_as_env: apollo_user
+        optional: true
+      - name: password
+        label: Your Apollo password
+        description: Password for Apollo
+        inject_as_env: apollo_pass
+        optional: true
+    variables:
+      - name: server
+        label: Your Apollo server
+        description: URL of your Apollo server
+        inject_as_env: apollo_url
+        optional: true
 outputs:
   out1:
     format: bam
@@ -165,12 +213,11 @@ help:
     This is HELP TEXT2!!!
 tests:
    - inputs:
-       foo: 5
+       input1: 7
      outputs:
        out1: moo.txt
    - inputs:
-       foo:
-         value: 5
+       input1: 8
      outputs:
        out1:
          lines_diff: 4
@@ -245,17 +292,26 @@ class BaseLoaderTestCase(TestCase):
     def _tool_source(self):
         return self._get_tool_source()
 
+    @property
+    def _output_models(self) -> Sequence[ToolOutput]:
+        return from_tool_source(self._tool_source)
+
     def _get_tool_source(self, source_file_name=None, source_contents=None, macro_contents=None):
         if source_file_name is None:
-            source_file_name = self.source_file_name
+            source_file_name = self._get_source_file_name()
         if source_contents is None:
             source_contents = self.source_contents
+
         return get_test_tool_source(
             source_file_name,
             source_contents,
             macro_contents,
             self.temp_directory,
         )
+
+    def _get_source_file_name(self) -> str:
+        assert self.source_file_name
+        return self.source_file_name
 
 
 class TestXmlExpressionLoader(BaseLoaderTestCase):
@@ -322,7 +378,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        requirements, containers, resource_requirements, _, credentials = self._tool_source.parse_requirements()
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
@@ -331,7 +387,13 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert resource_requirements[3].resource_type == "gpu_memory_min"
         assert resource_requirements[4].resource_type == "cuda_device_count_min"
         assert resource_requirements[5].resource_type == "cuda_device_count_max"
+        assert resource_requirements[6].resource_type == "shm_size"
+        assert resource_requirements[7].resource_type == "timelimit"
         assert not resource_requirements[0].runtime_required
+        assert credentials[0].name == "Apollo"
+        assert credentials[0].version == "gmod.org/apollo"
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -346,7 +408,7 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert isinf(exit[0].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT1!!!"
 
     def test_tests(self):
@@ -379,31 +441,37 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert attributes1["compare"] == "sim_size"
         assert attributes1["lines_diff"] == 4
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
+
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
+        assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_exit_code(self):
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="exit_code">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         assert len(regexes) == 0, regexes
 
-        tool_source = self._get_tool_source(
-            source_contents="""<tool id="bwa" name="bwa">
+        tool_source = self._get_tool_source(source_contents="""<tool id="bwa" name="bwa">
             <command detect_errors="aggressive">
                 ls
             </command>
         </tool>
-        """
-        )
+        """)
         exit, regexes = tool_source.parse_stdio()
         assert len(exit) == 2, exit
         # error:, exception: various memory exception...
@@ -497,7 +565,9 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert self._tool_source.parse_action_module() is None
 
     def test_requirements(self):
-        software_requirements, containers, resource_requirements = self._tool_source.parse_requirements_and_containers()
+        software_requirements, containers, resource_requirements, _, credentials = (
+            self._tool_source.parse_requirements()
+        )
         assert software_requirements.to_dict() == [{"name": "bwa", "type": "package", "version": "1.0.1", "specs": []}]
         assert len(containers) == 1
         assert containers[0].to_dict() == {
@@ -506,7 +576,7 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 6
+        assert len(resource_requirements) == 8
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
         assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
         assert resource_requirements[2].to_dict() == {
@@ -522,6 +592,17 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resource_type": "cuda_device_count_max",
             "value_or_expression": 2,
         }
+        assert resource_requirements[6].to_dict() == {
+            "resource_type": "shm_size",
+            "value_or_expression": 67108864,
+        }
+        assert resource_requirements[7].to_dict() == {
+            "resource_type": "timelimit",
+            "value_or_expression": 60,
+        }
+        assert len(credentials) == 1
+        assert len(credentials[0].secrets) == 2
+        assert len(credentials[0].variables) == 1
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -539,7 +620,7 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert isinf(exit[1].range_end)
 
     def test_help(self):
-        help_text = self._tool_source.parse_help()
+        help_text = self._tool_source.parse_help().content
         assert help_text.strip() == "This is HELP TEXT2!!!"
 
     def test_inputs(self):
@@ -559,8 +640,8 @@ class TestYamlLoader(BaseLoaderTestCase):
         inputs = test_dict["inputs"]
         assert len(inputs) == 1
         input1 = inputs[0]
-        assert input1["name"] == "foo"
-        assert input1["value"] == 5
+        assert input1["name"] == "input1"
+        assert input1["value"] == 7
 
         outputs = test_dict["outputs"]
         assert len(outputs) == 1
@@ -583,7 +664,7 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_xrefs(self):
         xrefs = self._tool_source.parse_xrefs()
-        assert xrefs == [{"value": "bwa", "reftype": "bio.tools"}]
+        assert xrefs == [{"value": "bwa", "type": "bio.tools"}]
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
@@ -653,6 +734,16 @@ class TestApplyRulesToolLoader(BaseLoaderTestCase):
         assert len(outputs) == 1
         assert len(output_collections) == 1
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "output"
+        assert not output_model.hidden
+        assert output_model.label == "${input.name} (re-organized)"
+        output_collection_model = assert_output_model_of_type(output_model, ToolOutputCollection)
+        assert output_collection_model.collection_type_from_rules == "rules"
+
 
 class TestBuildListToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
@@ -664,9 +755,16 @@ class TestBuildListToolLoader(BaseLoaderTestCase):
         assert tool_module[1] == "BuildListCollectionTool"
 
 
-class TestExpressionTestToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
-    source_contents = None
+class FunctionalTestToolTestCase(BaseLoaderTestCase):
+    test_path: str
+    source_contents: None
+
+    def _get_source_file_name(self) -> str:
+        return functional_test_tool_path(self.test_path)
+
+
+class TestExpressionTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "expression_null_handling_boolean.xml"
 
     def test_test(self):
         test_dicts = self._tool_source.parse_tests_to_dict()["tests"]
@@ -692,10 +790,87 @@ class TestExpressionTestToolLoader(BaseLoaderTestCase):
         assert "object" in output0["attributes"]
         assert output0["attributes"]["object"] is None
 
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "bool_out"
+        assert not output_model.hidden
+        assert output_model.label is None
 
-class TestExpressionOutputDataToolLoader(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
-    source_contents = None
+
+class TestDefaultDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "for_workflows/cat_default.xml"
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+
+
+class TestDefaultCollectionDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "collection_paired_default.xml"
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["collection_type"] == "paired"
+        elements = default_dict["elements"]
+        assert len(elements) == 2
+        element0 = elements[0]
+        assert element0["identifier"] == "forward"
+        assert element0["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+        element1 = elements[1]
+        assert element1["identifier"] == "reverse"
+        assert element1["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta"
+
+
+class TestDefaultNestedCollectionDataTestToolLoader(FunctionalTestToolTestCase):
+    test_path = "collection_nested_default.xml"
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["collection_type"] == "list:paired"
+        elements = default_dict["elements"]
+        assert len(elements) == 1
+        element0 = elements[0]
+        assert element0["identifier"] == "i1"
+
+        elements0 = element0["elements"]
+        assert len(elements0) == 2
+        elements00 = elements0[0]
+        assert elements00["identifier"] == "forward"
+        elements01 = elements0[1]
+        assert elements01["identifier"] == "reverse"
+
+
+class TestExpressionOutputDataToolLoader(FunctionalTestToolTestCase):
+    test_path = "expression_pick_larger_file.xml"
 
     def test_output_parsing(self):
         outputs, _ = self._tool_source.parse_outputs(None)
@@ -727,9 +902,8 @@ class TestSpecialToolLoader(BaseLoaderTestCase):
         assert action[1] == "ExportHistoryToolAction"
 
 
-class TestCollection(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_two_paired.xml")
-    source_contents = None
+class TestCollection(FunctionalTestToolTestCase):
+    test_path = "collection_two_paired.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -741,27 +915,89 @@ class TestCollection(BaseLoaderTestCase):
         assert len(output_collections) == 0
 
 
-class TestCollectionOutputXml(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair.xml")
-    source_contents = None
+class TestCollectionOutputXml(FunctionalTestToolTestCase):
+    test_path = "collection_creates_pair.xml"
 
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
 
 
-class TestCollectionOutputYaml(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair_y.yml")
-    source_contents = None
+class TestCollectionOutputYaml(FunctionalTestToolTestCase):
+    test_path = "collection_creates_pair_y.yml"
 
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
 
 
-class TestEnvironmentVariables(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/environment_variables.xml")
-    source_contents = None
+def test_yaml_parser_accepts_collection_type_source_alias():
+    # XML tools use ``type_source``; the pydantic UDT model uses
+    # ``collection_type_source``. Parser must accept either.
+    doc = {
+        "class": "GalaxyTool",
+        "id": "alias-tool",
+        "name": "Alias tool",
+        "version": "0.1",
+        "shell_command": "touch outs/a.txt",
+        "outputs": [
+            {
+                "name": "outs",
+                "type": "collection",
+                "collection_type_source": "input1",
+                "discover_datasets": [
+                    {
+                        "discover_via": "pattern",
+                        "pattern": "__name_and_ext__",
+                        "directory": "outs",
+                    }
+                ],
+            }
+        ],
+    }
+    tool_source = YamlToolSource(doc)
+    _outputs, output_collections = tool_source.parse_outputs(None)
+    assert output_collections["outs"].structure.collection_type_source == "input1"
+
+
+def test_yaml_parser_lifts_legacy_structure_wrapper():
+    # Older DynamicTool.value rows nest collection fields under ``structure:``.
+    # The YAML parser path bypasses pydantic (see ``Toolbox.dynamic_tool_to_tool``),
+    # so it normalizes the wrapper itself.
+    legacy_doc = {
+        "class": "GalaxyTool",
+        "id": "legacy-collection-tool",
+        "name": "Legacy collection tool",
+        "version": "0.1",
+        "shell_command": "mkdir -p outs && touch outs/a.txt",
+        "outputs": [
+            {
+                "name": "outs",
+                "type": "collection",
+                "structure": {
+                    "collection_type": "list",
+                    "discover_datasets": [
+                        {
+                            "discover_via": "pattern",
+                            "pattern": "__name_and_ext__",
+                            "directory": "outs",
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+    tool_source = YamlToolSource(legacy_doc)
+    outputs, output_collections = tool_source.parse_outputs(None)
+    assert "outs" in output_collections
+    output = output_collections["outs"]
+    assert output.structure.collection_type == "list"
+    assert output.structure.dataset_collector_descriptions
+    assert output.structure.dataset_collector_descriptions[0].discover_via == "pattern"
+
+
+class TestEnvironmentVariables(FunctionalTestToolTestCase):
+    test_path = "environment_variables.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -769,22 +1005,20 @@ class TestEnvironmentVariables(BaseLoaderTestCase):
         assert len(tests) == 1
 
 
-class TestExpectations(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
-    source_contents = None
+class TestExpectations(FunctionalTestToolTestCase):
+    test_path = "detect_errors.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
         tests = tests_dict["tests"]
         assert len(tests) == 10
         test_0 = tests[0]
-        assert len(test_0["stderr"]) == 1
-        assert len(test_0["stdout"]) == 2
+        assert len(test_0["stderr"]) == 2
+        assert len(test_0["stdout"]) == 1
 
 
-class TestExpectationsCommandVersion(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/job_properties.xml")
-    source_contents = None
+class TestExpectationsCommandVersion(FunctionalTestToolTestCase):
+    test_path = "job_properties.xml"
 
     def test_tests(self):
         tests_dict = self._tool_source.parse_tests_to_dict()
@@ -794,13 +1028,80 @@ class TestExpectationsCommandVersion(BaseLoaderTestCase):
         assert len(test_0["command_version"]) == 1
 
 
-class TestQcStdio(BaseLoaderTestCase):
-    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
-    source_contents = None
+class TestQcStdio(FunctionalTestToolTestCase):
+    test_path = "qc_stdout.xml"
 
     def test_tests(self):
         exit, regexes = self._tool_source.parse_stdio()
         assert len(exit) == 2
-        assert len(regexes) == 1
+        assert len(regexes) == 2
         regex = regexes[0]
         assert regex.error_level == 1.1
+
+
+class TestCollectionCatGroupTag(FunctionalTestToolTestCase):
+    test_path = "collection_cat_group_tag.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "out_file1"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source == "input1"
+
+
+def test_old_invalid_citation_dont_cause_failure_to_load():
+    with as_file(resource_path(__name__, "invalid_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    assert tool_source.parse_citations() == []
+
+
+def test_invalid_citation_not_allowed_in_modern_tools():
+    with as_file(resource_path(__name__, "invalid_citation_26.1.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    exc = None
+    try:
+        tool_source.parse_citations()
+    except Exception as e:
+        exc = e
+    assert exc is not None
+
+
+def test_legacy_doi_prefix_citation_is_normalized():
+    # Legacy 'doi:'-prefixed citations load and are normalized to the bare DOI
+    # so downstream resolution (https://doi.org/<doi>) works (see issue #22795).
+    with as_file(resource_path(__name__, "doi_prefixed_citation.xml")) as tool_path:
+        tool_source = get_tool_source(tool_path)
+    citations = tool_source.parse_citations()
+    assert len(citations) == 1
+    assert citations[0].type == "doi"
+    assert citations[0].content == "10.1186/1471-2105-11-485"
+
+
+class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
+    test_path = "tool_provided_metadata_2.xml"
+
+    def test_output_models(self):
+        output_models = self._output_models
+        assert len(output_models) == 1
+        output_model = output_models[0]
+        assert output_model.name == "sample"
+        assert not output_model.hidden
+        assert output_model.label is None
+        output_dataset_model = assert_output_model_of_type(output_model, ToolOutputDataset)
+        assert output_dataset_model.metadata_source is None
+        discover_datasets = output_dataset_model.discover_datasets or []
+        assert len(discover_datasets) == 1
+        discover_datasets_0 = discover_datasets[0]
+        assert discover_datasets_0.discover_via == "pattern"
+
+
+T = TypeVar("T")
+
+
+def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
+    assert isinstance(obj, clazz)
+    return obj

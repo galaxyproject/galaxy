@@ -1,12 +1,13 @@
 from typing import (
     Any,
     Optional,
-    Tuple,
 )
+
+import pytest
 
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.model.base import transaction
+from galaxy.tools.parameters.basic import ParameterValueError
 from .util import BaseParameterTestCase
 
 
@@ -35,6 +36,25 @@ class TestDataToolParameter(BaseParameterTestCase):
         # to just filter it out.
         assert [hda] == self.param.to_python(f"{hda.id},None", self.app)
 
+    def test_from_json_rejects_src_prefixed_string(self):
+        bogus = "hda:f9cad7b01a472135e2c8f5464c5c5ecb"
+        with pytest.raises(ParameterValueError, match="invalid dataset id"):
+            self.param.from_json([bogus], self.trans)
+
+    def test_from_json_rejects_garbage_string(self):
+        with pytest.raises(ParameterValueError, match="invalid dataset id"):
+            self.param.from_json("not-an-id", self.trans)
+
+    def test_from_json_multi_tolerates_none(self):
+        # An unset optional data input connected to a multiple data parameter
+        # arrives as a null list element; it must be filtered out rather than
+        # rejected as a malformed id (regression from #22617, surfaced as a
+        # workflow run erroring on an unset optional data input).
+        self.multiple = True
+        self.optional = True
+        assert self.param.from_json([None], self.trans) == []
+        assert self.param.from_json(["None"], self.trans) == []
+
     def test_field_filter_on_types(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
         hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
@@ -51,8 +71,8 @@ class TestDataToolParameter(BaseParameterTestCase):
         assert field["options"]["hda"][0]["name"] == "hda1"
 
     def test_field_display_hidden_hdas_only_if_selected(self):
-        hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
+        hda1 = self._new_hda(name="hda1")
+        hda2 = self._new_hda(name="hda2")
         hda1.visible = False
         hda2.visible = False
         self.stub_active_datasets(hda1, hda2)
@@ -61,8 +81,8 @@ class TestDataToolParameter(BaseParameterTestCase):
         assert field["options"]["hda"][0]["name"] == "(hidden) hda2"
 
     def test_field_display_deleted_hdas_only_if_selected(self):
-        hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda2 = MockHistoryDatasetAssociation(name="hda2", id=2)
+        hda1 = self._new_hda(name="hda1")
+        hda2 = self._new_hda(name="hda2")
         hda1.visible = False
         hda2.deleted = True
         self.stub_active_datasets(hda1, hda2)
@@ -143,23 +163,24 @@ class TestDataToolParameter(BaseParameterTestCase):
         self.stub_active_datasets(hda1)
         assert hda1 == self.param.get_initial_value(self.trans, {}), hda1
 
-    def _new_hda(self):
+    def _new_hda(self, name="Test Dataset"):
         hda = model.HistoryDatasetAssociation()
         hda.visible = True
+        hda.name = name
+        hda.extension = "txt"
         hda.dataset = model.Dataset()
-        self.app.model.context.add(hda)
+        hda.dataset.state = model.Dataset.states.OK
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(hda)
+        session.commit()
         return hda
 
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
-        self.app.model.context.add(self.test_history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.add(self.test_history)
+        session.commit()
         self.trans = galaxy_mock.MockTrans(history=self.test_history)
         self.multiple = False
         self.optional = False
@@ -167,7 +188,23 @@ class TestDataToolParameter(BaseParameterTestCase):
 
     def stub_active_datasets(self, *hdas):
         self.test_history._active_datasets_and_roles = [h for h in hdas if not h.deleted]
-        self.test_history._active_visible_datasets_and_roles = [h for h in hdas if not h.deleted and h.visible]
+        visible = [h for h in hdas if not h.deleted and h.visible]
+        self.test_history._active_visible_datasets_and_roles = visible
+
+        # Stub the paginated query helper used by ``DataToolParameter.to_dict``.
+        # The fakes mock ``find_conversion_destination`` at the HDA level rather
+        # than at the datatypes-registry level, so we deliberately ignore the
+        # SQL ``extensions``/``valid_states`` filters here and return all
+        # visible HDAs — the matcher path then exercises the per-HDA mocked
+        # conversion logic. We sort by ``hid`` descending to mirror the real
+        # query's ordering (newest-first), which ``get_initial_value`` relies
+        # on to pick the most recent matching HDA.
+        visible_desc = sorted(visible, key=lambda h: h.hid, reverse=True)
+
+        def _paginated(*, extensions=None, valid_states=None, search=None, offset=0, limit=50):
+            return visible_desc[offset : offset + limit], len(visible_desc)
+
+        self.test_history.paginated_active_visible_datasets = _paginated  # type: ignore[method-assign]
 
     def _simple_field(self, **kwds):
         return self.param.to_dict(trans=self.trans, **kwds)
@@ -188,8 +225,8 @@ class TestDataToolParameter(BaseParameterTestCase):
 
 
 class MockHistoryDatasetAssociation:
-    """Fake HistoryDatasetAssociation stubbed out for testing matching and
-    stuff like that.
+    """Fake HistoryDatasetAssociation that stubs find_conversion_destination
+    so conversion tests can run without a datatype registry.
     """
 
     def __init__(self, test_dataset=None, name="Test Dataset", id=1):
@@ -200,7 +237,7 @@ class MockHistoryDatasetAssociation:
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.conversion_destination: Tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
+        self.conversion_destination: tuple[bool, Optional[str], Optional[Any]] = (True, None, None)
         self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False

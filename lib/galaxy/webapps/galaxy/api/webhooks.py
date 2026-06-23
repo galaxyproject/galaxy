@@ -1,6 +1,7 @@
 """
 API Controller providing Galaxy Webhooks
 """
+
 import importlib.util
 import logging
 from typing import Any

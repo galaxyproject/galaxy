@@ -1,54 +1,48 @@
+<script setup lang="ts">
+import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
+import type { DatasetSource } from "@/api";
+import { copy } from "@/utils/clipboard";
+import localize from "@/utils/localization";
+
+import DatasetSourceTransform from "@/components/DatasetInformation/DatasetSourceTransform.vue";
+
+interface Props {
+    source: DatasetSource;
+}
+
+const props = defineProps<Props>();
+
+const sourceUri = computed(() => {
+    return props.source.source_uri;
+});
+const browserCompatUri = computed(() => {
+    return sourceUri.value && (sourceUri.value.indexOf("http") == 0 || sourceUri.value.indexOf("ftp") == 0);
+});
+
+function copyLink() {
+    copy(sourceUri.value, localize("Link copied to your clipboard"));
+}
+</script>
+
 <template>
     <li class="dataset-source">
-        <a v-if="browserCompatUri" v-b-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
+        <a v-if="browserCompatUri" v-g-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
             {{ source.source_uri }}
-            <font-awesome-icon icon="external-link-alt" />
+            <FontAwesomeIcon :icon="faExternalLinkAlt" />
         </a>
         <span v-else>
             {{ source.source_uri }}
         </span>
-        <span v-b-tooltip.hover title="Copy URI"
-            ><font-awesome-icon icon="copy" style="cursor: pointer" @click="copyLink"
-        /></span>
+
+        <span v-g-tooltip.hover title="Copy URI">
+            <FontAwesomeIcon :icon="faCopy" style="cursor: pointer" @click="copyLink" />
+        </span>
+
         <br />
-        <DatasetSourceTransform :transform="source.transform" />
+
+        <DatasetSourceTransform v-if="source.transform" :transform="source.transform" />
     </li>
 </template>
-
-<script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCopy, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { copy } from "utils/clipboard";
-import DatasetSourceTransform from "./DatasetSourceTransform";
-import _l from "utils/localization";
-
-library.add(faCopy, faExternalLinkAlt);
-
-export default {
-    components: {
-        DatasetSourceTransform,
-        FontAwesomeIcon,
-    },
-    props: {
-        source: {
-            type: Object,
-            required: true,
-        },
-    },
-    computed: {
-        browserCompatUri() {
-            const sourceUri = this.sourceUri;
-            return sourceUri && (sourceUri.indexOf("http") == 0 || sourceUri.indexOf("ftp") == 0);
-        },
-        sourceUri() {
-            return this.source.source_uri;
-        },
-    },
-    methods: {
-        copyLink() {
-            copy(this.sourceUri, _l("Link copied to your clipboard"));
-        },
-    },
-};
-</script>

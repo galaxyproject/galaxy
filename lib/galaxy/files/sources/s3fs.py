@@ -1,120 +1,108 @@
-import functools
 import logging
-import os
 from typing import (
-    Any,
-    cast,
-    Dict,
-    List,
     Optional,
+    Union,
 )
 
-from typing_extensions import Unpack
-
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
+from galaxy import exceptions
+from galaxy.files.models import FilesSourceRuntimeContext
+from galaxy.files.sources._fsspec import (
+    CacheOptionsDictType,
+    FsspecBaseFileSourceConfiguration,
+    FsspecBaseFileSourceTemplateConfiguration,
+    FsspecFilesSource,
 )
+from galaxy.util.config_templates import TemplateExpansion
 
 try:
-    import s3fs
+    from s3fs import S3FileSystem
 except ImportError:
-    s3fs = None
+    S3FileSystem = None
 
-from . import BaseFilesSource
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
+REQUIRED_PACKAGE = FS_PLUGIN_TYPE = "s3fs"
 
 log = logging.getLogger(__name__)
 
 
-class S3FsFilesSourceProperties(FilesSourceProperties, total=False):
-    bucket: str
-    endpoint_url: int
-    user: str
-    passwd: str
-    client_kwargs: dict  # internally computed. Should not be specified in config file
+class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
+    anon: Union[bool, TemplateExpansion] = False
+    endpoint_url: Union[str, TemplateExpansion, None] = None
+    bucket: Union[str, TemplateExpansion, None] = None
+    secret: Union[str, TemplateExpansion, None] = None
+    key: Union[str, TemplateExpansion, None] = None
+    request_checksum_calculation: Union[str, TemplateExpansion, None] = None
 
 
-class S3FsFilesSource(BaseFilesSource):
-    plugin_type = "s3fs"
+class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
+    anon: bool = False
+    endpoint_url: Optional[str] = None
+    bucket: Optional[str] = None
+    secret: Optional[str] = None
+    key: Optional[str] = None
+    request_checksum_calculation: Optional[str] = None
 
-    def __init__(self, **kwd: Unpack[S3FsFilesSourceProperties]):
-        if s3fs is None:
-            raise Exception("Package s3fs unavailable but required for this file source plugin.")
-        props: S3FsFilesSourceProperties = cast(S3FsFilesSourceProperties, self._parse_common_config_opts(kwd))
-        self._bucket = props.pop("bucket", "")
-        self._endpoint_url = props.pop("endpoint_url", None)
-        self._props = props
-        if self._endpoint_url:
-            self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    def _list(self, path="/", recursive=True, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        fs = self._open_fs(user_context=user_context, opts=opts)
-        if recursive:
-            res: List[Dict[str, Any]] = []
-            bucket_path = self._bucket_path(path)
-            for p, dirs, files in fs.walk(bucket_path, detail=True):
-                to_dict = functools.partial(self._resource_info_to_dict, p)
-                res.extend(map(to_dict, dirs.values()))
-                res.extend(map(to_dict, files.values()))
-            return res
-        else:
-            bucket_path = self._bucket_path(path)
-            res = fs.ls(bucket_path, detail=True)
-            to_dict = functools.partial(self._resource_info_to_dict, path)
-            return list(map(to_dict, res))
+class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
+    plugin_type = FS_PLUGIN_TYPE
+    required_module = S3FileSystem
+    required_package = REQUIRED_PACKAGE
 
-    def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        bucket_path = self._bucket_path(source_path)
-        self._open_fs(user_context=user_context, opts=opts).download(bucket_path, native_path)
+    template_config_class = S3FSFileSourceTemplateConfiguration
+    resolved_config_class = S3FSFileSourceConfiguration
 
-    def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        bucket_path = self._bucket_path(target_path)
-        self._open_fs(user_context=user_context, opts=opts).upload(native_path, bucket_path)
+    def _open_fs(
+        self,
+        context: FilesSourceRuntimeContext[S3FSFileSourceConfiguration],
+        cache_options: CacheOptionsDictType,
+    ):
+        if S3FileSystem is None:
+            raise self.required_package_exception
 
-    def _bucket_path(self, path: str):
-        if path.startswith("s3://"):
-            return path.replace("s3://", "")
-        elif not path.startswith("/"):
-            path = f"/{path}"
-        return f"{self._bucket}{path}"
-
-    def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        extra_props = opts.extra_props or {} if opts else {}
-        fs = s3fs.S3FileSystem(**{**self._props, **extra_props})
+        config = context.config
+        client_kwargs = {"endpoint_url": config.endpoint_url} if config.endpoint_url else None
+        config_kwargs = (
+            {"request_checksum_calculation": config.request_checksum_calculation}
+            if config.request_checksum_calculation
+            else None
+        )
+        fs = S3FileSystem(
+            anon=config.anon,
+            key=config.key,
+            secret=config.secret,
+            client_kwargs=client_kwargs,
+            config_kwargs=config_kwargs,
+            **cache_options,
+        )
         return fs
 
-    def _resource_info_to_dict(self, dir_path: str, resource_info):
-        name = os.path.basename(resource_info["name"])
-        path = os.path.join(dir_path, name)
-        uri = self.uri_from_path(path)
-        if resource_info["type"] == "directory":
-            return {"class": "Directory", "name": name, "uri": uri, "path": path}
-        else:
-            return {
-                "class": "File",
-                "name": name,
-                "size": resource_info["size"],
-                # should this be mtime...
-                "ctime": self.to_dict_time(resource_info["LastModified"]),
-                "uri": uri,
-                "path": path,
-            }
+    def _to_filesystem_path(self, path: str, config: S3FSFileSourceConfiguration) -> str:
+        """Convert an entry path to the S3 filesystem path format."""
+        if path.startswith("s3://"):
+            return path.replace("s3://", "")
+        bucket = config.bucket
+        if not bucket:
+            raise exceptions.MessageException("Bucket name is required for S3FsFilesSource.")
+        if not path.startswith("/"):
+            path = f"/{path}"
+        return f"{bucket}{path}"
 
-    def _serialization_props(self, user_context=None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        effective_props["bucket"] = self._bucket
-        return effective_props
+    def _adapt_entry_path(self, filesystem_path: str, config: S3FSFileSourceConfiguration) -> str:
+        """Remove the S3 bucket name from the filesystem path."""
+        if config.bucket:
+            bucket_prefix = f"{config.bucket}/"
+            return filesystem_path.replace(bucket_prefix, "", 1)
+        return filesystem_path
 
     def score_url_match(self, url: str):
+        # We need to use template_config here because this is called before the template is expanded.
+        bucket_name = self.template_config.bucket
         # For security, we need to ensure that a partial match doesn't work. e.g. s3://{bucket}something/myfiles
-        if self._bucket and (url.startswith(f"s3://{self._bucket}/") or url == f"s3://{self._bucket}"):
-            return len(f"s3://{self._bucket}")
-        elif not self._bucket and url.startswith("s3://"):
+        if bucket_name and (url.startswith(f"s3://{bucket_name}/") or url == f"s3://{bucket_name}"):
+            return len(f"s3://{bucket_name}")
+        elif not bucket_name and url.startswith("s3://"):
             return len("s3://")
         else:
             return super().score_url_match(url)

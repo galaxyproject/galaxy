@@ -1,104 +1,184 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, watchEffect, type Ref, type WatchStopHandle } from "vue";
-import { storeToRefs } from "pinia";
-import localize from "@/utils/localization";
-import { useUserStore } from "@/stores/userStore";
-import { useHistoryStore } from "@/stores/historyStore";
+import { faCheckSquare, faClock, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import { BAlert, BButton, BButtonGroup } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+
+import { userOwnsHistory } from "@/api";
+import { HistoryFilters } from "@/components/History/HistoryFilters";
+import { Toast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+
 import MultipleViewList from "./MultipleViewList.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
+import Heading from "@/components/Common/Heading.vue";
 import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
+type PinnedHistory = { id: string };
 
 const filter = ref("");
+const showAdvanced = ref(false);
 const showSelectModal = ref(false);
-
-library.add(faTimes);
+const initialLoaded = ref(false);
+const DISPLAY_INCREMENT = 4;
+const displayCount = ref(DISPLAY_INCREMENT);
 
 const { currentUser } = storeToRefs(useUserStore());
-const { histories, currentHistory } = storeToRefs(useHistoryStore());
+const { histories, currentHistory, historiesLoading } = storeToRefs(useHistoryStore());
 
 const historyStore = useHistoryStore();
-const selectedHistories: Ref<{ id: string }[]> = computed(() => historyStore.pinnedHistories);
 
-const noHistoriesInView = computed(() => !selectedHistories.value.length && histories.value.length > 0);
-
-const loadingPinnedHistories = ref(true);
-const stopStoreWatcher: Ref<WatchStopHandle | null> = ref(null);
-onMounted(async () => {
-    loadingPinnedHistories.value = true;
-    stopStoreWatcher.value = watchEffect(() => {
-        if (noHistoriesInView.value == true) {
-            historyStore.pinHistory(histories.value[0]!.id);
-            if (stopStoreWatcher.value) {
-                stopStoreWatcher.value();
+/** All user-owned histories sorted by update time (most recent first) */
+const sortedUserHistories = computed(() => {
+    return [...histories.value]
+        .filter((h) => userOwnsHistory(currentUser.value, h))
+        .sort((a, b) => {
+            if (a.update_time < b.update_time) {
+                return 1;
+            } else {
+                return -1;
             }
-        }
-    });
-    loadingPinnedHistories.value = false;
+        });
 });
+
+const selectedHistories = computed<PinnedHistory[]>(() => {
+    if (hasPinnedHistories.value) {
+        return historyStore.pinnedHistories;
+    } else {
+        return sortedUserHistories.value.slice(0, displayCount.value).map((history) => {
+            return { id: history.id };
+        });
+    }
+});
+
+/** Whether there are more histories available to load (only relevant when not using pinned) */
+const canLoadMore = computed(() => {
+    if (hasPinnedHistories.value) {
+        return false;
+    }
+    return sortedUserHistories.value.length > displayCount.value;
+});
+
+function loadMore() {
+    displayCount.value += DISPLAY_INCREMENT;
+}
+
+// On mounted, wait for history store to load, then set `initialLoaded` to true
+watch(
+    () => historiesLoading.value,
+    (loading: boolean) => {
+        if (!loading && histories.value.length > 0 && !initialLoaded.value) {
+            initialLoaded.value = true;
+        }
+    },
+    { immediate: true },
+);
+
+/** computed ref that indicates whether the user has histories pinned */
+const hasPinnedHistories = computed(() => Object.keys(historyStore.pinnedHistories).length > 0);
 
 /**
  * From the incoming list, pin histories that are not already pinned and
  * unpin histories that are not in the incoming list.
  * This is a mechanism to allow users to select or deselect histories in modal.
- * @param histories the incoming list of histories to pin
+ * @param incomingHistories the incoming list of histories to pin
  */
-function addHistoriesToList(histories: { id: string }[]) {
-    // Unpin histories that are already pinned but not in the incoming list
-    const historiesToUnpin = selectedHistories.value.filter(
-        (pinnedHistory) => !histories.some((history) => history.id === pinnedHistory.id)
-    );
-    historiesToUnpin.forEach((history) => {
-        historyStore.unpinHistory(history.id);
-    });
-    // Pin histories that aren't already pinned and are in incoming list
-    histories.forEach((history) => {
-        const historyExists = selectedHistories.value.some((h) => h.id === history.id);
+function addHistoriesToList(incomingHistories: PinnedHistory[]) {
+    if (incomingHistories.length === 0) {
+        showRecent();
+        return;
+    }
+    // Pin histories that are in incoming list and aren't already pinned
+    incomingHistories.forEach((history) => {
+        const historyExists = historyStore.pinnedHistories.some((h: PinnedHistory) => h.id === history.id);
         if (!historyExists) {
             historyStore.pinHistory(history.id);
-            historyStore.loadHistoryById(history.id);
         }
     });
+    // Unpin histories that are already pinned but not in the incoming list
+    const historiesToUnpin = historyStore.pinnedHistories
+        .filter((pinnedHistory: PinnedHistory) => !incomingHistories.some((history) => history.id === pinnedHistory.id))
+        .map((history: PinnedHistory) => history.id);
+    historyStore.unpinHistories(historiesToUnpin);
 }
 
-function updateFilter(newFilter: string) {
-    filter.value = newFilter;
+const showRecentTitle = computed(() => {
+    if (hasPinnedHistories.value) {
+        return localize(`Show ${displayCount.value} most recently updated histories instead`);
+    } else {
+        return localize(`Currently showing ${displayCount.value} most recently updated histories`);
+    }
+});
+
+function showRecent() {
+    displayCount.value = DISPLAY_INCREMENT;
+    historyStore.clearPinnedHistories();
+    Toast.info(
+        `Showing the ${displayCount.value} most recently updated histories. Pin histories to this view by clicking on Select Histories.`,
+        "History Multiview",
+    );
 }
 </script>
 
 <template>
-    <div v-if="currentUser">
-        <b-alert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
+    <div v-if="currentUser" class="d-flex flex-column">
+        <div class="d-flex">
+            <Heading h1 separator inline size="lg" class="flex-grow-1 mb-2">History Multiview</Heading>
+
+            <div class="d-flex justify-content-between">
+                <div>
+                    <BButtonGroup v-g-tooltip.hover :title="showRecentTitle">
+                        <BButton
+                            size="sm"
+                            data-description="show recent histories"
+                            variant="outline-primary"
+                            :disabled="!hasPinnedHistories"
+                            @click="showRecent">
+                            <FontAwesomeIcon v-if="hasPinnedHistories" :icon="faUndo" />
+                            <FontAwesomeIcon v-else :icon="faClock" />
+                            <span v-localize>Recent</span>
+                        </BButton>
+                    </BButtonGroup>
+                    <BButton
+                        v-g-tooltip.hover
+                        :title="localize('Open modal to select/deselect histories')"
+                        size="sm"
+                        data-description="open select histories modal"
+                        variant="outline-primary"
+                        @click="showSelectModal = true">
+                        <FontAwesomeIcon :icon="faCheckSquare" />
+                        <span v-localize>Select</span>
+                    </BButton>
+                </div>
+            </div>
+        </div>
+        <BAlert v-if="!initialLoaded && historiesLoading" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </b-alert>
+        </BAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
-            <b-input-group class="w-100">
-                <b-form-input
-                    v-model="filter"
-                    size="sm"
-                    debounce="500"
-                    :class="filter && 'font-weight-bold'"
-                    :placeholder="localize('search datasets in selected histories')"
-                    data-description="filter text input"
-                    @keyup.esc="updateFilter('')" />
-                <b-input-group-append>
-                    <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
-                        <FontAwesomeIcon icon="fa-times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
+            <FilterMenu
+                name="History Multiview"
+                :placeholder="localize('Search datasets and collections in selected histories')"
+                :filter-class="HistoryFilters"
+                :filter-text.sync="filter"
+                :loading="historiesLoading"
+                :show-advanced.sync="showAdvanced" />
             <MultipleViewList
-                :histories="histories"
+                v-show="!showAdvanced"
                 :filter="filter"
                 :current-history="currentHistory"
                 :selected-histories="selectedHistories"
-                :show-modal.sync="showSelectModal" />
+                :can-load-more="canLoadMore"
+                :show-modal.sync="showSelectModal"
+                @load-more="loadMore" />
         </div>
-        <b-alert v-else class="m-2" variant="danger" show>
+        <BAlert v-else-if="!histories.length" class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </b-alert>
+        </BAlert>
         <SelectorModal
             v-show="showSelectModal"
             :multiple="true"

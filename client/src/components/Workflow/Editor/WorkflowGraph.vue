@@ -1,87 +1,116 @@
-<template>
-    <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
-        <div
-            id="canvas-container"
-            ref="canvas"
-            class="canvas-content position-relative"
-            @drop.prevent
-            @dragover.prevent>
-            <AdaptiveGrid
-                :viewport-bounds="elementBounding"
-                :viewport-bounding-box="viewportBoundingBox"
-                :transform="transform" />
-            <div class="node-area" :style="canvasStyle">
-                <WorkflowEdges
-                    :transform="transform"
-                    :dragging-terminal="draggingTerminal"
-                    :dragging-connection="draggingPosition" />
-                <WorkflowNode
-                    v-for="(step, key) in steps"
-                    :id="step.id"
-                    :key="key"
-                    :name="step.name"
-                    :content-id="step.content_id"
-                    :step="step"
-                    :datatypes-mapper="datatypesMapper"
-                    :active-node-id="activeNodeId"
-                    :root-offset="elementBounding"
-                    :scroll="scroll"
-                    :scale="scale"
-                    @pan-by="panBy"
-                    @stopDragging="onStopDragging"
-                    @onDragConnector="onDragConnector"
-                    @onActivate="onActivate"
-                    @onDeactivate="onDeactivate"
-                    v-on="$listeners" />
-            </div>
-        </div>
-        <workflow-minimap
-            v-if="elementBounding"
-            :steps="steps"
-            :viewport-bounds="elementBounding"
-            :viewport-bounding-box="viewportBoundingBox"
-            @panBy="panBy"
-            @moveTo="moveTo" />
-    </div>
-</template>
 <script setup lang="ts">
-import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
+import { useElementBounding, useEventListener, useScroll } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useFocusedNodes } from "@/components/Graph/composables/useFocusedNodes";
+import { useD3Zoom } from "@/composables/d3Zoom";
+import { useViewportBoundingBox } from "@/composables/viewportBoundingBox";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+import { assertDefined } from "@/utils/assertions";
+import type { Vector } from "@/utils/geometry";
+
+import { useWorkflowBoundingBox } from "./composables/workflowBoundingBox";
+import type { OutputTerminals } from "./modules/terminals";
+import { maxZoom, minZoom } from "./modules/zoomLevels";
+
+import AdaptiveGrid from "./AdaptiveGrid.vue";
+import WorkflowComment from "./Comments/WorkflowComment.vue";
+import BoxSelectPreview from "./Tools/BoxSelectPreview.vue";
+import InputCatcher from "./Tools/InputCatcher.vue";
+import ToolBar from "./Tools/ToolBar.vue";
+import LoadingOverlay from "@/components/Common/LoadingOverlay.vue";
+import ZoomControl from "@/components/Graph/ZoomControl.vue";
+import AreaHighlight from "@/components/Workflow/Editor/AreaHighlight.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
-import { useElementBounding, useScroll } from "@vueuse/core";
-import { storeToRefs } from "pinia";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
-import { useD3Zoom } from "./composables/d3Zoom";
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import type { OutputTerminals } from "./modules/terminals";
-import { assertDefined } from "@/utils/assertions";
-import { minZoom, maxZoom } from "./modules/zoomLevels";
-import { useViewportBoundingBox } from "./composables/viewportBoundingBox";
-import AdaptiveGrid from "./AdaptiveGrid.vue";
 
-const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
+const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo", "stepClicked"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: null as unknown as PropType<number | null>, default: null },
-    scrollToId: { type: null as unknown as PropType<number | null>, default: null },
+    scrollToId: { type: Number as PropType<number | null>, default: null },
+    readonly: { type: Boolean, default: false },
+    initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
+    isInvocation: { type: Boolean, default: false },
+    showMinimap: { type: Boolean, default: true },
+    showZoomControls: { type: Boolean, default: true },
+    fixedHeight: { type: Number, default: undefined },
+    populatedInputs: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
+    detailedView: { type: Boolean, default: false },
 });
 
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
-const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
+const { stateStore, stepStore, connectionStore } = useWorkflowStores();
+const { scale, activeNodeId, draggingPosition, draggingTerminal, pendingHighlight } = storeToRefs(stateStore);
+
+const { focusedNodeIds } = useFocusedNodes(activeNodeId, {
+    upstream(id) {
+        const result: number[] = [];
+        for (const conn of connectionStore.getConnectionsForStep(id)) {
+            if (conn.input.stepId === id) {
+                result.push(conn.output.stepId);
+            }
+        }
+        return result;
+    },
+    downstream(id) {
+        const result: number[] = [];
+        for (const conn of connectionStore.getConnectionsForStep(id)) {
+            if (conn.output.stepId === id) {
+                result.push(conn.input.stepId);
+            }
+        }
+        return result;
+    },
+});
 const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll, { x: 20, y: 20 });
-const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
+const {
+    transform,
+    panBy,
+    setZoom,
+    moveTo,
+    setTransform: d3SetTransform,
+} = useD3Zoom(scale.value, minZoom, maxZoom, canvas, props.initialPosition);
+
+watch(
+    () => transform.value,
+    () => {
+        stateStore.position[0] = transform.value.x;
+        stateStore.position[1] = transform.value.y;
+    },
+);
+
+const { viewportBoundingBox, updateViewportBaseBoundingBox } = useViewportBoundingBox(
+    elementBounding,
+    scale,
+    transform,
+);
+const { getWorkflowBoundingBox } = useWorkflowBoundingBox();
+
+function fitWorkflow(minimumFitZoom = 0.5, maximumFitZoom = 1.0, padding = 50.0) {
+    if (!Object.keys(props.steps).length) {
+        // If there are no steps, we cannot fit the workflow.
+        return;
+    }
+    const aabb = getWorkflowBoundingBox();
+    aabb.expand(padding);
+
+    const transform = updateViewportBaseBoundingBox().transformTo(aabb);
+
+    const scale = Math.min(transform.scaleX, transform.scaleY);
+    const clampedScale = Math.max(minimumFitZoom, Math.min(maximumFitZoom, scale));
+
+    zoomTo(clampedScale);
+    moveTo({ x: aabb.x, y: aabb.y }, [0, 0]);
+}
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
@@ -105,21 +134,21 @@ watch(
                 const centerScreenY = height / 2;
                 const offsetX = centerScreenX - (stepPosition.left + stepWidth / 2);
                 const offsetY = centerScreenY - (stepPosition.top + stepHeight / 2);
-                onZoom(1, { x: offsetX, y: offsetY });
+                zoomTo(1, { x: offsetX, y: offsetY });
             } else {
                 console.log("Step has no position");
             }
             emit("scrollTo");
         }
-    }
+    },
 );
 
-function onZoom(zoomLevel: number, panTo: XYPosition | null = null) {
-    setZoom(zoomLevel);
+function zoomTo(zoomLevel: number, panTo: XYPosition | null = null, origin?: Vector) {
+    setZoom(zoomLevel, origin);
     if (panTo) {
         panBy({ x: panTo.x - transform.value.x, y: panTo.y - transform.value.y });
     }
-    stateStore.setScale(zoomLevel);
+    stateStore.scale = zoomLevel;
 }
 function onStopDragging() {
     stateStore.draggingPosition = null;
@@ -132,17 +161,58 @@ function onDragConnector(position: TerminalPosition, draggingTerminal: OutputTer
     isDragging.value = true;
 }
 function onActivate(nodeId: number | null) {
+    emit("stepClicked", nodeId);
     if (activeNodeId.value !== nodeId) {
-        stateStore.setActiveNode(nodeId);
+        stateStore.activeNodeId = nodeId;
     }
 }
 function onDeactivate() {
-    stateStore.setActiveNode(null);
+    stateStore.activeNodeId = null;
 }
+
+/**
+ * Max total pixel movement (|dx| + |dy|) between pointerdown and pointerup
+ * that still counts as a "click" rather than a pan/drag.
+ */
+const mouseMovementThreshold = 9;
+
+/** The position of the last pointerdown event, or null if there hasn't been one yet. */
+let canvasPointerDownPos: { x: number; y: number } | null = null;
+
+// capture: true makes these fire in the capture phase, before D3 zoom's bubble-phase
+// listeners on the same element — so D3 cannot stopImmediatePropagation us out.
+useEventListener(
+    canvas,
+    "pointerdown",
+    (e: PointerEvent) => {
+        canvasPointerDownPos = { x: e.clientX, y: e.clientY };
+    },
+    { capture: true },
+);
+
+useEventListener(
+    canvas,
+    "pointerup",
+    (e: PointerEvent) => {
+        if (!canvasPointerDownPos) {
+            return;
+        }
+        const dx = Math.abs(e.clientX - canvasPointerDownPos.x);
+        const dy = Math.abs(e.clientY - canvasPointerDownPos.y);
+        canvasPointerDownPos = null;
+        // walk up the DOM from the release target — if we hit a node, this was a node click
+        const clickedOnNode = !!(e.target as HTMLElement).closest(".workflow-node");
+        // only deactivate on a clean click (no pan) on the canvas background
+        if (dx + dy <= mouseMovementThreshold && !clickedOnNode) {
+            onDeactivate();
+        }
+    },
+    { capture: true },
+);
 
 watch(
     () => transform.value.k,
-    () => stateStore.setScale(transform.value.k)
+    () => (stateStore.scale = transform.value.k),
 );
 
 watch(transform, () => emit("transform", transform.value));
@@ -153,4 +223,128 @@ watchEffect(() => {
 const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
+
+const { commentStore } = useWorkflowStores();
+const { comments } = storeToRefs(commentStore);
+
+const areaHighlight = ref<InstanceType<typeof AreaHighlight>>();
+
+watch(pendingHighlight, (pending) => {
+    if (pending) {
+        pendingHighlight.value = null;
+        const centerPosition = {
+            x: pending.bounds.x + pending.bounds.width / 2.0,
+            y: pending.bounds.y + pending.bounds.height / 2.0,
+        };
+        areaHighlight.value?.show(pending.bounds);
+        if (pending.moveTo !== false) {
+            moveTo(centerPosition);
+        }
+    }
+});
+
+defineExpose({
+    fitWorkflow,
+    setZoom,
+    moveTo,
+    setTransform: d3SetTransform,
+});
 </script>
+
+<template>
+    <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
+        <LoadingOverlay v-if="props.loading" />
+        <ZoomControl
+            v-if="props.showZoomControls"
+            :zoom-level="scale"
+            :pan="transform"
+            @onZoom="zoomTo"
+            @update:pan="panBy" />
+        <ToolBar v-if="!readonly" />
+        <div
+            id="canvas-container"
+            ref="canvas"
+            class="canvas-content"
+            :style="{ height: props.fixedHeight ? `${props.fixedHeight}vh` : '100%' }"
+            @drop.prevent
+            @dragover.prevent>
+            <AdaptiveGrid
+                :viewport-bounds="elementBounding"
+                :viewport-bounding-box="viewportBoundingBox"
+                :transform="transform" />
+            <div class="node-area" :style="canvasStyle">
+                <InputCatcher :transform="transform" />
+                <BoxSelectPreview />
+                <WorkflowEdges
+                    :transform="transform"
+                    :dragging-terminal="draggingTerminal"
+                    :dragging-connection="draggingPosition"
+                    :focused-node-ids="focusedNodeIds" />
+                <WorkflowNode
+                    v-for="(step, key) in steps"
+                    :id="step.id"
+                    :key="key"
+                    :name="step.name"
+                    :content-id="step.content_id"
+                    :step="step"
+                    :datatypes-mapper="datatypesMapper"
+                    :active-node-id="activeNodeId"
+                    :root-offset="elementBounding"
+                    :scroll="scroll"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :is-invocation="props.isInvocation && (!props.detailedView || activeNodeId !== step.id)"
+                    :populated-inputs="props.populatedInputs"
+                    :is-out-of-focus="focusedNodeIds !== null && !focusedNodeIds.has(step.id)"
+                    @pan-by="panBy"
+                    @stopDragging="onStopDragging"
+                    @onDragConnector="onDragConnector"
+                    @onActivate="onActivate"
+                    @onDeactivate="onDeactivate"
+                    v-on="$listeners" />
+                <WorkflowComment
+                    v-for="comment in comments"
+                    :id="`workflow-comment-${comment.id}`"
+                    :key="`workflow-comment-${comment.id}`"
+                    :comment="comment"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :root-offset="elementBounding"
+                    @pan-by="panBy" />
+                <AreaHighlight ref="areaHighlight" />
+            </div>
+        </div>
+        <WorkflowMinimap
+            v-if="elementBounding && props.showMinimap"
+            :steps="steps"
+            :comments="comments"
+            :viewport-bounds="elementBounding"
+            :viewport-bounding-box="viewportBoundingBox"
+            @panBy="panBy"
+            @moveTo="moveTo" />
+        <slot></slot>
+    </div>
+</template>
+
+<style scoped lang="scss">
+.workflow-canvas {
+    position: relative;
+
+    .canvas-content {
+        width: 100%;
+        position: relative;
+        left: 0px;
+        top: 0px;
+        overflow: hidden;
+    }
+
+    .node-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform-origin: 0 0;
+    }
+}
+</style>

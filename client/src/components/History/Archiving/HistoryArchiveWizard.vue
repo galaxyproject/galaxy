@@ -1,19 +1,23 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
-import { useFileSources } from "@/composables/fileSources";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { BAlert, BCard } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
+
+import type { HistorySummary } from "@/api";
+import { useConfig } from "@/composables/config";
+import { useFileSources } from "@/composables/fileSources";
+import { useToast } from "@/composables/toast";
+import { useHistoryStore } from "@/stores/historyStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import Alert from "@/components/Alert.vue";
+import GTab from "@/components/BaseComponents/GTab.vue";
+import GTabs from "@/components/BaseComponents/GTabs.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
 import HistoryArchiveExportSelector from "@/components/History/Archiving/HistoryArchiveExportSelector.vue";
 import HistoryArchiveSimple from "@/components/History/Archiving/HistoryArchiveSimple.vue";
-import { useHistoryStore, type HistorySummary } from "@/stores/historyStore";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import { useConfig } from "@/composables/config";
-import { useToast } from "@/composables/toast";
-
-library.add(faArchive);
 
 const historyStore = useHistoryStore();
 const { config } = useConfig(true);
@@ -28,17 +32,26 @@ interface ArchiveHistoryWizardProps {
 const props = defineProps<ArchiveHistoryWizardProps>();
 
 const isArchiving = ref(false);
+const loadError = ref<string | null>(null);
 
 const history = computed<HistorySummary | null>(() => {
-    const history = historyStore.getHistoryById(props.historyId);
-    if (history === null) {
-        // It could be already an archived history, so we won't find it in the store
-        // as it's not in the active histories anymore.
-        historyStore.loadHistoryById(props.historyId);
-        return historyStore.getHistoryById(props.historyId);
-    }
-    return history;
+    return historyStore.getHistoryById(props.historyId, false);
 });
+
+watch(
+    () => props.historyId,
+    async (historyId) => {
+        loadError.value = null;
+        if (!historyStore.getHistoryById(historyId, false)) {
+            try {
+                await historyStore.loadHistoryById(historyId);
+            } catch (error) {
+                loadError.value = errorMessageAsString(error);
+            }
+        }
+    },
+    { immediate: true },
+);
 
 const isHistoryAlreadyArchived = computed(() => {
     return history.value?.archived;
@@ -62,41 +75,51 @@ async function onArchiveHistory(exportRecordId?: string) {
         isArchiving.value = false;
     }
 }
+
+const breadcrumbItems = computed(() => [
+    { title: "Histories", to: "/histories/list" },
+    {
+        title: history.value?.name || "Archive History",
+        to: `/histories/view?id=${props.historyId}`,
+        superText: historyStore.currentHistoryId === props.historyId ? "current" : undefined,
+    },
+    { title: "Archive", icon: faArchive },
+]);
 </script>
 
 <template>
     <div class="history-archive-wizard">
-        <font-awesome-icon icon="archive" size="2x" class="text-primary float-left mr-2" />
-        <h1 class="h-lg">
-            Archive
-            <loading-span v-if="!history" spinner-only />
-            <b v-else>{{ history.name }}</b>
-        </h1>
+        <BreadcrumbHeading :items="breadcrumbItems" />
 
-        <b-alert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
+        <Alert v-if="loadError" :message="loadError" variant="error" />
+        <BAlert v-else-if="!history" show>
+            <LoadingSpan spinner-only />
+        </BAlert>
+
+        <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the
-            <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
-        </b-alert>
+            <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
+        </BAlert>
         <div v-else-if="history">
-            <b-alert show variant="info">
+            <BAlert show variant="info">
                 Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
-                <router-link :to="archivedHistoriesRoute">Archived Histories</router-link> section.
-            </b-alert>
+                <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
+            </BAlert>
 
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>
-                <b-card no-body class="mt-3">
-                    <b-tabs pills card vertical lazy class="archival-option-tabs">
-                        <b-tab id="keep-storage-tab" title="Keep storage space" active>
-                            <history-archive-simple :history="history" @onArchive="onArchiveHistory" />
-                        </b-tab>
-                        <b-tab id="free-storage-tab" title="Free storage space">
-                            <history-archive-export-selector :history="history" @onArchive="onArchiveHistory" />
-                        </b-tab>
-                    </b-tabs>
-                </b-card>
+                <BCard no-body class="mt-3">
+                    <GTabs pills card vertical lazy class="archival-option-tabs">
+                        <GTab id="keep-storage-tab" title="Keep storage space" active>
+                            <HistoryArchiveSimple :history="history" @onArchive="onArchiveHistory" />
+                        </GTab>
+                        <GTab id="free-storage-tab" title="Free storage space">
+                            <HistoryArchiveExportSelector :history="history" @onArchive="onArchiveHistory" />
+                        </GTab>
+                    </GTabs>
+                </BCard>
             </div>
-            <history-archive-simple v-else :history="history" @onArchive="onArchiveHistory" />
+            <HistoryArchiveSimple v-else :history="history" @onArchive="onArchiveHistory" />
         </div>
     </div>
 </template>

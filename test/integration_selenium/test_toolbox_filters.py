@@ -26,6 +26,7 @@ class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
         the specified section is no longer displayed in the browser.
         """
         self.register()
+        self.components.tool_panel.tool_box.wait_for_visible()
         # The tool panel section should be visible and clickable at this stage
         section = self.driver.find_element(By.LINK_TEXT, "Test Section")
         self.action_chains().move_to_element(section).click().perform()
@@ -41,6 +42,7 @@ class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
         self.components.toolbox_filters.submit.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
+        self.components.tool_panel.tool_box.wait_for_visible()
         # But now it should raise NoSuchElementException
         with self.assertRaises(NoSuchElementException):
             self.driver.find_element(By.LINK_TEXT, "Test Section")

@@ -32,9 +32,34 @@ inputs:
   truevalue: booltrue
   falsevalue: boolfalse
   checked: false
+- name: data_input
+  type: data
+  extensions:
+    - tabular
+    - csv
 outputs:
   out_file1:
     format: txt
+"""
+USER_DEFINED_TOOL = """
+class: GalaxyUserTool
+id: samtools-reference
+version: "0.3"
+name: samtools reference
+description: Extract or fetch reference sequences from CRAM files
+container: quay.io/biocontainers/samtools:1.22.1--h96c455f_0
+shell_command: |
+  set -euo pipefail; samtools reference '$(inputs.alignment.path)'| bgzip > fasta.gz
+inputs:
+  - name: alignment
+    type: data
+    extensions:
+      - cram
+outputs:
+  - name: output1
+    type: data
+    format: fasta.gz
+    from_work_dir: fasta.gz
 """
 
 
@@ -66,6 +91,16 @@ def test_deserialize_yaml_tool(tool_app):
     tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=YAML_TOOL)
     assert tool.id == "simple_constructs_y"
     assert tool.name == "simple_constructs_y"
+    assert tool.inputs["data_input"].extensions == ["tabular", "csv"]
+
+
+def test_deserialize_user_defined_tool(tool_app):
+    tool = _deserialize(tool_app, tool_source_class="YamlToolSource", raw_tool_source=USER_DEFINED_TOOL)
+    assert tool.tool_type == "user_defined"
+    assert tool.id == "samtools-reference"
+    assert tool.name == "samtools reference"
+    assert tool.inputs["alignment"].type == "data"
+    assert tool.outputs["output1"].format == "fasta.gz"
 
 
 def test_deserialize_cwl_tool(tool_app):

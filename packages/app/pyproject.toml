@@ -1,1 +1,116 @@
-../package-pyproject.toml
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
+
+[project]
+dynamic = ["readme"]
+name = "galaxy-app"
+version = "26.1.dev0"
+description = "Galaxy application (backend)"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-auth",
+    "galaxy-config",
+    "galaxy-data",
+    "galaxy-files",
+    "galaxy-job-execution",
+    "galaxy-job-metrics",
+    "galaxy-objectstore",
+    "galaxy-tool-util[cwl,edam]",
+    "galaxy-tool-shed-schema",
+    "galaxy-tours",
+    "galaxy-util[image-util,jstree]",
+    "galaxy-web-framework",
+    "galaxy-web-stack",
+    "Beaker",
+    "boltons",
+    "bx-python",
+    "celery",
+    "cloudauthz==0.6.0",
+    "cwl-utils",
+    "dparse",
+    "gxformat2>=0.27.0",
+    "kombu>=5.3",
+    "lagom",
+    "lxml!=4.2.2",
+    "Mako",
+    "Markdown",
+    "MarkupSafe",
+    "mercurial>=7.2",
+    "more-itertools",
+    "nodejs-wheel>=22,<23",
+    "packaging",
+    "paramiko!=2.9.0,!=2.9.1",
+    "pebble",
+    "pulsar-galaxy-lib>=0.15.0.dev0",
+    "pydantic>=2.7.4",
+    "pydantic-ai>=1.99.0",
+    "pysam>=0.21",
+    "python-slugify",
+    "PyJWT",
+    "PyYAML",
+    "refgenconf>=0.13.0",
+    "regex",
+    "requests",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "starlette",
+    "svgwrite",
+    "typing-extensions",
+    "WebOb>=1.8.9",
+    "Whoosh",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+test = [
+    "galaxy-test-base",
+    "mock-ssh-server",
+    "pkce",
+    "pykwalify",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-mock",
+    "responses",
+    "testfixtures",
+]
+
+[project.scripts]
+galaxy-main = "galaxy.main:main"
+galaxy-dependencies = "galaxy.dependencies.script:main"
+galaxy-sse-monitor = "galaxy.sse_monitor.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = [
+    "galaxy.tools.bundled*",
+    "galaxy.tools.parameters.test*",
+]

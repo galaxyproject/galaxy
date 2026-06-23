@@ -10,7 +10,7 @@
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
-                <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
+                <b-input-group-append v-g-tooltip.hover :title="titleClearSearch">
                     <b-btn @click="setQuery()">
                         <i class="fa fa-times" />
                     </b-btn>
@@ -27,9 +27,10 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import SearchList from "./SearchList/Index.vue";
+import _l from "@/utils/localization";
+
 import InstalledList from "./InstalledList/Index.vue";
+import SearchList from "./SearchList/Index.vue";
 
 export default {
     components: {

@@ -1,19 +1,19 @@
-""" Clearing house for generic text datatypes that are not XML or tabular.
-"""
+"""Clearing house for generic text datatypes that are not XML or tabular."""
 
 import gzip
 import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from typing import (
     IO,
     Optional,
-    Tuple,
 )
 
+import ijson
 import yaml
 
 from galaxy.datatypes.data import (
@@ -38,7 +38,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import (
     nice_size,
-    shlex_join,
     string_as_bool,
     unicodify,
 )
@@ -91,7 +90,7 @@ class Json(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "JavaScript Object Notation (JSON)"
         else:
             dataset.peek = "file does not exist"
@@ -133,6 +132,20 @@ class Json(Text):
             return f"JSON file ({nice_size(dataset.get_size())})"
 
 
+class DataManagerJson(Json):
+    file_ext = "data_manager_json"
+    MetadataElement(
+        name="data_tables", default=None, desc="Data tables represented by this dataset", readonly=True, visible=True
+    )
+    MetadataElement(name="is_bundle", default=False, desc="Dataset represents bundle", readonly=True, visible=True)
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd):
+        super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
+        with open(dataset.get_file_name()) as fh:
+            data_tables = json.load(fh)["data_tables"]
+        dataset.metadata.data_tables = data_tables
+
+
 class ExpressionJson(Json):
     """Represents the non-data input or output to a tool or workflow."""
 
@@ -145,7 +158,7 @@ class ExpressionJson(Json):
         """ """
         if dataset.has_data():
             json_type = "null"
-            file_path = dataset.file_name
+            file_path = dataset.get_file_name()
             try:
                 with open(file_path) as f:
                     obj = json.load(f)
@@ -170,7 +183,7 @@ class Ipynb(Json):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Jupyter Notebook"
         else:
             dataset.peek = "file does not exist"
@@ -184,7 +197,7 @@ class Ipynb(Json):
             try:
                 with open(file_prefix.filename) as f:
                     ipynb = json.load(f)
-                if ipynb.get("nbformat", False) is not False and ipynb.get("metadata", False):
+                if ipynb.get("nbformat", False) is not False and "metadata" in ipynb:
                     return True
                 else:
                     return False
@@ -216,7 +229,7 @@ class Ipynb(Json):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         **kwd,
-    ) -> Tuple[IO, Headers]:
+    ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
@@ -232,17 +245,17 @@ class Ipynb(Json):
                     "html",
                     "--template",
                     "full",
-                    dataset.file_name,
+                    dataset.get_file_name(),
                     "--output",
                     ofilename,
                 ]
                 subprocess.check_call(cmd)
                 ofilename = f"{ofilename}.html"
             except subprocess.CalledProcessError:
-                ofilename = dataset.file_name
+                ofilename = dataset.get_file_name()
                 log.exception(
                     'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.',
-                    shlex_join(cmd),
+                    shlex.join(cmd),
                 )
             return open(ofilename, mode="rb"), headers
 
@@ -421,50 +434,93 @@ class Biom1(Json):
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
-        Store metadata information from the BIOM file.
+        Store metadata information from the BIOM file using streaming JSON parsing.
         """
-        if dataset.has_data():
-            with open(dataset.file_name) as fh:
+        if not dataset.has_data():
+            return
+
+        # Mapping of metadata names to BIOM field names
+        field_mapping = [
+            ("table_rows", "rows"),
+            ("table_matrix_element_type", "matrix_element_type"),
+            ("table_format", "format"),
+            ("table_generated_by", "generated_by"),
+            ("table_matrix_type", "matrix_type"),
+            ("table_shape", "shape"),
+            ("table_format_url", "format_url"),
+            ("table_date", "date"),
+            ("table_type", "type"),
+            ("table_id", "id"),
+            ("table_columns", "columns"),
+        ]
+
+        # Fields we're looking for
+        target_fields = {b_name for _, b_name in field_mapping}
+        found_fields = {}
+        column_metadata_headers = set()
+
+        try:
+            with open(dataset.get_file_name(), "rb") as fh:
+                log.debug("Loading metadata from json file %s", dataset.get_file_name())
+                log.debug("File size is %d bytes", os.path.getsize(dataset.get_file_name()))
+                parser = ijson.parse(fh)
+
+                for prefix, event, value in parser:
+                    # Handle top-level fields
+                    if "." not in prefix and prefix in target_fields:
+                        if event in ("string", "number", "boolean", "null"):
+                            found_fields[prefix] = value
+                        elif event == "start_array":
+                            # For arrays, we need to collect the items
+                            if prefix in ("rows", "columns", "shape"):
+                                found_fields[prefix] = []
+
+                    # Handle array items for rows and columns (collect ids)
+                    elif prefix.startswith("rows.item.id") and event == "string":
+                        if "rows" not in found_fields:
+                            found_fields["rows"] = []
+                        found_fields["rows"].append(value)
+
+                    elif prefix.startswith("columns.item.id") and event == "string":
+                        if "columns" not in found_fields:
+                            found_fields["columns"] = []
+                        found_fields["columns"].append(value)
+
+                    # Handle shape array items
+                    elif prefix.startswith("shape.item") and event == "number":
+                        if "shape" not in found_fields:
+                            found_fields["shape"] = []
+                        found_fields["shape"].append(value)
+
+                    # Collect column metadata headers
+                    elif prefix.startswith("columns.item.metadata.") and event in ("string", "number", "boolean"):
+                        if value is not None:
+                            # Extract the metadata key name
+                            key_parts = prefix.split(".")
+                            if len(key_parts) >= 4:
+                                metadata_key = key_parts[3]
+                                column_metadata_headers.add(metadata_key)
+
+                    # Early exit if we've found all top-level fields
+                    if len(found_fields) >= len(target_fields):
+                        # Still need to scan for column metadata headers
+                        continue
+
+            # Set metadata values
+            for m_name, b_name in field_mapping:
                 try:
-                    json_dict = json.load(fh)
-                except Exception:
-                    return
-
-                def _transform_dict_list_ids(dict_list):
-                    if dict_list:
-                        return [x.get("id", None) for x in dict_list]
-                    return []
-
-                b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for m_name, b_name in [
-                    ("table_rows", "rows"),
-                    ("table_matrix_element_type", "matrix_element_type"),
-                    ("table_format", "format"),
-                    ("table_generated_by", "generated_by"),
-                    ("table_matrix_type", "matrix_type"),
-                    ("table_shape", "shape"),
-                    ("table_format_url", "format_url"),
-                    ("table_date", "date"),
-                    ("table_type", "type"),
-                    ("table_id", "id"),
-                    ("table_columns", "columns"),
-                ]:
-                    try:
-                        metadata_value = json_dict.get(b_name, None)
-                        if b_name == "columns" and metadata_value:
-                            keep_columns = set()
-                            for column in metadata_value:
-                                if column["metadata"] is not None:
-                                    for k, v in column["metadata"].items():
-                                        if v is not None:
-                                            keep_columns.add(k)
-                            final_list = sorted(list(keep_columns))
-                            dataset.metadata.table_column_metadata_headers = final_list
-                        if b_name in b_transform:
-                            metadata_value = b_transform[b_name](metadata_value)
+                    metadata_value = found_fields.get(b_name)
+                    if metadata_value is not None:
                         setattr(dataset.metadata, m_name, metadata_value)
-                    except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong.")
+                except Exception:
+                    log.exception(f"Error setting metadata {m_name} from field {b_name}")
+
+            # Set column metadata headers
+            if column_metadata_headers:
+                dataset.metadata.table_column_metadata_headers = sorted(column_metadata_headers)
+
+        except Exception:
+            log.exception("Error in streaming BIOM metadata detection. Metadata may not be complete or even present.")
 
 
 @build_sniff_from_prefix
@@ -525,17 +581,62 @@ class ImgtJson(Json):
         Store metadata information from the imgt file.
         """
         if dataset.has_data():
-            with open(dataset.file_name) as fh:
+            with open(dataset.get_file_name()) as fh:
                 try:
                     json_dict = json.load(fh)
                     tax_names = []
                     for entry in json_dict:
                         if "taxonId" in entry:
-                            names = "%d: %s" % (entry["taxonId"], ",".join(entry["speciesNames"]))
+                            names = "{}: {}".format(entry["taxonId"], ",".join(entry["speciesNames"]))
                             tax_names.append(names)
                     dataset.metadata.taxon_names = tax_names
                 except Exception:
                     return
+
+
+@build_sniff_from_prefix
+class CytoscapeJson(Json):
+    """
+    Cytoscape JSON format for network visualization, typically containing 'nodes' and 'edges' in a JSON object.
+    https://js.cytoscape.org/#notation/elements-json
+    """
+
+    file_ext = "cytoscapejson"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "CytoscapeJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in Cytoscape JSON format by looking for 'nodes' and 'edges' keys.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('1.json')
+        >>> CytoscapeJson().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.cytoscapejson')
+        >>> CytoscapeJson().sniff(fname)
+        True
+        """
+        is_cytoscapejson = False
+        if self._looks_like_json(file_prefix):
+            is_cytoscapejson = self._looks_like_is_cytoscapejson(file_prefix)
+        return is_cytoscapejson
+
+    def _looks_like_is_cytoscapejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects 'nodes' and 'edges' to be present as keys in the JSON structure.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                if "generated_by" in segment_str or "target_cytoscapejs_version" in segment_str:
+                    return True
+        except Exception:
+            pass
+        return False
 
 
 @build_sniff_from_prefix
@@ -598,6 +699,97 @@ class GeoJson(Json):
 
 
 @build_sniff_from_prefix
+class VitessceJson(Json):
+    """
+    Vitessce Visual integration tool for exploration of spatial single cell experiments format based on JavaScript Object Notation (JSON).
+    https://www.npmjs.com/package/@vitessce/json-schema
+    """
+
+    file_ext = "vitessce.json"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in json format with imgt elements
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> VitessceJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.vitessce.json' )
+        >>> VitessceJson().sniff( fname )
+        True
+        """
+        is_vitesscejson = False
+        if self._looks_like_json(file_prefix):
+            is_vitesscejson = self._looks_like_is_vitesscejson(file_prefix)
+        return is_vitesscejson
+
+    def _looks_like_is_vitesscejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects version, datasets, layout and coordinationSpace to be specified.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                if all(x in segment_str for x in ["version", "datasets", "layout", "coordinationSpace"]):
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
+class AuspiceJson(Json):
+    """
+    Auspice is a visualization tool for phylogenetic trees and associated data.
+    It uses JSON format to represent the tree structure and metadata.
+    """
+
+    file_ext = "auspice.json"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "AuspiceJSON"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in Auspice v2 JSON by looking for keys
+        like "version", "meta" and "updated" that are both required by the
+        https://docs.nextstrain.org/projects/auspice/en/stable/releases/v2.html format
+        and also will be in the first part of the file
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.json' )
+        >>> AuspiceJson().sniff( fname )
+        False
+        >>> fname = get_test_fname( '1.auspicejson' )
+        >>> AuspiceJson().sniff( fname )
+        True
+        """
+        is_auspicejson = False
+        if self._looks_like_json(file_prefix):
+            is_auspicejson = self._looks_like_is_auspicejson(file_prefix)
+        return is_auspicejson
+
+    def _looks_like_is_auspicejson(self, file_prefix: FilePrefix, load_size: int = 20000) -> bool:
+        """
+        Expects JSON to start with { and 'meta', 'tree', 'updated' and 'nodes' to be present as keys in the JSON structure.
+        """
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+
+                if segment_str.startswith("{") and all(
+                    x in segment_str for x in ["version", "meta", "updated", "panels"]
+                ):
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
 class Obo(Text):
     """
     OBO file format description
@@ -610,7 +802,7 @@ class Obo(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Open Biomedical Ontology (OBO)"
         else:
             dataset.peek = "file does not exist"
@@ -652,7 +844,7 @@ class Arff(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
             dataset.blurb += f", {dataset.metadata.comment_lines} comments, {dataset.metadata.columns} attributes"
         else:
@@ -698,7 +890,7 @@ class Arff(Text):
         if dataset.has_data():
             first_real_line = False
             data_block = False
-            with open(dataset.file_name) as handle:
+            with open(dataset.get_file_name()) as handle:
                 for line in handle:
                     line = line.strip()
                     if not line:
@@ -805,7 +997,7 @@ class SnpEffDb(Text):
             dataset.metadata.regulation = regulations
             dataset.metadata.annotation = annotations
             try:
-                with open(dataset.file_name, "w") as fh:
+                with open(dataset.get_file_name(), "w") as fh:
                     fh.write(f"{genome_version}\n" if genome_version else "Genome unknown")
                     fh.write(f"{snpeff_version}\n" if snpeff_version else "SnpEff version unknown")
                     if annotations:
@@ -869,7 +1061,7 @@ class SnpSiftDbNSFP(Text):
         cannot do this until we are setting metadata
         """
         annotations = f"dbNSFP Annotations: {','.join(dataset.metadata.annotation)}\n"
-        with open(dataset.file_name, "a") as f:
+        with open(dataset.get_file_name(), "a") as f:
             if dataset.metadata.bgzip:
                 bn = dataset.metadata.bgzip
                 f.write(bn)
@@ -898,7 +1090,7 @@ class SnpSiftDbNSFP(Text):
         except Exception as e:
             log.warning(
                 "set_meta fname: %s  %s",
-                dataset.file_name if dataset and dataset.file_name else "Unkwown",
+                dataset.get_file_name() if dataset and dataset.get_file_name() else "Unkwown",
                 unicodify(e),
             )
 
@@ -1113,7 +1305,6 @@ class Yaml(Text):
                 return True
             except yaml.YAMLError:
                 return False
-            return False
 
 
 @build_sniff_from_prefix
@@ -1148,7 +1339,7 @@ class BCSLts(Json):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
-            ts = json.load(open(dataset.file_name))
+            ts = json.load(open(dataset.get_file_name()))
             dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1206,7 +1397,7 @@ class StormCheck(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name) as result:
+            with open(dataset.get_file_name()) as result:
                 answer = ""
                 for line in result:
                     if "Result (for initial states):" in line:
@@ -1234,7 +1425,7 @@ class CTLresult(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name) as result:
+            with open(dataset.get_file_name()) as result:
                 answer = ""
                 for line in result:
                     if "Result:" in line:
@@ -1409,3 +1600,102 @@ class FormattedDensity(Text):
             (lines[9].strip() == end_header and lines[10].strip() == grid_points)
             or (lines[9].strip() == end_header_spin and lines[10].strip() == grid_points_spin)
         )
+
+
+@build_sniff_from_prefix
+class Prm(Text):
+    """rDock prm format
+
+    For system definition files, scoring function definition files and search
+    protocol definition files.
+    """
+
+    file_ext = "prm"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is in prm format, according to
+        https://rdock.github.io/documentation/html_docs/reference-guide/file-formats.html
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname("test.prm")
+        >>> Prm().sniff(fname)
+        True
+        >>> fname = get_test_fname("larch_potentials.inp")
+        >>> Prm().sniff(fname)
+        False
+        """
+        return file_prefix.startswith("RBT_PARAMETER_FILE_V1.00")
+
+
+@build_sniff_from_prefix
+class SourmashSignature(Json):
+    """Sourmash signature format for MinHash sketches"""
+
+    file_ext = "sig"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "Sourmash signature file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines whether the file is a sourmash signature
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.sig')
+        >>> SourmashSignature().sniff(fname)
+        True
+        """
+        if self._looks_like_json(file_prefix):
+            return self._looks_like_sourmash(file_prefix)
+        return False
+
+    def _looks_like_sourmash(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
+        """Check for sourmash-specific JSON structure"""
+        try:
+            with open(file_prefix.filename) as fh:
+                segment_str = fh.read(load_size)
+                # Sourmash signatures contain specific keys such as sourmash_signature
+                if '"sourmash_signature"' in segment_str or '"class": "sourmash_signature"' in segment_str:
+                    return True
+                # Also check for signature-specific fields
+                if '"signatures"' in segment_str and '"ksize"' in segment_str:
+                    return True
+        except Exception:
+            pass
+        return False
+
+
+@build_sniff_from_prefix
+class Taf(Text):
+    """
+    TAF: a Transposed Alignment Format
+
+    https://github.com/ComparativeGenomicsToolkit/taffy/blob/main/docs/taf_format.md
+    """
+
+    file_ext = "taf"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Determines wether the file is in taf format
+
+        The first line of a .taf file begins with #taf. This word is followed
+        by white-space-separated 'variable:value' pairs. There should be no white
+        space surrounding the ':'.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.taf')
+        >>> Taf().sniff(fname)
+        True
+        """
+        try:
+            first_line = next(file_prefix.line_iterator(), "")
+        except Exception:
+            return False
+        return re.search(r"^#taf([ \t]+\S+:\S+)+$", first_line) is not None

@@ -1,0 +1,205 @@
+# This file defines the column targets for the rule builder.
+list_identifiers:
+  multiple: true
+  label: "List Identifier(s)"
+  columnHeader: "List Identifier"
+  help: |
+    This should be a short description of the replicate, sample name, 
+    condition, etc... that describes each level of the list structure.
+  importType: "collections"
+paired_identifier:
+  label: "Paired-end Indicator"
+  columnHeader: "Paired Indicator"
+  help: |
+    This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate 
+    forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate 
+    reverse reads.
+  importType: "collections"
+paired_or_unpaired_identifier:
+  label: "Optional Paired-end Indicator"
+  columnHeader: "Optional Paired Indicator"
+  help: |
+    This should be set to '1', 'R1', 'forward', 'f', or 'F' to indicate 
+    forward reads, and '2', 'r', 'reverse', 'R2', 'R', or 'R2' to indicate 
+    reverse reads. Unmatched '1' for 'forward' elements will be 'unpaired' 
+    in the resulting list, alternatively this column can be set to 'u' or 
+    'unpaired' to force the element to be unpaired.
+  importType: "collections"
+  advanced: true
+collection_name:
+  label: "Collection Name"
+  help: |
+    If this is set, all rows with the same collection name will be joined 
+    into a collection and it is possible to create multiple collections 
+    at once.
+  modes:
+    - "raw"
+    - "ftp"
+    - "datasets"
+    - "library_datasets"
+  importType: "collections"
+name_tag:
+  label: "Name Tag"
+  help: |
+    Add a name tag or hash tag based on the specified column value for 
+    imported datasets.
+  importType: "datasets"
+  modes:
+    - "raw"
+    - "ftp"
+  example_column_names: ["Name Tag", "nametag"]  
+tags:
+  multiple: true
+  label: "General Purpose Tag(s)"
+  columnHeader: "General Purpose Tag"
+  help: |
+    Add a general purpose tag based on the specified column value, use : 
+    to separate key-value pairs if desired. These tags are not propagated 
+    to derived datasets the way name and group tags are.
+  modes:
+    - "raw"
+    - "ftp"
+    - "datasets"
+    - "library_datasets"
+    - "collection_contents"
+  example_column_names: ["Tag"]  
+group_tags:
+  multiple: true
+  label: "Group Tag(s)"
+  columnHeader: "Group Tag"
+  help: |
+    Add a group tag based on the specified column value, use : to separate 
+    key-value pairs. These tags are propagated to derived datasets and may 
+    be useful for factorial experiments.
+  modes:
+    - "raw"
+    - "ftp"
+    - "datasets"
+    - "library_datasets"
+    - "collection_contents"
+  example_column_names: ["Group Tag", "grouptag"]
+name:
+  label: "Name"
+  importType: "datasets"
+  help: |
+    This is just the name of the dataset as it appears in the Galaxy history
+    panel.
+  example_column_names: ["Name"]
+dbkey:
+  label: "Genome"
+  help: |
+    This should be the genome build (e.g. hg19, mm9, etc...) that the data 
+    is associated with. If this is not set, there will be no genome associated
+    with the dataset.
+  modes:
+    - "raw"
+    - "ftp"
+  example_column_names: ["DBKey", "DB Key", "Genome", "Genome Build"]
+hash_sha1:
+  label: "Hash (SHA1)"
+  help: |
+    This is the SHA1 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
+  modes:
+    - "raw"
+    - "ftp"
+  advanced: true
+  example_column_names: ["SHA1", "sha-1 hash", "SHA1-Sum"]
+hash_md5:
+  label: "Hash (MD5)"
+  help: |
+    This is the MD5 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
+  modes:
+    - "raw"
+    - "ftp"
+  advanced: true
+  example_column_names: ["MD5", "MD5 hash", "MD5-Sum"]
+hash_sha256:
+  label: "Hash (SHA256)"
+  help: |
+    This is the SHA256 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
+  modes:
+    - "raw"
+    - "ftp"
+  advanced: true
+  example_column_names: ["SHA256", "sha-256 hash", "SHA256-Sum"]
+hash_sha512:
+  label: "Hash (SHA512)"
+  help: |
+    This is the SHA512 hash of the URI, this is used to verify that the file 
+    has not been corrupted during transfer.
+  modes:
+    - "raw"
+    - "ftp"
+  advanced: true
+  example_column_names: ["SHA512", "sha-512 hash", "SHA512-Sum"]
+file_type:
+  label: "Type"
+  modes:
+    - "raw"
+    - "ftp"
+  help: |
+    This should be the Galaxy file type corresponding to this file.
+  example_column_names: ["File Type", "file extension", "Extension"]
+url:
+  label: "URL"
+  modes:
+    - "raw"
+  help: |
+    This should be a URL (or Galaxy-aware URI) the file can be downloaded 
+    from.
+url_deferred:
+  label: "Deferred URL"
+  modes:
+    - "raw"
+  help: |
+    This should be a URL (or Galaxy-aware URI) the file can be downloaded 
+    from - the file will not be downloaded until it used by a tool.
+info:
+  label: "Info"
+  help: |
+    Unstructured text associated with the dataset that shows up in the 
+    history panel, this is optional and can be whatever you would like.
+  modes:
+    - "raw"
+    - "ftp"
+  example_column_names: [Info]
+ftp_path:
+  label: "FTP Path"
+  modes:
+    - "raw"
+    - "ftp"
+  help: |
+    This should be the path to the target file to include relative to your 
+    FTP directory on the Galaxy server.
+  requiresFtp: true
+space_to_tab:
+  label: "Spaces to Tabs"
+  help: |
+    If this is set to true, all spaces in the column values will be replaced with 
+    tabs.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+to_posix_lines:
+  label: "To POSIX Lines"
+  help: |
+    If this is set to true, convert windows-style line endings to POSIX ones.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+auto_decompress:
+  label: "Auto Decompress"
+  help: |
+    This is a boolean value that indicates whether the dataset should be automatically decompressed if it is
+    compressed. If set to true, Galaxy will attempt to decompress the dataset if it is compressed and it is not
+    explicitly set to a compressed datatype.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true
+deferred:
+  label: "Deferred"
+  help: |
+    This is a boolean value that indicates whether the dataset should be deferred. If set to true, Galaxy will not
+    download the dataset until it is used by a tool or workflow.
+  modes: []  # not exposed in the rule builder yet - should be raw & ftp though I think
+  advanced: true

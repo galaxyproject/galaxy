@@ -3,9 +3,10 @@
 </template>
 <script>
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
+
+import { getGalaxyInstance } from "@/app";
+import { getAppRoot } from "@/onload/loadConfig";
+import { rethrowSimple } from "@/utils/simple-error";
 
 export default {
     props: {

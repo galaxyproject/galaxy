@@ -1,54 +1,48 @@
 <template>
-    <b-container>
-        <b-row>
-            <b-col>
-                <h1 class="h-sm">Current Custom Builds</h1>
-            </b-col>
-        </b-row>
-        <b-row>
-            <b-col>
-                <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
-                    <template v-slot:cell(action)="row">
-                        <a
-                            v-b-tooltip.bottom.hover
-                            href="javascript:void(0)"
-                            title="Delete build"
-                            @click="deleteBuild(row.item.id)">
-                            <i class="icon fa fa-lg fa-trash-o" />
-                        </a>
-                    </template>
-                </b-table>
-            </b-col>
-        </b-row>
+    <div>
+        <BreadcrumbHeading :items="breadcrumbItems" />
+
+        <GTable compact show-empty :items="customBuilds" :fields="fields" class="mb-3">
+            <template v-slot:cell(action)="row">
+                <GLink tooltip title="Delete build" @click="deleteBuild(row.item.id)">
+                    <FontAwesomeIcon :icon="faTrash" />
+                </GLink>
+            </template>
+        </GTable>
+
         <template v-if="installedBuilds.length > 0">
-            <b-row class="mt-2">
-                <b-col>
+            <BRow class="mt-2">
+                <BCol>
                     <h2 class="h-sm">System Installed Builds</h2>
-                </b-col>
-            </b-row>
-            <b-row>
-                <b-col id="installed-builds" class="mb-4">
-                    <multiselect
+                </BCol>
+            </BRow>
+
+            <BRow>
+                <BCol id="installed-builds" class="mb-4">
+                    <Multiselect
                         v-model="selectedInstalledBuilds"
                         multiple
                         taggable
                         label="label"
+                        select-label=""
+                        deselect-label=""
                         track-by="value"
                         :searchable="false"
-                        :options="installedBuilds">
-                    </multiselect>
-                </b-col>
-            </b-row>
+                        :options="installedBuilds" />
+                </BCol>
+            </BRow>
         </template>
-        <b-row>
-            <b-col>
+
+        <BRow>
+            <BCol>
                 <h2 class="h-sm">Add a Custom Build</h2>
-            </b-col>
-        </b-row>
-        <b-row>
-            <b-col>
-                <b-card>
-                    <b-alert
+            </BCol>
+        </BRow>
+
+        <BRow>
+            <BCol>
+                <BCard>
+                    <BAlert
                         fade
                         dismissible
                         :variant="alertType"
@@ -56,57 +50,66 @@
                         @dismissed="dismissCountDown = 0"
                         @dismiss-count-down="countDownChanged">
                         {{ alertMessage }}
-                    </b-alert>
+                    </BAlert>
 
-                    <b-form @submit.prevent="save">
-                        <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
-                            <b-form-input id="name" v-model="form.name" tour_id="name" required />
-                        </b-form-group>
-                        <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
-                            <b-form-input id="id" v-model="form.id" tour_id="id" required />
-                        </b-form-group>
-                        <b-form-group label="Definition" description="Provide the data source." label-for="type">
-                            <b-form-select
+                    <BForm @submit.prevent="save">
+                        <BFormGroup label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
+                            <BFormInput id="name" v-model="form.name" tour_id="name" required />
+                        </BFormGroup>
+
+                        <BFormGroup label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
+                            <BFormInput id="id" v-model="form.id" tour_id="id" required />
+                        </BFormGroup>
+
+                        <BFormGroup label="Definition" description="Provide the data source." label-for="type">
+                            <BFormSelect
                                 id="type"
                                 v-model="selectedDataSource"
                                 tour_id="type"
-                                :options="dataSources"></b-form-select>
-                        </b-form-group>
+                                :options="dataSources"></BFormSelect>
+                        </BFormGroup>
+
                         <div>
-                            <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
-                                <b-form-select
+                            <BFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file">
+                                <BFormSelect
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"></b-form-select>
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
-                                <b-form-file placeholder="Choose a file..." @change="readFile" />
-                                <b-progress
+                                    :disabled="fastaFilesSelectDisabled"></BFormSelect>
+                            </BFormGroup>
+
+                            <BFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
+                                <BFormFile placeholder="Choose a file..." @change="readFile" />
+
+                                <BProgress
                                     v-show="fileLoaded !== 0"
                                     animated
                                     show-progress
                                     :value="fileLoaded"
                                     :max="maxFileSize" />
-                                <b-form-textarea v-show="form.file" :value="form.file" />
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
-                                <b-form-textarea id="len-file-text-area" v-model="form.text" />
-                            </b-form-group>
+
+                                <BFormTextarea v-show="form.file" :value="form.file" />
+                            </BFormGroup>
+
+                            <BFormGroup v-if="selectedDataSource === 'text'" label="Edit/Paste">
+                                <BFormTextarea id="len-file-text-area" v-model="form.text" />
+                            </BFormGroup>
                         </div>
 
-                        <b-button
+                        <BButton
                             id="save"
-                            v-b-tooltip.bottom.hover
+                            v-g-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
                             title="Create new build">
-                            <i class="icon fa fa-save" /> Save
-                        </b-button>
-                    </b-form>
-                </b-card>
-            </b-col>
-            <b-col>
-                <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
+                            <FontAwesomeIcon :icon="faSave" />
+                            Save
+                        </BButton>
+                    </BForm>
+                </BCard>
+            </BCol>
+
+            <BCol>
+                <BCard v-if="selectedDataSource === 'fasta'" class="alert-info">
                     <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
                         This is a multi-fasta file from your current history that provides the genome sequences for each
@@ -120,10 +123,10 @@ ATTATATATAAGACCACAGAGAGAATATTTTGCCCGG...
 &gt;chr2
 GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
 
-...</pre
-                    >
-                </b-card>
-                <b-card v-else class="alert-info">
+...
+                    </pre>
+                </BCard>
+                <BCard v-else class="alert-info">
                     <h2 class="h-sm">Length Format</h2>
                     <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
                     <pre class="card-text">chrom/contig   length of chrom/contig</pre>
@@ -133,36 +136,71 @@ chr1    197195432
 chr2    181748087
 chr3    159599783
 chr4    155630120
-chr5    152537259</pre
-                    >
-                    <p class="card-text">
-                        Trackster uses this information to populate the select box for chrom/contig, andto set the
-                        maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
-                        option), or directly enter the information into the box (Len Entry option).
-                    </p>
-                </b-card>
-            </b-col>
-        </b-row>
-    </b-container>
+chr5    152537259
+                    </pre>
+                </BCard>
+            </BCol>
+        </BRow>
+    </div>
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import axios from "axios";
-import { getGalaxyInstance } from "app";
-import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
-Vue.use(BootstrapVue);
+
+import { faSave, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import axios from "axios";
+import {
+    BAlert,
+    BButton,
+    BCard,
+    BCol,
+    BForm,
+    BFormFile,
+    BFormGroup,
+    BFormInput,
+    BFormSelect,
+    BFormTextarea,
+    BProgress,
+    BRow,
+} from "bootstrap-vue";
+import Multiselect from "vue-multiselect";
+
+import { getGalaxyInstance } from "@/app";
+import { useHistoryStore } from "@/stores/historyStore";
+import { withPrefix } from "@/utils/redirect";
+
+import GLink from "@/components/BaseComponents/GLink.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
+        BAlert,
+        BButton,
+        BCard,
+        BCol,
+        BForm,
+        BFormFile,
+        BFormGroup,
+        BFormInput,
+        BFormSelect,
+        BFormTextarea,
+        BProgress,
+        BreadcrumbHeading,
+        BRow,
+        FontAwesomeIcon,
+        GLink,
+        GTable,
         Multiselect,
     },
     data() {
         const Galaxy = getGalaxyInstance();
         return {
-            customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
+            faSave,
+            faTrash,
+            breadcrumbItems: [{ title: "User Preferences", to: "/user" }, { title: "Current Custom Builds" }],
+            customBuildsUrl: withPrefix(`/api/users/${Galaxy.user.id}/custom_builds`),
             selectedInstalledBuilds: [],
             installedBuilds: [],
             maxFileSize: 100,
@@ -212,9 +250,9 @@ export default {
             return value;
         },
     },
-    created() {
-        const Galaxy = getGalaxyInstance();
-        const historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+    async created() {
+        const { loadCurrentHistoryId } = useHistoryStore();
+        const historyId = await loadCurrentHistoryId();
         this.loadCustomBuilds();
         if (historyId) {
             this.loadCustomBuildsMetadata(historyId);
@@ -234,9 +272,8 @@ export default {
                 });
         },
         loadCustomBuildsMetadata(historyId) {
-            const Galaxy = getGalaxyInstance();
             axios
-                .get(`${Galaxy.root}api/histories/${historyId}/custom_builds_metadata`)
+                .get(withPrefix(`/api/histories/${historyId}/custom_builds_metadata`))
                 .then((response) => {
                     const fastaHdas = response.data.fasta_hdas;
                     for (let i = 0; i < fastaHdas.length; i++) {
@@ -322,9 +359,3 @@ export default {
     },
 };
 </script>
-
-<style scoped>
-.fa-trash-o {
-    color: initial;
-}
-</style>

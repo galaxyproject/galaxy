@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <set_environment version="1.0">
+        <environment_variable name="SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+    </set_environment>
+    <package name="bowtie2" version="2.0.0-beta7">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">http://downloads.sourceforge.net/project/bowtie-bio/bowtie2/2.0.0-beta7/bowtie2-2.0.0-beta7-source.zip</action>
+                <action type="shell_command">make</action>
+                <action type="move_file">
+                    <source>bowtie2</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="move_file">
+                    <source>bowtie2-align</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="move_file">
+                    <source>bowtie2-build</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="shell_command">chmod +x $INSTALL_DIR/bin/bowtie2</action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+Compiling bowtie2 requires zlib and libpthread to be present on your system.
+        </readme>
+    </package>
+    <package name="bowtie" version="0.12.8">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">http://downloads.sourceforge.net/project/bowtie-bio/bowtie/0.12.8/bowtie-0.12.8-src.zip</action>
+                <action type="shell_command">make</action>
+                <action type="move_file">
+                    <source>bowtie</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="move_file">
+                    <source>bowtie-inspect</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="move_file">
+                    <source>bowtie-build</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+        </readme>
+    </package>
+</tool_dependency>
+
+
+

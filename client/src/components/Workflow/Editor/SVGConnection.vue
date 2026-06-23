@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { line, curveBasis } from "d3";
 import { computed, type PropType } from "vue";
 
-import { getConnectionId, type Connection } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore, type TerminalPosition } from "@/stores/workflowEditorStateStore";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
+import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { Connection } from "@/stores/workflowStoreTypes";
+import { curveBasisPath } from "@/utils/connectionPath";
 
 const props = defineProps({
     id: String,
@@ -17,15 +17,15 @@ const props = defineProps({
         type: Object as PropType<TerminalPosition | null>,
         default: null,
     },
+    focusedNodeIds: {
+        type: Object as PropType<Set<number> | null>,
+        default: null,
+    },
 });
 
 const ribbonMargin = 4;
 
-const curve = line().curve(curveBasis);
-
-const stateStore = useWorkflowStateStore();
-const connectionStore = useConnectionStore();
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 
 const outputPos = computed(() => {
     if (props.terminalPosition) {
@@ -74,7 +74,7 @@ const connectionPosition = computed(() => {
 
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
 const inputIsMappedOver = computed(
-    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection
+    () => stepStore.stepInputMapOver[props.connection.input.stepId]?.[props.connection.input.name]?.isCollection,
 );
 
 const outputIsOptional = computed(() => {
@@ -82,7 +82,7 @@ const outputIsOptional = computed(() => {
         stepStore.getStep(props.connection.output.stepId)?.when ||
             stepStore
                 .getStep(props.connection.output.stepId)
-                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional),
     );
 });
 
@@ -163,7 +163,7 @@ const paths = computed(() => {
         }
     });
 
-    return lines.map((l) => curve(l)!);
+    return lines.map((l) => curveBasisPath(l));
 });
 
 const lineWidth = computed(() => {
@@ -172,6 +172,27 @@ const lineWidth = computed(() => {
     } else {
         return 4;
     }
+});
+
+/**
+ * The connection is considered out of focus if either the input or output node is not focused.
+ * The connection will never be considered out of focus if there are no focused nodes
+ * (i.e. in non-focus mode).
+ */
+const isOutOfFocus = computed(() => {
+    const ids = props.focusedNodeIds;
+    if (!ids) {
+        return false;
+    }
+
+    // make sure dragging connections are never dimmed (though we aren't passing the `focusedNodeIds`
+    // prop to dragging connections for now, we add this check just in case)
+    if (props.terminalPosition) {
+        return false;
+    }
+
+    const { output, input } = props.connection;
+    return !ids.has(output.stepId) || !ids.has(input.stepId);
 });
 
 const connectionClass = computed(() => {
@@ -183,6 +204,10 @@ const connectionClass = computed(() => {
 
     if (!connectionIsValid.value) {
         classList.push("invalid");
+    }
+
+    if (isOutOfFocus.value) {
+        classList.push("out-of-focus");
     }
 
     return classList.join(" ");
@@ -235,12 +260,13 @@ function keyForIndex(index: number) {
 </template>
 
 <style lang="scss">
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .workflow-editor-drawable-connection {
     .connection {
         stroke: #{$brand-primary};
+        transition: opacity 0.2s ease;
 
         &.optional {
             stroke-dasharray: 5 3;
@@ -248,6 +274,10 @@ function keyForIndex(index: number) {
 
         &.invalid {
             stroke: #{$brand-warning};
+        }
+
+        &.out-of-focus {
+            opacity: 0.2;
         }
     }
 }

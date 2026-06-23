@@ -5,6 +5,11 @@ import json
 import os
 import shutil
 from logging import getLogger
+from typing import (
+    Any,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import galaxy.model
 from galaxy.model import store
@@ -14,6 +19,9 @@ from galaxy.model.metadata import (
 )
 from galaxy.model.store import DirectoryModelExportStore
 from galaxy.util import safe_makedirs
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm.scoping import scoped_session
 
 log = getLogger(__name__)
 
@@ -57,7 +65,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         self,
         datasets_dict,
         out_collections,
-        sa_session,
+        sa_session: "scoped_session",
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -69,12 +77,15 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
+        compute_version_path: Optional[str] = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
+        validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job=None,
+        job: Optional[galaxy.model.Job] = None,
+        link_data_only: bool = False,
         kwds=None,
     ):
         """Setup files needed for external metadata collection.
@@ -118,7 +129,7 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
             rstring = f"Metadata results could not be read from '{filename_results_code}'"
 
         if not rval:
-            log.debug(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
+            log.warning(f"setting metadata externally failed for {dataset.__class__.__name__} {dataset.id}: {rstring}")
         return rval
 
 
@@ -133,7 +144,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         self,
         datasets_dict,
         out_collections,
-        sa_session,
+        sa_session: "scoped_session",
         exec_dir=None,
         tmp_dir=None,
         dataset_files_path=None,
@@ -145,21 +156,22 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
-        compute_version_path=None,
+        compute_version_path: Optional[str] = None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
-        validate_outputs=False,
+        validate_outputs: bool = False,
         object_store_conf=None,
         tool=None,
-        job=None,
-        link_data_only=False,
+        job: Optional[galaxy.model.Job] = None,
+        link_data_only: bool = False,
         kwds=None,
     ):
         assert job_metadata, "setup_external_metadata must be supplied with job_metadata path"
         kwds = kwds or {}
         if not job:
             job = sa_session.query(galaxy.model.Job).get(self.job_id)
+            assert job
         tmp_dir = _init_tmp_dir(tmp_dir)
 
         metadata_dir = os.path.join(tmp_dir, "metadata")
@@ -186,13 +198,15 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
 
             outputs[name] = {
-                "filename_override": _get_filename_override(output_fnames, dataset.file_name),
+                "filename_override": _get_filename_override(output_fnames, dataset.get_file_name()),
                 "validate": validate_outputs,
                 "object_store_store_by": dataset.dataset.store_by,
                 "id": dataset.id,
-                "model_class": "LibraryDatasetDatasetAssociation"
-                if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
-                else "HistoryDatasetAssociation",
+                "model_class": (
+                    "LibraryDatasetDatasetAssociation"
+                    if isinstance(dataset, galaxy.model.LibraryDatasetDatasetAssociation)
+                    else "HistoryDatasetAssociation"
+                ),
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
@@ -204,6 +218,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             "max_metadata_value_size": max_metadata_value_size,
             "max_discovered_files": max_discovered_files,
             "outputs": outputs,
+            "change_datatype_actions": job.get_change_datatype_actions(),
         }
 
         # export model objects and object store configuration for extended metadata also.
@@ -231,7 +246,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 json.dump(object_store_conf, f)
 
             # setup tool
-            tool_as_dict = {}
+            tool_as_dict: dict[str, Any] = {}
             tool_as_dict["stdio_exit_codes"] = [e.to_dict() for e in tool.stdio_exit_codes]
             tool_as_dict["stdio_regexes"] = [r.to_dict() for r in tool.stdio_regexes]
             tool_as_dict["outputs"] = {name: output.to_dict() for name, output in tool.outputs.items()}
@@ -327,7 +342,7 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
             if not real_metadata_object:
                 metadata_temp = MetadataTempFile()
                 metadata_temp.tmp_dir = tmp_dir
-                shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
+                shutil.copy(dataset.metadata.get(meta_key, None).get_file_name(), metadata_temp.get_file_name())
                 override_metadata.append((meta_key, metadata_temp.to_JSON()))
 
     with open(filename_override_metadata, "w+") as f:

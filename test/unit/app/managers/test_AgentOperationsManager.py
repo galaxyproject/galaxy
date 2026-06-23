@@ -1,0 +1,609 @@
+from unittest import mock
+
+import pytest
+
+from galaxy.agents.operations import AgentOperationsManager
+from galaxy.schema.fields import Security
+from .base import BaseTestCase
+
+
+class TestAgentOperationsManagerBasic(BaseTestCase):
+    """Tests for basic AgentOperationsManager operations that don't require services."""
+
+    def set_up_managers(self):
+        super().set_up_managers()
+        self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+    def test_connect(self):
+        result = self.agent_ops.connect()
+
+        assert result["connected"] is True
+        assert "server" in result
+        assert "user" in result
+        assert result["user"]["email"] == self.admin_user.email
+        assert result["user"]["username"] == self.admin_user.username
+
+    def test_connect_requires_user(self):
+        self.trans.set_user(None)
+        agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+        with pytest.raises(ValueError, match="User must be authenticated"):
+            agent_ops.connect()
+
+    def test_get_user(self):
+        result = self.agent_ops.get_user()
+
+        assert result["email"] == self.admin_user.email
+        assert result["username"] == self.admin_user.username
+        assert result["is_admin"] is True
+        assert result["active"] is True
+        assert result["deleted"] is False
+
+    def test_get_server_info(self):
+        result = self.agent_ops.get_server_info()
+
+        assert "server" in result
+        assert "capabilities" in result
+        assert "version" in result["server"]
+
+
+class TestAgentOperationsManagerWithMockedServices(BaseTestCase):
+    """Tests that mock the service layer."""
+
+    def set_up_managers(self):
+        super().set_up_managers()
+        self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+    def test_create_history(self):
+        mock_history = {"id": 123, "name": "Test History", "state": "new"}
+
+        mock_service = mock.MagicMock()
+        mock_service.create.return_value = mock_history
+
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.create_history("Test History")
+
+        mock_service.create.assert_called_once()
+        assert result["name"] == "Test History"
+        assert isinstance(result["id"], str)  # ID should be encoded
+
+    def test_list_histories(self):
+        mock_histories = [
+            mock.MagicMock(id="hist1", name="History 1"),
+            mock.MagicMock(id="hist2", name="History 2"),
+        ]
+
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = mock_histories
+
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.list_histories(limit=10, offset=0)
+
+        assert "histories" in result
+        assert result["count"] == 2
+        assert result["pagination"]["limit"] == 10
+        assert result["pagination"]["offset"] == 0
+
+    def test_list_histories_with_name_filter(self):
+        mock_histories = [mock.MagicMock(id="hist1", name="RNA Analysis")]
+
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = mock_histories
+
+        with mock.patch.object(
+            type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.list_histories(name="RNA")
+
+        assert result["count"] == 1
+        call_kwargs = mock_service.index.call_args
+        filter_params = call_kwargs.kwargs.get("filter_query_params") or call_kwargs[1].get("filter_query_params")
+        assert filter_params.q == ["name-contains"]
+        assert filter_params.qv == ["RNA"]
+
+    def test_get_collection_details(self):
+        mock_collection = {
+            "id": "col123",
+            "name": "Paired reads",
+            "collection_type": "list:paired",
+            "elements": [{"id": "elem1"}, {"id": "elem2"}],
+        }
+
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = mock_collection
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "dataset_collections_service",
+                new_callable=lambda: property(lambda self: mock_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_collection_details("encoded_col_id")
+
+        assert "collection" in result
+        assert result["collection_id"] == "encoded_col_id"
+        assert result["collection"]["name"] == "Paired reads"
+        assert len(result["collection"]["elements"]) == 2
+
+    def test_get_collection_details_truncates_elements(self):
+        elements = [{"id": f"elem{i}"} for i in range(10)]
+        mock_collection = {
+            "id": "col123",
+            "name": "Big collection",
+            "collection_type": "list",
+            "elements": elements,
+        }
+
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = mock_collection
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "dataset_collections_service",
+                new_callable=lambda: property(lambda self: mock_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_collection_details("encoded_col_id", max_elements=3)
+
+        assert len(result["collection"]["elements"]) == 3
+        assert result["collection"]["elements_truncated"] is True
+        assert result["collection"]["total_elements"] == 10
+
+    def test_get_workflow_details_with_version(self):
+        mock_workflow = mock.MagicMock()
+
+        mock_service = mock.MagicMock()
+        mock_service.show_workflow.return_value = mock_workflow
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "workflows_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            self.agent_ops.get_workflow_details("encoded_wf_id", version=3)
+
+        mock_service.show_workflow.assert_called_once_with(
+            trans=self.trans, workflow_id=42, instance=False, legacy=False, version=3
+        )
+
+    def test_invoke_workflow_with_history_name(self):
+        mock_workflows_service = mock.MagicMock()
+        mock_workflows_service.invoke_workflow.return_value = {"id": "inv123"}
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops),
+                "workflows_service",
+                new_callable=lambda: property(lambda self: mock_workflows_service),
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            self.agent_ops.invoke_workflow("encoded_wf_id", history_name="My Analysis")
+
+        call_kwargs = mock_workflows_service.invoke_workflow.call_args
+        payload = call_kwargs.kwargs.get("payload") or call_kwargs[1].get("payload")
+        assert payload.new_history_name == "My Analysis"
+        assert payload.history_id is None
+
+    def test_invoke_workflow_requires_history(self):
+        with pytest.raises(ValueError, match="Either history_id or history_name"):
+            self.agent_ops.invoke_workflow("encoded_wf_id")
+
+    def test_get_history_contents_with_filters(self):
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = ([], 0)
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "datasets_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=1),
+        ):
+            self.agent_ops.get_history_contents("hist_id", deleted=True, visible=False)
+
+        call_kwargs = mock_service.index.call_args
+        filter_params = call_kwargs.kwargs.get("filter_query_params") or call_kwargs[1].get("filter_query_params")
+        assert "deleted-eq" in filter_params.q
+        assert "visible-eq" in filter_params.q
+        assert "True" in filter_params.qv
+        assert "False" in filter_params.qv
+
+    def test_get_history_graph_forwards_args_and_returns_dump(self):
+        fake_response = mock.MagicMock()
+        fake_response.model_dump.return_value = {
+            "nodes": [{"id": "d-abc", "type": "dataset", "hid": 1}],
+            "edges": [],
+            "truncated": {"item_count_capped": False, "scope_type": "recent"},
+        }
+        mock_service = mock.MagicMock()
+        mock_service.graph.return_value = fake_response
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "histories_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=42),
+        ):
+            result = self.agent_ops.get_history_graph(
+                history_id="hist-encoded",
+                seed_src="hda",
+                seed_id="abc",
+                direction="backward",
+                depth=3,
+                limit=100,
+            )
+
+        mock_service.graph.assert_called_once()
+        call_kwargs = mock_service.graph.call_args.kwargs
+        assert call_kwargs["history_id"] == 42
+        assert call_kwargs["seed_src"] == "hda"
+        assert call_kwargs["seed_id"] == "abc"
+        assert call_kwargs["direction"] == "backward"
+        assert call_kwargs["depth"] == 3
+        assert call_kwargs["limit"] == 100
+        assert call_kwargs["include_deleted"] is False
+
+        assert result["truncated"]["item_count_capped"] is False
+        assert result["nodes"][0]["id"] == "d-abc"
+
+    def test_get_tool_run_examples_with_version(self):
+        mock_tool_v1 = mock.MagicMock()
+        mock_tool_v1.id = "cat1"
+        mock_tool_v1.name = "Concatenate"
+        mock_tool_v1.version = "1.0"
+        mock_tool_v1.tests = []
+
+        mock_tool_v2 = mock.MagicMock()
+        mock_tool_v2.id = "cat1"
+        mock_tool_v2.name = "Concatenate"
+        mock_tool_v2.version = "2.0"
+        mock_tool_v2.tests = []
+
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.side_effect = lambda tid, tool_version=None: (
+            mock_tool_v2 if tool_version == "2.0" else mock_tool_v1
+        )
+
+        result = self.agent_ops.get_tool_run_examples("cat1", tool_version="2.0")
+        assert result["tool_version"] == "2.0"
+
+    def test_search_tools(self):
+        mock_tool = mock.MagicMock()
+        mock_tool.id = "upload1"
+        mock_tool.name = "Upload File"
+        mock_tool.description = "Upload files to Galaxy"
+        mock_tool.version = "1.0"
+
+        self.app.toolbox_search = mock.MagicMock()
+        self.app.toolbox_search.search.return_value = ["upload1"]
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = mock_tool
+
+        result = self.agent_ops.search_tools("upload")
+
+        assert result["query"] == "upload"
+        assert "tools" in result
+        assert result["count"] == 1
+        assert result["tools"][0]["id"] == "upload1"
+
+    def test_get_tool_details(self):
+        mock_tool = mock.MagicMock()
+        mock_tool.id = "cat1"
+        mock_tool.name = "Concatenate datasets"
+        mock_tool.version = "1.0"
+        mock_tool.description = "Concatenate files"
+        mock_tool.help = "Help text"
+
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = mock_tool
+
+        result = self.agent_ops.get_tool_details("cat1")
+
+        assert result["id"] == "cat1"
+        assert result["name"] == "Concatenate datasets"
+        assert result["version"] == "1.0"
+
+    def test_get_tool_details_not_found(self):
+        self.app.toolbox = mock.MagicMock()
+        self.app.toolbox.get_tool.return_value = None
+
+        with pytest.raises(ValueError, match="not found"):
+            self.agent_ops.get_tool_details("nonexistent_tool")
+
+    def test_run_tool(self):
+        mock_result = {"jobs": [{"id": "job123"}], "outputs": [{"id": "dataset123"}]}
+
+        mock_service = mock.MagicMock()
+        mock_service._create.return_value = mock_result
+
+        with mock.patch.object(
+            type(self.agent_ops), "tools_service", new_callable=lambda: property(lambda self: mock_service)
+        ):
+            result = self.agent_ops.run_tool("hist123", "cat1", {"input1": "data1"})
+
+        assert result["jobs"] == [{"id": "job123"}]
+        assert result["outputs"] == [{"id": "dataset123"}]
+        call_args = mock_service._create.call_args
+        payload = call_args[0][1] if call_args[0] else call_args[1].get("payload")
+        assert payload["tool_id"] == "cat1"
+        assert payload["history_id"] == "hist123"
+
+    def test_get_job_status(self):
+        mock_job = mock.MagicMock()
+        mock_job.id = 123
+        mock_job.state = "ok"
+
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = mock_job
+
+        with (
+            mock.patch.object(
+                type(self.agent_ops), "jobs_service", new_callable=lambda: property(lambda self: mock_service)
+            ),
+            mock.patch.object(self.trans.security, "decode_id", return_value=123),
+        ):
+            result = self.agent_ops.get_job_status("encoded_job_id")
+
+        assert "job" in result
+        assert result["job_id"] == "encoded_job_id"
+
+    def test_list_file_source_templates_filters_hidden(self):
+        visible = mock.MagicMock(hidden=False)
+        visible.model_dump.return_value = {
+            "id": "omero",
+            "name": "OMERO",
+            "type": "omero",
+            "hidden": False,
+        }
+        hidden = mock.MagicMock(hidden=True)
+        hidden.model_dump.return_value = {
+            "id": "legacy_dropbox",
+            "name": "Legacy Dropbox",
+            "type": "dropbox",
+            "hidden": True,
+        }
+        mock_summaries = mock.MagicMock()
+        mock_summaries.root = [visible, hidden]
+        mock_manager = mock.MagicMock()
+        mock_manager.summaries = mock_summaries
+
+        with mock.patch.object(
+            type(self.agent_ops),
+            "file_source_instances_manager",
+            new_callable=lambda: property(lambda self: mock_manager),
+        ):
+            result = self.agent_ops.list_file_source_templates()
+
+        assert result["count"] == 1
+        assert result["templates"][0]["id"] == "omero"
+        visible.model_dump.assert_called_once_with(mode="json")
+        hidden.model_dump.assert_not_called()
+
+    def test_list_user_file_sources(self):
+        instance = mock.MagicMock()
+        instance.model_dump.return_value = {
+            "uuid": "abc-123",
+            "name": "My Omero",
+            "type": "omero",
+            "uri_root": "gxuserfiles://omero/abc-123",
+            "active": True,
+            "template_id": "omero",
+        }
+        mock_manager = mock.MagicMock()
+        mock_manager.index.return_value = [instance]
+
+        with mock.patch.object(
+            type(self.agent_ops),
+            "file_source_instances_manager",
+            new_callable=lambda: property(lambda self: mock_manager),
+        ):
+            result = self.agent_ops.list_user_file_sources()
+
+        assert result["count"] == 1
+        assert result["file_sources"][0]["uuid"] == "abc-123"
+        assert result["file_sources"][0]["type"] == "omero"
+        mock_manager.index.assert_called_once_with(self.trans)
+        instance.model_dump.assert_called_once_with(mode="json")
+
+    def test_list_user_file_sources_requires_user(self):
+        self.trans.set_user(None)
+        agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+        with pytest.raises(ValueError, match="User must be authenticated"):
+            agent_ops.list_user_file_sources()
+
+
+class TestAgentOperationsManagerPages(BaseTestCase):
+    """Page (notebook/report) operations against a mocked PagesService."""
+
+    def set_up_managers(self):
+        super().set_up_managers()
+        # DecodedDatabaseIdField on page payloads decodes via the module-global
+        # Security.security; point it at the same helper trans uses to encode.
+        Security.security = self.trans.security
+        self.agent_ops = AgentOperationsManager(app=self.app, trans=self.trans)
+
+    def _mock_pages_service(self, mock_service):
+        return mock.patch.object(
+            type(self.agent_ops), "pages_service", new_callable=lambda: property(lambda self: mock_service)
+        )
+
+    def test_list_pages_defaults_to_own_only(self):
+        pages = mock.MagicMock()
+        pages.model_dump.return_value = []
+        pages.root = []
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = (pages, 0)
+
+        with self._mock_pages_service(mock_service):
+            result = self.agent_ops.list_pages()
+
+        payload = mock_service.index.call_args.args[1]
+        assert payload.show_own is True
+        assert payload.show_published is False
+        assert payload.show_shared is False
+        assert payload.history_id is None
+        assert result["count"] == 0
+        assert result["total_matches"] == 0
+
+    def test_list_pages_history_filter(self):
+        encoded_history_id = self.trans.security.encode_id(42)
+        pages = mock.MagicMock()
+        pages.model_dump.return_value = []
+        pages.root = []
+        mock_service = mock.MagicMock()
+        mock_service.index.return_value = (pages, 5)
+
+        with self._mock_pages_service(mock_service):
+            result = self.agent_ops.list_pages(history_id=encoded_history_id)
+
+        payload = mock_service.index.call_args.args[1]
+        assert payload.history_id == 42
+        assert result["total_matches"] == 5
+
+    def test_get_page_drops_rendered_by_default(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.get_page("encoded_page")
+
+        assert result["content_editor"] == "# Notes"
+        assert "content" not in result
+        mock_service.show.assert_called_once_with(self.trans, 7)
+
+    def test_get_page_includes_rendered_when_requested(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.get_page("encoded_page", include_rendered=True)
+
+        assert result["content"] == "<rendered>"
+
+    def test_create_page_sets_markdown_format(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.create.return_value = details
+
+        with self._mock_pages_service(mock_service):
+            self.agent_ops.create_page(title="Report", content="# Hi", slug="my-report")
+
+        payload = mock_service.create.call_args.args[1]
+        assert payload.content_format == "markdown"
+        assert payload.title == "Report"
+        assert payload.slug == "my-report"
+        assert payload.history_id is None
+
+    def test_create_page_with_history_decodes_id(self):
+        encoded_history_id = self.trans.security.encode_id(99)
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.create.return_value = details
+
+        with self._mock_pages_service(mock_service):
+            self.agent_ops.create_page(history_id=encoded_history_id, content="# Hi")
+
+        payload = mock_service.create.call_args.args[1]
+        assert payload.history_id == 99
+        assert payload.content_format == "markdown"
+
+    def test_update_page_sets_edit_source_agent(self):
+        details = mock.MagicMock()
+        details.model_dump.return_value = {"id": "p1"}
+        mock_service = mock.MagicMock()
+        mock_service.update.return_value = details
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            self.agent_ops.update_page("encoded_page", content="# New")
+
+        call = mock_service.update.call_args
+        assert call.args[1] == 7
+        payload = call.args[2]
+        assert payload.edit_source == "agent"
+        assert payload.content == "# New"
+
+    def test_list_page_revisions(self):
+        revisions = mock.MagicMock()
+        revisions.model_dump.return_value = [{"id": "r1"}]
+        revisions.root = [{"id": "r1"}]
+        mock_service = mock.MagicMock()
+        mock_service.list_revisions.return_value = revisions
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", return_value=7),
+        ):
+            result = self.agent_ops.list_page_revisions("encoded_page")
+
+        mock_service.list_revisions.assert_called_once_with(self.trans, 7, sort_desc=False)
+        assert result["count"] == 1
+
+    def test_get_page_revision_drops_rendered_by_default(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.get_page_revision("encoded_page", "encoded_rev")
+
+        mock_service.show_revision.assert_called_once_with(self.trans, 7, 3)
+        assert result["content_editor"] == "# Notes"
+        assert "content" not in result
+
+    def test_get_page_revision_includes_rendered_when_requested(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r1", "content_editor": "# Notes", "content": "<rendered>"}
+        mock_service = mock.MagicMock()
+        mock_service.show_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.get_page_revision("encoded_page", "encoded_rev", include_rendered=True)
+
+        assert result["content"] == "<rendered>"
+
+    def test_revert_page_revision_returns_restore(self):
+        revision = mock.MagicMock()
+        revision.model_dump.return_value = {"id": "r2", "edit_source": "restore"}
+        mock_service = mock.MagicMock()
+        mock_service.revert_revision.return_value = revision
+
+        with (
+            self._mock_pages_service(mock_service),
+            mock.patch.object(self.trans.security, "decode_id", side_effect=[7, 3]),
+        ):
+            result = self.agent_ops.revert_page_revision("encoded_page", "encoded_rev")
+
+        mock_service.revert_revision.assert_called_once_with(self.trans, 7, 3)
+        assert result["edit_source"] == "restore"

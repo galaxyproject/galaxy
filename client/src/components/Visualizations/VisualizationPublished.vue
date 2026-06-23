@@ -1,19 +1,24 @@
 <template>
-    <Published :item="visualization">
+    <PublishedItem :item="visualization">
         <template v-slot>
-            <CenterFrame :src="getUrl" />
+            <VisualizationFrame
+                v-if="visualization && visualization.type"
+                :name="visualization.type"
+                :config="visualization.latest_revision?.config" />
         </template>
-    </Published>
+    </PublishedItem>
 </template>
 
 <script>
-import { urlData } from "utils/url";
-import CenterFrame from "entry/analysis/modules/CenterFrame";
-import Published from "components/Common/Published";
+import { urlData } from "@/utils/url";
+
+import VisualizationFrame from "./VisualizationFrame.vue";
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+
 export default {
     components: {
-        CenterFrame,
-        Published,
+        PublishedItem,
+        VisualizationFrame,
     },
     props: {
         id: {
@@ -25,11 +30,6 @@ export default {
         return {
             visualization: {},
         };
-    },
-    computed: {
-        getUrl() {
-            return `/visualization/saved?id=${this.id}`;
-        },
     },
     created() {
         const url = `/api/visualizations/${this.id}`;

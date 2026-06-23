@@ -13,9 +13,12 @@ A multi-hour long video playlist covering these slides can be found at
 
   schema
   api_guidelines
+  database_session_management
   build_a_job_runner
+  collection_semantics
   finding_and_improving_slow_code
   data_managers
+  data_source
   data_types
   faq
   writing_tests
@@ -23,4 +26,4 @@ A multi-hour long video playlist covering these slides can be found at
   debugging_galaxy
   debugging_galaxy_slurm
   translating
-  create_point_release
+  create_release

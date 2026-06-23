@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.testcase import ShedTestCase
 
 log = logging.getLogger(__name__)
 
@@ -35,12 +33,13 @@ Verify that convert_chars was installed first, contrary to the ordering that wou
 running_standalone = False
 
 
-class TestSimplePriorInstallation(ShedTwillTestCase):
+class TestSimplePriorInstallation(ShedTestCase):
     """Test features related to datatype converters."""
+
+    requires_galaxy = True
 
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -59,21 +58,14 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_create_column_repository(self):
         """Create and populate convert_chars_0150."""
-        global running_standalone
         category = self.create_category(name=category_name, description=category_description)
         repository = self.get_or_create_repository(
             name=column_repository_name,
@@ -84,16 +76,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             strings_displayed=[],
         )
         if running_standalone:
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_create_repository_dependency(self):
@@ -102,7 +88,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         Column maker repository dependency:
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         """
-        global running_standalone
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         if running_standalone:
@@ -133,7 +118,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0025_install_column_repository(self):
         """Install column_maker_0150."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["column_maker_0150", self.get_repository_tip(column_repository)]
         self._install_repository(
@@ -147,10 +131,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0030_verify_installation_order(self):
         """Verify that convert_chars_0150 was installed before column_maker_0150."""
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Column maker was selected for installation, so convert chars should have been installed first, as reflected by the update_time field.

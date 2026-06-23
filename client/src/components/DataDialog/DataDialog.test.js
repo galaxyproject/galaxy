@@ -1,16 +1,17 @@
-import DataDialog from "./DataDialog.vue";
-import SelectionDialog from "components/SelectionDialog/SelectionDialog.vue";
-import { Model } from "./model";
-import { UrlTracker } from "./utilities";
-import { Services } from "./services";
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { describe, expect, it, vi } from "vitest";
 
-jest.mock("app");
+import { Model } from "./model";
+import { Services } from "./services";
+
+import DataDialog from "./DataDialog.vue";
+import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
+
+vi.mock("app");
 
 const mockOptions = {
     callback: () => {},
     history: "history",
-    modalStatic: true,
 };
 
 describe("model.js", () => {
@@ -49,27 +50,6 @@ describe("model.js", () => {
         expect(model.count()).toBe(1);
         result = model.finalize();
         expect(result[0]).toBe("tag_2");
-    });
-});
-
-describe("utilities.js/UrlTracker", () => {
-    it("Test url tracker", () => {
-        const urlTracker = new UrlTracker("url_initial");
-        let url = urlTracker.getUrl();
-        expect(url).toBe("url_initial");
-        expect(urlTracker.atRoot()).toBe(true);
-        url = urlTracker.getUrl("url_1");
-        expect(url).toBe("url_1");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl("url_2");
-        expect(url).toBe("url_2");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl();
-        expect(url).toBe("url_1");
-        expect(urlTracker.atRoot()).toBe(false);
-        url = urlTracker.getUrl();
-        expect(url).toBe("url_initial");
-        expect(urlTracker.atRoot()).toBe(true);
     });
 });
 
@@ -128,10 +108,11 @@ describe("DataDialog.vue", () => {
     */
 
     it("loads correctly, embeds a SelectionDialog", () => {
-        const localVue = createLocalVue();
         wrapper = shallowMount(DataDialog, {
             propsData: mockOptions,
-            localVue,
+            stubs: {
+                Icon: true,
+            },
         });
         expect(wrapper.findComponent(SelectionDialog).exists()).toBe(true);
         // Cannot get nested slot templates to render into the wrapper

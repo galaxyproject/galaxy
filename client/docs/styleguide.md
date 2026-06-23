@@ -231,7 +231,7 @@ Add spaces between the `script`, `template` and `style` blocks.
 > </template>
 >
 > <style lang="scss" scoped>
-> // stlye stuff...
+> // style stuff...
 > </style>
 > ```
 >
@@ -245,7 +245,7 @@ Add spaces between the `script`, `template` and `style` blocks.
 >     <!--template stuff-->
 > </template>
 > <style lang="scss" scoped>
-> // stlye stuff...
+> // style stuff...
 > </style>
 > ```
 

@@ -4,13 +4,18 @@
     </command>
     <inputs>
         <param name="inttest" value="1" type="integer" />
+        <conditional name="cond">
+            <param name="bool_to_select" type="boolean" truevalue="a" falsevalue="b"></param>
+            <when value="a" />
+            <when value="b" />
+        </conditional>
     </inputs>
     <outputs>
         <data name="out_file1" format="txt" />
     </outputs>
     <tests>
         <test>
-            <param name="intest" value="1" />
+            <param name="inttest" value="1" />
             <output name="out_file1">
                 <assert_contents>
                     <has_line line="Version 0.1" />

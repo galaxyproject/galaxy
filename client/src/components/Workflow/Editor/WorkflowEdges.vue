@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { computed, type Ref } from "vue";
-import { type Connection, useConnectionStore, type OutputTerminal } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
+import { computed, type Ref } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
+import type { Connection, OutputTerminal } from "@/stores/workflowStoreTypes";
+import type { WorkflowTransform } from "@/utils/geometry";
+
 import type { OutputTerminals } from "./modules/terminals";
+
 import SVGConnection from "./SVGConnection.vue";
 
 const props = defineProps<{
     draggingConnection: TerminalPosition | null;
     draggingTerminal: OutputTerminals | null;
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
+    focusedNodeIds: Set<number> | null;
 }>();
 
-const connectionStore = useConnectionStore();
+const { connectionStore } = useWorkflowStores();
 const { connections } = storeToRefs(connectionStore);
 
 const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(() => {
@@ -52,7 +58,8 @@ function id(connection: Connection) {
                 v-for="connection in connections"
                 :id="id(connection)"
                 :key="key(connection)"
-                :connection="connection" />
+                :connection="connection"
+                :focused-node-ids="props.focusedNodeIds" />
         </svg>
     </div>
 </template>
@@ -67,5 +74,7 @@ function id(connection: Connection) {
     top: 0;
     position: absolute;
     transform-origin: 0 0;
+    z-index: 80;
+    pointer-events: none;
 }
 </style>

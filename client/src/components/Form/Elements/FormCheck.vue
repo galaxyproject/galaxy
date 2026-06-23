@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+interface CheckOption {
+    label: string;
+    value: string;
+}
+
 export interface FormCheckProps {
     value?: string | string[];
-    options: Array<[string, string]>;
+    options: Array<CheckOption>;
 }
 
 const props = defineProps<FormCheckProps>();
@@ -32,7 +37,7 @@ const selectAll = computed(() => currentValue.value.length === props.options.len
 
 function onSelectAll(selected: boolean): void {
     if (selected) {
-        const allValues = props.options.map((option) => option[1]);
+        const allValues = props.options.map((option) => option.value);
         emit("input", allValues);
     } else {
         emit("input", null);
@@ -51,8 +56,8 @@ function onSelectAll(selected: boolean): void {
             Select / Deselect all
         </b-form-checkbox>
         <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
-            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
-                {{ option[0] }}
+            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option.value">
+                {{ option.label }}
             </b-form-checkbox>
         </b-form-checkbox-group>
     </div>

@@ -1,26 +1,39 @@
-import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import FormTool from "./FormTool";
-import MockConfigProvider from "components/providers/MockConfigProvider";
-import Vuex from "vuex";
-import { configStore } from "store/configStore";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+
+import FormTool from "./FormTool.vue";
+
+vi.mock("@/api/schema", () => ({}));
+
+vi.mock("@/composables/config", () => ({
+    useConfig: vi.fn(() => ({
+        config: { enable_tool_source_display: false },
+        isConfigLoaded: true,
+    })),
+}));
 
 const localVue = getLocalVue();
 
+const { server, http } = useServerMock();
+
 describe("FormTool", () => {
-    const axiosMock = new MockAdapter(axios);
-    axiosMock.onGet(`/api/webhooks`).reply(200, []);
+    beforeEach(() => {
+        server.use(
+            http.get("/api/configuration", ({ response }) => {
+                return response(200).json({});
+            }),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+        );
+    });
 
     function mountTarget() {
-        const store = new Vuex.Store({
-            modules: {
-                config: mockModule(configStore),
-            },
-        });
-
         return mount(FormTool, {
             propsData: {
                 id: "input",
@@ -34,6 +47,7 @@ describe("FormTool", () => {
                         description: "description",
                         inputs: [{ name: "input", label: "input", type: "text", value: "value" }],
                         help: "help_text",
+                        help_format: "restructuredtext",
                         versions: ["1.0", "2.0", "3.0"],
                         citations: false,
                     },
@@ -44,11 +58,10 @@ describe("FormTool", () => {
             },
             localVue,
             stubs: {
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            pinia: createTestingPinia(),
-            provide: { store },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            provide: { workflowId: "mock-workflow" },
         });
     }
 
@@ -71,5 +84,6 @@ describe("FormTool", () => {
         state = wrapper.emitted().onSetData[1][1];
         expect(state.tool_version).toEqual("3.0");
         expect(state.tool_id).toEqual("tool_id+3.0");
+        await flushPromises();
     });
 });

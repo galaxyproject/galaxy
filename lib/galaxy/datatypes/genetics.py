@@ -11,14 +11,13 @@ subsequent row values are all numeric ! Will fail if any non numeric (eg '+' or 
 ross lazarus for rgenetics
 august 20 2007
 """
+
 import logging
 import os
 import re
 import sys
 from typing import (
-    Dict,
     IO,
-    List,
     Optional,
     Union,
 )
@@ -48,8 +47,9 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.compression_utils import FileObjType
+from .util.generic_util import display_as_url
 
-gal_Log = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 verbose = False
 
 # https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
@@ -78,7 +78,7 @@ class GenomeGraphs(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.markerCol = 1
-        header = open(dataset.file_name).readlines()[0].strip().split("\t")
+        header = open(dataset.get_file_name()).readlines()[0].strip().split("\t")
         dataset.metadata.columns = len(header)
         t = ["numeric" for x in header]
         t[0] = "string"
@@ -88,9 +88,9 @@ class GenomeGraphs(Tabular):
         """
         Returns file
         """
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
-    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str, request) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> list:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this
@@ -114,21 +114,13 @@ class GenomeGraphs(Tabular):
             for site_name, site_url in app.datatypes_registry.get_legacy_sites_by_build("ucsc", dataset.dbkey):
                 if site_name in app.datatypes_registry.get_display_sites("ucsc"):
                     site_url = site_url.replace("/hgTracks?", "/hgGenome?")  # for genome graphs
-                    internal_url = "%s" % app.legacy_url_for(
-                        mapper=app.legacy_mapper,
-                        environ=request.environ,
+                    internal_url = app.url_for(
                         controller="dataset",
                         dataset_id=dataset.id,
                         action="display_at",
                         filename=f"ucsc_{site_name}",
                     )
-                    display_url = "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" % (
-                        base_url,
-                        app.legacy_url_for(mapper=app.legacy_mapper, environ=request.environ, controller="root"),
-                        dataset.id,
-                        type,
-                    )
-                    display_url = quote_plus(display_url)
+                    display_url = display_as_url(app, base_url, str(dataset.id), type)
                     # was display_url = quote_plus( "%s/display_as?id=%i&display_app=%s" % (base_url, dataset.id, type) )
                     # redirect_url = quote_plus( "%sdb=%s&position=%s:%s-%s&hgt.customText=%%s" % (site_url, dataset.dbkey, chrom, start, stop) )
                     sl = [
@@ -153,7 +145,7 @@ class GenomeGraphs(Tabular):
         """
         try:
             out = ['<table cellspacing="0" cellpadding="3">']
-            with open(dataset.file_name) as f:
+            with open(dataset.get_file_name()) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
                 return f"Cannot find anything to parse in {dataset.name}"
@@ -182,7 +174,7 @@ class GenomeGraphs(Tabular):
         """
         Validate a gg file - all numeric after header row
         """
-        with open(dataset.file_name) as infile:
+        with open(dataset.get_file_name()) as infile:
             next(infile)  # header
             for row in infile:
                 ll = row.strip().split("\t")[1:]  # first is alpha feature identifier
@@ -335,10 +327,9 @@ class Rgenetics(Html):
         ]
         for fname in flist:
             sfname = os.path.split(fname)[-1]
-            f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -354,23 +345,23 @@ class Rgenetics(Html):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         if not overwrite:
             if verbose:
-                gal_Log.debug("@@@ rgenetics set_meta called with overwrite = False")
+                log.debug("@@@ rgenetics set_meta called with overwrite = False")
             return
         try:
             efp = dataset.extra_files_path
         except Exception:
             if verbose:
-                gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
+                log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
             return
         try:
             flist = os.listdir(efp)
         except Exception:
             if verbose:
-                gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
+                log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
             return
         if len(flist) == 0:
             if verbose:
-                gal_Log.debug(f"@@@rgenetics set_meta failed - {dataset.name} efp {efp} is empty?")
+                log.debug(f"@@@rgenetics set_meta failed - {dataset.name} efp {efp} is empty?")
             return
         self.regenerate_primary_file(dataset)
         if not dataset.info:
@@ -393,16 +384,6 @@ class SNPMatrix(Rgenetics):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
-
-    def sniff(self, filename: str) -> bool:
-        """need to check the file header hex code"""
-        with open(filename, "b") as infile:
-            head = infile.read(16)
-        head = [hex(x) for x in head]
-        if head != "":
-            return False
-        else:
-            return True
 
 
 class Lped(Rgenetics):
@@ -614,7 +595,7 @@ class IdeasPre(Html):
             fn = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{fn}">{fn}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -670,7 +651,7 @@ class RexpBase(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def get_phecols(self, phenolist: List, maxConc: int = 20) -> List:
+    def get_phecols(self, phenolist: list, maxConc: int = 20) -> list:
         """
         sept 2009: cannot use whitespace to split - make a more complex structure here
         and adjust the methods that rely on this structure
@@ -691,13 +672,16 @@ class RexpBase(Html):
             if nrows == 0:  # set up from header
                 head = row
                 totcols = len(row)
-                concordance: List[Dict] = [{} for x in head]
+                concordance: list[dict] = [{} for x in head]
             else:
                 for col, code in enumerate(row):  # keep column order correct
                     if col >= totcols:
-                        gal_Log.warning(
-                            "### get_phecols error in pheno file - row %d col %d (%s) longer than header %s"
-                            % (nrows, col, row, head)
+                        log.warning(
+                            "### get_phecols error in pheno file - row %d col %d (%s) longer than header %s",
+                            nrows,
+                            col,
+                            row,
+                            head,
                         )
                     else:
                         concordance[col].setdefault(code, 0)  # first one is zero
@@ -831,7 +815,7 @@ class RexpBase(Html):
             sfname = os.path.split(fname)[-1]
             rval.append(f'<li><a href="{sfname}">{sfname}</a>')
         rval.append("</ul></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -850,7 +834,7 @@ class RexpBase(Html):
             flist = os.listdir(dataset.extra_files_path)
         except Exception:
             if verbose:
-                gal_Log.debug("@@@rexpression set_meta failed - no dataset?")
+                log.debug("@@@rexpression set_meta failed - no dataset?")
             return
         bn = dataset.metadata.base_name
         if not bn:
@@ -865,16 +849,15 @@ class RexpBase(Html):
         pp = os.path.join(dataset.extra_files_path, pn)
         dataset.metadata.pheno_path = pp
         try:
-            with open(pp) as f:
-                pf = f.readlines()  # read the basename.phenodata in the extra_files_path
+            with open(pp) as file:
+                pf = file.readlines()  # read the basename.phenodata in the extra_files_path
         except Exception:
             pf = None
         if pf:
-            h = pf[0].strip()
-            h = h.split("\t")  # hope is header
-            h = [escape(x) for x in h]
-            dataset.metadata.column_names = h
-            dataset.metadata.columns = len(h)
+            header = pf[0].strip()
+            columns = [escape(x) for x in header.split("\t")]  # hope is header
+            dataset.metadata.column_names = columns
+            dataset.metadata.columns = len(columns)
             dataset.peek = "".join(pf[:5])
         else:
             dataset.metadata.column_names = []

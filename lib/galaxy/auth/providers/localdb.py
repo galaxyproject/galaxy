@@ -3,6 +3,7 @@ Created on 16/07/2014
 
 @author: Andrew Robinson
 """
+
 import logging
 
 from . import AuthProvider

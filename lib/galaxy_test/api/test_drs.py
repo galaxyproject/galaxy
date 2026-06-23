@@ -1,8 +1,5 @@
 import tempfile
-from typing import (
-    Callable,
-    List,
-)
+from collections.abc import Callable
 from unittest import SkipTest
 from urllib.parse import (
     urljoin,
@@ -13,27 +10,27 @@ import requests
 
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
-from galaxy.util.config_parsers import parse_allowlist_ips
-from galaxy.util.drs import (
+from galaxy.files.plugins import FileSourcePluginsConfig
+from galaxy.files.sources.util import (
     fetch_drs_to_file,
     RetryOptions,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 CONTENT = "My Cool DRS Data\n"
 
 # DRS expects identical get/post for two main API entrypoints.
-HTTP_METHODS: List[Callable[[str], requests.Response]] = [requests.get, requests.post]
+HTTP_METHODS: list[Callable[[str], requests.Response]] = [requests.get, requests.post]
 
 CHECKSUM_TEST_SLEEP_TIME = 3.0
 
 
 def user_context_fixture():
-    file_sources_config = ConfiguredFileSourcesConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
+    file_sources_config = FileSourcePluginsConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
     file_sources = ConfiguredFileSources(file_sources_config, load_stock_plugins=True)
     user_context = DictFileSourcesUserContext(
         preferences={
@@ -131,7 +128,7 @@ class TestDrsApi(ApiTestCase):
         for method in HTTP_METHODS:
             api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}/access/fakeid")
             error_response = method(api_url)
-            assert type(error_response.status_code) == int
+            assert isinstance(error_response.status_code, int)
             assert error_response.status_code == 404
             error_as_dict = error_response.json()
             assert "status_code" in error_as_dict

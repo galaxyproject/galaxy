@@ -42,9 +42,9 @@ __status__ = "beta"
 fake_sff_name = "fake_sff_name"
 
 # readname as key: lines with matches from SSAHA, one best match
-ssahapematches = {}  # type: ignore
+ssahapematches = {}  # type: ignore[var-annotated]
 # linker readname as key: length of linker sequence
-linkerlengths = {}  # type: ignore
+linkerlengths = {}  # type: ignore[var-annotated]
 
 # set to true if something really fishy is going on with the sequences
 stern_warning = False
@@ -602,8 +602,6 @@ def correct_for_smallhits(maskedseq, maskchar, linkername):
     Returns either unchanged "maskedseq" or a new sequence
      with some more characters masked.
     """
-    global linkerlengths
-
     if len(maskedseq) == 0:
         return maskedseq
 
@@ -682,8 +680,6 @@ def split_paired_end(data, sff_fh, seq_fh, qual_fh, xml_fh):
     stored with a ".part<number>" name, additionally they will not get
     template information in the XML
     """
-    global ssahapematches
-
     maskchar = "#"
 
     numseqs = 0
@@ -854,8 +850,6 @@ def extract_reads_from_sff(config, sff_files):
     of an SFF and searches these against the linker(s) with SSAHA2 to
     create needed information to split reads.
     """
-    global ssahapematches
-
     if len(sff_files) == 0:
         raise RuntimeError("No SFF file given?")
 
@@ -1129,8 +1123,6 @@ def tests_for_ssaha():
 def load_linker_sequences(linker_fname):
     """Loads all linker sequences into memory, storing only the length
     of each linker."""
-    global linkerlengths
-
     if not os.path.getsize(linker_fname):
         raise RuntimeError("File empty? '" + linker_fname + "'")
     fh = open(linker_fname)
@@ -1169,8 +1161,6 @@ def read_ssaha_data(ssahadata_fh):
     """Given file handle, reads file generated with SSAHA2 (with default
     output format) and stores all matches as list ssahapematches
     (ssaha paired-end matches) dictionary"""
-    global ssahapematches
-
     print("Parsing SSAHA2 result file ... ", end=" ")
     sys.stdout.flush()
 
@@ -1180,7 +1170,7 @@ def read_ssaha_data(ssahadata_fh):
             if len(ml) != 12:
                 print("\n", line, end=" ")
                 raise RuntimeError(
-                    "Expected 12 elements in the SSAHA2 line with ALIGMENT keyword, but found " + str(len(ml))
+                    "Expected 12 elements in the SSAHA2 line with ALIGNMENT keyword, but found " + str(len(ml))
                 )
             if ml[2] not in ssahapematches:
                 ssahapematches[ml[2]] = []
@@ -1329,7 +1319,7 @@ def read_config():
     parser.set_defaults(pelinker_fname=def_pelinker_fname)
 
     # we parse the cmd line
-    (options, args) = parser.parse_args()
+    options, args = parser.parse_args()
 
     # we put the result in a dict
     global config

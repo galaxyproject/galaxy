@@ -1,20 +1,23 @@
 <script setup lang="ts">
+import { format, formatDistanceToNow } from "date-fns";
 import { computed } from "vue";
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+
+import { galaxyTimeToDate, localizeUTCPretty } from "@/utils/dates";
 
 interface UtcDateProps {
     date: string;
-    mode?: "date" | "elapsed" | "pretty";
+    mode?: "date" | "elapsed" | "pretty" | "timeonly";
 }
 
 const props = withDefaults(defineProps<UtcDateProps>(), {
     mode: "date",
 });
 
-const parsedDate = computed(() => parseISO(`${props.date}Z`));
+const parsedDate = computed(() => galaxyTimeToDate(props.date));
 const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
 const fullISO = computed(() => parsedDate.value.toISOString());
-const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
+const pretty = computed(() => localizeUTCPretty(parsedDate.value));
+const timeonly = computed(() => format(parsedDate.value, "H:mm:ss zz"));
 </script>
 
 <template>
@@ -23,6 +26,9 @@ const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy
     </span>
     <span v-else-if="mode === 'elapsed'" class="utc-time utc-time-elapsed" :title="fullISO">
         {{ elapsedTime }}
+    </span>
+    <span v-else-if="mode === 'timeonly'" class="utc-time" :title="fullISO">
+        {{ timeonly }}
     </span>
     <span v-else class="utc-time" :title="elapsedTime">
         {{ pretty }}

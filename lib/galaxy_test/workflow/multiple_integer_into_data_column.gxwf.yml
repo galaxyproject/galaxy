@@ -1,0 +1,16 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: data
+  column:
+    type: [integer]
+outputs:
+  output:
+    outputSource: column_param_list/output2
+steps:
+  column_param_list:
+    tool_id: column_param_list
+    in:
+      input1: input
+      col: column
+      col_names: column

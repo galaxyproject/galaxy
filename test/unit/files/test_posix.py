@@ -1,10 +1,6 @@
 import os
 import tempfile
-from typing import (
-    Any,
-    Dict,
-    Tuple,
-)
+from typing import Any
 
 import pytest
 
@@ -14,8 +10,9 @@ from galaxy.exceptions import (
 )
 from galaxy.files import (
     ConfiguredFileSources,
-    ConfiguredFileSourcesConfig,
+    ConfiguredFileSourcesConf,
 )
+from galaxy.files.plugins import FileSourcePluginsConfig
 from galaxy.files.unittest_utils import (
     setup_root,
     TestConfiguredFileSources,
@@ -48,29 +45,32 @@ def test_posix():
     res = list_root(file_sources, "gxfiles://test1", recursive=False)
     file_a = find_file_a(res)
     assert file_a
-    assert file_a["uri"] == "gxfiles://test1/a"
-    assert file_a["name"] == "a"
+    assert file_a.uri == "gxfiles://test1/a"
+    assert file_a.name == "a"
 
     subdir1 = find(res, name="subdir1")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
 
     res = list_dir(file_sources, "gxfiles://test1/subdir1", recursive=False)
     subdir2 = find(res, name="subdir2")
     assert subdir2, res
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
 
     file_c = find(res, name="c")
     assert file_c, res
-    assert file_c["uri"] == "gxfiles://test1/subdir1/c"
+    assert file_c.uri == "gxfiles://test1/subdir1/c"
 
     res = list_root(file_sources, "gxfiles://test1", recursive=True)
     subdir1 = find(res, name="subdir1")
     subdir2 = find(res, name="subdir2")
-    assert subdir1["class"] == "Directory"
-    assert subdir1["uri"] == "gxfiles://test1/subdir1"
-    assert subdir2["uri"] == "gxfiles://test1/subdir1/subdir2"
-    assert subdir2["class"] == "Directory"
+    assert subdir1
+    assert subdir1.class_ == "Directory"
+    assert subdir1.uri == "gxfiles://test1/subdir1"
+    assert subdir2
+    assert subdir2.uri == "gxfiles://test1/subdir1/subdir2"
+    assert subdir2.class_ == "Directory"
 
 
 def test_posix_link_security():
@@ -97,6 +97,7 @@ def test_posix_link_security_allowlist():
 def test_posix_link_security_allowlist_write():
     file_sources = _configured_file_sources(include_allowlist=True, writable=True)
     write_from(file_sources, "gxfiles://test1/unsafe_dir/foo", "my test content")
+    assert file_sources.test_root
     with open(os.path.join(file_sources.test_root, "subdir1", "foo")) as f:
         assert f.read() == "my test content"
 
@@ -154,14 +155,15 @@ def test_posix_per_user_serialized():
 
 
 def test_user_ftp_explicit_config():
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_purge=False,
     )
     plugin = {
+        "id": "_ftp",
         "type": "gxftp",
     }
     tmp, root = setup_root()
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
 
@@ -179,11 +181,13 @@ def test_user_ftp_explicit_config():
 
 def test_user_ftp_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=False,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert os.path.exists(os.path.join(root, "a"))
@@ -197,11 +201,13 @@ def test_user_ftp_implicit_config():
 
 def test_user_ftp_respects_upload_purge_off():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
         ftp_upload_purge=True,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
@@ -210,10 +216,12 @@ def test_user_ftp_respects_upload_purge_off():
 
 def test_user_ftp_respects_upload_purge_on_by_default():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         ftp_upload_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     user_context = user_context_fixture(user_ftp_dir=root)
     write_file_fixtures(tmp, root)
     assert_realizes_as(file_sources, "gxftp://a", "a\n", user_context=user_context)
@@ -222,13 +230,14 @@ def test_user_ftp_respects_upload_purge_on_by_default():
 
 def test_import_dir_explicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         library_import_dir=root,
     )
     plugin = {
+        "id": "test-gximport",
         "type": "gximport",
     }
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[plugin])
+    file_sources = ConfiguredFileSources(file_sources_config, ConfiguredFileSourcesConf(conf_dict=[plugin]))
     write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
@@ -236,10 +245,12 @@ def test_import_dir_explicit_config():
 
 def test_import_dir_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         library_import_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
     write_file_fixtures(tmp, root)
 
     assert_realizes_as(file_sources, "gximport://a", "a\n")
@@ -247,10 +258,12 @@ def test_import_dir_implicit_config():
 
 def test_user_import_dir_implicit_config():
     tmp, root = setup_root()
-    file_sources_config = ConfiguredFileSourcesConfig(
+    file_sources_config = FileSourcePluginsConfig(
         user_library_import_dir=root,
     )
-    file_sources = ConfiguredFileSources(file_sources_config, conf_dict=[], load_stock_plugins=True)
+    file_sources = ConfiguredFileSources(
+        file_sources_config, ConfiguredFileSourcesConf(conf_dict=[]), load_stock_plugins=True
+    )
 
     write_file_fixtures(tmp, os.path.join(root, EMAIL))
 
@@ -427,7 +440,7 @@ def test_posix_file_url_allowed_root():
 
 
 def test_posix_file_url_disallowed_root():
-    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    file_sources, _ = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
     with tempfile.NamedTemporaryFile(mode="w") as tf:
         tf.write("some content")
         tf.flush()
@@ -467,7 +480,7 @@ def _configured_file_sources_with_root(
     writable=None,
     allow_subdir_creation=True,
     empty_root=False,
-) -> Tuple[TestConfiguredFileSources, str]:
+):
     if empty_root:
         tmp, root = "/", None
     else:
@@ -475,14 +488,14 @@ def _configured_file_sources_with_root(
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
-    file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
-    plugin: Dict[str, Any] = {
+    file_sources_config = FileSourcePluginsConfig(**config_kwd)
+    plugin: dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:
         plugin["writable"] = writable
     if per_user and root:
-        plugin["root"] = "%s/${user.username}" % root
+        plugin["root"] = f"{root}/${{user.username}}"
         # setup files just for alice
         root = os.path.join(root, "alice")
         os.mkdir(root)
@@ -521,3 +534,25 @@ def _download_and_check_file(file_sources):
 def _assert_access_prohibited(e):
     assert e is not None
     assert "Operation not allowed" in str(e)
+
+
+def test_score_url_match_requires_prefix():
+    """Ensure score_url_match uses prefix matching, not substring matching.
+
+    A malicious URI like gxfiles://test1http://evil.com should NOT match
+    the file source with uri_root gxfiles://test1.
+    """
+    file_sources = _configured_file_sources()
+    file_source = file_sources.get_file_source_path("gxfiles://test1/a").file_source
+    # Normal prefix match works
+    assert file_source.score_url_match("gxfiles://test1/a") > 0
+    # Embedded scheme must not match
+    assert file_source.score_url_match("gxfiles://test1http://evil.com/foo") == 0
+    assert file_source.score_url_match("http://evil.com/gxfiles://test1/a") == 0
+
+
+def test_get_file_source_path_strips_whitespace():
+    file_sources = _configured_file_sources()
+    resolved = file_sources.get_file_source_path("\ngxfiles://test1/a\n")
+    assert resolved.file_source is not None
+    assert resolved.path == "/a"

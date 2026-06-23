@@ -1,34 +1,40 @@
-import { createPinia } from "pinia";
+import { expectConfigurationRequest, getLocalVue } from "@tests/vitest/helpers";
+import { setupMockConfig } from "@tests/vitest/mockConfig";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
-import ToolCard from "./ToolCard";
-import Vuex from "vuex";
-import { configStore } from "store/configStore";
-import { useUserStore } from "stores/userStore";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+import { useUserStore } from "@/stores/userStore";
+
+import ToolCard from "./ToolCard.vue";
+
+const { server, http } = useServerMock();
+
+vi.mock("@/api/schema");
+
+const config = { enable_tool_source_display: false };
+setupMockConfig(config);
 
 const localVue = getLocalVue();
 
-const createStore = () => {
-    return new Vuex.Store({
-        modules: {
-            config: mockModule(configStore, { config: {} }),
-        },
-    });
-};
-
 describe("ToolCard", () => {
     let wrapper;
-    let axiosMock;
     let userStore;
 
-    beforeEach(() => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+    beforeEach(async () => {
+        // some child component must be bypassing useConfig - so we need to explicitly
+        // stup the API endpoint also. If you can drop this without request problems in log,
+        // this hack can be removed.
+        server.use(
+            expectConfigurationRequest(http, {}),
+            http.untyped.get("/api/webhooks", () => {
+                return HttpResponse.json([]);
+            }),
+        );
 
         const pinia = createPinia();
-        const store = createStore();
 
         wrapper = mount(ToolCard, {
             propsData: {
@@ -39,22 +45,20 @@ describe("ToolCard", () => {
                 sustainVersion: false,
                 options: {
                     id: "options.id",
+                    name: "options.name",
+                    version: "options.version",
                     versions: [],
                     sharable_url: "options.sharable_url",
                     help: "options.help",
+                    help_format: "restructuredtext",
                     citations: false,
                 },
                 messageText: "messageText",
                 messageVariant: "warning",
                 disabled: false,
             },
-            stubs: {
-                ToolSourceMenuItem: { template: "<div></div>" },
-            },
             localVue,
-            store,
             pinia,
-            provide: { store },
         });
         userStore = useUserStore();
         userStore.currentUser = {
@@ -63,6 +67,7 @@ describe("ToolCard", () => {
             is_admin: true,
             preferences: {},
         };
+        await flushPromises();
     });
 
     it("shows props", async () => {
@@ -84,5 +89,6 @@ describe("ToolCard", () => {
         await wrapper.setProps({ disabled: true });
         const backdropActive = wrapper.findAll(".portlet-backdrop");
         expect(backdropActive.length).toBe(1);
+        await flushPromises();
     });
 });

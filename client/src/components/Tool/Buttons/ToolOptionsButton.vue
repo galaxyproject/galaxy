@@ -1,50 +1,46 @@
-<script setup>
-import { computed, ref } from "vue";
-import { copyLink, copyId, downloadTool, openLink } from "../utilities";
-import { storeToRefs } from "pinia";
-import Webhooks from "utils/webhooks";
-import { useUserStore } from "@/stores/userStore";
-import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
+<script setup lang="ts">
+import { faCopy, faEye } from "@fortawesome/free-regular-svg-icons";
+import { faCaretDown, faDownload, faExternalLinkAlt, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BDropdown, BDropdownItem } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
 
-const { currentUser } = storeToRefs(useUserStore());
+import { isAdminUser } from "@/api";
+import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+import { loadWebhooks } from "@/utils/webhooks";
 
-const props = defineProps({
-    id: {
-        type: String,
-        required: true,
-    },
-    sharableUrl: {
-        type: String,
-        default: null,
-    },
-    options: {
-        type: Object,
-        required: true,
-    },
+import { copyId, copyLink, downloadTool, openLink } from "../utilities";
+
+import ToolTourGeneratorItem from "./ToolTourGeneratorItem.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import ToolSource from "@/components/Tool/ToolSource.vue";
+
+const { currentUser, isAdmin } = storeToRefs(useUserStore());
+const { config } = useConfig(true);
+
+interface Props {
+    id: string;
+    toolUuid?: string | null;
+    sharableUrl?: string | null;
+    options: Record<string, any>;
+    allowGeneratedTours?: boolean;
+    version?: string;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    toolUuid: null,
+    sharableUrl: null,
+    version: "1.0",
 });
 
-const webhookDetails = ref([]);
+const showToolSource = ref(false);
+const webhookDetails = ref<any[]>([]);
 
-Webhooks.load({
-    type: "tool-menu",
-    callback: (webhooks) => {
-        webhooks.forEach((webhook) => {
-            if (webhook.activate && webhook.config.function) {
-                webhookDetails.value.push({
-                    icon: `fa ${webhook.config.icon}`,
-                    title: webhook.config.title,
-                    onclick: () => {
-                        const func = new Function("options", webhook.config.function);
-                        func(props.options);
-                    },
-                });
-            }
-        });
-    },
-});
-
-const showDownload = computed(() => currentUser.value?.is_admin);
+const showDownload = computed(() => isAdminUser(currentUser.value));
 const showLink = computed(() => Boolean(props.sharableUrl));
 
 function onCopyLink() {
@@ -62,51 +58,73 @@ function onDownload() {
 function onLink() {
     openLink(props.sharableUrl);
 }
-</script>
 
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { faCopy } from "@fortawesome/free-regular-svg-icons";
+async function loadToolMenuWebhooks() {
+    const webhooks = await loadWebhooks("tool-menu");
+    webhooks.forEach((webhook: any) => {
+        if (webhook.activate && webhook.config.function) {
+            webhookDetails.value.push({
+                icon: `fa ${webhook.config.icon}`,
+                title: webhook.config.title,
+                onclick: () => {
+                    const func = new Function("options", webhook.config.function);
+                    func(props.options);
+                },
+            });
+        }
+    });
+}
 
-library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
+loadToolMenuWebhooks();
 </script>
 
 <template>
-    <b-dropdown
-        v-b-tooltip.hover
-        no-caret
-        right
-        role="button"
-        title="Options"
-        variant="link"
-        aria-label="View all Options"
-        class="tool-dropdown"
-        size="sm">
-        <template v-slot:button-content>
-            <FontAwesomeIcon icon="fa-caret-down" />
-        </template>
+    <div>
+        <BDropdown
+            no-caret
+            right
+            role="button"
+            title="Options"
+            variant="link"
+            aria-label="View all Options"
+            class="tool-dropdown"
+            toggle-class="p-0"
+            size="sm">
+            <template v-slot:button-content>
+                <GButton class="d-block" color="blue" transparent size="small" tooltip title="Options">
+                    <FontAwesomeIcon :icon="faCaretDown" />
+                </GButton>
+            </template>
 
-        <b-dropdown-item @click="onCopyLink">
-            <FontAwesomeIcon icon="fa-link" /><span v-localize>Copy Link</span>
-        </b-dropdown-item>
+            <BDropdownItem @click="onCopyLink">
+                <FontAwesomeIcon :icon="faLink" /><span v-localize>Copy Link</span>
+            </BDropdownItem>
 
-        <b-dropdown-item @click="onCopyId">
-            <FontAwesomeIcon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
-        </b-dropdown-item>
+            <BDropdownItem @click="onCopyId">
+                <FontAwesomeIcon :icon="faCopy" /><span v-localize>Copy Tool ID</span>
+            </BDropdownItem>
 
-        <b-dropdown-item v-if="showDownload" @click="onDownload">
-            <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
-        </b-dropdown-item>
+            <BDropdownItem v-if="showDownload" @click="onDownload">
+                <FontAwesomeIcon :icon="faDownload" /><span v-localize>Download</span>
+            </BDropdownItem>
 
-        <ToolSourceMenuItem :tool-id="id" />
+            <BDropdownItem v-if="config.enable_tool_source_display || isAdmin" @click="showToolSource = true">
+                <FontAwesomeIcon :icon="faEye" /><span v-localize>View Tool source</span>
+            </BDropdownItem>
 
-        <b-dropdown-item v-if="showLink" @click="onLink">
-            <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
-        </b-dropdown-item>
+            <BDropdownItem v-if="showLink" @click="onLink">
+                <FontAwesomeIcon :icon="faExternalLinkAlt" /><span v-localize>See in Tool Shed</span>
+            </BDropdownItem>
 
-        <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
-            <span :class="w.icon" />{{ l(w.title) }}
-        </b-dropdown-item>
-    </b-dropdown>
+            <ToolTourGeneratorItem v-if="props.allowGeneratedTours" :tool-id="props.id" :tool-version="props.version" />
+
+            <BDropdownItem v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
+                <span :class="w.icon" />{{ localize(w.title) }}
+            </BDropdownItem>
+        </BDropdown>
+
+        <GModal :show.sync="showToolSource" fullscreen :title="`Tool Source for ${id}`">
+            <ToolSource v-if="showToolSource" :tool-id="id" :tool-uuid="toolUuid || undefined" />
+        </GModal>
+    </div>
 </template>

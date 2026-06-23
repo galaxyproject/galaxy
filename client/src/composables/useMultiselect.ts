@@ -1,4 +1,4 @@
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 
 export function useMultiselect() {
     const editing = ref(false);

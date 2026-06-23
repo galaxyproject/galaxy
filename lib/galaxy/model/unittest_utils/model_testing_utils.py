@@ -1,10 +1,11 @@
 import os
 import uuid
-from contextlib import contextmanager
-from typing import (
+from collections.abc import (
     Callable,
     Iterator,
-    NewType,
+)
+from contextlib import contextmanager
+from typing import (
     Optional,
 )
 
@@ -19,10 +20,15 @@ from sqlalchemy.engine import (
     make_url,
 )
 from sqlalchemy.sql.compiler import IdentifierPreparer
+from sqlalchemy.sql.expression import text
 
-from galaxy.model.database_utils import create_database
+from galaxy.model.database_utils import (
+    create_database,
+    DbUrl,
+    is_postgres,
+)
 
-# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql://postgres@localhost:5432/postgres' pytest test/unit/model
+# GALAXY_TEST_CONNECT_POSTGRES_URI='postgresql+psycopg://postgres@localhost:5432/postgres' pytest test/unit/model
 skip_if_not_postgres_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_POSTGRES_URI"), reason="GALAXY_TEST_CONNECT_POSTGRES_URI not set"
 )
@@ -31,8 +37,6 @@ skip_if_not_postgres_uri = pytest.mark.skipif(
 skip_if_not_mysql_uri = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_CONNECT_MYSQL_URI"), reason="GALAXY_TEST_CONNECT_MYSQL_URI not set"
 )
-
-DbUrl = NewType("DbUrl", str)
 
 
 @contextmanager
@@ -96,8 +100,7 @@ def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
 
     def url() -> DbUrl:
         database = _generate_unique_database_name()
-        connection_url = _get_connection_url()
-        if connection_url:
+        if connection_url := _get_connection_url():
             return _make_postgres_db_url(DbUrl(connection_url), database)
         else:
             return _make_sqlite_db_url(tmp_directory, database)
@@ -114,8 +117,7 @@ def url(tmp_directory: str) -> str:
     """
     # TODO this duplication should be removed (see url_factory).
     database = _generate_unique_database_name()
-    connection_url = _get_connection_url()
-    if connection_url:
+    if connection_url := _get_connection_url():
         return _make_postgres_db_url(DbUrl(connection_url), database)
     else:
         return _make_sqlite_db_url(tmp_directory, database)
@@ -145,7 +147,7 @@ def drop_database(db_url, database):
         _drop_database(db_url, database)
     else:
         url = make_url(db_url)
-        os.remove(url.database)
+        os.remove(url.database)  # type: ignore[arg-type]
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
@@ -221,10 +223,6 @@ def get_stored_instance_by_id(session, cls_, id):
     return session.execute(statement).scalar_one()
 
 
-def is_postgres(url: DbUrl) -> bool:
-    return url.startswith("postgres")
-
-
 def _is_mysql(url: DbUrl) -> bool:
     return url.startswith("mysql")
 
@@ -240,7 +238,7 @@ def _drop_database(connection_url, database_name):
     engine = create_engine(connection_url, isolation_level="AUTOCOMMIT")
     preparer = IdentifierPreparer(engine.dialect)
     database_name = preparer.quote(database_name)
-    stmt = f"DROP DATABASE IF EXISTS {database_name}"
+    stmt = text(f"DROP DATABASE IF EXISTS {database_name}")
     with engine.connect() as conn:
         conn.execute(stmt)
     engine.dispose()
@@ -267,4 +265,4 @@ def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
 def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
     url = make_url(connection_url)
     url = url.set(database=database)
-    return DbUrl(str(url))
+    return DbUrl(url.render_as_string(hide_password=False))

@@ -1,7 +1,7 @@
 import logging
 
 from sqlalchemy import (
-    and_,
+    select,
     true,
 )
 from sqlalchemy.orm import joinedload
@@ -22,15 +22,11 @@ class GalaxySessionManager:
         """Returns GalaxySession if session_key is valid."""
         # going through self.model since this can be used by Galaxy or Toolshed despite
         # type annotations
-        galaxy_session = (
-            self.sa_session.query(self.model.GalaxySession)
-            .filter(
-                and_(
-                    self.model.GalaxySession.table.c.session_key == session_key,
-                    self.model.GalaxySession.table.c.is_valid == true(),
-                )
-            )
+        stmt = (
+            select(self.model.GalaxySession)
+            .where(self.model.GalaxySession.session_key == session_key)
+            .where(self.model.GalaxySession.is_valid == true())
             .options(joinedload(self.model.GalaxySession.user))
-            .first()
+            .limit(1)
         )
-        return galaxy_session
+        return self.sa_session.scalars(stmt).first()

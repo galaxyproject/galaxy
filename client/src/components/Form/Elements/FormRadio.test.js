@@ -1,6 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import MountTarget from "./FormRadio";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import MountTarget from "./FormRadio.vue";
 
 const localVue = getLocalVue(true);
 
@@ -23,7 +25,7 @@ describe("FormRadio", () => {
         const n = 3;
         const options = [];
         for (let i = 0; i < n; i++) {
-            options.push([`label_${i}`, `value_${i}`]);
+            options.push({ label: `label_${i}`, value: `value_${i}` });
         }
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='radio']");

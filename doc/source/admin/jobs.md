@@ -38,7 +38,7 @@ workers
 
 The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.md)) should be used for running jobs, and how to group those processes.
 
-The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
+The handlers configuration may define a ``default`` attribute. This is the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
 
 The collection contains `<handler>` elements.
 
@@ -159,7 +159,7 @@ execution:
       k8s_namespace: default
       runner: pulsar_k8s
       docker_enabled: true
-      docker_default_container_id: busybox:ubuntu-14.04
+      docker_default_container_id: busybox:1.36.1-glibc
       pulsar_app_config:
         message_queue_url: 'amqp://guest:guest@host.docker.internal:5672//'
     local_environment:
@@ -254,7 +254,7 @@ def ncbi_blastn_wrapper(job):
     # Allocate extra time
     inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
     inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-    query_file = inp_data[ "query" ].file_name
+    query_file = inp_data[ "query" ].get_file_name()
     query_size = os.path.getsize( query_file )
     if query_size > 1024 * 1024:
         walltime_str = "walltime=24:00:00/"
@@ -279,7 +279,7 @@ def ncbi_blastn_wrapper(app, user_email):
 ```
 
 
-The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
+The first example above delegates to the PBS job runner and allocates extra walltime for larger input files (based on tool input parameter named `query`). The second example delegates to the DRMAA job runner and assigns users in the admin list to a special project (perhaps configured to have a higher priority or extended walltime).
 
 The above examples demonstrate that the dynamic job destination framework will pass in the arguments to your function that are needed based on the argument names. The valid argument names at this time are:
 
@@ -316,7 +316,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 Also available though less likely useful are ``job_id``.
 
-The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the the dynamic destination:
+The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the dynamic destination:
 
 ```xml
     <destination id="blast_dynamic" runner="dynamic">

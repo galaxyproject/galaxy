@@ -1,0 +1,136 @@
+<script setup lang="ts">
+import { BAlert, BBadge } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed, ref, watch } from "vue";
+
+import { useToolStore } from "@/stores/toolStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import { MY_PANEL_VIEW_ID } from "./panelViews";
+
+import LoadingSpan from "../LoadingSpan.vue";
+import ActivityPanel from "./ActivityPanel.vue";
+import FavoritesButton from "./Buttons/FavoritesButton.vue";
+import PanelViewMenu from "./Menus/PanelViewMenu.vue";
+import ToolBox from "./ToolBox.vue";
+
+const toolStore = useToolStore();
+
+const userStore = useUserStore();
+const props = defineProps({
+    useSearchWorker: { type: Boolean, default: true },
+    workflow: { type: Boolean, default: false },
+});
+
+const emit = defineEmits<{
+    (e: "onInsertTool", toolId: string, toolName: string): void;
+}>();
+
+const { currentPanelView, currentToolSections, isPanelPopulated, toolSections, toolsById } = storeToRefs(toolStore);
+const isMyPanel = computed(() => currentPanelView.value === MY_PANEL_VIEW_ID);
+
+const errorMessage = ref("");
+const panelsFetched = ref(false);
+const showFavorites = ref(false);
+const toolsCount = computed(() => Object.keys(toolsById.value || {}).length);
+
+function formatToolsCount(count: number) {
+    if (count < 1000) {
+        return `${count}`;
+    }
+    const thousands = Math.floor(count / 1000);
+    return `${thousands}k+`;
+}
+
+const discoverToolsLabel = computed(() => {
+    return `${localize("Discover")} ${formatToolsCount(toolsCount.value)} ${localize("Tools")}`;
+});
+
+async function initializePanel() {
+    try {
+        await userStore.loadUser(false);
+        await toolStore.fetchPanels();
+        await toolStore.fetchTools();
+        await toolStore.initializePanel();
+    } catch (error) {
+        if (process.env.NODE_ENV != "test") {
+            console.error(`ToolPanel::initializePanel - ${error}`);
+        }
+
+        errorMessage.value = errorMessageAsString(error);
+    } finally {
+        panelsFetched.value = true;
+    }
+}
+
+function onInsertTool(toolId: string, toolName: string) {
+    emit("onInsertTool", toolId, toolName);
+}
+
+// if currentPanelView ever becomes null || "", load tools
+watch(
+    () => currentPanelView.value,
+    async (newVal) => {
+        if ((!newVal || !toolSections.value[newVal]) && panelsFetched.value) {
+            await initializePanel();
+        }
+    },
+);
+
+initializePanel();
+</script>
+
+<template>
+    <ActivityPanel
+        v-if="panelsFetched"
+        id="toolbox-panel"
+        title="Tools"
+        aria-labelledby="toolbox-heading"
+        class="toolbox-panel"
+        :go-to-all-title="discoverToolsLabel"
+        go-to-all-data-description="toolbox discover tools"
+        :href="!props.workflow ? `/tools/list` : undefined">
+        <template v-slot:activity-panel-header-top>
+            <PanelViewMenu />
+        </template>
+        <template v-slot:header-buttons>
+            <FavoritesButton v-if="!isMyPanel" v-model="showFavorites" />
+        </template>
+        <ToolBox
+            v-if="isPanelPopulated"
+            :workflow="props.workflow"
+            :show-favorites.sync="showFavorites"
+            :favorites-default="isMyPanel"
+            :use-search-worker="useSearchWorker"
+            @onInsertTool="onInsertTool" />
+        <div v-else-if="errorMessage" data-description="tool panel error message">
+            <BAlert class="m-2" variant="danger" show>
+                {{ errorMessage }}
+            </BAlert>
+        </div>
+        <div v-else>
+            <BBadge class="alert-info w-100">
+                <LoadingSpan message="Loading Toolbox" />
+            </BBadge>
+        </div>
+    </ActivityPanel>
+    <BAlert v-else-if="currentToolSections" class="m-2" variant="info" show>
+        <LoadingSpan message="Loading Toolbox" />
+    </BAlert>
+</template>
+
+<style lang="scss" scoped>
+.toolbox-panel {
+    padding: 0.5rem 0rem !important;
+
+    :deep(.activity-panel-header) {
+        margin-right: 1rem;
+        margin-left: 1rem;
+        .activity-panel-header-top {
+            align-items: flex-start;
+        }
+    }
+}
+</style>

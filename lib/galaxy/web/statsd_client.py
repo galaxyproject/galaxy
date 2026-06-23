@@ -1,6 +1,5 @@
 import sys
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -34,6 +33,10 @@ class VanillaGalaxyStatsdClient:
         infix = self._effective_infix(path, tags)
         self.statsd_client.timing(infix + path, time)
 
+    def gauge(self, path, value, tags=None):
+        infix = self._effective_infix(path, tags)
+        self.statsd_client.gauge(infix + path, value)
+
     def incr(self, path, n=1, tags=None):
         infix = self._effective_infix(path, tags)
         self.statsd_client.incr(infix + path, n)
@@ -49,22 +52,28 @@ class VanillaGalaxyStatsdClient:
 
 
 CURRENT_TEST: Optional[str] = None
-CURRENT_TEST_METRICS: Optional[Dict[str, Dict]] = None
+CURRENT_TEST_METRICS: Optional[dict[str, dict]] = None
 
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
     def timing(self, path, time, tags=None):
-        metrics = CURRENT_TEST_METRICS
-        if metrics is not None:
+        if (metrics := CURRENT_TEST_METRICS) is not None:
             timing = metrics["timing"]
             if path not in timing:
                 timing[path] = []
             timing[path].append({"time": time, "tags": tags})
         super().timing(path, time, tags=tags)
 
+    def gauge(self, path, value, tags=None):
+        if (metrics := CURRENT_TEST_METRICS) is not None:
+            gauge = metrics.setdefault("gauge", {})
+            if path not in gauge:
+                gauge[path] = []
+            gauge[path].append({"value": value, "tags": tags})
+        super().gauge(path, value, tags=tags)
+
     def incr(self, path, n=1, tags=None):
-        metrics = CURRENT_TEST_METRICS
-        if metrics is not None:
+        if (metrics := CURRENT_TEST_METRICS) is not None:
             counter = metrics["counter"]
             if path not in counter:
                 counter[path] = []
@@ -72,8 +81,7 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
         super().incr(path, n=n, tags=tags)
 
     def _effective_infix(self, path, tags):
-        current_test = CURRENT_TEST
-        if current_test is not None:
+        if (current_test := CURRENT_TEST) is not None:
             tags = tags or {}
             tags["test"] = current_test
         return super()._effective_infix(path, tags)
@@ -81,6 +89,9 @@ class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):
 
 class MockStatsClient:
     def timing(self, path, time, tags=None):
+        pass
+
+    def gauge(self, path, value, tags=None):
         pass
 
     def incr(self, path, n=1, tags=None):

@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import { computed } from "vue";
+
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const props = defineProps<{
     value?: string;

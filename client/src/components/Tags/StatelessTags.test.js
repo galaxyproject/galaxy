@@ -1,5 +1,7 @@
-import { mount, createLocalVue } from "@vue/test-utils";
-import StatelessTags from "./StatelessTags";
+import { createLocalVue, mount } from "@vue/test-utils";
+import { beforeEach, describe, expect, it } from "vitest";
+
+import StatelessTags from "./StatelessTags.vue";
 
 describe("Tags/StatelessTags.vue", () => {
     const localVue = createLocalVue();

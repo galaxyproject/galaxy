@@ -1,25 +1,35 @@
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance } from "@/app";
+import adminFormsGridConfig from "@/components/Grid/configs/adminForms";
+import adminGroupsGridConfig from "@/components/Grid/configs/adminGroups";
+import adminQuotasGridConfig from "@/components/Grid/configs/adminQuotas";
+import adminRolesGridConfig from "@/components/Grid/configs/adminRoles";
+import adminUsersGridConfig from "@/components/Grid/configs/adminUsers";
 
-import Admin from "entry/analysis/modules/Admin";
-import Home from "components/admin/Home";
-import ActiveInvocations from "components/admin/ActiveInvocations";
-import DataManager from "components/admin/DataManager/DataManager";
-import DataManagerJobs from "components/admin/DataManager/DataManagerJobs";
-import DataManagerJob from "components/admin/DataManager/DataManagerJob";
-import DataManagerTable from "components/admin/DataManager/DataManagerTable";
-import DataManagerView from "components/admin/DataManager/DataManagerView";
-import DataTables from "components/admin/DataTables";
-import DataTypes from "components/admin/DataTypes";
-import DisplayApplications from "components/admin/DisplayApplications";
-import ErrorStack from "components/admin/ErrorStack";
-import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
-import JobsList from "components/admin/JobsList";
-import RegisterForm from "components/Login/RegisterForm";
-import ResetMetadata from "components/admin/ResetMetadata";
-import SanitizeAllow from "components/admin/SanitizeAllow";
-import Toolshed from "components/Toolshed/Index";
-import ToolboxDependencies from "components/admin/Dependencies/Landing";
+import AdminHome from "@/components/admin/AdminHome.vue";
+import DataManager from "@/components/admin/DataManager/DataManager.vue";
+import DataManagerJob from "@/components/admin/DataManager/DataManagerJob.vue";
+import DataManagerJobs from "@/components/admin/DataManager/DataManagerJobs.vue";
+import DataManagerTable from "@/components/admin/DataManager/DataManagerTable.vue";
+import DataManagerView from "@/components/admin/DataManager/DataManagerView.vue";
+import DataTables from "@/components/admin/DataTables.vue";
+import DataTypes from "@/components/admin/DataTypes.vue";
+import ToolboxDependencies from "@/components/admin/Dependencies/Landing.vue";
+import DisplayApplications from "@/components/admin/DisplayApplications.vue";
+import ErrorStack from "@/components/admin/ErrorStack.vue";
+import GroupForm from "@/components/admin/GroupForm.vue";
+import JobsList from "@/components/admin/JobsList.vue";
+import BroadcastForm from "@/components/admin/Notifications/BroadcastForm.vue";
+import NotificationForm from "@/components/admin/Notifications/NotificationForm.vue";
+import NotificationsManagement from "@/components/admin/Notifications/NotificationsManagement.vue";
+import ResetMetadata from "@/components/admin/ResetMetadata.vue";
+import RoleForm from "@/components/admin/RoleForm.vue";
+import SanitizeAllow from "@/components/admin/SanitizeAllow.vue";
+import FormGeneric from "@/components/Form/FormGeneric.vue";
+import GridInvocation from "@/components/Grid/GridInvocation.vue";
+import GridList from "@/components/Grid/GridList.vue";
+import RegisterForm from "@/components/Register/RegisterForm.vue";
+import Toolshed from "@/components/Toolshed/Index.vue";
+import Admin from "@/entry/analysis/modules/Admin.vue";
 
 export default [
     {
@@ -29,19 +39,24 @@ export default [
         children: [
             {
                 path: "",
-                component: Home,
-                props: () => {
-                    const config = getGalaxyInstance().config;
-                    return {
-                        isToolShedInstalled: config.tool_shed_urls && config.tool_shed_urls.length > 0,
-                    };
-                },
+                component: AdminHome,
             },
             { path: "data_tables", component: DataTables },
             { path: "data_types", component: DataTypes },
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
-            { path: "invocations", component: ActiveInvocations },
+            {
+                path: "invocations",
+                component: GridInvocation,
+                props: () => {
+                    return {
+                        headerMessage:
+                            "Workflow invocations that are still being scheduled are displayed on this page.",
+                        noInvocationsMessage: "There are no scheduling workflow invocations to show currently.",
+                        ownerGrid: false,
+                    };
+                },
+            },
             { path: "jobs", component: JobsList },
             { path: "reset_metadata", component: ResetMetadata },
             { path: "sanitize_allow", component: SanitizeAllow },
@@ -95,48 +110,71 @@ export default [
                 ],
             },
 
+            // notifications and broadcasts
+            {
+                path: "notifications",
+                component: NotificationsManagement,
+            },
+
+            {
+                path: "notifications/create_new_broadcast",
+                name: "NewBroadcast",
+                component: BroadcastForm,
+            },
+
+            {
+                path: "notifications/edit_broadcast/:id",
+                name: "EditBroadcast",
+                component: BroadcastForm,
+                props: true,
+            },
+
+            {
+                path: "notifications/create_new_notification",
+                name: "NewNotification",
+                component: NotificationForm,
+            },
+
             // grids
             {
                 path: "forms",
-                component: Grid,
-                props: {
-                    urlBase: "forms/forms_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminFormsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "groups",
-                component: Grid,
-                props: {
-                    urlBase: "admin/groups_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminGroupsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "quotas",
-                component: Grid,
-                props: {
-                    urlBase: "admin/quotas_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminQuotasGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "roles",
-                component: Grid,
-                props: {
-                    urlBase: "admin/roles_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminRolesGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "users",
-                component: Grid,
-                props: {
-                    urlBase: "admin/users_list",
-                },
-            },
-            {
-                path: "tool_versions",
-                component: Grid,
-                props: {
-                    urlBase: "admin/tool_versions_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminUsersGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             // forms
             {
@@ -164,15 +202,14 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/roles",
                 }),
             },
             {
                 path: "form/manage_users_and_roles_for_group",
-                component: FormGeneric,
+                component: GroupForm,
                 props: (route) => ({
-                    url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    groupId: route.query.id,
                 }),
             },
             {
@@ -185,19 +222,11 @@ export default [
             },
             {
                 path: "form/create_role",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_role",
-                    redirect: "/admin/roles",
-                },
+                component: RoleForm,
             },
             {
                 path: "form/create_group",
-                component: FormGeneric,
-                props: {
-                    url: "/admin/create_group",
-                    redirect: "/admin/groups",
-                },
+                component: GroupForm,
             },
             {
                 path: "form/create_quota",

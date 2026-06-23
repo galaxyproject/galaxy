@@ -4,10 +4,12 @@ Manager and Serializer for HDCAs.
 HistoryDatasetCollectionAssociations (HDCAs) are datasets contained or created in a
 history.
 """
+
 import logging
-from typing import Dict
+from typing import Optional
 
 from galaxy import model
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers import (
     annotatable,
     base,
@@ -18,6 +20,7 @@ from galaxy.managers import (
 )
 from galaxy.managers.collections_util import get_hda_and_element_identifiers
 from galaxy.model.tags import GalaxyTagHandler
+from galaxy.schema.schema import OldestCreateTimeByObjectStoreId
 from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
@@ -39,9 +42,11 @@ def stream_dataset_collection(dataset_collection_instance, upstream_mod_zip=Fals
 
 
 def write_dataset_collection(dataset_collection_instance, archive):
+    if not dataset_collection_instance.collection.populated_optimized:
+        raise RequestParameterInvalidException("Attempt to write dataset collection that has not been populated yet")
     names, hdas = get_hda_and_element_identifiers(dataset_collection_instance)
     for name, hda in zip(names, hdas):
-        if hda.state != hda.states.OK:
+        if hda.state != hda.states.OK or hda.purged or hda.dataset.purged:
             continue
         for file_path, relpath in hda.datatype.to_archive(dataset=hda, name=name):
             archive.write(file_path, relpath)
@@ -55,9 +60,9 @@ def set_collection_attributes(dataset_element, *payload):
 
 # TODO: to DatasetCollectionInstanceManager
 class HDCAManager(
-    base.ModelManager,
-    secured.AccessibleManagerMixin,
-    secured.OwnableManagerMixin,
+    base.ModelManager[model.HistoryDatasetCollectionAssociation],
+    secured.AccessibleManagerMixin[model.HistoryDatasetCollectionAssociation],
+    secured.OwnableManagerMixin[model.HistoryDatasetCollectionAssociation],
     deletable.PurgableManagerMixin,
     annotatable.AnnotatableManagerMixin,
 ):
@@ -99,9 +104,22 @@ class HDCAManager(
                 returned.append(processed)
         return returned
 
-    def update_attributes(self, content, payload: Dict):
+    def update_attributes(self, content, payload: dict):
         # pre-requisite checked that attributes are valid
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
+
+    # .... security and permissions
+    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: Optional[model.User], **kwargs) -> bool:
+        """
+        Use history to see if current user owns HDCA.
+        """
+        history = item.history
+        assert history
+        # allow anonymous user to access current history
+        if history.user is None:
+            current_history = kwargs.get("history")
+            return current_history is not None and history == current_history
+        return history.user == user
 
 
 # serializers
@@ -267,11 +285,13 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "populated_state",
                 "populated_state_message",
                 "element_count",
+                "elements_datatypes",
+                "elements_deleted",
+                "elements_states",
                 "job_source_id",
                 "job_source_type",
                 "job_state_summary",
                 "name",
-                "type_id",
                 "deleted",
                 "visible",
                 "type",
@@ -280,6 +300,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 "update_time",
                 "tags",
                 "contents_url",
+                "store_times_summary",
             ],
         )
         self.add_view(
@@ -287,7 +308,6 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             [
                 "populated",
                 "elements",
-                "elements_datatypes",
             ],
             include_keys_from="summary",
         )
@@ -296,7 +316,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
         super().add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, base.Serializer] = {
+        serializers: dict[str, base.Serializer] = {
             "model_class": lambda item, key, **context: self.hdca_manager.model_class.__class__.__name__,
             # TODO: remove
             "type": lambda item, key, **context: "collection",
@@ -310,11 +330,15 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 history_id=self.app.security.encode_id(item.history_id),
                 id=self.app.security.encode_id(item.id),
                 type=self.hdca_manager.model_class.content_type,
+                context=context,
             ),
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
+            "elements_states": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[2],
+            "elements_deleted": lambda item, key, **context: item.dataset_dbkeys_and_extensions_summary[3],
             "collection_id": self.serialize_id,
+            "store_times_summary": self.serialize_store_times_summary,
         }
         self.serializers.update(serializers)
 
@@ -333,3 +357,9 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
     def serialize_elements_datatypes(self, item, key, **context):
         extensions_set = item.dataset_dbkeys_and_extensions_summary[1]
         return list(extensions_set)
+
+    def serialize_store_times_summary(self, item, key, **context):
+        store_times_summary = item.dataset_dbkeys_and_extensions_summary[4]
+        return [
+            OldestCreateTimeByObjectStoreId(object_store_id=t[0], oldest_create_time=t[1]) for t in store_times_summary
+        ]

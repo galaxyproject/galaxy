@@ -26,10 +26,12 @@
     </div>
 </template>
 <script>
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance } from "@/app";
+
 import Categories from "./Categories.vue";
 import Repositories from "./Repositories.vue";
 import ServerSelection from "./ServerSelection.vue";
+
 export default {
     components: {
         Categories,

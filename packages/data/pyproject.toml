@@ -1,1 +1,97 @@
-../package-pyproject.toml
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
+
+[project]
+dynamic = ["readme"]
+name = "galaxy-data"
+version = "26.1.dev0"
+description = "Galaxy datatype framework and datatypes"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-files",
+    "galaxy-objectstore",
+    "galaxy-schema",
+    "galaxy-tool-util",
+    "galaxy-util[image-util,template]",
+    "alembic",
+    "bdbag>=1.6.3",
+    "bx-python",
+    "dnspython",
+    "galaxy-sequence-utils",
+    "h5grove>=1.2.1",
+    "h5py",
+    "ijson",
+    "isa-rwval>=0.10.11",
+    "isal>=1.7.0",
+    "MarkupSafe",
+    "msal",
+    "mrcfile",
+    "numpy",
+    "openpyxl>=3.1.5",
+    "parsley",
+    "pycryptodome",
+    "pydantic[email]>=2.7.4",
+    "pydicom",
+    "pylibmagic",
+    "pypng",
+    "python-magic",
+    "pysam>=0.21",
+    "rocrate<0.15.0",
+    "social-auth-core>=4.5.0",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "tifffile",
+    "typing-extensions",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+test = [
+    "galaxy-config",
+    "hvac",
+    "pytest",
+    "roc-validator",
+]
+
+[project.scripts]
+galaxy-build-objects = "galaxy.model.store.build_objects:main"
+galaxy-load-objects = "galaxy.model.store.load_objects:main"
+galaxy-manage-db = "galaxy.model.orm.scripts:manage_db"
+galaxy-prune-histories = "galaxy.model.scripts:prune_history_table"
+galaxy-delete-sessions = "galaxy.model.scripts:delete_galaxy_sessions"
+galaxy-delete-job-metrics = "galaxy.model.scripts:delete_job_metrics"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = [
+    "galaxy.datatypes.test",
+]

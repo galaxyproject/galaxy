@@ -1,12 +1,16 @@
 """
 Controller handles external tool related requests
 """
+
 import logging
 
 from markupsafe import escape
 
 import galaxy.util
 from galaxy import web
+from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.model import HistoryDatasetAssociation
+from galaxy.tool_util.identifiers import uri_safe_tool_id
 from galaxy.tools import DataSourceTool
 from galaxy.web import (
     error,
@@ -35,23 +39,30 @@ class ToolRunner(BaseUIController):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
 
-    def __get_tool(self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False):
-        tool_version_select_field, tools, tool = self.get_toolbox().get_tool_components(
-            tool_id, tool_version, get_loaded_tools_by_lineage, set_selected
-        )
-        return tool
+    def __get_tool(self, tool_id, tool_version=None):
+        # webob's params.mixed() returns a list when a form/query key is repeated
+        # (some data sources redirect back with tool_id duplicated); accept that
+        # case only when every value agrees.
+        if isinstance(tool_id, list):
+            unique_ids = set(tool_id)
+            if len(unique_ids) != 1:
+                raise RequestParameterInvalidException(f"Conflicting tool_id values supplied: {tool_id!r}")
+            tool_id = unique_ids.pop()
+        # Some data sources send back redirects ending with `/`, this takes care of that case
+        tool_id = tool_id.rstrip("/")
+        return self.get_toolbox().get_tool(tool_id, tool_version=tool_version)
 
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         def __tool_404__():
             log.debug("index called with tool id '%s' but no such tool exists", tool_id)
-            trans.log_event("Tool id '%s' does not exist" % tool_id)
+            trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
-            return trans.show_error_message("Tool '%s' does not exist." % (escape(tool_id)))
+            return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")
 
         # tool id not available, redirect to main page
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # tool id is not matching, display an error
         if not tool:
@@ -72,25 +83,52 @@ class ToolRunner(BaseUIController):
             return __tool_404__()
         # FIXME: Tool class should define behavior
         if tool.tool_type in ["default", "interactivetool"]:
-            return trans.response.send_redirect(url_for(controller="root", tool_id=tool_id))
+            return trans.response.send_redirect(url_for(f"/?tool_id={uri_safe_tool_id(tool_id)}"))
 
-        # execute tool without displaying form (used for datasource tools)
-        params = galaxy.util.Params(kwd, sanitize=False)
-        # do param translation here, used by datasource tools
+        # execute tool without displaying form
+        # (used for datasource tools, but note that data_source_async tools
+        # are handled separately by the async controller)
+        params = galaxy.util.Params(kwd, sanitize=False).__dict__
         if tool.input_translator:
-            tool.input_translator.translate(params)
-        if "runtool_btn" not in params.__dict__ and "URL" not in params.__dict__:
-            error("Tool execution through the `tool_runner` requires a `runtool_btn` flag or `URL` parameter.")
+            # perform test translation of the incoming params without affecting originals
+            # the actual translation will happen later
+            # this is only for checking if we end up with required parameters
+            test_params = params.copy()
+            tool.input_translator.translate(test_params)
+        else:
+            test_params = params
+        if tool.tool_type == "data_source":
+            if "URL" not in test_params:
+                error("Execution of `data_source` tools requires a `URL` parameter")
+            # preserve original params sent by the remote server as extra dict
+            # before in-place translation happens, then clean the incoming params
+            params.update({"incoming_request_params": params.copy()})
+            if tool.input_translator and tool.wants_params_cleaned:
+                for k in list(params.keys()):
+                    if k not in tool.input_translator.vocabulary and k not in ("URL", "incoming_request_params"):
+                        # the remote server has sent a param
+                        # that the tool is not expecting -> drop it
+                        del params[k]
+        else:
+            if "runtool_btn" not in test_params:
+                error("Tool execution through the `tool_runner` requires a `runtool_btn` flag")
+
         # We may be visiting Galaxy for the first time ( e.g., sending data from UCSC ),
         # so make sure to create a new history if we've never had one before.
         history = tool.get_default_history_by_trans(trans, create=True)
         try:
-            vars = tool.handle_input(trans, params.__dict__, history=history)
+            vars = tool.handle_input(trans, params, history=history)
         except Exception as e:
             error(galaxy.util.unicodify(e))
         if len(params) > 0:
             trans.log_event(f"Tool params: {str(params)}", tool_id=tool_id)
-        return trans.fill_template("root/tool_runner.mako", **vars)
+        if job_errors := vars.get("job_errors"):
+            errors = "\n".join(f"- {job_error}" for job_error in job_errors)
+            message = f"There were errors setting up {len(job_errors)} submitted job(s):\n{errors}"
+            return trans.show_error_message(message)
+        # Return the user to the Galaxy SPA; the frontend surfaces a toast
+        # based on the `notification` query parameter.
+        return trans.response.send_redirect(url_for("/?notification=tool-submitted"))
 
     @web.expose
     def rerun(self, trans, id=None, job_id=None, **kwd):
@@ -111,7 +149,7 @@ class ToolRunner(BaseUIController):
                 except Exception:
                     error("Invalid value for 'id' parameter")
             # Get the dataset object
-            data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(id)
+            data = trans.sa_session.query(HistoryDatasetAssociation).get(id)
             # only allow rerunning if user is allowed access to the dataset.
             if not (
                 trans.user_is_admin
@@ -123,8 +161,8 @@ class ToolRunner(BaseUIController):
             if job:
                 job_id = trans.security.encode_id(job.id)
             else:
-                raise Exception("Failed to get job information for dataset hid %d" % data.hid)
-        return trans.response.send_redirect(url_for(controller="root", job_id=job_id))
+                raise Exception(f"Failed to get job information for dataset hid {data.hid}")
+        return trans.response.send_redirect(url_for(f"/?job_id={job_id}"))
 
     @web.expose
     def data_source_redirect(self, trans, tool_id=None):
@@ -137,11 +175,11 @@ class ToolRunner(BaseUIController):
         Subverting did not work on Chrome 31
         """
         if tool_id is None:
-            return trans.response.send_redirect(url_for(controller="root", action="welcome"))
+            return trans.response.send_redirect(url_for("/"))
         tool = self.__get_tool(tool_id)
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
-            log.error("data_source_redirect called with tool id '%s' but no such tool exists", tool_id)
+            log.debug("data_source_redirect called with tool id '%s' but no such tool exists", tool_id)
             trans.log_event(f"Tool id '{tool_id}' does not exist")
             trans.response.status = 404
             return trans.show_error_message(f"Tool '{escape(tool_id)}' does not exist.")

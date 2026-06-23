@@ -1,0 +1,38 @@
+<tool id="gx_drill_down_code" name="gx_drill_down_code" version="1.0.0">
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <code file="gx_drill_down_code.py"/>
+    <command><![CDATA[
+echo "parameter: $parameter" > '$output'
+    ]]></command>
+    <inputs>
+        <param name="ref_parameter" type="data" ext="tabular" >
+        </param>
+g        <param name="parameter" type="drill_down" dynamic_options="collate_table(ref_parameter.dataset.get_file_name())">
+        </param>
+    </inputs>
+    <expand macro="simple_text_output" />
+    <tests>
+        <test>
+            <param name="ref_parameter" value="1.tabular" />
+            <param name="parameter" value="chr22" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="parameter: chr22" />
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="ref_parameter" value="1.tabular" />
+            <param name="parameter" value="2000" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="parameter: 2000" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

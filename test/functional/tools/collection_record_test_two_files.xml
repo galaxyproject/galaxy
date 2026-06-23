@@ -1,0 +1,32 @@
+<tool id="collection_record_test_two_files" name="collection_record_test_two_files" version="0.1.0">
+  <command>
+    cat $f1.parent $f1['child'] >> $out1;
+    echo 'Collection name: $f1.name'
+  </command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="record" label="Input collection" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="f1">
+        <collection type="record" name="collection name">
+          <fields>[{"name": "parent", "type": "File"}, {"name": "child", "type": "File"}]</fields>
+          <element name="parent" value="simple_line.txt" />
+          <element name="child" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="out1">
+        <assert_contents>
+          <has_line line="This is a line of text." />
+          <has_line line="This is a different line of text." />
+        </assert_contents>
+      </output>
+      <assert_stdout>
+          <has_line line="Collection name: collection name" />
+      </assert_stdout>
+    </test>
+  </tests>
+</tool>

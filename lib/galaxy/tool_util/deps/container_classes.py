@@ -16,6 +16,7 @@ from typing import (
 )
 from uuid import uuid4
 
+from packaging.version import Version
 from typing_extensions import Protocol
 
 from galaxy.util import (
@@ -51,23 +52,28 @@ python << EOF
 from __future__ import print_function
 
 import json
-import re
 import subprocess
 import tarfile
 
 t = tarfile.TarFile("${cached_image_file}")
 meta_str = t.extractfile('repositories').read()
 meta = json.loads(meta_str)
-tag, tag_value = next(iter(meta.items()))
-rev, rev_value = next(iter(tag_value.items()))
+repository, tag_value = next(iter(meta.items()))
+tag, id = next(iter(tag_value.items()))
 cmd = "${images_cmd}"
-proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
+proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, text=True)
 stdo, stde = proc.communicate()
 found = False
 for line in stdo.split("\n"):
-    tmp = re.split(r'\s+', line)
-    if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
-        found = True
+    line = line.strip()
+    if line:
+        try:
+            img = json.loads(line)
+            if img.get("Repository") == repository and img.get("Tag") == tag and img.get("ID") == id:
+                found = True
+                break
+        except (json.JSONDecodeError, ValueError):
+            pass
 if not found:
     print("Loading image")
     cmd = "cat ${cached_image_file} | ${load_cmd}"
@@ -96,16 +102,13 @@ class ContainerProtocol(Protocol):
     """
 
     @property
-    def app_info(self) -> "AppInfo":
-        ...
+    def app_info(self) -> "AppInfo": ...
 
     @property
-    def tool_info(self) -> "ToolInfo":
-        ...
+    def tool_info(self) -> "ToolInfo": ...
 
     @property
-    def job_info(self) -> Optional["JobInfo"]:
-        ...
+    def job_info(self) -> Optional["JobInfo"]: ...
 
 
 class Container(metaclass=ABCMeta):
@@ -187,6 +190,10 @@ class Volume:
         ('A', 'B', 'rw')
         >>> Volume.parse_volume_str('A:ro')
         ('A', 'A', 'ro')
+        >>> Volume.parse_volume_str('A:z')
+        ('A', 'A', 'z')
+        >>> Volume.parse_volume_str('A:Z')
+        ('A', 'A', 'Z')
         >>> Volume.parse_volume_str('A')
         ('A', 'A', 'rw')
         >>> Volume.parse_volume_str(' ')
@@ -209,7 +216,9 @@ class Volume:
             target = volume_parts[1]
             mode = volume_parts[2]
         elif len(volume_parts) == 2:
-            if volume_parts[1] not in ("rw", "ro", "default_ro"):
+            # not really parsing/checking mode here, just figuring out if the 2nd component is target or mode
+            mode_parts = volume_parts[1].split(",")
+            if any(mode_part not in ("rw", "ro", "default_ro", "z", "Z") for mode_part in mode_parts):
                 source = volume_parts[0]
                 target = volume_parts[1]
                 mode = "rw"
@@ -294,7 +303,8 @@ def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     if not volumes_raw_str:
         return []
 
-    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",")]
+    # filter out empty strings, this happens for tools without tool directories.
+    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",") if v]
     rw_paths = [v.target for v in volumes if v.mode == "rw"]
     for volume in volumes:
         mode = volume.mode
@@ -322,7 +332,7 @@ class HasDockerLikeVolumes:
             return value
 
         template = string.Template(value)
-        variables = dict()
+        variables = {}
 
         def add_var(name, value):
             if value:
@@ -340,6 +350,7 @@ class HasDockerLikeVolumes:
         add_var("default_file_path", self.app_info.default_file_path)
         add_var("library_import_dir", self.app_info.library_import_dir)
         add_var("tool_data_path", self.app_info.tool_data_path)
+        add_var("galaxy_data_manager_data_path", self.app_info.galaxy_data_manager_data_path)
         add_var("shed_tool_data_path", self.app_info.shed_tool_data_path)
 
         if self.job_info.job_directory and self.job_info.job_directory_type == "pulsar":
@@ -363,7 +374,7 @@ class HasDockerLikeVolumes:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
-                if self.tool_info.profile <= 19.09:
+                if Version(str(self.tool_info.profile)) <= Version("19.09"):
                     defaults += ",$job_directory/configs:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
@@ -378,6 +389,8 @@ class HasDockerLikeVolumes:
             defaults += ",$library_import_dir:default_ro"
         if self.app_info.tool_data_path:
             defaults += ",$tool_data_path:default_ro"
+        if self.app_info.galaxy_data_manager_data_path:
+            defaults += ",$galaxy_data_manager_data_path:default_ro"
         if self.app_info.shed_tool_data_path:
             defaults += ",$shed_tool_data_path:default_ro"
 
@@ -397,6 +410,18 @@ class HasDockerLikeVolumes:
             volumes_str = volumes_str[0:tool_directory_index] + volumes_str[end_index : len(volumes_str)]
 
         return volumes_str
+
+
+def _parse_volumes(volumes_raw: str, container_type: str) -> List[DockerVolume]:
+    """
+    >>> volumes_raw = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:z,$default_file_path:z"
+    >>> volumes = _parse_volumes(volumes_raw, "docker")
+    >>> [str(v) for v in volumes]
+    ['"$galaxy_root:$galaxy_root:ro"', '"$tool_directory:$tool_directory:ro"', '"$job_directory:$job_directory:ro"', '"$working_directory:$working_directory:z"', '"$default_file_path:$default_file_path:z"']
+    """
+    preprocessed_volumes_list = preprocess_volumes(volumes_raw, container_type)
+    # TODO: Remove redundant volumes...
+    return [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
 
 class DockerContainer(Container, HasDockerLikeVolumes):
@@ -438,9 +463,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
-        preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
-        # TODO: Remove redundant volumes...
-        volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
+        volumes = _parse_volumes(volumes_raw, self.container_type)
         volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = self.docker_host_props
@@ -463,6 +486,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
+            host_port_cmd=self.prop("host_port_cmd", None),
             container_name=self.container_name,
             **docker_host_props,
         )
@@ -484,7 +508,7 @@ _on_exit() {{
 {run_command}"""
 
     def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
-        images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
+        images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
         return string.Template(LOAD_CACHED_IMAGE_COMMAND_TEMPLATE).safe_substitute(
@@ -559,8 +583,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
 
         volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
-        preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
-        volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
+        volumes = _parse_volumes(volumes_raw, self.container_type)
 
         run_command = singularity_util.build_singularity_run_command(
             command,
@@ -572,6 +595,9 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
             cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
+            ipc=asbool(self.prop("ipc", singularity_util.DEFAULT_IPC)),
+            pid=asbool(self.prop("pid", singularity_util.DEFAULT_PID)),
+            contain=asbool(self.prop("contain", singularity_util.DEFAULT_CONTAIN)),
             no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )

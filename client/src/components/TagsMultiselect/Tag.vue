@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { computed } from "vue";
+
 import { keyedColorScheme } from "@/utils/color";
 
 interface TagProps {
@@ -18,8 +18,6 @@ const emit = defineEmits<{
     (e: "click", tag: string): void;
     (e: "deleted", tag: string): void;
 }>();
-
-library.add(faTimes);
 
 const color = computed(() => keyedColorScheme(props.option));
 
@@ -53,13 +51,13 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
             class="px-1 py-0 tag-delete-button"
             tabindex="-1"
             @click.prevent.stop="onDelete">
-            <FontAwesomeIcon icon="fa-times"></FontAwesomeIcon>
+            <FontAwesomeIcon :icon="faTimes"></FontAwesomeIcon>
         </b-button>
     </div>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .tag {
     display: inline-flex;

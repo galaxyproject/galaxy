@@ -1,44 +1,29 @@
+<script setup lang="ts">
+import type { HDCASummary } from "@/api";
+
+import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
+import ContentExpirationIndicator from "@/components/History/Content/ContentExpirationIndicator.vue";
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
+
+interface Props {
+    dsc: HDCASummary;
+    writeable: boolean;
+}
+
+defineProps<Props>();
+</script>
+
 <template>
     <DetailsLayout
-        :name="dsc.name"
+        :name="dsc.name ?? ''"
         :tags="dsc.tags"
         :writeable="writeable"
+        :renameable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
-        <template v-slot:name>
-            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
-            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
-            <CollectionDescription
-                :job-state-summary="jobState"
-                :collection-type="dsc.collection_type"
-                :element-count="dsc.element_count"
-                :elements-datatypes="dsc.elements_datatypes" />
+        <template v-slot:description>
+            <CollectionDescription :hdca="dsc" />
+            <ContentExpirationIndicator :item="dsc" />
         </template>
     </DetailsLayout>
 </template>
-
-<script>
-import short from "@/components/plugins/short.js";
-import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
-import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
-import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
-
-export default {
-    components: {
-        CollectionDescription,
-        DetailsLayout,
-    },
-    directives: {
-        short,
-    },
-    props: {
-        dsc: { type: Object, required: true },
-        writeable: { type: Boolean, required: true },
-    },
-    computed: {
-        jobState() {
-            return new JobStateSummary(this.dsc);
-        },
-    },
-};
-</script>

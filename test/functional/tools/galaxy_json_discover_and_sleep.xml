@@ -20,7 +20,6 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="7" />
             <output name="output" md5="d41d8cd98f00b204e9800998ecf8427e">
             </output>
         </test>

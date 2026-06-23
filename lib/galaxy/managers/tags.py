@@ -4,7 +4,6 @@ from typing import Optional
 from pydantic import Field
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -48,13 +47,12 @@ class TagsManager:
         """Apply a new set of tags to an item; previous tags are deleted."""
         user = trans.user
         new_tags: Optional[str] = None
-        if payload.item_tags and len(payload.item_tags.__root__) > 0:
-            new_tags = ",".join(payload.item_tags.__root__)
+        if payload.item_tags:
+            new_tags = ",".join(payload.item_tags)
         item = self._get_item(trans.tag_handler, payload)
         trans.tag_handler.delete_item_tags(user, item)
         trans.tag_handler.apply_item_tags(user, item, new_tags)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
     def _get_item(self, tag_handler: GalaxyTagHandlerSession, payload: ItemTagsPayload):
         """
@@ -62,5 +60,4 @@ class TagsManager:
         """
         item_class_name = str(payload.item_class)
         item_class = tag_handler.item_tag_assoc_info[item_class_name].item_class
-        item = tag_handler.sa_session.query(item_class).filter(item_class.id == payload.item_id).first()
-        return item
+        return tag_handler.sa_session.get(item_class, payload.item_id)

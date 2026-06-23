@@ -1,8 +1,9 @@
 """Integration tests for the flush_per_n_datasets setting."""
+
 from galaxy_test.driver import integration_util
 
 
-class FlushPerNDatasetsTestCase(integration_util.IntegrationInstance):
+class FlushPerNDatasetsIntegrationInstance(integration_util.IntegrationInstance):
     """Describe a Galaxy test instance with embedded pulsar configured."""
 
     framework_tool_and_types = True
@@ -13,7 +14,7 @@ class FlushPerNDatasetsTestCase(integration_util.IntegrationInstance):
         config["flush_per_n_datasets"] = 1
 
 
-instance = integration_util.integration_module_instance(FlushPerNDatasetsTestCase)
+instance = integration_util.integration_module_instance(FlushPerNDatasetsIntegrationInstance)
 test_tools = integration_util.integration_tool_runner(
     ["collection_creates_dynamic_nested", "collection_creates_dynamic_list_of_pairs"]
 )

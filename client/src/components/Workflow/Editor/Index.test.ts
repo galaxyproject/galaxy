@@ -1,74 +1,121 @@
-import { expect, jest } from "@jest/globals";
-
-import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import { PiniaVuePlugin } from "pinia";
-import { setActivePinia } from "pinia";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue, mockUnprivilegedToolsRequest } from "@tests/vitest/helpers";
+import { shallowMount, type Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { getWorkflowFull } from "@/components/Workflow/workflows.services";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+import type { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+
+import { getVersions } from "./modules/services";
+import { getStateUpgradeMessages } from "./modules/utilities";
 
 import Index from "./Index.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
-jest.mock("components/Datatypes/factory");
-jest.mock("./modules/services");
-jest.mock("layout/modal");
-jest.mock("onload/loadConfig");
-jest.mock("./modules/utilities");
+vi.mock("components/Datatypes/factory", () => ({}));
+vi.mock("./modules/services");
+vi.mock("@/onload/loadConfig");
+vi.mock("./modules/utilities");
+vi.mock("@/components/Workflow/workflows.services");
 
-jest.mock("app");
+vi.mock("app", () => ({}));
 
-import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
-import { loadWorkflow, getVersions } from "./modules/services";
-import { getStateUpgradeMessages } from "./modules/utilities";
-import { getAppRoot } from "@/onload/loadConfig";
-import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
+const { server, http } = useServerMock();
 
-const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
-const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;
-const mockLoadWorkflow = loadWorkflow as jest.Mocked<typeof loadWorkflow>;
-const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
+const mockGetAppRoot = vi.mocked(getAppRoot);
+const mockGetStateUpgradeMessages = vi.mocked(getStateUpgradeMessages);
+const mockLoadWorkflow = vi.mocked(getWorkflowFull);
+const MockGetVersions = vi.mocked(getVersions);
+
+/** TODO: A potentially hacky type until we modernize the entire
+ * component to Composition API and TypeScript */
+type IndexComponent = Vue & {
+    annotation: string | null;
+    name: string | null;
+    stateStore: ReturnType<typeof useWorkflowStateStore>;
+    datatypesMapper: ReturnType<typeof useDatatypesMapperStore> | null;
+    datatypes: Record<string, string[]> | null;
+    onDownload: () => void;
+    onChange: () => void;
+    saveAsName: string | null;
+    saveAsAnnotation: string | null;
+    services: { createWorkflow: ReturnType<typeof vi.fn> } | null;
+    routeToWorkflow: () => Promise<void>;
+};
 
 describe("Index", () => {
-    let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
+    let wrapper: Wrapper<IndexComponent>;
 
     beforeEach(() => {
-        const testingPinia = createTestingPinia();
+        const testingPinia = createTestingPinia({ createSpy: vi.fn });
         setActivePinia(testingPinia);
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
         mockLoadWorkflow.mockResolvedValue({ steps: {} });
-        MockGetVersions.mockResolvedValue(() => []);
+        MockGetVersions.mockResolvedValue([]);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => "prefix/");
         Object.defineProperty(window, "onbeforeunload", {
             value: null,
             writable: true,
         });
-        wrapper = shallowMount(Index, {
+        mockUnprivilegedToolsRequest(server, http);
+        wrapper = shallowMount(Index as object, {
             propsData: {
-                id: "workflow_id",
+                workflowId: "workflow_id",
                 initialVersion: 1,
-                tags: ["moo", "cow"],
-                moduleSections: [],
-                dataManagers: [],
+                workflowTags: ["moo", "cow"],
                 workflows: [],
                 toolbox: [],
             },
             localVue,
             pinia: testingPinia,
+            // mock out components that have exposed methods used by Index.vue.
+            stubs: {
+                ActivityBar: {
+                    template: "<div />",
+                    methods: {
+                        isActiveSideBar(name: string) {
+                            return name === "workflow-editor-tools";
+                        },
+                    },
+                    expose: ["isActiveSideBar"],
+                },
+                WorkflowGraph: {
+                    template: "<div />",
+                    methods: {
+                        fitWorkflow() {},
+                    },
+                    expose: ["fitWorkflow"],
+                },
+            },
         });
     });
 
+    // Methods to handle the `hasChanges` ref. Once we modernize, we can just use the store directly.
+    function getHasChanges() {
+        return wrapper.vm.stateStore.hasChanges;
+    }
     async function resetChanges() {
-        wrapper.vm.hasChanges = false;
+        setHasChanges(false);
         await wrapper.vm.$nextTick();
+    }
+    function setHasChanges(value: boolean) {
+        wrapper.vm.stateStore.hasChanges = value;
     }
 
     it("resolves datatypes", async () => {
-        expect(wrapper.datatypesMapper).not.toBeNull();
-        expect(wrapper.datatypes).not.toBeNull();
+        expect(wrapper.vm.datatypesMapper).not.toBeNull();
+        expect(wrapper.vm.datatypes).not.toBeNull();
     });
 
     it("routes to download URL and respects Galaxy prefix", async () => {
@@ -81,43 +128,93 @@ describe("Index", () => {
     });
 
     it("tracks changes to annotations", async () => {
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
         wrapper.vm.annotation = "original annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
 
-        resetChanges();
+        await resetChanges();
 
         wrapper.vm.annotation = "original annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
 
         wrapper.vm.annotation = "new annotation";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
     });
 
     it("tracks changes to name", async () => {
-        expect(wrapper.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
         wrapper.vm.name = "original name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
 
-        resetChanges();
+        await resetChanges();
 
         wrapper.vm.name = "original name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeFalsy();
+        expect(getHasChanges()).toBeFalsy();
 
         wrapper.vm.name = "new name";
         await wrapper.vm.$nextTick();
-        expect(wrapper.vm.hasChanges).toBeTruthy();
+        expect(getHasChanges()).toBeTruthy();
+    });
+
+    it("save as calls createWorkflow with the provided name and annotation", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.saveAsAnnotation = "A description";
+        vm.services = {
+            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 3 }),
+        };
+        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
+
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        expect(vm.services.createWorkflow).toHaveBeenCalledWith(
+            expect.objectContaining({ name: "My New Workflow", annotation: "A description" }),
+        );
+    });
+
+    it("save-as field values are intact when doSaveAs runs (not cleared by close event)", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.services = {
+            createWorkflow: vi.fn().mockResolvedValue({ id: "new_id", name: "My New Workflow", number_of_steps: 1 }),
+        };
+        vi.spyOn(vm, "routeToWorkflow").mockResolvedValue(undefined);
+
+        wrapper.findComponent(GModal).vm.$emit("ok");
+        await flushPromises();
+
+        // if fields were cleared before doSaveAs ran, name would be the "SavedAs_..." fallback
+        expect(vm.services.createWorkflow).toHaveBeenCalledWith(expect.objectContaining({ name: "My New Workflow" }));
+    });
+
+    it("resets save-as fields when the modal is cancelled", async () => {
+        const vm = wrapper.vm;
+        vm.saveAsName = "My New Workflow";
+        vm.saveAsAnnotation = "A description";
+
+        wrapper.findComponent(GModal).vm.$emit("cancel");
+        await wrapper.vm.$nextTick();
+
+        expect(vm.saveAsName).toBeNull();
+        expect(vm.saveAsAnnotation).toBeNull();
     });
 
     it("prevents navigation only if hasChanges", async () => {
-        expect(wrapper.vm.hasChanges).toBeFalsy();
-        await wrapper.vm.onChange();
-        const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
+        expect(getHasChanges()).toBeFalsy();
+        // Trigger hasChanges via the name watcher rather than calling onChange() directly,
+        // because direct method invocation doesn't propagate through createTestingPinia's
+        // store mutation tracking with Vite 8's module processing.
+        wrapper.vm.name = "trigger change";
+        await wrapper.vm.$nextTick();
+        expect(getHasChanges()).toBeTruthy();
+        await wrapper.vm.$nextTick();
+        const confirmationRequired = wrapper.emitted()["update:confirmation"]![0]![0];
         expect(confirmationRequired).toBeTruthy();
     });
 });

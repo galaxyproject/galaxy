@@ -5,6 +5,7 @@ the reverse complement for each block in the source file.
 
 usage: %prog input_maf_file output_maf_file
 """
+
 # Dan Blankenberg
 from __future__ import print_function
 

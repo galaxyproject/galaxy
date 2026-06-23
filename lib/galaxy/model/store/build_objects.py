@@ -90,8 +90,8 @@ def main(argv=None):
     galaxy.model.set_datatypes_registry(example_datatype_registry_for_sample())
     from galaxy.model import mapping
 
-    mapping.init("/tmp", "sqlite:///:memory:", create_tables=True, object_store=object_store)
-
+    mapping.init("/tmp", "sqlite:///:memory:", create_tables=True)
+    galaxy.model.setup_global_object_store_for_models(object_store)
     with open(args.objects) as f:
         targets = yaml.safe_load(f)
         if not isinstance(targets, list):
@@ -103,18 +103,15 @@ def main(argv=None):
     if export_type is None:
         export_type = "directory" if not export_path.endswith(".tgz") else "bag_archive"
 
-    export_types = {
+    export_types: dict[str, type[store.DirectoryModelExportStore]] = {
         "directory": store.DirectoryModelExportStore,
         "tar": store.TarModelExportStore,
         "bag_directory": store.BagDirectoryModelExportStore,
         "bag_archive": store.BagArchiveModelExportStore,
     }
     store_class = export_types[export_type]
-    export_kwds = {
-        "serialize_dataset_objects": True,
-    }
 
-    with store_class(export_path, **export_kwds) as export_store:
+    with store_class(export_path, serialize_dataset_objects=True) as export_store:
         for target in targets:
             persist_target_to_export_store(target, export_store, object_store, ".")
 

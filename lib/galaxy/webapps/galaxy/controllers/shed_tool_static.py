@@ -2,7 +2,10 @@ import logging
 import os
 
 from galaxy import web
-from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.exceptions import (
+    ObjectNotFound,
+    RequestParameterInvalidException,
+)
 from galaxy.util.path import (
     join,
     safe_contains,
@@ -34,6 +37,8 @@ class ShedToolStatic(BaseUIController):
         """
         guid = "/".join((shed, "repos", owner, repo, tool, version))
         tool = trans.app.toolbox.get_tool(guid)
+        if tool is None:
+            raise ObjectNotFound(f"Could not find tool with guid '{guid}'.")
         repo_path = os.path.abspath(tool._repository_dir)
         found_path = None
 

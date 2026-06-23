@@ -1,6 +1,8 @@
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import Tag from "./Tag";
+import { describe, expect, it } from "vitest";
+
+import Tag from "./Tag.vue";
 
 const localVue = getLocalVue();
 

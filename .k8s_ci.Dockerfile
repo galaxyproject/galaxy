@@ -2,14 +2,9 @@
 # - base: ubuntu (default) OR prebuilt image0
 # - install build tools
 # - clone playbook
-# Stage 2: build galaxy client and server in parallel
-# Stage 2.1:
-# - run playbook with server build steps only
+# - run playbook
 # - remove build artifacts + files not needed in container
-# Stage 2.2:
-# - run playbook with client build steps only
-# - remove build artifacts + files not needed in container
-# Stage 3:
+# Stage 2:
 # - create galaxy user + group + directory
 # - copy galaxy files from stage 2.1 and 2.2
 # - finalize container (set path, user...)
@@ -18,18 +13,18 @@
 ARG ROOT_DIR=/galaxy
 ARG SERVER_DIR=$ROOT_DIR/server
 
-ARG STAGE1_BASE=python:3.10-slim
+ARG STAGE1_BASE=python:3.12-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
-ARG GALAXY_PLAYBOOK_BRANCH=v4.0.0
+ARG GALAXY_PLAYBOOK_BRANCH=v4.2.0
 
 ARG GIT_COMMIT=unspecified
 ARG BUILD_DATE=unspecified
 ARG IMAGE_TAG=unspecified
 
 #======================================================
-# Stage 1 - Setup common requirements for build
+# Stage 1 - Run playbook
 #======================================================
 FROM $STAGE1_BASE AS stage1
 ARG DEBIAN_FRONTEND=noninteractive
@@ -51,28 +46,21 @@ RUN set -xe; \
         libc-dev \
         bzip2 \
         gcc \
-    && pip install --no-cache virtualenv ansible \
+    && pip install --no-cache virtualenv ansible==11.11.0 \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Remove context from previous build; copy current context; run playbook
 WORKDIR /tmp/ansible
 RUN rm -rf *
-ENV LC_ALL en_US.UTF-8
-RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
-WORKDIR /tmp/ansible/galaxy-docker
-RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
 
 # Add Galaxy source code
 COPY . $SERVER_DIR/
 
-#======================================================
-# Stage 2.1 - Build galaxy server
-#======================================================
-FROM stage1 AS server_build
-ARG SERVER_DIR
-
-RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: false}" -e galaxy_virtualenv_command=virtualenv
+RUN git clone --depth 1 --branch $GALAXY_PLAYBOOK_BRANCH $GALAXY_PLAYBOOK_REPO galaxy-docker
+WORKDIR /tmp/ansible/galaxy-docker
+RUN ansible-galaxy install -r requirements.yml -p roles --force-with-deps
+RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_virtualenv_command=virtualenv
 
 # Remove build artifacts + files not needed in container
 WORKDIR $SERVER_DIR
@@ -83,34 +71,17 @@ RUN rm -rf \
         .git \
         .venv/include/node \
         .venv/src/node* \
+        client/dist \
         doc \
         test \
         test-data
 # Clean up *all* node_modules, including plugins.  Everything is already built+staged.
 RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
+# Remove pre-built visualization plugin static files (not present in base image, ~220MB)
+RUN find config/plugins/visualizations -mindepth 2 -maxdepth 2 -name "static" -type d -exec rm -rf '{}' +
 
 #======================================================
-# Stage 2.2 - Build galaxy client
-#======================================================
-FROM stage1 AS client_build
-ARG SERVER_DIR
-
-RUN ansible-playbook -i localhost, playbook.yml -v --tags "galaxy_build_client" -e galaxy_virtualenv_command=virtualenv
-
-WORKDIR $SERVER_DIR
-RUN rm -rf \
-        .ci \
-        .git \
-        .venv/include/node \
-        .venv/src/node* \
-        doc \
-        test \
-        test-data
-# Clean up *all* node_modules, including plugins.  Everything is already built+staged.
-RUN find . -name "node_modules" -type d -prune -exec rm -rf '{}' +
-
-#======================================================
-# Stage 3 - Build final image based on previous stages
+# Stage 2 - Build final image based on previous stage
 #======================================================
 FROM $FINAL_STAGE_BASE
 ARG DEBIAN_FRONTEND=noninteractive
@@ -150,31 +121,33 @@ RUN set -xe; \
         locales \
         vim-tiny \
         nano-tiny \
+        netcat-openbsd \
         curl \
         procps \
         less \
         bzip2 \
         tini \
-        nodejs \
+        wget \
     && update-alternatives --install /usr/bin/nano nano /bin/nano-tiny 0 \
     && update-alternatives --install /usr/bin/vim vim /usr/bin/vim.tiny 0 \
     && echo "set nocompatible\nset backspace=indent,eol,start" >> /usr/share/vim/vimrc.tiny \
     && echo "$LANG UTF-8" > /etc/locale.gen \
     && locale-gen $LANG && update-locale LANG=$LANG \
+    && curl -L https://github.com/galaxyproject/gxadmin/releases/latest/download/gxadmin > /usr/bin/gxadmin \
+    && chmod +x /usr/bin/gxadmin \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
 # Create Galaxy user, group, directory; chown
 RUN set -xe; \
-      adduser --system --group --uid 101 $GALAXY_USER \
+      adduser --system --group --uid 10001 $GALAXY_USER \
       && mkdir -p $SERVER_DIR \
       && chown $GALAXY_USER:$GALAXY_USER $ROOT_DIR -R
 
 WORKDIR $ROOT_DIR
 # Copy galaxy files to final image
 # The chown value MUST be hardcoded (see https://github.com/moby/moby/issues/35018)
-COPY --chown=$GALAXY_USER:$GALAXY_USER --from=server_build $ROOT_DIR .
-COPY --chown=$GALAXY_USER:$GALAXY_USER --from=client_build $SERVER_DIR/static ./server/static
+COPY --chown=$GALAXY_USER:$GALAXY_USER --from=stage1 $ROOT_DIR .
 
 WORKDIR $SERVER_DIR
 
@@ -191,4 +164,4 @@ ENV GALAXY_CONFIG_CONDA_AUTO_INIT=False
 ENTRYPOINT ["tini", "--"]
 
 # [optional] to run:
-CMD galaxy
+CMD ["galaxy"]

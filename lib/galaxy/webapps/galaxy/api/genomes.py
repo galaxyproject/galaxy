@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    List,
 )
 
 from fastapi import (
@@ -71,7 +70,7 @@ class FastAPIGenomes:
     @router.get("/api/genomes", summary="Return a list of installed genomes", response_description="Installed genomes")
     def index(
         self, trans: ProvidesUserContext = DependsOnTrans, chrom_info: bool = ChromInfoQueryParam
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         return self.manager.get_dbkeys(trans.user, chrom_info)
 
     @router.get(
@@ -100,6 +99,7 @@ class FastAPIGenomes:
     )
     def indexes(
         self,
+        trans: ProvidesUserContext = DependsOnTrans,  # may want to get custom index in the future
         id: str = IdPathParam,
         type: str = IndexTypeQueryParam,
         format: str = FormatQueryParam,

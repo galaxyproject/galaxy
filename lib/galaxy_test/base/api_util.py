@@ -3,7 +3,6 @@ import os
 import random
 import string
 from typing import (
-    Dict,
     Optional,
 )
 
@@ -41,7 +40,7 @@ def get_user_api_key() -> Optional[str]:
     return os.environ.get("GALAXY_TEST_USER_API_KEY", DEFAULT_GALAXY_USER_API_KEY)
 
 
-def baseauth_headers(username: str, password: str) -> Dict[str, str]:
+def baseauth_headers(username: str, password: str) -> dict[str, str]:
     unencoded_credentials = f"{username}:{password}"
     authorization = base64.b64encode(unencoded_credentials.encode("utf-8")).decode("utf-8")
     headers = {

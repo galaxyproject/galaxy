@@ -1,3 +1,5 @@
+from typing import Optional
+
 from galaxy.managers.markdown_parse import validate_galaxy_markdown
 
 
@@ -5,25 +7,22 @@ def assert_markdown_valid(markdown):
     validate_galaxy_markdown(markdown)
 
 
-def assert_markdown_invalid(markdown, at_line=None):
+def assert_markdown_invalid(markdown, at_line: Optional[int] = None):
     failed = False
     try:
         validate_galaxy_markdown(markdown)
     except ValueError as e:
         failed = True
         if at_line is not None:
-            assert "Invalid line %d" % (at_line + 1) in str(e)
-    assert failed, "Expected markdown [%s] to fail validation but it did not." % markdown
+            assert f"Invalid line {at_line + 1}" in str(e)
+    assert failed, f"Expected markdown [{markdown}] to fail validation but it did not."
 
 
 def test_markdown_validation():
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 hello world
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 hello ``world``
 
 Here is some more text.
@@ -32,19 +31,15 @@ Here is some more text.
 import <stdio>
 printf('hello')
 ```
-"""
-    )
+""")
     # assert valid container is fine.
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 job_metrics(job_id=THISFAKEID)
 ```
-"""
-    )
+""")
     # assert multiple valid container is fine.
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 job_metrics(job_id=THISFAKEID)
 ```
@@ -55,16 +50,13 @@ Markdown between directives.
 job_metrics(job_id=THISFAKEID)
 ```
 
-"""
-    )
+""")
 
     # assert valid container is fine at end of document.
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 job_metrics(job_id=THISFAKEID)
-```"""
-    )
+```""")
     # assert valid containers require container close
     assert_markdown_invalid(
         """
@@ -74,114 +66,86 @@ job_metrics(job_id=THISFAKEID)
         at_line=1,
     )
     # assert valid containers require container close, even at end...
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
-job_metrics(job_id=THISFAKEID)"""
-    )
+job_metrics(job_id=THISFAKEID)""")
     # assert only one command allowed
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(job_id=THISFAKEID)
 job_metrics(job_id=THISFAKEID2)
 ```
-"""
-    )
+""")
     # assert command paren is closed
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(job_id=THISFAKEID
 ```
-"""
-    )
+""")
     # assert command arg is named.
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(THISFAKEID)
 ```
-"""
-    )
+""")
     # assert quotes are fine
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 job_metrics(step="Moo Cow")
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 ```galaxy
 job_metrics(step='Moo Cow')
 ```
-"""
-    )
+""")
     # assert spaces require quotes
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(output=Moo Cow)
 ```
-"""
-    )
+""")
     # assert unmatched quotes invalid
-    assert_markdown_invalid(
-        """
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(output="Moo Cow)
 ```
-"""
-    )
-    assert_markdown_invalid(
-        """
+""")
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(output=Moo Cow")
 ```
-"""
-    )
-    assert_markdown_invalid(
-        """
+""")
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(output='Moo Cow)
 ```
-"""
-    )
-    assert_markdown_invalid(
-        """
+""")
+    assert_markdown_invalid("""
 ```galaxy
 job_metrics(output=Moo Cow')
 ```
-"""
-    )
+""")
 
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 workflow_display()
 ```
-"""
-    )
+""")
 
     # Test image with a composite path (param needs to be closed, can't be misnamed i.e. pathx)
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 
 ```galaxy
 history_dataset_as_image(output="cow", path="foo/bar.png")
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 
 ```galaxy
 history_dataset_as_image(output=cow, path="foo/bar.png")
 ```
-"""
-    )
+""")
     assert_markdown_invalid(
         """
 
@@ -202,13 +166,11 @@ history_dataset_as_image(output="cow", pathx="foo/bar.png")
     )
 
     # Test validation of three arguments
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 history_dataset_link(output=moo, path="cow.png", label="my label")
 ```
-"""
-    )
+""")
     assert_markdown_invalid(
         """
 ```galaxy
@@ -235,34 +197,26 @@ history_dataset_link(output=moo, path="cow.png", labelx="my label")
     )
 
     # Test validation of arguments with different whitespaces
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 history_dataset_link(output= moo, path= "cow.png", label= "my label")
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 ```galaxy
 history_dataset_link(output = moo, path = "cow.png", label = "my label")
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 ```galaxy
 history_dataset_link(output = moo, path ="cow.png", label= "my label" )
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 ```galaxy
 history_dataset_link(  output = moo, path ="cow.png", label= "my label" )
 ```
-"""
-    )
+""")
     assert_markdown_invalid(
         """
 ```galaxy
@@ -288,17 +242,209 @@ history_dataset_link(  output = moo, path ="cow.png", labelx= "my label" )
         at_line=2,
     )
 
-    assert_markdown_valid(
-        """
+    assert_markdown_valid("""
 ```galaxy
 visualization(id=1)
 ```
-"""
-    )
-    assert_markdown_valid(
-        """
+""")
+    assert_markdown_valid("""
 ```galaxy
 visualization(foo|bar=hello)
 ```
-"""
+""")
+
+
+def test_markdown_validation_embed():
+    assert_markdown_valid("""
+| moo | cow |
+| 1 | 2 |
+""")
+    assert_markdown_valid("""
+| moo | cow |
+| 1 | ${galaxy generate_galaxy_version()} |
+""")
+    assert_markdown_valid("""
+| moo | cow |
+| 1 | ${galaxy history_dataset_name(input=foobar)} |
+""")
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy history_dataset_name(foo=bar)} |
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy generate_galaxy_version(moo=cow)} |
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+| moo | cow |
+| 1 | ${galaxy invalid()} |
+""",
+        at_line=2,
+    )
+
+
+def test_markdown_validation_hid_argument():
+    """Test that hid argument is valid for dataset/collection directives."""
+    # Dataset directives should accept hid
+    assert_markdown_valid("""
+```galaxy
+history_dataset_display(hid=42)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_as_image(hid=1)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_as_table(hid=5)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_embedded(hid=10)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_index(hid=3)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_info(hid=7)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(hid=2)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_name(hid=8)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_peek(hid=4)
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_type(hid=6)
+```
+""")
+    # Collection directive should accept hid
+    assert_markdown_valid("""
+```galaxy
+history_dataset_collection_display(hid=5)
+```
+""")
+    # hid with other arguments
+    assert_markdown_valid("""
+```galaxy
+history_dataset_as_image(hid=1, path="image.png")
+```
+""")
+    assert_markdown_valid("""
+```galaxy
+history_dataset_link(hid=2, label="my link")
+```
+""")
+
+
+def test_markdown_validation_hid_invalid_for_non_dataset_directives():
+    """Test that hid argument is rejected for non-dataset directives."""
+    # hid should not be valid for job directives
+    assert_markdown_invalid(
+        """
+```galaxy
+job_metrics(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+job_parameters(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+tool_stdout(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+tool_stderr(hid=1)
+```
+""",
+        at_line=2,
+    )
+    # hid should not be valid for workflow directives
+    assert_markdown_invalid(
+        """
+```galaxy
+workflow_display(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+workflow_image(hid=1)
+```
+""",
+        at_line=2,
+    )
+    # hid should not be valid for invocation directives
+    assert_markdown_invalid(
+        """
+```galaxy
+invocation_inputs(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+invocation_outputs(hid=1)
+```
+""",
+        at_line=2,
+    )
+    # hid should not be valid for instance directives
+    assert_markdown_invalid(
+        """
+```galaxy
+generate_galaxy_version(hid=1)
+```
+""",
+        at_line=2,
+    )
+    assert_markdown_invalid(
+        """
+```galaxy
+history_link(hid=1)
+```
+""",
+        at_line=2,
     )

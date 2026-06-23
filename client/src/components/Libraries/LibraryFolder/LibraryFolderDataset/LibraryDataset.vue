@@ -2,43 +2,48 @@
     <div v-if="dataset">
         <div v-if="!isEditMode">
             <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
+
             <!-- Toolbar -->
-            <b-button
+            <BButton
                 title="Download dataset"
                 class="mr-1 mb-2"
                 data-test-id="download-btn"
                 @click="download(datasetDownloadFormat, dataset_id)">
-                <font-awesome-icon icon="download" />
+                <FontAwesomeIcon :icon="faDownload" />
                 Download
-            </b-button>
-            <b-button
+            </BButton>
+
+            <BButton
                 title="Import dataset into history"
                 class="mr-1 mb-2"
                 data-test-id="import-history-btn"
                 @click="importToHistory">
-                <font-awesome-icon icon="book" />
+                <FontAwesomeIcon :icon="faBook" />
                 to History
-            </b-button>
+            </BButton>
+
             <span v-if="dataset.can_user_modify">
-                <b-button
+                <BButton
                     title="Modify library item"
                     class="mr-1 mb-2"
                     data-test-id="modify-btn"
                     @click="isEditMode = true">
-                    <font-awesome-icon icon="pencil-alt" />
+                    <FontAwesomeIcon :icon="faPencilAlt" />
                     Modify
-                </b-button>
-                <b-button
+                </BButton>
+
+                <BButton
                     title="Attempt to detect the format of dataset"
                     class="mr-1 mb-2"
                     data-test-id="auto-detect-btn"
                     @click="detectDatatype">
-                    <font-awesome-icon icon="redo" />
+                    <FontAwesomeIcon :icon="faRedo" />
                     Auto-detect datatype
-                </b-button>
+                </BButton>
             </span>
-            <b-button
-                v-if="currentUser.is_admin"
+
+            <BButton
+                v-if="currentUser?.is_admin"
                 title="Manage permissions"
                 class="mr-1 mb-2"
                 :to="{
@@ -46,33 +51,36 @@
                     params: { folder_id: folder_id, dataset_id: dataset_id },
                 }"
                 data-test-id="permissions-btn">
-                <font-awesome-icon icon="users" />
+                <FontAwesomeIcon :icon="faUsers" />
                 Permissions
-            </b-button>
+            </BButton>
         </div>
+
         <div v-if="dataset.is_unrestricted" data-test-id="unrestricted-msg">
             This dataset is unrestricted so everybody with the link can access it.
-            <copy-to-clipboard
+            <CopyToClipboard
                 message="A link to current dataset was copied to your clipboard"
                 :text="currentRouteName"
                 title="Copy link to this dataset " />
         </div>
+
         <!-- Table -->
-        <b-table
+        <GTable
             v-if="table_items"
+            class="dataset_table mt-2"
+            compact
+            hide-header
+            striped
             :fields="fields"
             :items="table_items"
-            class="dataset_table mt-2"
-            thead-class="d-none"
-            striped
-            small
             data-test-id="dataset-table">
             <template v-slot:cell(name)="row">
                 <strong>{{ row.item.name }}</strong>
             </template>
+
             <template v-slot:cell(value)="row">
                 <div v-if="isEditMode">
-                    <b-form-input
+                    <BFormInput
                         v-if="row.item.name === fieldTitles.name"
                         v-model="modifiedDataset.name"
                         :value="row.item.value" />
@@ -83,24 +91,24 @@
                             collection-name="Data Types"
                             :loading="loadingDatatypes"
                             :items="datatypes"
-                            :current-item-id="dataset.file_ext"
+                            :current-item="datatypes?.find((datatype) => datatype.id === dataset.file_ext)"
                             @update:selected-item="onSelectedDatatype" />
                     </DatatypesProvider>
-                    <db-key-provider
+                    <DbKeyProvider
                         v-else-if="row.item.name === fieldTitles.genome_build"
                         v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                         <SingleItemSelector
                             collection-name="Database/Builds"
                             :loading="loadingDbKeys"
                             :items="dbkeys"
-                            :current-item-id="dataset.genome_build"
+                            :current-item="dbkeys?.find((dbkey) => dbkey.id === dataset.genome_build)"
                             @update:selected-item="onSelectedDbKey" />
-                    </db-key-provider>
-                    <b-form-input
+                    </DbKeyProvider>
+                    <BFormInput
                         v-else-if="row.item.name === fieldTitles.message"
                         v-model="modifiedDataset.message"
                         :value="row.item.value" />
-                    <b-form-input
+                    <BFormInput
                         v-else-if="row.item.name === fieldTitles.misc_info"
                         v-model="modifiedDataset.misc_info"
                         :value="row.item.value" />
@@ -110,48 +118,55 @@
                     <div>{{ row.item.value }}</div>
                 </div>
             </template>
-        </b-table>
+        </GTable>
+
         <!-- Edit Controls -->
         <div v-if="isEditMode">
-            <b-button class="mr-1 mb-2" @click="isEditMode = false">
-                <font-awesome-icon :icon="['fas', 'times']" />
+            <BButton class="mr-1 mb-2" @click="isEditMode = false">
+                <FontAwesomeIcon :icon="faTimes" />
                 Cancel
-            </b-button>
-            <b-button class="mr-1 mb-2" @click="updateDataset">
-                <font-awesome-icon :icon="['far', 'save']" />
+            </BButton>
+
+            <BButton class="mr-1 mb-2" @click="updateDataset">
+                <FontAwesomeIcon :icon="faSave" />
                 Save
-            </b-button>
+            </BButton>
         </div>
+
         <!-- Peek View -->
-        <div v-if="dataset.peek" data-test-id="peek-view" v-html="dataset.peek" />
+        <div v-if="dataset.peek" data-test-id="peek-view" class="break-word" v-html="dataset.peek" />
     </div>
 </template>
 
 <script>
-import { mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faUsers, faRedo, faPencilAlt, faBook, faDownload, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { faSave } from "@fortawesome/free-regular-svg-icons";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import mod_import_dataset from "components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
-import { Services } from "components/Libraries/LibraryFolder/services";
-import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
-import download from "components/Libraries/LibraryFolder/TopToolbar/download";
-import CopyToClipboard from "components/CopyToClipboard";
-import { Toast } from "composables/toast";
-import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { DbKeyProvider, DatatypesProvider } from "components/providers";
-import SingleItemSelector from "components/SingleItemSelector";
-import { buildFields } from "components/Libraries/library-utils";
+import { faBook, faDownload, faPencilAlt, faRedo, faTimes, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton, BFormInput } from "bootstrap-vue";
+import { mapState } from "pinia";
 
-library.add(faUsers, faRedo, faBook, faDownload, faPencilAlt, faTimes, faSave);
+import { buildFields } from "@/components/Libraries/library-utils";
+import { fieldTitles } from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
+import { Services } from "@/components/Libraries/LibraryFolder/services";
+import download from "@/components/Libraries/LibraryFolder/TopToolbar/download";
+import mod_import_dataset from "@/components/Libraries/LibraryFolder/TopToolbar/import-to-history/import-dataset";
+import { DatatypesProvider, DbKeyProvider } from "@/components/providers";
+import { Toast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+
+import GTable from "@/components/Common/GTable.vue";
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
+import LibraryBreadcrumb from "@/components/Libraries/LibraryFolder/LibraryBreadcrumb.vue";
+import SingleItemSelector from "@/components/SingleItemSelector.vue";
 
 export default {
     components: {
+        BButton,
+        BFormInput,
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,
+        GTable,
         DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
@@ -168,6 +183,13 @@ export default {
     },
     data() {
         return {
+            faBook,
+            faDownload,
+            faPencilAlt,
+            faRedo,
+            faSave,
+            faTimes,
+            faUsers,
             dataset: undefined,
             modifiedDataset: {},
             currentRouteName: window.location.href,
@@ -216,7 +238,7 @@ export default {
                     this.populateDatasetDetailsTable(response);
                     Toast.success("Changes to library dataset saved.");
                 },
-                (error) => Toast.error(error)
+                (error) => Toast.error(error),
             );
         },
         updateDataset() {
@@ -228,7 +250,7 @@ export default {
                         this.populateDatasetDetailsTable(response);
                         Toast.success("Changes to library dataset saved.");
                     },
-                    (error) => Toast.error(error)
+                    (error) => Toast.error(error),
                 );
             }
             this.isEditMode = false;

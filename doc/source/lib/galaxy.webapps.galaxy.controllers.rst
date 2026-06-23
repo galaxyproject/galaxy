@@ -57,14 +57,6 @@ galaxy.webapps.galaxy.controllers.dataset module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.error module
-----------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.error
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.forms module
 ----------------------------------------------
 
@@ -113,14 +105,6 @@ galaxy.webapps.galaxy.controllers.shed\_tool\_static module
    :undoc-members:
    :show-inheritance:
 
-galaxy.webapps.galaxy.controllers.tag module
---------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.tag
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.webapps.galaxy.controllers.tool\_runner module
 -----------------------------------------------------
 
@@ -133,14 +117,6 @@ galaxy.webapps.galaxy.controllers.user module
 ---------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.controllers.user
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.webapps.galaxy.controllers.userskeys module
---------------------------------------------------
-
-.. automodule:: galaxy.webapps.galaxy.controllers.userskeys
    :members:
    :undoc-members:
    :show-inheritance:

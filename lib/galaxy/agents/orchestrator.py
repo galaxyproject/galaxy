@@ -1,0 +1,307 @@
+"""
+Workflow orchestration agent for coordinating multiple agents on complex tasks.
+"""
+
+import asyncio
+import logging
+import re
+from pathlib import Path
+from typing import (
+    Any,
+    Optional,
+)
+
+from pydantic import BaseModel
+from pydantic_ai import Agent
+
+from galaxy.schema.agents import ConfidenceLevel
+from .base import (
+    AgentResponse,
+    AgentRunState,
+    AgentType,
+    BaseGalaxyAgent,
+    extract_result_content,
+    GalaxyAgentDependencies,
+)
+
+log = logging.getLogger(__name__)
+
+
+def _create_error_response(agent_name: str, error_msg: str, is_timeout: bool = False) -> AgentResponse:
+    return AgentResponse(
+        content=error_msg,
+        confidence=ConfidenceLevel.LOW,
+        agent_type=agent_name,
+        suggestions=[],
+        metadata={"error": True, "timeout": is_timeout},
+    )
+
+
+class AgentPlan(BaseModel):
+    """Simple plan for which agents to call."""
+
+    agents: list[str]
+    sequential: bool = False
+    reasoning: str
+
+
+class WorkflowOrchestratorAgent(BaseGalaxyAgent):
+    """Coordinates multiple specialist agents for complex tasks."""
+
+    agent_type = AgentType.ORCHESTRATOR
+    capability_blurb = "Suggest next steps and handle requests that combine several of these."
+    DEFAULT_MAX_TOKENS = 16384
+
+    def __init__(self, deps: GalaxyAgentDependencies):
+        super().__init__(deps)
+
+    def _create_agent(self) -> Agent[GalaxyAgentDependencies, Any]:
+        if self._supports_structured_output():
+            agent = Agent(
+                self._get_model(),
+                deps_type=GalaxyAgentDependencies,
+                output_type=AgentPlan,
+                system_prompt=self.get_system_prompt(),
+                retries=self._get_retries(),
+            )
+        else:
+            agent = Agent(
+                self._get_model(),
+                deps_type=GalaxyAgentDependencies,
+                system_prompt=self._get_simple_system_prompt(),
+                retries=self._get_retries(),
+            )
+
+        return agent
+
+    def get_system_prompt(self) -> str:
+        prompt_path = Path(__file__).parent / "prompts" / "orchestrator.md"
+        return prompt_path.read_text()
+
+    def _normalize_agent_plan(self, agents: list[str]) -> list[str]:
+        """Map legacy plan outputs to supported agents and drop duplicates."""
+        normalized: list[str] = []
+        legacy_aliases = {
+            "next_step_advisor": AgentType.HISTORY,
+        }
+        supported_agents = {
+            AgentType.ERROR_ANALYSIS,
+            AgentType.CUSTOM_TOOL,
+            AgentType.HISTORY,
+            AgentType.TOOL_RECOMMENDATION,
+            AgentType.GTN_TRAINING,
+        }
+
+        for agent_name in agents:
+            normalized_name = legacy_aliases.get(agent_name, agent_name)
+            if normalized_name not in supported_agents:
+                log.warning(f"Orchestrator: skipping unsupported agent '{agent_name}' from generated plan")
+                continue
+            if normalized_name not in normalized:
+                normalized.append(normalized_name)
+
+        return normalized
+
+    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+        validation_error = self._validate_query(query)
+        if validation_error:
+            return self._validation_error_response(validation_error)
+
+        try:
+            plan = await self._get_agent_plan(query)
+            plan.agents = self._normalize_agent_plan(plan.agents)
+            if not plan.agents:
+                log.warning("Orchestrator: plan did not contain any supported agents, defaulting to history")
+                plan.agents = [AgentType.HISTORY]
+            log.info(
+                f"Orchestrator: Plan generated - agents={plan.agents}, sequential={plan.sequential}, reasoning={plan.reasoning[:100]}"
+            )
+
+            # Finding failed jobs must happen before analyzing them
+            if "history" in plan.agents and "error_analysis" in plan.agents:
+                if not plan.sequential:
+                    log.info("Orchestrator: Forcing sequential=true for history + error_analysis combination")
+                    plan.sequential = True
+
+            if plan.sequential:
+                responses = await self._execute_sequential(plan.agents, query, context)
+            else:
+                responses = await self._execute_parallel(plan.agents, query, context)
+
+            combined_content = self._combine_responses(responses, plan.reasoning)
+
+            return self._build_response(
+                content=combined_content,
+                confidence=ConfidenceLevel.HIGH,
+                method="orchestrated",
+                query=query,
+                agent_data={
+                    "agents_used": plan.agents,
+                    "execution_type": "sequential" if plan.sequential else "parallel",
+                },
+            )
+
+        except Exception as e:
+            log.error(f"Orchestration error: {e}")
+            return self._get_fallback_response(query, str(e))
+
+    async def _get_agent_plan(self, query: str) -> AgentPlan:
+        try:
+            result = await self._run_with_retry(query)
+
+            if self._supports_structured_output():
+                if hasattr(result, "output"):
+                    return result.output
+                elif hasattr(result, "data"):
+                    return result.data
+                else:
+                    return result
+            else:
+                response_text = extract_result_content(result)
+                return self._parse_simple_plan(response_text)
+
+        except (OSError, ValueError) as e:
+            log.warning(f"Agent plan generation failed, using fallback: {e}")
+            return AgentPlan(
+                agents=["error_analysis"],
+                sequential=False,
+                reasoning="Fallback to single agent due to planning error",
+            )
+
+    def _parse_simple_plan(self, response_text: str) -> AgentPlan:
+        agents_match = re.search(r"agents.*?\[(.*?)\]", response_text, re.IGNORECASE | re.DOTALL)
+        if agents_match:
+            agents_str = agents_match.group(1)
+            agents = [a.strip().strip("\"'") for a in agents_str.split(",")]
+        else:
+            agents = ["error_analysis"]
+
+        sequential = "sequential=true" in response_text.lower()
+
+        reasoning_match = re.search(
+            r"reasoning[=:]?\s*[\"']?(.*?)[\"']?$",
+            response_text,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        reasoning = reasoning_match.group(1) if reasoning_match else "Multi-agent coordination"
+
+        return AgentPlan(agents=agents, sequential=sequential, reasoning=reasoning)
+
+    def _get_agent_timeout(self) -> float:
+        """Default 120s to accommodate slow LLM backends."""
+        return self._get_agent_config("agent_timeout", 120.0)
+
+    async def _execute_sequential(
+        self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
+    ) -> dict[str, AgentResponse]:
+        """Execute agents sequentially with timeout protection."""
+        responses: dict[str, AgentResponse] = {}
+        timeout = self._get_agent_timeout()
+        run_state = AgentRunState()
+        ctx: dict[str, Any] = {**(context or {}), "run_state": run_state}
+
+        log.info(f"Orchestrator: Running agents in SEQUENTIAL mode: {agents}")
+        for agent_name in agents:
+            try:
+                log.info(f"Orchestrator: Starting agent '{agent_name}' with query length {len(query)}")
+                agent = self.deps.get_agent(agent_name, self.deps)
+                response = await asyncio.wait_for(agent.process(query, ctx), timeout=timeout)
+                responses[agent_name] = response
+                run_state.record(agent_name, response)
+
+                log.debug(f"Orchestrator: Agent '{agent_name}' completed. Response length: {len(response.content)}")
+                log.debug(f"Orchestrator: Agent '{agent_name}' response preview: {response.content[:500]}...")
+
+            except asyncio.TimeoutError:
+                log.error(f"Agent {agent_name} timed out after {timeout}s")
+                responses[agent_name] = _create_error_response(
+                    agent_name,
+                    f"Agent {agent_name} timed out after {timeout} seconds",
+                    is_timeout=True,
+                )
+            except (ValueError, ConnectionError, TimeoutError) as e:
+                log.error(f"Error executing agent {agent_name}: {e}")
+                responses[agent_name] = _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
+
+        return responses
+
+    async def _execute_parallel(
+        self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
+    ) -> dict[str, AgentResponse]:
+        """Execute agents in parallel with timeout protection."""
+        log.info(f"Orchestrator: Running agents in PARALLEL mode: {agents}")
+        timeout = self._get_agent_timeout()
+
+        async def call_agent(agent_name: str):
+            try:
+                agent = self.deps.get_agent(agent_name, self.deps)
+                response = await asyncio.wait_for(agent.process(query, context or {}), timeout=timeout)
+                return agent_name, response
+            except asyncio.TimeoutError:
+                log.error(f"Agent {agent_name} timed out after {timeout}s")
+                return agent_name, _create_error_response(
+                    agent_name,
+                    f"Agent {agent_name} timed out after {timeout} seconds",
+                    is_timeout=True,
+                )
+            except (ValueError, ConnectionError, TimeoutError) as e:
+                log.error(f"Error executing agent {agent_name}: {e}")
+                return agent_name, _create_error_response(agent_name, f"Agent {agent_name} encountered an error")
+
+        tasks = [call_agent(agent_name) for agent_name in agents]
+        results = await asyncio.gather(*tasks)
+
+        return dict(results)
+
+    def _combine_responses(self, responses: dict[str, AgentResponse], reasoning: str) -> str:
+        if not responses:
+            return "No agent responses received."
+
+        if len(responses) == 1:
+            return list(responses.values())[0].content
+
+        parts = []
+        for i, (agent_name, response) in enumerate(responses.items()):
+            content = response.content.strip()
+            if i == 0:
+                parts.append(content)
+            else:
+                transition = self._get_transition_phrase(agent_name)
+                parts.append(f"\n\n{transition}\n\n{content}")
+
+        return "".join(parts)
+
+    def _get_transition_phrase(self, agent_name: str) -> str:
+        transitions = {
+            "error_analysis": "Looking at this error more closely:",
+            "history": "Based on your history:",
+            "custom_tool": "Regarding the tool:",
+            "tool_recommendation": "For relevant Galaxy tools:",
+            "gtn_training": "For relevant GTN training materials:",
+        }
+        return transitions.get(agent_name, "Additionally:")
+
+    def _get_simple_system_prompt(self) -> str:
+        return """
+        You coordinate multiple Galaxy agents. Determine which agents to call and in what order.
+
+        Available agents:
+        - error_analysis: Debug job failures and errors (use when user PROVIDES error details)
+        - custom_tool: Create new Galaxy tools
+        - history: Summarize histories, describe analyses, FIND failed jobs, and suggest practical next steps
+        - tool_recommendation: Find relevant Galaxy tools already available on this server
+        - gtn_training: Find Galaxy Training Network tutorials and FAQs
+
+        Respond in this format:
+        AGENTS: [agent1, agent2]
+        SEQUENTIAL: true/false
+        REASONING: explanation
+
+        Examples:
+        - "What failed in my history?" → AGENTS: [history, error_analysis], SEQUENTIAL: true (find failed job, then analyze)
+        - "Why did the job in my BRC history fail?" → AGENTS: [history, error_analysis], SEQUENTIAL: true
+        - "What should I do next?" → AGENTS: [history], SEQUENTIAL: false
+        - "What tool should I use next for this analysis?" → AGENTS: [history, tool_recommendation], SEQUENTIAL: true
+        - "Here's my error: [pasted text]" → AGENTS: [error_analysis], SEQUENTIAL: false (user provided details)
+        - "Summarize my history" → AGENTS: [history], SEQUENTIAL: false
+        """

@@ -34,7 +34,7 @@ def convert_to_tsv(input_fname, output_fname):
 def convert_to_csv(input_fname, output_fname):
     with open(input_fname) as tabfile, open(output_fname, "w", newline="") as ofh:
         writer = csv.writer(ofh, delimiter=",")
-        for line in tabfile.readlines():
+        for line in tabfile:
             writer.writerow(line.strip().split("\t"))
 
 

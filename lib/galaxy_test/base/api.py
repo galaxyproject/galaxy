@@ -2,8 +2,8 @@ import os
 from contextlib import contextmanager
 from typing import (
     Any,
-    Dict,
     Optional,
+    TYPE_CHECKING,
 )
 from urllib.parse import (
     urlencode,
@@ -31,6 +31,9 @@ from .api_util import (
 )
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
+if TYPE_CHECKING:
+    from requests import Response
+
 CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]
 CELERY_BROKER = get_from_env("CELERY_BROKER", CONFIG_PREFIXES, "memory://")
 CELERY_BACKEND = get_from_env("CELERY_BACKEND", CONFIG_PREFIXES, "rpc://localhost")
@@ -48,10 +51,10 @@ def celery_config():
 
 class UsesCeleryTasks:
     @classmethod
-    def handle_galaxy_config_kwds(cls, config: Dict[str, Any]) -> None:
+    def handle_galaxy_config_kwds(cls, config: dict[str, Any]) -> None:
         config["enable_celery_tasks"] = True
         config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
-        celery_conf: Dict[str, Any] = config.get("celery_conf", {})
+        celery_conf: dict[str, Any] = config.get("celery_conf", {})
         celery_conf.update(DEFAULT_CELERY_CONFIG)
         config["celery_conf"] = celery_conf
 
@@ -97,9 +100,14 @@ class UsesApiTestCaseMixin:
 
     def tearDown(self):
         if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
-            # Only kill running jobs after test for managed test instances
-            for job in self.galaxy_interactor.get("jobs?state=running").json():
-                self._delete(f"jobs/{job['id']}")
+            # Only kill running jobs after test for managed test instances.
+            # Use low-level methods to bypass aiocop blocking-I/O checks —
+            # tearDown cleanup should not fail the test for server-side
+            # blocking events.
+            response = self.galaxy_interactor._get("jobs?state=running")
+            if response.ok:
+                for job in response.json():
+                    self.galaxy_interactor._delete(f"jobs/{job['id']}")
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
@@ -109,8 +117,7 @@ class UsesApiTestCaseMixin:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
-        query = urlencode(params)
-        if query:
+        if query := urlencode(params):
             url = f"{url}?{query}"
         return url
 
@@ -146,7 +153,7 @@ class UsesApiTestCaseMixin:
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=OTHER_USER, anon=False):
+    def _different_user(self, email: Optional[str] = None, anon=False):
         """Use in test cases to switch get/post operations to act as new user
 
         ..code-block:: python
@@ -163,6 +170,7 @@ class UsesApiTestCaseMixin:
             self.galaxy_interactor.cookies = cookies
             new_key = None
         else:
+            email = OTHER_USER if email is None else email
             _, new_key = self._setup_user_get_key(email)
         try:
             self.user_api_key = new_key
@@ -173,6 +181,10 @@ class UsesApiTestCaseMixin:
             self.galaxy_interactor.api_key = original_interactor_key
             self.galaxy_interactor.cookies = original_cookies
 
+    def _get_current_history_id(self) -> str:
+        """Return the current session's history ID (works for anonymous users)."""
+        return self._get(urljoin(self.url, "history/current_history_json")).json()["id"]
+
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
 
@@ -181,6 +193,9 @@ class UsesApiTestCaseMixin:
 
     def _post(self, *args, **kwds):
         return self.galaxy_interactor.post(*args, **kwds)
+
+    def _options(self, *args, **kwds):
+        return self.galaxy_interactor.options(*args, **kwds)
 
     def _delete(self, *args, **kwds):
         return self.galaxy_interactor.delete(*args, **kwds)
@@ -194,7 +209,7 @@ class UsesApiTestCaseMixin:
     def _assert_status_code_is_ok(self, response):
         assert_status_code_is_ok(response)
 
-    def _assert_status_code_is(self, response, expected_status_code):
+    def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None:
         assert_status_code_is(response, expected_status_code)
 
     def _assert_has_keys(self, response, *keys):
@@ -212,6 +227,37 @@ class UsesApiTestCaseMixin:
     _assert_has_key = _assert_has_keys
 
 
+AIOCOP_ENABLED = os.environ.get("GALAXY_TEST_AIOCOP", "").lower() in ("1", "true", "yes")
+# Matches aiocop's THRESHOLD_HIGH — high-severity events (socket.connect,
+# subprocess, etc.) fail the request; lower-severity stat-like calls are
+# logged but not treated as test failures.
+AIOCOP_FAIL_SEVERITY = 50
+
+
+def _check_aiocop_violations(response: "Response") -> None:
+    """Fail the test if the server reported a high-severity aiocop violation.
+
+    When the Galaxy test server has ``GALAXY_TEST_AIOCOP=1`` set, each
+    response includes an ``X-Aiocop-Violations`` header summarizing any
+    blocking-I/O events caught by the aiocop audit hook during that
+    request.  See ``galaxy.web.framework.middleware.aiocop_integration``.
+    """
+    header = response.headers.get("x-aiocop-violations")
+    if not header:
+        return
+    fields = dict(part.split("=", 1) for part in header.split(";") if "=" in part)
+    try:
+        severity = int(fields.get("severity", "0"))
+    except ValueError:
+        severity = 0
+    if severity >= AIOCOP_FAIL_SEVERITY:
+        raise AssertionError(
+            f"aiocop detected high-severity blocking I/O (severity={severity}, "
+            f"count={fields.get('count', '?')}, first={fields.get('first', '?')}) "
+            f"during {response.request.method} {response.request.path_url}"
+        )
+
+
 class ApiTestInteractor(BaseInteractor):
     """Specialized variant of the API interactor (originally developed for
     tool functional tests) for testing the API generally.
@@ -227,23 +273,31 @@ class ApiTestInteractor(BaseInteractor):
     # directly to test API - instead of relying on higher-level constructs for
     # specific pieces of the API (the way it is done with the variant for tool)
     # testing.
+    def _maybe_check_aiocop(self, response: "Response") -> "Response":
+        if AIOCOP_ENABLED:
+            _check_aiocop_violations(response)
+        return response
+
     def get(self, *args, **kwds):
-        return self._get(*args, **kwds)
+        return self._maybe_check_aiocop(self._get(*args, **kwds))
 
     def head(self, *args, **kwds):
-        return self._head(*args, **kwds)
+        return self._maybe_check_aiocop(self._head(*args, **kwds))
 
     def post(self, *args, **kwds):
-        return self._post(*args, **kwds)
+        return self._maybe_check_aiocop(self._post(*args, **kwds))
+
+    def options(self, *args, **kwds):
+        return self._maybe_check_aiocop(self._options(*args, **kwds))
 
     def delete(self, *args, **kwds):
-        return self._delete(*args, **kwds)
+        return self._maybe_check_aiocop(self._delete(*args, **kwds))
 
     def patch(self, *args, **kwds):
-        return self._patch(*args, **kwds)
+        return self._maybe_check_aiocop(self._patch(*args, **kwds))
 
     def put(self, *args, **kwds):
-        return self._put(*args, **kwds)
+        return self._maybe_check_aiocop(self._put(*args, **kwds))
 
 
 class AnonymousGalaxyInteractor(ApiTestInteractor):

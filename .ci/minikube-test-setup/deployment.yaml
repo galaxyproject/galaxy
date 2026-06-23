@@ -15,7 +15,7 @@ spec:
         app.kubernetes.io/name: test
     spec:
       containers:
-      - image: postgres:12
+      - image: postgres:17
         name: postgres
         ports:
         - containerPort: 5432

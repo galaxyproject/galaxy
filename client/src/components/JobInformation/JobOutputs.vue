@@ -1,9 +1,9 @@
 <template>
     <div>
-        <h2 v-if="title" class="h-md">
+        <Heading v-if="title" id="job-outputs-heading" h2 separator inline size="md">
             {{ title }}
             <span v-if="paginate && totalLength > firstN"> (showing {{ firstN }} of {{ totalLength }}) </span>
-        </h2>
+        </Heading>
         <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>
@@ -17,7 +17,7 @@
                         {{ value[0].label || name }}
                     </td>
                     <td>
-                        <generic-history-item
+                        <GenericHistoryItem
                             v-for="(item, index) in value"
                             :key="index"
                             :item-id="item.value.id"
@@ -26,9 +26,9 @@
                 </tr>
                 <tr v-if="paginate && totalLength > firstN">
                     <td colspan="2">
-                        <b-button id="paginate-btn" block variant="secondary" @click="firstN += 10">
+                        <BButton id="paginate-btn" block variant="secondary" @click="firstN += 10">
                             Show {{ totalLength - firstN >= 10 ? 10 : totalLength - firstN }} more outputs
-                        </b-button>
+                        </BButton>
                     </td>
                 </tr>
             </tbody>
@@ -37,11 +37,16 @@
 </template>
 
 <script>
-import GenericHistoryItem from "components/History/Content/GenericItem";
+import { BButton } from "bootstrap-vue";
+
+import Heading from "../Common/Heading.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
 export default {
     components: {
+        BButton,
         GenericHistoryItem,
+        Heading,
     },
     props: {
         jobOutputs: Object,

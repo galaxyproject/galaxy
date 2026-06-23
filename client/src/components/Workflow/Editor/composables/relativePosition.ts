@@ -1,5 +1,5 @@
 import type { ZoomTransform } from "d3-zoom";
-import { inject, onScopeDispose, ref, watch, type Ref } from "vue";
+import { inject, onScopeDispose, type Ref, ref, watch } from "vue";
 
 /**
  * Observe a section of the dom tree using a resize observer
@@ -62,7 +62,7 @@ export function useRelativePosition(child: Ref<HTMLElement | null>, root: Ref<HT
         },
         {
             immediate: true,
-        }
+        },
     );
 
     onScopeDispose(() => {

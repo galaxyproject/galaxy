@@ -1,10 +1,6 @@
-# For testing
--r test-requirements.txt
-
 # For dev
-sphinx
 mypy
 
 # For release
 build
-twine
+twine==6.2.0

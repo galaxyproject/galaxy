@@ -1,8 +1,12 @@
 """
 Tool Parameter specific sanitizing.
 """
+
 import logging
 import string
+from typing import (
+    overload,
+)
 
 import galaxy.util
 
@@ -58,7 +62,7 @@ class ToolParameterSanitizer:
             rval._valid_chars = rval.get_valid_by_name(valid_elem.get("initial", "default"))
             for action_elem in valid_elem:
                 preset = rval.get_valid_by_name(action_elem.get("preset", "none"))
-                valid_value = [val for val in action_elem.get("value", [])]
+                valid_value = list(action_elem.get("value", []))
                 if action_elem.tag.lower() == "add":
                     for val in preset + valid_value:
                         if val not in rval._valid_chars:
@@ -138,7 +142,7 @@ class ToolParameterSanitizer:
                 text = text.replace(value, key)
         return text
 
-    def sanitize_text(self, text):
+    def sanitize_text(self, text: str):
         """Restricts the characters that are allowed in a text"""
         if not self.sanitize:
             return text
@@ -151,6 +155,12 @@ class ToolParameterSanitizer:
             else:
                 rval.append(self._invalid_char)
         return "".join(rval)
+
+    @overload
+    def sanitize_param(self, value: str) -> str: ...
+
+    @overload
+    def sanitize_param(self, value: list[str]) -> list[str]: ...
 
     def sanitize_param(self, value):
         """Clean incoming parameters (strings or lists)"""

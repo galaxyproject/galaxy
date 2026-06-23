@@ -5,16 +5,15 @@ The functions in this module should be considered part of the API used by
 visualizations in their mako files through the `$h` object, see
 GalaxyWebTransaction in galaxy/webapps/base/webapp.py
 """
-from datetime import (
-    datetime,
-    timedelta,
-)
+
+import re
+from datetime import timedelta
 
 from babel import default_locale
 from babel.dates import format_timedelta
 from routes import url_for
 
-from galaxy.util import unicodify
+from galaxy.util import now
 from galaxy.util.json import safe_dumps as dumps  # noqa: F401
 from .tags import (
     javascript_link,
@@ -28,14 +27,14 @@ def time_ago(x):
     Convert a datetime to a string.
     """
     # If the date is more than one week ago, then display the actual date instead of in words
-    if datetime.utcnow() - x > timedelta(weeks=1):  # Greater than a week difference
+    if now() - x > timedelta(weeks=1):  # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
         # Workaround https://github.com/python-babel/babel/issues/137
-        kwargs = dict()
+        kwargs = {}
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
-        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
+        return format_timedelta(x - now(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
 
 
 def iff(a, b, c):
@@ -92,19 +91,14 @@ def js_helper(prefix, *args):
 
 def dist_js(*args):
     """
-    Take a prefix and list of javascript names and return appropriate
-    string of script tags.
+    Generate ES module script tags for bundled JavaScript files.
+    These are loaded as ES modules since Vite outputs ES module format.
     """
-    return js_helper("static/dist/", *args)
-
-
-# Unicode help
-def to_unicode(a_string):
-    """
-    Convert a string to unicode in utf-8 format; if string is already unicode,
-    does nothing because string's encoding cannot be determined by introspection.
-    """
-    return unicodify(a_string, "utf-8")
+    tags = []
+    for name in args:
+        url = url_for(f"/static/dist/{name}.js?v={server_starttime}")
+        tags.append(f'<script type="module" src="{url}"></script>')
+    return "\n".join(tags)
 
 
 def is_true(val):
@@ -112,6 +106,22 @@ def is_true(val):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val is True or val in ["True", "true", "T", "t"]
+
+
+def is_url(val):
+    """
+    Regular expression to match common URL protocols
+
+    >>> assert is_url(None) == False
+    >>> assert is_url("is_url") == False
+    >>> assert is_url("http://is_url") == True
+    >>> assert is_url("https://is_url") == True
+    """
+    if val is not None:
+        url_pattern = re.compile(r"^(https?:\/\/|ftp:\/\/)")
+        return bool(url_pattern.match(val))
+    else:
+        return False
 
 
 def to_js_bool(val):

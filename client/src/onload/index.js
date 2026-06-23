@@ -1,38 +1,20 @@
-// Bootstrap overwrites .tooltip() method, load it after jquery-ui
-// (which is loaded everywhere via libs/jquery.custom.js)
+// index.ts
 import "bootstrap";
-
-// Galaxy core styles
-import "scss/base.scss";
-
-// Set up webpack's public path; nothing to import but the module has side
-// effects fixing webpack globals.
-import "./publicPath";
-
+import "@/style/scss/base.scss";
 // Default Font
 import "@fontsource/atkinson-hyperlegible";
 import "@fontsource/atkinson-hyperlegible/700.css";
 
-import { overrideProductionConsole } from "./console";
-
-// Module exports appear as objects on window.config in the browser
-export { standardInit } from "./standardInit";
-export { initializations$, addInitialization, prependInitialization, clearInitQueue } from "./initQueue";
-export { config$, set as setConfig, get as getConfig, getAppRoot } from "./loadConfig";
-export { getRootFromIndexLink } from "./getRootFromIndexLink";
-
-// Client-side configuration variables (based on environment)
 import config from "config";
+
+import { overrideProductionConsole } from "./console";
+import { getAppRoot, loadConfig } from "./loadConfig";
 
 overrideProductionConsole();
 
-if (!config.testBuild === true) {
+export { getAppRoot, loadConfig };
+
+if (!config.testBuild) {
     console.log(`Galaxy Client '${config.name}' build, dated ${config.buildTimestamp}`);
-    console.debug("Full configuration:", config);
+    console.debug("Full environment configuration:", config);
 }
-
-// Custom Icons
-import customIconPack from "@/assets/icons.json";
-import { library } from "@fortawesome/fontawesome-svg-core";
-
-library.add(customIconPack);

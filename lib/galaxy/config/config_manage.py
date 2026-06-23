@@ -6,25 +6,25 @@ from argparse import (
     ArgumentParser,
     Namespace,
 )
+from collections.abc import Callable
 from io import StringIO
+from pathlib import Path
 from textwrap import TextWrapper
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     NamedTuple,
     Optional,
-    Tuple,
 )
 
 import yaml
 from boltons.iterutils import remap
 
 try:
-    from gravity.util import settings_to_sample
+    from gravity.settings import settings_to_sample
 except ImportError:
     settings_to_sample = None
+
+from pykwalify.errors import RuleError
 
 try:
     from pykwalify.core import Core
@@ -46,6 +46,7 @@ from galaxy.util.properties import (
     nice_config_parser,
     NicerConfigParser,
 )
+from galaxy.util.resources import Traversable
 from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
@@ -56,7 +57,6 @@ DESCRIPTION = "Convert configuration files."
 APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
-USING_SAMPLE_MESSAGE = "Config file not found, using sample."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(
     initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False
@@ -68,11 +68,11 @@ DROP_OPTION_VALUE = object()
 
 
 class App(NamedTuple):
-    config_paths: List[str]
+    config_paths: list[str]
     default_port: str
-    expected_app_factories: List[str]
+    expected_app_factories: list[str]
     destination: str
-    schema_path: str
+    schema_path: Traversable
 
     @property
     def app_name(self) -> str:
@@ -88,7 +88,7 @@ class App(NamedTuple):
 
 
 class _OptionAction:
-    def converted(self, args: Namespace, app_desc: App, key: str, value: Any) -> Tuple[str, Any]:
+    def converted(self, args: Namespace, app_desc: App, key: str, value: Any) -> tuple[str, Any]:
         raise NotImplementedError()
 
     def lint(self, args: Namespace, app_desc: App, key: str, value: Any) -> None:
@@ -155,7 +155,7 @@ class _RenameAction(_OptionAction):
         )
 
 
-OPTION_ACTIONS: Dict[str, _OptionAction] = {
+OPTION_ACTIONS: dict[str, _OptionAction] = {
     "use_beaker_session": _DeprecatedAndDroppedAction(),
     "use_interactive": _DeprecatedAndDroppedAction(),
     "session_type": _DeprecatedAndDroppedAction(),
@@ -203,13 +203,16 @@ OPTION_ACTIONS: Dict[str, _OptionAction] = {
     "legacy_eager_objectstore_initialization": _DeprecatedAndDroppedAction(),
     "enable_openid": _DeprecatedAndDroppedAction(),
     "openid_consumer_cache_path": _DeprecatedAndDroppedAction(),
+    "enable_beta_workflow_modules": _DeprecatedAndDroppedAction(),
+    "ga4gh_service_organization_name": _RenameAction("organization_name"),
+    "ga4gh_service_organization_url": _RenameAction("organization_url"),
 }
 
 
 class OptionValue(NamedTuple):
     name: str
     value: Any
-    option: Dict[str, Any]
+    option: dict[str, Any]
 
 
 GALAXY_APP = App(
@@ -217,26 +220,26 @@ GALAXY_APP = App(
     "8080",
     ["galaxy.web.buildapp:app_factory"],
     "config/galaxy.yml",
-    str(GALAXY_CONFIG_SCHEMA_PATH),
+    GALAXY_CONFIG_SCHEMA_PATH,
 )
 SHED_APP = App(
     ["tool_shed_wsgi.ini", "config/tool_shed.ini"],
     "9009",
     ["tool_shed.webapp.buildapp:app_factory"],
     "config/tool_shed.yml",
-    str(TOOL_SHED_CONFIG_SCHEMA_PATH),
+    TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 REPORTS_APP = App(
     ["reports_wsgi.ini", "config/reports.ini"],
     "9001",
     ["galaxy.webapps.reports.buildapp:app_factory"],
     "config/reports.yml",
-    str(REPORTS_CONFIG_SCHEMA_PATH),
+    REPORTS_CONFIG_SCHEMA_PATH,
 )
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: Optional[list[str]] = None) -> None:
     """Entry point for conversion process."""
     if argv is None:
         argv = sys.argv[1:]
@@ -303,14 +306,16 @@ def _find_config(args: Namespace, app_desc: App) -> str:
             if os.path.exists(possible_ini_config):
                 path = possible_ini_config
 
-    if not path:
-        _warn(USING_SAMPLE_MESSAGE)
+    if path:
+        print(f"Found config file {path}")
+    else:
         path = os.path.join(args.galaxy_root, app_desc.sample_destination)
+        _warn(f"Config file not found, using sample {path}")
 
     return path
 
 
-def _find_app_options(app_desc: App, path: str) -> Dict[str, Any]:
+def _find_app_options(app_desc: App, path: str) -> dict[str, Any]:
     """Load app (as opposed to server) options from specified path.
 
     Supplied ``path`` may be either YAML or ini file.
@@ -324,7 +329,7 @@ def _find_app_options(app_desc: App, path: str) -> Dict[str, Any]:
     return app_items
 
 
-def _find_app_options_from_config_parser(p: NicerConfigParser) -> Dict[str, Any]:
+def _find_app_options_from_config_parser(p: NicerConfigParser) -> dict[str, Any]:
     if not p.has_section("app:main"):
         _warn(NO_APP_MAIN_MESSAGE)
         app_items = {}
@@ -351,13 +356,13 @@ def _validate(args: Namespace, app_desc: App) -> None:
     path = _find_config(args, app_desc)
     # Allow empty mapping (not allowed by pykwalify)
     raw_config = _order_load_path(path)
-    if raw_config.get(app_desc.app_name) is None:
-        raw_config[app_desc.app_name] = {}
+    # Drop top-level keys (e.g. "gravity") except for app_desc.app_name
+    raw_config = {app_desc.app_name: raw_config.get(app_desc.app_name) or {}}
     # Rewrite the file any way to merge any duplicate keys
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
 
-    def _clean(p: Tuple[str, ...], k: str, v: Any) -> bool:
+    def _clean(p: tuple[str, ...], k: str, v: Any) -> bool:
         return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias", "resolves_to"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
@@ -369,7 +374,13 @@ def _validate(args: Namespace, app_desc: App) -> None:
             schema_files=[fp.name],
         )
     os.remove(config_p.name)
-    c.validate()
+    try:
+        c.validate()
+    except RuleError as error:
+        if error.error_key == "default.not_scalar":
+            # Default values are not supported by pykwalify (or kwalify) for map types. Yet, it is
+            # beneficial to provide those defaults since they are loaded with the schema.
+            pass
 
 
 def _run_conversion(args: Namespace, app_desc: App) -> None:
@@ -383,7 +394,7 @@ def _run_conversion(args: Namespace, app_desc: App) -> None:
 
     p = nice_config_parser(ini_config)
     app_items = _find_app_options_from_config_parser(p)
-    app_dict: Dict[str, OptionValue] = {}
+    app_dict: dict[str, OptionValue] = {}
     schema = app_desc.schema
     for key, value in app_items.items():
         if key in ["__file__", "here"]:
@@ -426,8 +437,7 @@ def _replace_file(args: Namespace, f: StringIO, app_desc: App, from_path: str, t
 def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     schema = app_desc.schema
     f = StringIO()
-    description = getattr(schema, "description", None)
-    if description:
+    if description := getattr(schema, "description", None):
         description = description.lstrip()
         as_comment = "\n".join(f"# {line}" for line in description.split("\n")) + "\n"
         f.write(as_comment)
@@ -453,7 +463,7 @@ def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
             to_f.write(contents)
 
 
-def _order_load_path(path: str) -> Dict[str, Any]:
+def _order_load_path(path: str) -> dict[str, Any]:
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
@@ -471,7 +481,7 @@ def _write_sample_section(args: Namespace, f: StringIO, section_header: str, sch
         _write_option(args, f, key, option_value, as_comment=True)
 
 
-def _write_section(args: Namespace, f: StringIO, section_header: str, section_dict: Dict[str, OptionValue]) -> None:
+def _write_section(args: Namespace, f: StringIO, section_header: str, section_dict: dict[str, OptionValue]) -> None:
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
         _write_option(args, f, key, option_value)
@@ -498,7 +508,7 @@ def _write_option(args: Namespace, f: StringIO, key: str, option_value: OptionVa
     f.write(f"{lines_indented}\n\n")
 
 
-def _parse_option_value(option_value: OptionValue) -> Tuple[Dict[str, Any], Any]:
+def _parse_option_value(option_value: OptionValue) -> tuple[dict[str, Any], Any]:
     option = option_value.option
     value = option_value.value
     # Hack to get nicer YAML values during conversion
@@ -515,21 +525,126 @@ def _warn(message: str) -> None:
     print(f"WARNING: {message}")
 
 
-def _get_option_desc(option: Dict[str, Any]) -> str:
+def _get_option_desc(option: dict[str, Any]) -> str:
     desc = option["desc"]
-    parent_dir = option.get("path_resolves_to")
-    if parent_dir:
+    if parent_dir := option.get("path_resolves_to"):
         path_resolves = f"The value of this option will be resolved with respect to <{parent_dir}>."
         return f"{desc}\n{path_resolves}" if desc else path_resolves
     return desc
 
 
-ACTIONS: Dict[str, Callable] = {
+_SCHEMA_TO_PYTHON_TYPE: dict[str, str] = {
+    "str": "str",
+    "bool": "bool",
+    "int": "int",
+    "float": "float",
+    "any": "Any",
+    "seq": "list[Any]",
+}
+
+_CONFIG_TYPE_CLASS_NAMES: dict[str, str] = {
+    "galaxy": "GalaxyAppConfigurationAttributes",
+    "tool_shed": "ToolShedAppConfigurationAttributes",
+    "reports": "ReportsAppConfigurationAttributes",
+}
+
+# Per-app overrides for attributes whose runtime Python type differs from what
+# the schema alone would generate.  Causes include: post-processing in
+# _process_config (listify, timedelta conversion), BaseAppConfiguration
+# guarantees that override a null schema default, or more specific element
+# types for seq attrs.
+_ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
+    "galaxy": {
+        # Always resolved to a concrete str by BaseAppConfiguration._set_config_base
+        "config_dir": "str",
+        "data_dir": "str",
+        "managed_config_dir": "str",
+        # BaseAppConfiguration declares str; always non-null at runtime
+        "object_store_store_by": "str",
+        # Listified by _process_config or CommonConfigurationMixin
+        "allowed_origin_hostnames": "list[str]",
+        "mulled_channels": "list[str]",
+        "tool_filters": "list[str]",
+        "tool_label_filters": "list[str]",
+        "tool_section_filters": "list[str]",
+        "toolbox_filter_base_modules": "list[str]",
+        "user_library_import_symlink_allowlist": "list[str]",
+        "user_tool_filters": "list[str]",
+        "user_tool_label_filters": "list[str]",
+        "user_tool_section_filters": "list[str]",
+        # Can be conditionally set to None in _process_config despite non-null schema default
+        "interactivetools_map": "str | None",
+        "tool_dependency_dir": "str | None",
+        # Config file paths that are optional (not required to be set)
+        "file_source_templates_config_file": "str | None",
+        "object_store_templates_config_file": "str | None",
+        "amqp_internal_connection": "str | None",
+        # seq attrs with more specific element types
+        "file_source_templates": "list[dict[str, Any]] | None",
+        "object_store_templates": "list[dict[str, Any]] | None",
+        # Stored as float despite int schema type
+        "object_store_cache_size": "float",
+        # Converted from int (days) to timedelta by _process_config
+        "password_expiration_period": "timedelta",
+    },
+    "tool_shed": {},
+    "reports": {},
+}
+
+_CONFIG_DIR = Path(__file__).resolve().parent
+
+
+def _python_type_for_option(option: dict[str, Any]) -> str:
+    schema_type = option.get("type", "str")
+    default = option.get("default")
+    py_type = _SCHEMA_TO_PYTHON_TYPE.get(schema_type, "Any")
+    # Attributes with a null default remain None at runtime when not configured —
+    # _update_raw_config_from_kwargs skips type conversion when value is None.
+    if default is None and py_type in ("str", "int", "float"):
+        return f"{py_type} | None"
+    return py_type
+
+
+def _build_config_types(args: Namespace, app_desc: App) -> None:
+    schema = app_desc.schema
+    app_name = app_desc.app_name
+    class_name = _CONFIG_TYPE_CLASS_NAMES[app_name]
+    output_path = _CONFIG_DIR / f"_{app_name}_config_schema_attributes.py"
+
+    overrides = _ATTR_TYPE_OVERRIDES.get(app_name, {})
+    attr_types = {key: overrides.get(key, _python_type_for_option(option)) for key, option in schema.app_schema.items()}
+    needs_any = any("Any" in t for t in attr_types.values())
+    needs_timedelta = any("timedelta" in t for t in attr_types.values())
+    imports = ["from datetime import timedelta"] if needs_timedelta else []
+    if needs_any:
+        imports.append("from typing import Any")
+
+    lines = [
+        "# AUTOGENERATED by config_manage.py build_config_types — do not edit manually.",
+        "# Run `make config-rebuild` to regenerate from the config schema.",
+        *imports,
+        "",
+        "",
+        f"class {class_name}:",
+        f'    """Type annotations for schema-defined "{app_name}" config attributes."""',
+        "",
+    ]
+    for key, py_type in attr_types.items():
+        lines.append(f"    {key}: {py_type}")
+    lines.append("")
+
+    content = "\n".join(lines)
+    output_path.write_text(content)
+    print(f"Written: {output_path}")
+
+
+ACTIONS: dict[str, Callable] = {
     "convert": _run_conversion,
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,
     "lint": _lint,
     "build_rst": _to_rst,
+    "build_config_types": _build_config_types,
 }
 
 

@@ -1,3 +1,0 @@
-pytest
-fs-gcsfs
-s3fs

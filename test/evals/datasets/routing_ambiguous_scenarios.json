@@ -1,0 +1,107 @@
+[
+  {
+    "name": "underspecified-goal-stuck-rnaseq-vague",
+    "ambiguity_type": "underspecified-goal",
+    "query": "Hey, I'm working on some RNA-seq stuff in Galaxy and I'm kind of stuck. Can you help?",
+    "expected": "clarification",
+    "good_clarifying_question": "Happy to help -- where in the RNA-seq process are you stuck: are you getting an error from a specific tool, unsure which tool to run next (e.g. alignment vs quantification vs DESeq2), or confused by a result you got?"
+  },
+  {
+    "name": "underspecified-goal-what-next",
+    "ambiguity_type": "underspecified-goal",
+    "query": "Okay, I uploaded my files. What should I do next?",
+    "expected": "clarification",
+    "good_clarifying_question": "Glad they're uploaded -- what kind of data are they (e.g. FASTQ reads, a VCF, a BAM, a tabular file) and what are you ultimately trying to produce, so I can point you to the right next step?"
+  },
+  {
+    "name": "underspecified-goal-make-it-work",
+    "ambiguity_type": "underspecified-goal",
+    "query": "Can someone just help me get this thing working? I've been at it all day and nothing's happening.",
+    "expected": "clarification",
+    "good_clarifying_question": "I'd like to help -- what specifically isn't working: a job that's stuck or failed, a workflow that won't start, an upload that won't finish, or something else? If there's a tool name or an error message, that would point me right at it."
+  },
+  {
+    "name": "vague-failure-no-details-history-red",
+    "ambiguity_type": "vague-failure-no-details",
+    "query": "Something's broken in my history, can you take a look?",
+    "expected": "clarification",
+    "good_clarifying_question": "Which dataset is the problem, and what state is it in -- red/errored, grey/queued, or green but with unexpected results? If it's a failed job, the dataset number or job id will help me dig into the error."
+  },
+  {
+    "name": "vague-failure-no-details-workflow-wont-run",
+    "ambiguity_type": "vague-failure-no-details",
+    "query": "My workflow won't run, what do I do?",
+    "expected": "clarification",
+    "good_clarifying_question": "When you try, does it fail to start (an error or missing-input message when you hit Run), or does it start and then a step turns red? The workflow name or invocation id plus any message you see would let me pinpoint it."
+  },
+  {
+    "name": "vague-failure-no-details-results-look-off",
+    "ambiguity_type": "vague-failure-no-details",
+    "query": "I ran my analysis and the results look totally off, something definitely went wrong.",
+    "expected": "clarification",
+    "good_clarifying_question": "What does 'off' look like concretely -- empty output, way more/fewer rows than expected, wrong coordinates, or a specific number that's wrong? And which tool produced it (name or dataset number)? That'll tell me whether it's a parameter/reference issue or an actual job error."
+  },
+  {
+    "name": "cross-specialist-intent-atac-seq",
+    "ambiguity_type": "cross-specialist-intent",
+    "query": "I'm working with ATAC-seq data in Galaxy and could use some help.",
+    "expected": "clarification",
+    "good_clarifying_question": "Happy to help with ATAC-seq -- are you looking to find the right tools, follow a step-by-step tutorial, get a failed step diagnosed, or interpret results you already have?"
+  },
+  {
+    "name": "cross-specialist-intent-variant-calling-stuck",
+    "ambiguity_type": "cross-specialist-intent",
+    "query": "I'm stuck on variant calling, can you help me out?",
+    "expected": "clarification",
+    "good_clarifying_question": "What's blocking you on variant calling -- a job that errored out, picking the right caller, running a specific tool, or figuring out the overall workflow?"
+  },
+  {
+    "name": "cross-specialist-intent-single-cell",
+    "ambiguity_type": "cross-specialist-intent",
+    "query": "Can you help me with single-cell RNA-seq?",
+    "expected": "clarification",
+    "good_clarifying_question": "For single-cell RNA-seq, do you want help choosing tools, a full tutorial to follow, running a specific tool, troubleshooting a failed step, or making sense of results you already have?"
+  },
+  {
+    "name": "referentless-followup-better-one",
+    "ambiguity_type": "referentless-followup",
+    "query": "is there a better one for this?",
+    "expected": "clarification",
+    "good_clarifying_question": "Happy to help find an alternative -- what are you looking to replace: a specific tool, a workflow, a reference genome, or something else, and for what kind of analysis?"
+  },
+  {
+    "name": "referentless-followup-redo-it",
+    "ambiguity_type": "referentless-followup",
+    "query": "can you just redo it, it came out wrong last time",
+    "expected": "clarification",
+    "good_clarifying_question": "Sure -- what would you like me to redo: a specific job or tool run, a workflow invocation, or an upload, and what went wrong with the previous result (an error, or unexpected output)?"
+  },
+  {
+    "name": "referentless-followup-other-approach",
+    "ambiguity_type": "referentless-followup",
+    "query": "what about the other approach instead?",
+    "expected": "clarification",
+    "good_clarifying_question": "Which two approaches are you weighing -- can you name the analysis (for example DESeq2 vs edgeR, or reference-based vs de novo assembly) so I know what the alternative is?"
+  },
+  {
+    "name": "overbroad-scope-rnaseq-end-to-end",
+    "ambiguity_type": "overbroad-scope",
+    "query": "Can you handle my RNA-seq data for me from start to finish?",
+    "expected": "clarification",
+    "good_clarifying_question": "Happy to help -- where do you want to start: raw read QC/trimming, alignment to a reference, count quantification, or differential expression? And do you have a reference genome/organism and your sample groups in mind?"
+  },
+  {
+    "name": "overbroad-scope-analyze-my-genome",
+    "ambiguity_type": "overbroad-scope",
+    "query": "I just uploaded my sequencing data, analyze my genome.",
+    "expected": "clarification",
+    "good_clarifying_question": "What's the goal -- assembling a new genome, mapping reads and calling variants against a reference, or annotating an existing assembly? And what kind of reads did you upload (Illumina short reads or long reads)?"
+  },
+  {
+    "name": "overbroad-scope-do-everything-singlecell",
+    "ambiguity_type": "overbroad-scope",
+    "query": "Do everything for my single-cell dataset.",
+    "expected": "clarification",
+    "good_clarifying_question": "Where are you starting -- raw FASTQs that still need to be turned into a count matrix, or an existing matrix/AnnData ready for QC and clustering? And which downstream steps do you actually need (filtering, clustering, marker detection, annotation)?"
+  }
+]

@@ -1,6 +1,7 @@
 import logging
 
 from galaxy.exceptions import ConfigurationError
+from galaxy.util.resources import Traversable
 from galaxy.util.yaml_util import ordered_load
 
 log = logging.getLogger(__name__)
@@ -35,15 +36,15 @@ class Schema:
 
 
 class AppSchema(Schema):
-    def __init__(self, schema_path, app_name):
+    def __init__(self, schema_path: Traversable, app_name: str):
         self.raw_schema = self._read_schema(schema_path)
         self.description = self.raw_schema.get("desc", None)
         app_schema = self.raw_schema["mapping"][app_name]["mapping"]
         self._preprocess(app_schema)
         super().__init__(app_schema)
 
-    def _read_schema(self, path):
-        with open(path) as f:
+    def _read_schema(self, path: Traversable):
+        with path.open() as f:
             return ordered_load(f)
 
     def _preprocess(self, app_schema):
@@ -92,8 +93,8 @@ class AppSchema(Schema):
         def check_exists(option, key):
             if not option:
                 message = (
-                    "Invalid schema: property '{}' listed as path resolution target "
-                    "for '{}' does not exist".format(resolves_to, key)
+                    f"Invalid schema: property '{resolves_to}' listed as path resolution target "
+                    f"for '{key}' does not exist"
                 )
                 raise_error(message)
 

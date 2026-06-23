@@ -1,10 +1,14 @@
 import logging
 import math
+from typing import (
+    Any,
+)
 
 from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.dataset_collections.types.sample_sheet_util import validate_column_definitions
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -29,12 +33,18 @@ def api_payload_to_create_params(payload):
         message = f"Missing required parameters {missing_parameters}"
         raise exceptions.ObjectAttributeMissingException(message)
 
+    column_definitions = payload.get("column_definitions", None)
+    validate_column_definitions(column_definitions)
+
     params = dict(
         collection_type=payload.get("collection_type"),
         element_identifiers=payload.get("element_identifiers"),
         name=payload.get("name", None),
         hide_source_items=string_as_bool(payload.get("hide_source_items", False)),
         copy_elements=string_as_bool(payload.get("copy_elements", False)),
+        fields=payload.get("fields", None),
+        column_definitions=column_definitions,
+        rows=payload.get("rows", None),
     )
     return params
 
@@ -43,7 +53,7 @@ def validate_input_element_identifiers(element_identifiers):
     """Scan through the list of element identifiers supplied by the API consumer
     and verify the structure is valid.
     """
-    log.debug("Validating %d element identifiers for collection creation." % len(element_identifiers))
+    log.debug("Validating %d element identifiers for collection creation.", len(element_identifiers))
     identifier_names = set()
     for element_identifier in element_identifiers:
         if "__object__" in element_identifier:
@@ -144,41 +154,55 @@ def dictify_dataset_collection_instance(
         else:
             element_func = dictify_element_reference
         dict_value["elements"] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+        icj = dataset_collection_instance.implicit_collection_jobs
+        if icj:
+            dict_value["implicit_collection_jobs_id"] = icj.id
+        else:
+            dict_value["implicit_collection_jobs_id"] = None
 
-    security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 
-def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, security=None):
+def dictify_element_reference(
+    element: model.DatasetCollectionElement, rank_fuzzy_counts=None, recursive=True, security=None
+):
     """Load minimal details of elements required to show outline of contents in history panel.
 
     History panel can use this reference to expand to full details if individual dataset elements
     are clicked.
     """
     dictified = element.to_dict(view="element")
-    element_object = element.element_object
-    if element_object is not None:
-        object_details = dict(
+    if (element_object := element.element_object) is not None:
+        object_details: dict[str, Any] = dict(
             id=element_object.id,
             model_class=element_object.__class__.__name__,
         )
-        if element.child_collection:
+        if isinstance(element_object, model.DatasetCollection):
             object_details["collection_type"] = element_object.collection_type
+            object_details["element_count"] = element_object.element_count
+            object_details["populated"] = element_object.populated_optimized
+
+            # Add hierarchical state information for intermediate collections
+            # Add elements_states and intermediate_states from DatasetCollection
+            dataset_summary = element_object.dataset_states_and_extensions_summary
+            object_details["elements_states"] = dataset_summary.states
+            object_details["elements_deleted"] = dataset_summary.deleted
+            object_details["elements_datatypes"] = dataset_summary.extensions
 
             # Recursively yield elements for each nested collection...
             if recursive:
-                child_collection = element.child_collection
-                elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+                elements, rest_fuzzy_counts = get_fuzzy_count_elements(element_object, rank_fuzzy_counts)
                 object_details["elements"] = [
                     dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts, recursive=recursive)
                     for _ in elements
                 ]
-                object_details["element_count"] = child_collection.element_count
         else:
             object_details["state"] = element_object.state
             object_details["hda_ldda"] = "hda"
-            object_details["history_id"] = element_object.history_id
-            object_details["tags"] = element_object.make_tag_string_list()
+            object_details["purged"] = element_object.purged
+            if isinstance(element_object, model.HistoryDatasetAssociation):
+                object_details["history_id"] = element_object.history_id
+                object_details["tags"] = element_object.make_tag_string_list()
 
         dictified["object"] = object_details
     else:

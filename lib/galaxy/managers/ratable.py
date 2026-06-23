@@ -1,20 +1,20 @@
 """
 Mixins for Ratable model managers and serializers.
 """
-import logging
-from typing import Type
 
+import logging
+
+from sqlalchemy import select
 from sqlalchemy.sql.expression import func
 
 from galaxy.model import ItemRatingAssociation
-from galaxy.model.base import transaction
 from . import base
 
 log = logging.getLogger(__name__)
 
 
 class RatableManagerMixin:
-    rating_assoc: Type[ItemRatingAssociation]
+    rating_assoc: type[ItemRatingAssociation]
 
     def rating(self, item, user, as_int=True):
         """Returns the integer rating given to this item by the user.
@@ -35,13 +35,14 @@ class RatableManagerMixin:
     def ratings_avg(self, item):
         """Returns the average of all ratings given to this item."""
         foreign_key = self._foreign_key(self.rating_assoc)
-        avg = self.session().query(func.avg(self.rating_assoc.rating)).filter(foreign_key == item).scalar()
-        return avg or 0.0
+        stmt = select(func.avg(self.rating_assoc.rating)).where(foreign_key == item)
+        return self.session().scalar(stmt) or 0.0
 
     def ratings_count(self, item):
         """Returns the number of ratings given to this item."""
         foreign_key = self._foreign_key(self.rating_assoc)
-        return self.session().query(func.count(self.rating_assoc.rating)).filter(foreign_key == item).scalar()
+        stmt = select(func.count(self.rating_assoc.rating)).where(foreign_key == item)
+        return self.session().scalar(stmt)
 
     def rate(self, item, user, value, flush=True):
         """Updates or creates a rating for this item and user. Returns the rating"""
@@ -56,8 +57,7 @@ class RatableManagerMixin:
         self.session().add(rating)
         if flush:
             session = self.session()
-            with transaction(session):
-                session.commit()
+            session.commit()
         return rating
 
     # TODO?: all ratings for a user

@@ -7,7 +7,6 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
-from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
@@ -29,11 +28,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
 
-        self.app.model.Dataset.object_store = object_store
+        model.Dataset.object_store = object_store
 
     def tearDown(self):
-        if self.app.model.Dataset.object_store is self.app.object_store:
-            self.app.model.Dataset.object_store = None
+        if model.Dataset.object_store is self.app.object_store:
+            model.Dataset.object_store = None
 
     def test_empty_collect(self):
         assert len(self._collect()) == 0
@@ -63,12 +62,10 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert created_hda_1.dbkey == "?"
 
     def test_collect_multiple_recurse(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name__" directory="subdir1" recurse="true" ext="txt" />
             <discover_datasets pattern="__name__" directory="subdir2" recurse="true" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         path1 = self._setup_extra_file(filename="test1", subdir="subdir1")
         path2 = self._setup_extra_file(filename="test2", subdir="subdir2/nested1/")
         path3 = self._setup_extra_file(filename="test3", subdir="subdir2")
@@ -128,12 +125,22 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         created_hda_3 = datasets[DEFAULT_TOOL_OUTPUT]["test3"]
         assert_created_with_path(self.app.object_store, created_hda_3.dataset, path3)
 
+    def test_collect_collection_default_format(self):
+        self._replace_output_collectors("""<dataset_collection name="parent" format="abcdef">
+            <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" />
+        </dataset_collection>""")
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
+        self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
+
+        datasets = self._collect()
+        assert DEFAULT_TOOL_OUTPUT in datasets
+        for dataset in datasets[DEFAULT_TOOL_OUTPUT].values():
+            assert dataset.ext == "abcdef"
+
     def test_collect_sorted_reverse(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name__" directory="subdir_for_name_discovery" sort_by="reverse_filename" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="test2")
 
@@ -144,11 +151,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test2", "test1"]
 
     def test_collect_sorted_name(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="name" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         # Setup filenames in reverse order and ensure name is used as key.
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="ctest1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="btest2")
@@ -161,11 +166,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
 
     def test_collect_sorted_numeric(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="[abc](?P&lt;name&gt;.*)" directory="subdir_for_name_discovery" sort_by="numeric_name" ext="txt" />
-        </output>"""
-        )
+        </output>""")
         # Setup filenames in reverse order and ensure name is used as key.
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="c1")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="b10")
@@ -194,6 +197,7 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert len(history_2.datasets) == 1
 
         self._collect()
+        self.app.model.context.flush()
 
         # Make sure extra primary was copied to cloned history with
         # cloned output.
@@ -317,12 +321,10 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         in grouping patterns and named patterns such as __designation__,
         __name__, __designation_and_ext__, and __name_and_ext__.
         """
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name_and_ext__" directory="subdir_for_name_discovery" />
             <discover_datasets pattern="__designation_and_ext__" directory="subdir_for_designation_discovery" />
-        </output>"""
-        )
+        </output>""")
         self._setup_extra_file(subdir="subdir_for_name_discovery", filename="example1.txt")
         self._setup_extra_file(subdir="subdir_for_designation_discovery", filename="example2.txt")
         primary_outputs = self._collect()[DEFAULT_TOOL_OUTPUT]
@@ -334,11 +336,9 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         assert designation_output.name == "{} ({})".format(self.hda.name, "example2")
 
     def test_cannot_read_files_outside_job_directory(self):
-        self._replace_output_collectors(
-            """<output>
+        self._replace_output_collectors("""<output>
             <discover_datasets pattern="__name_and_ext__" directory="../../secrets" />
-        </output>"""
-        )
+        </output>""")
         exception_thrown = False
         try:
             self._collect()
@@ -377,15 +377,13 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
         # Rewrite tool as if it had been created with output containing
         # supplied dataset_collector elem.
         elem = util.parse_xml_string(xml_str)
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_elem(elem)
+        )
 
     def _replace_output_collectors_from_dict(self, output_dict):
-        self.tool.outputs[
-            DEFAULT_TOOL_OUTPUT
-        ].dataset_collector_descriptions = output_collection_def.dataset_collector_descriptions_from_output_dict(
-            output_dict
+        self.tool.outputs[DEFAULT_TOOL_OUTPUT].dataset_collector_descriptions = (
+            output_collection_def.dataset_collector_descriptions_from_output_dict(output_dict)
         )
 
     def _append_job_json(self, object, output_path=None, line_type="new_primary_dataset"):
@@ -434,12 +432,11 @@ class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def _new_history(self, hdas=None, flush=True):
         hdas = hdas or []
         history = model.History()
-        self.app.model.context.add(history)
+        session = self.app.model.context
+        session.add(history)
         for hda in hdas:
             history.add_dataset(hda, set_hid=False)
-        session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         return history
 
 

@@ -1,5 +1,6 @@
 <tool id="multi_output_assign_primary" name="multi_output_assign_primary" version="0.1.0">
   <command>
+    echo "other" > '$other';
     echo "1" > sample1.report.tsv;
     echo "2" > sample2.report.tsv;
     echo "3" > sample3.report.tsv;
@@ -9,6 +10,7 @@
     <param name="input" type="data" />
   </inputs>
   <outputs>
+    <data name="other" format="txt" label="other"/>  
     <data format="tabular" name="sample">
       <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" assign_primary_output="true" />
     </data>
@@ -17,6 +19,11 @@
     <test>
       <param name="num_param" value="7" />
       <param name="input" ftype="txt" value="simple_line.txt"/>
+      <output name="other">
+        <assert_contents>
+          <has_line line="other" />
+        </assert_contents>
+      </output>
       <output name="sample">
         <assert_contents>
           <has_line line="1" />

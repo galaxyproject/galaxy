@@ -3,13 +3,14 @@ import os
 import random
 import string
 import weakref
+from collections.abc import Mapping
 from datetime import (
     datetime,
     timedelta,
 )
 from typing import (
     Any,
-    Mapping,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -23,15 +24,22 @@ from sqlalchemy import (
     DateTime,
     desc,
     ForeignKey,
+    func,
     Integer,
     not_,
+    select,
     String,
     Table,
+    text,
     TEXT,
     true,
     UniqueConstraint,
 )
+from sqlalchemy.ext import hybrid
 from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    object_session,
     registry,
     relationship,
 )
@@ -42,18 +50,16 @@ from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
 )
-from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.security.validate_user_input import validate_password_str
-from galaxy.util import unique_id
+from galaxy.util import (
+    now,
+    unique_id,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.hash_util import new_insecure_hash
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.util import (
-    hg_util,
-    metadata_util,
-)
+from tool_shed.util import hg_util
 from tool_shed.util.hgweb_config import hgweb_config_manager
 
 log = logging.getLogger(__name__)
@@ -62,13 +68,15 @@ WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
     # Workaround for https://github.com/python/mypy/issues/14182
-    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta as _DeclarativeMeta
+
+    from tool_shed.structured_app import ToolShedApp
 
     class DeclarativeMeta(_DeclarativeMeta, type):
         pass
 
 else:
-    from sqlalchemy.orm.decl_api import DeclarativeMeta
+    from sqlalchemy.orm import DeclarativeMeta
 
 mapper_registry = registry()
 
@@ -78,6 +86,8 @@ class Base(metaclass=DeclarativeMeta):
     registry = mapper_registry
     metadata = mapper_registry.metadata
     __init__ = mapper_registry.constructor
+    table: Table
+    __table__: Table
 
     @classmethod
     def __declare_last__(cls):
@@ -87,35 +97,35 @@ class Base(metaclass=DeclarativeMeta):
 class APIKeys(Base):
     __tablename__ = "api_keys"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
-    key = Column(TrimmedString(32), index=True, unique=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
-    deleted = Column(Boolean, index=True, default=False, nullable=False)
+    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False, nullable=False)
 
 
 class User(Base, Dictifiable):
     __tablename__ = "galaxy_user"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    email = Column(TrimmedString(255), nullable=False)
-    username = Column(String(255), index=True)
-    password = Column(TrimmedString(40), nullable=False)
-    external = Column(Boolean, default=False)
-    new_repo_alert = Column(Boolean, default=False)
-    deleted = Column(Boolean, index=True, default=False)
-    purged = Column(Boolean, index=True, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    email: Mapped[str] = mapped_column(TrimmedString(255), nullable=False)
+    username: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    password: Mapped[str] = mapped_column(TrimmedString(40), nullable=False)
+    external: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    new_repo_alert: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
+    purged: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
     active_repositories = relationship(
         "Repository",
-        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),  # type: ignore[has-type]
+        primaryjoin=(lambda: (Repository.user_id == User.id) & (not_(Repository.deleted))),
         back_populates="user",
-        order_by=lambda: desc(Repository.name),  # type: ignore[has-type]
+        order_by=lambda: desc(Repository.name),
     )
     galaxy_sessions = relationship(
-        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)  # type: ignore[has-type]
+        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)
     )
     api_keys = relationship("APIKeys", back_populates="user", order_by=lambda: desc(APIKeys.create_time))
     reset_tokens = relationship("PasswordResetToken", back_populates="user")
@@ -129,15 +139,16 @@ class User(Base, Dictifiable):
         "UserRoleAssociation",
         viewonly=True,
         primaryjoin=(
-            lambda: (User.id == UserRoleAssociation.user_id)  # type: ignore[has-type]
-            & (UserRoleAssociation.role_id == Role.id)  # type: ignore[has-type]
-            & not_(Role.name == User.email)  # type: ignore[has-type]
+            lambda: (User.id == UserRoleAssociation.user_id)
+            & (UserRoleAssociation.role_id == Role.id)
+            & not_(Role.name == User.email)
         ),
     )
 
-    def __init__(self, email=None, password=None):
+    def __init__(self, email=None, password=None, username=None) -> None:
         self.email = email
         self.password = password
+        self.username = username
         self.external = False
         self.deleted = False
         self.purged = False
@@ -173,8 +184,7 @@ class User(Base, Dictifiable):
     total_disk_usage = property(get_disk_usage, set_disk_usage)
 
     def set_password_cleartext(self, cleartext):
-        message = validate_password_str(cleartext)
-        if message:
+        if message := validate_password_str(cleartext):
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_insecure_hash(text_type=cleartext)
@@ -192,9 +202,9 @@ class User(Base, Dictifiable):
 class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
-    token = Column(String(32), primary_key=True, unique=True, index=True)
-    expiration_time = Column(DateTime)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
+    token: Mapped[str] = mapped_column(String(32), primary_key=True, unique=True, index=True)
+    expiration_time: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user = relationship("User", back_populates="reset_tokens")
 
     def __init__(self, user, token=None):
@@ -210,11 +220,11 @@ class PasswordResetToken(Base):
 class Group(Base, Dictifiable):
     __tablename__ = "galaxy_group"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    name = Column(String(255), index=True, unique=True)
-    deleted = Column(Boolean, index=True, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
+    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
     roles = relationship("GroupRoleAssociation", back_populates="group")
     users = relationship("UserGroupAssociation", back_populates="group")
 
@@ -229,13 +239,13 @@ class Group(Base, Dictifiable):
 class Role(Base, Dictifiable):
     __tablename__ = "role"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    name = Column(String(255), index=True, unique=True)
-    description = Column(TEXT)
-    type = Column(String(40), index=True)
-    deleted = Column(Boolean, index=True, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(TEXT)
+    type: Mapped[Optional[str]] = mapped_column(String(40), index=True)
+    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
     repositories = relationship("RepositoryRoleAssociation", back_populates="role")
     groups = relationship("GroupRoleAssociation", back_populates="role")
     users = relationship("UserRoleAssociation", back_populates="role")
@@ -264,11 +274,11 @@ class Role(Base, Dictifiable):
 class UserGroupAssociation(Base):
     __tablename__ = "user_group_association"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
-    group_id = Column(ForeignKey("galaxy_group.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    group_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     user = relationship("User", back_populates="groups")
     group = relationship("Group", back_populates="users")
 
@@ -281,11 +291,11 @@ class UserGroupAssociation(Base):
 class UserRoleAssociation(Base):
     __tablename__ = "user_role_association"
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
-    role_id = Column(ForeignKey("role.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     user = relationship("User", back_populates="roles")
     role = relationship("Role", back_populates="users")
 
@@ -299,11 +309,11 @@ class UserRoleAssociation(Base):
 class GroupRoleAssociation(Base):
     __tablename__ = "group_role_association"
 
-    id = Column(Integer, primary_key=True)
-    group_id = Column(ForeignKey("galaxy_group.id"), index=True)
-    role_id = Column(ForeignKey("role.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    group_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_group.id"), index=True)
+    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     group = relationship("Group", back_populates="roles")
     role = relationship("Role", back_populates="groups")
 
@@ -315,11 +325,11 @@ class GroupRoleAssociation(Base):
 class RepositoryRoleAssociation(Base):
     __tablename__ = "repository_role_association"
 
-    id = Column(Integer, primary_key=True)
-    repository_id = Column(ForeignKey("repository.id"), index=True)
-    role_id = Column(ForeignKey("role.id"), index=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[Optional[int]] = mapped_column(ForeignKey("repository.id"), index=True)
+    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
     repository = relationship("Repository", back_populates="roles")
     role = relationship("Role", back_populates="repositories")
 
@@ -332,19 +342,19 @@ class RepositoryRoleAssociation(Base):
 class GalaxySession(Base):
     __tablename__ = "galaxy_session"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
-    remote_host = Column(String(255))
-    remote_addr = Column(String(255))
-    referer = Column(TEXT)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
+    remote_host: Mapped[Optional[str]] = mapped_column(String(255))
+    remote_addr: Mapped[Optional[str]] = mapped_column(String(255))
+    referer: Mapped[Optional[str]] = mapped_column(TEXT)
     # unique 128 bit random number coerced to a string
-    session_key = Column(TrimmedString(255), index=True, unique=True)
-    is_valid = Column(Boolean, default=False)
+    session_key: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
+    is_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     # saves a reference to the previous session so we have a way to chain them together
-    prev_session_id = Column(Integer)
-    last_action = Column(DateTime)
+    prev_session_id: Mapped[Optional[int]] = mapped_column(Integer)
+    last_action: Mapped[Optional[datetime]] = mapped_column(DateTime)
     user = relationship("User", back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
@@ -356,21 +366,21 @@ class GalaxySession(Base):
 class Repository(Base, Dictifiable):
     __tablename__ = "repository"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    name = Column(TrimmedString(255), index=True)
-    type = Column(TrimmedString(255), index=True)
-    remote_repository_url = Column(TrimmedString(255))
-    homepage_url = Column(TrimmedString(255))
-    description = Column(TEXT)
-    long_description = Column(TEXT)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
-    private = Column(Boolean, default=False)
-    deleted = Column(Boolean, index=True, default=False)
-    email_alerts = Column(MutableJSONType, nullable=True)
-    times_downloaded = Column(Integer)
-    deprecated = Column(Boolean, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    type: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    remote_repository_url: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    homepage_url: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    description: Mapped[Optional[str]] = mapped_column(TEXT)
+    long_description: Mapped[Optional[str]] = mapped_column(TEXT)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    private: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
+    email_alerts: Mapped[Optional[bytes]] = mapped_column(MutableJSONType, nullable=True)
+    times_downloaded: Mapped[Optional[int]] = mapped_column(Integer)
+    deprecated: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
     categories = relationship("RepositoryCategoryAssociation", back_populates="repository")
     ratings = relationship(
         "RepositoryRatingAssociation",
@@ -380,13 +390,14 @@ class Repository(Base, Dictifiable):
     user = relationship("User", back_populates="active_repositories")
     downloadable_revisions = relationship(
         "RepositoryMetadata",
-        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id) & (RepositoryMetadata.downloadable == true()),  # type: ignore[attr-defined,has-type]
+        primaryjoin=lambda: (Repository.id == RepositoryMetadata.repository_id)
+        & (RepositoryMetadata.downloadable == true()),
         viewonly=True,
-        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
+        order_by=lambda: desc(RepositoryMetadata.update_time),
     )
     metadata_revisions = relationship(
         "RepositoryMetadata",
-        order_by=lambda: desc(RepositoryMetadata.update_time),  # type: ignore[attr-defined]
+        order_by=lambda: desc(RepositoryMetadata.update_time),
         back_populates="repository",
     )
     roles = relationship("RepositoryRoleAssociation", back_populates="repository")
@@ -404,6 +415,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -419,6 +431,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
@@ -429,6 +442,25 @@ class Repository(Base, Dictifiable):
         self.deprecated = deprecated
         self.name = self.name or "Unnamed repository"
         self.user = user
+
+    @hybrid.hybrid_property
+    def last_updated_time(self):
+        if downloadable_revisions := self.downloadable_revisions:
+            return downloadable_revisions[0].create_time
+        return self.create_time
+
+    @last_updated_time.expression  # type: ignore[no-redef]
+    def last_updated_time(cls):
+        last_revision_create_time = (
+            select(RepositoryMetadata.create_time)
+            .where(RepositoryMetadata.repository_id == cls.id)
+            .where(RepositoryMetadata.downloadable == true())
+            .order_by(RepositoryMetadata.update_time.desc())
+            .limit(1)
+            .correlate(cls)
+            .scalar_subquery()
+        )
+        return func.coalesce(last_revision_create_time, cls.create_time)
 
     @property
     def hg_repo(self):
@@ -479,17 +511,20 @@ class Repository(Base, Dictifiable):
         type_class = self.get_type_class(app)
         return type_class.get_changesets_for_setting_metadata(app, self)
 
-    def get_repository_dependencies(self, app, changeset, toolshed_url):
+    def get_repository_dependencies(self, app, changeset, toolshed_url, trans=None):
         # We aren't concerned with repositories of type tool_dependency_definition here if a
         # repository_metadata record is not returned because repositories of this type will never
         # have repository dependencies. However, if a readme file is uploaded, or some other change
         # is made that does not create a new downloadable changeset revision but updates the existing
         # one, we still want to be able to get repository dependencies.
-        repository_metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(app, self, changeset)
+        from tool_shed.dependencies.repository.relation_builder import RelationBuilder
+        from tool_shed.util.metadata_util import get_current_repository_metadata_for_changeset_revision
+
+        repository_metadata = get_current_repository_metadata_for_changeset_revision(app, self, changeset)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                rb = relation_builder.RelationBuilder(app, self, repository_metadata, toolshed_url)
+                rb = RelationBuilder(app, self, repository_metadata, toolshed_url, trans=trans)
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
                 if repository_dependencies:
                     return repository_dependencies
@@ -499,14 +534,18 @@ class Repository(Base, Dictifiable):
         return app.repository_types_registry.get_class_by_label(self.type)
 
     def get_tool_dependencies(self, app, changeset_revision):
-        changeset_revision = metadata_util.get_next_downloadable_changeset_revision(app, self, changeset_revision)
+        from tool_shed.util.metadata_util import get_next_downloadable_changeset_revision
+
+        changeset_revision = get_next_downloadable_changeset_revision(app, self, changeset_revision)
         for downloadable_revision in self.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 return downloadable_revision.metadata.get("tool_dependencies", {})
         return {}
 
-    def installable_revisions(self, app, sort_revisions=True):
-        return metadata_util.get_metadata_revisions(app, self, sort_revisions=sort_revisions)
+    def installable_revisions(self, app: "ToolShedApp", sort_revisions: bool = True):
+        from tool_shed.util.metadata_util import get_metadata_revisions
+
+        return get_metadata_revisions(app, self, sort_revisions=sort_revisions)
 
     def is_new(self):
         tip_rev = self.hg_repo.changelog.tiprev()
@@ -517,6 +556,19 @@ class Repository(Base, Dictifiable):
         return hgweb_config_manager.get_entry(
             os.path.join(hgweb_config_manager.hgweb_repo_prefix, self.user.username, self.name)
         )
+
+    def hg_repository_path(self, repositories_directory: str) -> str:
+        if self.id is None:
+            raise Exception("Attempting to call hg_repository_path before id has been set on repository object")
+        dir = os.path.join(repositories_directory, *util.directory_hash_id(self.id))
+        final_repository_path = os.path.join(dir, f"repo_{self.id}")
+        return final_repository_path
+
+    def ensure_hg_repository_path(self, repositories_directory: str) -> str:
+        final_repository_path = self.hg_repository_path(repositories_directory)
+        if not os.path.exists(final_repository_path):
+            os.makedirs(final_repository_path)
+        return final_repository_path
 
     def revision(self):
         repo = self.hg_repo
@@ -571,13 +623,13 @@ class ItemRatingAssociation:
 class RepositoryRatingAssociation(Base, ItemRatingAssociation):
     __tablename__ = "repository_rating_association"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    repository_id = Column(ForeignKey("repository.id"), index=True)
-    user_id = Column(ForeignKey("galaxy_user.id"), index=True)
-    rating = Column(Integer, index=True)
-    comment = Column(TEXT)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    repository_id: Mapped[Optional[int]] = mapped_column(ForeignKey("repository.id"), index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    rating: Mapped[Optional[int]] = mapped_column(Integer, index=True)
+    comment: Mapped[Optional[str]] = mapped_column(TEXT)
     repository = relationship("Repository", back_populates="ratings")
     user = relationship("User")
 
@@ -588,16 +640,32 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation):
 class Category(Base, Dictifiable):
     __tablename__ = "category"
 
-    id = Column(Integer, primary_key=True)
-    create_time = Column(DateTime, default=now)
-    update_time = Column(DateTime, default=now, onupdate=now)
-    name = Column(TrimmedString(255), index=True, unique=True)
-    description = Column(TEXT)
-    deleted = Column(Boolean, index=True, default=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    create_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now)
+    update_time: Mapped[Optional[datetime]] = mapped_column(DateTime, default=now, onupdate=now)
+    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
+    description: Mapped[Optional[str]] = mapped_column(TEXT)
+    deleted: Mapped[Optional[bool]] = mapped_column(Boolean, index=True, default=False)
     repositories = relationship("RepositoryCategoryAssociation", back_populates="category")
 
     dict_collection_visible_keys = ["id", "name", "description", "deleted"]
     dict_element_visible_keys = ["id", "name", "description", "deleted"]
+
+    def active_repository_count(self, session=None) -> int:
+        statement = """
+SELECT count(*) as count
+FROM repository r
+INNER JOIN repository_category_association rca on rca.repository_id = r.id
+WHERE
+    rca.category_id = :category_id
+    AND r.private = false
+    AND r.deleted = false
+    and r.deprecated = false
+"""
+        if session is None:
+            session = object_session(self)
+        params = {"category_id": self.id}
+        return session.execute(text(statement), params).scalar()
 
     def __init__(self, deleted=False, **kwd):
         super().__init__(**kwd)
@@ -607,9 +675,9 @@ class Category(Base, Dictifiable):
 class RepositoryCategoryAssociation(Base):
     __tablename__ = "repository_category_association"
 
-    id = Column(Integer, primary_key=True)
-    repository_id = Column(ForeignKey("repository.id"), index=True)
-    category_id = Column(ForeignKey("category.id"), index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    repository_id: Mapped[Optional[int]] = mapped_column(ForeignKey("repository.id"), index=True)
+    category_id: Mapped[Optional[int]] = mapped_column(ForeignKey("category.id"), index=True)
     category = relationship("Category", back_populates="repositories")
     repository = relationship("Repository", back_populates="categories")
 
@@ -622,15 +690,15 @@ class Tag(Base):
     __tablename__ = "tag"
     __table_args__ = (UniqueConstraint("name"),)
 
-    id = Column(Integer, primary_key=True)
-    type = Column(Integer)
-    parent_id = Column(ForeignKey("tag.id"))
-    name = Column(TrimmedString(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    type: Mapped[Optional[int]] = mapped_column(Integer)
+    parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"))
+    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
     children = relationship("Tag", back_populates="parent")
     parent = relationship("Tag", back_populates="children", remote_side=[id])
 
     def __str__(self):
-        return "Tag(id=%s, type=%i, parent_id=%s, name=%s)" % (self.id, self.type, self.parent_id, self.name)
+        return f"Tag(id={self.id}, type={self.type}, parent_id={self.parent_id}, name={self.name})"
 
 
 # The RepositoryMetadata model is mapped imperatively (for details see discussion in PR #12064).
@@ -638,8 +706,26 @@ class Tag(Base):
 
 
 class RepositoryMetadata(Dictifiable):
-    # Once the class has been mapped, all Column items in this table will be available
-    # as instrumented class attributes on RepositoryMetadata.
+    # Annotations only — runtime attributes are installed by
+    # mapper_registry.map_imperatively below.
+    id: Mapped[Optional[int]]
+    create_time: Mapped[Optional[datetime]]
+    update_time: Mapped[Optional[datetime]]
+    repository_id: Mapped[Optional[int]]
+    changeset_revision: Mapped[Optional[str]]
+    numeric_revision: Mapped[Optional[int]]
+    metadata: Mapped[Any]
+    tool_versions: Mapped[Any]
+    malicious: Mapped[Optional[bool]]
+    downloadable: Mapped[Optional[bool]]
+    missing_test_components: Mapped[Optional[bool]]
+    has_repository_dependencies: Mapped[Optional[bool]]
+    includes_datatypes: Mapped[Optional[bool]]
+    includes_tools: Mapped[Optional[bool]]
+    includes_tool_dependencies: Mapped[Optional[bool]]
+    includes_workflows: Mapped[Optional[bool]]
+    repository: Mapped["Repository"]
+
     table = Table(
         "repository_metadata",
         mapper_registry.metadata,
@@ -675,6 +761,7 @@ class RepositoryMetadata(Dictifiable):
         "includes_tool_dependencies",
         "includes_tools_for_display_in_tool_panel",
         "includes_workflows",
+        "create_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -690,6 +777,7 @@ class RepositoryMetadata(Dictifiable):
         "includes_tool_dependencies",
         "includes_tools_for_display_in_tool_panel",
         "includes_workflows",
+        "create_time",
         "repository_dependencies",
     ]
 
@@ -740,10 +828,7 @@ class RepositoryMetadata(Dictifiable):
     @property
     def repository_dependencies(self):
         if self.has_repository_dependencies:
-            return [
-                repository_dependency
-                for repository_dependency in self.metadata["repository_dependencies"]["repository_dependencies"]
-            ]
+            return list(self.metadata["repository_dependencies"]["repository_dependencies"])
         return []
 
 

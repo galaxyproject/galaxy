@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" width="640" height="220">
+  <defs>
+    <filter id="shadow" x="-4%" y="-4%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feComponentTransfer in="blur">
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#555"/>
+    </marker>
+  </defs>
+
+  <!-- Left: Sample Sheet container -->
+  <rect x="10" y="10" width="240" height="195" rx="8" ry="8" fill="#d9ead3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="130" y="32" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">Sample Sheet: "RNA-seq"</text>
+
+  <!-- Metadata table -->
+  <!-- Header row -->
+  <rect x="22" y="44" width="80" height="22" fill="#fff" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="102" y="44" width="36" height="22" fill="#fce5cd" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="138" y="44" width="100" height="22" fill="#fce5cd" stroke="#aaa" stroke-width="0.5"/>
+  <text x="62" y="59" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#333">Name</text>
+  <text x="120" y="59" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#b45309">rep</text>
+  <text x="188" y="59" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#b45309">treatment</text>
+
+  <!-- Row 1 -->
+  <rect x="22" y="66" width="80" height="22" fill="#fff" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="102" y="66" width="36" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="138" y="66" width="100" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <text x="62" y="81" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample1</text>
+  <text x="120" y="81" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">1</text>
+  <text x="188" y="81" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">control</text>
+
+  <!-- Row 2 -->
+  <rect x="22" y="88" width="80" height="22" fill="#fff" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="102" y="88" width="36" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="138" y="88" width="100" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <text x="62" y="103" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample2</text>
+  <text x="120" y="103" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">2</text>
+  <text x="188" y="103" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">treated</text>
+
+  <!-- Row 3 -->
+  <rect x="22" y="110" width="80" height="22" fill="#fff" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="102" y="110" width="36" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <rect x="138" y="110" width="100" height="22" fill="#fff8e1" stroke="#aaa" stroke-width="0.5"/>
+  <text x="62" y="125" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#333">sample3</text>
+  <text x="120" y="125" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">3</text>
+  <text x="188" y="125" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#b45309">control</text>
+
+  <!-- Metadata label -->
+  <text x="155" y="155" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#b45309">metadata columns</text>
+  <line x1="110" y1="140" x2="110" y2="148" stroke="#b45309" stroke-width="0.8" stroke-dasharray="2,2"/>
+  <line x1="110" y1="148" x2="200" y2="148" stroke="#b45309" stroke-width="0.8" stroke-dasharray="2,2"/>
+  <line x1="200" y1="140" x2="200" y2="148" stroke="#b45309" stroke-width="0.8" stroke-dasharray="2,2"/>
+
+  <!-- Arrow -->
+  <line x1="270" y1="107" x2="370" y2="107" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <text x="320" y="92" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#555">Extract</text>
+  <text x="320" y="105" text-anchor="middle" font-family="sans-serif" font-size="11" font-weight="bold" fill="#555">metadata</text>
+
+  <!-- Right: Tabular dataset -->
+  <rect x="390" y="10" width="235" height="195" rx="8" ry="8" fill="#cfe2f3" stroke="#888" stroke-width="1" filter="url(#shadow)"/>
+  <text x="507" y="32" text-anchor="middle" font-family="sans-serif" font-size="13" font-weight="bold" fill="#333">Tabular dataset</text>
+
+  <!-- Table header row -->
+  <rect x="400" y="44" width="90" height="22" fill="#a4c2f4" stroke="#7a9ec7" stroke-width="0.5"/>
+  <rect x="490" y="44" width="40" height="22" fill="#a4c2f4" stroke="#7a9ec7" stroke-width="0.5"/>
+  <rect x="530" y="44" width="85" height="22" fill="#a4c2f4" stroke="#7a9ec7" stroke-width="0.5"/>
+  <text x="445" y="59" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#1a3c6e">element_id</text>
+  <text x="510" y="59" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#1a3c6e">rep</text>
+  <text x="572" y="59" text-anchor="middle" font-family="monospace" font-size="10" font-weight="bold" fill="#1a3c6e">treatment</text>
+
+  <!-- Data row 1 -->
+  <rect x="400" y="66" width="90" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="490" y="66" width="40" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="530" y="66" width="85" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="445" y="81" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">sample1</text>
+  <text x="510" y="81" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">1</text>
+  <text x="572" y="81" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">control</text>
+
+  <!-- Data row 2 -->
+  <rect x="400" y="88" width="90" height="22" fill="#f3f6fc" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="490" y="88" width="40" height="22" fill="#f3f6fc" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="530" y="88" width="85" height="22" fill="#f3f6fc" stroke="#bbb" stroke-width="0.5"/>
+  <text x="445" y="103" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">sample2</text>
+  <text x="510" y="103" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">2</text>
+  <text x="572" y="103" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">treated</text>
+
+  <!-- Data row 3 -->
+  <rect x="400" y="110" width="90" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="490" y="110" width="40" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <rect x="530" y="110" width="85" height="22" fill="#fff" stroke="#bbb" stroke-width="0.5"/>
+  <text x="445" y="125" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">sample3</text>
+  <text x="510" y="125" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">3</text>
+  <text x="572" y="125" text-anchor="middle" font-family="monospace" font-size="10" fill="#333">control</text>
+
+  <!-- Subtitle -->
+  <text x="507" y="157" text-anchor="middle" font-family="sans-serif" font-size="10" font-style="italic" fill="#555">tab-separated metadata export</text>
+</svg>

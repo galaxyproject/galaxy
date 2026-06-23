@@ -1,3 +1,4 @@
+import responses
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
@@ -24,13 +25,16 @@ class MockDoiCache(DoiCache):
         self._cache.clear()
 
 
+@responses.activate
 def test_DoiCache(url_factory):  # noqa: F811
     db_url = url_factory()
     with create_and_drop_database(db_url):
         doi_cache = MockDoiCache(galaxy.config.GalaxyAppConfiguration(override_tempdir=False), db_url)
         assert is_cache_empty(db_url, "doi")
-        assert "Jörg" in doi_cache.get_bibtex("10.1093/bioinformatics/bts252")
-        assert "Özkurt" in doi_cache.get_bibtex("10.1101/2021.12.24.474111")
+        dois = (("10.1093/bioinformatics/bts252", "Jörg"), ("10.1101/2021.12.24.474111", "Özkurt"))
+        for doi, author in dois:
+            responses.add(method="GET", url=f"https://doi.org/{doi}", body=author)
+            assert author in doi_cache.get_bibtex(doi)
         assert not is_cache_empty(db_url, "doi")
         doi_cache._cache.clear()
         assert is_cache_empty(db_url, "doi")

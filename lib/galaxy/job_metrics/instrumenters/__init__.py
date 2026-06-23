@@ -2,6 +2,7 @@
 
 These are responsible for collecting and formatting a coherent set of metrics.
 """
+
 import os.path
 from abc import (
     ABCMeta,
@@ -28,7 +29,7 @@ InstrumentableT = Optional[Union[str, List[str]]]
 class InstrumentPlugin(metaclass=ABCMeta):
     """Describes how to instrument job scripts and retrieve collected metrics."""
 
-    formatter = formatting.JobMetricFormatter()
+    formatter: Optional[formatting.JobMetricFormatter] = formatting.JobMetricFormatter()
     default_safety = DEFAULT_SAFETY
 
     @property

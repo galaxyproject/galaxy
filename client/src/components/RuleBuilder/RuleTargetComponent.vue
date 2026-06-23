@@ -10,6 +10,7 @@
 
 <script>
 import RuleDefs from "./rule-definitions";
+
 const RULES = RuleDefs.RULES;
 
 export default {

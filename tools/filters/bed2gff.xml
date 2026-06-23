@@ -1,8 +1,14 @@
-<tool id="bed2gff1" name="BED-to-GFF" version="2.0.0">
+<tool id="bed2gff1" name="BED-to-GFF" version="2.0.0" profile="24.2">
   <description>converter</description>
   <edam_operations>
     <edam_operation>operation_3434</edam_operation>
   </edam_operations>
+  <requirements>
+    <requirement type="package" version="3.13">python</requirement>
+  </requirements>
+  <required_files>
+    <include path="bed_to_gff_converter.py"/>
+  </required_files>
   <command>python '$__tool_directory__/bed_to_gff_converter.py' '$input' '$out_file1'</command>
   <inputs>
     <param format="bed" name="input" type="data" label="Convert this dataset"/>

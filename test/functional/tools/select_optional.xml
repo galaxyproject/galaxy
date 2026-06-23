@@ -1,4 +1,5 @@
 <tool id="select_optional" name="Optional select" version="1.0.0" profile="20.01">
+    <!-- this tool has a profile of 20.01, but has an identical behavior without it -->
     <command><![CDATA[
         echo select_opt $select_opt >> '$output1' &&
         echo select_mult_opt $select_mult_opt >> '$output1' &&

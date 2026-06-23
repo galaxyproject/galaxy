@@ -4,6 +4,7 @@ Run this script from galaxy's root with
 ipython -i scripts/celery_shell.py -- -c config/galaxy.yml
 ```
 """
+
 import logging
 import os
 

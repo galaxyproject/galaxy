@@ -352,7 +352,7 @@ The command-line options::
   --ignoreQS        Ignore the quality scores in fastq or QUAL files.
   --seed {F2 | S11 | F3 | F4}    Specify the seed pattern, which has a specific full sensitivity. Check the algorithm page (link below) for seed patterns to balance the sensitivity and running time.
   --readFormat {fasta | fastq | csfasta | csfastq}    Read in reads in the specified format, instead of guessing according to the extension name.
-  --delimiter CHAR  Which is a character used as the delimiter to separate the the read id, and the additional info in the line with ">" in fasta or csfasta.
+  --delimiter CHAR  Which is a character used as the delimiter to separate the read id, and the additional info in the line with ">" in fasta or csfasta.
 
 Paired reads options::
 

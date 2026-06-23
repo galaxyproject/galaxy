@@ -4,51 +4,64 @@
  */
 
 import { defineStore } from "pinia";
-import Vue from "vue";
-import { getAppRoot } from "@/onload/loadConfig";
-import axios from "axios";
+import { ref } from "vue";
 
-/* interfaces */
-interface Job {
-    id: string;
-}
-interface JobDef {
-    tool_id: string;
-}
-interface JobResponse {
-    produces_entry_points: boolean;
-    jobs: Array<Job>;
-}
-interface ResponseVal {
-    jobDef: JobDef;
-    jobResponse: JobResponse;
-    toolName: string;
-}
+import { GalaxyApi } from "@/api";
+import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
+import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
+import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
-export const useJobStore = defineStore("jobStore", {
-    state: () => ({
-        jobs: {} as { [index: string]: Job },
-        response: {} as ResponseVal,
-    }),
-    getters: {
-        getJob: (state) => {
-            return (jobId: string) => state.jobs[jobId];
-        },
-        getLatestResponse: (state) => {
-            return state.response;
-        },
-    },
-    actions: {
-        async fetchJob(jobId: string) {
-            const { data } = await axios.get(`${getAppRoot()}api/jobs/${jobId}?full=true`);
-            this.saveJobForJobId(jobId, data);
-        },
-        // Setters
-        saveJobForJobId(jobId: string, job: Job) {
-            Vue.set(this.jobs, jobId, job);
-        },
-        saveLatestResponse(response: ResponseVal) {
-            this.response = response;
-        },
-    },
+export const useJobStore = defineStore("jobStore", () => {
+    const latestResponse = ref<ResponseVal | null>(null);
+
+    async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
+        const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
+            params: { path: { job_id: params.id } },
+            query: { full: true },
+        });
+        if (error) {
+            rethrowSimpleWithStatus(error, response);
+        }
+        return data;
+    }
+
+    function saveLatestResponse(newResponse: ResponseVal) {
+        latestResponse.value = newResponse;
+    }
+
+    const {
+        fetchItemById: fetchJob,
+        getItemById: getJob,
+        getItemLoadError: getJobLoadError,
+        isLoadingItem: isLoadingJob,
+    } = useKeyedCache<ShowFullJobResponse>(fetchJobById);
+
+    function pollJobUntilTerminal(params: FetchParams) {
+        function poll() {
+            fetchJob(params);
+            setTimeout(pollJobUntilTerminal, 1000, params);
+        }
+
+        const job = getJob.value(params.id);
+        if (job) {
+            const jobState = job.state;
+            if (TERMINAL_STATES.indexOf(jobState) !== -1) {
+                return;
+            } else {
+                poll();
+            }
+        } else {
+            poll();
+        }
+    }
+
+    return {
+        fetchJob,
+        saveLatestResponse,
+        getJob,
+        getJobLoadError,
+        isLoadingJob,
+        latestResponse,
+        pollJobUntilTerminal,
+    };
 });

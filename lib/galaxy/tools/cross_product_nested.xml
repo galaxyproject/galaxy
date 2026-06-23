@@ -1,0 +1,164 @@
+<tool id="__CROSS_PRODUCT_NESTED__"
+      name="Nested Cross Product"
+      version="1.0.0">
+    <description>of two collections into nested lists for all-vs-all comparison</description>
+    <type class="CrossProductNestedCollectionTool" module="galaxy.tools" />
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <expand macro="uses_a_model_operation_action" />
+    <expand macro="annotate_as_aggregation_operation" />
+    <inputs>
+        <param type="data_collection" name="input_a" collection_type="list" label="Input Collection A" />
+        <param type="data_collection" name="input_b" collection_type="list" label="Input Collection B" />
+    </inputs>
+    <outputs>
+        <collection name="output_a" format_source="input_a" type="list:list" label="${on_string} (A files)" >
+        </collection>
+        <collection name="output_b" format_source="input_b" type="list:list" label="${on_string} (B files)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input_a">
+                <collection type="list">
+                    <element name="a1" value="simple_line.txt" />
+                    <element name="a2" value="simple_line_alternative.txt" />
+                </collection>
+            </param>
+            <param name="input_b">
+                <collection type="list">
+                    <element name="b1" value="1.txt" />
+                    <element name="b2" value="1.fasta" />
+                </collection>
+            </param>
+            <output_collection name="output_a" type="list:list">
+                <element name="a1">
+                    <element name="b1">
+                        <expand macro="assert_is_simple_line" />
+                    </element>
+                    <element name="b2">
+                        <expand macro="assert_is_simple_line" />
+                    </element>
+                </element>
+                <element name="a2">
+                    <element name="b1">
+                        <expand macro="assert_is_simple_line_alt" />
+                    </element>
+                    <element name="b2">
+                        <expand macro="assert_is_simple_line_alt" />
+                    </element>
+                </element>
+            </output_collection>
+            <output_collection name="output_b" type="list:list">
+                <element name="a1">
+                    <element name="b1">
+                        <expand macro="assert_is_1_dot_txt" />
+                    </element>
+                    <element name="b2">
+                        <expand macro="assert_is_1_dot_fasta" />
+                    </element>
+                </element>
+                <element name="a2">
+                    <element name="b1">
+                        <expand macro="assert_is_1_dot_txt" />
+                    </element>
+                    <element name="b2">
+                        <expand macro="assert_is_1_dot_fasta" />
+                    </element>
+                </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Creates two nested lists (``list:list``) that, when processed element-wise by a downstream tool, produce every pairwise combination (all-vs-all) of the two input collections, organized by the first input.
+
+===========
+Description
+===========
+
+This tool takes two flat list collections and produces two ``list:list`` output collections that encode the **Cartesian product** (cross product) of the inputs. The outer list has one element per element of Input A, and each inner list has one element per element of Input B.
+
+When you feed these two outputs into a tool that takes two inputs, Galaxy matches elements at each nesting level. The result is a nested list where the outer identifier tells you which element from Input A was used, and the inner identifier tells you which element from Input B was used.
+
+This is similar to **Flat Cross Product**, but the output preserves structure: results are grouped by the first input, making it easier to see all comparisons for a given element of Input A.
+
+========
+Examples
+========
+
+**All-vs-all comparison with nested output**
+
+Given::
+
+ Input A:  [a1]  [a2]
+ Input B:  [b1]  [b2]
+
+The tool produces two ``list:list`` collections::
+
+ Output A (list:list):
+
+   a1/
+     b1  →  a1
+     b2  →  a1
+   a2/
+     b1  →  a2
+     b2  →  a2
+
+ Output B (list:list):
+
+   a1/
+     b1  →  b1
+     b2  →  b2
+   a2/
+     b1  →  b1
+     b2  →  b2
+
+Feeding both outputs to a comparison tool produces::
+
+ Result (list:list):
+
+   a1/
+     b1  →  compare(a1, b1)
+     b2  →  compare(a1, b2)
+   a2/
+     b1  →  compare(a2, b1)
+     b2  →  compare(a2, b2)
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/cross_product_nested.svg
+  :alt: Nested cross product of two collections
+  :width: 620
+
+-------
+
+==================================
+How element-wise matching works
+==================================
+
+Normally, when you connect two lists to a tool, Galaxy matches them element-wise (dot product). This tool rearranges the inputs so that the same matching mechanism produces every combination instead, with results grouped into a nested structure.
+
+.. image:: ${static_path}/images/tools/collection_ops/dot_product.png
+  :alt: Element-wise (dot product) matching
+  :width: 500
+
+-------
+
+.. class:: infomark
+
+For a flat output list instead of nested, use **Flat Cross Product**.
+
+-------
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+    ]]></help>
+</tool>

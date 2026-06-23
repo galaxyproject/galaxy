@@ -8,12 +8,24 @@ import os
 import re
 import sys
 from functools import reduce
-from typing import Set
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Union,
+)
 
 import numpy as np
 import yaml
 
 from galaxy.util import parse_xml
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetInstance,
+        Job,
+    )
+    from galaxy.structured_app import MinimalManagerApp
+    from galaxy.tools import Tool
 
 __version__ = "1.1.0"
 
@@ -27,7 +39,7 @@ verbose = True
 list of all valid priorities, inferred from the global
 default_desinations section of the config
 """
-priority_list: Set[str] = set()
+priority_list: set[str] = set()
 
 """
 Instantiated to a list of all valid destinations in the job configuration file
@@ -35,7 +47,7 @@ if run directly to validate configs. Otherwise, remains None. We often check
 to see if app is None, because if it is then we'll try using the
 destination_list instead.
 -"""
-destination_list: Set[str] = set()
+destination_list: set[str] = set()
 
 """
 The largest the edit distance can be for a word to be considered
@@ -66,7 +78,7 @@ class ScannerError(Exception):
     pass
 
 
-def get_keys_from_dict(dl, keys_list):
+def get_keys_from_dict(dl: Union[dict, list], keys_list: list) -> None:
     """
     This function builds a list using the keys from nest dictionaries
     """
@@ -1251,30 +1263,15 @@ def str_to_bytes(size):
     return curr_size
 
 
-def importer(test):
-    """
-    Uses Mock galaxy for testing or real galaxy for production
-
-    @type test: bool
-    @param test: True when being run from a test
-    """
-    global JobDestination
-    global JobMappingException
-    if test:
-
-        class JobDestination:
-            def __init__(self, *kwd):
-                self.id = kwd.get("id")
-                self.nativeSpec = kwd.get("params")["nativeSpecification"]
-                self.runner = kwd.get("runner")
-
-        from galaxy.jobs.mapper import JobMappingException
-    else:
-        from galaxy.jobs import JobDestination
-        from galaxy.jobs.mapper import JobMappingException
-
-
-def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, job_conf_path=None):
+def map_tool_to_destination(
+    job: "Job",
+    app: "MinimalManagerApp",
+    tool: "Tool",
+    user_email: Optional[str],
+    test: bool = False,
+    path: Optional[str] = None,
+    job_conf_path: Optional[str] = None,
+):
     """
     Dynamically allocate resources
 
@@ -1283,7 +1280,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     @param tool: current tool
 
     @type test: bool
-    @param test: True when running in test mode
+    @param test: unused and ignored
 
     @type path: str
     @param path: path to tool_destinations.yml
@@ -1291,7 +1288,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     @type job_conf_path: str
     @param job_conf_path: path to job_conf.xml
     """
-    importer(test)
+    from galaxy.jobs.mapper import JobMappingException
 
     # set verbose to True by default, just in case (some tests fail without
     # this due to how the tests apparently work)
@@ -1313,8 +1310,8 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         raise JobMappingException(e)
 
     # Get all inputs from tool and databases
-    inp_data = {da.name: da.dataset for da in job.input_datasets}
-    inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets])
+    inp_data: dict[str, DatasetInstance] = {da.name: da.dataset for da in job.input_datasets if da.dataset}
+    inp_data.update([(da.name, da.dataset) for da in job.input_library_datasets if da.dataset])
 
     if config is not None and str(tool.old_id) in config["tools"]:
         if "rules" in config["tools"][str(tool.old_id)]:
@@ -1333,41 +1330,34 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
     num_input_datasets = 0
 
     if filesize_rule_present or records_rule_present or num_input_datasets_rule_present:
-        # Loop through the database and look for amount of records
-        try:
-            for line in inp_db:
-                if line[0] == ">":
-                    records += 1
-        except NameError:
-            pass
         # Loops through each input file and adds the size to the total
         # or looks through db for records
         for da in inp_data:
             try:
                 # If the input is a file, check and add the size
-                if inp_data[da] is not None and os.path.isfile(inp_data[da].file_name):
+                if inp_data[da] is not None and os.path.isfile(inp_data[da].get_file_name()):
                     num_input_datasets += 1
                     if verbose:
                         message = f"Loading file: {str(da)}"
-                        message += str(inp_data[da].file_name)
+                        message += str(inp_data[da].get_file_name())
                         log.debug(message)
 
                     # Add to records if the file type is fasta
                     if inp_data[da].ext == "fasta":
                         if records_rule_present:
-                            inp_db = open(inp_data[da].file_name)
+                            inp_db = open(inp_data[da].get_file_name())
 
                             # Try to find automatically computed sequences
-                            metadata = inp_data[da].get_metadata()
+                            metadata = inp_data[da].metadata
 
                             try:
-                                records += int(metadata.get("sequences"))
+                                records += int(metadata["sequences"])
                             except (TypeError, KeyError):
                                 for line in inp_db:
                                     if line[0] == ">":
                                         records += 1
                     if filesize_rule_present:
-                        query_file = str(inp_data[da].file_name)
+                        query_file = str(inp_data[da].get_file_name())
                         file_size += os.path.getsize(query_file)
             except AttributeError:
                 # Otherwise, say that input isn't a file
@@ -1505,12 +1495,12 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
                                         matched = True
 
                             elif rule["rule_type"] == "arguments":
-                                options = job.get_param_values(app)
+                                options = tool.get_param_values(job)
                                 matched = True
                                 # check if the args in the config file are available
                                 for arg in rule["arguments"]:
                                     arg_dict = {arg: rule["arguments"][arg]}
-                                    arg_keys_list = []
+                                    arg_keys_list: list = []
                                     get_keys_from_dict(arg_dict, arg_keys_list)
                                     try:
                                         options_value = reduce(dict.__getitem__, arg_keys_list, options)
@@ -1581,6 +1571,7 @@ def map_tool_to_destination(job, app, tool, user_email, test=False, path=None, j
         if fail_message:
             raise JobMappingException(fail_message)
         else:
+            assert matched_rule
             raise JobMappingException(matched_rule["fail_message"])
 
     if config is not None:
@@ -1612,8 +1603,6 @@ def get_destination_list_from_job_config(job_config_location) -> set:
     :return: A list of all of the destination IDs declared in the job
              configuration file.
     """
-    global destination_list
-
     # os.path.realpath gets the path of DynamicToolDestination.py
     # and then os.path.join is used to go back four directories
 
@@ -1647,14 +1636,14 @@ def get_destination_list_from_job_config(job_config_location) -> set:
 
         # Add all destination IDs from the job configuration xml file
         for destination in job_conf.getroot().iter("destination"):
-            if isinstance(destination.get("id"), str):
-                destination_list.add(destination.get("id"))
-
+            destination_id = destination.get("id")
+            if destination_id:
+                destination_list.add(destination_id)
             else:
                 error = f"Destination ID '{str(destination)}"
                 error += "' in job configuration file cannot be"
                 error += " parsed. Things may not work as expected!"
-                log.debug(error)
+                log.warning(error)
 
     return destination_list
 
@@ -1773,11 +1762,13 @@ if __name__ == "__main__":
         "--check-config",
         dest="check_config",
         nargs="?",
-        help="Use this option to validate tool_destinations.yml."
-        + " Optionally, provide the path to the tool_destinations.yml"
-        + " that you would like to check, and/or the path to the related"
-        + " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
-        + "and galaxy/config/job_conf.xml",
+        help=(
+            "Use this option to validate tool_destinations.yml."
+            " Optionally, provide the path to the tool_destinations.yml"
+            " that you would like to check, and/or the path to the related"
+            " job_conf.xml. Default: galaxy/config/tool_destinations.yml"
+            "and galaxy/config/job_conf.xml"
+        ),
     )
 
     parser.add_argument("-j", "--job-config", dest="job_config")

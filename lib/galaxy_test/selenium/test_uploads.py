@@ -1,8 +1,11 @@
 import os
 
 import pytest
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 
 from .framework import (
+    selenium_only,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -10,17 +13,19 @@ from .framework import (
 
 
 class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_file(self):
         self.perform_upload(self.get_filename("1.sam"))
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_summary_includes(1, "28 lines")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pasted_content(self):
         pasted_content = "this is pasted"
@@ -28,8 +33,9 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pasted_url_content(self):
         pasted_content = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/LICENSE.txt"
@@ -37,8 +43,9 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_composite_dataset_pasted_data(self):
         paste_content = ["a", "b", "c"]
@@ -46,15 +53,17 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_wait_for_hid_ok(1)
         history_count = len(self.history_contents())
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_elements(self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value")
-        request_json = param_values[1].text
+        param_values = self.driver.find_element(By.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value .vjs-tree")
+        request_json = param_values.get_attribute("data-request-json")
+        assert request_json
         for data in paste_content:
-            assert f'"paste_content": "{data}"' in request_json
+            assert f'"paste_content":"{data}"' in request_json
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_simplest(self):
         self.perform_upload(self.get_filename("1.sam"))
@@ -62,7 +71,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_ok(1)
         history_contents = self.history_contents()
         history_count = len(history_contents)
-        assert history_count == 1, "Incorrect number of items in history - expected 1, found %d" % history_count
+        assert history_count == 1, f"Incorrect number of items in history - expected 1, found {history_count}"
 
         hda = history_contents[0]
         assert hda["name"] == "1.sam", hda
@@ -71,6 +80,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_dbkey_displayed_as(1, "?")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_specify_ext(self):
         self.perform_upload(self.get_filename("1.sam"), ext="txt")
@@ -80,6 +90,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         assert hda["name"] == "1.sam"
         assert hda["extension"] == "txt", hda
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_specify_genome(self):
         self.perform_upload(self.get_filename("1.sam"), genome="hg18")
@@ -88,6 +99,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_dbkey_displayed_as(1, "hg18")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_specify_ext_all(self):
         self.perform_upload(self.get_filename("1.sam"), ext_all="txt")
@@ -97,6 +109,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         assert hda["name"] == "1.sam"
         assert hda["extension"] == "txt", hda
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_specify_genome_all(self):
         self.perform_upload(self.get_filename("1.sam"), genome_all="hg18")
@@ -105,6 +118,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=1, wait=True)
         self.assert_item_dbkey_displayed_as(1, "hg18")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_deferred(self):
         self.perform_upload_of_pasted_content(
@@ -115,6 +129,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=hid, wait=True)
         self.screenshot("history_panel_dataset_deferred")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_list(self):
         self.upload_list([self.get_filename("1.tabular")], name="Test List")
@@ -127,6 +142,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         # Make sure source item is hidden when the collection is created.
         self.history_panel_wait_for_hid_hidden(1)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair(self):
         self.upload_list([self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Pair")
@@ -142,6 +158,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(3)
         self.history_panel_wait_for_hid_hidden(4)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_pair_specify_extension(self):
         self.upload_list(
@@ -158,6 +175,7 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         assert hda["name"] == "1.tabular"
         assert hda["extension"] == "txt", hda
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     def test_upload_paired_list(self):
         self.upload_paired_list(
@@ -174,6 +192,38 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_wait_for_hid_hidden(3)
         self.history_panel_wait_for_hid_hidden(4)
 
+    @selenium_only("Not yet migrated to support Playwright backend")
+    @selenium_test
+    def test_upload_modal_retains_content(self):
+        self.home()
+
+        # initialize 2 uploads and close modal
+        self.upload_start_click()
+        self.upload_queue_local_file(self.get_filename("1.sam"))
+        self.upload_paste_data("some pasted data")
+        self.components.upload.close_button.wait_for_and_click()
+
+        # reopen modal and check that the files are still there
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-init")
+        self.wait_for_selector_visible("#upload-row-1.upload-init")
+
+        # perform upload and close modal
+        self.upload_start()
+        self.components.upload.close_button.wait_for_and_click()
+
+        # add another pasted file, but don't upload it
+        self.upload_start_click()
+        self.upload_paste_data("some more pasted data")
+        self.components.upload.close_button.wait_for_and_click()
+
+        # reopen modal and see 2 uploaded, 1 yet to upload
+        self.upload_start_click()
+        self.wait_for_selector_visible("#upload-row-0.upload-success")
+        self.wait_for_selector_visible("#upload-row-1.upload-success")
+        self.wait_for_selector_visible("#upload-row-2.upload-init")
+
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -204,7 +254,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_example_1_4_filter_header")
@@ -218,6 +268,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.history_panel_wait_for_hid_ok(6)
         # self.screenshot("rules_example_1_6_download_complete")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -225,10 +276,9 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_2_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -246,6 +296,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         # self.history_panel_wait_for_hid_ok(2)
         # self.screenshot("rules_example_2_5_download_complete")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -253,8 +304,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
         self._wait_for_upload_modal()
         self.screenshot("rules_example_3_1_inputs")
@@ -284,6 +335,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("PRJDB3920")
         self.screenshot("rules_example_3_14_paired_identifier_set")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -321,6 +373,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.main_button_ok.wait_for_and_click()
         rule_builder.view_source.wait_for_visible()
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -356,6 +409,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_mapping("collection-name", "E")
         self.screenshot("rules_example_5_9_mapping")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.gtn_screenshot
     @pytest.mark.local
@@ -364,8 +418,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -392,6 +446,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.rule_builder_set_collection_name("PRJNA355367")
         self.screenshot("rules_example_6_7_named")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.local
     def test_rules_deferred_datasets(self):
@@ -421,7 +476,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
+        filter_input = filter_editor_element.find_element(By.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_deferred_datasets_4_filter_header")
@@ -435,6 +490,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_deferred(6)
         self.screenshot("rules_deferred_datasets_8_download_complete")
 
+    @selenium_only("Not yet migrated to support Playwright backend")
     @selenium_test
     @pytest.mark.local
     def test_rules_deferred_list(self):
@@ -442,8 +498,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -470,7 +526,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.screenshot("rules_deferred_list_7_named")
         rule_builder.main_button_ok.wait_for_and_click()
         hid = 2
-        self.history_panel_wait_for_hid_ok(hid)
+        self.history_panel_wait_for_hid_state(hid, state="deferred", allowed_force_refreshes=1)
         self.screenshot("rules_deferred_list_7_download_complete")
 
     def _read_rules_test_data_file(self, name):
@@ -478,26 +534,29 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
             return f.read()
 
     def _wait_for_upload_modal(self):
-        self.components.upload.build_btn.wait_for_visible()
-        self.components.upload.build_btn.wait_for_clickable()
+        self.components.upload.build_button.wait_for_visible()
+        self.components.upload.build_button.wait_for_clickable()
 
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
-        first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, "td")[0]
+        # handsontable
+        # first_cell = table_elem.find_elements(By.CSS_SELECTOR, "td")[0]
+        # aggrid
+        first_cell = table_elem.find_elements(By.CSS_SELECTOR, ".ag-cell")[0]
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
         for _ in range(15):
-            action_chains.send_keys(self.keys.ARROW_RIGHT)
+            action_chains.send_keys(Keys.ARROW_RIGHT)
         action_chains.perform()
 
     def _setup_uniprot_example(self):
         self.perform_upload(self.get_filename("rules/uniprot.tsv"))
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_data_type("Collections")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
     # @selenium_test

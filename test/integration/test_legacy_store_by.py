@@ -23,7 +23,7 @@ class TestChangeDatatypeStoreByIdIntegration(integration_util.IntegrationTestCas
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
 
-class StoreByIdTestCase(integration_util.IntegrationInstance):
+class StoreByIdIntegrationInstance(integration_util.IntegrationInstance):
     framework_tool_and_types = True
 
     @classmethod
@@ -32,7 +32,7 @@ class StoreByIdTestCase(integration_util.IntegrationInstance):
         config["outputs_to_working_directory"] = True
 
 
-instance = integration_util.integration_module_instance(StoreByIdTestCase)
+instance = integration_util.integration_module_instance(StoreByIdIntegrationInstance)
 
 test_tools = integration_util.integration_tool_runner(
     [

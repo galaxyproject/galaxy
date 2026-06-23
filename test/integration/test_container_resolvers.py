@@ -1,23 +1,23 @@
 import json
 import os
 import re
-from tempfile import mkdtemp
 from typing import (
     Any,
     ClassVar,
-    Dict,
-    List,
+    Literal,
     Optional,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    Literal,
     Protocol,
 )
 
 from galaxy.tool_util.deps.container_resolvers.mulled import list_docker_cached_mulled_images
-from galaxy.util.commands import shell
+from galaxy.util.commands import (
+    execute,
+    shell,
+)
 from galaxy.util.path import safe_walk
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
@@ -77,22 +77,29 @@ def _assert_container_in_cache_singularity(
     cache_directory: str,
     cached: bool,
     container_name: str,
-    namespace: Optional[str] = None,
-    hash_func: Literal["v1", "v2"] = "v2",
+    resolver_type: str,
 ):
-    cache_dir_contents = []
-    for dirpath, _, files in safe_walk(cache_directory):
-        for f in files:
-            cache_dir_contents.append(os.path.join(dirpath, f))
+    if "mulled" in resolver_type:
+        resolver_type = "mulled"
+    elif "explicit" in resolver_type or "mapping" in resolver_type:
+        resolver_type = "explicit"
+    else:
+        raise AssertionError(f"Unknown resolver_type {resolver_type}")
+    cache_directory = os.path.join(cache_directory, resolver_type)
     # explicit containers are stored in subdirs that are included in the container_name
     container_path, container_name = os.path.split(container_name)
-    cache_directory = os.path.join(cache_directory, container_path)
+    if resolver_type == "explicit":
+        cache_directory = os.path.join(cache_directory, container_path)
 
     # it's fine if the path does not exist if not-cached is the assumption
     if not os.path.exists(cache_directory) and not cached:
         return
 
     imageid_list = os.listdir(path=cache_directory)
+    cache_dir_contents = []
+    for dirpath, _, files in safe_walk(cache_directory):
+        for f in files:
+            cache_dir_contents.append(os.path.join(dirpath, f))
     assert cached == (
         container_name in imageid_list
     ), f"did not find container {container_name} in {cache_directory} which contains {imageid_list}. [{cache_dir_contents}]"
@@ -105,6 +112,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
     cache is cleared before each test
     """
 
+    assumptions: dict[str, Any]
     container_type: str = "docker"
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
@@ -120,7 +128,11 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self._clear_container_cache()
+        self._remove_tested_docker_image_from_cache()
+
+    def tearDown(self) -> None:
+        self._clear_singularity_image_cache()
+        return super().tearDown()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
@@ -135,24 +147,25 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
         if not cls.allow_conda_fallback:
             disable_dependency_resolution(config)
         else:
-            cls.conda_tmp_prefix = mkdtemp()
-            cls._test_driver.temp_directories.append(cls.conda_tmp_prefix)
+            cls.conda_tmp_prefix = cls._test_driver.mkdtemp()
             config["use_cached_dependency_manager"] = True
             config["conda_auto_init"] = True
             config["conda_auto_install"] = True
             config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")
 
-    def _clear_container_cache(self):
-        """
-        clear all possibe container caches (ie docker and singularity)
-        """
-        cmd = ["docker", "system", "prune", "--all", "--force", "--volumes"]
-        shell(cmd)
-        if not os.path.exists(self._app.config.container_image_cache_path):
-            return
-        for dirpath, _, files in safe_walk(self._app.config.container_image_cache_path):
-            for f in files:
-                os.unlink(os.path.join(dirpath, f))
+    def _remove_tested_docker_image_from_cache(self):
+        cmd1 = ["docker", "image", "ls", "--quiet", "--filter", f'reference={self.assumptions["run"]["cache_name"]}']
+        if image_ids := execute(cmd1):
+            image_id_list = image_ids.splitlines()
+            assert len(image_id_list) == 1
+            cmd2 = ["docker", "image", "rm", "--force", image_id_list[0]]
+            shell(cmd2)
+
+    def _clear_singularity_image_cache(self):
+        if os.path.exists(self._app.config.container_image_cache_path):
+            for dirpath, _, files in safe_walk(self._app.config.container_image_cache_path):
+                for f in files:
+                    os.unlink(os.path.join(dirpath, f))
 
     def _assert_container_in_cache(
         self,
@@ -217,16 +230,8 @@ class SingularityContainerResolverTestCase(DockerContainerResolverTestCase):
         - resolver_type the used resolver, will use only "mulled"/"explicit"
         """
         cache_directory = os.path.join(self._app.config.container_image_cache_path, self.container_type)
-        if "resolver_type" in kwargs:
-            resolver_type = kwargs["resolver_type"]
-            if "mulled" in resolver_type:
-                resolver_type = "mulled"
-            elif "explicit" in resolver_type or "mapping" in resolver_type:
-                resolver_type = "explicit"
-            else:
-                raise AssertionError(f"Unknown resolver_type {resolver_type}")
-            cache_directory = os.path.join(cache_directory, resolver_type)
-        _assert_container_in_cache_singularity(cache_directory, cached, container_name, namespace, hash_func)
+        assert "resolver_type" in kwargs
+        _assert_container_in_cache_singularity(cache_directory, cached, container_name, kwargs["resolver_type"])
 
 
 class ContainerResolverTestProtocol(Protocol):
@@ -241,7 +246,7 @@ class ContainerResolverTestProtocol(Protocol):
         ...
 
     @property
-    def assumptions(self) -> Dict[str, Any]:
+    def assumptions(self) -> dict[str, Any]:
         """a dictionary storing the assumptions of the three tests
 
         needs to contain 3 keys ("run", "list", "build")
@@ -295,7 +300,7 @@ class ContainerResolverTestProtocol(Protocol):
         """
         ...
 
-    def _check_status(self, status: Dict[str, Any], assumptions: Dict[str, Any]) -> None:
+    def _check_status(self, status: dict[str, Any], assumptions: dict[str, Any]) -> None:
         """
         function to check the status of a API call against assumptions dict
         """
@@ -303,8 +308,7 @@ class ContainerResolverTestProtocol(Protocol):
 
     # The remaining methods are implemented in IntegrationTestCase
     @property
-    def dataset_populator(self) -> DatasetPopulator:
-        ...
+    def dataset_populator(self) -> DatasetPopulator: ...
 
     def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None:
         """
@@ -383,7 +387,7 @@ class ContainerResolverTestCases:
             for o in self.assumptions["run"]["output"]:
                 assert o in output
 
-    def _check_status(self: ContainerResolverTestProtocol, status: Dict[str, Any], assumptions: Dict[str, Any]) -> None:
+    def _check_status(self: ContainerResolverTestProtocol, status: dict[str, Any], assumptions: dict[str, Any]) -> None:
         """see ContainerResolverTestProtocol._check_status"""
         if "unresolved" in assumptions:
             assert status["model_class"] == "NullDependency"
@@ -481,6 +485,11 @@ class MulledTestCase:
     mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
 
 
+class MulledTestCaseWithBuildInfo:
+    tool_id = "mulled_example_multi_2"
+    mulled_hash = "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0"
+
+
 class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerResolverTestCases, MulledTestCase):
     """
     Test default container resolvers
@@ -489,7 +498,7 @@ class TestDefaultContainerResolvers(DockerContainerResolverTestCase, ContainerRe
     - listing containers does not cache them
     """
 
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "bedtools v2.26.0",
@@ -558,7 +567,7 @@ class TestDefaultSingularityContainerResolvers(
             ],
             "cached": True,
             "resolver_type": "mulled_singularity",  # only used to check mulled / explicit
-            "cache_name": MulledTestCase.mulled_hash,
+            "cache_name": f"quay.io/biocontainers/{MulledTestCase.mulled_hash}",
             "cache_namespace": "biocontainers",
         },
         "list": [
@@ -621,13 +630,13 @@ class TestMulledContainerResolvers(DockerContainerResolverTestCase, ContainerRes
     - building the container creates a cache entry (cached=True, 1st call resolves with mulled and 2nd with cached_mulled)
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {
             "type": "cached_mulled",
         },
         {"type": "mulled"},
     ]
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "bedtools v2.26.0",
@@ -696,7 +705,7 @@ class TestMulledSingularityContainerResolvers(
        - 2nd round resolves cached image, uses the cached container
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {
             "type": "cached_mulled_singularity",
         },
@@ -764,7 +773,7 @@ class TestMulledContainerResolversNoAutoInstall(TestMulledContainerResolvers):
     No difference (since the cached name is identical to the URI)
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {
             "type": "cached_mulled",
         },
@@ -784,7 +793,7 @@ class TestMulledSingularityContainersResolversNoAutoInstall(TestMulledSingularit
     the path is used instead of the URI)
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {
             "type": "cached_mulled_singularity",
         },
@@ -854,11 +863,11 @@ class TestCondaFallBack(DockerContainerResolverTestCase, ContainerResolverTestCa
     """
 
     allow_conda_fallback: bool = True
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "null"},
     ]
 
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "bedtools v2.26.0",
@@ -896,11 +905,11 @@ class TestCondaFallBackAndRequireContainer(DockerContainerResolverTestCase, Cont
     """
 
     allow_conda_fallback: bool = True
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "null"},
     ]
 
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "expect_failure": True,
             "cached": False,
@@ -955,10 +964,10 @@ class TestExplicitContainerResolver(DockerContainerResolverTestCase, ContainerRe
     - list and build resolve the URI and do not cache the container
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "explicit"},
     ]
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "Program: bwa (alignment via Burrows-Wheeler transformation)",
@@ -1021,10 +1030,10 @@ class TestExplicitSingularityContainerResolver(
     - list and build resolve the URI and do not cache the container
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "explicit_singularity"},
     ]
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "Program: bwa (alignment via Burrows-Wheeler transformation)",
@@ -1084,10 +1093,10 @@ class TestCachedExplicitSingularityContainerResolver(
     - list resolves to the path irrespective if the path is existent (TODO bug?)
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "cached_explicit_singularity"},
     ]
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "Program: bwa (alignment via Burrows-Wheeler transformation)",
@@ -1149,10 +1158,10 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
     here
     """
 
-    container_resolvers_config: List[Dict[str, Any]] = [
+    container_resolvers_config: list[dict[str, Any]] = [
         {"type": "cached_explicit_singularity"},
     ]
-    assumptions: Dict[str, Any] = {
+    assumptions: dict[str, Any] = {
         "run": {
             "output": [
                 "cowsay works LOL",
@@ -1199,6 +1208,64 @@ class TestCachedExplicitSingularityContainerResolverWithSingularityRequirement(
                 ),
                 "cached": True,
                 "cache_name": ExplicitSingularityTestCase.mulled_hash,
+                "cache_namespace": "biocontainers",
+            },
+        ],
+    }
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        super().handle_galaxy_config_kwds(config)
+        config["container_resolvers"] = cls.container_resolvers_config
+
+
+class TestCachedExplicitSingularityContainerResolverWithNamespace(
+    SingularityContainerResolverTestCase, ContainerResolverTestCases, ExplicitTestCase
+):
+    """
+    test cached_explicit_singularity container resolver with namespace stripping
+
+    when namespace="biocontainers" is configured, the resolver strips
+    docker://quay.io/biocontainers/ from the image identifier so that the
+    cached image is stored as a flat filename (e.g. bwa:0.7.17--h7132678_9)
+    compatible with CVMFS-hosted biocontainer caches.
+    """
+
+    _image_name = ExplicitTestCase.mulled_hash.rsplit("/", 1)[-1]
+
+    container_resolvers_config: list[dict[str, Any]] = [
+        {"type": "cached_explicit_singularity", "namespace": "biocontainers"},
+    ]
+    assumptions: dict[str, Any] = {
+        "run": {
+            "output": [
+                "Program: bwa (alignment via Burrows-Wheeler transformation)",
+                "Version: 0.7.17-r1188",
+            ],
+            "cached": True,
+            "resolver_type": "cached_explicit_singularity",
+            "cache_name": _image_name,
+            "cache_namespace": "biocontainers",
+        },
+        # With namespace set the resolver returns None when the image is not yet
+        # cached, so listing resolves to NullDependency before any install.
+        "list": [
+            {"unresolved": True},
+            {"unresolved": True},
+        ],
+        "build": [
+            {
+                "resolver_type": "cached_explicit_singularity",
+                "identifier": f"/tmp/.*/singularity/explicit/{_image_name}",
+                "cached": True,
+                "cache_name": _image_name,
+                "cache_namespace": "biocontainers",
+            },
+            {
+                "resolver_type": "cached_explicit_singularity",
+                "identifier": f"/tmp/.*/singularity/explicit/{_image_name}",
+                "cached": True,
+                "cache_name": _image_name,
                 "cache_namespace": "biocontainers",
             },
         ],

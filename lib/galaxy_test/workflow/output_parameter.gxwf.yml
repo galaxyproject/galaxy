@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  text_int: data
+outputs:
+  out_int:
+    outputSource: param_out/integer_param
+steps:
+  param_out:
+    tool_id: param_value_from_file
+    state:
+      param_type: integer
+    in:
+      input1: text_int

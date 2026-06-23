@@ -1,7 +1,12 @@
+import datetime
 import os
 import threading
 import time
-from typing import Optional
+from typing import (
+    cast,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import psutil
 
@@ -10,9 +15,14 @@ from galaxy import (
     model,
 )
 from galaxy.app_unittest_utils.tools_support import UsesTools
+from galaxy.jobs import MinimalJobWrapper
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
 from galaxy.util.unittest import TestCase
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 class TestLocalJobRunner(TestCase, UsesTools):
@@ -28,19 +38,19 @@ class TestLocalJobRunner(TestCase, UsesTools):
     def test_run(self):
         self.job_wrapper.command_line = "echo HelloWorld"
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "HelloWorld"
 
     def test_galaxy_lib_on_path(self):
         self.job_wrapper.command_line = '''python -c "import galaxy.util"'''
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.exit_code == 0
 
     def test_default_slots(self):
         self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "1"
 
     def test_slots_override(self):
@@ -49,18 +59,18 @@ class TestLocalJobRunner(TestCase, UsesTools):
         self.job_wrapper.job_destination.params["local_slots"] = 3
         self.job_wrapper.command_line = """echo $GALAXY_SLOTS"""
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.stdout.strip() == "3"
 
     def test_exit_code(self):
         self.job_wrapper.command_line = '''sh -c "exit 4"'''
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert self.job_wrapper.exit_code == 4
 
     def test_metadata_gets_set(self):
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
     def test_metadata_gets_set_if_embedded(self):
@@ -71,7 +81,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         self.app.datatypes_registry.set_external_metadata_tool = None
 
         runner = local.LocalJobRunner(self.app, 1)
-        runner.queue_job(self.job_wrapper)
+        runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
         assert os.path.exists(self.job_wrapper.mock_metadata_path)
 
     def test_stopping_job(self):
@@ -79,7 +89,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
         runner = local.LocalJobRunner(self.app, 1)
 
         def queue():
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         t = threading.Thread(target=queue)
         t.start()
@@ -97,13 +107,13 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
-        self.app.model.session = bunch.Bunch(add=lambda x: None, flush=lambda: None)
+        self.app.model.session = cast("scoped_session", bunch.Bunch(add=lambda x: None, flush=lambda: None))
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15
 
         def queue():
-            runner.queue_job(self.job_wrapper)
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
 
         t = threading.Thread(target=queue)
         t.start()
@@ -113,6 +123,25 @@ class TestLocalJobRunner(TestCase, UsesTools):
         t.join(1)
         assert not psutil.pid_exists(external_id)
         assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
+
+    def test_timelimit_kills_job(self):
+        self.tool.timelimit = 3
+        self.job_wrapper.command_line = '''python -c "import time; time.sleep(30)"'''
+        runner = local.LocalJobRunner(self.app, 1)
+
+        def queue():
+            runner.queue_job(cast(MinimalJobWrapper, self.job_wrapper))
+
+        t = threading.Thread(target=queue)
+        t.start()
+        external_id = self.job_wrapper.wait_for_external_id()
+        assert external_id is not None
+        assert psutil.pid_exists(external_id)
+        t.join(30)
+        assert not t.is_alive(), "Job was not killed by timelimit"
+        assert not psutil.pid_exists(external_id)
+        assert hasattr(self.job_wrapper, "fail_message")
+        assert "time limit" in self.job_wrapper.fail_message
 
 
 class MockJobWrapper:
@@ -132,7 +161,7 @@ class MockJobWrapper:
         self.working_directory = working_directory
         self.tool_working_directory = tool_working_directory
         self.requires_setting_metadata = True
-        self.job_destination = bunch.Bunch(id="default", params={})
+        self.job_destination = JobDestination(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
         self.job = model.Job()
         self.job_id = 1
@@ -203,7 +232,19 @@ class MockJobWrapper:
         return ""
 
     def has_limits(self):
-        return False
+        return self.tool.timelimit is not None
+
+    def check_limits(self, runtime=None):
+        if runtime is not None and self.tool:
+            timelimit = self.tool.timelimit
+            if timelimit and timelimit > 0:
+                timelimit_delta = datetime.timedelta(seconds=timelimit)
+                if runtime > timelimit_delta:
+                    return (
+                        "tool_timelimit_reached",
+                        f"Job exceeded tool time limit (limit: {timelimit}s)",
+                    )
+        return None
 
     def fail(
         self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None

@@ -1,37 +1,40 @@
+<script setup lang="ts">
+import { onMounted, ref } from "vue";
+
+import { GalaxyApi, type HistoryDetailed } from "@/api";
+import { rethrowSimple } from "@/utils/simple-error";
+
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import HistoryView from "@/components/History/HistoryView.vue";
+
+interface Props {
+    id: string;
+}
+
+const props = defineProps<Props>();
+const history = ref<HistoryDetailed>();
+
+onMounted(async () => {
+    const { data, error } = await GalaxyApi().GET("/api/histories/{history_id}", {
+        params: {
+            path: { history_id: props.id },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+        return;
+    }
+
+    // The default view is the detailed view
+    history.value = data as HistoryDetailed;
+});
+</script>
+
 <template>
-    <Published :item="history">
+    <PublishedItem :item="history">
         <template v-slot>
             <HistoryView :id="id" />
         </template>
-    </Published>
+    </PublishedItem>
 </template>
-
-<script>
-import { urlData } from "utils/url";
-import Published from "components/Common/Published";
-import HistoryView from "components/History/HistoryView";
-
-export default {
-    components: {
-        Published,
-        HistoryView,
-    },
-    props: {
-        id: {
-            type: String,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            history: {},
-        };
-    },
-    created() {
-        const url = `/api/histories/${this.id}`;
-        urlData({ url }).then((data) => {
-            this.history = data;
-        });
-    },
-};
-</script>

@@ -10,6 +10,7 @@ Each :class:`JobInstrumenter` plugin object describes how to inject a bits
 of shell code into a job scripts (before and after tool commands run) and then
 collect the output of these from a job directory.
 """
+
 import collections
 import logging
 import os
@@ -19,10 +20,13 @@ from abc import (
 )
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
+    Union,
 )
 
 from galaxy import util
@@ -33,10 +37,15 @@ from .safety import (
     Safety,
 )
 
+if TYPE_CHECKING:
+    from galaxy.job_metrics.instrumenters import InstrumentPlugin
+    from galaxy.util import Element
+
 log = logging.getLogger(__name__)
 
 
 DEFAULT_FORMATTER = formatting.JobMetricFormatter()
+DEFAULT_CONFIG = [{"type": "core"}]
 
 
 class DictifiableMetric(NamedTuple):
@@ -68,10 +77,18 @@ class RawMetric(NamedTuple):
 class JobMetrics:
     """Load and store a collection of :class:`JobInstrumenter` objects."""
 
-    def __init__(self, conf_file=None, **kwargs):
+    def __init__(self, conf_file=None, conf_dict=None, **kwargs):
         """Load :class:`JobInstrumenter` objects from specified configuration file."""
-        self.plugin_classes = self.__plugins_dict()
-        self.default_job_instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file, **kwargs)
+        self.plugin_classes = cast(Dict[str, "InstrumentPlugin"], self.__plugins_dict())
+        if conf_file and os.path.exists(conf_file):
+            self.default_job_instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file, **kwargs)
+        elif conf_dict or conf_dict is None:
+            if conf_dict is None:
+                conf_dict = DEFAULT_CONFIG
+            self.default_job_instrumenter = JobInstrumenter.from_dict(self.plugin_classes, conf_dict, **kwargs)
+        else:
+            # allows for setting non-None falsey values to get no metrics config whatsoever
+            self.default_job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters = collections.defaultdict(lambda: self.default_job_instrumenter)
 
     def format(self, plugin: str, key: str, value: Any) -> formatting.FormattedMetric:
@@ -81,6 +98,7 @@ class JobMetrics:
             formatter = plugin_class.formatter
         else:
             formatter = DEFAULT_FORMATTER
+        assert formatter
         return formatter.format(key, value)
 
     def dictifiable_metrics(self, raw_metrics: List[RawMetric], allowed_safety: Safety) -> List[DictifiableMetric]:
@@ -107,21 +125,23 @@ class JobMetrics:
         metrics = map(raw_to_dictifiable, raw_metrics)
         return [m for m in metrics if m.safety.value >= allowed_safety.value]
 
-    def set_destination_conf_file(self, destination_id, conf_file):
+    def set_destination_conf_file(self, destination_id: str, conf_file: str) -> None:
         instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
-    def set_destination_conf_element(self, destination_id, element):
+    def set_destination_conf_element(self, destination_id: str, element: "Element") -> None:
         plugin_source = plugin_config.PluginConfigSource("xml", element)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
-    def set_destination_conf_dicts(self, destination_id, conf_dicts):
+    def set_destination_conf_dicts(self, destination_id: str, conf_dicts: List[Dict[str, Any]]) -> None:
         plugin_source = plugin_config.PluginConfigSource("dict", conf_dicts)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
-    def set_destination_instrumenter(self, destination_id, job_instrumenter=None):
+    def set_destination_instrumenter(
+        self, destination_id: str, job_instrumenter: Union["JobInstrumenterI", None] = None
+    ) -> None:
         if job_instrumenter is None:
             job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters[destination_id] = job_instrumenter
@@ -226,6 +246,11 @@ class JobInstrumenter(JobInstrumenterI):
             return NULL_JOB_INSTRUMENTER
         plugins_source = plugin_config.plugin_source_from_path(conf_file)
         return JobInstrumenter(plugin_classes, plugins_source, **kwargs)
+
+    @staticmethod
+    def from_dict(plugin_classes, conf_dict, **kwargs) -> "JobInstrumenterI":
+        plugin_source = plugin_config.plugin_source_from_dict(conf_dict)
+        return JobInstrumenter(plugin_classes, plugin_source, **kwargs)
 
 
 __all__ = (

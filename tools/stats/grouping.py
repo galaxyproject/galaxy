@@ -11,6 +11,7 @@ Arguments:
     5 ascii to delete (comma separated list)
     6... op,col,do_round,default
 """
+
 from __future__ import print_function
 
 import random

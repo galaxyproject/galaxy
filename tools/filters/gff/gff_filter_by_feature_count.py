@@ -5,6 +5,7 @@ Filter a gff file using a criterion based on feature counts for a transcript.
 Usage:
 %prog input_name output_name feature_name condition
 """
+
 from __future__ import print_function
 
 import sys
@@ -48,6 +49,8 @@ AST_NODE_TYPE_WHITELIST = [
     "UnaryOp",
     "Invert",
     "Not",
+    "UAdd",
+    "USub",
     "NotIn",
     "In",
     "Is",
@@ -55,6 +58,7 @@ AST_NODE_TYPE_WHITELIST = [
     "List",
     "Index",
     "Subscript",
+    "Constant",
     "Name",
 ]
 

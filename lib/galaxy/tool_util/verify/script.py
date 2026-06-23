@@ -23,10 +23,10 @@ from typing import (
 
 import yaml
 
+from galaxy.tool_util.verify import ToolTestDescriptionDict
 from galaxy.tool_util.verify.interactor import (
     DictClientTestConfig,
     GalaxyInteractorApi,
-    ToolTestDictsT,
     verify_tool,
 )
 
@@ -179,7 +179,7 @@ def test_tools(
     verify_kwds = (verify_kwds or {}).copy()
     tool_test_start = dt.datetime.now()
     history_created = False
-    test_history = None
+    test_history: Optional[str] = None
     if not history_per_test_case:
         if not history_name:
             history_name = f"History for {results.suitename}"
@@ -192,8 +192,8 @@ def test_tools(
                 if log:
                     log.info(f"Using existing history with id '{test_history}', last updated: {history['update_time']}")
         if not test_history:
-            history_created = True
             test_history = galaxy_interactor.new_history(history_name=history_name, publish_history=publish_history)
+            history_created = True
             if log:
                 log.info(f"History created with id '{test_history}'")
     verify_kwds.update(
@@ -231,7 +231,7 @@ def test_tools(
                 log.info(f"Report written to '{destination}'")
                 log.info(results.info_message())
                 log.info(f"Total tool test time: {dt.datetime.now() - tool_test_start}")
-            if history_created and not no_history_cleanup:
+            if test_history and history_created and not no_history_cleanup:
                 galaxy_interactor.delete_history(test_history)
 
 
@@ -341,9 +341,11 @@ def build_case_references(
                     test_references.append(test_reference)
     else:
         assert tool_id
-        tool_test_dicts: ToolTestDictsT = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+        tool_test_dicts: List[ToolTestDescriptionDict] = galaxy_interactor.get_tool_tests(
+            tool_id, tool_version=tool_version
+        )
         for i, tool_test_dict in enumerate(tool_test_dicts):
-            this_tool_version = tool_test_dict.get("tool_version", tool_version)
+            this_tool_version = tool_test_dict.get("tool_version") or tool_version
             this_test_index = i
             if test_index == ALL_TESTS or i == test_index:
                 test_reference = TestReference(tool_id, this_tool_version, this_test_index)
@@ -362,7 +364,7 @@ def build_case_references(
                 filtered_test_references.append(test_reference)
         if log is not None:
             log.info(
-                f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests."
+                f"Skipping {len(test_references) - len(filtered_test_references)} out of {len(test_references)} tests."
             )
         test_references = filtered_test_references
 

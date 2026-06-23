@@ -14,8 +14,8 @@
 </template>
 
 <script>
-import PersonViewer from "./PersonViewer";
-import OrganizationViewer from "./OrganizationViewer";
+import OrganizationViewer from "./OrganizationViewer.vue";
+import PersonViewer from "./PersonViewer.vue";
 
 export default {
     components: {

@@ -7,14 +7,16 @@ from typing import (
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
-from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
-    on_text_for_names,
+)
+from galaxy.tools.execution_helpers import (
+    on_text_for_dataset_and_collections,
+    on_text_for_numeric_ids,
 )
 from galaxy.util import XML
 from galaxy.util.unittest import TestCase
@@ -49,21 +51,71 @@ TWO_OUTPUTS = """<tool id="test_tool" name="Test Tool">
 </tool>
 """
 
+# Tool with a multiple="true" data parameter – used to test on_string handling for collections.
+MULTIPLE_DATA_TOOL = """<tool id="test_tool" name="Test Tool" version="1.0" profile="26.1">
+    <command>cat "$param1" &lt; $out1</command>
+    <inputs>
+        <param type="data" format="tabular" name="param1" multiple="true" value="" />
+    </inputs>
+    <outputs>
+        <data name="out1" format="data" />
+    </outputs>
+</tool>
+"""
 
-def test_on_text_for_names():
-    def assert_on_text_is(expected, *names):
-        on_text = on_text_for_names(names)
+
+def test_on_text_for_numeric_ids():
+    def assert_on_text_is(expected, hids):
+        on_text = on_text_for_numeric_ids(hids, "dataset")
         assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
 
-    assert_on_text_is("data 1", "data 1")
-    assert_on_text_is("data 1 and data 2", "data 1", "data 2")
-    assert_on_text_is("data 1, data 2, and data 3", "data 1", "data 2", "data 3")
-    assert_on_text_is("data 1, data 2, and others", "data 1", "data 2", "data 3", "data 4")
+    assert_on_text_is("dataset 1", [1])
+    assert_on_text_is("dataset 1 and 2", [1, 2])
+    assert_on_text_is("dataset 1-3", [1, 2, 3])
+    assert_on_text_is("dataset 1-4", [1, 2, 3, 4])
+    assert_on_text_is("dataset 1, 3, and 4", [1, 3, 4])
+    assert_on_text_is("dataset 1-3 and 5-7", [1, 2, 3, 5, 6, 7])
+    assert_on_text_is("dataset 1-3, 5-7, and 9-11", [1, 2, 3, 5, 6, 7, 9, 10, 11])
 
-    assert_on_text_is("data 1 and data 2", "data 1", "data 1", "data 2")
+    assert_on_text_is("dataset 1-3, 5, and 9", [1, 2, 3, 5, 9])
+
+    assert_on_text_is("dataset 1, 2, and others", [1, 2, 4, 5])
+    assert_on_text_is("dataset 1, 2, and 4-6", [1, 2, 4, 5, 6])
+
+    assert_on_text_is("dataset 1 and 2", [1, 1, 2])
+
+
+def test_on_text_for_dataset_and_collections():
+    def assert_on_text_is(expected, dataset_hids, collection_hids, element_ids):
+        on_text = on_text_for_dataset_and_collections(dataset_hids, collection_hids, element_ids)
+        assert on_text == expected, f"Wrong on text value {on_text}, expected {expected}"
+
+    assert_on_text_is("dataset 1 and collection 4 and 5", [1], [4, 5], None)
+    assert_on_text_is("dataset 1 and SampleA and SampleB", [1], None, ["SampleA", "SampleB"])
 
 
 class TestDefaultToolAction(TestCase, tools_support.UsesTools):
+    def test_on_text_multiple_true_collection(self):
+        # Create a collection with three datasets
+        hdca = model.HistoryDatasetCollectionAssociation()
+        hdca.id = 999
+        hdca.hid = 55
+        collection = model.DatasetCollection()
+        hdca.collection = collection
+        # add three datasets to the collection
+        hda1 = self.__add_dataset()
+        hda2 = self.__add_dataset()
+        hda3 = self.__add_dataset()
+        model.DatasetCollectionElement(collection=collection, element=hda1)
+        model.DatasetCollectionElement(collection=collection, element=hda2)
+        model.DatasetCollectionElement(collection=collection, element=hda3)
+        collection.collection_type = "list"
+        self.history.dataset_collections.append(hdca)
+        # incoming param with the collection
+        incoming = {"param1": hdca}
+        job, output = self._simple_execute(contents=MULTIPLE_DATA_TOOL, incoming=incoming)
+        assert output["out1"].name == f"Test Tool on collection {hdca.hid}"
+
     def setUp(self):
         self.setup_app()
         history = model.History()
@@ -71,8 +123,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(history)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
         self.app.object_store = cast(BaseObjectStore, MockObjectStore())
@@ -99,7 +150,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        assert output["out1"].name == "Test Tool on data 2 and data 1"
+        assert output["out1"].name == "Test Tool on dataset 1 and 2"
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
@@ -130,8 +181,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
         session = self.app.model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         return hda
 
     def _simple_execute(self, contents=None, incoming=None):
@@ -140,7 +190,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _ = self.action.execute(
+        job, out_data, *_ = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
@@ -187,12 +237,10 @@ def test_determine_output_format():
     # Test change_format but no match
     __assert_output_format_is("fastq", change_format_output, param_context={"options_type": {"output_type": "sanger"}})
 
-    change_on_metadata_xml_template = string.Template(
-        """<data><change_format>
+    change_on_metadata_xml_template = string.Template("""<data><change_format>
         <when input_dataset="${input}" attribute="random_field" value="1" format="fastqsolexa" />
         <when input_dataset="${input}" attribute="random_field" value="2" format="fastqillumina" />
-    </change_format></data>"""
-    )
+    </change_format></data>""")
 
     change_on_metadata_illumina = change_on_metadata_xml_template.safe_substitute({"input": "i2"})
     change_on_metadata_output = quick_output("fastq", change_format_xml=change_on_metadata_illumina)
@@ -231,7 +279,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
         )
         c1.elements = [dce1, dce2]
 
-        input_collections["hdcai"] = [(hc1, False)]
+        input_collections["hdcai"] = hc1
 
     actual_format = determine_output_format(output, param_context, inputs, input_collections, last_ext)
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"

@@ -7,12 +7,12 @@ from tool_shed_client.schema import (
     CreateUserRequest,
     User,
 )
-from ..base.api import (
+from ..base.api import ShedApiTestCase
+from ..base.api_util import (
     email_to_username,
     ensure_user_with_email,
-    ShedApiTestCase,
+    get_admin_api_key,
 )
-from ..base.api_util import get_admin_api_key
 
 
 class TestShedUsersApi(ShedApiTestCase):
@@ -35,7 +35,7 @@ class TestShedUsersApi(ShedApiTestCase):
             "username": username,
         }
         request = CreateUserRequest(**body)
-        response = post(url, json=request.dict(), headers=headers)
+        response = post(url, json=request.model_dump(), headers=headers)
         api_asserts.assert_status_code_is_ok(response)
         self._verify_username_password(email, password)
         user = User(**response.json())
@@ -77,5 +77,23 @@ class TestShedUsersApi(ShedApiTestCase):
         assert show_response.json()["username"] == username
         assert show_response.json()["id"] == user_id
 
-    def _verify_username_password(self, email, password):
-        self._api_key(email, password)
+    def test_api_key_endpoints(self):
+        email = "testindexapi@bx.psu.edu"
+        password = "mycoolpassword123"
+        ensure_user_with_email(self.admin_api_interactor, email, password)
+        api_key = self._verify_username_password(email, password)
+        second_try_api_key = self._verify_username_password(email, password)
+        assert api_key == second_try_api_key
+
+        user_populator = self.populator_for_key(api_key)
+        user_populator.delete_api_key()
+        new_api_key = self._verify_username_password(email, password)
+        assert api_key != new_api_key
+
+        user_populator = self.populator_for_key(new_api_key)
+        another_new_api_key = user_populator.create_new_api_key()
+        assert new_api_key != another_new_api_key
+        assert new_api_key != api_key
+
+    def _verify_username_password(self, email: str, password: str) -> str:
+        return self.api_interactor.create_api_key(email, password)

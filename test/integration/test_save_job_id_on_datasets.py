@@ -8,6 +8,7 @@ Here we test the creation of this reference in various contexts:
 """
 
 import pytest
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy_test.driver.driver_util import GalaxyTestDriver
@@ -38,9 +39,9 @@ def test_driver():
 @pytest.mark.parametrize("tool_id", TEST_TOOL_IDS)
 def test_tool_datasets(tool_id, test_driver):
     test_driver.run_tool_test(tool_id)
-    session = test_driver.app.model.context.current
-    job = session.query(model.Job).order_by(model.Job.id.desc()).first()
-    datasets = session.query(model.Dataset).filter(model.Dataset.job_id == job.id).all()
+    session = test_driver.app.model.context
+    job = session.scalars(select(model.Job).order_by(model.Job.id.desc()).limit(1)).first()
+    datasets = session.scalars(select(model.Dataset).filter(model.Dataset.job_id == job.id)).all()
 
     if tool_id == "boolean_conditional":
         assert len(datasets) == 1

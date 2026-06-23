@@ -1,9 +1,13 @@
-<tool id="MAF_Limit_To_Species1" name="Filter MAF blocks" version="1.0.0">
+<tool id="MAF_Limit_To_Species1" name="Filter MAF blocks" version="1.0.0" profile="24.2">
   <description>by Species</description>
   <macros>
-      <import>macros.xml</import>
+    <import>macros.xml</import>
   </macros>
-  <command>python '$__tool_directory__/maf_limit_to_species.py' $species '$input1' '$out_file1' $allow_partial $min_species</command>
+  <expand macro="requirements" />
+  <required_files>
+    <include path="maf_limit_to_species.py"/>
+  </required_files>
+  <command>python '$__tool_directory__/maf_limit_to_species.py' '$species' '$input1' '$out_file1' '$allow_partial' '$min_species'</command>
   <inputs>
     <param name="input1" type="data" format="maf" label="MAF file"/>
     <param name="allow_partial" type="select" label="Exclude blocks which have missing species" >

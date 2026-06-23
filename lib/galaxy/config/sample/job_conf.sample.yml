@@ -4,10 +4,20 @@ runners:
     workers: 4
   drmaa:
     load: galaxy.jobs.runners.drmaa:DRMAAJobRunner
-
-    # Different DRMs handle successfully completed jobs differently,
-    # these options can be changed to handle such differences.
-    # Defaults are shown:
+    # Configuration of a Distributed Resource Manager (DRM) compatible with the
+    # Distributed Resource Management Application API (DRMAA), e.g. Slurm,
+    # HTCondor, Oracle Grid Engine (a.k.a. SGE), Altair Grid Engine (a.k.a. Univa).
+    # Different DRMs handle successfully completed jobs differently.
+    # For example they may raise an InternalException or InvalidJobException when querying a finished job.
+    # The following options allow to configure if Galaxy should consider the jobs as OK or in error in such a case.
+    #
+    # For setting up a DRMAA runner it may be advisable to test with the state set to "error" and use "ok"
+    # only if all (including successfull jobs) fail with one of the two exceptions.
+    # 
+    # In case these exceptions may occur transiently a number of retries can be configured.
+    # 
+    # Defaults are shown below. 
+    # Possible values for the states are "ok" and "error".
     invalidjobexception_state: ok
     invalidjobexception_retries: 0
     internalexception_state: ok
@@ -20,6 +30,12 @@ runners:
     load: galaxy.jobs.runners.cli:ShellJobRunner
   condor:
     load: galaxy.jobs.runners.condor:CondorJobRunner
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    # Optional connection overrides for a remote schedd/collector.
+    #htcondor_collector: "collector.example.org:9618"
+    #htcondor_schedd: "schedd@collector.example.org"
+    #htcondor_config: /etc/condor/condor_config
   slurm:
     load: galaxy.jobs.runners.slurm:SlurmJobRunner
   dynamic:
@@ -338,6 +354,27 @@ runners:
     #app: {}
     #pulsar_config: path/to/pulsar/app.yml
 
+  # Using Pulsar and co-execution to run jobs against a TES service.
+  # - https://www.ga4gh.org/product/task-execution-service-tes/
+  # - https://pulsar.readthedocs.io/en/latest/containers.html#ga4gh-tes
+  pulsar_tes:
+    load: galaxy.jobs.runners.pulsar:PulsarTesJobRunner
+    # RabbitMQ URL from Galaxy server (include credentials).
+    amqp_url: <amqp_url>
+    # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
+    #galaxy_url: <galaxy_url>  
+
+  # Using Pulsar and co-execution to run jobs against Google Cloud Platform's Batch service.
+  # - https://cloud.google.com/batch/docs/get-started
+  # - https://pulsar.readthedocs.io/en/latest/containers.html#google-cloud-platform-batch
+  pulsar_gcp:
+    load: galaxy.jobs.runners.pulsar:PulsarGcpBatchJobRunner
+    # RabbitMQ URL from Galaxy server (include credentials).
+    amqp_url: <amqp_url>
+    # If Pulsar needs to talk to Galaxy at a particular host and port, set that here.
+    #galaxy_url: <galaxy_url>
+
+
 # Job handler configuration - for a full discussion of job handlers, see the documentation at:
 #     https://docs.galaxyproject.org/en/latest/admin/scaling.html
 handling:
@@ -503,6 +540,11 @@ execution:
       # Following command can be used to tweak docker command.
       #docker_cmd: /usr/local/custom_docker/docker
 
+      # Docker containers that expose ports (e.g. Interactive Tools) can
+      # optionally use a command to determine the host port that is exposed. By
+      # default, one is chosen at random (docker run -p <guest_port> ...).
+      #docker_host_port_cmd:
+
       # Following can be used to connect to docker server in different
       # ways (translated as -H argument to docker client).
       #docker_host: unix:///var/run/docker.sock
@@ -513,13 +555,13 @@ execution:
       # trust tool's specified container - a destination wide override
       # can be set. This will cause all jobs on this destination to use
       # that docker image.
-      #docker_container_id_override: busybox:ubuntu-14.04
+      #docker_container_id_override: busybox:1.36.1-glibc
 
       # Likewise, if deployer wants to use docker for isolation and
       # does trust tool's specified container - but also wants tool's not
       # configured to run in a container the following option can provide
       # a fallback. -->
-      #docker_default_container_id: busybox:ubuntu-14.04
+      #docker_default_container_id: busybox:1.36.1-glibc
 
       # If the destination should be secured to only allow containerized jobs
       # the following parameter may be set for the job destination. Some tools
@@ -571,7 +613,7 @@ execution:
       # This doesn't work in Singularity because if any parent directory is mounted as ro
       # none of its children will be rw. So the job directory will be mounted rw for
       # Singularity.
-      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro</param>
+      #singularity_volumes: $defaults,/mnt/galaxyData/libraries:ro,/mnt/galaxyData/indices:ro
 
       # You can configure singularity to run using sudo - this probably should not
       # be set and may be removed in the future.
@@ -585,6 +627,24 @@ execution:
       # This may be a security or configuration issue, hence galaxy passes the `--cleanenv`
       # argument by default. You can turn this off by setting singularity_cleanenv to `false`.
       #singularity_cleanenv: true
+
+      # Singularity by default inherits the PID namespace, this can give
+      # issues with multiprocessing, hence galaxy passes the `--pid` argument
+      # by default to isolate the PID namespace. You can turn this off by setting
+      # singularity_pid to `false`.
+      #singularity_pid: true
+
+      # Singularity by default inherits the IPC namespace, this can give
+      # issues with multiprocessing, hence Galaxy passes the `--ipc` argument
+      # by default to isolate the IPC namespace. You can turn this off by setting
+      # singularity_ipc to `false`.
+      #singularity_ipc: true
+
+      # Singularity mounts some directories, such as $HOME and $PWD by default.
+      # Setting singularity_contain to `true` disables this behaviour and only allows explicitly
+      # requested volumes to be mounted. This gives full control over
+      # the mounting behavior.
+      #singularity_contain: true
 
       # Pass extra arguments to the singularity exec command not covered by the
       # above options.
@@ -633,7 +693,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false
@@ -642,7 +702,7 @@ execution:
         - type: docker
           shell: '/bin/sh'
           resolve_dependencies: false
-          identifier: 'busybox:ubuntu-14.04'
+          identifier: 'busybox:1.36.1-glibc'
         - type: singularity
           shell: '/bin/sh'
           resolve_dependencies: false
@@ -799,7 +859,7 @@ execution:
       function: map_tool_to_destination
       rules_module: tpv.rules
       tpv_config_files:
-        - https://raw.githubusercontent.com/galaxyproject/total-perspective-vortex/main/tests/fixtures/mapping-sample.yml
+        - https://gxy.io/tpv/db-latest.yml
         # - config/tpv_rules_local.yml
 
     docker_dispatch:
@@ -898,6 +958,55 @@ execution:
       # Path to Kubernetes configuration fil (see Kubernetes runner description.)
       #k8s_config_path: /path/to/kubeconfig
 
+    pulsar_tes_environment:
+      runner: pulsar_tes
+      # A tes_url is required
+      tes_url: "<tes_url>"
+      #basic_auth:
+      #  username: <username>
+      #  password: <password>
+      #cpu_cores: 1
+      # Define if the task is allowed to run on preemptible compute instances,\nfor example, AWS Spot. This option may have no effect when utilized\non some backends that don't have the concept of preemptible jobs.
+      #preemptible: false
+      #ram_gb: 8
+      #disk_gb: 40
+      # Request that the task be run in these compute zones. How this string is utilized will be dependent on the backend system. For example, a\nsystem based on a cluster queueing system may use this string to define\npriorty queue to which the job is assigned.
+      #zones: us-west-1
+      #backend_parameters: {}
+      #backend_parameters_strict: false
+      # Configure the embedded Pulsar app, only message_queue_url is required but
+      # other options may be useful (unsure).
+      pulsar_app_config:
+          # This needs to be the RabbitMQ server, but this should be the host
+          # and port that your TES nodes would connect to the server via.
+          message_queue_url: "<amqp_url>"
+
+    pulsar_gcp_environment:
+      runner: pulsar_gcp
+      # required
+      project_id: <gcp_project_id>
+      # Path to GCP service account credentials file. (not sure if ~ would be implicitly respected in this example)
+      #credentials_file: ~/.config/gcloud/application_default_credentials.json
+      # GCP region or zone to use (optional)
+      #region: us-central1
+      # Max walltime to use in seconds (defaults to 60 * 60 * 24)
+      #walltime_limit: 216000
+      # Maximum number of retries for the job. Maps to TaskSpec.max_retry_count.
+      #retry_count: 2
+      # Name of the SSD volume to be mounted in the task. Shared among all containers in job.
+      #ssd_name: pulsar_staging
+      # Size of the shared local SSD disk in GB (must be a multiple of 375).
+      #disk_size: 375
+      # Machine type for the job's VM.
+      #machine_type: n1-standard-1
+      #labels: {}
+      # Configure the embedded Pulsar app, only message_queue_url is required but
+      # other options may be useful (unsure).
+      pulsar_app_config:
+          # This needs to be the RabbitMQ server, but this should be the host
+          # and port that your GCP compute would connect to the server via.
+          message_queue_url: "<amqp_url>"
+
     # Example CLI runners.
     ssh_torque:
       runner: cli
@@ -941,6 +1050,41 @@ execution:
       # Galaxy's configured container resolution strategy and a default container can be
       # specified here with docker_default_container_id for instance.
       #universe: docker
+
+    htcondor:
+      runner: htcondor
+
+      # Identical to the condor runner configuration, but uses the htcondor2
+      # Python bindings. Requires the htcondor2 module to be installed in
+      # Galaxy's virtualenv.
+      # Optional per-destination HTCondor connection overrides (not passed to submit):
+      #htcondor_collector: "collector.example.org:9618"
+      #htcondor_schedd: "schedd@collector.example.org"
+      #htcondor_config: /etc/condor/condor_config
+
+      # Resource requests forwarded verbatim to the condor submit description:
+      #request_cpus: 4
+      #request_memory: 8192M
+      #request_gpus: 1
+
+      # Wall-clock time limit. Accepts seconds, HH:MM:SS, or D-HH:MM:SS.
+      # Injects periodic_hold = (JobDurationSeconds >= N) into the submit
+      # description. Galaxy reports the resulting hold as walltime_reached,
+      # enabling automatic resubmission to a longer-running destination.
+      #request_walltime: "24:00:00"
+
+      # Advanced: set periodic_hold directly as a raw HTCondor ClassAd
+      # expression for multi-condition policies. HTCondor evaluates it every
+      # PERIODIC_EXPR_INTERVAL (default 60 s); when true the job is held with
+      # HoldReasonCode=16 (walltime_reached). Takes precedence over
+      # request_walltime — the runner will not inject its own periodic_hold
+      # when this key is present.
+      # Example: hold if wall-clock exceeds 2 h OR resident memory > 16 GB:
+      #periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+
+      # Maximum distinct JOB_HELD events before the job is permanently failed
+      # (default 3, set to 0 to disable hold escalation entirely).
+      #max_held_count: 3
 
     # Job Re-submission
     # Jobs can be re-submitted for various reasons (to the same destination or others,
@@ -1051,7 +1195,7 @@ tools:
 - id: bowtie
   handler: handler1
 - id: bar
-  enviroment: dynamic
+  environment: dynamic
 -
   # Next example defines resource group to insert into tool interface
   # and pass to dynamic destination (as resource_params argument).
@@ -1064,14 +1208,10 @@ tools:
   handler: special_handlers
   environment: bigmem
 -
-  # legacy trackerster parameter for tool mapping
-  id: foo
-  handler: handler0
-  source: trackster
--
   # Classes can be used to map groups of tools - the current classes include
   # - local (these special tools that aren't parameterized for remote execution - expression tools, upload, etc..)
   # - requires_galaxy (these special tools require Galaxy's Python environment during execution)
+  # - user_defined (these tools are defined by the user and should be routed to an isolated job execution environment)
   # If a tool matches multiple classes, it will match the first class according to the order listed
   # above in this document (local, requires_galaxy).
   class: local

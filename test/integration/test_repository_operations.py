@@ -1,7 +1,9 @@
 import os
+import xml.etree.ElementTree as ET
 from collections import namedtuple
 
-from galaxy.model.base import transaction
+from sqlalchemy import select
+
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
@@ -18,7 +20,6 @@ REVISION_4 = "071084070619"
 
 
 class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
-
     """Test data manager installation and table reload through the API"""
 
     @classmethod
@@ -61,11 +62,34 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         self.install_repository(*repo)
         self.uninstall_repository(*repo)
 
+    def test_non_data_manager_install_lands_loc_files_under_shed_subdir(self):
+        """Non-Data-Manager repos install their .loc files under tool_data_path/shed/ (keeping them
+        separate from admin-configured loc files at the tool_data_path root and from anything
+        shipped via tool_data_table_conf.xml.sample). Any <table> entries written to
+        shed_tool_data_table_conf.xml have no <tool_shed_repository> sub-element."""
+        non_dm_repo = ("devteam", "bwa", "051eba708f43")
+        non_dm_loc_files = {"bwa_mem_index.loc"}
+        self.install_repository(*non_dm_repo)
+        shed_loc_dir = os.path.join(self._app.config.tool_data_path, "shed")
+        for loc_file in non_dm_loc_files:
+            shared_loc = os.path.join(shed_loc_dir, loc_file)
+            assert os.path.exists(shared_loc), f"Expected shared loc file at {shared_loc}"
+            # The loc file should NOT also be written at the tool_data_path root.
+            assert not os.path.exists(
+                os.path.join(self._app.config.tool_data_path, loc_file)
+            ), f"Shed loc file should not land at tool_data_path root: {loc_file}"
+        shed_conf = self._app.config.shed_tool_data_table_config
+        if os.path.exists(shed_conf):
+            for table_elem in ET.parse(shed_conf).getroot().findall("table"):
+                assert (
+                    table_elem.find("tool_shed_repository") is None
+                ), f"Table {table_elem.get('name')!r} should not have a <tool_shed_repository> sub-element"
+
     def test_repository_update(self):
         response = self._install_repository(revision=REVISION_4, version="0.0.3", allow_upgraded=True)[0]
         assert int(response["ctx_rev"]) >= 4
         latest_revision = response["changeset_revision"]
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"]).json()
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}").json()
         assert repo_response["tool_shed_status"]["revision_update"] == "False"  # that should really be a boolean
         # now checkout revision 3 and attempt an update
         path_components = [
@@ -86,16 +110,15 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         hg_util.update_repository(repository_path, ctx_rev="3")
         # change repo to revision 3 in database
         model = self._app.install_model
-        tsr = model.context.query(model.ToolShedRepository).first()
+        session = model.context()
+        tsr = session.scalars(select(model.ToolShedRepository).limit(1)).first()
         assert tsr.name == REPO.name
         assert tsr.changeset_revision == latest_revision
         assert int(tsr.ctx_rev) >= 4
         tsr.ctx_rev = "3"
         tsr.installed_changeset_revision = REVISION_3
         tsr.changeset_revision = REVISION_3
-        session = model.context
-        with transaction(session):
-            session.commit()
+        session.commit()
         # update shed_tool_conf.xml to look like revision 3 was the installed_changeset_revision
         with open(self._app.config.shed_tool_config_file) as shed_config:
             shed_text = shed_config.read().replace(latest_revision, REVISION_3)
@@ -103,7 +126,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             shed_config.write(shed_text)
         self._get("/api/tool_shed_repositories/check_for_updates", data={"id": response["id"]}, admin=True).json()
         # At this point things should look like there is minor update available
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"])
+        repo_response = self._get(f"/api/tool_shed_repositories/{response['id']}")
         repo_response.raise_for_status()
         repo_json = repo_response.json()
         assert repo_json["tool_shed_status"]["revision_update"] == "True"

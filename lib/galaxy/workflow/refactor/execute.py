@@ -1,14 +1,14 @@
 import logging
 from typing import (
     Any,
-    Dict,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.tools.parameters import visit_input_values
-from galaxy.tools.parameters.basic import (
+from galaxy.tools.parameters.basic import contains_workflow_parameter
+from galaxy.tools.parameters.workflow_utils import (
     ConnectedValue,
-    contains_workflow_parameter,
+    NO_REPLACEMENT,
     runtime_to_json,
 )
 from .schema import (
@@ -22,6 +22,7 @@ from .schema import (
     FillStepDefaultsAction,
     InputReferenceByOrderIndex,
     OutputReferenceByOrderIndex,
+    Position,
     RefactorActionExecution,
     RefactorActionExecutionMessage,
     RefactorActionExecutionMessageTypeEnum,
@@ -43,20 +44,31 @@ from .schema import (
 )
 from ..modules import (
     InputParameterModule,
-    NO_REPLACEMENT,
+    WorkflowModuleInjector,
 )
 
 log = logging.getLogger(__name__)
 
 
 class WorkflowRefactorExecutor:
-    def __init__(self, raw_workflow_description, workflow, module_injector):
+    # Constants for automatic input positioning
+    BASE_POSITION = 10
+    VERTICAL_SPACING = 120
+    HORIZONTAL_SPACING = 220
+
+    def __init__(self, raw_workflow_description, workflow, module_injector: WorkflowModuleInjector):
         # we mostly use the ga representation, but there may be cases where the
         # models/modules of existing workflow are more usable.
         self.raw_workflow_description = raw_workflow_description
         self.workflow = workflow
         self.module_injector = module_injector
-        self.module_injector.inject_all(workflow, ignore_tool_missing_exception=True)
+        self.module_injector.inject_all(
+            workflow,
+            ignore_tool_missing_exception=True,
+            allow_tool_state_corrections=module_injector.allow_tool_state_corrections,
+        )
+        # Track positions of newly created input steps during refactoring
+        self._new_input_positions: list[Position] = []
 
     def refactor(self, refactor_request: RefactorActions):
         action_executions = []
@@ -71,7 +83,7 @@ class WorkflowRefactorExecutor:
             if refactor_method is None:
                 raise RequestParameterInvalidException(f"Unknown workflow editing action encountered [{action_type}]")
             execution = RefactorActionExecution(
-                action=action.dict(),
+                action=action,
                 messages=[],
             )
             refactor_method(action, execution)
@@ -111,12 +123,70 @@ class WorkflowRefactorExecutor:
     def _apply_update_report(self, action: UpdateReportAction, execution: RefactorActionExecution):
         self._as_dict["report"] = {"markdown": action.report.markdown}
 
+    def _get_next_input_position(self):
+        """
+        Calculate a non-overlapping position for a new input step.
+        Places inputs to the left of all existing non-input workflow steps,
+        and stacks them vertically to avoid overlapping with existing inputs.
+        """
+        # Find the minimum left position of all existing non-input workflow steps
+        min_left_non_input = None
+        # Find all existing input step positions to avoid overlaps
+        existing_input_positions = []
+
+        for step in self._as_dict["steps"].values():
+            if "position" in step and step["position"]:
+                step_left = step["position"].get("left")
+                step_top = step["position"].get("top")
+
+                if step_left is not None:
+                    # Track existing input positions
+                    if step.get("type") in ["data_input", "data_collection_input", "parameter_input"]:
+                        if step_top is not None:
+                            existing_input_positions.append((step_left, step_top))
+                    else:
+                        # Track minimum left position of non-input steps
+                        if min_left_non_input is None or step_left < min_left_non_input:
+                            min_left_non_input = step_left
+
+        if min_left_non_input is not None:
+            # Place inputs one column to the left (subtract HORIZONTAL_SPACING)
+            # (Negative positions are normalized?)
+            left = min_left_non_input - self.HORIZONTAL_SPACING
+        else:
+            left = self.BASE_POSITION
+
+        # Calculate top position: stack vertically, avoiding existing inputs
+        # Start with the base position and increment by VERTICAL_SPACING
+        position_index = len(self._new_input_positions)
+        top = self.BASE_POSITION + (self.VERTICAL_SPACING * position_index)
+
+        # Check if this position overlaps with any existing input at the same left coordinate
+        overlap_found = True
+        while overlap_found:
+            overlap_found = False
+            for existing_left, existing_top in existing_input_positions:
+                # If inputs are in approximately the same column (within HORIZONTAL_SPACING/2)
+                if abs(existing_left - left) < (self.HORIZONTAL_SPACING / 2):
+                    # Check if they overlap vertically (within VERTICAL_SPACING)
+                    if abs(existing_top - top) < self.VERTICAL_SPACING:
+                        # Overlap detected, move down
+                        top += self.VERTICAL_SPACING
+                        overlap_found = True
+                        break
+
+        position = Position(left=left, top=top)
+
+        # Track this new input position
+        self._new_input_positions.append(position)
+        return position
+
     def _apply_add_step(self, action: AddStepAction, execution: RefactorActionExecution):
         steps = self._as_dict["steps"]
         order_index = len(steps)
         step_dict = {
             "order_index": order_index,
-            "id": "new_%d" % order_index,
+            "id": f"new_{order_index}",
             "type": action.type,
         }
         if action.tool_state:
@@ -131,7 +201,7 @@ class WorkflowRefactorExecutor:
         input_type = action.type
         module_type = None
 
-        tool_state: Dict[str, Any] = {}
+        tool_state: dict[str, Any] = {}
         if input_type in ["data", "dataset"]:
             module_type = "data_input"
         elif input_type in ["data_collection", "dataset_collection"]:
@@ -155,8 +225,13 @@ class WorkflowRefactorExecutor:
         if action.label:
             add_step_kwds["label"] = action.label
 
+        # If no position is provided, calculate a non-overlapping position
+        position = action.position
+        if position is None:
+            position = self._get_next_input_position()
+
         add_step_action = AddStepAction(
-            action_type="add_step", type=module_type, tool_state=tool_state, position=action.position, **add_step_kwds
+            action_type="add_step", type=module_type, tool_state=tool_state, position=position, **add_step_kwds
         )
         self._apply_add_step(add_step_action, execution)
 
@@ -251,7 +326,7 @@ class WorkflowRefactorExecutor:
     def _apply_extract_untyped_parameter(self, action: ExtractUntypedParameter, execution: RefactorActionExecution):
         untyped_parameter_name = action.name
         new_label = action.label or untyped_parameter_name
-        target_value = "${%s}" % untyped_parameter_name
+        target_value = f"${{{untyped_parameter_name}}}"
 
         target_tool_inputs = []
         rename_pjas = []
@@ -330,7 +405,7 @@ class WorkflowRefactorExecutor:
             if untyped_parameter_name != new_label:
                 action_arguments = rename_pja.get("action_arguments")
                 old_newname = action_arguments["newname"]
-                new_newname = old_newname.replace(target_value, "${%s}" % new_label)
+                new_newname = old_newname.replace(target_value, f"${{{new_label}}}")
                 action_arguments["newname"] = new_newname
 
         optional = False
@@ -462,18 +537,30 @@ class WorkflowRefactorExecutor:
     def _inject(self, step, execution):
         # compute runtime state, capture upgrade messages that result
         if not hasattr(step, "module"):
-            self.module_injector.inject(step)
+            self.module_injector.inject(step, allow_tool_state_corrections=True)
         self.module_injector.compute_runtime_state(step)
         if getattr(step, "upgrade_messages", None):
             for key, value in step.upgrade_messages.items():
-                message = RefactorActionExecutionMessage(
-                    message=value,
-                    message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
-                    input_name=key,
-                    step_label=step.label,
-                    order_index=step.order_index,
-                )
-                execution.messages.append(message)
+                if isinstance(value, dict):
+                    for input_name, message in value.items():
+                        execution.messages.append(
+                            RefactorActionExecutionMessage(
+                                message=message,
+                                message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
+                                input_name=input_name,
+                                step_label=step.label,
+                                order_index=step.order_index,
+                            )
+                        )
+                else:
+                    message = RefactorActionExecutionMessage(
+                        message=value,
+                        message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
+                        input_name=key,
+                        step_label=step.label,
+                        order_index=step.order_index,
+                    )
+                    execution.messages.append(message)
         if getattr(step.module, "version_changes", None):
             for version_change in step.module.version_changes:
                 message = RefactorActionExecutionMessage(
@@ -531,6 +618,9 @@ class WorkflowRefactorExecutor:
                 if upgrade_input["name"] == input_name:
                     matching_input = upgrade_input
                     break
+                elif step.when_expression and f"inputs.{input_name}" in step.when_expression:
+                    # TODO: eventually track step inputs more formally
+                    matching_input = upgrade_input
 
             # In the future check parameter type, format, mapping status...
             if matching_input is None:

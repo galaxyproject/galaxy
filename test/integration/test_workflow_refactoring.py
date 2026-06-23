@@ -1,10 +1,11 @@
 import contextlib
 import json
+from collections.abc import Hashable
 from typing import (
     Any,
-    Dict,
-    List,
 )
+
+from sqlalchemy import select
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.workflows import RefactorRequest
@@ -18,8 +19,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
-from galaxy.model.base import transaction
-from galaxy.tools.parameters.basic import workflow_building_modes
+from galaxy.tools.parameters.workflow_utils import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
 from galaxy_test.base.uses_shed_api import UsesShedApi
@@ -44,8 +44,8 @@ steps:
       input1: test_input
 """
 
-ActionJson = Dict[str, Any]
-ActionsJson = List[ActionJson]
+ActionJson = dict[str, Any]
+ActionsJson = list[ActionJson]
 
 
 class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
@@ -71,10 +71,10 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         assert response.workflow["annotation"] == "my cool new annotation"
 
         actions = [
-            {"action_type": "update_license", "license": "AFL-3.0"},
+            {"action_type": "update_license", "license": "MIT"},
         ]
         self._refactor(actions)
-        assert self._latest_workflow.license == "AFL-3.0"
+        assert self._latest_workflow.license == "MIT"
 
         actions = [
             {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},
@@ -192,6 +192,147 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         self._refactor(actions)
         assert self._latest_workflow.step_by_label("first_cat").workflow_outputs[0].label == "new_wf_out"
 
+    def test_extract_input_multiple_non_overlapping_positions(self):
+        """Test that multiple extract_input actions create non-overlapping, properly positioned inputs."""
+        # Create a workflow with multiple tool steps that have disconnected inputs
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  first_cat:
+    tool_id: cat
+    position:
+      left: 230
+      top: 10
+  second_cat:
+    tool_id: cat
+    position:
+      left: 450
+      top: 10
+  third_cat:
+    tool_id: cat
+    position:
+      left: 230
+      top: 150
+""")
+
+        # Extract inputs for all three tool steps in a single refactor operation
+        actions: ActionsJson = [
+            {
+                "action_type": "extract_input",
+                "input": {"label": "first_cat", "input_name": "input1"},
+                "label": "input_1",
+            },
+            {
+                "action_type": "extract_input",
+                "input": {"label": "second_cat", "input_name": "input1"},
+                "label": "input_2",
+            },
+            {
+                "action_type": "extract_input",
+                "input": {"label": "third_cat", "input_name": "input1"},
+                "label": "input_3",
+            },
+        ]
+        self._refactor(actions)
+
+        # Verify all inputs were created
+        input_1 = self._latest_workflow.step_by_label("input_1")
+        input_2 = self._latest_workflow.step_by_label("input_2")
+        input_3 = self._latest_workflow.step_by_label("input_3")
+
+        assert input_1 is not None
+        assert input_2 is not None
+        assert input_3 is not None
+
+        # Verify inputs are connected
+        assert len(self._latest_workflow.step_by_label("first_cat").inputs) == 1
+        assert len(self._latest_workflow.step_by_label("second_cat").inputs) == 1
+        assert len(self._latest_workflow.step_by_label("third_cat").inputs) == 1
+
+        # Verify positions are set
+        assert input_1.position is not None
+        assert input_2.position is not None
+        assert input_3.position is not None
+
+        # Verify all inputs have the same left position (leftmost column)
+        assert input_1.position["left"] == input_2.position["left"] == input_3.position["left"]
+
+        first_cat = self._latest_workflow.step_by_label("first_cat")
+        second_cat = self._latest_workflow.step_by_label("second_cat")
+        third_cat = self._latest_workflow.step_by_label("third_cat")
+
+        # Verify inputs are to the left of all tool steps
+        assert input_1.position["left"] < first_cat.position["left"]
+        assert input_1.position["left"] < second_cat.position["left"]
+        assert input_1.position["left"] < third_cat.position["left"]
+
+        # Verify inputs are vertically stacked with 120px spacing
+        # The actual top values will be normalized, but the spacing should be preserved
+        assert input_2.position["top"] - input_1.position["top"] == 120
+        assert input_3.position["top"] - input_2.position["top"] == 120
+
+    def test_extract_input_avoids_existing_input_overlap(self):
+        """Test that new inputs don't overlap with existing inputs."""
+        # Create a workflow with an existing input and a tool step
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  existing_input:
+    type: data
+    position:
+      left: 10
+      top: 10
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: existing_input
+    position:
+      left: 230
+      top: 10
+  second_cat:
+    tool_id: cat
+    position:
+      left: 450
+      top: 10
+""")
+
+        # Disconnect second_cat and extract its input
+        actions: ActionsJson = [
+            {
+                "action_type": "extract_input",
+                "input": {"label": "second_cat", "input_name": "input1"},
+                "label": "new_input",
+            }
+        ]
+        self._refactor(actions)
+
+        # Verify new input was created
+        new_input = self._latest_workflow.step_by_label("new_input")
+        existing_input = self._latest_workflow.step_by_label("existing_input")
+        assert new_input is not None
+        assert existing_input is not None
+
+        # Both inputs should be in the same column (leftmost) new input should be
+        # below the existing input to avoid overlap
+
+        # Verify they're in the same column (same left position)
+        assert new_input.position["left"] == existing_input.position["left"]
+
+        # Verify the new input is positioned below the existing input
+        # Should be at least 120px (VERTICAL_SPACING) apart
+        assert new_input.position["top"] > existing_input.position["top"]
+        assert new_input.position["top"] - existing_input.position["top"] >= 120
+
+        # Verify both inputs are to the left of tool steps
+        first_cat = self._latest_workflow.step_by_label("first_cat")
+        second_cat = self._latest_workflow.step_by_label("second_cat")
+
+        assert new_input.position["left"] < first_cat.position["left"]
+        assert new_input.position["left"] < second_cat.position["left"]
+        assert existing_input.position["left"] < first_cat.position["left"]
+        assert existing_input.position["left"] < second_cat.position["left"]
+
     def test_basic_refactoring_types_dry_run(self):
         self.workflow_populator.upload_yaml_workflow(REFACTORING_SIMPLE_TEST)
 
@@ -208,10 +349,10 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         assert response.workflow["annotation"] == "my cool new annotation"
 
         actions = [
-            {"action_type": "update_license", "license": "AFL-3.0"},
+            {"action_type": "update_license", "license": "MIT"},
         ]
         response = self._dry_run(actions)
-        assert response.workflow["license"] == "AFL-3.0"
+        assert response.workflow["license"] == "MIT"
 
         actions = [
             {"action_type": "update_creator", "creator": [{"class": "Person", "name": "Mary"}]},
@@ -295,8 +436,7 @@ class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, U
         # test parameters used in PJA without being used in tool state.
         # These will work fine with the simplified workflow UI, but should probably
         # be formalized and assigned a unique label and informative annotation.
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -305,11 +445,10 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -318,8 +457,7 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_dry_run(self):
         # same as above but dry run...
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -328,11 +466,10 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param"},
         ]
@@ -344,8 +481,7 @@ steps:
 
     def test_refactoring_legacy_parameters_without_tool_state_relabel(self):
         # same thing as above, but apply relabeling and ensure PJA gets updated.
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
   test_input: data
@@ -354,11 +490,10 @@ steps:
     tool_id: cat
     in:
       input1: test_input
-    outputs:
+    out:
       out_file1:
         rename: "${pja_only_param} name"
-"""
-        )
+""")
         actions: ActionsJson = [
             {"action_type": "extract_untyped_parameter", "name": "pja_only_param", "label": "new_label"},
         ]
@@ -512,8 +647,7 @@ steps:
         assert message.input_name == "num_lines"
 
     def test_tool_version_upgrade_no_state_change(self):
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -521,8 +655,7 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-"""
-        )
+""")
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
@@ -535,9 +668,35 @@ steps:
         assert len(action_executions[0].messages) == 0
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.2"
 
+    def test_tool_version_upgrade_keeps_when_expression(self):
+        self.workflow_populator.upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  the_bool:
+    type: boolean
+steps:
+  the_step:
+    tool_id: multiple_versions
+    tool_version: '0.1'
+    in:
+      when: the_bool
+    state:
+      inttest: 0
+    when: $(inputs.when)
+""")
+        assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
+        actions: ActionsJson = [
+            {"action_type": "upgrade_tool", "step": {"label": "the_step"}},
+        ]
+        action_executions = self._refactor(actions).action_executions
+        assert len(action_executions) == 1
+        assert len(action_executions[0].messages) == 0
+        step = self._latest_workflow.step_by_label("the_step")
+        assert step.tool_version == "0.2"
+        assert step.when_expression
+
     def test_tool_version_upgrade_state_added(self):
-        self.workflow_populator.upload_yaml_workflow(
-            """
+        self.workflow_populator.upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
   the_step:
@@ -545,8 +704,7 @@ steps:
     tool_version: '0.1'
     state:
       inttest: 0
-"""
-        )
+""")
         assert self._latest_workflow.step_by_label("the_step").tool_version == "0.1"
         actions: ActionsJson = [
             {"action_type": "upgrade_tool", "step": {"label": "the_step"}, "tool_version": "0.2"},
@@ -557,7 +715,7 @@ steps:
 
         assert len(action_executions) == 1
         messages = action_executions[0].messages
-        assert len(messages) == 1
+        assert len(messages) == 2
         message = messages[0]
         assert message.message_type == RefactorActionExecutionMessageTypeEnum.tool_state_adjustment
         assert message.order_index == 0
@@ -766,8 +924,9 @@ steps:
         with self.workflow_populator.export_for_update(workflow_id) as workflow_object:
             yield workflow_object
 
-    def _refactor(self, actions: List[Dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
-        user = self._app.model.session.query(User).order_by(User.id.desc()).limit(1).one()
+    def _refactor(self, actions: list[dict[str, Any]], stored_workflow=None, dry_run=False, style="ga"):
+        stmt = select(User).order_by(User.id.desc()).limit(1)
+        user = self._app.model.session.execute(stmt).scalar_one()
         mock_trans = MockTrans(self._app, user)
 
         app = self._app
@@ -790,8 +949,7 @@ steps:
         # Do a bunch of checks to ensure nothing workflow related was written to the database
         # or even added to the sa_session.
         sa_session = self._app.model.session
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
 
         sw_update_time = self._model_last_time(StoredWorkflow)
         assert sw_update_time
@@ -805,8 +963,7 @@ steps:
         wo_last_id = self._model_last_id(WorkflowOutput)
 
         response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
-        with transaction(sa_session):
-            sa_session.commit()
+        sa_session.commit()
         assert sw_update_time == self._model_last_time(StoredWorkflow)
         assert w_update_time == self._model_last_time(Workflow)
         assert ws_last_id == self._model_last_id(WorkflowStep)
@@ -818,11 +975,13 @@ steps:
         return response
 
     def _model_last_time(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.update_time.desc()).limit(1).one()
+        stmt = select(clazz).order_by(clazz.update_time.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).unique().scalar_one()
         return obj.update_time
 
     def _model_last_id(self, clazz):
-        obj = self._app.model.session.query(clazz).order_by(clazz.id.desc()).limit(1).one_or_none()
+        stmt = select(clazz).order_by(clazz.id.desc()).limit(1)
+        obj = self._app.model.session.execute(stmt).scalar_one_or_none()
         return obj.id if obj else None
 
     @property
@@ -835,7 +994,8 @@ steps:
 
     def _recent_stored_workflow(self, n=1):
         app = self._app
-        return app.model.session.query(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n).all()[-1]
+        stmt = select(StoredWorkflow).order_by(StoredWorkflow.id.desc()).limit(n)
+        return app.model.session.scalars(stmt).unique().all()[-1]
 
     @property
     def _latest_workflow(self):
@@ -892,6 +1052,8 @@ class MockTrans(ProvidesAppContext):
         self.user = user
         self.history = None
         self.workflow_building_mode = workflow_building_modes.ENABLED
+        self.tag_handler = app.tag_handler
+        self._short_term_cache: dict[tuple[Hashable, ...], Any] = {}
 
     @property
     def galaxy_session(self):

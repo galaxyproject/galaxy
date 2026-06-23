@@ -1,0 +1,14 @@
+type: pithos
+auth:
+  url: http://example.org/
+  token: extoken123
+
+container:
+  name: foo
+  project: cow
+
+extra_dirs:
+  - type: temp
+    path: database/tmp_pithos
+  - type: job_work
+    path: database/working_pithos

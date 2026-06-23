@@ -17,13 +17,13 @@
                 A dependency resolver of type {{ dependencyResolver.resolver_type }} was used to resolve these
                 dependencies.
             </span>
-            <display-raw :object="dependencyResolver" />
+            <DisplayRaw :object="dependencyResolver" />
         </span>
         <span v-else> no dependency resolver </span>
     </span>
 </template>
 <script>
-import DisplayRaw from "./DisplayRaw";
+import DisplayRaw from "./DisplayRaw.vue";
 
 export default {
     components: { DisplayRaw },

@@ -13,7 +13,7 @@ def set_basic_defaults(job_wrapper):
 
 
 def do_split(job_wrapper):
-    if len(job_wrapper.job_io.get_input_fnames()) > 1 or len(job_wrapper.job_io.get_output_fnames()) > 1:
+    if len(job_wrapper.job_io.get_input_datasets()) > 1 or len(job_wrapper.job_io.get_output_fnames()) > 1:
         log.error("The basic splitter is not capable of handling jobs with multiple inputs or outputs.")
         raise Exception("Job Splitting Failed, the basic splitter only handles tools with one input and one output")
     # add in the missing information for splitting the one input and merging the one output

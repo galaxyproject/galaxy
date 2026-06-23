@@ -1,15 +1,22 @@
 <script setup lang="ts">
+import { BFormCheckbox, BPagination } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
+
+import type { TableField } from "@/components/Common/GTable.types";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
-import { BModal, BTable, BFormCheckbox, BPagination, BButton } from "bootstrap-vue";
+
+import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GModal from "@/components/BaseComponents/GModal.vue";
+import GTable from "@/components/Common/GTable.vue";
+import Heading from "@/components/Common/Heading.vue";
 import UtcDate from "@/components/UtcDate.vue";
-import { type CleanableItem, type CleanupOperation, type SortableKey, PaginationOptions } from "./model";
-import { computed, ref, watch } from "vue";
 
 interface ReviewCleanupDialogProps {
     operation?: CleanupOperation;
     totalItems?: number;
-    modalStatic?: boolean;
 }
 
 const props = withDefaults(defineProps<ReviewCleanupDialogProps>(), {
@@ -24,7 +31,7 @@ const emit = defineEmits<{
 const permanentlyDeleteText = localize("Permanently delete");
 const captionText = localize("To free up account space, review and select items to be permanently deleted here.");
 const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
-const fields = [
+const fields: TableField[] = [
     {
         key: "selected",
         label: "",
@@ -32,16 +39,18 @@ const fields = [
     },
     {
         key: "name",
+        label: localize("Name"),
         sortable: true,
     },
     {
         key: "size",
+        label: localize("Size"),
         sortable: true,
         formatter: toNiceSize,
     },
     {
-        label: "Updated",
         key: "update_time",
+        label: localize("Updated"),
         sortable: true,
     },
 ];
@@ -59,6 +68,7 @@ const items = ref<CleanableItem[]>([]);
 const selectedItems = ref<CleanableItem[]>([]);
 const confirmChecked = ref(false);
 const isBusy = ref(false);
+const openConfirmationModal = ref(false);
 
 const selectedItemCount = computed(() => {
     return selectedItems.value.length;
@@ -77,38 +87,35 @@ const title = computed(() => {
 });
 
 const confirmationTitle = computed(() => {
-    return `Permanently delete ${selectedItemCount.value} items?`;
-});
-
-const deleteButtonVariant = computed(() => {
-    return hasItemsSelected.value ? "danger" : "";
+    return `Permanently delete ${selectedItemCount.value} item${selectedItemCount.value > 1 ? "s" : ""}?`;
 });
 
 const deleteItemsText = computed(() => {
-    return hasItemsSelected.value ? `${selectedItemCount.value} items` : "";
+    return hasItemsSelected.value ? `${selectedItemCount.value} item${selectedItemCount.value > 1 ? "s" : ""}` : "";
 });
 
-const confirmButtonVariant = computed(() => {
-    return confirmChecked.value ? "danger" : "";
-});
-
-watch(props, (newVal) => {
-    currentPage.value = 1;
-    totalRows.value = newVal.totalItems;
-});
-
-watch(selectedItems, (newVal) => {
-    if (newVal.length === 0) {
-        indeterminate.value = false;
-        allSelected.value = false;
-    } else if (newVal.length === totalRows.value) {
-        indeterminate.value = false;
-        allSelected.value = true;
-    } else {
-        indeterminate.value = true;
-        allSelected.value = false;
+async function loadItems() {
+    if (!props.operation) {
+        items.value = [];
+        return;
     }
-});
+
+    try {
+        isBusy.value = true;
+        const page = currentPage.value > 0 ? currentPage.value - 1 : 0;
+        const offset = page * MAXIMUM_ITEMS_PER_PAGE;
+        const options = new PaginationOptions({
+            offset: offset,
+            limit: MAXIMUM_ITEMS_PER_PAGE,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        });
+        const result = await props.operation.fetchItems(options);
+        items.value = result;
+    } finally {
+        isBusy.value = false;
+    }
+}
 
 function toNiceSize(sizeInBytes: number) {
     return bytesToString(sizeInBytes, true, undefined);
@@ -130,8 +137,9 @@ function hideModal() {
     showDialog.value = false;
 }
 
-function onShowModal() {
+async function onShowModal() {
     resetModal();
+    await loadItems();
 }
 
 function resetModal() {
@@ -147,37 +155,37 @@ function onConfirmCleanupSelectedItems() {
     hideModal();
 }
 
-function onSort(props: { sortBy: SortableKey; sortDesc: boolean }) {
-    sortBy.value = props.sortBy;
-    sortDesc.value = props.sortDesc;
+function onSort(sortByKey: string, sortDescending: boolean) {
+    sortBy.value = sortByKey as SortableKey;
+    sortDesc.value = sortDescending;
 }
 
-async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
-    try {
-        const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
-        const offset = page * ctx.perPage;
-        const options = new PaginationOptions({
-            offset: offset,
-            limit: ctx.perPage,
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-        });
-        const result = await props.operation.fetchItems(options);
-        return result;
-    } catch (error) {
-        return [];
+function isItemSelected(item: CleanableItem): boolean {
+    return selectedItems.value.some((selectedItem) => selectedItem.id === item.id);
+}
+
+function toggleItemSelection(item: CleanableItem): void {
+    const index = selectedItems.value.findIndex((selectedItem) => selectedItem.id === item.id);
+    if (index === -1) {
+        selectedItems.value = [...selectedItems.value, item];
+    } else {
+        selectedItems.value = selectedItems.value.filter((selectedItem) => selectedItem.id !== item.id);
     }
 }
 
 async function selectAllItems() {
     isBusy.value = true;
-    const allItems = await props.operation.fetchItems(
+    const operation = props.operation;
+    if (!operation) {
+        return;
+    }
+    const allItems = await operation.fetchItems(
         new PaginationOptions({
             offset: 0,
             limit: totalRows.value,
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
-        })
+        }),
     );
     items.value = allItems;
     selectedItems.value = allItems;
@@ -188,6 +196,50 @@ function unselectAllItems() {
     selectedItems.value = [];
 }
 
+watch(
+    () => props.totalItems,
+    (newVal) => {
+        currentPage.value = 1;
+        totalRows.value = newVal;
+    },
+);
+
+watch(
+    () => props.operation,
+    () => {
+        currentPage.value = 1;
+    },
+);
+
+watch([currentPage, sortBy, sortDesc], async () => {
+    await loadItems();
+});
+
+watch(showDialog, (newVal) => {
+    if (newVal) {
+        onShowModal();
+    }
+});
+
+watch(openConfirmationModal, (newVal) => {
+    if (newVal) {
+        resetConfirmationModal();
+    }
+});
+
+watch(selectedItems, (newVal) => {
+    if (newVal.length === 0) {
+        indeterminate.value = false;
+        allSelected.value = false;
+    } else if (newVal.length === totalRows.value) {
+        indeterminate.value = false;
+        allSelected.value = true;
+    } else {
+        indeterminate.value = true;
+        allSelected.value = false;
+    }
+});
+
 defineExpose({
     openModal,
     selectedItems,
@@ -195,73 +247,84 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
-        <template v-slot:modal-title>
-            {{ title }}
-            <span class="text-primary h3">{{ totalRows }} items</span>
+    <GModal footer :show.sync="showDialog" size="medium">
+        <template v-slot:header>
+            <Heading class="w-100 d-flex justify-content-between mb-0" size="md">
+                <div>{{ title }}</div>
+                <div class="text-primary">{{ totalRows }} {{ totalRows === 1 ? "item" : "items" }}</div>
+            </Heading>
         </template>
         <div>
             {{ captionText }}
         </div>
-        <b-table
+
+        <GTable
             v-if="operation"
-            v-model="items"
-            :fields="fields"
-            :items="itemsProvider"
-            :per-page="MAXIMUM_ITEMS_PER_PAGE"
-            :current-page="currentPage"
-            :busy="isBusy"
             hover
-            no-sort-reset
-            no-local-sorting
-            no-provider-filtering
+            :fields="fields"
+            :items="items"
+            :sort-by="sortBy"
+            :sort-desc="sortDesc"
+            :loading="isBusy"
+            :local-filtering="false"
+            :local-sorting="false"
             sticky-header="50vh"
             data-test-id="review-table"
             @sort-changed="onSort">
             <template v-slot:head(selected)>
-                <b-form-checkbox
+                <BFormCheckbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
                     @change="toggleSelectAll" />
             </template>
+
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
+                <BFormCheckbox
+                    :key="data.index"
+                    :checked="isItemSelected(data.item)"
+                    @change="toggleItemSelection(data.item)" />
             </template>
+
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </b-table>
-        <template v-slot:modal-footer>
-            <b-pagination
-                v-if="hasPages"
-                v-model="currentPage"
-                :total-rows="totalRows"
-                :per-page="MAXIMUM_ITEMS_PER_PAGE" />
-            <b-button
-                v-b-modal.confirmation-modal
-                :disabled="!hasItemsSelected"
-                :variant="deleteButtonVariant"
-                class="mx-2"
-                data-test-id="delete-button">
-                {{ permanentlyDeleteText }} {{ deleteItemsText }}
-            </b-button>
+        </GTable>
+
+        <template v-slot:footer>
+            <div
+                class="d-flex align-items-center"
+                :class="hasPages ? 'justify-content-between' : 'justify-content-end'">
+                <BPagination
+                    v-if="hasPages"
+                    v-model="currentPage"
+                    class="mb-0"
+                    :total-rows="totalRows"
+                    :per-page="MAXIMUM_ITEMS_PER_PAGE" />
+
+                <GButton
+                    :disabled="!hasItemsSelected"
+                    color="red"
+                    class="mx-2"
+                    data-test-id="delete-button"
+                    @click="openConfirmationModal = true">
+                    {{ permanentlyDeleteText }} {{ deleteItemsText }}
+                </GButton>
+            </div>
         </template>
 
-        <b-modal
+        <GModal
             id="confirmation-modal"
+            confirm
+            :show.sync="openConfirmationModal"
             :title="confirmationTitle"
-            title-tag="h2"
-            :ok-title="permanentlyDeleteText"
-            :ok-variant="confirmButtonVariant"
+            :ok-text="permanentlyDeleteText"
+            ok-color="red"
             :ok-disabled="!confirmChecked"
-            static
-            centered
-            @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems">
-            <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
+            <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
-            </b-form-checkbox>
-        </b-modal>
-    </b-modal>
+            </BFormCheckbox>
+        </GModal>
+    </GModal>
 </template>

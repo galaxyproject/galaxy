@@ -1,0 +1,10 @@
+input:
+  class: Collection
+  collection_type: paired
+  elements:
+    - identifier: forward
+      class: File
+      contents: "forward content"
+    - identifier: reverse
+      class: File
+      contents: "reverse content"

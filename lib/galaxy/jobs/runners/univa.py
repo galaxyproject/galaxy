@@ -28,11 +28,16 @@ known bugs/problems:
       cases 10.
     * The sheduler logs contains quite useful information.
 """
+
 import logging
 import re
 import signal
 import time
 from math import inf
+from typing import (
+    TYPE_CHECKING,
+    Union,
+)
 
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 from galaxy.util import (
@@ -40,6 +45,9 @@ from galaxy.util import (
     size_to_bytes,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs.runners.drmaa import DRMAAJobState
 
 log = logging.getLogger(__name__)
 
@@ -57,21 +65,23 @@ class UnivaJobRunner(DRMAAJobRunner):
     # restrict job name length as in the DRMAAJobRunner
     # restrict_job_name_length = 15
 
-    def check_watched_item(self, ajs, new_watched):
+    def check_watched_item_drmaa(self, ajs: "DRMAAJobState", new_watched: list["DRMAAJobState"]) -> str:
         """
         get state with job_status/qstat
 
         since qstat returns undetermined for finished jobs
         we return DONE here
         """
+        assert ajs.job_id is not None
         state = self._get_drmaa_state(ajs.job_id, self.ds, False)
         # log.debug("UnivaJobRunner:check_watched_item ({jobid}) -> state {state}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state]))
         if state == self.drmaa.JobState.UNDETERMINED:
             return self.drmaa.JobState.DONE
         return state
 
-    def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
-        extinfo = dict()
+    def _complete_terminal_job(self, ajs: "DRMAAJobState", drmaa_state: str, **kwargs) -> Union[bool, None]:
+        extinfo: dict = {}
+        assert ajs.job_id is not None
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -213,7 +223,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
         signals = {
             k: v
-            for v, k in reversed(sorted(signal.__dict__.items()))
+            for v, k in sorted(signal.__dict__.items(), reverse=True)
             if v.startswith("SIG") and not v.startswith("SIG_")
         }
         cmd = ["qacct", "-j", job_id]
@@ -234,7 +244,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                     return self.drmaa.JobState.UNDETERMINED
             else:
                 break
-        qacct = dict()
+        qacct = {}
         for line in stdout.split("\n"):
             # remove header
             if line.startswith("=") or line == "":
@@ -267,7 +277,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # qdel       100     137          user@mail
 
         extinfo["time_wasted"] = _parse_time(qacct["wallclock"])
-        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"])
+        extinfo["memory_wasted"] = size_to_bytes(qacct["maxvmem"], binary=True)
         extinfo["slots"] = int(qacct["slots"])
 
         # deleted_by
@@ -444,7 +454,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # log.debug("UnivaJobRunner._get_drmaa_state_wait ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
         return state
 
-    def _get_drmaa_state(self, job_id, ds, waitqacct, extinfo=None):
+    def _get_drmaa_state(self, job_id: str, ds, waitqacct: bool, extinfo: Union[dict, None] = None) -> str:
         """
         get the state using drmaa.job_info/qstat and drmaa.wait/qacct using the above functions
         qacct/wait is only called if waitqacct is True.
@@ -567,8 +577,7 @@ class UnivaJobRunner(DRMAAJobRunner):
 
 def _parse_time(tstring):
     tme = None
-    m = re.search("([0-9:.]+)", tstring)
-    if m is not None:
+    if (m := re.search("([0-9:.]+)", tstring)) is not None:
         timespl = m.group(1).split(":")
         tme = float(timespl[-1])  # sec
         if len(timespl) > 1:  # min
@@ -599,7 +608,7 @@ def _parse_native_specs(job_id, native_spec):
     # parse memory
     m = re.search(r"mem=([\d.]+[KGMT]?)[\s,]*", native_spec)
     if m is not None:
-        mem = size_to_bytes(m.group(1))
+        mem = size_to_bytes(m.group(1), binary=True)
         # mem = _parse_mem(m.group(1))
         if mem is None:
             log.error(f"DRMAAUniva: job {job_id} has unparsable memory native spec {native_spec}")

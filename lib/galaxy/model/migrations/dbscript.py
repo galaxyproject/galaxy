@@ -10,6 +10,7 @@ from galaxy.model.migrations.base import (
     BaseDbScript,
     BaseParserBuilder,
 )
+from galaxy.model.migrations.dbrevisions import REVISION_TAGS
 from galaxy.model.migrations.scripts import (
     get_configuration,
     get_configuration_from_file,
@@ -23,22 +24,6 @@ CONFIG_FILE_ARG = "--galaxy-config"
 CONFIG_DIR_NAME = "config"
 GXY_CONFIG_PREFIX = "GALAXY_CONFIG_"
 TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
-
-# Update this dict with tags for each new release.
-# Note: the key should NOT be a prefix of an existing revision hash in alembic/versions_gxy/.
-# For example, if we have a hash 231xxxxxxxxx and use 231 as the key for release 23.1,
-# then using 231 as a partial revision identifier like `sh manage_db.sh upgrade 231`
-# will map to release 23.1 instead of revision 231xxxxxxxxx.
-REVISION_TAGS = {
-    "release_22.01": "base",
-    "22.01": "base",
-    "release_22.05": "186d4835587b",
-    "22.05": "186d4835587b",
-    "release_23.0": "caa7742f7bca",
-    "23.0": "caa7742f7bca",
-    "release_23.1": "e93c5d0b47a9",
-    "23.1": "e93c5d0b47a9",
-}
 
 
 class ParserBuilder(BaseParserBuilder):
@@ -69,7 +54,7 @@ class DbScript(BaseDbScript):
         return f"gxy@{revision_id}"
 
     def _revision_tags(self):
-        return REVISION_TAGS
+        return {f"release_{k}": v for k, v in REVISION_TAGS.items()} | REVISION_TAGS
 
     def _set_dburl(self, config_file: Optional[str] = None) -> None:
         gxy_config, tsi_config, _ = get_configuration_from_file(os.getcwd(), config_file)

@@ -1,10 +1,14 @@
 <script setup lang="ts">
+import { ref, watch } from "vue";
+
+import { getObjectStoreDetails } from "@/api/objectStores";
+import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import type { ConcreteObjectStoreModel } from "./types";
+
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
-import { getObjectStoreDetails } from "./services";
-import { watch, ref } from "vue";
-import type { ConcreteObjectStoreModel } from "./types";
-import { errorMessageAsString } from "@/utils/simple-error";
 
 interface ShowSelectObjectStoreProps {
     forWhat: string;
@@ -32,15 +36,15 @@ watch(
     () => props.preferredObjectStoreId,
     async () => {
         fetch();
-    }
+    },
 );
 fetch();
-const loadingMessage = "Loading object store details";
+const loadingMessage = localize("Loading Galaxy storage details");
 </script>
 
 <template>
     <div>
-        <LoadingSpan v-if="loading" :message="loadingMessage | localize" />
+        <LoadingSpan v-if="loading" :message="loadingMessage" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
         <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>

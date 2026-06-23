@@ -131,12 +131,7 @@ def generate_message_for_invalid_tools(
                 f"Upload a file named {bold_start}{sample_ext}{bold_end} to the repository to correct this error."
             )
         else:
-            if as_html:
-                correction_msg = exception_msg
-            else:
-                correction_msg = (
-                    exception_msg.replace("<br/>", new_line).replace("<b>", bold_start).replace("</b>", bold_end)
-                )
+            correction_msg = exception_msg
         message += f"{bold_start}{tool_file}{bold_end} - {correction_msg}{new_line}"
     return message
 

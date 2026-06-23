@@ -1,4 +1,4 @@
-<tool id="mulled_example_multi_1" name="mulled_example_multi_1" version="0.1.0" license="AFL-3.0">
+<tool id="mulled_example_multi_1" name="mulled_example_multi_1" version="0.1.0" license="MIT">
     <xrefs>
         <xref type="bio.tools">bedtools</xref>
         <xref type="bio.tools">samtools</xref>

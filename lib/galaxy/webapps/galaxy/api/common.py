@@ -1,30 +1,130 @@
 """This module contains utility functions shared across the api package."""
+
+from io import BytesIO
 from typing import (
+    Annotated,
     Any,
-    Dict,
-    List,
     Optional,
-    Set,
 )
 
 from fastapi import (
+    Body,
+    Path,
     Query,
     Request,
 )
+from starlette.responses import StreamingResponse
 
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
     ValueFilterQueryParams,
 )
-from galaxy.schema.schema import UpdateDatasetPermissionsPayload
-from galaxy.util import listify
-
-SerializationViewQueryParam: Optional[str] = Query(
-    None,
-    title="View",
-    description="View to be passed to the serializer",
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
 )
+from galaxy.schema.schema import (
+    UpdateDatasetPermissionsPayload,
+    UpdateDatasetPermissionsPayloadAliases,
+)
+from galaxy.util import listify
+from galaxy.webapps.base.api import GalaxyStreamingResponse
+
+FolderIdPathParam = Annotated[
+    LibraryFolderDatabaseIdField,
+    Path(..., title="Folder ID", description="The encoded identifier of the library folder."),
+]
+
+HistoryIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="History ID", description="The encoded database identifier of the History."),
+]
+
+HistoryDatasetIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Dataset ID", description="The ID of the History Dataset.")
+]
+
+
+HistoryItemIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Item ID", description="The ID of the item (`HDA`/`HDCA`)")
+]
+
+HistoryHDCAIDPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="History Dataset Collection ID", description="The ID of the `HDCA`.")
+]
+
+
+DatasetCollectionElementIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Dataset Collection Element ID", description="The encoded ID of the dataset collection element."),
+]
+
+
+UserIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="User ID", description="The ID of the user."),
+]
+
+
+GroupIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Group ID", description="The ID of the group."),
+]
+
+
+RoleIDPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Role ID", description="The ID of the role."),
+]
+
+UpdateDatasetPermissionsBody = Annotated[
+    UpdateDatasetPermissionsPayloadAliases,
+    Body(
+        ...,
+        examples=[
+            UpdateDatasetPermissionsPayload(
+                action="set_permissions",
+                access_ids=[],
+                manage_ids=[],
+                modify_ids=[],
+            ).model_dump()
+        ],
+    ),
+]
+
+LibraryIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Library ID", description="The ID of the Library."),
+]
+
+LibraryDatasetIdPathParam = Annotated[
+    DecodedDatabaseIdField, Path(..., title="Library dataset ID", description="The encoded ID of the library dataset.")
+]
+
+NotificationIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Notification ID", description="The ID of the Notification."),
+]
+
+
+PageIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Page ID", description="The ID of the Page."),
+]
+
+QuotaIdPathParam = Annotated[
+    DecodedDatabaseIdField,
+    Path(..., title="Quota ID", description="The ID of the Quota."),
+]
+
+SerializationViewQueryParam = Annotated[
+    Optional[str],
+    Query(
+        title="View",
+        description="View to be passed to the serializer",
+    ),
+]
 
 SerializationKeysQueryParam: Optional[str] = Query(
     None,
@@ -32,18 +132,18 @@ SerializationKeysQueryParam: Optional[str] = Query(
     description="Comma-separated list of keys to be passed to the serializer",
 )
 
-FilterQueryQueryParam: Optional[List[str]] = Query(
+FilterQueryQueryParam: Optional[list[str]] = Query(
     default=None,
     title="Filter Query",
     description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
-    example="create_time-gt",
+    examples=["create_time-gt"],
 )
 
-FilterValueQueryParam: Optional[List[str]] = Query(
+FilterValueQueryParam: Optional[list[str]] = Query(
     default=None,
     title="Filter Value",
     description="The value to filter by.",
-    example="2015-01-29",
+    examples=["2015-01-29"],
 )
 
 OffsetQueryParam: Optional[int] = Query(
@@ -84,15 +184,15 @@ def parse_serialization_params(
 
 
 def query_serialization_params(
-    view: Optional[str] = SerializationViewQueryParam,
+    view: SerializationViewQueryParam = None,
     keys: Optional[str] = SerializationKeysQueryParam,
 ) -> SerializationParams:
     return parse_serialization_params(view=view, keys=keys)
 
 
 def get_value_filter_query_params(
-    q: Optional[List[str]] = FilterQueryQueryParam,
-    qv: Optional[List[str]] = FilterValueQueryParam,
+    q: Optional[list[str]] = FilterQueryQueryParam,
+    qv: Optional[list[str]] = FilterValueQueryParam,
 ) -> ValueFilterQueryParams:
     """
     This function is meant to be used as a Dependency.
@@ -105,8 +205,8 @@ def get_value_filter_query_params(
 
 
 def get_filter_query_params(
-    q: Optional[List[str]] = FilterQueryQueryParam,
-    qv: Optional[List[str]] = FilterValueQueryParam,
+    q: Optional[list[str]] = FilterQueryQueryParam,
+    qv: Optional[list[str]] = FilterValueQueryParam,
     offset: Optional[int] = OffsetQueryParam,
     limit: Optional[int] = LimitQueryParam,
     order: Optional[str] = OrderQueryParam,
@@ -124,20 +224,27 @@ def get_filter_query_params(
     )
 
 
-def get_update_permission_payload(payload: Dict[str, Any]) -> UpdateDatasetPermissionsPayload:
-    """Converts the generic payload dictionary into a UpdateDatasetPermissionsPayload model with custom parsing.
-    This is an attempt on supporting multiple aliases for the permissions params."""
-    # There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
-    # The `access_ids[]` name is not pydantic friendly, so this will be modelled as an alias but we can only set one alias
+def normalize_permission_payload(
+    payload_aliases: UpdateDatasetPermissionsPayloadAliases,
+) -> UpdateDatasetPermissionsPayload:
+    """Normalize the payload by choosing the first non-None value for each field.
+
+    This is an attempt on supporting multiple aliases for the permissions params.
+    There are several allowed names for the same role list parameter, i.e.: `access`, `access_ids`, `access_ids[]`
+    """
     # TODO: Maybe we should choose only one way/naming and deprecate the others?
-    payload["access_ids"] = payload.get("access_ids[]") or payload.get("access")
-    payload["manage_ids"] = payload.get("manage_ids[]") or payload.get("manage")
-    payload["modify_ids"] = payload.get("modify_ids[]") or payload.get("modify")
-    update_payload = UpdateDatasetPermissionsPayload(**payload)
+    payload = payload_aliases.model_dump()
+    normalized_payload = {
+        "action": payload.get("action"),
+        "access_ids": payload.get("access_ids") or payload.get("access_ids[]") or payload.get("access"),
+        "manage_ids": payload.get("manage_ids") or payload.get("manage_ids[]") or payload.get("manage"),
+        "modify_ids": payload.get("modify_ids") or payload.get("modify_ids[]") or payload.get("modify"),
+    }
+    update_payload = UpdateDatasetPermissionsPayload.model_construct(**normalized_payload)
     return update_payload
 
 
-def get_query_parameters_from_request_excluding(request: Request, exclude: Set[str]) -> dict:
+def get_query_parameters_from_request_excluding(request: Request, exclude: set[str]) -> dict:
     """Gets all the request query parameters excluding the given parameters names in `exclude` set.
 
     This is useful when an endpoint uses arbitrary or dynamic query parameters that
@@ -179,8 +286,8 @@ def query_parameter_as_list(query):
     """
 
     def parse_elements(
-        elements: Optional[List[str]] = query,
-    ) -> Optional[List[Any]]:
+        elements: Optional[list[str]] = query,
+    ) -> Optional[list[Any]]:
         if query.default != Ellipsis and not elements:
             return query.default
         if elements and len(elements) == 1:
@@ -188,3 +295,12 @@ def query_parameter_as_list(query):
         return elements
 
     return parse_elements
+
+
+def serve_workbook(content: BytesIO, filename: Optional[str]) -> StreamingResponse:
+    filename = filename or "galaxy_sample_sheet_workbook.xlsx"
+    return GalaxyStreamingResponse(
+        content,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

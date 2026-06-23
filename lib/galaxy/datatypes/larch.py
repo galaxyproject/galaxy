@@ -1,5 +1,3 @@
-from typing import List
-
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -81,14 +79,14 @@ class AthenaProject(Text):
         Extract metadata from @args
         """
 
-        def extract_arg(args: List[str], arg_name: str):
+        def extract_arg(args: list[str], arg_name: str):
             try:
                 index = args.index(f"'{arg_name}'")
                 setattr(dataset.metadata, arg_name, args[index + 1].replace("'", ""))
             except ValueError:
                 return
 
-        headers = get_headers(dataset.file_name, sep=" = ", count=3, comment_designator="#")
+        headers = get_headers(dataset.get_file_name(), sep=" = ", count=3, comment_designator="#")
         args = []
         for header in headers:
             if header[0] == "@args":
@@ -104,7 +102,7 @@ class AthenaProject(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = (
                 f"atsym: {dataset.metadata.atsym}\n"
                 f"bkg_e0: {dataset.metadata.bkg_e0}\n"
@@ -201,7 +199,7 @@ class FEFFInput(Text):
         Extract metadata from TITLE
         """
         title_block = ""
-        headers = get_headers(dataset.file_name, sep=None, comment_designator="*")
+        headers = get_headers(dataset.get_file_name(), sep=None, comment_designator="*")
         for header in headers:
             if header and header[0] == "TITLE":
                 title_block += " ".join(header[1:]) + "\n"
@@ -210,7 +208,7 @@ class FEFFInput(Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.peek = get_file_peek(dataset.get_file_name())
             dataset.info = dataset.metadata.title_block
 
         else:

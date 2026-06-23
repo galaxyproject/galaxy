@@ -2,3 +2,4 @@ User-agent: *
 Disallow: /display?
 Disallow: /display_as?
 Disallow: /training-material/
+Disallow: /tool_runner?

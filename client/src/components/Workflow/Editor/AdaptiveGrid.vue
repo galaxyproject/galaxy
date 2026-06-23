@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import type { UseElementBoundingReturn } from "@vueuse/core";
-import { computed, ref, watch, type Ref, onMounted } from "vue";
-import { Transform, type AxisAlignedBoundingBox } from "./modules/geometry";
+import { computed, onMounted, type Ref, ref, watch } from "vue";
+
+import { useAnimationFrame } from "@/composables/sensors/animationFrame";
+import { type AxisAlignedBoundingBox, Transform, type WorkflowTransform } from "@/utils/geometry";
 
 const lineGap = 10;
 
@@ -32,7 +33,7 @@ const landmarkLines = [
 const props = defineProps<{
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
-    transform: { x: number; y: number; k: number };
+    transform: WorkflowTransform;
 }>();
 
 const colors = {
@@ -56,7 +57,7 @@ let redraw = true;
 watch(
     () => [props.transform, props.viewportBounds],
     () => (redraw = true),
-    { deep: true }
+    { deep: true },
 );
 
 useAnimationFrame(() => {
@@ -116,7 +117,7 @@ function traceGrid(
     ctx: CanvasRenderingContext2D,
     gap: number,
     pan: { x: number; y: number },
-    bounds: AxisAlignedBoundingBox
+    bounds: AxisAlignedBoundingBox,
 ) {
     const startOffset = {
         x: (pan.x % gap) - gap,
@@ -149,8 +150,8 @@ function traceGrid(
 </template>
 
 <style scoped lang="scss">
-@import "~bootstrap/scss/_functions.scss";
-@import "theme/blue.scss";
+@import "bootstrap/scss/_functions.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .adaptive-grid-canvas {
     --grid-color: #{$workflow-editor-grid-color};

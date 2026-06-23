@@ -1,0 +1,78 @@
+Use this template to customize the text email your users will receive
+when a new notification of category "storage_operation" is sent to them.
+Copy the file to {{ templates_dir }}/mail/notifications/storage_operation-email.txt and modify as required.
+
+If you are adding URLs, remember that only absolute URLs (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the text like
+{{ variable_name }}. They will be rendered into the text before the email is
+sent:
+
+- name                      The user's name
+- user_email                The user's email
+- date                      Date and time of the notification
+- hostname                  Your galaxy's hostname (i.e. usegalaxy.* or the value in `server_name` from the galaxy config file)
+- contact_email             Your galaxy's contact email
+- notification_settings_url The URL to the user's notification settings to manage their subscriptions
+- variant                   The notification variant indicates the level of importance of the notification (i.e. info, warning, urgent)
+- content                   The storage operation payload
+  - subject                 Notification subject
+  - message                 Notification body in text
+  - run_url                 Link to the run status page
+  - mode                    Storage operation mode
+  - state                   Storage operation state
+  - total_count             Total datasets in run
+  - succeeded_count         Successful datasets count
+  - failed_count            Failed datasets count
+  - skipped_count           Skipped datasets count
+- galaxy_url                The URL to the Galaxy instance (i.e. https://usegalaxy.*)
+
+Template begins here>>>>>>
+Hello {{ name }},
+
+{{ content['subject'] }}
+
+{{ content['message'] }}
+
+Storage operation summary:
+- Mode: {{ content['mode'] }}
+- Current state: {{ content['state'] }}
+- Total datasets: {{ content['total_count'] }}
+- Succeeded: {{ content['succeeded_count'] }}
+- Failed: {{ content['failed_count'] }}
+- Skipped: {{ content['skipped_count'] }}
+{% if content['total_count'] and content['total_count'] > 0 %}
+- Success rate: {{ ((content['succeeded_count'] * 100) / content['total_count']) | round(1) }}%
+- Failed rate: {{ ((content['failed_count'] * 100) / content['total_count']) | round(1) }}%
+- Skipped rate: {{ ((content['skipped_count'] * 100) / content['total_count']) | round(1) }}%
+{% endif %}
+
+Run details:
+{% if content['failed_count'] and content['failed_count'] > 0 %}
+Some datasets failed during this run. Please review the run details for the failure reasons.
+{% elif content['succeeded_count'] and content['total_count'] and content['succeeded_count'] == content['total_count'] %}
+All datasets were processed successfully.
+{% else %}
+This run has completed with mixed results. Please review the run details.
+{% endif %}
+
+To view the live or final status of this run, open:
+{{ content['run_url'] }}
+
+Thank you for using Galaxy!
+
+Regards,
+Your Galaxy Team at {{ hostname }}
+
+---
+
+You received this email because you are subscribed to receive storage operation notifications.
+{% if notification_settings_url %}
+To manage your notification settings, please visit {{ notification_settings_url }}.
+{% endif %}
+
+{% if contact_email %}
+This is an automated email. If you have any questions or concerns, please do not reply to this email, instead, contact us at {{ contact_email }}.
+{% endif %}

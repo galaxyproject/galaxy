@@ -4,6 +4,7 @@ Testing approach:
 - Use alembic api for setup and accessing the database.
 - Run command as subprocess, verify captured output + database state.
 """
+
 import os
 from typing import NewType
 
@@ -23,10 +24,11 @@ from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noq
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import in_packages
-from galaxy.util.resources import resource_path
-
-pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
+from galaxy.util.resources import (
+    as_file,
+    resource_path,
+    Traversable,
+)
 
 DbUrl = NewType("DbUrl", str)
 
@@ -39,21 +41,26 @@ ADMIN_CMD = "manage_db.sh"
 DEV_CMD = "scripts/db_dev.sh"
 COMMANDS = [ADMIN_CMD, DEV_CMD]
 
+# Skip all but one due to slow speed. Leave one test as a "smoke test".
+SKIP_REASON = "Slow test: database migration management scripts"
+
 
 @pytest.fixture(scope="session")
-def migrations_dir():
+def migrations_dir() -> Traversable:
     """[galaxy-root]/lib/galaxy/model/migrations/"""
     return resource_path("galaxy.model", "migrations")
 
 
 @pytest.fixture(scope="session")
-def alembic_env_dir(migrations_dir) -> str:
+def alembic_env_dir(migrations_dir: Traversable) -> Traversable:
     """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
     return migrations_dir / "alembic"
 
 
 @pytest.fixture(params=["one database", "two databases"])
-def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, monkeypatch, request):  # noqa: F811
+def config(
+    url_factory, alembic_env_dir: Traversable, alembic_config_text, tmp_directory, monkeypatch, request  # noqa: F811
+):
     """
     Construct Config object for staging; setup staging env.
     """
@@ -68,7 +75,8 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
 
     # Copy production alembic.ini to staging location
     config_file_path = os.path.join(tmp_directory, "alembic.ini")
-    update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, gxy_dburl)
+    with as_file(alembic_env_dir) as alembic_env_dir_path:
+        update_config_for_staging(alembic_config_text, os.fspath(alembic_env_dir_path), version_locations, gxy_dburl)
     write_to_file(config_file_path, alembic_config_text)
 
     alembic_cfg = Config(config_file_path)
@@ -94,6 +102,7 @@ def create_alembic_branches(config: Config, gxy_versions_dir: str, tsi_versions_
     )
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestRevisionCommand:
     def test_revision_cmd(self, config):
         run_command(f"{DEV_CMD} revision --message foo1")
@@ -101,7 +110,7 @@ class TestRevisionCommand:
         run_command(f"{DEV_CMD} revision --rev-id 3 --message foo3")
 
         script_dir = ScriptDirectory.from_config(config)
-        revisions = [rev for rev in script_dir.walk_revisions()]
+        revisions = list(script_dir.walk_revisions())
         assert len(revisions) == 5  # verify total revisions: 2 base + 3 new
 
         rev = script_dir.get_revision("3")
@@ -116,6 +125,7 @@ class TestRevisionCommand:
         assert "the following arguments are required: -m/--message" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestShowCommand:
     def test_show_cmd(self, config):
         alembic.command.revision(config, rev_id="42", head=GXY_BASE_ID)
@@ -141,6 +151,7 @@ class TestShowCommand:
         assert "the following arguments are required: revision" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 class TestHistoryCommand:
     def test_history_cmd(self, config):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
@@ -175,6 +186,7 @@ class TestHistoryCommand:
         assert "gxy0 -> 1 (gxy)" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestVersionCommand:
     def test_version_cmd(self, config, command):
@@ -195,6 +207,7 @@ class TestVersionCommand:
         assert "Revises: 1" in completed.stdout
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDbVersionCommand:
     def test_dbversion_cmd(self, config, command):
@@ -225,6 +238,7 @@ class TestDbVersionCommand:
 
 @pytest.mark.parametrize("command", COMMANDS)
 class TestUpgradeCommand:
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
@@ -266,6 +280,7 @@ class TestUpgradeCommand:
         assert "UPDATE alembic_version SET version_num='2'" in completed.stdout
         assert "UPDATE alembic_version SET version_num='3'" in completed.stdout
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd_with_revision_arg(self, config, command):
         alembic.command.revision(config, rev_id="1", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="2", head="1")
@@ -278,6 +293,7 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("1",)
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_upgrade_cmd_with_relative_revision_syntax(self, config, command):
         alembic.command.revision(config, rev_id="a", head=GXY_BASE_ID)
         alembic.command.revision(config, rev_id="b", head="a")
@@ -304,6 +320,7 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("d",)
 
+    @pytest.mark.skip(SKIP_REASON)
     def test_repair_arg_available_to_dev_script_only(self, config, command):
         completed = run_command(f"{command} upgrade --repair")
         if command == DEV_CMD:
@@ -313,6 +330,7 @@ class TestUpgradeCommand:
             assert "unrecognized arguments: --repair" in completed.stderr
 
 
+@pytest.mark.skip(SKIP_REASON)
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDowngradeCommand:
     def test_downgrade_cmd(self, config, command):

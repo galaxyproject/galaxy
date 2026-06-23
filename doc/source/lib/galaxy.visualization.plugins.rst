@@ -17,6 +17,14 @@ galaxy.visualization.plugins.config\_parser module
    :undoc-members:
    :show-inheritance:
 
+galaxy.visualization.plugins.datasource\_testing module
+-------------------------------------------------------
+
+.. automodule:: galaxy.visualization.plugins.datasource_testing
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.visualization.plugins.plugin module
 ------------------------------------------
 
@@ -29,22 +37,6 @@ galaxy.visualization.plugins.registry module
 --------------------------------------------
 
 .. automodule:: galaxy.visualization.plugins.registry
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.visualization.plugins.resource\_parser module
-----------------------------------------------------
-
-.. automodule:: galaxy.visualization.plugins.resource_parser
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.visualization.plugins.utils module
------------------------------------------
-
-.. automodule:: galaxy.visualization.plugins.utils
    :members:
    :undoc-members:
    :show-inheritance:

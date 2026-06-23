@@ -10,7 +10,7 @@
     </outputs>
     <tests>
         <test>
-            <param name="intest" value="1"/>
+            <param name="inttest" value="1"/>
             <output name="out_file1" file="multiple_versions_0.2.txt">
                 <assert_contents>
                     <has_line line="Version 0.2"/>

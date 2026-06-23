@@ -46,7 +46,8 @@
                 title="Disconnect External Identity"
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
-                Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
+                Disconnect {{ capitalizeAsTitle(item.provider_label) }} -
+                {{ item.email }}
             </b-button>
 
             <b-modal
@@ -85,20 +86,25 @@
 
         <div v-if="enable_oidc" class="external-subheading">
             <h2 class="h-md">Connect Other External Identities</h2>
-            <external-login :login_page="false" />
+            <hr class="my-4" />
+            <ExternalLogin />
         </div>
     </section>
 </template>
 
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
+import purify from "dompurify";
+import Vue from "vue";
+
+import { getGalaxyInstance } from "@/app";
+import { Toast } from "@/composables/toast";
+import { userLogout } from "@/utils/logout";
+import { capitalizeFirstLetter } from "@/utils/strings";
+
 import svc from "./service";
-import { userLogout } from "utils/logout";
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
-import { sanitize } from "dompurify";
-import { Toast } from "composables/toast";
+
+import ExternalLogin from "@/components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);
 
@@ -115,7 +121,6 @@ export default {
             doomedItem: null,
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
-            cilogonOrCustos: null,
             userEmail: galaxy.user.get("email"),
         };
     },
@@ -150,10 +155,13 @@ export default {
     },
     mounted() {
         const params = new URLSearchParams(window.location.search);
-        const notificationMessage = sanitize(params.get("notification"));
+        const notificationMessage = purify.sanitize(params.get("notification"));
         Toast.success(notificationMessage);
     },
     methods: {
+        capitalizeAsTitle(str) {
+            return capitalizeFirstLetter(str);
+        },
         loadIdentities() {
             this.loading = true;
             svc.getIdentityProviders()
@@ -174,13 +182,13 @@ export default {
                     this.$refs.deleteAndResetModal.show();
                     this.setError(
                         "Before disconnecting this identity, you need to set your account password, " +
-                            "in order to avoid being locked out of your account."
+                            "in order to avoid being locked out of your account.",
                     );
                 }
             } else {
                 this.setError(
                     "Before disconnecting this identity, you need to set your account password, " +
-                        "in order to avoid being locked out of your account."
+                        "in order to avoid being locked out of your account.",
                 );
             }
         },
@@ -221,12 +229,12 @@ export default {
 </script>
 
 <style lang="scss">
-@import "~bootstrap/scss/functions";
-@import "~bootstrap/scss/variables";
-@import "~bootstrap/scss/mixins";
-@import "~bootstrap/scss/utilities/spacing";
-@import "scss/theme/blue.scss";
-@import "scss/mixins";
+@import "bootstrap/scss/functions";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities/spacing";
+@import "@/style/scss/theme/blue.scss";
+@import "@/style/scss/mixins";
 
 .operations {
     margin-bottom: 0;

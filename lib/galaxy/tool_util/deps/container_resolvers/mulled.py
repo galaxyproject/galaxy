@@ -1,5 +1,6 @@
 """This module describes the :class:`MulledContainerResolver` ContainerResolver plugin."""
 
+import json
 import logging
 import os
 import subprocess
@@ -8,6 +9,7 @@ from abc import (
     abstractmethod,
 )
 from typing import (
+    Any,
     Callable,
     Container as TypingContainer,
     Dict,
@@ -42,13 +44,13 @@ from ..container_classes import (
 )
 from ..docker_util import build_docker_images_command
 from ..mulled.mulled_build import (
-    DEFAULT_CHANNELS,
     ensure_installed,
     InvolucroContext,
     mull_targets,
 )
 from ..mulled.mulled_build_tool import requirements_to_mulled_targets
 from ..mulled.util import (
+    DEFAULT_CHANNELS,
     default_mulled_conda_channels_from_env,
     mulled_tags_for,
     split_tag,
@@ -104,6 +106,8 @@ CachedTarget = Union[CachedMulledImageSingleTarget, CachedV1MulledImageMultiTarg
 
 
 class CacheDirectory(metaclass=ABCMeta):
+    cacher_type: str
+
     def __init__(self, path: str, hash_func: Literal["v1", "v2"] = "v2") -> None:
         self.path = path
         self.hash_func = hash_func
@@ -111,8 +115,8 @@ class CacheDirectory(metaclass=ABCMeta):
     def _list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
         contents = os.listdir(self.path)
         sorted_images = version_sorted(contents)
-        raw_images = map(lambda name: identifier_to_cached_target(name, self.hash_func), sorted_images)
-        return list(i for i in raw_images if i is not None)
+        raw_images = (identifier_to_cached_target(name, self.hash_func) for name in sorted_images)
+        return [i for i in raw_images if i is not None]
 
     @abstractmethod
     def list_cached_mulled_images_from_path(self) -> List[CachedTarget]:
@@ -187,13 +191,27 @@ def list_docker_cached_mulled_images(
     if resolution_cache is not None and cache_key in resolution_cache:
         images_and_versions = resolution_cache.get(cache_key)
     else:
-        command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
+        command = build_docker_images_command(truncate=True, format="json", sudo=False, to_str=False)
         try:
-            images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
+            output = unicodify(subprocess.check_output(command)).strip()
         except subprocess.CalledProcessError:
             log.info("Call to `docker images` failed, configured container resolution may be broken")
             return []
-        images_and_versions = [":".join(line.split()[0:2]) for line in images_and_versions[1:]]
+
+        # Parse JSON output from docker images
+        images_and_versions = []
+        for line in output.splitlines():
+            if line.strip():
+                try:
+                    image_info = json.loads(line)
+                    repository = image_info.get("Repository", "")
+                    tag = image_info.get("Tag", "")
+                    if repository and tag:
+                        images_and_versions.append(f"{repository}:{tag}")
+                except json.JSONDecodeError:
+                    log.warning(f"Failed to parse docker image JSON: {line}")
+                    continue
+
         if resolution_cache is not None:
             resolution_cache[cache_key] = images_and_versions
 
@@ -202,7 +220,7 @@ def list_docker_cached_mulled_images(
         return image
 
     name_filter = get_filter(namespace)
-    sorted_images = version_sorted([_ for _ in filter(name_filter, images_and_versions)])
+    sorted_images = version_sorted(list(filter(name_filter, images_and_versions)))
     raw_images = (output_line_to_image(_) for _ in sorted_images)
     return [i for i in raw_images if i is not None]
 
@@ -734,11 +752,11 @@ class BuildMulledDockerContainerResolver(CliContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
         self.auto_install = string_as_bool(auto_install)
-        self._mulled_kwds = {
+        self._mulled_kwds: Dict[str, Any] = {
             "namespace": namespace,
             "hash_func": self.hash_func,
             "command": "build-and-test",
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self._mulled_kwds["channels"] = default_mulled_conda_channels_from_env() or self._get_config_option(
             "mulled_channels", DEFAULT_CHANNELS
@@ -786,9 +804,10 @@ class BuildMulledSingularityContainerResolver(SingularityCliContainerResolver):
             "channels": self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             "hash_func": self.hash_func,
             "command": "build-and-test",
+            "namespace": "local",
             "singularity": True,
             "singularity_image_dir": self.cache_directory.path,
-            "use_mamba": True,
+            "use_mamba": False,
         }
         self.involucro_context = InvolucroContext(**self._involucro_context_kwds)
         auto_init = self._get_config_option("involucro_auto_init", True)

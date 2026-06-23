@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { computed, nextTick, onMounted, onUpdated, ref } from "vue";
 
-const props = defineProps<{
+import type { IconLike } from "@/components/icons/galaxyIcons";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+interface Props {
     h1?: boolean;
     h2?: boolean;
     h3?: boolean;
@@ -12,12 +17,32 @@ const props = defineProps<{
     bold?: boolean;
     separator?: boolean;
     inline?: boolean;
-    size?: "xl" | "lg" | "md" | "sm" | "text";
-    icon?: string | [string, string];
-}>();
+    // TODO: Redo in Vue 3 to use BootstrapSize for prop typing.
+    size?: "xs" | "sm" | "md" | "lg" | "xl" | "text";
+    icon?: IconLike;
+    truncate?: boolean;
+    clamp?: number;
+    collapse?: "open" | "closed" | "none";
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    collapse: "none",
+    icon: undefined,
+    size: "lg",
+});
+
+defineEmits(["click"]);
 
 const sizeClass = computed(() => {
-    return `h-${props.size ?? "lg"}`;
+    return `h-${props.size}`;
+});
+
+const collapsible = computed(() => {
+    return props.collapse !== "none";
+});
+
+const collapsed = computed(() => {
+    return props.collapse === "closed";
 });
 
 const element = computed(() => {
@@ -28,12 +53,56 @@ const element = computed(() => {
     }
     return "h1";
 });
+
+const headingRef = ref<HTMLElement | null>(null);
+const isClamped = ref(false);
+
+function checkClamped() {
+    if (headingRef.value && props.clamp) {
+        isClamped.value = headingRef.value.scrollHeight > headingRef.value.clientHeight;
+    } else {
+        isClamped.value = false;
+    }
+}
+
+const clampTooltip = computed(() => {
+    if (isClamped.value) {
+        return headingRef.value?.textContent?.trim() ?? null;
+    }
+    return null;
+});
+
+const clampStyle = computed(() => {
+    if (props.clamp) {
+        return { webkitLineClamp: props.clamp };
+    }
+    return undefined;
+});
+
+onMounted(checkClamped);
+onUpdated(() => nextTick(checkClamped));
 </script>
 
 <template>
-    <div v-if="props.separator" class="separator heading">
-        <div class="stripe"></div>
-        <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
+    <div v-if="props.separator" class="separator heading word-wrap-break">
+        <GButton v-if="collapsible" transparent size="small" icon-only inline @click="$emit('click')">
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
+        </GButton>
+        <div v-else class="stripe"></div>
+        <component
+            :is="element"
+            ref="headingRef"
+            :title="clampTooltip"
+            :class="[
+                sizeClass,
+                props.bold ? 'font-weight-bold' : '',
+                collapsible ? 'collapsible' : '',
+                props.truncate ? 'truncate' : '',
+                props.clamp ? 'clamp' : '',
+            ]"
+            :style="clampStyle"
+            @click="$emit('click')">
             <slot />
         </component>
         <div class="stripe"></div>
@@ -41,23 +110,36 @@ const element = computed(() => {
     <component
         :is="element"
         v-else
-        class="heading"
-        :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
+        ref="headingRef"
+        :title="clampTooltip"
+        class="heading word-wrap-break"
+        :class="[
+            sizeClass,
+            props.bold ? 'font-weight-bold' : '',
+            props.inline ? 'inline' : '',
+            collapsible ? 'collapsible' : '',
+            props.truncate ? 'truncate' : '',
+            props.clamp ? 'clamp' : '',
+        ]"
+        :style="clampStyle"
+        @click="$emit('click')">
+        <GButton v-if="collapsible" transparent size="small" icon-only inline>
+            <FontAwesomeIcon v-if="collapsed" fixed-width :icon="faAngleDoubleDown" />
+            <FontAwesomeIcon v-else fixed-width :icon="faAngleDoubleUp" />
+        </GButton>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
     </component>
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
-
-.heading:deep(svg) {
-    font-size: 0.75em;
-}
+@import "@/style/scss/theme/blue.scss";
 
 // prettier-ignore
 h1, h2, h3, h4, h5, h6 {
-    display: flex;
+    &:not(.truncate):not(.clamp) {
+        display: flex;
+    }
     align-items: center;
     gap: 0.4em;
 
@@ -65,6 +147,22 @@ h1, h2, h3, h4, h5, h6 {
         display: inline-flex;
         margin-bottom: 0;
     }
+
+    &.truncate {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &.clamp {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+.collapsible {
+    cursor: pointer;
 }
 
 .separator {

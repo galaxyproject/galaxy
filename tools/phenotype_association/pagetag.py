@@ -37,6 +37,7 @@ b) a file where each line has the following:
 where SNP is one of  the SNPs and the "list" is a comma separated list of SNPs
 that exceed the rsquare threshold with the first SNP.
 """
+
 from __future__ import print_function
 
 from getopt import (

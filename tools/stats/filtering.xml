@@ -1,8 +1,14 @@
-<tool id="Filter1" name="Filter" version="1.1.1">
+<tool id="Filter1" name="Filter" version="1.1.1" profile="24.2">
   <description>data on any column using simple expressions</description>
   <edam_operations>
     <edam_operation>operation_0335</edam_operation>
   </edam_operations>
+  <requirements>
+    <requirement type="package" version="3.13">python</requirement>
+  </requirements>
+  <required_files>
+    <include path="filtering.py"/>
+  </required_files>
   <command>
     python '$__tool_directory__/filtering.py' '$input' '$out_file1' '$inputs' ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
   </command>

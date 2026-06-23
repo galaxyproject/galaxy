@@ -113,7 +113,7 @@ galaxy_server% export DRMAA_LIBRARY_PATH=/galaxy/sge/lib/lx24-amd64/libdrmaa.so
 
 #### DRM Notes
 
-**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are abvailable that are not affected by these limitations, e.g. univa and slurm runners.
+**Limitations**: The DRMAA runner does not work if Galaxy is configured to run jobs as real user, because in this setting jobs are submitted with an external script, i.e. in an extra DRMAA session, and the session based (python) DRMAA library can only query jobs within the session in which started them. Furthermore, the DRMAA job runner only distinguishes successful and failed jobs and ignores information about possible failure sources, e.g. runtime / memory violation, which could be used for job resubmission. Specialized job runners are available that are not affected by these limitations, e.g. univa and slurm runners.
 
 **TORQUE**: The DRMAA runner can also be used (instead of the [PBS](#pbs) runner) to submit jobs to TORQUE, however, problems have been reported when using the `libdrmaa.so` provided with TORQUE.  Using this library will result in a segmentation fault when the drmaa runner attempts to write the job template, and any native job runner options will not be passed to the DRM.  Instead, you should compile the [pbs-drmaa](https://apps.man.poznan.pl/trac/pbs-drmaa/wiki) library and use this as the value for `$DRMAA_LIBRARY_PATH`.
 
@@ -216,6 +216,208 @@ If you need to add additional parameters to your condor submission, you can do s
 </destinations>
 ```
 
+### HTCondor (htcondor2 API)
+
+Runs jobs via the [HTCondor](https://research.cs.wisc.edu/htcondor/) DRM using the
+[htcondor2](https://pypi.org/project/htcondor/) Python bindings (v2 API). Unlike the
+legacy Condor runner, which shells out to CLI tools, this runner communicates entirely
+through the Python API for submitting, monitoring, and removing jobs. Install the
+package with `pip install htcondor` (or obtain it from your HTCondor installation).
+
+#### Architecture
+
+The `htcondor2` Python library is a C extension that reads its HTCondor
+configuration — collector address, authentication method, and security tokens —
+**at import time, not at call time**. Setting `CONDOR_CONFIG` after the module has
+already been imported has no effect. In a long-running Galaxy server process the
+library is therefore permanently bound to whatever configuration was active when it
+was first imported.
+
+This constraint drives the two-client design:
+
+- **In-process client** — used when no `htcondor_config` destination parameter is
+  set. `htcondor2` runs directly inside the Galaxy server process and uses whichever
+  `CONDOR_CONFIG` (or `$CONDOR_CONFIG` environment variable) was present at startup.
+  This covers the common case where the Galaxy server host is already a submit node
+  — i.e. HTCondor is configured system-wide and Galaxy can reach the local schedd
+  without any extra configuration.
+
+- **Subprocess client** — used when an `htcondor_config` destination parameter is
+  set. Because the Galaxy process has already imported `htcondor2` against its own
+  configuration, a separate Python helper process is spawned with `CONDOR_CONFIG`
+  set to the per-destination file *before* `htcondor2` is imported inside that
+  process. This isolates each pool's collector address and authentication tokens
+  entirely from the main Galaxy process and from every other pool. One long-lived
+  helper subprocess is shared across all destinations that reference the **same**
+  config file (keyed on the resolved absolute path), so multiple schedds within
+  the same pool share a single helper. Jobs targeting a second, independent pool
+  that has its own config file get their own helper subprocess.
+
+The practical rule is: to submit to a **remote or non-default pool**, set
+`htcondor_config` to a file that points `htcondor2` at the right collector and
+carries the pool's authentication tokens. To submit to the **local pool** (Galaxy
+host is already a submit node), omit `htcondor_config` and the in-process path is
+used automatically.
+
+Multiple independent pools are fully supported: give each destination its own
+`htcondor_config` file and the runner will maintain one helper subprocess per file.
+
+#### Destination parameters
+
+The following parameters are recognised by the runner and are **not** forwarded to the
+condor submit description. All others (e.g. `request_cpus`, `request_memory`,
+`universe`) are passed through verbatim.
+
+| Parameter | Description |
+|-----------|-------------|
+| `htcondor_collector` | Collector address (e.g. `collector.example.org:9618`). When set, the runner queries this collector for a schedd rather than using the default from `CONDOR_CONFIG`. |
+| `htcondor_schedd` | Name of a specific schedd to target (e.g. `schedd@submit.example.org`). When omitted, the first schedd returned by the collector is used. |
+| `htcondor_config` | Path to an alternative `condor_config` file. Triggers the subprocess client so Galaxy's own HTCondor environment is unaffected. Useful when submitting to multiple independent pools. |
+| `request_walltime` | Maximum wall-clock time for the job. Accepts plain seconds (`3600`), `HH:MM:SS` (`1:00:00`), `MM:SS`, or SLURM-compatible `D-HH:MM:SS` (`1-0:00:00`). The runner injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. When the limit is reached HTCondor holds the job with `HoldReasonCode=16`, which Galaxy reports as `walltime_reached` — enabling automatic resubmission to a longer-running destination. Ignored if the destination already sets a `periodic_hold` expression directly. |
+| `max_held_count` | Maximum number of *unresolved* `JOB_HELD` events tolerated before the job is permanently failed (default: `3`). The counter increments each time HTCondor places the job on hold with an unclassified reason code (memory and wall-time holds fail immediately regardless of this setting). A `JOB_RELEASED` event resets the counter to zero, because a release means the hold resolved and the job can make forward progress again — only consecutive holds that are never released indicate a genuinely stuck job. Once the threshold is reached the job fails with `runner_state=UNKNOWN_ERROR`, which the resubmission framework can act on. Set to `1` to fail immediately on the first unresolved hold, raise the value for pools that use automated hold/release policies, or set to `0` to disable hold escalation entirely. |
+
+#### Basic configuration
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor
+  environments:
+    htcondor:
+      runner: htcondor
+      request_cpus: 1
+      request_memory: 4096M
+      # Wall-clock time limit: seconds, HH:MM:SS, or D-HH:MM:SS.
+      request_walltime: "24:00:00"
+      # Fail after this many distinct hold events (default 3). Raise if your
+      # workflow expects periodic holds followed by automatic releases.
+      max_held_count: 3
+```
+
+For remote pools, supply the collector/schedd and an alternative config file:
+
+```yaml
+execution:
+  environments:
+    htcondor_remote:
+      runner: htcondor
+      htcondor_collector: "collector.example.org:9618"
+      htcondor_schedd: "schedd@submit.example.org"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+```
+
+The equivalent XML form is also supported:
+
+```xml
+<plugins>
+    <plugin id="htcondor" type="runner" load="galaxy.jobs.runners.htcondor:HTCondorJobRunner"/>
+</plugins>
+<destinations>
+    <destination id="htcondor" runner="htcondor">
+        <param id="request_cpus">4</param>
+        <param id="request_memory">4096M</param>
+        <param id="request_walltime">24:00:00</param>
+    </destination>
+</destinations>
+```
+
+#### Walltime and Advanced Hold Expressions
+
+`request_walltime` is a convenience parameter that covers the most common case: limiting a job by elapsed wall-clock time. Internally it injects `periodic_hold = (JobDurationSeconds >= N)` into the submit description. HTCondor evaluates this expression every `PERIODIC_EXPR_INTERVAL` (default 60 s); when it becomes true the job is placed on hold with `HoldReasonCode=16`, which Galaxy maps to `walltime_reached`.
+
+For more complex policies you can set `periodic_hold` directly. HTCondor ClassAd expressions can combine any job attribute, so a single expression can enforce multiple resource limits at once:
+
+```yaml
+execution:
+  environments:
+    htcondor_gpu:
+      runner: htcondor
+      request_gpus: 1
+      request_memory: 16384M
+      # Hold the job if it exceeds 2 hours wall-clock time OR if its resident
+      # set size exceeds 16 GB (16777216 KB).  A user-supplied periodic_hold
+      # takes precedence over request_walltime — the runner will not overwrite it.
+      periodic_hold: "(JobDurationSeconds >= 7200 || ResidentSetSize > 16777216)"
+```
+
+When `periodic_hold` is set directly, `request_walltime` is ignored for that destination.
+
+#### Multiple Independent Pools
+
+To submit jobs to two separate HTCondor pools, give each destination its own
+`htcondor_config` file. The runner creates one helper subprocess per file and
+routes jobs accordingly:
+
+```yaml
+runners:
+  htcondor:
+    load: galaxy.jobs.runners.htcondor:HTCondorJobRunner
+    workers: 4
+
+execution:
+  default: htcondor_pool_a
+  environments:
+    htcondor_pool_a:
+      runner: htcondor
+      htcondor_collector: "collector-a.example.org:9618"
+      htcondor_config: "/etc/condor/pool_a_config"
+      request_memory: 4096M
+    htcondor_pool_b:
+      runner: htcondor
+      htcondor_collector: "collector-b.example.org:9618"
+      htcondor_config: "/etc/condor/pool_b_config"
+      request_memory: 8192M
+
+tools:
+  - id: memory_intensive_tool
+    environment: htcondor_pool_b
+```
+
+Each config file must point `htcondor2` at the right collector and carry the
+pool's authentication tokens (e.g. an IDTOKEN written to the directory referenced
+by `SEC_TOKEN_DIRECTORY`).
+
+#### Testing with htcondor/mini (Docker)
+
+The test suite in `test/integration/test_htcondor_runner.py` contains two tiers:
+
+**Automated Docker tests (`TestHTCondorContainerJob`)**
+
+Requires only Docker and the `htcondor2` Python package. The test class starts two
+`htcondor/mini` all-in-one containers automatically, each running a full HTCondor
+stack (master, schedd, collector, negotiator, and startd). It authenticates via
+IDTOKENS generated inside each container, submits real Galaxy jobs to both pools,
+and verifies via `condor_history` that each job reached the correct cluster.
+No manual setup is needed.
+
+```bash
+pip install htcondor
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+Override the Docker image if needed:
+
+```bash
+GALAXY_TEST_HTCONDOR_IMAGE=htcondor/mini:23-el9 \
+python -m pytest test/integration/test_htcondor_runner.py::TestHTCondorContainerJob -v
+```
+
+**Unit-style tests (fake htcondor2 stub)**
+
+No HTCondor installation required. A lightweight stub at
+`test/integration/htcondor_fake/htcondor2.py` mirrors the real htcondor2 API and
+records every submit/remove call. These cover job lifecycle transitions, multi-pool
+helper isolation, crash recovery, and cancellation:
+
+```bash
+python -m pytest test/integration/test_htcondor_runner.py -k "not Container" -v
+```
+
 ### Pulsar
 
 Runs jobs via Galaxy [Pulsar](https://pulsar.readthedocs.io/). Pulsar does not require an existing cluster or a shared filesystem and can also run jobs on Windows hosts. It also has the ability to interface with all of the DRMs supported by Galaxy. Pulsar provides a much looser coupling between Galaxy job execution and the Galaxy server host than is possible with Galaxy's native job execution code.
@@ -254,7 +456,7 @@ The `RemoteShell` plugin uses `rsh(1)` to connect to a remote system and execute
 : Remote system hostname to log in to.
 
 ``shell_rsh``
-: ``rsh``-like command to excute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
+: ``rsh``-like command to execute (e.g. ``<param id="shell_rsh">/opt/example/bin/remsh</param>``) - just defaults to ``rst``.
 
 The `RemoteShell` parameters translate to a command line of `% <shell_rsh> [-l <shell_username>] <shell_hostname> "<remote_command_with_args>"`, where the inclusion of `-l` is dependent on whether `shell_username` is set. Alternate values for `shell_rsh` must be compatible with this syntax.
 
@@ -369,7 +571,7 @@ Since this is a complex problem, the current solution does have some caveats:
 * All of the datasets stored in Galaxy will have to be readable on the underlying filesystem by all Galaxy users. Said users need not have direct access to any systems which mount these filesystems, only the ability to run jobs on clusters that mount them. But I expect that in most environments, users will have the ability to submit jobs to these clusters or log in to these clusters outside of Galaxy, so this will be a security concern to evaluate for most environments.
   * *Technical details* - Since Galaxy maintains dataset sharing internally and all files are owned by the Galaxy user, when running jobs only under a single user, permissions can be set such that only the Galaxy user can read all datasets. Since the dataset may be shared by multiple users, it is not suitable to simply change ownership of inputs before a job runs (what if another user tried to use the same dataset as an input during this time?). This could possibly be solved if Galaxy had tight control over extended ACLs on the file, but since many different ACL schemes exist, Galaxy would need a module for each scheme to be supported.
 * The real user system works by changing ownership of the job's working directory to the system prior to running the job, and back to the Galaxy user once the job has completed. It does this by executing a site-customizable script via [sudo](https://www.sudo.ws/).
-  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whos name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
+  * Two possibilities to determine the system user that corresponds to a galaxy user are implemented: i) the user whose name matches the Galaxy user's email address (with the @domain stripped off) and ii) the user whos name is equal to the galaxy user name. Until release 17.05 only the former option is available. The latter option is suitable for Galaxy installations that user external authentification (e.g. LDAP) against a source that is also the source of the system users.
   * The script accepts a path and does nothing to ensure that this path is a Galaxy working directory per default (and not at all up to release 17.05). So anyone who has access to the Galaxy user could use this script and sudo to change the ownership of any file or directory. Furthermore, anyone with write access to the script could introduce arbitrary (harmful) code -- so it might be a good idea to give write access only to trustworthy users, e.g., root.
 
 ### Configuration
@@ -403,7 +605,7 @@ For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is
 drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
 ```
 
-Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
+Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directories `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 

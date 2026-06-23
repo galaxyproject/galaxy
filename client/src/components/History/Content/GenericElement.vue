@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import Vue from "vue";
-import type { PropType } from "vue";
-import type { components } from "@/schema";
-import { ref } from "vue";
+import { type PropType, ref, set } from "vue";
+
+import type { DCESummary, DCObject } from "@/api";
+
 import ContentItem from "./ContentItem.vue";
 
 defineProps({
     dsc: {
-        type: Object as PropType<components["schemas"]["DCObject"]>,
+        type: Object as PropType<DCObject>,
         required: true,
     },
 });
 
-const expandCollections = ref({});
-const expandDatasets = ref({});
+const expandCollections = ref<Record<string, boolean>>({});
+const expandDatasets = ref<Record<string, boolean>>({});
 
 function toggle(expansionMap: Record<string, boolean>, itemId: string) {
-    Vue.set(expansionMap, itemId, !expansionMap[itemId]);
+    set(expansionMap, itemId, !expansionMap[itemId]);
+}
+
+function childObject(item: DCESummary): DCObject {
+    return item.object as DCObject;
 }
 </script>
 
@@ -24,7 +28,7 @@ function toggle(expansionMap: Record<string, boolean>, itemId: string) {
     <div>
         <div v-for="(item, index) in dsc.elements" :key="index">
             <ContentItem
-                :id="item.element_index"
+                :id="item.element_index + 1"
                 :item="item.object"
                 :name="item.element_identifier"
                 :is-dataset="item.element_type == 'hda'"
@@ -33,7 +37,7 @@ function toggle(expansionMap: Record<string, boolean>, itemId: string) {
                 @update:expand-dataset="toggle(expandDatasets, item.id)"
                 @view-collection="toggle(expandCollections, item.id)" />
             <div v-if="!!expandCollections[item.id]" class="mx-3">
-                <GenericElement :dsc="item.object" />
+                <GenericElement :dsc="childObject(item)" />
             </div>
         </div>
     </div>

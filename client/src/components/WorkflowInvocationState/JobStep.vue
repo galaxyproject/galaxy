@@ -1,79 +1,112 @@
-<template>
-    <b-card v-if="jobs">
-        <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
-            <template v-slot:row-details="row">
-                <job-provider :id="row.item.id" v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
-                    <div v-else>
-                        <job-information v-if="item" :job_id="item.id" />
-                        <p></p>
-                        <job-parameters v-if="item" :job-id="item.id" :include-title="false" />
-                    </div>
-                </job-provider>
-            </template>
-            <template v-slot:cell(create_time)="data">
-                <UtcDate :date="data.value" mode="elapsed" />
-            </template>
-            <template v-slot:cell(update_time)="data">
-                <UtcDate :date="data.value" mode="elapsed" />
-            </template>
-        </b-table>
-    </b-card>
-</template>
-<script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { JobProvider } from "components/providers";
-import JobInformation from "components/JobInformation/JobInformation";
-import JobParameters from "components/JobParameters/JobParameters";
-import UtcDate from "components/UtcDate";
+<script setup lang="ts">
+import { BAlert, BPagination } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
 
-Vue.use(BootstrapVue);
+import type { JobBaseModel, JobState } from "@/api/jobs";
+import { statePlaceholders } from "@/composables/useInvocationGraph";
 
-export default {
-    components: {
-        UtcDate,
-        JobProvider,
-        JobParameters,
-        JobInformation,
+import GButton from "../BaseComponents/GButton.vue";
+import JobDetailsDisplayed from "../JobInformation/JobDetails.vue";
+import InvocationStepStateDisplay from "./InvocationStepStateDisplay.vue";
+import JobStepJobs from "./JobStepJobs.vue";
+
+const PER_PAGE = 10;
+
+const props = defineProps<{
+    jobs: JobBaseModel[];
+    invocationId: string;
+}>();
+
+const firstJob = computed(() => props.jobs[0]);
+const jobCount = computed(() => props.jobs.length);
+
+/** Jobs grouped by their state */
+const jobsByState = computed(() => {
+    const jobsMap: { [key: string]: JobBaseModel[] } = {};
+    props.jobs.forEach((job) => {
+        if (!jobsMap[job.state]) {
+            jobsMap[job.state] = [];
+        }
+        jobsMap[job.state]?.push(job);
+    });
+    return jobsMap as Record<JobState, JobBaseModel[]>;
+});
+
+/** Jobs in the currently selected state */
+const currentStateJobs = computed(() => {
+    if (!currentState.value || !jobsByState.value[currentState.value]) {
+        return [];
+    }
+    return jobsByState.value[currentState.value].slice().sort((a, b) => {
+        let compare = 0;
+        compare = new Date(a.update_time).getTime() - new Date(b.update_time).getTime();
+
+        return sortDesc.value ? -compare : compare;
+    });
+});
+
+/** Currently selected/filtered job state */
+const currentState = ref<JobState | null>(firstJob.value?.state || null);
+
+const currentPage = ref(1);
+const sortDesc = ref(true);
+
+watch(
+    () => currentState.value,
+    () => {
+        currentPage.value = 1;
     },
-    props: {
-        jobs: { type: Array, required: true },
+);
+
+// For a running workflow, if the available states change, ensure the current state is still valid
+watch(
+    () => Object.keys(jobsByState.value),
+    (newStates) => {
+        if (currentState.value && !newStates.includes(currentState.value)) {
+            currentState.value = (newStates[0] as JobState) || null;
+        }
     },
-    data() {
-        return {
-            fields: [
-                { key: "state", sortable: true },
-                { key: "update_time", label: "Updated", sortable: true },
-                { key: "create_time", label: "Created", sortable: true },
-            ],
-            toggledItems: {},
-        };
-    },
-    methods: {
-        jobsProvider(ctx, callback) {
-            // It may seem unnecessary to use a provider here, since the jobs prop
-            // is being updated externally. However we need to keep track of the
-            // _showDetails attribute which determines whether the row is shown as expanded
-            this.$watch(
-                "jobs",
-                function () {
-                    // update new jobs array with current state
-                    const toggledJobs = this.jobs.map((e) => {
-                        return { ...e, _showDetails: !!this.toggledItems[e.id] };
-                    });
-                    callback(toggledJobs);
-                },
-                { immediate: true }
-            );
-            return null;
-        },
-        toggleDetails(item) {
-            // toggle item
-            item._showDetails = !item._showDetails;
-            // update state
-            this.toggledItems[item.id] = item._showDetails;
-        },
-    },
-};
+);
 </script>
+
+<template>
+    <BAlert v-if="!jobCount" variant="info" show> No jobs found for this step. </BAlert>
+    <div v-else-if="jobCount === 1 && firstJob">
+        <JobDetailsDisplayed :job-id="firstJob.id" :invocation-id="props.invocationId" />
+    </div>
+    <div v-else>
+        <div class="mb-2 p-2 d-flex justify-content-between align-items-center flex-wrap">
+            <nav class="d-flex flex-gapx-1">
+                <GButton
+                    v-for="(stateJobs, state) in jobsByState"
+                    :key="state"
+                    outline
+                    color="blue"
+                    :title="`Click to view ${statePlaceholders[state] || state} jobs`"
+                    :pressed="currentState === state"
+                    @click="currentState = state">
+                    <InvocationStepStateDisplay :state="state" :job-count="stateJobs.length" />
+                </GButton>
+            </nav>
+
+            <div>
+                <BPagination
+                    v-if="currentState && jobsByState[currentState].length > PER_PAGE"
+                    v-model="currentPage"
+                    class="justify-content-md-center m-0"
+                    size="sm"
+                    :per-page="PER_PAGE"
+                    :total-rows="jobsByState[currentState].length" />
+            </div>
+        </div>
+
+        <BAlert v-if="!currentState" variant="info" show> Please select a job state to view jobs. </BAlert>
+        <JobStepJobs
+            v-else
+            :jobs="currentStateJobs"
+            :invocation-id="props.invocationId"
+            :current-page.sync="currentPage"
+            :sort-desc.sync="sortDesc"
+            :per-page="PER_PAGE" />
+    </div>
+</template>

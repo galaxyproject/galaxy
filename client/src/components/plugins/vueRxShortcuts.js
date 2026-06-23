@@ -1,6 +1,6 @@
-import VueRx from "vue-rx";
 import { isObservable } from "rxjs";
 import { pluck } from "rxjs/operators";
+import VueRx from "vue-rx";
 
 const defaultNext = (label) => (result) => {
     if (label) {

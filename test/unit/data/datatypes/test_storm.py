@@ -35,7 +35,7 @@ def test_storm_set_peek(storm_loader, input_file, expected_peek):
     loader = storm_loader()
     with get_input_files(input_file) as input_files:
         dataset = MockDataset(1)
-        dataset.file_name = input_files[0]
-        dataset.dataset = MockDatasetDataset(dataset.file_name)
+        dataset.set_file_name(input_files[0])
+        dataset.dataset = MockDatasetDataset(dataset.get_file_name())
         loader.set_peek(dataset)
         assert dataset.peek == expected_peek

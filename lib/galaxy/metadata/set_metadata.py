@@ -10,6 +10,7 @@ set to the path of the dataset on which metadata is being set
 (output_filename_override could previously be left empty and the path would be
 constructed automatically).
 """
+
 import glob
 import json
 import logging
@@ -18,7 +19,9 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import Optional
+from typing import (
+    Optional,
+)
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -46,20 +49,24 @@ from galaxy.model import (
     DatasetInstance,
     HistoryDatasetAssociation,
     Job,
+    JobOutputNameTooLongError,
     store,
 )
 from galaxy.model.custom_types import total_size
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.store import SessionlessContext
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
 )
 from galaxy.tool_util.output_checker import (
+    AnyJobMessage,
     check_output,
     DETECTED_JOB_STATE,
 )
 from galaxy.tool_util.parser.stdio import (
+    StdioErrorLevel,
     ToolStdioExitCode,
     ToolStdioRegex,
 )
@@ -67,6 +74,7 @@ from galaxy.tool_util.provided_metadata import parse_tool_provided_metadata
 from galaxy.util import (
     safe_contains,
     stringify_dictionary_keys,
+    unicodify,
 )
 from galaxy.util.expressions import ExpressionContext
 
@@ -88,7 +96,8 @@ def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, exter
     # or a remote object store from its cache path.
     # empty files could happen when outputs are discovered from working dir,
     # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
-    if os.path.getsize(external_filename):
+    assert dataset.dataset is not None
+    if not dataset.dataset.purged and os.path.getsize(external_filename):
         object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
 
 
@@ -115,10 +124,9 @@ def set_meta_with_tool_provided(
     # This is intentional due to interplay of overwrite kwd, the fact that some metadata
     # parameters may rely on the values of others, and that we are accepting the
     # values provided by the tool as Truth.
-    extension = dataset_instance.extension
-    if extension == "_sniff_":
+    if (extension := dataset_instance.extension) == "_sniff_":
         try:
-            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.file_name, datatypes_registry)
+            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.get_file_name(), datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
@@ -216,7 +224,8 @@ def set_metadata_portable(
 
     export_store = None
     final_job_state = Job.states.OK
-    job_messages = []
+    discovery_failed = False
+    job_messages: list[AnyJobMessage] = []
     if extended_metadata_collection:
         tool_dict = metadata_params["tool"]
         stdio_exit_code_dicts, stdio_regex_dicts = tool_dict["stdio_exit_codes"], tool_dict["stdio_regexes"]
@@ -237,35 +246,35 @@ def set_metadata_portable(
         for directory, prefix in locations:
             if directory and os.path.exists(os.path.join(directory, f"{prefix}stdout")):
                 with open(os.path.join(directory, f"{prefix}stdout"), "rb") as f:
-                    tool_stdout = f.read(MAX_STDIO_READ_BYTES)
+                    tool_stdout = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                 with open(os.path.join(directory, f"{prefix}stderr"), "rb") as f:
-                    tool_stderr = f.read(MAX_STDIO_READ_BYTES)
+                    tool_stderr = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                 break
         else:
             if os.path.exists(os.path.join(tool_job_working_directory, "task_0")):
                 # We have a task splitting job
-                tool_stdout = b""
-                tool_stderr = b""
+                tool_stdout = ""
+                tool_stderr = ""
                 paths = tool_job_working_directory.glob("task_*")
                 for path in paths:
                     with open(path / "outputs" / "tool_stdout", "rb") as f:
-                        task_stdout = f.read(MAX_STDIO_READ_BYTES)
+                        task_stdout = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stdout:
-                            tool_stdout = b"%s[%s stdout]\n%s\n" % (tool_stdout, path.name.encode(), task_stdout)
+                            tool_stdout = f"{tool_stdout}[{path.name} stdout]\n{task_stdout}\n"
                     with open(path / "outputs" / "tool_stderr", "rb") as f:
-                        task_stderr = f.read(MAX_STDIO_READ_BYTES)
+                        task_stderr = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stderr:
-                            tool_stderr = b"%s[%s stdout]\n%s\n" % (tool_stderr, path.name.encode(), task_stderr)
+                            tool_stderr = f"{tool_stderr}[{path.name} stderr]\n{task_stderr}\n"
             else:
                 wdc = os.listdir(tool_job_working_directory)
                 odc = os.listdir(outputs_directory)
                 if not is_celery_task:
                     error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
                     error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-                    log.warn(f"{error_desc}. {error_extra}")
+                    log.warning(f"{error_desc}. {error_extra}")
                     raise Exception(error_desc)
                 else:
-                    tool_stdout = tool_stderr = b""
+                    tool_stdout = tool_stderr = ""
 
         job_id_tag = metadata_params["job_id_tag"]
 
@@ -273,7 +282,7 @@ def set_metadata_portable(
         tool_exit_code = read_exit_code_from(exit_code_file, job_id_tag)
 
         check_output_detected_state, tool_stdout, tool_stderr, job_messages = check_output(
-            stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag
+            stdio_regexes, stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
         if check_output_detected_state == DETECTED_JOB_STATE.OK and not tool_provided_metadata.has_failed_outputs():
             final_job_state = Job.states.OK
@@ -296,6 +305,7 @@ def set_metadata_portable(
     import_model_store = store.imported_store_for_metadata(
         tool_job_working_directory / "metadata/outputs_new", object_store=object_store
     )
+    assert isinstance(import_model_store.sa_session, SessionlessContext)
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
     job: Optional[Job] = None
@@ -311,6 +321,7 @@ def set_metadata_portable(
         tool_job_working_directory / "working",
         final_job_state=final_job_state,
         max_discovered_files=max_discovered_files,
+        job=job,
     )
 
     if extended_metadata_collection:
@@ -338,9 +349,19 @@ def set_metadata_portable(
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except MaxDiscoveredFilesExceededError as e:
+        except (MaxDiscoveredFilesExceededError, JobOutputNameTooLongError) as e:
+            log.warning("Job failed during extended metadata output discovery: %s", e)
+            discovery_failed = True
             final_job_state = Job.states.ERROR
-            job_messages.append(str(e))
+            job_messages.append(
+                {
+                    "type": "max_discovered_files",
+                    "desc": str(e),
+                    "code_desc": None,
+                    "error_level": StdioErrorLevel.FATAL,
+                }
+            )
+
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
@@ -353,7 +374,6 @@ def set_metadata_portable(
                             continue
                         command_line_lines.append(line)
                     job.command_line = "".join(command_line_lines).strip()
-                    export_store.export_job(job, include_job_data=False)
 
     unnamed_id_to_path = {}
     unnamed_is_deferred = {}
@@ -394,15 +414,30 @@ def set_metadata_portable(
                 external_filename = unnamed_id_to_path.get(dataset_instance_id, dataset_filename_override)
                 if not os.path.exists(external_filename):
                     matches = glob.glob(external_filename)
-                    assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
-                    external_filename = matches[0]
-                    assert safe_contains(
-                        tool_job_working_directory, external_filename
-                    ), f"Cannot collect output '{external_filename}' from outside of working directory"
-                    created_from_basename = os.path.relpath(
-                        external_filename, os.path.join(tool_job_working_directory, "working")
-                    )
-                    dataset.dataset.created_from_basename = created_from_basename
+                    if matches:
+                        assert len(matches) == 1, f"{len(matches)} file(s) matched by output glob '{external_filename}'"
+                        external_filename = matches[0]
+                        assert safe_contains(
+                            tool_job_working_directory, external_filename
+                        ), f"Cannot collect output '{external_filename}' from outside of working directory"
+                        created_from_basename = os.path.relpath(
+                            external_filename, os.path.join(tool_job_working_directory, "working")
+                        )
+                        dataset.dataset.created_from_basename = created_from_basename
+                    elif os.path.exists(dataset_path_to_extra_path(external_filename)):
+                        # Only output is extra files dir, but no primary output file, that's fine,
+                        # but make sure we create an empty primary output file. It's a little
+                        # weird to do this, but it does indicate that there's nothing wrong with the file,
+                        # as opposed to perhaps a storage issue.
+                        with open(external_filename, "wb"):
+                            pass
+                    elif not os.path.exists(dataset_filename_override):
+                        # purged output ?
+                        dataset.purged = True
+                        dataset.dataset.purged = True
+                    else:
+                        raise Exception(f"Output file '{external_filename}' not found")
+
                 # override filename if we're dealing with outputs to working directory and dataset is not linked to
                 link_data_only = metadata_params.get("link_data_only")
                 if not link_data_only:
@@ -445,13 +480,14 @@ def set_metadata_portable(
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
                 if not is_deferred and not link_data_only:
-                    object_store_update_actions.append(
-                        partial(push_if_necessary, object_store, dataset, external_filename)
-                    )
+                    if dataset_instance_id not in unnamed_id_to_path:
+                        object_store_update_actions.append(
+                            partial(push_if_necessary, object_store, dataset, external_filename)
+                        )
                     object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(dataset.set_total_size))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
                     dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
                     if not dataset.state == dataset.states.ERROR:
@@ -459,7 +495,8 @@ def set_metadata_portable(
                         dataset.state = dataset.dataset.state = dataset_state
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
-                    set_meta(dataset, file_dict)
+                    if not dataset.dataset.purged:
+                        set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -480,18 +517,13 @@ def set_metadata_portable(
                     dataset.dataset.uuid = context["uuid"]
                 if not final_job_state == Job.states.ERROR:
                     line_count = context.get("line_count", None)
-                    try:
-                        # Certain datatype's set_peek methods contain a line_count argument
-                        dataset.set_peek(line_count=line_count)
-                    except TypeError:
-                        # ... and others don't
-                        dataset.set_peek()
+                    dataset.set_peek(line_count=line_count)
                 for context_key in TOOL_PROVIDED_JOB_METADATA_KEYS:
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
             else:
-                if dataset_instance_id not in unnamed_id_to_path:
+                if dataset_instance_id not in unnamed_id_to_path and not dataset.dataset.purged:
                     # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
                     # so only run set_meta for fixed outputs
                     set_meta(dataset, file_dict)
@@ -509,6 +541,16 @@ def set_metadata_portable(
     if export_store:
         export_store.push_metadata_files()
         export_store._finalize()
+        if discovery_failed and job:
+            # _finalize() builds the jobs attrs file from included_datasets /
+            # included_collections via `creating_job_associations`. For tools
+            # whose only discoverable outputs are dynamic collections, nothing
+            # reaches either of those before discovery fails, so _finalize()
+            # writes an empty jobs list - and the ERROR state (plus
+            # job_messages) we set on the job is not persisted. Export the job
+            # once here so perform_import on the host side picks it up from
+            # the jobs attrs file.
+            export_store.export_job(job, include_job_data=False)
     write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 

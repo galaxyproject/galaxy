@@ -1,15 +1,79 @@
-<template>
-    <b-table small caption-top :fields="['label', 'parameter_value']" :items="parameters" />
-</template>
-<script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
+<script setup lang="ts">
+import type {
+    InvocationInput,
+    InvocationInputParameter,
+    InvocationOutput,
+    InvocationOutputCollection,
+} from "@/api/invocations";
+import type { TableField } from "@/components/Common/GTable.types";
 
-Vue.use(BootstrapVue);
+import GTable from "@/components/Common/GTable.vue";
+import GenericHistoryItem from "@/components/History/Content/GenericItem.vue";
 
-export default {
-    props: {
-        parameters: { type: Array, required: true },
-    },
-};
+type InvocationStepTypes = InvocationInput | InvocationInputParameter | InvocationOutput | InvocationOutputCollection;
+
+interface Props {
+    parameters: InvocationStepTypes[];
+    styledTable?: boolean;
+}
+
+const props = defineProps<Props>();
+
+const fields: TableField[] = [
+    { key: "label", label: "Label" },
+    { key: "parameter_value", label: "Value" },
+];
+
+function isData(value: unknown): value is InvocationInput | InvocationOutput | InvocationOutputCollection {
+    return typeof value === "object" && value !== null && "src" in value;
+}
+
+function hasValidId(
+    value: InvocationInput | InvocationOutput | InvocationOutputCollection,
+): value is typeof value & { id: string } {
+    return value.id !== null && value.id !== undefined && typeof value.id === "string";
+}
+
+function isInputParameter(value: InvocationStepTypes): value is InvocationInputParameter {
+    return "parameter_value" in value;
+}
+
+function dataStepLabel(input: InvocationStepTypes): string {
+    if ("label" in input && input.label) {
+        return input.label;
+    }
+    if ("src" in input) {
+        return input.src === "hda" ? "Input dataset" : "Input dataset collection";
+    }
+    return "Unnamed";
+}
 </script>
+
+<template>
+    <GTable
+        compact
+        :bordered="props.styledTable"
+        :fields="fields"
+        :items="props.parameters"
+        :striped="props.styledTable">
+        <template v-slot:cell(parameter_value)="{ item }">
+            <GenericHistoryItem
+                v-if="isData(item) && hasValidId(item)"
+                :item-id="item.id"
+                :item-src="item.src"
+                :data-label="dataStepLabel(item)" />
+            <div v-else-if="isData(item) && !hasValidId(item)" class="text-muted">Dataset with no ID</div>
+            <i
+                v-else-if="
+                    isInputParameter(item) && (item.parameter_value === null || item.parameter_value === undefined)
+                "
+                class="text-muted">
+                No value provided
+            </i>
+            <span v-else-if="isInputParameter(item)">
+                {{ item.parameter_value }}
+            </span>
+            <span v-else class="text-muted">Unsupported input/output value</span>
+        </template>
+    </GTable>
+</template>

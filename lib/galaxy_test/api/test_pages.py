@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -30,7 +28,7 @@ class BasePagesApiTestCase(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
-    def _create_valid_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+    def _create_valid_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         return self.dataset_populator.new_page(slug=slug, **kwd)
 
     def _create_valid_page_as(self, other_email, slug):
@@ -40,8 +38,27 @@ class BasePagesApiTestCase(ApiTestCase):
         self._assert_status_code_is(page_response, 200)
         return page_response.json()
 
+    def _create_history_attached_page(self, slug: str = "history-page", title: str = "History Page") -> dict[str, Any]:
+        history_id = self.dataset_populator.new_history()
+        page_request = dict(
+            slug=slug,
+            title=title,
+            content="*History page*\n\n",
+            content_format="markdown",
+            history_id=history_id,
+        )
+        page_response = self._post("pages", page_request, json=True)
+        self._assert_status_code_is(page_response, 200)
+        return page_response.json()
+
     def _test_page_payload(self, **kwds):
         return self.dataset_populator.new_page_payload(**kwds)
+
+    def _update_page(self, page_id, annotation, slug, title, error_code=200):
+        payload = dict(title=title, slug=slug, annotation=annotation)
+        page_response = self._put(f"pages/{page_id}", payload, json=True)
+        self._assert_status_code_is(page_response, error_code)
+        return page_response.json()
 
 
 class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
@@ -108,6 +125,56 @@ steps:
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" not in markdown_content
 
+    @skip_without_tool("cat")
+    def test_revert_report_with_galaxy_directives(self):
+        test_data = """
+input_1:
+  value: 1.bed
+  type: File
+"""
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            page_request = dict(
+                slug="revert-report-test",
+                title="Revert Report Test",
+                invocation_id=invocation_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page = page_response.json()
+            page_id = page["id"]
+            # Update with plain content to create a second revision
+            update_payload = dict(content="# V2 plain", content_format="markdown")
+            update_response = self._put(f"pages/{page_id}", update_payload, json=True)
+            self._assert_status_code_is(update_response, 200)
+            # Get revisions, revert to original (which has Galaxy directives)
+            revisions_resp = self._get(f"pages/{page_id}/revisions")
+            self._assert_status_code_is(revisions_resp, 200)
+            revisions = revisions_resp.json()
+            v1_revision_id = revisions[0]["id"]
+            revert_resp = self._post(f"pages/{page_id}/revisions/{v1_revision_id}/revert", json=True)
+            self._assert_status_code_is(revert_resp, 200)
+            result = revert_resp.json()
+            assert result["edit_source"] == "restore"
+            assert "## Workflow" in result["content"]
+
     def test_index(self):
         create_response_json = self._create_valid_page_with_slug("indexpage")
         assert self._users_index_has_page_with_id(create_response_json)
@@ -125,7 +192,7 @@ steps:
         delete_response.raise_for_status()
         assert self._users_index_has_page_with_id(response1)
         assert not self._users_index_has_page_with_id(response2)
-        assert self._users_index_has_page_with_id(response2, dict(deleted=True))
+        assert self._users_index_has_page_with_id(response2, dict(deleted=True, show_published=False))
 
     def test_index_user_id_security(self):
         user_id = self.dataset_populator.user_id()
@@ -294,6 +361,34 @@ steps:
             dict(show_published=True, show_shared=True, search="is:shared_with_me")
         )
 
+    def test_index_type_standalone(self):
+        standalone = self._create_valid_page_with_slug("type-standalone-only")
+        history_attached = self._create_history_attached_page("type-standalone-ha")
+        index_ids = self._index_ids(dict(search="type:standalone"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] not in index_ids
+
+    def test_index_type_history_attached(self):
+        standalone = self._create_valid_page_with_slug("type-ha-only-sa")
+        history_attached = self._create_history_attached_page("type-ha-only")
+        index_ids = self._index_ids(dict(search="type:history_attached"))
+        assert standalone["id"] not in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_default_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-default-sa")
+        history_attached = self._create_history_attached_page("type-default-ha")
+        index_ids = self._index_ids()
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
+
+    def test_index_type_all_returns_both(self):
+        standalone = self._create_valid_page_with_slug("type-all-sa")
+        history_attached = self._create_history_attached_page("type-all-ha")
+        index_ids = self._index_ids(dict(search="type:all"))
+        assert standalone["id"] in index_ids
+        assert history_attached["id"] in index_ids
+
     def test_index_does_not_show_unavailable_pages(self):
         create_response_json = self._create_valid_page_as("others_page_index@bx.psu.edu", "otherspageindex")
         assert not self._users_index_has_page_with_id(create_response_json)
@@ -334,7 +429,7 @@ steps:
     def test_delete(self):
         response_json = self._create_valid_page_with_slug("testdelete")
         delete_response = delete(self._api_url(f"pages/{response_json['id']}", use_key=True))
-        self._assert_status_code_is(delete_response, 204)
+        self._assert_status_code_is_ok(delete_response)
 
     def test_400_on_delete_invalid_page_id(self):
         delete_response = delete(self._api_url(f"pages/{self._random_key()}", use_key=True))
@@ -388,6 +483,28 @@ steps:
         assert show_json["content"] == "<p>Page!</p>"
         assert show_json["content_format"] == "html"
 
+    def test_update(self):
+        response_json = self._create_valid_page_with_slug("pagetoupdate")
+        page_id = response_json["id"]
+        update_response = self._update_page(page_id, "newannotation", "new.slug", "newtitle", error_code=400)
+        assert update_response["err_msg"] == "String should match pattern '^[a-z0-9-]+$' in ('body', 'slug')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "", error_code=400)
+        assert update_response["err_msg"] == "String should have at least 1 character in ('body', 'title')"
+        update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle")
+        self._assert_has_keys(update_response, "id", "slug", "title")
+        assert update_response["title"] == "newtitle"
+        assert update_response["slug"] == "newslug"
+        show_response = self._get(f"pages/{page_id}")
+        show_json = show_response.json()
+        assert show_json["annotation"] == "newannotation"
+
+    def test_update_as_other_user(self):
+        response_json = self._create_valid_page_with_slug("pagetoupdateasother")
+        page_id = response_json["id"]
+        with self._different_user():
+            update_response = self._update_page(page_id, "newannotation", "newslug", "newtitle", error_code=403)
+            assert update_response["err_msg"] == "Page is not owned by the current user"
+
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")
         show_response = self._get(f"pages/{response_json['id']}")
@@ -431,7 +548,50 @@ steps:
         pdf_response = self._get(f"pages/{page_id}.pdf")
         self._assert_status_code_is(pdf_response, 400)
 
-    def _create_published_page_with_slug(self, slug, **kwd) -> Dict[str, Any]:
+    @skip_without_tool("cat")
+    def test_page_source_invocation_fk(self):
+        test_data = "input_1:\n  value: 1.bed\n  type: File\n"
+        with self.dataset_populator.test_history() as history_id:
+            summary = self.workflow_populator.run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input_1: data
+outputs:
+  output_1:
+    outputSource: first_cat/out_file1
+steps:
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input_1
+""",
+                test_data=test_data,
+                history_id=history_id,
+            )
+            invocation_id = summary.invocation_id
+            page_request = dict(
+                slug="invocation-report-fk-test",
+                title="Invocation Report FK Test",
+                invocation_id=invocation_id,
+            )
+            page_response = self._post("pages", page_request, json=True)
+            self._assert_status_code_is(page_response, 200)
+            page_id = page_response.json()["id"]
+            show_response = self._get(f"pages/{page_id}")
+            self._assert_status_code_is(show_response, 200)
+            show_json = show_response.json()
+            assert show_json["source_invocation_id"] is not None
+
+    def test_page_source_fk_null_by_default(self):
+        response_json = self._create_valid_page_with_slug("no-source-fk-test")
+        page_id = response_json["id"]
+        show_response = self._get(f"pages/{page_id}")
+        self._assert_status_code_is(show_response, 200)
+        show_json = show_response.json()
+        assert show_json["source_invocation_id"] is None
+
+    def _create_published_page_with_slug(self, slug, **kwd) -> dict[str, Any]:
         response = self.dataset_populator.new_page(slug=slug, **kwd)
         response = self._make_public(response["id"])
         return response
@@ -444,22 +604,20 @@ steps:
         response = self._put(f"pages/{page_id}/share_with_users", data, json=True)
         api_asserts.assert_status_code_is_ok(response)
 
-    def _index_raw(self, params: Optional[Dict[str, Any]] = None) -> Response:
+    def _index_raw(self, params: Optional[dict[str, Any]] = None) -> Response:
         index_response = self._get("pages", data=params or {})
         return index_response
 
-    def _index(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _index(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         index_response = self._index_raw(params)
         self._assert_status_code_is(index_response, 200)
-        print(params)
-        print(index_response.json())
         return index_response.json()
 
-    def _index_ids(self, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _index_ids(self, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         return [p["id"] for p in self._index(params)]
 
     def _users_index_has_page_with_id(
-        self, has_id: Union[Dict[str, Any], str], params: Optional[Dict[str, Any]] = None
+        self, has_id: Union[dict[str, Any], str], params: Optional[dict[str, Any]] = None
     ):
         pages = self._index(params)
         if isinstance(has_id, dict):

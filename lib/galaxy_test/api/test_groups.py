@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import (
+    Optional,
+)
 
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
@@ -11,13 +13,16 @@ class TestGroupsApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    def test_create_valid(self, group_name: Optional[str] = None):
+    def _create_valid_group(self, group_name: Optional[str] = None):
         payload = self._build_valid_group_payload(group_name)
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
         group = response.json()[0]  # POST /api/groups returns a list
         self._assert_valid_group(group)
         return group
+
+    def test_create_valid(self):
+        self._create_valid_group()
 
     def test_create_only_admin(self):
         response = self._post("groups", json=True)
@@ -29,6 +34,31 @@ class TestGroupsApi(ApiTestCase):
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 400)
 
+    def test_create_with_auto_create_role(self):
+        name = f"auto-role-group-{self.dataset_populator.get_random_name()}"
+        payload = self._build_valid_group_payload(name)
+        payload["auto_create_role"] = True
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+        group = response.json()[0]
+        self._assert_valid_group(group)
+        # Verify role with same name was created and associated with the group
+        roles = self._get(f"groups/{group['id']}/roles", admin=True).json()
+        role_names = [r["name"] for r in roles]
+        assert name in role_names
+
+    def test_create_with_auto_create_role_conflict(self):
+        """Auto-create role should fail if a role with the same name already exists."""
+        name = f"auto-role-conflict-{self.dataset_populator.get_random_name()}"
+        # First create a role with this name
+        role_payload = {"name": name, "description": "A test role.", "user_ids": [self.dataset_populator.user_id()]}
+        self._post("roles", role_payload, admin=True, json=True)
+        # Now try to create a group with auto_create_role - should conflict
+        payload = self._build_valid_group_payload(name)
+        payload["auto_create_role"] = True
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 409)
+
     def test_create_duplicated_name_raises_409(self):
         payload = self._build_valid_group_payload()
         response = self._post("groups", payload, admin=True, json=True)
@@ -38,7 +68,7 @@ class TestGroupsApi(ApiTestCase):
         self._assert_status_code_is(response, 409)
 
     def test_index(self):
-        self.test_create_valid()
+        self._create_valid_group()
         response = self._get("groups", admin=True)
         self._assert_status_code_is(response, 200)
         groups = response.json()
@@ -52,7 +82,7 @@ class TestGroupsApi(ApiTestCase):
         self._assert_status_code_is(response, 403)
 
     def test_show(self):
-        group = self.test_create_valid()
+        group = self._create_valid_group()
         group_id = group["id"]
         response = self._get(f"groups/{group_id}", admin=True)
         self._assert_status_code_is(response, 200)
@@ -61,7 +91,7 @@ class TestGroupsApi(ApiTestCase):
         self._assert_has_keys(response_group, "users_url", "roles_url")
 
     def test_show_only_admin(self):
-        group = self.test_create_valid()
+        group = self._create_valid_group()
         group_id = group["id"]
         response = self._get(f"groups/{group_id}")
         self._assert_status_code_is(response, 403)
@@ -72,25 +102,77 @@ class TestGroupsApi(ApiTestCase):
         self._assert_status_code_is(response, 400)
 
     def test_update(self):
-        group = self.test_create_valid(group_name="group-test")
+        user_id = self.dataset_populator.user_id()
+        user_private_role_id = self.dataset_populator.user_private_role_id()
+        original_name = f"group-test-{self.dataset_populator.get_random_name()}"
+        group = self._create_valid_group(group_name=original_name)
+
+        self._assert_group_has_expected_values(
+            group["id"],
+            name=original_name,
+            user_ids=[user_id],
+            role_ids=[user_private_role_id],
+        )
 
         group_id = group["id"]
-        updated_name = "group-test-updated"
-        update_payload = {
-            "name": updated_name,
-        }
-        update_response = self._put(f"groups/{group_id}", data=update_payload, admin=True, json=True)
+        updated_name = f"group-test-updated-{self.dataset_populator.get_random_name()}"
+        update_response = self._put(f"groups/{group_id}", data={"name": updated_name}, admin=True, json=True)
         self._assert_status_code_is_ok(update_response)
 
+        # Only the name should be updated
+        self._assert_group_has_expected_values(
+            group_id,
+            name=updated_name,
+            user_ids=[user_id],
+            role_ids=[user_private_role_id],
+        )
+
+        # Add another user to the group
+        another_user_email = f"user-{self.dataset_populator.get_random_name()}@example.com"
+        another_user_id = None
+        with self._different_user(another_user_email):
+            another_user_id = self.dataset_populator.user_id()
+            another_role_id = self.dataset_populator.user_private_role_id()
+        assert another_user_id is not None
+        update_response = self._put(
+            f"groups/{group_id}", data={"user_ids": [user_id, another_user_id]}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(update_response)
+
+        # Check if the user was added
+        self._assert_group_has_expected_values(
+            group_id,
+            name=updated_name,
+            user_ids=[user_id, another_user_id],
+            role_ids=[user_private_role_id],
+        )
+
+        # Add another role to the group
+        update_response = self._put(
+            f"groups/{group_id}", data={"role_ids": [user_private_role_id, another_role_id]}, admin=True, json=True
+        )
+        self._assert_status_code_is_ok(update_response)
+
+        # Check if the role was added
+        self._assert_group_has_expected_values(
+            group_id,
+            name=updated_name,
+            user_ids=[user_id, another_user_id],
+            role_ids=[user_private_role_id, another_role_id],
+        )
+
+        # TODO: Test removing users and roles
+        # Currently not possible because the API can only add users and roles
+
     def test_update_only_admin(self):
-        group = self.test_create_valid()
+        group = self._create_valid_group()
         group_id = group["id"]
         response = self._put(f"groups/{group_id}")
         self._assert_status_code_is(response, 403)
 
     def test_update_duplicating_name_raises_409(self):
-        group_a = self.test_create_valid()
-        group_b = self.test_create_valid()
+        group_a = self._create_valid_group()
+        group_b = self._create_valid_group()
 
         # Update group_b with the same name as group_a
         group_b_id = group_b["id"]
@@ -101,10 +183,71 @@ class TestGroupsApi(ApiTestCase):
         update_response = self._put(f"groups/{group_b_id}", data=update_payload, admin=True, json=True)
         self._assert_status_code_is(update_response, 409)
 
+    def test_delete(self):
+        group = self._create_valid_group()
+        group_id = group["id"]
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+
+    def test_delete_duplicating_name_raises_409(self):
+        group = self._create_valid_group()
+        group_id = group["id"]
+        group_name = group["name"]
+
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+
+        # Create a new group with the same name as the deleted one is not allowed
+        payload = self._build_valid_group_payload(group_name)
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 409)
+
+    def test_purge(self):
+        group = self._create_valid_group()
+        group_id = group["id"]
+
+        # Delete and purge the group
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"groups/{group_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # The group is deleted and purged, so it cannot be found
+        response = self._get(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is(response, 404)
+
+    def test_purge_can_reuse_name(self):
+        group = self._create_valid_group()
+        group_id = group["id"]
+        group_name = group["name"]
+
+        # Delete and purge the group
+        delete_response = self._delete(f"groups/{group_id}", admin=True)
+        self._assert_status_code_is_ok(delete_response)
+        purge_response = self._post(f"groups/{group_id}/purge", admin=True)
+        self._assert_status_code_is_ok(purge_response)
+
+        # Create a new group with the same name as the deleted one is allowed
+        payload = self._build_valid_group_payload(group_name)
+        response = self._post("groups", payload, admin=True, json=True)
+        self._assert_status_code_is(response, 200)
+
     def _assert_valid_group(self, group, assert_id=None):
         self._assert_has_keys(group, "id", "name", "model_class", "url")
         if assert_id is not None:
             assert group["id"] == assert_id
+
+    def _assert_group_has_expected_values(self, group_id: str, name: str, user_ids: list[str], role_ids: list[str]):
+        group = self._get(f"groups/{group_id}", admin=True).json()
+        assert group["name"] == name
+        users = self._get(f"groups/{group_id}/users", admin=True).json()
+        assert len(users) == len(user_ids)
+        for user in users:
+            assert user["id"] in user_ids
+        roles = self._get(f"groups/{group_id}/roles", admin=True).json()
+        assert len(roles) == len(role_ids)
+        for role in roles:
+            assert role["id"] in role_ids
 
     def _build_valid_group_payload(self, name: Optional[str] = None):
         name = name or self.dataset_populator.get_random_name()

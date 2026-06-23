@@ -1,43 +1,163 @@
 <script setup lang="ts">
-import draggable from "vuedraggable";
-import { ref, type Ref } from "vue";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faBell, faEllipsisH, faUserCog } from "@fortawesome/free-solid-svg-icons";
+import { watchImmediate } from "@vueuse/core";
 import { storeToRefs } from "pinia";
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-import { useActivityStore, type Activity } from "@/stores/activityStore";
-import { useRoute } from "vue-router/composables";
-import { convertDropData } from "@/stores/activitySetup";
-import { useEventStore } from "@/stores/eventStore";
-import ContextMenu from "@/components/Common/ContextMenu.vue";
-import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
-import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
-import ActivityItem from "./ActivityItem.vue";
-import ActivitySettings from "./ActivitySettings.vue";
-import InteractiveItem from "./Items/InteractiveItem.vue";
-import UploadItem from "./Items/UploadItem.vue";
-import NotificationItem from "./Items/NotificationItem.vue";
+import { computed, type Ref, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router/composables";
+import draggable from "vuedraggable";
 
-const { config } = useConfig();
+import { useConfig } from "@/composables/config";
+import { useActiveContext } from "@/composables/useActiveContext";
+import { convertDropData } from "@/stores/activitySetup";
+import { useActivityStore } from "@/stores/activityStore";
+import type { Activity } from "@/stores/activityStoreTypes";
+import { useChatStore } from "@/stores/chatStore";
+import { useEventStore } from "@/stores/eventStore";
+import { useUnprivilegedToolStore } from "@/stores/unprivilegedToolStore";
+import { useUserStore } from "@/stores/userStore";
+import localize from "@/utils/localization";
+
+import ChatHistoryPanel from "../GalaxyAI/ChatHistoryPanel.vue";
+import InvocationsPanel from "../Panels/InvocationsPanel.vue";
+import ActivityBarHeader from "./ActivityBarHeader.vue";
+import ActivityBarSeparator from "./ActivityBarSeparator.vue";
+import ActivityItem from "./ActivityItem.vue";
+import InteractiveItem from "./Items/InteractiveItem.vue";
+import NotificationItem from "./Items/NotificationItem.vue";
+import UploadItem from "./Items/UploadItem.vue";
+import AdminPanel from "@/components/admin/AdminPanel.vue";
+import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HistoryGraphPanel from "@/components/Panels/HistoryGraphPanel.vue";
+import InteractiveToolsPanel from "@/components/Panels/InteractiveToolsPanel.vue";
+import MultiviewPanel from "@/components/Panels/MultiviewPanel.vue";
+import NotificationsPanel from "@/components/Panels/NotificationsPanel.vue";
+import SettingsPanel from "@/components/Panels/SettingsPanel.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
+import UploadPanel from "@/components/Panels/Upload/UploadPanel.vue";
+import UserToolPanel from "@/components/Panels/UserToolPanel.vue";
+import VisualizationPanel from "@/components/Visualizations/VisualizationPanel.vue";
+
+const props = withDefaults(
+    defineProps<{
+        defaultActivities?: Activity[];
+        activityBarId?: string;
+        specialActivities?: Activity[];
+        exitActivity?: Activity;
+        runActivity?: Activity;
+        showAdmin?: boolean;
+        optionsTitle?: string;
+        optionsTooltip?: string;
+        optionsHeading?: string;
+        optionsIcon?: IconDefinition;
+        optionsSearchPlaceholder?: string;
+        initialActivity?: string;
+        hidePanel?: boolean;
+        headerIcon?: IconDefinition;
+        headerTitle?: string;
+    }>(),
+    {
+        defaultActivities: undefined,
+        activityBarId: "default",
+        specialActivities: () => [],
+        exitActivity: undefined,
+        runActivity: undefined,
+        showAdmin: true,
+        optionsTitle: "More",
+        optionsHeading: "Additional Activities",
+        optionsIcon: () => faEllipsisH,
+        optionsSearchPlaceholder: "Search Activities",
+        optionsTooltip: "View additional activities",
+        initialActivity: undefined,
+        hidePanel: false,
+        headerIcon: undefined,
+        headerTitle: undefined,
+    },
+);
+
+// require user to long click before dragging
+const DRAG_DELAY = 50;
+
+const { config, isConfigLoaded } = useConfig();
 
 const route = useRoute();
+const router = useRouter();
 const userStore = useUserStore();
+const chatStore = useChatStore();
+const { activeContext } = useActiveContext();
+
+// Notebook context must never use center mode — the chat panel floats alongside
+// the page editor, so force right-panel whenever we enter a notebook context.
+watch(activeContext, (ctx) => {
+    if (ctx?.contextType === "notebook" && chatStore.isCenterMode) {
+        chatStore.setLocation("right");
+    }
+});
+
 const eventStore = useEventStore();
-const activityStore = useActivityStore();
-const { isAnonymous } = storeToRefs(userStore);
+const activityStore = useActivityStore(props.activityBarId);
 
-const emit = defineEmits(["dragstart"]);
+const unprivilegedToolStore = useUnprivilegedToolStore();
+const { canUseUnprivilegedTools } = storeToRefs(unprivilegedToolStore);
 
-// sync built-in activities with cached activities
-activityStore.sync();
+if (props.initialActivity) {
+    activityStore.toggledSideBar = props.initialActivity;
+}
+
+watchImmediate(
+    () => props.defaultActivities,
+    (defaults) => {
+        if (defaults) {
+            activityStore.overrideDefaultActivities(defaults);
+        } else {
+            activityStore.resetDefaultActivities();
+        }
+    },
+);
+
+watchImmediate(
+    () => props.specialActivities,
+    (specials) => {
+        activityStore.setSpecialPanelActivityIds(specials.filter((a) => a.panel).map((a) => a.id));
+    },
+);
+
+const { isAdmin, isAnonymous } = storeToRefs(userStore);
+
+const emit = defineEmits<{
+    (e: "dragstart", dragItem: Activity | null): void;
+    (e: "activityClicked", activityId: string): void;
+}>();
 
 // activities from store
-const { activities } = storeToRefs(activityStore);
+const { activities: storeActivities, isSideBarOpen, sidePanelWidth } = storeToRefs(activityStore);
 
-// context menu references
-const contextMenuVisible = ref(false);
-const contextMenuX = ref(0);
-const contextMenuY = ref(0);
+const activities = computed({
+    get() {
+        return storeActivities.value.filter((activity) => {
+            if (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) {
+                return false;
+            }
+            if (activity.id === "interactivetools" && !config.value?.interactivetools_enable) {
+                return false;
+            }
+            if (activity.id === "galaxyai" && !config.value?.llm_api_configured) {
+                return false;
+            }
+            return true;
+        });
+    },
+    set(newActivities: Activity[]) {
+        // Find any filtered-out activities and add them back
+        const filteredOut = storeActivities.value.filter(
+            (activity) =>
+                (activity.id === "user-defined-tools" && !canUseUnprivilegedTools.value) ||
+                (activity.id === "interactivetools" && !config.value?.interactivetools_enable) ||
+                (activity.id === "galaxyai" && !config.value?.llm_api_configured),
+        );
+        storeActivities.value = [...newActivities, ...filteredOut];
+    },
+});
 
 // drag references
 const dragTarget: Ref<EventTarget | null> = ref(null);
@@ -46,10 +166,13 @@ const dragItem: Ref<Activity | null> = ref(null);
 // drag state
 const isDragging = ref(false);
 
+// computed values
+const canDrag = computed(() => isActiveSideBar("settings"));
+
 /**
- * Checks if the route of an activitiy is currently being visited and panels are collapsed
+ * Checks if the route of an activity is currently being visited and panels are collapsed
  */
-function isActiveRoute(activityTo: string) {
+function isActiveRoute(activityTo?: string | null) {
     return route.path === activityTo && isActiveSideBar("");
 }
 
@@ -57,7 +180,17 @@ function isActiveRoute(activityTo: string) {
  * Checks if a panel has been expanded
  */
 function isActiveSideBar(menuKey: string) {
-    return userStore.toggledSideBar === menuKey;
+    return activityStore.toggledSideBar === menuKey;
+}
+
+/**
+ * Checks if an activity that has a panel should have the `is-active` prop
+ */
+function panelActivityIsActive(activity: Activity) {
+    if (activity.id === "galaxyai" && !chatStore.isCenterMode && chatStore.chatVisible) {
+        return true;
+    }
+    return isActiveSideBar(activity.id) || isActiveRoute(activity.to);
 }
 
 /**
@@ -65,7 +198,7 @@ function isActiveSideBar(menuKey: string) {
  */
 function onDragEnter(evt: MouseEvent) {
     const eventData = eventStore.getDragData();
-    if (eventData) {
+    if (eventData && !eventStore.multipleDragData) {
         dragTarget.value = evt.target;
         dragItem.value = convertDropData(eventData);
         emit("dragstart", dragItem.value);
@@ -80,7 +213,7 @@ function onDragEnter(evt: MouseEvent) {
 function onDragLeave(evt: MouseEvent) {
     if (dragItem.value && dragTarget.value == evt.target) {
         const dragId = dragItem.value.id;
-        activities.value = activities.value.filter((a) => a.id !== dragId);
+        storeActivities.value = storeActivities.value.filter((a) => a.id !== dragId);
     }
 }
 
@@ -98,7 +231,7 @@ function onDragOver(evt: MouseEvent) {
             if (targetActivity && targetActivity.id !== dragId) {
                 const activitiesTemp = activities.value.filter((a) => a.id !== dragId);
                 activitiesTemp.splice(targetIndex, 0, dragItem.value);
-                activities.value = activitiesTemp;
+                storeActivities.value = activitiesTemp;
             }
         }
     }
@@ -107,121 +240,265 @@ function onDragOver(evt: MouseEvent) {
 /**
  * Tracks the state of activities which expand or collapse the sidepanel
  */
-function onToggleSidebar(toggle: string) {
-    userStore.toggleSideBar(toggle);
+function toggleSidebar(toggle: string = "", to: string | null = null) {
+    // if an activity's dedicated panel/sideBar is already active
+    // but the route is different, don't collapse
+    if (toggle && to && !(route.path === to) && isActiveSideBar(toggle)) {
+        return;
+    }
+    activityStore.toggleSideBar(toggle);
 }
 
-/**
- * Positions and displays the context menu
- */
-function toggleContextMenu(evt: MouseEvent) {
-    if (evt && !contextMenuVisible.value) {
-        evt.preventDefault();
-        contextMenuVisible.value = true;
-        contextMenuX.value = evt.x;
-        contextMenuY.value = evt.y;
+function onChatGxyClick() {
+    // On notebook routes, always use the right panel — never navigate to center.
+    if (activeContext.value?.contextType === "notebook") {
+        if (chatStore.isCenterMode) {
+            chatStore.setLocation("right");
+        }
+        chatStore.toggleChat();
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
+        return;
+    }
+
+    if (chatStore.isCenterMode) {
+        toggleSidebar("galaxyai");
+        if (!route.path.startsWith("/galaxyai")) {
+            router.push("/galaxyai");
+        }
     } else {
-        contextMenuVisible.value = false;
+        chatStore.toggleChat();
+
+        // if we click the activity, in not center mode, and the sidebar is open, we close it as well
+        if (isActiveSideBar("galaxyai")) {
+            toggleSidebar("galaxyai");
+        }
     }
 }
+
+function onActivityClicked(activity: Activity) {
+    if (activity.click) {
+        emit("activityClicked", activity.id);
+    } else {
+        toggleSidebar();
+    }
+}
+
+function setActiveSideBar(key: string) {
+    activityStore.toggledSideBar = key;
+}
+
+defineExpose({
+    isActiveSideBar,
+    setActiveSideBar,
+});
 </script>
 
 <template>
     <div class="d-flex">
+        <!-- while this warning is correct, it is hiding too many other errors -->
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             class="activity-bar d-flex flex-column no-highlight"
             data-description="activity bar"
-            @contextmenu="toggleContextMenu"
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
+            <ActivityBarHeader
+                :icon="props.headerIcon"
+                :title="props.headerTitle"
+                :is-side-bar-open="isSideBarOpen"
+                @close-sidebar="activityStore.closeSideBar" />
             <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
-                    :list="activities"
+                    v-model="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
+                    :disabled="!canDrag"
                     :force-fallback="true"
                     chosen-class="activity-chosen-class"
+                    :delay="DRAG_DELAY"
                     drag-class="activity-drag-class"
                     ghost-class="activity-chosen-class"
                     @start="isDragging = true"
                     @end="isDragging = false">
-                    <div v-for="(activity, activityIndex) in activities" :key="activityIndex">
-                        <div v-if="activity.visible">
+                    <div
+                        v-for="(activity, activityIndex) in activities"
+                        :key="activityIndex"
+                        :class="{ 'activity-can-drag': canDrag }">
+                        <div v-if="activity.visible && (activity.anonymous || !isAnonymous)">
                             <UploadItem
                                 v-if="activity.id === 'upload'"
-                                :id="`activity-${activity.id}`"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                @click="onToggleSidebar()" />
+                                :tooltip="activity.tooltip" />
                             <InteractiveItem
-                                v-else-if="activity.id === 'interactivetools'"
-                                :id="`activity-${activity.id}`"
+                                v-else-if="activity.to && activity.id === 'interactivetools'"
+                                :id="`${activity.id}`"
                                 :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
+                                :icon="activity.icon"
+                                :is-active="panelActivityIsActive(activity)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                :to="activity.to"
+                                @click="toggleSidebar(activity.id, activity.to)" />
+                            <ActivityItem
+                                v-else-if="activity.id === 'galaxyai'"
+                                :id="`${activity.id}`"
+                                :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
+                                :icon="activity.icon"
+                                :is-active="panelActivityIsActive(activity)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                @click="onChatGxyClick" />
+                            <ActivityItem
+                                v-else-if="activity.panel"
+                                :id="`${activity.id}`"
+                                :key="activity.id"
+                                :activity-bar-id="props.activityBarId"
+                                :icon="activity.icon"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
+                                :is-active="panelActivityIsActive(activity)"
+                                :title="activity.title"
+                                :tooltip="activity.tooltip"
+                                :to="activity.to || ''"
+                                @click="toggleSidebar(activity.id, activity.to)" />
+                            <ActivityItem
+                                v-else
+                                :id="`${activity.id}`"
+                                :key="activity.id"
+                                :indicator="activity.indicator"
+                                :indicator-variant="activity.indicatorVariant"
+                                :activity-bar-id="props.activityBarId"
                                 :icon="activity.icon"
                                 :is-active="isActiveRoute(activity.to)"
                                 :title="activity.title"
                                 :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar()" />
-                            <ActivityItem
-                                v-else-if="['tools', 'workflows'].includes(activity.id)"
-                                :id="`activity-${activity.id}`"
-                                :key="activity.id"
-                                :icon="activity.icon"
-                                :is-active="isActiveSideBar(activity.id)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar(activity.id)" />
-                            <ActivityItem
-                                v-else-if="activity.to"
-                                :id="`activity-${activity.id}`"
-                                :key="activity.id"
-                                :icon="activity.icon"
-                                :is-active="isActiveRoute(activity.to)"
-                                :title="activity.title"
-                                :tooltip="activity.tooltip"
-                                :to="activity.to"
-                                @click="onToggleSidebar()" />
+                                :to="activity.to ?? undefined"
+                                :variant="activity.variant"
+                                :window-title="activity.windowTitle"
+                                @click="onActivityClicked(activity)" />
                         </div>
                     </div>
                 </draggable>
             </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            <ActivityBarSeparator />
+            <b-nav v-if="!isAnonymous" vertical class="flex-nowrap p-1">
+                <template v-for="activity in props.specialActivities">
+                    <ActivityItem
+                        v-if="activity.panel"
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="panelActivityIsActive(activity)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to || ''"
+                        :variant="activity.variant"
+                        @click="toggleSidebar(activity.id, activity.to)" />
+                    <ActivityItem
+                        v-else
+                        :id="`${activity.id}`"
+                        :key="activity.id"
+                        :activity-bar-id="props.activityBarId"
+                        :icon="activity.icon"
+                        :indicator="activity.indicator"
+                        :indicator-variant="activity.indicatorVariant"
+                        :is-active="isActiveRoute(activity.to)"
+                        :title="activity.title"
+                        :tooltip="activity.tooltip"
+                        :to="activity.to ?? undefined"
+                        :variant="activity.variant"
+                        @click="onActivityClicked(activity)" />
+                </template>
                 <NotificationItem
-                    v-if="!isAnonymous && config.enable_notification_system"
-                    id="activity-notifications"
-                    icon="bell"
-                    :is-active="isActiveRoute('/user/notifications')"
+                    v-if="isConfigLoaded && config.enable_notification_system"
+                    id="notifications"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="faBell"
+                    :is-active="isActiveSideBar('notifications') || isActiveRoute('/user/notifications')"
                     title="Notifications"
-                    to="/user/notifications"
-                    @click="onToggleSidebar()" />
+                    @click="toggleSidebar('notifications')" />
                 <ActivityItem
-                    id="activity-settings"
-                    icon="cog"
-                    :is-active="isActiveRoute('/user')"
-                    title="Settings"
-                    tooltip="Edit preferences"
-                    to="/user"
-                    @click="onToggleSidebar()" />
+                    id="settings"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.optionsIcon"
+                    :is-active="isActiveSideBar('settings')"
+                    :title="props.optionsTitle"
+                    :tooltip="props.optionsTooltip"
+                    @click="toggleSidebar('settings')" />
+                <ActivityItem
+                    v-if="isAdmin && showAdmin"
+                    id="admin"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="faUserCog"
+                    :is-active="isActiveSideBar('admin')"
+                    title="Admin"
+                    tooltip="Administer this Galaxy"
+                    variant="danger"
+                    @click="toggleSidebar('admin')" />
+                <ActivityItem
+                    v-if="props.runActivity"
+                    :id="`${props.runActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.runActivity.icon"
+                    :indicator="props.runActivity.indicator"
+                    :indicator-variant="props.runActivity.indicatorVariant"
+                    :title="props.runActivity.title"
+                    :tooltip="props.runActivity.tooltip"
+                    :variant="props.runActivity.variant"
+                    @click="onActivityClicked(props.runActivity)" />
+                <ActivityItem
+                    v-if="props.exitActivity"
+                    :id="`${props.exitActivity.id}`"
+                    :activity-bar-id="props.activityBarId"
+                    :icon="props.exitActivity.icon"
+                    :indicator="props.exitActivity.indicator"
+                    :indicator-variant="props.exitActivity.indicatorVariant"
+                    :title="props.exitActivity.title"
+                    :tooltip="props.exitActivity.tooltip"
+                    :variant="props.exitActivity.variant"
+                    @click="onActivityClicked(props.exitActivity)" />
             </b-nav>
         </div>
-        <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
-            <ToolBox />
+        <FlexPanel
+            v-if="isSideBarOpen && !hidePanel"
+            side="left"
+            :collapsible="false"
+            :reactive-width.sync="sidePanelWidth">
+            <ToolPanel v-if="isActiveSideBar('tools')" />
+            <UploadPanel v-else-if="isActiveSideBar('beta-upload')" />
+            <InvocationsPanel v-else-if="isActiveSideBar('invocation')" />
+            <VisualizationPanel v-else-if="isActiveSideBar('visualizations')" />
+            <MultiviewPanel v-else-if="isActiveSideBar('multiview')" />
+            <HistoryGraphPanel v-else-if="isActiveSideBar('historygraph')" />
+            <ChatHistoryPanel v-else-if="isActiveSideBar('galaxyai')" />
+            <NotificationsPanel v-else-if="isActiveSideBar('notifications')" />
+            <UserToolPanel v-if="isActiveSideBar('user-defined-tools')" in-panel />
+            <InteractiveToolsPanel v-else-if="isActiveSideBar('interactivetools')" />
+            <SettingsPanel
+                v-else-if="isActiveSideBar('settings')"
+                :activity-bar-id="props.activityBarId"
+                :heading="localize(props.optionsHeading)"
+                :search-placeholder="localize(props.optionsSearchPlaceholder)"
+                @activityClicked="(id) => emit('activityClicked', id)" />
+            <AdminPanel v-else-if="isActiveSideBar('admin')" />
+            <slot name="side-panel" :is-active-side-bar="isActiveSideBar"></slot>
         </FlexPanel>
-        <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
-            <WorkflowBox />
-        </FlexPanel>
-        <ContextMenu :visible="contextMenuVisible" :x="contextMenuX" :y="contextMenuY" @hide="toggleContextMenu">
-            <ActivitySettings />
-        </ContextMenu>
     </div>
 </template>
 
 <style lang="scss">
-@import "theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 .activity-bar {
     background: $panel-bg-color;
@@ -230,6 +507,12 @@ function toggleContextMenu(evt: MouseEvent) {
 
 .activity-bar::-webkit-scrollbar {
     display: none;
+}
+
+.activity-can-drag .activity-item {
+    border-radius: $border-radius-extralarge;
+    outline: 2px dashed $border-color;
+    outline-offset: -3px;
 }
 
 .activity-chosen-class {

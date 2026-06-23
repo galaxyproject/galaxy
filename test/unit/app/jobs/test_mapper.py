@@ -1,9 +1,11 @@
 import uuid
-
-from galaxy.jobs import (
-    HasResourceParameters,
-    JobDestination,
+from typing import (
+    cast,
+    TYPE_CHECKING,
 )
+
+from galaxy.jobs import HasResourceParameters
+from galaxy.jobs.job_destination import JobDestination
 from galaxy.jobs.mapper import (
     ERROR_MESSAGE_NO_RULE_FUNCTION,
     ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND,
@@ -14,6 +16,13 @@ from . import (
     test_rules,
     test_rules_override,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs import (
+        JobConfiguration,
+        JobWrapper,
+    )
+    from galaxy.tools import Tool
 
 WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()
@@ -83,7 +92,7 @@ def test_dynamic_mapping_workflow_invocation_parameter():
 
 
 def test_dynamic_mapping_no_function():
-    dest = __dynamic_destination(dict())
+    dest = __dynamic_destination({})
     mapper = __mapper(dest)
     mapper.job_wrapper.tool.all_ids = ["no_such_function"]
     error_message = ERROR_MESSAGE_NO_RULE_FUNCTION % dest
@@ -134,10 +143,10 @@ def __assert_mapper_errors_with_message(mapper, message):
 
 
 def __mapper(tool_job_destination=TOOL_JOB_DESTINATION):
-    job_wrapper = MockJobWrapper(tool_job_destination)
-    job_config = MockJobConfig()
+    job_wrapper = cast("JobWrapper", MockJobWrapper(tool_job_destination))
+    job_config = cast("JobConfiguration", MockJobConfig())
 
-    mapper = JobRunnerMapper(job_wrapper, {}, job_config)
+    mapper = JobRunnerMapper(job_wrapper, lambda url: JobDestination(), job_config)
     mapper.rules_module = test_rules
     return mapper
 
@@ -161,7 +170,7 @@ class MockJobConfig:
 
 class MockJobWrapper(HasResourceParameters):
     def __init__(self, tool_job_destination):
-        self.tool = MockTool(tool_job_destination)
+        self.tool = cast("Tool", MockTool(tool_job_destination))
         self.job_id = 12345
         self.app = object()
 
@@ -174,16 +183,10 @@ class MockJobWrapper(HasResourceParameters):
             "__workflow_invocation_uuid__": WORKFLOW_UUID,
         }
 
-        def get_param_values(app, ignore_errors):
-            assert app == self.app
-            params = raw_params.copy()
-            params["__job_resource"] = {"__job_resource__select": "True", "memory": "8gb"}
-            return params
-
         return bunch.Bunch(
             user=bunch.Bunch(id=6789, email="test@example.com"),
             raw_param_dict=lambda: raw_params,
-            get_param_values=get_param_values,
+            raw_params=raw_params,
         )
 
 
@@ -200,3 +203,8 @@ class MockTool:
 
     def is_mock_tool(self):
         return True
+
+    def get_param_values(self, job, ignore_errors: bool = False):
+        params = job.raw_params.copy()
+        params["__job_resource"] = {"__job_resource__select": "True", "memory": "8gb"}
+        return params

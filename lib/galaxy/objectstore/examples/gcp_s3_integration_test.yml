@@ -1,0 +1,18 @@
+type: generic_s3
+store_by: uuid
+auth:
+  access_key: ${GALAXY_TEST_GOOGLE_INTEROP_ACCESS_KEY}
+  secret_key: ${GALAXY_TEST_GOOGLE_INTEROP_SECRET_KEY}
+
+bucket:
+  name: ${GALAXY_TEST_GOOGLE_BUCKET}
+
+connection:
+  host: storage.googleapis.com
+  port: 443
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure

@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!--
+Empty auth config file for testing.
+This file contains no authenticators, which allows fixed_delegated_auth to be True
+when combined with a single OIDC provider.
+-->
+<auth>
+</auth>

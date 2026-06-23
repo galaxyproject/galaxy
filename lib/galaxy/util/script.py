@@ -1,5 +1,5 @@
-"""Utilities for Galaxy scripts
-"""
+"""Utilities for Galaxy scripts"""
+
 import argparse
 import logging
 import os

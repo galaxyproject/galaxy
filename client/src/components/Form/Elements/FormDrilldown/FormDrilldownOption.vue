@@ -1,15 +1,29 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type ComputedRef } from "vue";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faCaretRight, faFile, faFolder } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio } from "bootstrap-vue";
-import { getAllValues, type Option } from "./utilities";
-import FormDrilldownList from "./FormDrilldownList.vue";
+import { computed, type ComputedRef, onMounted, ref } from "vue";
 
-const props = defineProps<{
+import { getAllValues, type Option } from "./utilities";
+
+import FormDrilldownList from "./FormDrilldownList.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+
+interface Props {
     currentValue: string[];
     option: Option;
     handleClick: Function;
     multiple: boolean;
-}>();
+    showIcons?: boolean;
+    leafIcon?: IconDefinition;
+    branchIcon?: IconDefinition;
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    leafIcon: () => faFile,
+    branchIcon: () => faFolder,
+});
 
 const showChildren = ref(false);
 
@@ -41,6 +55,11 @@ function toggleInitialization(): void {
         }
     }
 }
+
+function getOptionIcon(option: Option) {
+    return option.leaf ? props.leafIcon : props.branchIcon;
+}
+
 onMounted(() => {
     toggleInitialization();
 });
@@ -48,25 +67,50 @@ onMounted(() => {
 
 <template>
     <div>
-        <b-button v-if="hasOptions" variant="link" class="btn p-0" @click="toggleChildren">
-            <i v-if="showChildren" class="fa fa-minus-square" />
-            <i v-else class="fa fa-plus-square" />
-        </b-button>
+        <GButton v-if="hasOptions" color="blue" transparent class="p-0" @click="toggleChildren">
+            <FontAwesomeIcon v-if="showChildren" :icon="faCaretDown" class="align-checkbox" />
+            <FontAwesomeIcon v-else :icon="faCaretRight" class="align-checkbox" />
+        </GButton>
+        <span v-if="!hasOptions" class="align-indent"></span>
         <component
             :is="isComponent"
+            :id="`drilldown-option-${option.name}`"
             class="drilldown-option d-inline"
             value="true"
+            :disabled="option.disabled"
             :checked="isChecked"
-            @change="handleClick(option.value)">
+            @change="handleClick(option.value, $event)">
+            <FontAwesomeIcon v-if="props.showIcons" :icon="getOptionIcon(option)" />
             {{ option.name }}
         </component>
-        <form-drilldown-list
+        <FormDrilldownList
             v-if="hasOptions"
             v-show="showChildren"
-            class="pl-5"
+            class="indent"
+            :show-icons="props.showIcons"
             :current-value="currentValue"
             :multiple="multiple"
             :options="option.options"
             :handle-click="handleClick" />
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "@/style/scss/theme/blue.scss";
+.ui-drilldown {
+    $ui-drilldown-padding: 1rem;
+    $ui-drilldown-border: 0.5px solid $gray-500;
+
+    .indent {
+        padding-left: calc($ui-drilldown-padding + $ui-drilldown-padding/2);
+    }
+    .align-indent {
+        display: inline-block;
+        width: $ui-drilldown-padding;
+        border-bottom: $ui-drilldown-border;
+    }
+    .align-checkbox {
+        width: $ui-drilldown-padding;
+    }
+}
+</style>

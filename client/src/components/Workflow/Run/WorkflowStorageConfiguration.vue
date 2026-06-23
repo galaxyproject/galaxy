@@ -6,6 +6,7 @@
             v-bind="buttonProps"
             @click="showPreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
+            Primary Storage
         </b-button>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
@@ -14,9 +15,13 @@
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
             v-model="showPreferredObjectStoreModal"
-            title="Invocation Preferred Object Store"
+            :title="primaryModalTitle"
             v-bind="modalProps"
-            hide-footer>
+            size="lg"
+            scrollable
+            centered
+            ok-only
+            ok-title="Close">
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
@@ -28,6 +33,7 @@
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
             @click="showIntermediatePreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
+            Intermediate Storage
         </b-button>
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
@@ -37,9 +43,13 @@
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
             v-model="showIntermediatePreferredObjectStoreModal"
-            title="Invocation Preferred Object Store (Intermediate Datasets)"
+            :title="intermediateModalTitle"
             v-bind="modalProps"
-            hide-footer>
+            size="lg"
+            scrollable
+            centered
+            ok-only
+            ok-title="Close">
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId"
                 @updated="onUpdateIntermediate" />
@@ -48,8 +58,12 @@
 </template>
 
 <script>
-import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
-import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
+import { mapState } from "pinia";
+
+import { useConfigStore } from "@/stores/configurationStore";
+
+import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore.vue";
+import WorkflowTargetPreferredObjectStorePopover from "@/components/Workflow/Run/WorkflowTargetPreferredObjectStorePopover.vue";
 
 export default {
     components: {
@@ -79,6 +93,20 @@ export default {
         };
     },
     computed: {
+        ...mapState(useConfigStore, ["config"]),
+        preferredOrEmptyString() {
+            if (this.config?.object_store_always_respect_user_selection) {
+                return "";
+            } else {
+                return "Preferred";
+            }
+        },
+        primaryModalTitle() {
+            return `Invocation ${this.preferredOrEmptyString} Galaxy Storage`;
+        },
+        intermediateModalTitle() {
+            return `Invocation ${this.preferredOrEmptyString} Galaxy Storage (Intermediate Datasets)`;
+        },
         suffixPrimary() {
             if (this.splitObjectStore) {
                 return ` (Workflow Output Datasets)`;
@@ -105,12 +133,10 @@ export default {
         async onUpdate(preferredObjectStoreId) {
             this.selectedObjectStoreId = preferredObjectStoreId;
             this.$emit("updated", preferredObjectStoreId, false);
-            this.showPreferredObjectStoreModal = false;
         },
         async onUpdateIntermediate(preferredObjectStoreId) {
             this.selectedIntermediateObjectStoreId = preferredObjectStoreId;
             this.$emit("updated", preferredObjectStoreId, true);
-            this.showIntermediatePreferredObjectStoreModal = false;
         },
     },
 };

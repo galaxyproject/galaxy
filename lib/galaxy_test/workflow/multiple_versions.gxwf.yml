@@ -1,0 +1,20 @@
+class: GalaxyWorkflow
+inputs:
+  input:
+    type: int
+outputs:
+  output_1:
+    outputSource: multiple_1/out_file1
+  output_2:
+    outputSource: multiple_2/out_file1
+steps:
+  multiple_1:
+    tool_id: multiple_versions
+    tool_version: "0.1"
+    in:
+      inttest: input
+  multiple_2:
+    tool_id: multiple_versions
+    tool_version: "0.2"
+    in:
+      inttest: input

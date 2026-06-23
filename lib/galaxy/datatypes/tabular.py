@@ -14,8 +14,6 @@ import tempfile
 from json import dumps
 from typing import (
     cast,
-    Dict,
-    List,
     Optional,
     Union,
 )
@@ -65,6 +63,7 @@ from galaxy.datatypes.sniff import (
     iter_headers,
     validate_tabular,
 )
+from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import compression_utils
 from galaxy.util.compression_utils import (
     FileObjType,
@@ -127,13 +126,15 @@ class TabularData(Text):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
+        dataset.blurb = f"{dataset.blurb} {dataset.metadata.columns} columns"
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
     def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
-                not dataset.dataset.purged
+                not dataset.deleted
+                and not dataset.dataset.purged
                 and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
@@ -153,14 +154,21 @@ class TabularData(Text):
         )
 
     def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
-        with compression_utils.get_fileobj(dataset.file_name) as f:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
-            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != "\n":
-                cursor = f.read(1)
-                while cursor and cursor != "\n":
-                    ck_data += cursor
+            try:
+                ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+                if ck_data and ck_data[-1] != "\n":
                     cursor = f.read(1)
+                    while cursor and cursor != "\n":
+                        ck_data += cursor
+                        cursor = f.read(1)
+            except UnicodeDecodeError:
+                raise InvalidFileFormatError("Dataset appears to contain binary data, cannot display.")
+            except EOFError:
+                raise InvalidFileFormatError(
+                    "Dataset appears to be a truncated or corrupt compressed file, cannot display."
+                )
             last_read = f.tell()
         return ck_data, last_read
 
@@ -187,45 +195,20 @@ class TabularData(Text):
             # We should add a new datatype 'matrix', with its own draw method, suitable for this kind of data.
             # For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
             max_peek_size = 1000000  # 1 MB
-            if os.stat(dataset.file_name).st_size < max_peek_size:
+            if os.stat(dataset.get_file_name()).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
-                return open(dataset.file_name, mode="rb"), headers
+                return open(dataset.get_file_name(), mode="rb"), headers
             else:
                 headers["content-type"] = "text/html"
-                return (
-                    trans.fill_template_mako(
-                        "/dataset/large_file.mako",
-                        truncated_data=open(dataset.file_name).read(max_peek_size),
-                        data=dataset,
-                    ),
-                    headers,
-                )
+                headers["x-content-truncated"] = max_peek_size
+                with compression_utils.get_fileobj(dataset.get_file_name(), "rb") as fh:
+                    return util.unicodify(fh.read(max_peek_size)), headers
         else:
-            column_names = "null"
-            if dataset.metadata.column_names:
-                column_names = dataset.metadata.column_names
-            elif hasattr(dataset.datatype, "column_names"):
-                column_names = dataset.datatype.column_names
-            column_types = dataset.metadata.column_types
-            if not column_types:
-                column_types = []
-            column_number = dataset.metadata.columns
-            if column_number is None:
-                column_number = "null"
-            return (
-                trans.fill_template(
-                    "/dataset/tabular_chunked.mako",
-                    dataset=dataset,
-                    chunk=self.get_chunk(trans, dataset, 0),
-                    column_number=column_number,
-                    column_names=column_names,
-                    column_types=column_types,
-                ),
-                headers,
-            )
+            headers["x-content-chunked"] = "true"
+            return self.get_chunk(trans, dataset, 0), headers
 
     def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
-        with open(dataset_instance.file_name) as f:
+        with open(dataset_instance.get_file_name()) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
@@ -246,10 +229,10 @@ class TabularData(Text):
     def make_html_peek_header(
         self,
         dataset: DatasetProtocol,
-        skipchars: Optional[List] = None,
-        column_names: Optional[List] = None,
+        skipchars: Optional[list] = None,
+        column_names: Optional[list] = None,
         column_number_format: str = "%s",
-        column_parameter_alias: Optional[Dict] = None,
+        column_parameter_alias: Optional[dict] = None,
         **kwargs,
     ) -> str:
         if skipchars is None:
@@ -299,7 +282,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -404,7 +387,7 @@ class Tabular(TabularData):
 
     file_ext = "tabular"
 
-    def get_column_names(self, first_line: str) -> Optional[List[str]]:
+    def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return None
 
     def set_meta(
@@ -450,18 +433,18 @@ class Tabular(TabularData):
         column_type_compare_order = list(column_type_set_order)  # Order to compare column types
         column_type_compare_order.reverse()
 
-        def type_overrules_type(column_type1, column_type2):
-            if column_type1 is None or column_type1 == column_type2:
+        def type_overrules_type(new_column_type, old_column_type):
+            if new_column_type is None or new_column_type == old_column_type:
                 return False
-            if column_type2 is None:
+            if old_column_type is None:
                 return True
             for column_type in column_type_compare_order:
-                if column_type1 == column_type:
+                if new_column_type == column_type:
                     return True
-                if column_type2 == column_type:
+                if old_column_type == column_type:
                     return False
             # neither column type was found in our ordered list, this cannot happen
-            raise ValueError(f"Tried to compare unknown column types: {column_type1} and {column_type2}")
+            raise ValueError(f"Tried to compare unknown column types: {new_column_type} and {old_column_type}")
 
         def is_int(column_text):
             # Don't allow underscores in numeric literals (PEP 515)
@@ -507,11 +490,11 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
-        column_types: List = []
-        first_line_column_types = [default_column_type]  # default value is one column of type str
+        column_types: list = []
+        first_line_column_types = []
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
-            with compression_utils.get_fileobj(dataset.file_name) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name()) as dataset_fh:
                 i = 0
                 for line in iter(dataset_fh.readline, ""):
                     line = line.rstrip("\r\n")
@@ -579,10 +562,10 @@ class Tabular(TabularData):
             dataset.metadata.column_names = column_names
 
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
     def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
-        return open(dataset.file_name, "rb")
+        return open(dataset.get_file_name(), "rb")
 
 
 class SraManifest(Tabular):
@@ -595,7 +578,7 @@ class SraManifest(Tabular):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
-    def get_column_names(self, first_line: str) -> Optional[List[str]]:
+    def get_column_names(self, first_line: str) -> Optional[list[str]]:
         return first_line.strip().split("\t")
 
 
@@ -800,7 +783,7 @@ class Sam(Tabular, _BamOrSam):
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)
-        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', create_dataset=True, sa_session=sa_session, dataset=samds))
+        >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='sam', sa_session=sa_session, dataset=samds))
         >>> Sam().set_meta(hda)
         >>> hda.metadata.comment_lines
         2
@@ -808,7 +791,7 @@ class Sam(Tabular, _BamOrSam):
         ['ref', 'ref2']
         """
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 if (
                     self.max_optional_metadata_filesize >= 0
@@ -848,7 +831,7 @@ class Sam(Tabular, _BamOrSam):
             _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
@@ -1048,7 +1031,7 @@ class BaseVcf(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             # Skip comments.
             for line in fh:
                 if not line.startswith("##"):
@@ -1059,7 +1042,7 @@ class BaseVcf(Tabular):
             dataset.metadata.sample_names = line.split()[9:]
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str) -> None:
+    def merge(split_files: list[str], output_file: str) -> None:
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
@@ -1074,9 +1057,9 @@ class BaseVcf(Tabular):
     def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
-                raise Exception("Not enough columns in row %s" % row.join("\t"))
+                raise Exception("Not enough columns in row {}".format(row.join("\t")))
 
-        validate_tabular(dataset.file_name, sep="\t", validate_row=validate_row, comment_designator="#")
+        validate_tabular(dataset.get_file_name(), sep="\t", validate_row=validate_row, comment_designator="#")
         return DatatypeValidation.validated()
 
     # Dataproviders
@@ -1139,7 +1122,7 @@ class VcfGz(BaseVcf, binary.Binary):
 
         try:
             pysam.tabix_index(
-                dataset.file_name, index=index_file.file_name, preset="vcf", keep_original=True, force=True
+                dataset.get_file_name(), index=index_file.get_file_name(), preset="vcf", keep_original=True, force=True
             )
         except Exception as e:
             raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
@@ -1222,14 +1205,15 @@ class Eland(Tabular):
             "DESC",
             "SRAS",
             "PRAS",
-            "PART_CHROM" "PART_CONTIG",
+            "PART_CHROM",
+            "PART_CONTIG",
             "PART_OFFSET",
             "PART_STRAND",
             "FILT",
         ]
 
     def make_html_table(
-        self, dataset: DatasetProtocol, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+        self, dataset: DatasetProtocol, skipchars: Optional[list] = None, peek: Optional[list] = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
@@ -1297,7 +1281,7 @@ class Eland(Tabular):
         **kwd,
     ) -> None:
         if dataset.has_data():
-            with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.get_file_name(), compressed_formats=["gzip"]) as dataset_fh:
                 dataset_fh = cast(FileObjTypeStr, dataset_fh)
                 lanes = {}
                 tiles = {}
@@ -1313,7 +1297,7 @@ class Eland(Tabular):
                     if line:
                         line_pieces = line.split("\t")
                         if len(line_pieces) != 22:
-                            raise Exception("%s:%d:Corrupt line!" % (dataset.file_name, i))
+                            raise Exception(f"{dataset.get_file_name()}:{i}:Corrupt line!")
                         lanes[line_pieces[2]] = 1
                         tiles[line_pieces[3]] = 1
                         barcodes[line_pieces[6]] = 1
@@ -1345,7 +1329,7 @@ class Eland(Tabular):
                 "str",
             ]
             dataset.metadata.lanes = list(lanes.keys())
-            dataset.metadata.tiles = ["%04d" % int(t) for t in tiles.keys()]
+            dataset.metadata.tiles = [f"{int(t):04d}" for t in tiles.keys()]
             dataset.metadata.barcodes = [_ for _ in barcodes.keys() if _ != "0"] + [
                 "NoIndex" for _ in barcodes.keys() if _ == "0"
             ]
@@ -1458,7 +1442,7 @@ class BaseCSV(TabularData):
         data_row = []
         data_lines = 0
         if dataset.has_data():
-            with open(dataset.file_name, newline="") as csvfile:
+            with open(dataset.get_file_name(), newline="") as csvfile:
                 # Parse file with the correct dialect
                 reader = csv.reader(csvfile, self.dialect)
                 try:
@@ -1469,7 +1453,7 @@ class BaseCSV(TabularData):
                 except StopIteration:
                     pass
                 except csv.Error as e:
-                    raise Exception("CSV reader error - line %d: %s" % (reader.line_num, e))
+                    raise Exception(f"CSV reader error - line {reader.line_num}: {e}")
                 else:
                     data_lines = reader.line_num - 1
 
@@ -1496,6 +1480,46 @@ class CSV(BaseCSV):
     file_ext = "csv"
     dialect = csv.excel  # This is the default
     strict_width = False  # Previous csv type did not check column width
+
+
+@build_sniff_from_prefix
+class GeoCSV(CSV):
+    """
+    CSV format compatible with Kepler.gl, expected to contain latitude and longitude fields.
+    https://docs.kepler.gl/docs/user-guides/b-kepler-gl-workflow/a-add-data-to-the-map#csv
+    """
+
+    file_ext = "geocsv"
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        super().set_peek(dataset)
+        if not dataset.dataset.purged:
+            dataset.blurb = "GeoCSV"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """
+        Looks for CSV with latitude/longitude headers.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('2.csv')
+        >>> GeoCSV().sniff(fname)
+        False
+        >>> fname = get_test_fname('1.geocsv')
+        >>> GeoCSV().sniff(fname)
+        True
+        """
+        try:
+            with open(file_prefix.filename) as f:
+                # Read first line as header
+                header = f.readline().strip()
+                if not header or "," not in header:
+                    return False
+                fields = [col.strip().lower() for col in header.split(",")]
+                has_lat = any(col in fields for col in ["lat", "latitude"])
+                has_lon = any(col in fields for col in ["lon", "lng", "longitude"])
+                return has_lat and has_lon
+        except Exception:
+            return False
 
 
 @dataproviders.decorators.has_dataproviders
@@ -1537,7 +1561,7 @@ class ConnectivityTable(Tabular):
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
 
-        with open(dataset.file_name) as fh:
+        with open(dataset.get_file_name()) as fh:
             for _ in fh:
                 data_lines += 1
 
@@ -1587,12 +1611,12 @@ class ConnectivityTable(Tabular):
                     if not self.header_regexp.match(line):
                         return False
                     else:
-                        length = int(re.split(r"\W+", line, 1)[0])
+                        length = int(re.split(r"\W+", line, maxsplit=1)[0])
                 else:
                     if not self.structure_regexp.match(line.upper()):
                         return False
                     else:
-                        if j != int(re.split(r"\W+", line, 1)[0]):
+                        if j != int(re.split(r"\W+", line, maxsplit=1)[0]):
                             return False
                         elif j == length:  # Last line of first sequence has been reached
                             return True
@@ -1677,7 +1701,7 @@ class MatrixMarket(TabularData):
     ) -> None:
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 line = ""
                 data_lines = 0
                 comment_lines = 0
@@ -1804,10 +1828,10 @@ class CMAP(TabularData):
         **kwd,
     ) -> None:
         if dataset.has_data():
-            with open(dataset.file_name) as dataset_fh:
+            with open(dataset.get_file_name()) as dataset_fh:
                 comment_lines = 0
                 column_headers = None
-                cleaned_column_types = None
+                cleaned_column_types = []
                 number_of_columns = 0
                 for i, line in enumerate(dataset_fh):
                     line = line.strip("\n")
@@ -1815,7 +1839,6 @@ class CMAP(TabularData):
                         if line.startswith("#h"):
                             column_headers = line.split("\t")[1:]
                         elif line.startswith("#f"):
-                            cleaned_column_types = []
                             for column_type in line.split("\t")[1:]:
                                 if column_type == "Hex":
                                     cleaned_column_types.append("str")
@@ -1981,3 +2004,100 @@ class Psl(Tabular):
                     break
         if count > 0:
             return True
+
+
+@build_sniff_from_prefix
+class FourDNPairs(Tabular):
+    """
+    `4dn_pairs` is a simple tabular format used to store DNA contact pairs detected in Hi-C experiments.
+    The format is defined and maintained by the 4DN (4D Nucleome) Consortium.
+
+    Specification: https://github.com/4dn-dcic/pairix/blob/master/pairs_format_specification.md
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the column name "pair_type"
+
+    Sniffing will return False if:
+      - A non-header line (not starting with "#") is encountered before matching the criteria
+      - The file is compressed (e.g., .gz)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs' )
+    >>> FourDNPairs().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs.gz' )
+    >>> FourDNPairs().sniff( fname )
+    False
+    """
+
+    file_ext = "4dn_pairs"
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if line.rstrip().endswith("pair_type"):
+                    return True
+                else:
+                    break
+        return False
+
+
+@build_sniff_from_prefix
+class FourDNPairsam(Tabular):
+    """
+    The `.pairsam` format is an extension of the standard `.pairs` format, defined by the `pairtools` toolkit.
+    It builds on the pairtools-specific variant of `.pairs` by adding two additional columns—`sam1` and `sam2`—
+    which contain the alignment records from which each Hi-C contact pair was derived.
+
+    Specification: https://pairtools.readthedocs.io/en/latest/formats.html#pairsam
+
+    Sniffing rules for identifying this format:
+      - The first line of the file must be exactly: "## pairs format v1.0.0"
+      - A header line starting with "#columns:" must be present
+      - That "#columns:" line must end with the tab-separated fields: "pair_type\tsam1\tsam2"
+
+    Sniffing will return False if:
+      - A non-header line (i.e., one not starting with "#") appears before a valid header is matched
+      - The file is compressed (e.g., ends in `.gz`)
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname( '2.txt' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairs' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    >>> fname = get_test_fname( '1.4dn_pairsam' )
+    >>> FourDNPairsam().sniff( fname )
+    True
+    >>> fname = get_test_fname( '1.4dn_pairsam.gz' )
+    >>> FourDNPairsam().sniff( fname )
+    False
+    """
+
+    file_ext = "4dn_pairsam"
+
+    def sniff_prefix(self, file_prefix):
+        if not file_prefix.startswith("## pairs format v1.0.0"):
+            return False
+        for line in file_prefix.line_iterator():
+            if not line.startswith("#"):
+                break
+            if line.startswith("#columns:"):
+                if re.search(r"pair_type[\t ]+sam1[\t ]+sam2$", line.rstrip()):
+                    return True
+                else:
+                    break
+        return False

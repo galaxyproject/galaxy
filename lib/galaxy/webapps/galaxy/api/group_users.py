@@ -1,13 +1,12 @@
 """
 API operations on Group objects.
 """
-import logging
 
-from fastapi import Path
+import logging
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_users import GroupUsersManager
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.schema.schema import (
     GroupUserListResponse,
     GroupUserResponse,
@@ -17,19 +16,19 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import (
+    GroupIDPathParam,
+    UserIdPathParam,
+)
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["group_users"])
 
-GroupIDParam: DecodedDatabaseIdField = Path(..., title="GroupID", description="The ID of the group")
-
-UserIDParam: DecodedDatabaseIdField = Path(..., title="UserID", description="The ID of the user")
-
 
 def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
-    encoded_group_id = DecodedDatabaseIdField.encode(group_id)
-    encoded_user_id = DecodedDatabaseIdField.encode(user.id)
+    encoded_group_id = Security.security.encode_id(group_id)
+    encoded_user_id = Security.security.encode_id(user.id)
     url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
     return GroupUserResponse(id=user.id, email=user.email, url=url)
 
@@ -38,16 +37,23 @@ def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
 class FastAPIGroupUsers:
     manager: GroupUsersManager = depends(GroupUsersManager)
 
-    @router.get("/api/groups/{group_id}/users", require_admin=True, summary="Displays a collection (list) of groups.")
+    @router.get(
+        "/api/groups/{group_id}/users",
+        require_admin=True,
+        summary="Displays a collection (list) of groups.",
+        name="group_users",
+    )
     def index(
-        self, trans: ProvidesAppContext = DependsOnTrans, group_id: DecodedDatabaseIdField = GroupIDParam
+        self,
+        group_id: GroupIDPathParam,
+        trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupUserListResponse:
         """
         GET /api/groups/{encoded_group_id}/users
         Displays a collection (list) of groups.
         """
         group_users = self.manager.index(trans, group_id)
-        return GroupUserListResponse(__root__=[group_user_to_model(trans, group_id, gr) for gr in group_users])
+        return GroupUserListResponse(root=[group_user_to_model(trans, group_id, gr) for gr in group_users])
 
     @router.get(
         "/api/groups/{group_id}/user/{user_id}",
@@ -58,9 +64,9 @@ class FastAPIGroupUsers:
     )
     def show(
         self,
+        group_id: GroupIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
     ) -> GroupUserResponse:
         """
         Displays information about a group user.
@@ -76,9 +82,9 @@ class FastAPIGroupUsers:
     )
     def update(
         self,
+        group_id: GroupIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
     ) -> GroupUserResponse:
         """
         PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -95,9 +101,9 @@ class FastAPIGroupUsers:
     )
     def delete(
         self,
+        group_id: GroupIDPathParam,
+        user_id: UserIdPathParam,
         trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = GroupIDParam,
-        user_id: DecodedDatabaseIdField = UserIDParam,
     ) -> GroupUserResponse:
         """
         DELETE /api/groups/{encoded_group_id}/users/{encoded_user_id}

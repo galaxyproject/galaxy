@@ -1,0 +1,41 @@
+<tool id="multi_output_assign_primary2" name="multi_output_assign_primary2" version="0.1.0">
+  <command>
+    echo "other" > '$other';
+    echo "1" > sample1.report.tsv;
+    echo "2" > sample2.report.tsv;
+    echo "3" > sample3.report.tsv;
+  </command>
+  <inputs>
+    <param name="num_param" type="integer" value="7" />
+    <param name="input" type="data" />
+  </inputs>
+  <outputs>
+    <data format="tabular" name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" assign_primary_output="true" />
+    </data>
+    <data name="other" format="txt" label="other"/>  
+  </outputs>
+  <tests>
+    <test>
+      <param name="num_param" value="7" />
+      <param name="input" ftype="txt" value="simple_line.txt"/>
+      <output name="other">
+        <assert_contents>
+          <has_line line="other" />
+        </assert_contents>
+      </output>
+      <output name="sample">
+        <assert_contents>
+          <has_line line="1" />
+        </assert_contents>
+        <!-- no sample1 it was consumed by named output "sample" -->
+        <discovered_dataset designation="sample2" ftype="tabular">
+          <assert_contents><has_line line="2" /></assert_contents>
+        </discovered_dataset>
+        <discovered_dataset designation="sample3" ftype="tabular">
+          <assert_contents><has_line line="3" /></assert_contents>
+        </discovered_dataset>
+      </output>
+    </test>
+  </tests>
+</tool>

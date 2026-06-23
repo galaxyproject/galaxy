@@ -1,6 +1,6 @@
-import { computed, ref } from "vue-demi";
-import { isClient, resolveUnref, toRefs } from "@vueuse/shared";
 import { useEventListener } from "@vueuse/core";
+import { isClient, resolveUnref, toRefs } from "@vueuse/shared";
+import { computed, ref } from "vue-demi";
 
 /**
  * Make elements draggable.
@@ -76,7 +76,7 @@ export function useDraggable(target, options = {}) {
             draggingElement,
             "pointermove",
             throttleMove,
-            options.useCapture ?? true
+            options.useCapture ?? true,
         );
         handleEvent(e);
     };

@@ -6,9 +6,9 @@
         <p v-else-if="entryPointsForJob(jobId).length == 1">
             <span v-if="entryPointsForJob(jobId)[0].active">
                 There is an InteractiveTool result view available,
-                <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
+                <a v-g-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
                     Open
-                    <font-awesome-icon icon="external-link-alt" />
+                    <FontAwesomeIcon :icon="faExternalLinkAlt" />
                 </a>
             </span>
             <span v-else>
@@ -21,9 +21,9 @@
                 <li v-for="entryPoint of entryPointsForJob(jobId)" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active">
-                        <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
+                        <a v-g-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
                             (Open
-                            <font-awesome-icon icon="external-link-alt" />)
+                            <FontAwesomeIcon :icon="faExternalLinkAlt" />)
                         </a>
                     </span>
                     <span v-else> (waiting to become active...) </span>
@@ -37,14 +37,12 @@
 </template>
 
 <script>
-import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "stores/entryPointStore";
-import { getAppRoot } from "onload/loadConfig";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { mapState } from "pinia";
 
-library.add(faExternalLinkAlt);
+import { getAppRoot } from "@/onload/loadConfig";
+import { useEntryPointStore } from "@/stores/entryPointStore";
 
 export default {
     components: {
@@ -56,17 +54,16 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            faExternalLinkAlt,
+        };
+    },
     computed: {
         ...mapState(useEntryPointStore, ["entryPointsForJob"]),
         interactiveToolsLink: function () {
             return getAppRoot() + "interactivetool_entry_points/list";
         },
-    },
-    created: function () {
-        this.ensurePollingEntryPoints();
-    },
-    methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
     },
 };
 </script>

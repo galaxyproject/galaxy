@@ -26,7 +26,7 @@ if __name__ == "__main__":
         print(usage, file=sys.stderr)
         sys.exit(1)
 
-    (base_url, key, hda_id, library_id, folder_id) = sys.argv[1:6]
+    base_url, key, hda_id, library_id, folder_id = sys.argv[1:6]
 
     message = ""
     if num_args >= 7:

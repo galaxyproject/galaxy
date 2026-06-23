@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
 import type { GetComponentPropTypes } from "types/utilityTypes";
+import { ref } from "vue";
+
+import CarbonEmissionsIcon from "./CarbonEmissionsIcon.vue";
 
 const props = defineProps<{
     heading: string;
@@ -18,7 +19,7 @@ function toggleInfo() {
 </script>
 
 <template>
-    <button v-b-tooltip.hover :title="props.explanation" @click="toggleInfo">
+    <button v-g-tooltip.hover :title="props.explanation" @click="toggleInfo">
         <div id="heading">{{ props.heading }}</div>
 
         <div class="value">
@@ -30,7 +31,7 @@ function toggleInfo() {
 </template>
 
 <style lang="scss" scoped>
-@import "scss/theme/blue.scss";
+@import "@/style/scss/theme/blue.scss";
 
 button {
     padding: 0.5rem;

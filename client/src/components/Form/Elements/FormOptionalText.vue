@@ -18,7 +18,8 @@
 </template>
 
 <script>
-import FormText from "./FormText";
+import FormText from "./FormText.vue";
+
 export default {
     components: {
         FormText,

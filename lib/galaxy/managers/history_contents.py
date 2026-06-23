@@ -2,12 +2,12 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+
 import json
 import logging
 from typing import (
     Any,
-    Dict,
-    List,
+    Optional,
 )
 
 from sqlalchemy import (
@@ -18,11 +18,14 @@ from sqlalchemy import (
     func,
     Integer,
     literal,
+    null,
     nullsfirst,
     nullslast,
     select,
+    Select,
     sql,
     true,
+    UnaryExpression,
 )
 from sqlalchemy.orm import (
     joinedload,
@@ -44,7 +47,12 @@ from galaxy.managers import (
     tools,
 )
 from galaxy.managers.job_connections import JobConnectionsManager
+from galaxy.model import batch_fetch_job_state_summaries
 from galaxy.schema import ValueFilterQueryParams
+from galaxy.schema.tasks import (
+    CopyDatasetsPayload,
+    CopyDatasetsResponse,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import listify
 from .base import (
@@ -83,6 +91,7 @@ class HistoryContentsManager(base.SortableManager):
         "collection_id",
         "name",
         "state",
+        "object_store_id",
         "size",
         "deleted",
         "purged",
@@ -98,24 +107,6 @@ class HistoryContentsManager(base.SortableManager):
         self.subcontainer_manager = app[self.subcontainer_class_manager_class]
 
     # ---- interface
-    def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns non-subcontainer objects within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.contained_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        return self.contained_manager.list(filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
-
-    def subcontainers(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns only the containers within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.subcontainer_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        # TODO: collections.DatasetCollectionManager doesn't have the list
-        # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
-        return self._session().query(self.subcontainer_class).filter(filters).all()
-
     def contents(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
         Returns a list of both/all types of contents, filtered and in some order.
@@ -150,7 +141,7 @@ class HistoryContentsManager(base.SortableManager):
             attribute_dsc = f"{attribute}-dsc"
             attribute_asc = f"{attribute}-asc"
             if order_by_string in (attribute, attribute_dsc):
-                order_by = desc(attribute)
+                order_by: UnaryExpression = desc(attribute)
                 if attribute == "size":
                     return nullslast(order_by)
                 return order_by
@@ -166,6 +157,41 @@ class HistoryContentsManager(base.SortableManager):
             "Unknown order_by", order_by=order_by_string, available=available
         )
 
+    def get_hda_by_hid(self, history_id, hid):
+        """Return the user-visible HDA at this HID in a history, or None.
+
+        Implicitly-converted HDAs share the original's HID but are
+        ``visible=False``; filtering by visibility yields the canonical
+        user-facing dataset. If no visible row matches (e.g. the user
+        hid the original), falls back to the row that has no row in
+        ``ImplicitlyConvertedDatasetAssociation`` claiming it as a child.
+        """
+        HDA = model.HistoryDatasetAssociation
+        ICDA = model.ImplicitlyConvertedDatasetAssociation
+        session = self._session()
+        stmt = (
+            select(HDA)
+            .where(HDA.history_id == history_id, HDA.hid == hid, HDA.visible == true())
+            .order_by(HDA.id.asc())
+        )
+        result = session.execute(stmt).scalars().first()
+        if result is not None:
+            return result
+        not_a_conversion = ~select(ICDA.id).where(ICDA.hda_id == HDA.id).exists()
+        stmt = select(HDA).where(HDA.history_id == history_id, HDA.hid == hid, not_a_conversion).order_by(HDA.id.asc())
+        return session.execute(stmt).scalars().first()
+
+    def get_hdca_by_hid(self, history_id, hid):
+        """Return the HDCA at this HID in a history, or None.
+
+        Collections have no implicit-conversion mechanism, so HID is
+        effectively unique among HDCAs in a history; ``first()`` defends
+        against any future schema surprises without raising.
+        """
+        HDCA = model.HistoryDatasetCollectionAssociation
+        stmt = select(HDCA).where(HDCA.history_id == history_id, HDCA.hid == hid).order_by(HDCA.id.asc())
+        return self._session().execute(stmt).scalars().first()
+
     # history specific methods
     def state_counts(self, history):
         """
@@ -179,13 +205,11 @@ class HistoryContentsManager(base.SortableManager):
             base.ModelFilterParser.parsed_filter("orm", sql.column("visible") == true()),
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
-        statement = (
-            sql.select([sql.column("state"), func.count("*")])
-            .select_from(contents_subquery)
-            .group_by(sql.column("state"))
+        statement: Select = (
+            select(sql.column("state"), func.count()).select_from(contents_subquery).group_by(sql.column("state"))
         )
-        counts = self.app.model.context.execute(statement).fetchall()
-        return dict(counts)
+        counts = self.app.model.session.execute(statement).fetchall()
+        return dict(counts)  # type: ignore[arg-type]
 
     def active_counts(self, history):
         """
@@ -199,12 +223,12 @@ class HistoryContentsManager(base.SortableManager):
         hdca_select = self._active_counts_statement(model.HistoryDatasetCollectionAssociation, history.id)
         subquery = hda_select.union_all(hdca_select).subquery()
         statement = select(
-            cast(func.sum(subquery.c.deleted), Integer).label("deleted"),
-            cast(func.sum(subquery.c.hidden), Integer).label("hidden"),
-            cast(func.sum(subquery.c.active), Integer).label("active"),
+            cast(func.coalesce(func.sum(subquery.c.deleted), 0), Integer).label("deleted"),
+            cast(func.coalesce(func.sum(subquery.c.hidden), 0), Integer).label("hidden"),
+            cast(func.coalesce(func.sum(subquery.c.active), 0), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted
@@ -219,6 +243,65 @@ class HistoryContentsManager(base.SortableManager):
             .select_from(table_attr)
             .filter_by(history_id=history_id)
         )
+
+    def copy_contents(self, trans, history_id, payload: CopyDatasetsPayload) -> CopyDatasetsResponse:
+        user = trans.get_user()
+        if not user:
+            raise glx_exceptions.MessageException("Please login to copy datasets between histories.")
+
+        source_history = self.app.history_manager.get_owned(history_id, user, current_history=trans.history)
+        source_content = payload.source_content or []
+        if not source_content:
+            raise glx_exceptions.MessageException("Select at least one item to copy.")
+
+        decoded_target_ids: list[int] = []
+        if payload.target_history_name:
+            new_history = model.History(name=payload.target_history_name, user=user)
+            trans.sa_session.add(new_history)
+            trans.sa_session.commit()
+            decoded_target_ids.append(new_history.id)
+        else:
+            if not payload.target_history_ids:
+                raise glx_exceptions.MessageException("Select a destination history or provide a target history name.")
+            decoded_target_ids.extend(self.app.security.decode_id(h) for h in payload.target_history_ids)
+
+        target_histories = [
+            h for h in (trans.sa_session.get(model.History, i) for i in decoded_target_ids) if h and h.user == user
+        ]
+        if len(target_histories) != len(decoded_target_ids):
+            raise glx_exceptions.MessageException("You lack permission for one or more destination histories.")
+
+        decoded_ds, decoded_dc = [], []
+        for entry in source_content:
+            if entry.type == "dataset":
+                decoded_ds.append(self.app.security.decode_id(entry.id))
+            elif entry.type == "dataset_collection":
+                decoded_dc.append(self.app.security.decode_id(entry.id))
+            else:
+                raise glx_exceptions.MessageException("Unknown content type.")
+
+        contents = [trans.sa_session.get(model.HistoryDatasetAssociation, i) for i in decoded_ds]
+        contents.extend(trans.sa_session.get(model.HistoryDatasetCollectionAssociation, i) for i in decoded_dc)
+        contents.sort(key=lambda c: c.hid)
+
+        for c in contents:
+            if not c:
+                raise glx_exceptions.MessageException("You tried to copy a dataset that does not exist.")
+            if c.history != source_history:
+                raise glx_exceptions.MessageException("You tried to copy a dataset not in the source history.")
+            for h in target_histories:
+                if c.history_content_type == "dataset":
+                    copy = c.copy(flush=False)
+                    h.stage_addition(copy)
+                    copy.copy_tags_from(user, c)
+                else:
+                    copy = c.copy(element_destination=h)
+
+        for h in target_histories:
+            h.add_pending_items()
+        trans.sa_session.commit()
+
+        return CopyDatasetsResponse(history_ids=[self.app.security.encode_id(i) for i in decoded_target_ids])
 
     def map_datasets(self, history, fn, **kwargs):
         """
@@ -242,15 +325,6 @@ class HistoryContentsManager(base.SortableManager):
     def _session(self):
         return self.app.model.context
 
-    def _filter_to_contents_query(self, container, content_class, **kwargs):
-        # TODO: use list (or by_history etc.)
-        container_filter = self._get_filter_for_contained(container, content_class)
-        query = self._session().query(content_class).filter(container_filter)
-        return query
-
-    def _get_filter_for_contained(self, container, content_class):
-        return content_class.history == container
-
     def _union_of_contents(self, container, expand_models=True, **kwargs):
         """
         Returns a limited and offset list of both types of contents, filtered
@@ -261,9 +335,7 @@ class HistoryContentsManager(base.SortableManager):
             return contents_results
 
         # partition ids into a map of { component_class names -> list of ids } from the above union query
-        id_map: Dict[str, List[int]] = dict(
-            [(self.contained_class_type_name, []), (self.subcontainer_class_type_name, [])]
-        )
+        id_map: dict[str, list[int]] = {self.contained_class_type_name: [], self.subcontainer_class_type_name: []}
         for result in contents_results:
             result_type = self._get_union_type(result)
             contents_id = self._get_union_id(result)
@@ -363,7 +435,7 @@ class HistoryContentsManager(base.SortableManager):
         # pull column from class by name or override with kwargs if listed there, then label
         for column_name in self.common_columns:
             if column_name in kwargs:
-                column = kwargs.get(column_name, None)
+                column = kwargs[column_name]
             elif column_name == "model_class":
                 column = literal(component_class.__name__)
             else:
@@ -380,8 +452,10 @@ class HistoryContentsManager(base.SortableManager):
             history_content_type=literal("dataset"),
             size=model.Dataset.file_size,
             state=model.Dataset.state,
+            object_store_id=model.Dataset.object_store_id,
+            quota_source_label=model.Dataset.object_store_id,
             # do not have inner collections
-            collection_id=literal(None),
+            collection_id=null(),
         )
         subquery = self._session().query(*columns)
         # for the HDA's we need to join the Dataset since it has an actual state column
@@ -403,12 +477,14 @@ class HistoryContentsManager(base.SortableManager):
             component_class,
             history_content_type=literal("dataset_collection"),
             # do not have datasets
-            dataset_id=literal(None),
-            size=literal(None),
+            dataset_id=null(),
+            size=null(),
             state=model.DatasetCollection.populated_state,
+            object_store_id=null(),
+            quota_source_label=null(),
             # TODO: should be purgable? fix
-            purged=literal(False),
-            extension=literal(None),
+            purged=false(),
+            extension=null(),
         )
         subquery = self._session().query(*columns)
         # for the HDCA's we need to join the DatasetCollection since it has the populated_state
@@ -434,31 +510,36 @@ class HistoryContentsManager(base.SortableManager):
         if not id_list:
             return []
         component_class = self.contained_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))
             .options(undefer(component_class._metadata))
             .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        return {row.id: row for row in result}
 
     def _subcontainer_id_map(self, id_list, serialization_params=None):
         """Return an id to model map of all subcontainer-type models in the id_list."""
         if not id_list:
             return []
         component_class = self.subcontainer_class
-        query = (
-            self._session()
-            .query(component_class)
-            .filter(component_class.id.in_(id_list))
+        stmt = (
+            select(component_class)
+            .where(component_class.id.in_(id_list))
             .options(joinedload(component_class.collection))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))
         )
-        return {row.id: row for row in query.all()}
+        result = self._session().scalars(stmt).unique()
+        id_map = {row.id: row for row in result}
+        if id_map and component_class is model.HistoryDatasetCollectionAssociation:
+            summaries = batch_fetch_job_state_summaries(self._session(), list(id_map.keys()))
+            for hdca_id, hdca in id_map.items():
+                hdca._job_state_summary = summaries.get(hdca_id)
+        return id_map
 
 
 class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -496,7 +577,7 @@ class HistoryContentsSerializer(base.ModelSerializer, deletable.PurgableSerializ
     def add_serializers(self):
         super().add_serializers()
         deletable.PurgableSerializerMixin.add_serializers(self)
-        serializers: Dict[str, Serializer] = {
+        serializers: dict[str, Serializer] = {
             "type_id": self.serialize_type_id,
             "history_id": self.serialize_id,
             "dataset_id": self.serialize_id_or_skip,
@@ -521,29 +602,40 @@ class HistoryContentsFilters(
 ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
+    # Threaded from ``parse_query_filters_with_relations`` so the depth-arbitrary
+    # ``extension`` HDCA clause can scope its recursive CTE to the current
+    # history. ``None`` means the filter is being parsed outside a history
+    # scope (e.g. ``/api/datasets``); in that case the HDCA branch of the
+    # extension filter degrades to a no-op (HDA filter still applies).
+    _current_history_id: Optional[int] = None
 
     def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
         """Parse query filters but consider case where related filter is included."""
-        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
-        if query_filters.q and query_filters.qv and has_related_q:
-            qv_index = query_filters.q.index(has_related_q[0])
-            qv_hid = query_filters.qv[qv_index]
+        prev_history_id = self._current_history_id
+        self._current_history_id = history_id
+        try:
+            has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
+            if query_filters.q and query_filters.qv and has_related_q:
+                qv_index = query_filters.q.index(has_related_q[0])
+                qv_hid = query_filters.qv[qv_index]
 
-            # Type check whether hid is int
-            if not qv_hid.isdigit():
-                raise glx_exceptions.RequestParameterInvalidException(
-                    "unparsable value for related filter",
-                    column="related",
-                    operation="eq",
-                    value=qv_hid,
-                    ValueError="invalid type in filter",
+                # Type check whether hid is int
+                if not qv_hid.isdigit():
+                    raise glx_exceptions.RequestParameterInvalidException(
+                        "unparsable value for related filter",
+                        column="related",
+                        operation="eq",
+                        value=qv_hid,
+                        ValueError="invalid type in filter",
+                    )
+
+                query_filters_with_relations = self.get_query_filters_with_relations(
+                    query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
                 )
-
-            query_filters_with_relations = self.get_query_filters_with_relations(
-                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
-            )
-            return super().parse_query_filters(query_filters_with_relations)
-        return super().parse_query_filters(query_filters)
+                return super().parse_query_filters(query_filters_with_relations)
+            return super().parse_query_filters(query_filters)
+        finally:
+            self._current_history_id = prev_history_id
 
     def _parse_orm_filter(self, attr, op, val):
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
@@ -595,8 +687,64 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-        column_filter = get_filter(attr, op, val)
-        if column_filter is not None:
+            if attr == "object_store_id":
+                if op == "eq":
+                    return sql.column("object_store_id") == val
+
+                if op == "in":
+                    object_store_ids = [s for s in val.split(",") if s]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+            if attr == "quota_source_label":
+                if op == "eq":
+                    ids = self.app.object_store.get_quota_source_map().ids_per_quota_source(
+                        include_default_quota_source=True
+                    )
+                    if val == "__null__":
+                        val = None
+                    if val not in ids:
+                        raise ValueError(f"Could not find key {val} in object store keys {list(ids.keys())}")
+                    object_store_ids = ids[val]
+                    return sql.column("object_store_id").in_(object_store_ids)
+
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+        if attr == "extension" and op in ("eq", "in"):
+            # Apply different filter expressions to the HDA and HDCA branches
+            # of the union: HDAs filter by their own ``extension`` column,
+            # while HDCAs go through the depth-arbitrary recursive-CTE clause
+            # built by ``History._hdca_extensions_only_in_clause`` (a
+            # collection matches only when every leaf HDA extension is in the
+            # set, mirroring ``SummaryDatasetCollectionMatcher.hdca_match``).
+            # The CTE needs the current history_id; ``parse_query_filters_with_relations``
+            # stashes it on ``self``. When parsed without a history scope
+            # (e.g. ``/api/datasets``), the HDCA branch degrades to a no-op
+            # — HDA filtering still applies, which covers the documented
+            # behavior of ``/api/datasets``. Other ops (``like``) fall through
+            # to the base parser's standard column filter (HDCAs are excluded
+            # there because the union's HDCA branch has ``extension=null()``).
+            if op == "eq":
+                extensions = {val}
+            else:
+                extensions = {e for e in val.split(",") if e}
+            if not extensions:
+                raise_filter_err(attr, op, val, "empty extension list")
+            history_id = self._current_history_id
+
+            def extension_filter(component_class):
+                if component_class is model.HistoryDatasetAssociation:
+                    return model.HistoryDatasetAssociation.extension.in_(extensions)
+                if component_class is model.HistoryDatasetCollectionAssociation:
+                    if history_id is None:
+                        return true()
+                    return model.History._hdca_extensions_only_in_clause(extensions, history_id)
+                return None
+
+            return self.parsed_filter(filter_type="orm_function", filter=extension_filter)
+
+        if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 
@@ -637,9 +785,8 @@ class HistoryContentsFilters(
 
     def _add_parsers(self):
         super()._add_parsers()
-        database_connection: str = self.app.config.database_connection
         annotatable.AnnotatableFilterMixin._add_parsers(self)
-        genomes.GenomeFilterMixin._add_parsers(self, database_connection)
+        genomes.GenomeFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
@@ -652,6 +799,12 @@ class HistoryContentsFilters(
                 # 'hid-in'        : { 'op': ( 'in' ), 'val': self.parse_int_list },
                 "name": {"op": ("eq", "contains", "like")},
                 "state": {"op": ("eq", "in")},
+                # ``eq`` / ``in`` are handled specially in ``_parse_orm_filter``
+                # so the HDCA branch can use a depth-arbitrary recursive CTE;
+                # ``like`` falls through to the base parser's column filter.
+                "extension": {"op": ("eq", "like", "in"), "val": {"in": lambda v: v.split(",")}},
+                "object_store_id": {"op": ("eq", "in")},
+                "quota_source_label": {"op": ("eq")},
                 "visible": {"op": ("eq"), "val": parse_bool},
                 "create_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},
                 "update_time": {"op": ("le", "ge", "lt", "gt"), "val": self.parse_date},

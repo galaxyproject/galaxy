@@ -2,6 +2,7 @@
 
 See the file error_codes.json for actual error code descriptions.
 """
+
 from json import loads
 from typing import Dict
 
@@ -27,7 +28,7 @@ class ErrorCode:
 
     def __repr__(self):
         """Return object representation of this error code."""
-        return "ErrorCode[code=%d,message=%s]" % (self.code, str(self.default_error_message))
+        return f"ErrorCode[code={self.code},message={str(self.default_error_message)}]"
 
     def __int__(self):
         """Return the error code integer."""
@@ -42,7 +43,7 @@ def _from_dict(entry):
     return (name, ErrorCode(code, message))
 
 
-error_codes_json = resource_string(__package__, "error_codes.json")
+error_codes_json = resource_string(__name__, "error_codes.json")
 error_codes_by_name: Dict[str, ErrorCode] = {}
 error_codes_by_int_code: Dict[int, ErrorCode] = {}
 

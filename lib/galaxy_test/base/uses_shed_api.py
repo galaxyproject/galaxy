@@ -1,9 +1,7 @@
 import abc
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Optional,
 )
 from unittest import SkipTest
@@ -16,19 +14,18 @@ from galaxy_test.base.api_asserts import assert_status_code_is
 
 DEFAULT_TOOL_SHED_URL = "https://toolshed.g2.bx.psu.edu"
 
-OperationT = Callable[[Dict[str, Any]], Response]
+OperationT = Callable[[dict[str, Any]], Response]
 
 
 class UsesShedApi:
     @property
     @abc.abstractmethod
-    def galaxy_interactor(self) -> GalaxyInteractorApi:
-        ...
+    def galaxy_interactor(self) -> GalaxyInteractorApi: ...
 
-    def delete_repo_request(self, payload: Dict[str, Any]) -> Response:
+    def delete_repo_request(self, payload: dict[str, Any]) -> Response:
         return self.galaxy_interactor._delete("tool_shed_repositories", data=payload, admin=True)
 
-    def install_repo_request(self, payload: Dict[str, Any]) -> Response:
+    def install_repo_request(self, payload: dict[str, Any]) -> Response:
         return self.galaxy_interactor._post(
             "tool_shed_repositories/new/install_repository_revision", data=payload, admin=True
         )
@@ -41,7 +38,7 @@ class UsesShedApi:
         changeset: str,
         tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
         tool_panel_section_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         payload = {"tool_shed_url": tool_shed_url, "name": name, "owner": owner, "changeset_revision": changeset}
         if tool_panel_section_id:
             payload["tool_panel_section_id"] = tool_panel_section_id
@@ -56,7 +53,7 @@ class UsesShedApi:
         changeset: str,
         tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
         tool_panel_section_id: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         try:
             return self.repository_operation(
                 operation=self.install_repo_request,
@@ -73,15 +70,15 @@ class UsesShedApi:
 
     def uninstall_repository(
         self, owner: str, name: str, changeset: str, tool_shed_url: str = DEFAULT_TOOL_SHED_URL
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         return self.repository_operation(
             operation=self.delete_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url
         )
 
     def index_repositories(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
-        params: Dict[str, str] = {}
+    ) -> list[dict[str, Any]]:
+        params: dict[str, str] = {}
         if owner is not None:
             params["owner"] = owner
         if name is not None:
@@ -96,7 +93,7 @@ class UsesShedApi:
 
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[dict[str, Any]]:
         index = self.index_repositories(owner, name, changeset)
         if len(index) == 0:
             return None
@@ -105,7 +102,7 @@ class UsesShedApi:
         else:
             return index[0]
 
-    def get_installed_repository(self, id: str) -> Dict[str, Any]:
+    def get_installed_repository(self, id: str) -> dict[str, Any]:
         response = self.galaxy_interactor._get(f"tool_shed_repositories/{id}", admin=True)
         response.raise_for_status()
         return response.json()

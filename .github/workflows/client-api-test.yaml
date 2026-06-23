@@ -1,0 +1,47 @@
+name: Client API Testing
+on:
+  push:
+    paths:
+      - 'client/packages/api-client/**'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/pnpm-lock.yaml'
+      - 'client/src/api/**'
+      - '.github/workflows/client-api-test.yaml'
+  pull_request:
+    paths:
+      - 'client/packages/api-client/**'
+      - 'client/pnpm-workspace.yaml'
+      - 'client/pnpm-lock.yaml'
+      - 'client/src/api/**'
+      - '.github/workflows/client-api-test.yaml'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions: {}
+jobs:
+  client-api-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
+      - name: Read Node.js version
+        id: node-version
+        run: echo "version=$(cat 'client/.node_version')" >> $GITHUB_OUTPUT
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: client/package.json
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: client
+      - name: Build client-api
+        run: pnpm --filter @galaxyproject/galaxy-api-client run build
+        working-directory: client
+      - name: Run client-api tests
+        run: pnpm --filter @galaxyproject/galaxy-api-client test
+        working-directory: client

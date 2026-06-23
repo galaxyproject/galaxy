@@ -1,118 +1,55 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import TrsTool from "./TrsTool.vue";
-import TrsUrlImport from "./TrsUrlImport.vue";
-import { Toast } from "@/composables/toast";
-import { Services } from "../services";
-import { useUserStore } from "@/stores/userStore";
-import { computed, ref, watch, type Ref } from "vue";
-import { getRedirectOnImportPath } from "../redirectPath";
-import LoadingSpan from "@/components/LoadingSpan.vue";
-import TrsServerSelection from "./TrsServerSelection.vue";
+import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
-import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
-const props = defineProps({
-    queryTrsServer: {
-        type: String,
-        default: null,
-    },
-    queryTrsId: {
-        type: String,
-        default: null,
-    },
-    queryTrsVersionId: {
-        type: String,
-        default: null,
-    },
-    queryTrsUrl: {
-        type: String,
-        default: null,
-    },
-    isRun: {
-        type: Boolean,
-        default: false,
-    },
+import { getRedirectOnImportPath } from "@/components/Workflow/redirectPath";
+import { Services } from "@/components/Workflow/services";
+import { useUserStore } from "@/stores/userStore";
+
+import type { TrsSelection } from "./types";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import TrsIdImport from "@/components/Workflow/Import/TrsIdImport.vue";
+import TrsSearch from "@/components/Workflow/Import/TrsSearch.vue";
+import TrsUrlImport from "@/components/Workflow/Import/TrsUrlImport.vue";
+
+interface Props {
+    isRun?: boolean;
+    queryTrsId?: string;
+    queryTrsUrl?: string;
+    queryTrsServer?: string;
+    queryTrsVersionId?: string;
+    trsServers?: TrsSelection[];
+    trsMethod?: "search" | "url" | "id";
+}
+
+const props = withDefaults(defineProps<Props>(), {
+    trsMethod: "search",
+    isRun: false,
+    queryTrsId: "",
+    queryTrsUrl: "",
+    queryTrsServer: "",
+    queryTrsVersionId: "",
+    trsServers: () => [],
 });
 
-const trsTool: Ref<TrsToolInterface | null> = ref(null);
-const loading = ref(false);
-const importing = ref(false);
-const trsSelection: Ref<TrsSelection | null> = ref(null);
-const errorMessage: Ref<string | null> = ref(null);
-const toolId = ref(props.queryTrsId);
+const emit = defineEmits<{
+    (e: "input-valid", valid: boolean): void;
+}>();
+
+type TrsView = "trsId" | "trsUrl" | "trsSearch";
+
 const { isAnonymous } = storeToRefs(useUserStore());
-const isAutoImport = ref(
-    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl)
-);
-
-const toolIdTrimmed = computed(() => {
-    return toolId.value?.trim() || null;
-});
-
-const hasErrorMessage = computed(() => {
-    return errorMessage.value != null;
-});
-
-watch(toolIdTrimmed, () => {
-    onToolId();
-});
+const importing = ref(false);
+const errorMessage: Ref<string | null> = ref(null);
+const trsSearchRef = ref<InstanceType<typeof TrsSearch>>();
+const trsIdImportRef = ref<InstanceType<typeof TrsIdImport>>();
+const trsUrlImportRef = ref<InstanceType<typeof TrsUrlImport>>();
+const validationState = ref(false);
 
 const services = new Services();
-
-async function onToolId() {
-    trsTool.value = null;
-    errorMessage.value = null;
-
-    if (!trsSelection.value || !toolIdTrimmed.value) {
-        return;
-    }
-
-    loading.value = true;
-
-    try {
-        const tool = await services.getTrsTool(trsSelection.value.id, toolIdTrimmed.value);
-
-        trsTool.value = tool;
-
-        if (isAutoImport.value) {
-            let versionField: "name" | "id" = "name";
-            const version = trsTool.value!.versions.find((version) => {
-                if (version.name === props.queryTrsVersionId) {
-                    return true;
-                } else if (version.id === props.queryTrsVersionId) {
-                    versionField = "id";
-                    return true;
-                }
-            });
-
-            if (version) {
-                importVersion(trsSelection.value.id, trsTool.value!.id, version[versionField], props.isRun);
-            } else {
-                Toast.warning(`Specified version: ${props.queryTrsVersionId} doesn't exist`);
-                isAutoImport.value = false;
-            }
-        }
-    } catch (error) {
-        trsTool.value = null;
-        errorMessage.value = error as string;
-    } finally {
-        loading.value = false;
-    }
-}
-
-function onTrsSelection(selection: TrsSelection) {
-    trsSelection.value = selection;
-
-    if (toolIdTrimmed.value) {
-        onToolId();
-    }
-}
-
-function onTrsSelectionError(message: string) {
-    errorMessage.value = message;
-}
-
 const router = useRouter();
 
 async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
@@ -151,51 +88,90 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
         importing.value = false;
     }
 }
+
+// In wizard mode: use trsMethod prop to determine which view to show
+const effectiveView = computed<TrsView>(() => {
+    // Map wizard method names to TrsView names
+    const methodMap: Record<string, TrsView> = {
+        search: "trsSearch",
+        url: "trsUrl",
+        id: "trsId",
+    };
+    return methodMap[props.trsMethod] || "trsSearch";
+});
+
+// Forward validation from child components
+function onChildValidation(valid: boolean) {
+    validationState.value = valid;
+    emit("input-valid", valid);
+}
+
+// Expose import method for wizard
+async function attemptImport() {
+    // Delegate to the active view's import logic
+    if (effectiveView.value === "trsSearch" && trsSearchRef.value) {
+        trsSearchRef.value.triggerImport();
+    } else if (effectiveView.value === "trsUrl" && trsUrlImportRef.value) {
+        trsUrlImportRef.value.triggerImport();
+    } else if (effectiveView.value === "trsId" && trsIdImportRef.value) {
+        trsIdImportRef.value.triggerImport();
+    }
+}
+
+defineExpose({ attemptImport });
 </script>
 
 <template>
-    <div class="workflow-import-trs-id">
-        <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
-            <div>
-                <b>TRS Server:</b>
-                <TrsServerSelection
-                    :trs-selection="trsSelection"
-                    :query-trs-server="props.queryTrsServer"
-                    @onError="onTrsSelectionError"
-                    @onTrsSelection="onTrsSelection" />
-            </div>
-            <b-alert v-if="isAutoImport && !hasErrorMessage" show variant="info">
-                <LoadingSpan message="Loading your Workflow" />
-            </b-alert>
-            <div v-else>
-                <div class="my-3">
-                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
-                        <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
-                    </b-form-group>
-                </div>
-                <div>
-                    <b-alert v-if="loading" show variant="info">
-                        <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
-                    </b-alert>
-                    <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-                    <b-alert v-if="importing" show variant="info">
-                        <LoadingSpan message="Importing workflow" />
-                    </b-alert>
-                </div>
-                <TrsTool
-                    v-if="trsTool"
-                    :trs-tool="trsTool"
-                    @onImport="(versionId) => importVersion(trsSelection?.id, trsTool?.id, versionId)" />
-            </div>
-            <hr />
-            <div>
-                <TrsUrlImport
-                    :query-trs-url="props.queryTrsUrl"
-                    @onImport="(url) => importVersionFromUrl(url, isRun)" />
-            </div>
-        </b-card>
-        <b-alert v-else class="text-center my-2" show variant="danger">
+    <div class="workflow-import-trs">
+        <BAlert v-if="isAnonymous" class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
-        </b-alert>
+        </BAlert>
+
+        <div v-else>
+            <BAlert v-if="importing" show variant="info">
+                <LoadingSpan message="Importing workflow" />
+            </BAlert>
+
+            <BAlert v-if="errorMessage" show variant="danger">
+                {{ errorMessage }}
+            </BAlert>
+
+            <div v-if="effectiveView === 'trsSearch'" style="min-height: 500px">
+                <TrsSearch ref="trsSearchRef" @input-valid="onChildValidation" />
+            </div>
+
+            <div v-if="effectiveView === 'trsId'" style="min-height: 500px">
+                <TrsIdImport
+                    ref="trsIdImportRef"
+                    :is-run="props.isRun"
+                    :query-trs-id="props.queryTrsId"
+                    :query-trs-server="props.queryTrsServer"
+                    :query-trs-version-id="props.queryTrsVersionId"
+                    @onImport="(trsId, toolId, version) => importVersion(trsId, toolId, version, props.isRun)"
+                    @input-valid="onChildValidation" />
+            </div>
+
+            <div v-if="effectiveView === 'trsUrl'" style="min-height: 500px">
+                <TrsUrlImport
+                    ref="trsUrlImportRef"
+                    :query-trs-url="props.queryTrsUrl"
+                    @onImport="(url) => importVersionFromUrl(url, props.isRun)"
+                    @input-valid="onChildValidation" />
+            </div>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.clickable-card {
+    cursor: pointer;
+    transition:
+        transform 0.2s,
+        box-shadow 0.2s;
+}
+
+.clickable-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+</style>

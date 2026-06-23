@@ -1,6 +1,7 @@
 import axios from "axios";
-import { getGalaxyInstance } from "app";
-import { withPrefix } from "utils/redirect";
+
+import { getGalaxyInstance } from "@/app";
+import { withPrefix } from "@/utils/redirect";
 
 /**
  * Handles user logout.  Invalidates the current session, checks to see if we

@@ -1,8 +1,10 @@
-import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import FormDefault from "./FormDefault";
 import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
+import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import FormDefault from "./FormDefault.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -23,6 +25,7 @@ describe("FormDefault", () => {
                     contentId: "id",
                     annotation: "annotation",
                     label: "label",
+                    name: "name",
                     type: "subworkflow",
                     configForm: {
                         inputs: [],
@@ -32,13 +35,16 @@ describe("FormDefault", () => {
                 },
             },
             localVue,
-            pinia: createTestingPinia(),
+            pinia: createTestingPinia({ createSpy: vi.fn }),
+            provide: {
+                workflowId: "mock-workflow",
+            },
         });
     });
 
     it("check initial value and value change", async () => {
         const title = wrapper.find(".portlet-title-text").text();
-        expect(title).toBe("label");
+        expect(title).toBe("name");
         const inputCount = wrapper.findAll("input").length;
         expect(inputCount).toBe(4);
         const outputLabelCount = wrapper.findAll("#__label__output-name").length;

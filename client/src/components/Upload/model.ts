@@ -1,0 +1,67 @@
+import type { FileStream, UploadableFile } from "@/utils/tusUpload";
+
+export type { FileStream, UploadableFile };
+
+export interface UploadFile {
+    mode: string | null;
+    name: string | null;
+    size: number | null;
+    uri?: string | null;
+    path?: string | null;
+    label?: string | null;
+    url?: string | null;
+}
+
+export function isLocalFile(file: unknown): file is File {
+    return file !== null && typeof file === "object" && "name" in file && "size" in file;
+}
+
+/**
+ * UI model for an upload row in the upload modal.
+ * This is the reactive state used by Vue components.
+ */
+export interface UploadRowModel {
+    dbKey: string;
+    deferred?: boolean;
+    enabled: boolean;
+    extension: string;
+    fileContent: string;
+    fileData: UploadableFile | null;
+    fileMode: string;
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+    fileUri?: string | null;
+    info?: string | null;
+    optional: boolean;
+    outputs: object | null;
+    percentage: number;
+    spaceToTab: boolean;
+    status: string;
+    targetHistoryId?: string;
+    toPosixLines: boolean;
+    id?: string;
+    autoDecompress: boolean;
+}
+
+export const defaultModel: UploadRowModel = {
+    dbKey: "?",
+    deferred: false,
+    enabled: true,
+    extension: "auto",
+    fileContent: "",
+    fileData: null,
+    fileMode: "",
+    fileName: "",
+    filePath: "",
+    fileSize: 0,
+    fileUri: null,
+    info: null,
+    optional: false,
+    outputs: null,
+    percentage: 0,
+    spaceToTab: false,
+    status: "init",
+    toPosixLines: true,
+    autoDecompress: true,
+};

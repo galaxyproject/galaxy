@@ -1,0 +1,146 @@
+<tool id="__NEST__"
+      name="Nest collection"
+      version="1.0.0"
+      tool_type="nest_collection">
+    <description>by adding a nesting level</description>
+    <type class="NestTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <edam_operations>
+        <edam_operation>operation_2409</edam_operation>
+    </edam_operations>
+    <macros>
+        <import>model_operation_macros.xml</import>
+    </macros>
+    <inputs>
+        <param type="data_collection" collection_type="list,paired" name="input" label="Input Collection" />
+    </inputs>
+    <outputs>
+        <collection name="output" format_source="input" type="list:list" label="${on_string} (nested)" >
+        </collection>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="sample1" value="simple_line.txt"/>
+                    <element name="sample2" value="simple_line_alternative.txt"/>
+                </collection>
+            </param>
+            <output_collection name="output" type="list:list">
+              <element name="sample1">
+                <element name="sample1">
+                    <expand macro="assert_is_simple_line" />
+                </element>
+              </element>
+              <element name="sample2">
+                <element name="sample2">
+                    <expand macro="assert_is_simple_line_alt" />
+                </element>
+              </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list:paired">
+                    <element name="sample1">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line.txt" />
+                            <element name="reverse" value="simple_line.txt" />
+                        </collection>
+                    </element>
+                    <element name="sample2">
+                        <collection type="paired">
+                            <element name="forward" value="simple_line_alternative.txt" />
+                            <element name="reverse" value="simple_line_alternative.txt" />
+                        </collection>
+                    </element>
+                </collection>
+            </param>
+            <output_collection name="output" type="list:list" count="2">
+              <element name="sample1" count="1">
+                <element name="sample1">
+                  <element name="forward">
+                    <expand macro="assert_is_simple_line" />
+                  </element>
+                  <element name="reverse">
+                    <expand macro="assert_is_simple_line" />
+                  </element>
+                </element>
+              </element>
+              <element name="sample2" count="1">
+                <element name="sample2">
+                  <element name="forward">
+                    <expand macro="assert_is_simple_line_alt" />
+                  </element>
+                  <element name="reverse">
+                    <expand macro="assert_is_simple_line_alt" />
+                  </element>
+                </element>
+              </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Wraps each element of a collection inside its own inner list, adding one nesting level.
+
+===========
+Description
+===========
+
+This tool takes a collection and produces a nested collection (``list:list``) where each top-level element becomes a single-element inner list. The inner list and its sole element share the same identifier.
+
+For example, a ``list`` with elements ``[A, B, C]`` becomes a ``list:list`` where the outer list has three elements, each containing a one-element inner list: ``[A→[A], B→[B], C→[C]]``.
+
+If the input is already nested (e.g. ``list:paired``), the output gains one more level of nesting (``list:list:paired``), where each inner ``list`` contains a single paired collection.
+
+========
+Examples
+========
+
+**Nest a flat list**
+
+Input ``list``::
+
+ List: "Samples"
+
+   sample1  →  Dataset 1
+   sample2  →  Dataset 2
+   sample3  →  Dataset 3
+
+Output ``list:list``::
+
+ Nested list: "Samples (nested)"
+
+   sample1/
+     sample1  →  Dataset 1
+   sample2/
+     sample2  →  Dataset 2
+   sample3/
+     sample3  →  Dataset 3
+
+-------
+
+**Why is this useful?**
+
+Some Galaxy tools expect a ``list`` as input — when you feed them a ``list``, Galaxy runs the tool once on the entire list. If you want Galaxy to run the tool separately on each element (map over the collection), you need the input to be a ``list:list`` so that Galaxy maps over the outer list and passes each inner list to the tool individually. Nesting provides that extra level.
+
+-------
+
+.. image:: ${static_path}/images/tools/collection_ops/nest.svg
+  :alt: Nest a collection by adding a nesting level
+  :width: 500
+
+-------
+
+.. class:: infomark
+
+@QUOTA_USAGE_NOTE@
+
+    ]]></help>
+</tool>

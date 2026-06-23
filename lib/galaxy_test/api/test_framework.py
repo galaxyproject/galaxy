@@ -9,6 +9,10 @@ class TestApiFramework(ApiTestCase):
         get_response = self._get("licenses")
         assert get_response.headers["x-frame-options"] == "SAMEORIGIN"
 
+    def test_xframe_options_skipped_for_embed(self):
+        get_response = self._get("/published/page", data={"embed": "true"})
+        assert "x-frame-options" not in get_response.headers
+
     # Next several tests test the API's run_as functionality.
     def test_user_cannont_run_as(self):
         run_as_user = self._setup_user("for_run_as@bx.psu.edu")

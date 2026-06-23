@@ -6,10 +6,12 @@ import tempfile
 
 from galaxy.tools import expressions
 from galaxy.util import galaxy_directory
+from galaxy.util.unittest_utils import skip_unless_executable
 
 LIB_DIRECTORY = os.path.join(galaxy_directory(), "lib")
 
 
+@skip_unless_executable("node")
 def test_run_simple():
     test_directory = tempfile.mkdtemp()
     try:

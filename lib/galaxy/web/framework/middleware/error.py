@@ -9,6 +9,7 @@ Error handler middleware
 When an exception is thrown from the wrapper application, this logs
 the exception and displays an error page.
 """
+
 import logging
 import sys
 import traceback
@@ -40,7 +41,6 @@ NoDefault = _NoDefault()
 
 
 class ErrorMiddleware:
-
     """
     Error handling middleware
 
@@ -226,7 +226,6 @@ class ResponseStartChecker:
 
 
 class CatchingIter:
-
     """
     A wrapper around the application iterator that will catch
     exceptions raised by the a generator, or by the close method, and
@@ -268,7 +267,7 @@ class CatchingIter:
             if not self.start_checker.response_started:
                 self.start_checker("500 Internal Server Error", [("content-type", "text/html")], exc_info)
 
-            return response
+            return response.encode("utf-8", errors="ignore")
 
     def close(self):
         # This should at least print something to stderr if the
@@ -289,7 +288,6 @@ class CatchingIter:
 
 
 class Supplement:
-
     """
     This is a supplement used to display standard WSGI information in
     the traceback.
@@ -424,12 +422,9 @@ def handle_exception(
         extra_data = ""
         reported = True
     else:
-        msg = (
-            error_message
-            or """
+        msg = error_message or """
         An error occurred.
         """
-        )
         extra = "<p><b>The error has been logged to our team.</b>"
         if "sentry_event_id" in environ:
             extra += " If you want to contact us about this error, please reference the following<br><br>"
@@ -452,13 +447,11 @@ def send_report(rep, exc_data, html=True):
         output = StringIO()
         traceback.print_exc(file=output)
         if html:
-            return """
-            <p>Additionally an error occurred while sending the {} report:
+            return f"""
+            <p>Additionally an error occurred while sending the {markupsafe.escape(str(rep))} report:
 
-            <pre>{}</pre>
-            </p>""".format(
-                markupsafe.escape(str(rep)), output.getvalue()
-            )
+            <pre>{output.getvalue()}</pre>
+            </p>"""
         else:
             return f"Additionally an error occurred while sending the {rep} report:\n{output.getvalue()}"
     else:
@@ -466,7 +459,7 @@ def send_report(rep, exc_data, html=True):
 
 
 def error_template(head_html, exception, extra):
-    return """
+    return f"""
     <!DOCTYPE HTML>
     <html>
     <head>
@@ -475,7 +468,7 @@ def error_template(head_html, exception, extra):
     .content {{ max-width: 720px; margin: auto; margin-top: 50px; }}
     </style>
     <title>Internal Server Error</title>
-    {}
+    {head_html}
     </head>
     <body>
     <div class="content">
@@ -483,16 +476,14 @@ def error_template(head_html, exception, extra):
 
     <h2>Galaxy was unable to successfully complete your request</h2>
 
-    <p>{}</p>
+    <p>{exception}</p>
 
     This may be an intermittent problem due to load or other unpredictable factors, reloading the page may address the problem.
 
-    {}
+    {extra}
     </div>
     </body>
-    </html>""".format(
-        head_html, exception, extra
-    )
+    </html>"""
 
 
 def make_error_middleware(app, global_conf, **kw):

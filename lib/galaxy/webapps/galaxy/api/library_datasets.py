@@ -1,4 +1,5 @@
 """API operations on the library datasets."""
+
 import glob
 import logging
 import os
@@ -25,7 +26,8 @@ from galaxy.managers import (
     library_datasets,
     roles,
 )
-from galaxy.model.base import transaction
+from galaxy.model import DatasetPermissions
+from galaxy.model.db.role import get_private_role_user_emails_dict
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -149,10 +151,13 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 page_limit = 10
             query = kwd.get("q", None)
             roles, total_roles = trans.app.security_agent.get_valid_roles(trans, dataset, query, page, page_limit)
+            role_ids = {r.id for r in roles}
+            private_role_emails = get_private_role_user_emails_dict(trans.sa_session, role_ids=role_ids)
             return_roles = []
             for role in roles:
                 role_id = trans.security.encode_id(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                displayed_name = private_role_emails.get(role.id, role.name)
+                return_roles.append(dict(id=role_id, name=displayed_name, type=role.type))
             return dict(roles=return_roles, page=page, page_limit=page_limit, total=total_roles)
         else:
             raise exceptions.RequestParameterInvalidException(
@@ -170,7 +175,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -198,7 +203,8 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         :rtype:     dictionary
         """
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
-        updated = self.ld_manager.update(trans, library_dataset, payload)
+        self.ld_manager.check_modifiable(trans, library_dataset)
+        updated = self.ld_manager.update(library_dataset, payload, trans=trans)
         serialized = self.ld_manager.serialize(trans, updated)
         return serialized
 
@@ -258,12 +264,11 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         elif action == "make_private":
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
-                dp = trans.app.model.DatasetPermissions(
+                dp = DatasetPermissions(
                     trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                with transaction(trans.sa_session):
-                    trans.sa_session.commit()
+                trans.sa_session.commit()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
@@ -356,8 +361,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
             library_dataset.deleted = True
 
         trans.sa_session.add(library_dataset)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
+        trans.sa_session.commit()
 
         rval = trans.security.encode_all_ids(library_dataset.to_dict())
         nice_size = util.nice_size(
@@ -434,8 +438,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         kwd["file_type"] = kwd.get("file_type", "auto")
         kwd["link_data_only"] = "link_to_files" if util.string_as_bool(kwd.get("link_data", False)) else "copy_files"
         kwd["tag_using_filenames"] = util.string_as_bool(kwd.get("tag_using_filenames", None))
-        encoded_folder_id = kwd.get("encoded_folder_id", None)
-        if encoded_folder_id is not None:
+        if (encoded_folder_id := kwd.get("encoded_folder_id", None)) is not None:
             folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
         else:
             raise exceptions.RequestParameterMissingException("The required attribute encoded_folder_id is missing.")
@@ -486,9 +489,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                     os.path.realpath(path),
                 )
                 raise exceptions.RequestParameterInvalidException("The given path is invalid.")
-            if trans.app.config.user_library_import_check_permissions and not full_path_permission_for_user(
-                full_dir, path, username
-            ):
+            if username is not None and not full_path_permission_for_user(full_dir, path, username):
                 log.error(
                     "User attempted to import a path that resolves to a path outside of their import dir: "
                     "%s -> %s and cannot be read by them.",
@@ -501,9 +502,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 path, allowlist=[full_dir] + trans.app.config.user_library_import_symlink_allowlist, username=username
             ):
                 # the path is a dir and contains files that symlink outside the user dir
-                error = "User attempted to import a path that resolves to a path outside of their import dir: {} -> {}".format(
-                    path, os.path.realpath(path)
-                )
+                error = f"User attempted to import a path that resolves to a path outside of their import dir: {path} -> {os.path.realpath(path)}"
                 if trans.app.config.user_library_import_check_permissions:
                     error += " or is not readable for them."
                 log.error(error)
@@ -693,22 +692,22 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                         zpath = f"{zpath}.html"  # fake the real nature of the html file
                     try:
                         if archive_format == "zip":
-                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.get_file_name(), zpath)  # add the primary of a composite set
                         else:
-                            archive.write(ldda.dataset.file_name, zpath)  # add the primary of a composite set
+                            archive.write(ldda.dataset.get_file_name(), zpath)  # add the primary of a composite set
                     except OSError:
                         log.exception(
                             "Unable to add composite parent %s to temporary library download archive",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                         )
                         raise exceptions.InternalServerError("Unable to create archive for download.")
                     except ObjectNotFound:
-                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
+                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.get_file_name())
                         raise exceptions.ObjectNotFound("Requested dataset not found. ")
                     except Exception as e:
                         log.exception(
                             "Unable to add composite parent %s to temporary library download archive",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                         )
                         raise exceptions.InternalServerError(
                             f"Unable to add composite parent to temporary library download archive. {util.unicodify(e)}"
@@ -734,19 +733,19 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                             )
                 else:
                     try:
-                        archive.write(ldda.dataset.file_name, path)
+                        archive.write(ldda.dataset.get_file_name(), path)
                     except OSError:
                         log.exception(
-                            "Unable to write %s to temporary library download archive", ldda.dataset.file_name
+                            "Unable to write %s to temporary library download archive", ldda.dataset.get_file_name()
                         )
                         raise exceptions.InternalServerError("Unable to create archive for download")
                     except ObjectNotFound:
-                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.file_name)
+                        log.exception("Requested dataset %s does not exist on the host.", ldda.dataset.get_file_name())
                         raise exceptions.ObjectNotFound("Requested dataset not found.")
                     except Exception as e:
                         log.exception(
                             "Unable to add %s to temporary library download archive %s",
-                            ldda.dataset.file_name,
+                            ldda.dataset.get_file_name(),
                             outfname,
                         )
                         raise exceptions.InternalServerError(f"Unknown error. {util.unicodify(e)}")
@@ -761,14 +760,14 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
                 single_ld = library_datasets[0]
                 ldda = single_ld.library_dataset_dataset_association
                 dataset = ldda.dataset
-                fStat = os.stat(dataset.file_name)
+                fStat = os.stat(dataset.get_file_name())
                 trans.response.set_content_type(ldda.get_mime())
                 trans.response.headers["Content-Length"] = str(fStat.st_size)
                 fname = f"{ldda.name}.{ldda.extension}"
                 fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{fname}"'
                 try:
-                    return open(dataset.file_name, "rb")
+                    return open(dataset.get_file_name(), "rb")
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:

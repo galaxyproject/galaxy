@@ -1,0 +1,13 @@
+class: GalaxyWorkflow
+inputs:
+  input1:
+    type: collection
+    collection_type: list
+outputs:
+  wf_output:
+    outputSource: tool_step/out_file1
+steps:
+  tool_step:
+    tool_id: cat_collection
+    in:
+      input1: input1

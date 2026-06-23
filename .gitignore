@@ -7,13 +7,12 @@ scripts/scramble/lib
 scripts/scramble/archives
 
 # Python virtualenv
-.venv
-.venv3
+.venv*/
 
 # Python build artifacts
 build
 dist
-lib/galaxy.egg-info
+*.egg-info/
 .eggs
 
 # Generated static content
@@ -32,10 +31,11 @@ lib/galaxy/web/framework/meta.json
 *.lock
 *.log
 *.pid
-celerybeat-schedule
 
 # Celery state files
-celerybeat-schedule.*
+celerybeat-schedule
+celery-beat-schedule
+celerybeat-schedule.db
 
 # Tool Shed runtime files
 tool_shed_webapp.lock
@@ -73,14 +73,15 @@ shed_data_manager_conf.xml
 object_store_conf.xml
 job_metrics_conf.xml
 workflow_schedulers_conf.xml
+client_build_hash.txt
 config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 config/plugins/**/.parcel-cache
+config/plugins/visualizations
 !config/plugins
 static/welcome.html.*
 static/welcome.html
-static/client_build_hash.txt
 lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml
 
 # Tool data
@@ -111,8 +112,10 @@ test-data-cache
 run_api_tests.html
 run_cwl_tests.html
 run_framework_tests.html
+run_framework_workflows_tests.html
 run_functional_tests.html
 run_integration_tests.html
+run_playwright_tests.html
 run_selenium_tests.html
 run_toolshed_tests.html
 test/tool_shed/tmp/*
@@ -131,6 +134,7 @@ tool_test_output.json
 client/**/jsconfig.json
 vetur.config.js
 .pre-commit-config.yaml
+galaxy.code-workspace
 
 # Chrom len files
 *.len
@@ -154,6 +158,7 @@ doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
+doc/source/dev/plantuml.jar
 client/docs/dist
 
 # Webpack stats
@@ -162,19 +167,21 @@ client/webpack-stats.json
 # Packages
 packages/*/build
 packages/*/dist
-packages/*/*.egg-info
+packages/meta/requirements.txt
 
 # Standalone script + main, or build into dist
 config/plugins/**/static/dist
 config/plugins/**/static/script.js
 config/plugins/**/static/main.css
+config/plugins/**/static/script.css
 config/plugins/**/static/plugin_build_hash.txt
 config/plugins/**/static/*.map
 
 # Viz-specific build artifacts to ignore (until these are removed from codebase)
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
-config/plugins/visualizations/h5web/static/script.css
+config/plugins/visualizations/scatterplot/static/scatterplot.js
+config/plugins/visualizations/tiffviewer/static/
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
@@ -183,8 +190,22 @@ test/functional/tools/cwl_tools/v1.?/
 # Involucro tool
 involucro
 
+# Claude Code local settings
+.claude/settings.local.json
+
+# GTN search database (downloaded on first use)
+lib/galaxy/agents/gtn/data/gtn_search.db
+
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
+
+# Agent eval runner: per-user model config (real keys live in env, but be safe)
+test/evals/models.yaml
+# Eval result artifacts -- keep baselines you care about somewhere outside
+# the repo. Filenames encode the repo SHA they were generated from, so any
+# baseline file pairs back to the exact commit it came from.
+test/evals/results/*
+!test/evals/results/.gitkeep

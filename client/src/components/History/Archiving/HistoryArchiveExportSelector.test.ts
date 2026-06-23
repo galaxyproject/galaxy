@@ -1,12 +1,11 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import flushPromises from "flush-promises";
 import { BFormCheckbox } from "bootstrap-vue";
-import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
-import type { HistorySummary } from "@/stores/historyStore";
-import { mockFetcher } from "@/schema/__mocks__";
+import flushPromises from "flush-promises";
+import { describe, expect, it } from "vitest";
+
+import type { HistorySummary, ObjectExportTaskResponse } from "@/api";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
     FILE_SOURCE_STORE_RESPONSE,
@@ -15,7 +14,7 @@ import {
     RECENT_STS_DOWNLOAD_RESPONSE,
 } from "@/components/Common/models/testData/exportData";
 
-jest.mock("@/schema");
+import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 
 const localVue = getLocalVue(true);
 
@@ -26,14 +25,12 @@ const TEST_HISTORY = {
     archived: false,
 };
 
-const GET_EXPORTS_API_ENDPOINT = "/api/histories/{history_id}/exports";
-
 const EXPORT_RECORD_BTN = "#create-export-record-btn";
 const ARCHIVE_HISTORY_BTN = "#archive-history-btn";
 const CONFIRM_DELETE_CHECKBOX = "[type='checkbox']";
 
 async function mountComponentWithHistory(history: HistorySummary) {
-    const wrapper = shallowMount(HistoryArchiveExportSelector, {
+    const wrapper = shallowMount(HistoryArchiveExportSelector as object, {
         propsData: { history },
         localVue,
         stubs: {
@@ -45,19 +42,26 @@ async function mountComponentWithHistory(history: HistorySummary) {
     return wrapper;
 }
 
+const { server, http } = useServerMock();
+
+function mockGetExportsApiResponse(taskExportResponse: ObjectExportTaskResponse[]) {
+    server.use(
+        http.get("/api/histories/{history_id}/exports", ({ response }) => {
+            // We need to use the untyped version of the response here because the typed version does not support the
+            // content-type "application/vnd.galaxy.task.export+json" that is returned by the server.
+            return response.untyped(
+                HttpResponse.json(taskExportResponse, {
+                    status: 200,
+                    headers: { "Content-Type": "application/vnd.galaxy.task.export+json" },
+                }),
+            );
+        }),
+    );
+}
+
 describe("HistoryArchiveExportSelector.vue", () => {
-    let axiosMock: MockAdapter;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
-    });
-
     it("should display a button to create an export record if there is no up to date export record", async () => {
-        mockFetcher.path(GET_EXPORTS_API_ENDPOINT).method("get").mock({ data: [] });
+        mockGetExportsApiResponse([]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -66,10 +70,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should display a button to create an export record if the most recent export record is not permanent", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [RECENT_STS_DOWNLOAD_RESPONSE] });
+        mockGetExportsApiResponse([RECENT_STS_DOWNLOAD_RESPONSE]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -78,10 +79,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should display a button to create an export record if there are permanent export records but none are up to date", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [FILE_SOURCE_STORE_RESPONSE, FAILED_FILE_SOURCE_STORE_RESPONSE] });
+        mockGetExportsApiResponse([FILE_SOURCE_STORE_RESPONSE, FAILED_FILE_SOURCE_STORE_RESPONSE]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -90,10 +88,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should not display a button to create an export record if there is an up to date export record", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [RECENT_FILE_SOURCE_STORE_RESPONSE] });
+        mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -102,10 +97,12 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should not display a button to create an export record if a record is being created", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [IN_PROGRESS_FILE_SOURCE_STORE_RESPONSE] });
+        mockGetExportsApiResponse([IN_PROGRESS_FILE_SOURCE_STORE_RESPONSE]);
+        server.use(
+            http.get("/api/tasks/{task_id}/state", ({ response }) => {
+                return response(200).json("PENDING");
+            }),
+        );
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -114,7 +111,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should disable the Archive button if there is no up to date export record", async () => {
-        mockFetcher.path(GET_EXPORTS_API_ENDPOINT).method("get").mock({ data: [] });
+        mockGetExportsApiResponse([]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -123,10 +120,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should disable the Archive button if the confirm delete checkbox is not checked", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [RECENT_FILE_SOURCE_STORE_RESPONSE] });
+        mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 
@@ -139,10 +133,7 @@ describe("HistoryArchiveExportSelector.vue", () => {
     });
 
     it("should enable the Archive button if there is an up to date export record and the confirm delete checkbox is checked", async () => {
-        mockFetcher
-            .path(GET_EXPORTS_API_ENDPOINT)
-            .method("get")
-            .mock({ data: [RECENT_FILE_SOURCE_STORE_RESPONSE] });
+        mockGetExportsApiResponse([RECENT_FILE_SOURCE_STORE_RESPONSE]);
 
         const wrapper = await mountComponentWithHistory(TEST_HISTORY as HistorySummary);
 

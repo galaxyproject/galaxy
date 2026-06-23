@@ -1,0 +1,21 @@
+<tool id="collection_paired_or_list_paired_input" name="collection_paired_or_list_paired_input" version="0.1.0">
+  <command><![CDATA[
+    #for $key in $f1.keys()#
+      echo "identifier is $key" >> "$out1";
+      #set $element = $f1[$key]
+    #if $element.is_collection:
+      echo 'collection_type<${element.collection.collection_type}>' >> "$out1";
+    #else:
+      echo 'Simple dataset' >> "$out1";
+    #end if#
+    #end for#
+  ]]></command>
+  <inputs>
+    <param name="f1" type="data_collection" collection_type="paired,list:paired" label="Input collection" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="out1" />
+  </outputs>
+  <tests>
+  </tests>
+</tool>

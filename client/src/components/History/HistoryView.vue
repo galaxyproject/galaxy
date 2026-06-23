@@ -1,59 +1,72 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
-            {{ historyStateInfoMessage }}
+        <BreadcrumbHeading :items="breadcrumbItems">
+            <div class="d-flex flex-gapx-1">
+                <GButton
+                    v-if="userOwnsHistory"
+                    color="blue"
+                    :title="setAsCurrentTitle"
+                    :disabled="isSetAsCurrentDisabled"
+                    data-description="switch to history button"
+                    @click="setCurrentHistory(history.id)">
+                    Switch to this history
+                </GButton>
+
+                <GButton
+                    v-if="canImportHistory"
+                    color="blue"
+                    title="Import this history"
+                    data-description="import history button"
+                    @click="showCopyModal = true">
+                    <FontAwesomeIcon :icon="faFileImport" />
+                    Import this history
+                </GButton>
+
+                <HistoryOptions :history="history" minimal />
+            </div>
+        </BreadcrumbHeading>
+
+        <b-alert :show="copySuccess">
+            History imported and is now your active history. <b-link :to="importedHistoryLink">View here</b-link>.
         </b-alert>
-        <div class="flex-row flex-grow-0 pb-3">
-            <b-button
-                v-if="userOwnsHistory"
-                size="sm"
-                variant="outline-info"
-                :title="setAsCurrentTitle"
-                :disabled="isSetAsCurrentDisabled"
-                data-description="switch to history button"
-                @click="setCurrentHistory(history.id)">
-                Switch to this history
-            </b-button>
-            <b-button
-                v-if="canImportHistory"
-                v-b-modal:copy-history-modal
-                size="sm"
-                variant="outline-info"
-                title="Import this history"
-                data-description="import history button">
-                Import this history
-            </b-button>
-        </div>
+
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
             :history="history"
             :selected-collections.sync="selectedCollections"
             :show-controls="false"
             @view-collection="onViewCollection" />
-        <HistoryPanel
-            v-else
-            :history="history"
-            :writable="canEditHistory"
-            :show-controls="false"
-            filterable
-            @view-collection="onViewCollection" />
-        <CopyModal id="copy-history-modal" :history="history" />
+        <HistoryPanel v-else :history="history" filterable @view-collection="onViewCollection" />
+
+        <CopyModal :history="history" :show-modal.sync="showCopyModal" @ok="copyOkay" />
     </div>
 </template>
 
 <script>
+import { faFileImport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { mapActions, mapState } from "pinia";
-import { useUserStore } from "@/stores/userStore";
+
+import { isAnonymousUser } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
-import CollectionPanel from "./CurrentCollection/CollectionPanel";
-import HistoryPanel from "./CurrentHistory/HistoryPanel";
-import CopyModal from "./Modals/CopyModal";
+import { useUserStore } from "@/stores/userStore";
+
+import CollectionPanel from "./CurrentCollection/CollectionPanel.vue";
+import HistoryPanel from "./CurrentHistory/HistoryPanel.vue";
+import CopyModal from "./Modals/CopyModal.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import BreadcrumbHeading from "@/components/Common/BreadcrumbHeading.vue";
+import HistoryOptions from "@/components/History/HistoryOptions.vue";
 
 export default {
     components: {
         HistoryPanel,
         CollectionPanel,
         CopyModal,
+        FontAwesomeIcon,
+        GButton,
+        BreadcrumbHeading,
+        HistoryOptions,
     },
     props: {
         id: {
@@ -63,12 +76,25 @@ export default {
     },
     data() {
         return {
+            faFileImport,
             selectedCollections: [],
+            copySuccess: false,
+            showCopyModal: false,
         };
     },
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["getHistoryById", "currentHistory"]),
+        breadcrumbItems() {
+            return [
+                { title: "Histories", to: "/histories/list" },
+                {
+                    title: this.history.name,
+                    to: `/histories/view?id=${this.history.id}`,
+                    superText: this.isCurrentHistory ? "current" : undefined,
+                },
+            ];
+        },
         history() {
             return this.getHistoryById(this.id);
         },
@@ -79,41 +105,19 @@ export default {
             return this.currentHistory?.id == this.history?.id;
         },
         isSetAsCurrentDisabled() {
-            return this.isCurrentHistory || this.history.archived || this.history.purged;
+            return this.isCurrentHistory;
         },
         setAsCurrentTitle() {
             if (this.isCurrentHistory) {
                 return "This history is already your current history.";
             }
-            if (this.history.archived) {
-                return "This history has been archived and cannot be set as your current history. Unarchive it first.";
-            }
-            if (this.history.purged) {
-                return "This history has been purged and cannot be set as your current history.";
-            }
             return "Switch to this history";
-        },
-        canEditHistory() {
-            return this.userOwnsHistory && !this.history.archived && !this.history.purged;
-        },
-        showHistoryArchived() {
-            return this.history.archived && this.userOwnsHistory;
-        },
-        showHistoryStateInfo() {
-            return this.showHistoryArchived || this.history.purged;
-        },
-        historyStateInfoMessage() {
-            if (this.showHistoryArchived && this.history.purged) {
-                return "This history has been archived and purged.";
-            } else if (this.showHistoryArchived) {
-                return "This history has been archived.";
-            } else if (this.history.purged) {
-                return "This history has been purged.";
-            }
-            return "";
         },
         canImportHistory() {
             return !this.userOwnsHistory && !this.history.purged;
+        },
+        importedHistoryLink() {
+            return isAnonymousUser(this.currentUser) ? "/" : "/histories/list";
         },
     },
     created() {
@@ -123,6 +127,9 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setCurrentHistory"]),
         onViewCollection(collection) {
             this.selectedCollections = [...this.selectedCollections, collection];
+        },
+        copyOkay() {
+            this.copySuccess = true;
         },
     },
 };

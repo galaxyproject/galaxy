@@ -1,6 +1,8 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import BaseList from "./BaseList";
+import { describe, expect, test } from "vitest";
+
+import BaseList from "./BaseList.vue";
 
 const localVue = getLocalVue();
 
@@ -22,6 +24,7 @@ describe("Categories", () => {
     const setter = async () => {
         return {};
     };
+
     test("test categories loading", async () => {
         const wrapper = mount(BaseList, {
             propsData: {
@@ -29,7 +32,11 @@ describe("Categories", () => {
                 tooltip: "tooltip",
                 plural: "plural",
                 success: "success",
-                fields: ["execute", "col_0", "col_1"],
+                fields: [
+                    { key: "execute", label: "Execute" },
+                    { key: "col_0", label: "Col 0" },
+                    { key: "col_1", label: "Col 1" },
+                ],
                 getter: getter,
                 setter: setter,
             },

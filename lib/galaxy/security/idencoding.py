@@ -11,6 +11,8 @@ from Crypto.Random import get_random_bytes
 
 import galaxy.exceptions
 from galaxy.util import (
+    hex_to_lowercase_alphanum,
+    lowercase_alphanum_to_hex,
     smart_str,
     unicodify,
 )
@@ -33,9 +35,11 @@ class IdEncodingHelper:
         per_kind_id_secret_base = config.get("per_kind_id_secret_base", self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
 
-    def encode_id(self, obj_id, kind=None):
+    def encode_id(self, obj_id, kind=None, strict_integer=False):
         if obj_id is None:
             raise galaxy.exceptions.MalformedId("Attempted to encode None id")
+        if strict_integer and not isinstance(obj_id, int):
+            raise galaxy.exceptions.MalformedId("Attempted to encode id that is not an integer")
         id_cipher = self.__id_cipher(kind)
         # Convert to bytes
         s = smart_str(obj_id)
@@ -146,3 +150,18 @@ def _last_bits(secret):
     if len(last_bits) > MAXIMUM_ID_SECRET_LENGTH:
         last_bits = last_bits[-MAXIMUM_ID_SECRET_LENGTH:]
     return last_bits
+
+
+class IdAsLowercaseAlphanumEncodingHelper:
+    """
+    Helper class to encode IDs as lowercase alphanumeric strings, and vice versa
+    """
+
+    def __init__(self, security: IdEncodingHelper):
+        self.security = security
+
+    def encode_id(self, id: int) -> str:
+        return hex_to_lowercase_alphanum(self.security.encode_id(id))
+
+    def decode_id(self, id: str) -> int:
+        return self.security.decode_id(lowercase_alphanum_to_hex(id).rjust(16, "0"))

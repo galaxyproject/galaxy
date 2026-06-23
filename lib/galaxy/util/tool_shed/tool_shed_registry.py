@@ -5,6 +5,8 @@ from typing import (
     Optional,
 )
 
+from typing_extensions import Literal
+
 from galaxy.util import parse_xml_string
 from galaxy.util.path import StrPath
 from galaxy.util.tool_shed import common_util
@@ -20,6 +22,8 @@ DEFAULT_TOOL_SHEDS_CONF_XML = f"""<?xml version="1.0"?>
 </tool_sheds>
 """
 
+API_VERSION = Literal["v1", "v2"]
+
 
 class AUTH_TUPLE(NamedTuple):
     username: str
@@ -28,11 +32,13 @@ class AUTH_TUPLE(NamedTuple):
 
 class Registry:
     tool_sheds: Dict[str, str]
+    tool_shed_api_versions: Dict[str, API_VERSION]
     tool_sheds_auth: Dict[str, Optional[AUTH_TUPLE]]
 
     def __init__(self, config: Optional[StrPath] = None):
         self.tool_sheds = {}
         self.tool_sheds_auth = {}
+        self.tool_shed_api_versions = {}
         if config:
             # Parse tool_sheds_conf.xml
             tree, error_message = parse_xml(config)
@@ -48,10 +54,17 @@ class Registry:
             try:
                 name = elem.get("name", None)
                 url = elem.get("url", None)
+                version_raw = elem.get("version", "1")
+                version: API_VERSION
+                if version_raw == "1":
+                    version = "v1"
+                else:
+                    version = "v2"
                 username = elem.get("user", None)
                 password = elem.get("pass", None)
                 if name and url:
                     self.tool_sheds[name] = url
+                    self.tool_shed_api_versions[name] = version
                     self.tool_sheds_auth[name] = None
                     log.debug(f"Loaded reference to tool shed: {name}")
                 if name and url and username and password:
@@ -74,6 +87,13 @@ class Registry:
         else:
             log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
             return None
+
+    def is_legacy(self, url: str) -> bool:
+        shed_name = self._shed_name_for_url(url)
+        if shed_name is None:
+            return True
+        else:
+            return self.tool_shed_api_versions[shed_name] == "v1"
 
     def _shed_name_for_url(self, url: str) -> Optional[str]:
         url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)

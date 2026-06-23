@@ -239,12 +239,13 @@ steps:
 
 WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING = """
 class: GalaxyWorkflow
+inputs:
+  input_collection: collection
 steps:
-  - type: input_collection
   - tool_id: collection_creates_pair
     state:
       input1:
-        $link: 0
+        $link: "0"
   - tool_id: collection_paired_test
     state:
       f1:
@@ -547,7 +548,7 @@ inputs:
 steps:
   first_cat:
     tool_id: cat1
-    outputs:
+    out:
        out_file1:
          hide: true
          rename: "the new value"
@@ -617,6 +618,7 @@ inputs:
   int_input:
     type: integer
     default: 3
+    optional: true
 steps:
   random:
     tool_id: random_lines1
@@ -732,7 +734,7 @@ steps:
       input: required
     state:
       lineNum:
-        $link:  expression/out1
+        $link: expression/out1
   count_multi_file:
     tool_id: count_multi_file
     in:
@@ -797,7 +799,7 @@ steps:
     state:
       input1:
         $link: input1
-    outputs:
+    out:
       out_file1:
         rename: "#{input1 | basename} suffix"
 test_data:
@@ -816,7 +818,7 @@ steps:
     tool_id: cat
     in:
       input1: input1
-    outputs:
+    out:
       out_file1:
         rename: "${replaceme} suffix"
 """
@@ -842,7 +844,7 @@ steps:
           label: first_cat
           in:
             input1: inner_input
-          outputs:
+          out:
             out_file1:
               rename: "${replaceme} suffix"
     in:
@@ -861,6 +863,48 @@ steps:
       num_lines:
         default: 6
 """
+
+WORKFLOW_LIST_PAIRED_INPUT_TO_TYPE_SOURCE = """
+class: GalaxyWorkflow
+inputs:
+  - id: input_header
+    type: data
+  - id: input_list
+    type: collection
+    collection_type: "list:paired"
+steps:
+  - tool_id: collection_type_source
+    in:
+      header: input_header
+      input_collect: input_list
+"""
+
+
+WORKFLOW_LIST_PAIRED_MAPPED_OVER_PAIRED = """
+class: GalaxyWorkflow
+inputs:
+  - id: input_list
+    type: collection
+    collection_type: "list:paired"
+steps:
+  - tool_id: collection_paired_test
+    in:
+      f1: input_list
+"""
+
+
+WORKFLOW_LIST_PAIRED_OR_UNPAIRED_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  - id: input_list
+    type: collection
+    collection_type: "list:paired_or_unpaired"
+steps:
+  - tool_id: collection_list_paired_or_unpaired
+    in:
+      f1: input_list
+"""
+
 
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
@@ -1146,4 +1190,170 @@ outputs:
     outputSource: subworkflow/inner_output_1
   outer_output_2:
     outputSource: subworkflow/inner_output_2
+"""
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+"""
+
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+"""
+
+WORKFLOW_FLAT_CROSS_PRODUCT = """
+class: GalaxyWorkflow
+inputs:
+  collection_a: collection
+  collection_b: collection
+steps:
+  cross_product:
+    tool_id: __CROSS_PRODUCT_FLAT__
+    in:
+      input_a:
+        collection_a
+      input_b:
+        collection_b
+outputs:
+  output_a:
+    outputSource: cross_product/output_a
+  output_b:
+    outputSource: cross_product/output_b
+"""
+
+WORKFLOW_WITH_DATA_TAG_FILTER = r"""{
+    "a_galaxy_workflow": "true",
+    "annotation": null,
+    "comments": [],
+    "format-version": "0.1",
+    "name": "Export WF4 Assembly HiC (imported from URL) (imported from uploaded file)",
+    "steps": {
+        "0": {
+            "annotation": "With dataset tag : genomescope_model ",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "With dataset tag : genomescope_model ",
+                    "name": "Genomescope Model"
+                }
+            ],
+            "label": "Genomescope Model",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "left": 0,
+                "top": 0
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"format\": [\"txt\"], \"tag\": \"genomescope_model\"}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "a165c531-371f-4073-9cdd-85ce3506586f",
+            "when": null,
+            "workflow_outputs": []
+        }
+    },
+    "tags": [],
+    "uuid": "03a95ebe-af1e-4628-ac2f-e7553babfb2f",
+    "version": 3
+}"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS = """
+class: GalaxyWorkflow
+inputs:
+  input_c: collection
+
+steps:
+  mixed_collection:
+    tool_id: exit_code_from_file
+    in:
+       input: input_c
+
+  filtered_collection:
+    tool_id: "__KEEP_SUCCESS_DATASETS__"
+    in:
+      input: mixed_collection/out_file1
+
+  cat:
+    tool_id: cat
+    in:
+      input1: filtered_collection/output
+"""
+
+WORKFLOW_KEEP_SUCCESSFUL_DATASETS_TEST_DATA = """
+input_c:
+  collection_type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
+"""
+
+WORKFLOW_WITH_IMAGES_IN_REPORT = """
+class: GalaxyWorkflow
+name: Workflow with Images in Report
+inputs:
+  image_input: data
+outputs:
+  output_image:
+    outputSource: image_cat/out_file1
+steps:
+  image_cat:
+    tool_id: cat
+    in:
+      input1: image_input
+report:
+  markdown: |
+    ## Images in Report
+
+    This report demonstrates embedding images within a markdown workflow report,
+    including inline images in tables.
+
+    ### Block-level Image
+
+    ```galaxy
+    history_dataset_as_image(output=output_image)
+    ```
+
+    ### Table with Inline Images
+
+    | Description | Image |
+    |-------------|-------|
+    | First Image | ${galaxy history_dataset_as_image(output=output_image)} |
+    | Second Image | ${galaxy history_dataset_as_image(output=output_image)} |
+
+    The above table should show two images rendered inline.
+"""
+
+WORKFLOW_WITH_IMAGES_IN_REPORT_TEST_DATA = """
+image_input_1:
+  value: 454Score.png
+  type: File
+  file_type: png
+  name: first test image
 """

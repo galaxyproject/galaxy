@@ -12,14 +12,14 @@ upstream component or environment that is accessed through props and events -->
             @click.prevent="toggleTagDisplay">
             {{ linkText }}
         </a>
-        <vue-tags-input
+        <VueTagsInput
             v-if="tagsVisible"
             v-model="tagText"
             class="tags-input tag-area"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            placeholder="Add Tags"
+            :placeholder="localize('Add Tags')"
             :add-on-key="triggerKeys"
             :validation="validation"
             @before-adding-tag="beforeAddingTag"
@@ -28,12 +28,15 @@ upstream component or environment that is accessed through props and events -->
             <template v-slot:tag-center="t">
                 <div class="tag-name" @click="$emit('tag-click', t.tag)">{{ t.tag.label }}</div>
             </template>
-        </vue-tags-input>
+        </VueTagsInput>
     </div>
 </template>
 
 <script>
 import VueTagsInput from "@johmun/vue-tags-input";
+
+import localize from "@/utils/localization";
+
 import { createTag, VALID_TAG_RE } from "./model";
 
 export default {
@@ -93,6 +96,7 @@ export default {
         },
     },
     methods: {
+        localize,
         tagsChanged(newTags) {
             this.$emit("input", this.pluckLabels(newTags));
         },
@@ -132,8 +136,8 @@ export default {
 <style lang="scss">
 // Most styling of the tags should happen in here.
 
-@import "theme/blue";
-@import "scss/mixins";
+@import "@/style/scss/theme/blue";
+@import "@/style/scss/mixins";
 
 // Puts a little graphic in place of the text-input
 // when the input is not in focus

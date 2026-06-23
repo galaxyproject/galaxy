@@ -1,11 +1,8 @@
 from typing import (
-    Dict,
+    Literal,
     Optional,
-    Type,
     Union,
 )
-
-from typing_extensions import Literal
 
 from galaxy.datatypes.data import (
     Data,
@@ -25,6 +22,7 @@ from galaxy.datatypes.tabular import (
     Vcf,
 )
 from galaxy.datatypes.xml import Phyloxml
+from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers import genome
 from galaxy.visualization.data_providers.basic import (
@@ -34,8 +32,8 @@ from galaxy.visualization.data_providers.basic import (
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 # a dict keyed on datatype with a 'default' string key.
-PROVIDER_BY_DATATYPE_CLASS_DICT = Dict[Union[Literal["default"], Type[Data]], Type[BaseDataProvider]]
-DATA_PROVIDER_BY_TYPE_NAME_DICT = Dict[str, Union[Type[BaseDataProvider], PROVIDER_BY_DATATYPE_CLASS_DICT]]
+PROVIDER_BY_DATATYPE_CLASS_DICT = dict[Union[Literal["default"], type[Data]], type[BaseDataProvider]]
+DATA_PROVIDER_BY_TYPE_NAME_DICT = dict[str, Union[type[BaseDataProvider], PROVIDER_BY_DATATYPE_CLASS_DICT]]
 
 
 class DataProviderRegistry:
@@ -72,7 +70,7 @@ class DataProviderRegistry:
         """
 
         data_provider: Optional[BaseDataProvider]
-        data_provider_class: Type[BaseDataProvider]
+        data_provider_class: type[BaseDataProvider]
 
         # any datatype class that is a subclass of another needs to be
         # checked before the parent in this conditional.
@@ -112,8 +110,13 @@ class DataProviderRegistry:
                 if name == original_dataset.ext:
                     data_provider = data_provider_class(original_dataset=original_dataset)
                 else:
-                    converted_dataset = original_dataset.get_converted_dataset(trans, name)
-                    deps = original_dataset.get_converted_dataset_deps(trans, name)
+                    try:
+                        converted_dataset = original_dataset.get_converted_dataset(trans, name)
+                        deps = original_dataset.get_converted_dataset_deps(trans, name)
+                    except NoConverterException:
+                        raise RequestParameterInvalidException(
+                            f"Conversion from '{original_dataset.ext}' to '{name}' not possible"
+                        )
                     data_provider = data_provider_class(
                         original_dataset=original_dataset, converted_dataset=converted_dataset, dependencies=deps
                     )

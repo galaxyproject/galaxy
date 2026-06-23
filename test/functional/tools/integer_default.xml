@@ -1,0 +1,33 @@
+<tool id="integer_default" name="Test integer default" version="0.1.0">
+    <command><![CDATA[
+echo ${int($input1) + int($input2) + int($input3)} > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="integer" value="0" label="Integer with default 0" />
+        <param name="input2" type="integer" value="" label="Integer with default empty string" />
+        <!-- Not needed any more to have `value=""` when there is no good default -->
+        <param name="input3" type="integer" label="Integer with no default value" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="1" />
+            <param name="input2" value="2" />
+            <param name="input3" value="3" />
+            <output name="out_file1">
+                <assert_contents>
+                    <has_line line="6" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test that it fails if a non-optional integer param is not set -->
+        <test expect_failure="true">
+            <param name="input1" value="1" />
+            <param name="input2" value="2" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

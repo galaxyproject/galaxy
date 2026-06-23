@@ -1,14 +1,13 @@
 from typing import (
     Any,
-    Dict,
 )
 
 import jsonschema
-import requests
 
+from galaxy.util import requests
 from galaxy_test.base import api_asserts
 
-schema_store: Dict[str, Any] = {}
+schema_store: dict[str, Any] = {}
 
 
 class JsonSchemaValidator:

@@ -1,8 +1,9 @@
-import JOB_STATES_MODEL from "utils/job-states-model";
-import { snakeCase } from "snake-case";
+import { snakeCase } from "lodash";
+
+import { NON_TERMINAL_STATES } from "@/api/jobs";
 
 export function stateIsTerminal(result) {
-    return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(result.state);
+    return !NON_TERMINAL_STATES.includes(result.state);
 }
 
 export const HasAttributesMixin = {

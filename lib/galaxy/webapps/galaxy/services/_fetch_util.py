@@ -11,7 +11,7 @@ from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import Security
 from galaxy.tools.actions.upload_common import validate_datatype_extension
 from galaxy.util import relpath
 
@@ -22,7 +22,7 @@ VALID_DESTINATION_TYPES = ["library", "library_folder", "hdca", "hdas"]
 ELEMENTS_FROM_TRANSIENT_TYPES = ["archive", "bagit_archive"]
 
 
-def validate_and_normalize_targets(trans, payload):
+def validate_and_normalize_targets(trans, payload, set_internal_fields=True):
     """Validate and normalize all src references in fetch targets.
 
     - Normalize ftp_import and server_dir src entries into simple path entries
@@ -34,6 +34,8 @@ def validate_and_normalize_targets(trans, payload):
       as needed for each upload.
     """
     targets = payload.get("targets", [])
+    if landing_uuid := payload.get("landing_uuid"):
+        payload["landing_uuid"] = str(landing_uuid)
 
     for target in targets:
         destination = get_required_item(target, "destination", "Each target must specify a 'destination'")
@@ -48,7 +50,7 @@ def validate_and_normalize_targets(trans, payload):
             for key in ["name", "description", "synopsis"]:
                 if key in destination:
                     del destination[key]
-            destination["library_folder_id"] = DecodedDatabaseIdField.encode(library.root_folder.id)
+            destination["library_folder_id"] = Security.security.encode_id(library.root_folder.id)
 
     # Unlike upload.py we don't transmit or use run_as_real_user in the job - we just make sure
     # in_place and purge_source are set on the individual upload fetch sources as needed based
@@ -56,7 +58,8 @@ def validate_and_normalize_targets(trans, payload):
     run_as_real_user = trans.app.config.external_chown_script is not None  # See comment in upload.py
     purge_ftp_source = getattr(trans.app.config, "ftp_upload_purge", True) and not run_as_real_user
 
-    payload["check_content"] = trans.app.config.check_upload_content
+    if set_internal_fields:
+        payload["check_content"] = trans.app.config.check_upload_content
 
     def check_src(item):
         validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
@@ -162,9 +165,11 @@ def validate_and_normalize_targets(trans, payload):
                 raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
 
             validate_non_local(url, trans.app.config.fetch_url_allowlist_ips)
-            item["in_place"] = run_as_real_user
+            if set_internal_fields:
+                item["in_place"] = run_as_real_user
         elif src == "files":
-            item["in_place"] = run_as_real_user
+            if set_internal_fields:
+                item["in_place"] = run_as_real_user
             item["purge_source"] = True
 
         # Small disagreement with traditional uploads - we purge less by default since whether purging
@@ -172,6 +177,8 @@ def validate_and_normalize_targets(trans, payload):
         # https://github.com/galaxyproject/galaxy/issues/5361
         if "purge_source" not in item:
             item["purge_source"] = False
+        if "purge_source" in item and not set_internal_fields:
+            del item["purge_source"]
 
     replace_request_syntax_sugar(targets)
     _for_each_src(check_src, targets)

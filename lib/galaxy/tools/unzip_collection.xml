@@ -2,8 +2,11 @@
       name="Unzip collection"
       version="1.0.0"
       tool_type="unzip_collection">
-  <description></description>
+  <description>into forward and reverse datasets</description>
   <type class="UnzipCollectionTool" module="galaxy.tools" />
+  <macros>
+    <import>model_operation_macros.xml</import>
+  </macros>
   <action module="galaxy.tools.actions.model_operations"
           class="ModelOperationToolAction"/>
     <edam_operations>
@@ -18,28 +21,49 @@
   </outputs>
   <help><![CDATA[
 
-
 ========
 Synopsis
 ========
 
-Takes a paired collection and "unzips" it into two simple dataset collections (lists of datasets). 
+Splits a paired dataset into two individual datasets (forward and reverse).
 
 ===========
 Description
 ===========
 
-Given a paired collection of forward and reverse reads this tool will "unzip" it into two collections containing forward and reverse reads, respectively:
+This tool takes a single ``paired`` collection and extracts its two components — the **forward** and the **reverse** dataset — as separate output datasets.
+
+This is the inverse of **Zip collections**, which combines two datasets into a pair.
+
+========
+Examples
+========
+
+**Unzip a paired collection**
+
+Input ``paired`` collection::
+
+ Paired: "Sample 1"
+
+   forward  →  reads_R1.fastq
+   reverse  →  reads_R2.fastq
+
+Outputs::
+
+ Forward dataset:  reads_R1.fastq
+ Reverse dataset:  reads_R2.fastq
+
+-------
 
 .. image:: ${static_path}/images/tools/collection_ops/unzip.svg
+  :alt: Unzip a paired collection into forward and reverse datasets
   :width: 500
-  :alt: Unzipping operation
 
------
+-------
 
 .. class:: infomark
 
-This tool will create new history datasets from your collection but your quota usage will not increase.
+@QUOTA_USAGE_NOTE@
 
   ]]></help>
 </tool>

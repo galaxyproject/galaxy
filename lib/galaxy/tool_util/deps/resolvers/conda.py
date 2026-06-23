@@ -45,7 +45,7 @@ DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
 # https://github.com/bioconda/bioconda-recipes/blob/master/config.yml
-DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda,defaults"
+DEFAULT_ENSURE_CHANNELS = "conda-forge,bioconda"
 CONDA_SOURCE_CMD = """[ "$(basename "$CONDA_DEFAULT_ENV")" = "$(basename '{environment_path}')" ] || {{
 MAX_TRIES=3
 COUNT=0
@@ -349,6 +349,8 @@ class CondaDependencyResolver(
         dir_contents = set(
             os.listdir(self.conda_context.envs_path) if os.path.exists(self.conda_context.envs_path) else []
         )
+        # never delete Galaxy's conda env
+        used_paths.add("_galaxy_")
         unused_paths = dir_contents.difference(used_paths)  # New set with paths in dir_contents but not in used_paths
         unused_paths = [os.path.join(self.conda_context.envs_path, p) for p in unused_paths]
         return unused_paths

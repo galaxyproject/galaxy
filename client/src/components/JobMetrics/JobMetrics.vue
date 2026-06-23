@@ -1,14 +1,16 @@
 <script setup lang="ts">
+import { BAlert } from "bootstrap-vue";
+import { computed, ref, unref, watch } from "vue";
+
+import { useJobMetricsStore } from "@/stores/jobMetricsStore";
+
+import { worldwideCarbonIntensity, worldwidePowerUsageEffectiveness } from "./CarbonEmissions/carbonEmissionConstants";
+
+import Heading from "../Common/Heading.vue";
 import AwsEstimate from "./AwsEstimate.vue";
 import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
-import { useJobMetricsStore } from "@/stores/jobMetricsStore";
-import { computed, ref, unref } from "vue";
 
 const props = defineProps({
-    jobId: {
-        type: String,
-        default: null,
-    },
     datasetFilesize: {
         type: Number,
         default: 0,
@@ -25,9 +27,29 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    jobId: {
+        type: String,
+        default: null,
+    },
+    powerUsageEffectiveness: {
+        type: Number,
+        default: worldwidePowerUsageEffectiveness,
+    },
+    geographicalServerLocationName: {
+        type: String,
+        default: "GLOBAL",
+    },
+    carbonIntensity: {
+        type: Number,
+        default: worldwideCarbonIntensity,
+    },
     shouldShowAwsEstimate: {
         type: Boolean,
         default: false,
+    },
+    shouldShowCarbonEmissionEstimates: {
+        type: Boolean,
+        default: true,
     },
 });
 
@@ -40,7 +62,14 @@ async function getJobMetrics() {
         await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
     }
 }
-getJobMetrics();
+
+watch(
+    props,
+    () => {
+        getJobMetrics();
+    },
+    { immediate: true },
+);
 
 const ec2Instances = ref<EC2[]>();
 import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
@@ -156,7 +185,7 @@ const estimatedServerInstance = computed(() => {
 
 <template>
     <div v-if="pluginsSortedByPluginType.length > 0">
-        <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
+        <Heading v-if="includeTitle" id="job-metrics-heading" h1 separator inline size="md"> Job Metrics </Heading>
 
         <div v-for="pluginType in pluginsSortedByPluginType" :key="pluginType" class="metrics_plugin">
             <h3 class="metrics_plugin_title m-sm">{{ pluginType }}</h3>
@@ -174,18 +203,21 @@ const estimatedServerInstance = computed(() => {
         </div>
 
         <AwsEstimate
-            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances"
+            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances && shouldShowAwsEstimate"
             :ec2-instances="ec2Instances"
-            :should-show-aws-estimate="shouldShowAwsEstimate"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
 
         <CarbonEmissions
-            v-if="estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
+            v-if="shouldShowCarbonEmissionEstimates && estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
+            :carbon-intensity="carbonIntensity"
+            :geographical-server-location-name="geographicalServerLocationName"
+            :power-usage-effectiveness="powerUsageEffectiveness"
             :estimated-server-instance="estimatedServerInstance"
             :job-runtime-in-seconds="jobRuntimeInSeconds"
             :cores-allocated="coresAllocated"
             :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
+    <BAlert v-else variant="info" show> No metrics available for this job. </BAlert>
 </template>

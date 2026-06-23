@@ -20,6 +20,7 @@ At the time of writing July 3 2015 this resolver has to be plugged in.
 See bottom for instructions on how to add this resolver.
 
 """
+
 import logging
 from os import listdir
 from os.path import (

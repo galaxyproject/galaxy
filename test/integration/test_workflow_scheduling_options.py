@@ -8,6 +8,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
 )
+from galaxy_test.base.workflow_fixtures import WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING
 from galaxy_test.driver import integration_util
 
 
@@ -36,7 +37,7 @@ class TestMaximumWorkflowInvocationDuration(integration_util.IntegrationTestCase
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
         url = f"workflows/{workflow_id}/invocations"
-        invocation_response = self._post(url, data=request)
+        invocation_response = self._post(url, data=request, json=True)
         invocation_url = url + "/" + invocation_response.json()["id"]
         time.sleep(5)
         state = self._get(invocation_url).json()["state"]
@@ -62,25 +63,7 @@ class TestMaximumWorkflowJobsPerSchedulingIteration(integration_util.Integration
         config["maximum_workflow_jobs_per_scheduling_iteration"] = 1
 
     def test_collection_explicit_and_implicit(self):
-        workflow_id = self.workflow_populator.upload_yaml_workflow(
-            """
-class: GalaxyWorkflow
-steps:
-  - type: input_collection
-  - tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: 0
-  - tool_id: collection_paired_test
-    state:
-      f1:
-        $link: 1/paired_output
-  - tool_id: cat_list
-    state:
-      input1:
-        $link: 2/out1
-"""
-        )
+        workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING)
         with self.dataset_populator.test_history() as history_id:
             fetch_response = self.dataset_collection_populator.create_list_in_history(
                 history_id, contents=["a\nb\nc\nd\n", "e\nf\ng\nh\n"]
@@ -90,7 +73,7 @@ steps:
             inputs = {
                 "0": {"src": "hdca", "id": hdca1["id"]},
             }
-            self.workflow_populator.invoke_workflow_and_wait(history_id, workflow_id, inputs)
+            self.workflow_populator.invoke_workflow_and_wait(workflow_id, history_id, inputs)
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             assert "a\nc\nb\nd\ne\ng\nf\nh\n" == self.dataset_populator.get_history_dataset_content(history_id, hid=0)
 

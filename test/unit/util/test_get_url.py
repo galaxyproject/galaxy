@@ -27,7 +27,7 @@ def test_get_url_retry_after(httpserver):
     attempts = []
 
     def retry_handler(request):
-        attempts.append(requests)
+        attempts.append(request)
         if len(attempts) < 4:
             return Response("try again later", status=429, content_type="text/plain")
         else:

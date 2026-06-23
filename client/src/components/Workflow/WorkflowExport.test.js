@@ -1,23 +1,32 @@
+import { getLocalVue } from "@tests/vitest/helpers";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
+import { beforeEach, describe, expect, it } from "vitest";
+import { nextTick } from "vue";
 
-import axios from "axios";
-import WorkflowExport from "./WorkflowExport";
+import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
+
+import WorkflowExport from "./WorkflowExport.vue";
 
 const localVue = getLocalVue();
-const axiosMock = new MockAdapter(axios);
-axiosMock.onGet("/api/workflows/0").reply(200, {
-    id: "0",
-    name: "workflow",
-});
-axiosMock.onGet("/api/workflows/1").reply(200, {
-    id: "1",
-    owner: "owner",
-    slug: "slug",
-    importable: true,
-});
+const { server, http } = useServerMock();
+
+server.use(
+    http.untyped.get("/api/workflows/0", () => {
+        return HttpResponse.json({
+            id: "0",
+            name: "workflow",
+        });
+    }),
+    http.untyped.get("/api/workflows/1", () => {
+        return HttpResponse.json({
+            id: "1",
+            owner: "owner",
+            slug: "slug",
+            importable: true,
+        });
+    }),
+);
 
 function getHref(item) {
     return item.attributes("href");
@@ -26,15 +35,14 @@ function getHref(item) {
 describe("Workflow Export", () => {
     let wrapper;
     beforeEach(async () => {
-        wrapper = shallowMount(
-            WorkflowExport,
-            {
-                propsData: {
-                    id: "0",
-                },
+        wrapper = shallowMount(WorkflowExport, {
+            propsData: {
+                id: "0",
             },
-            localVue
-        );
+            localVue,
+        });
+        await flushPromises();
+        await nextTick();
     });
 
     it("verify display", async () => {

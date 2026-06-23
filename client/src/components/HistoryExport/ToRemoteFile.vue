@@ -9,7 +9,7 @@
                 :job="jobError" />
         </b-alert>
         <div v-if="waitingOnJob">
-            <loading-span message="Executing history export job, this will likely take a while." />
+            <LoadingSpan message="Executing history export job, this will likely take a while." />
         </div>
         <div v-else-if="jobComplete">
             <b-alert show variant="success" dismissible @dismissed="reset">
@@ -22,15 +22,18 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import { waitOnJob } from "components/JobStates/wait";
-import { errorMessageAsString } from "utils/simple-error";
-import LoadingSpan from "components/LoadingSpan";
-import JobError from "components/JobInformation/JobError";
-import ExportForm from "components/Common/ExportForm";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
+
+import { waitOnJob } from "@/components/JobStates/wait";
+import { getAppRoot } from "@/onload/loadConfig";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import ExportForm from "@/components/Common/ExportForm.vue";
+import JobError from "@/components/JobInformation/JobError.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+
 Vue.use(BootstrapVue);
 
 export default {

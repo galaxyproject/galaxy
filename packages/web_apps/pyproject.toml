@@ -1,1 +1,89 @@
-../package-pyproject.toml
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77.0.0", "setuptools-scm>=8"]
+
+[project]
+dynamic = ["readme"]
+name = "galaxy-web-apps"
+version = "26.1.dev0"
+description = "Galaxy web apps"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = [
+    "LICENSE",
+]
+authors = [
+    {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
+]
+dependencies = [
+    "galaxy-app",
+    "galaxy-data",
+    "galaxy-job-execution",
+    "galaxy-tool-util",
+    "galaxy-util[jstree,template]",
+    "galaxy-web-framework",
+    "galaxy-web-stack",
+    "a2wsgi",
+    "apispec",
+    "Babel",
+    "CT3>=3.3.3",
+    "fastapi>=0.133.0",
+    "gunicorn!=25.1.0",
+    "httpx",
+    "gxformat2>=0.27.0",
+    "Mako",
+    "MarkupSafe",
+    "Paste",
+    "pydantic>=2.7.4",
+    "PyJWT",
+    "python-dateutil",
+    "python-multipart",  # required to support form parsing in FastAPI/Starlette
+    "PyYAML",
+    "requests",
+    "Routes",
+    "slowapi",
+    "SQLAlchemy>=2.0.37,<2.1,!=2.0.41",
+    "starlette>=1.0.1",
+    "starlette-context",
+    "tuspyserver",
+    "typing-extensions",
+    "uvicorn",
+    "uvloop>=0.21.0",
+    "WebOb>=1.8.9",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Testing",
+]
+keywords = ["Galaxy"]
+
+[project.optional-dependencies]
+test = [
+    "httpx",
+    "pytest",
+    "pytest-asyncio",
+]
+
+[project.scripts]
+galaxy-web = "galaxy.webapps.galaxy.script:main"
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/galaxy"
+
+[tool.setuptools.dynamic]
+readme = {content-type = "text/x-rst", file = ["README.rst", "HISTORY.rst"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]

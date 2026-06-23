@@ -50,8 +50,8 @@ function levenshteinDistance(a, b, transpose = false) {
                     matrix[i - 1][j - 1] + 1, // substitution
                     Math.min(
                         matrix[i][j - 1] + 1, // insertion
-                        matrix[i - 1][j] + 1 // deletion
-                    )
+                        matrix[i - 1][j] + 1, // deletion
+                    ),
                 );
                 if (transpose == true) {
                     // Check for transpostions

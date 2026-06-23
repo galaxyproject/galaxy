@@ -1,13 +1,18 @@
 import json
 import logging
+from collections.abc import Sequence
 from typing import (
     Any,
-    Dict,
-    List,
-    Sequence,
+    TYPE_CHECKING,
 )
 
 from packaging.version import Version
+
+if TYPE_CHECKING:
+    from galaxy.tools.parameters.wrappers import (
+        DatasetCollectionWrapper,
+        DatasetFilenameWrapper,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -40,28 +45,40 @@ def data_collection_input_to_path(v):
 
 
 def data_collection_input_to_staging_path_and_source_path(
-    v, invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
-) -> List[Dict[str, Any]]:
+    v: "DatasetCollectionWrapper", invalid_chars: Sequence[str] = ("/",), include_collection_name: bool = False
+) -> list[dict[str, Any]]:
     staging_paths = v.get_all_staging_paths(
         invalid_chars=invalid_chars, include_collection_name=include_collection_name
     )
-    source_paths = v.all_paths
-    metadata_files = v.all_metadata_files
+    if v.element_identifiers_extensions_paths_and_metadata_files:
+        element_identifiers, extensions, source_paths, metadata_files = zip(
+            *v.element_identifiers_extensions_paths_and_metadata_files
+        )
+    else:
+        element_identifiers, extensions, source_paths, metadata_files = (), (), (), ()
     return [
         {
+            "element_identifier": element_identifier,
+            "ext": extension,
             "staging_path": staging_path,
             "source_path": source_path,
             "metadata_files": [
                 {"staging_path": f"{staging_path}.{mf[0]}", "source_path": mf[1]} for mf in metadata_files
             ],
         }
-        for staging_path, source_path, metadata_files in zip(staging_paths, source_paths, metadata_files)
+        for element_identifier, extension, staging_path, source_path, metadata_files in zip(
+            element_identifiers, extensions, staging_paths, source_paths, metadata_files
+        )
     ]
 
 
-def data_input_to_staging_path_and_source_path(v, invalid_chars: Sequence[str] = ("/",)) -> Dict[str, Any]:
+def data_input_to_staging_path_and_source_path(
+    v: "DatasetFilenameWrapper", invalid_chars: Sequence[str] = ("/",)
+) -> dict[str, Any]:
     staging_path = v.get_staging_path(invalid_chars=invalid_chars)
     return {
+        "element_identifier": v.element_identifier,
+        "ext": v.file_ext,
         "staging_path": staging_path,
         "source_path": data_input_to_path(v),
         "metadata_files": [
@@ -70,7 +87,7 @@ def data_input_to_staging_path_and_source_path(v, invalid_chars: Sequence[str] =
     }
 
 
-def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
+def _json_wrap_input(input, value_wrapper, profile, handle_files=None):
     input_type = input.type
 
     if input_type == "repeat":
@@ -100,7 +117,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             json_value = [data_input_to_path(v) for v in value_wrapper]
         elif handle_files == "staging_path_and_source_path":
             json_value = [data_input_to_staging_path_and_source_path(v) for v in value_wrapper]
-        elif handle_files == "skip":
+        elif handle_files is None:
             return SKIP_INPUT
         else:
             raise NotImplementedError()
@@ -109,7 +126,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
             json_value = data_input_to_path(value_wrapper)
         elif handle_files == "staging_path_and_source_path":
             json_value = data_input_to_staging_path_and_source_path(value_wrapper)
-        elif handle_files == "skip":
+        elif handle_files is None:
             return SKIP_INPUT
         elif handle_files == "OBJECT":
             if value_wrapper:
@@ -125,7 +142,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             raise NotImplementedError()
     elif input_type == "data_collection":
-        if handle_files == "skip":
+        if handle_files is None:
             return SKIP_INPUT
         elif handle_files == "paths":
             return data_collection_input_to_path(value_wrapper)

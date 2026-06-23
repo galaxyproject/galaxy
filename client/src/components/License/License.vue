@@ -1,13 +1,13 @@
 <template>
-    <loading-span v-if="license == null" message="Loading license information"> </loading-span>
+    <LoadingSpan v-if="license == null" message="Loading license information"> </LoadingSpan>
     <span v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
             {{ title }}
         </span>
-        <external-link :href="license.url">
+        <ExternalLink :href="license.url">
             {{ license.name }}
-        </external-link>
+        </ExternalLink>
         <slot name="buttons"></slot>
     </span>
     <span v-else>
@@ -18,10 +18,10 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import LoadingSpan from "components/LoadingSpan";
-import ExternalLink from "components/ExternalLink";
+import { GalaxyApi } from "@/api";
+
+import ExternalLink from "@/components/ExternalLink.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 export default {
     components: {
@@ -62,9 +62,14 @@ export default {
     methods: {
         fetchLicense() {
             this.license = null;
-            const url = `${getAppRoot()}api/licenses/${this.licenseId}`;
-            axios
-                .get(url)
+            GalaxyApi()
+                .GET("/api/licenses/{license_id}", {
+                    params: {
+                        path: {
+                            license_id: this.licenseId,
+                        },
+                    },
+                })
                 .then((response) => response.data)
                 .then((data) => {
                     this.license = data;

@@ -58,6 +58,7 @@ export TEMP
 export TMPDIR
 
 GALAXY_PYTHON=`command -v python`
+$prepare_dirs_statement
 cd $working_directory
 $memory_statement
 $instrument_pre_commands

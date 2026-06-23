@@ -1,5 +1,8 @@
+import { createTestingPinia } from "@pinia/testing";
+import { getLocalVue } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import mountTarget from "./ActivityItem.vue";
 
 const localVue = getLocalVue();
@@ -11,6 +14,7 @@ describe("ActivityItem", () => {
         wrapper = mount(mountTarget, {
             propsData: {
                 id: "activity-test-id",
+                activityBarId: "activity-bar-test-id",
                 icon: "activity-test-icon",
                 indicator: 0,
                 progressPercentage: 0,
@@ -19,6 +23,7 @@ describe("ActivityItem", () => {
                 to: null,
                 tooltip: "activity-test-tooltip",
             },
+            pinia: createTestingPinia({ createSpy: vi.fn }),
             localVue,
             stubs: {
                 FontAwesomeIcon: true,
@@ -27,8 +32,7 @@ describe("ActivityItem", () => {
     });
 
     it("rendering", async () => {
-        const reference = wrapper.find("[id='activity-test-id']");
-        expect(reference.attributes().id).toBe("activity-test-id");
+        const reference = wrapper.find(".activity-item");
         expect(reference.text()).toBe("activity-test-title");
         expect(reference.find("[icon='activity-test-icon']").exists()).toBeTruthy();
         expect(reference.find(".progress").exists()).toBeFalsy();
@@ -44,7 +48,7 @@ describe("ActivityItem", () => {
     });
 
     it("rendering indicator", async () => {
-        const reference = wrapper.find("[id='activity-test-id']");
+        const reference = wrapper.find(".activity-item");
         const indicatorSelector = "[data-description='activity indicator']";
         const noindicator = reference.find(indicatorSelector);
         expect(noindicator.exists()).toBeFalsy();

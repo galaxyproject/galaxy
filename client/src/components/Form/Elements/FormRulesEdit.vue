@@ -1,12 +1,22 @@
 <script setup>
-import RuleCollectionBuilder from "components/RuleCollectionBuilder";
-import RulesDisplay from "components/RulesDisplay/RulesDisplay";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { BAlert } from "bootstrap-vue";
+import { computed, ref } from "vue";
+
+import { fetchCollectionDetails } from "@/api/datasetCollections";
+import { errorMessageAsString } from "@/utils/simple-error";
+
+import GButton from "@/components/BaseComponents/GButton.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import RuleCollectionBuilder from "@/components/RuleCollectionBuilder.vue";
+import RulesDisplay from "@/components/RulesDisplay/RulesDisplay.vue";
 
 const props = defineProps({
+    id: {
+        type: String,
+        default: undefined,
+    },
     value: {
         type: Object,
     },
@@ -18,6 +28,8 @@ const props = defineProps({
 
 const modal = ref(null);
 const elements = ref(null);
+const loading = ref(false);
+const loadError = ref();
 
 const initialRules = {
     rules: [],
@@ -28,15 +40,21 @@ const displayRules = computed(() => props.value ?? initialRules);
 
 async function onEdit() {
     if (props.target) {
-        const url = `${getAppRoot()}api/dataset_collections/${props.target.id}?instance_type=history`;
-
         try {
-            const response = await axios.get(url);
-            elements.value = response.data;
+            loading.value = true;
+            loadError.value = undefined;
+            const result = await fetchCollectionDetails({ hdca_id: props.target.id });
+            if (result.error) {
+                throw result.error;
+            }
+            elements.value = result.data;
             modal.value.show();
         } catch (e) {
+            loadError.value = errorMessageAsString(e);
             console.error(e);
             console.log("problem fetching collection");
+        } finally {
+            loading.value = false;
         }
     } else {
         modal.value.show();
@@ -55,21 +73,17 @@ function onCancel() {
 }
 </script>
 
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faEdit);
-</script>
-
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <b-button title="Edit Rules" @click="onEdit">
-            <FontAwesomeIcon icon="fa-edit" />
+        <GButton :id="props.id" title="Edit Rules" @click="onEdit">
+            <FontAwesomeIcon :icon="faEdit" />
             <span>Edit</span>
-        </b-button>
-
+        </GButton>
+        <LoadingSpan v-if="loading" message="Loading collection details"> </LoadingSpan>
+        <BAlert v-if="loadError" show variant="danger" dismissible @dismissed="loadError = undefined">
+            {{ loadError }}
+        </BAlert>
         <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
             <template v-slot:modal-title>
                 <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>

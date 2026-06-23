@@ -1,85 +1,122 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <BBreadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
+
         <Alert :message="message" :variant="status" />
+
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
         <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
         <div v-else-if="jobs">
-            <b-container fluid class="mb-3">
-                <b-row>
-                    <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
-                            <b-input-group>
-                                <b-form-input
+            <BContainer fluid class="mb-3">
+                <BRow>
+                    <BCol md="6">
+                        <BFormGroup description="Search for strings or regular expressions">
+                            <BInputGroup>
+                                <BFormInput
                                     v-model="filter"
                                     placeholder="Type to Search"
                                     @keyup.esc.native="filter = ''" />
-                                <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-form-group>
-                    </b-col>
-                </b-row>
-                <b-row>
-                    <b-col>
-                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
+
+                                <BInputGroupAppend>
+                                    <BButton :disabled="!filter" @click="filter = ''">Clear (esc)</BButton>
+                                </BInputGroupAppend>
+                            </BInputGroup>
+                        </BFormGroup>
+                    </BCol>
+                </BRow>
+
+                <BRow>
+                    <BCol>
+                        <GButton :pressed.sync="showCommandLine" outline>
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
-                        </b-button>
-                    </b-col>
-                </b-row>
-            </b-container>
-            <b-table
-                id="jobs-table"
-                :fields="tableFields"
-                :items="tableItems"
-                :filter="filter"
-                hover
-                responsive
-                striped>
+                        </GButton>
+                    </BCol>
+                </BRow>
+            </BContainer>
+
+            <GTable id="jobs-table" hover striped :fields="tableFields" :items="tableItems" :filter="filter">
                 <template v-slot:cell(actions)="row">
-                    <b-button-group>
-                        <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
-                            <span class="fa fa-redo" />
-                        </b-button>
-                        <b-button
+                    <GButtonGroup>
+                        <GButton tooltip title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
+                            <FontAwesomeIcon :icon="faRedo" />
+                        </GButton>
+
+                        <GButton
                             :id="'job-' + jobs[row.index]['encId']"
-                            v-b-tooltip.hover
+                            tooltip
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
-                            <span class="fa fa-info-circle" />
-                        </b-button>
-                        <b-button
+                            <FontAwesomeIcon :icon="faInfoCircle" />
+                        </GButton>
+
+                        <GButton
                             v-if="!showCommandLine"
+                            outline
                             :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </template>
+
                 <template v-slot:row-details="row">
-                    <b-card>
+                    <BCard>
                         <h2 class="h-text">Command Line</h2>
+
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
+
                         <template v-slot:footer>
-                            <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+                            <GButton class="mt-3" @click="row.toggleDetails"> Hide Info </GButton>
                         </template>
-                    </b-card>
+                    </BCard>
                 </template>
-            </b-table>
+            </GTable>
         </div>
     </div>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { faInfoCircle, faRedo } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import Alert from "components/Alert.vue";
+import {
+    BBreadcrumb,
+    BButton,
+    BCard,
+    BCol,
+    BContainer,
+    BFormGroup,
+    BFormInput,
+    BInputGroup,
+    BInputGroupAppend,
+    BRow,
+} from "bootstrap-vue";
+
+import { getAppRoot } from "@/onload/loadConfig";
+
+import Alert from "@/components/Alert.vue";
+import GButton from "@/components/BaseComponents/GButton.vue";
+import GButtonGroup from "@/components/BaseComponents/GButtonGroup.vue";
+import GTable from "@/components/Common/GTable.vue";
 
 export default {
     components: {
         Alert,
+        BBreadcrumb,
+        BButton,
+        BCard,
+        BCol,
+        BContainer,
+        BFormGroup,
+        BFormInput,
+        BInputGroup,
+        BInputGroupAppend,
+        BRow,
+        FontAwesomeIcon,
+        GButton,
+        GButtonGroup,
+        GTable,
     },
     props: {
         id: {
@@ -89,6 +126,8 @@ export default {
     },
     data() {
         return {
+            faInfoCircle,
+            faRedo,
             dataManager: [],
             jobs: [],
             fields: [

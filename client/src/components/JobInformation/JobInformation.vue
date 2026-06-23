@@ -1,14 +1,179 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+
+import { GalaxyApi } from "@/api";
+import { type JobConsoleOutput, NON_TERMINAL_STATES, type ShowFullJobResponse } from "@/api/jobs";
+import { JobConsoleOutputProvider, JobDetailsProvider } from "@/components/providers/JobProvider";
+import { rethrowSimple } from "@/utils/simple-error";
+
+import type { JobMessage } from "../../api/jobs";
+import { getJobDuration } from "./utilities";
+
+import Heading from "../Common/Heading.vue";
+import DecodedId from "../DecodedId.vue";
+import JobState from "../JobStates/JobState.vue";
+import CodeRow from "./CodeRow.vue";
+import RerunJobButton from "./RerunJobButton.vue";
+import CopyToClipboard from "@/components/CopyToClipboard.vue";
+import HelpText from "@/components/Help/HelpText.vue";
+import UtcDate from "@/components/UtcDate.vue";
+
+const props = withDefaults(
+    defineProps<{
+        jobId: string;
+        /** If `true`, the job's update and create times, as well as time to finish are shown. */
+        includeTimes?: boolean;
+        /** If `true`, the title is shown. */
+        includeTitle?: boolean;
+        /** If provided, this component will skip fetching the invocation ID for the job. */
+        invocationId?: string;
+    }>(),
+    { includeTitle: true },
+);
+
+const job = ref<ShowFullJobResponse | null>(null);
+const fetchedInvocationId = ref<string | null | undefined>(props.invocationId);
+
+const stdout_length = ref(50000);
+const stdout_text = ref("");
+const stderr_length = ref(50000);
+const stderr_text = ref("");
+
+const stdout_position = computed(() => stdout_text.value.length);
+const stderr_position = computed(() => stderr_text.value.length);
+
+function jobStateIsTerminal(jobState: string) {
+    return jobState && !NON_TERMINAL_STATES.includes(jobState);
+}
+
+function jobStateIsRunning(jobState: string) {
+    return jobState == "running";
+}
+
+const jobIsTerminal = computed(() => (job.value?.state ? jobStateIsTerminal(job.value?.state) : false));
+const jobIsRunning = computed(() => (job.value?.state ? jobStateIsRunning(job.value.state) : false));
+const routeToInvocation = computed(() => `/workflows/invocations/${fetchedInvocationId.value}`);
+
+/** Whether the job can be rerun; actually decided based on if the tool `is_workflow_compatible`,
+ * but that would require an extra fetch. Just going by known non-rerunnable tool ids for now.
+ */
+const jobIsRerunnable = computed(
+    () => !!job.value?.tool_id && !job.value.tool_id.startsWith("upload") && job.value.tool_id !== "__DATA_FETCH__",
+);
+
+// Curious as to why we're trying to access tool_version and traceback like this, when they don't exist on
+// `ShowFullJobResponse`? Possibly historical reasons or maybe the `JobProvider` can return different types (doesn't seem like it)?
+const toolVersion = computed(() =>
+    job.value && "tool_version" in job.value ? (job.value?.tool_version as string) : null,
+);
+const traceback = computed(() => (job.value && "traceback" in job.value ? (job.value?.traceback as string) : null));
+
+const metadataDetail = ref<Record<string, string>>({
+    exit_code: `Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. https://docs.galaxyproject.org/en/master/dev/schema.html#tool-stdio-exit-code`,
+    error_level: `NO_ERROR = 0</br>LOG = 1</br>QC = 1.1</br>WARNING = 2</br>FATAL = 3</br>FATAL_OOM = 4</br>MAX = 4`,
+});
+
+function updateJob(newJob: ShowFullJobResponse) {
+    job.value = newJob;
+    if (jobStateIsTerminal(newJob?.state)) {
+        if (newJob.tool_stdout) {
+            stdout_text.value = newJob.tool_stdout;
+        }
+        if (newJob.tool_stderr) {
+            stderr_text.value = newJob.tool_stderr;
+        }
+    }
+}
+
+function updateConsoleOutputs(output: JobConsoleOutput) {
+    // Keep stdout in memory and only fetch new text via JobProvider
+    if (output) {
+        if (output.stdout != null) {
+            stdout_text.value += output.stdout;
+        }
+        if (output.stderr != null) {
+            stderr_text.value += output.stderr;
+        }
+    }
+}
+
+function filterMetadata(jobMessages: JobMessage[]): Partial<JobMessage>[] {
+    return jobMessages.map((item) => {
+        return Object.entries(item).reduce((acc: Record<string, unknown>, [key, value]) => {
+            if (value) {
+                acc[key] = value;
+            }
+            return acc;
+        }, {});
+    });
+}
+
+async function fetchInvocationForJob(jobId: string) {
+    const { data: invocations, error } = await GalaxyApi().GET("/api/invocations", {
+        params: {
+            query: { job_id: jobId },
+        },
+    });
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    if (invocations.length) {
+        return invocations[0];
+    }
+
+    return null;
+}
+
+// Fetches the invocation for the given job id to get the associated invocation id
+watch(
+    () => props.jobId,
+    async (newId, oldId) => {
+        if (
+            newId &&
+            (fetchedInvocationId.value === undefined || (fetchedInvocationId.value === null && newId !== oldId))
+        ) {
+            const invocation = await fetchInvocationForJob(newId);
+            if (invocation) {
+                fetchedInvocationId.value = invocation.id;
+            } else {
+                fetchedInvocationId.value = null;
+            }
+        }
+    },
+    { immediate: true },
+);
+</script>
+
 <template>
     <div>
-        <job-details-provider auto-refresh :job-id="job_id" @update:result="updateJob" />
-        <h2 class="h-md">Job Information</h2>
+        <JobDetailsProvider auto-refresh :job-id="props.jobId" @update:result="updateJob" />
+        <JobConsoleOutputProvider
+            v-if="jobIsRunning"
+            auto-refresh
+            :job-id="props.jobId"
+            :stdout_position="stdout_position"
+            :stdout_length="stdout_length"
+            :stderr_position="stderr_position"
+            :stderr_length="stderr_length"
+            @update:result="updateConsoleOutputs" />
+        <div v-if="props.includeTitle" class="d-flex justify-content-between flex-gapx-1">
+            <Heading id="job-information-heading" class="flex-grow-1" h1 separator inline size="md">
+                Job Information
+                <JobState v-if="job" class="job-information-state-badge" :job="job" />
+            </Heading>
+            <div v-if="job && jobIsRerunnable">
+                <RerunJobButton :job-id="props.jobId" outline />
+            </div>
+        </div>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
                     <td>Galaxy Tool ID</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
-                        <copy-to-clipboard
+                        <CopyToClipboard
                             message="Tool ID was copied to your clipboard"
                             :text="job.tool_id"
                             title="Copy Tool ID" />
@@ -16,116 +181,117 @@
                 </tr>
                 <tr v-if="job && job.state">
                     <td>Job State</td>
-                    <td data-description="galaxy-job-state">{{ job.state }}</td>
+                    <td data-description="galaxy-job-state">
+                        <HelpText :uri="`galaxy.jobs.states.${job.state}`" :text="job.state" />
+                    </td>
                 </tr>
-                <tr v-if="job && job.tool_version">
+                <tr v-if="toolVersion">
                     <td>Galaxy Tool Version</td>
-                    <td id="galaxy-tool-version">{{ job.tool_version }}</td>
+                    <td id="galaxy-tool-version">{{ toolVersion }}</td>
                 </tr>
-                <tr v-if="job && includeTimes">
+                <tr v-if="job && props.includeTimes">
                     <td>Created</td>
                     <td v-if="job.create_time" id="created">
                         <UtcDate :date="job.create_time" mode="pretty" />
                     </td>
                 </tr>
-                <tr v-if="job && includeTimes">
+                <tr v-if="job && props.includeTimes">
                     <td>Updated</td>
                     <td v-if="job.update_time" id="updated">
                         <UtcDate :date="job.update_time" mode="pretty" />
                     </td>
                 </tr>
-                <tr v-if="job && includeTimes && jobIsTerminal">
+                <tr v-if="job && props.includeTimes && jobIsTerminal">
                     <td>Time To Finish</td>
                     <td id="runtime">
-                        {{ runTime }}
+                        {{ getJobDuration(job) }}
                     </td>
                 </tr>
-                <code-row v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
-                <code-row v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
-                <code-row v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
-                <code-row
-                    v-if="job && job.traceback"
+                <CodeRow
+                    v-if="job && job.command_line"
+                    id="command-line"
+                    help-uri="unix.commandLine"
+                    :code-label="'Command Line'"
+                    :code-item="job.command_line" />
+                <CodeRow
+                    v-if="job"
+                    id="stdout"
+                    help-uri="unix.stdout"
+                    :code-label="'Tool Standard Output'"
+                    :code-item="stdout_text" />
+                <CodeRow
+                    v-if="job"
+                    id="stderr"
+                    help-uri="unix.stderr"
+                    :code-label="'Tool Standard Error'"
+                    :code-item="stderr_text" />
+                <CodeRow
+                    v-if="traceback"
                     id="traceback"
+                    help-uri="unix.traceback"
                     :code-label="'Unexpected Job Errors'"
-                    :code-item="job.traceback" />
+                    :code-item="traceback" />
                 <tr v-if="job">
-                    <td>Tool Exit Code</td>
+                    <td>Tool <HelpText uri="unix.exitCode" text="Exit Code" /></td>
                     <td id="exit-code">{{ job.exit_code }}</td>
                 </tr>
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
                     <td>Job Messages</td>
                     <td>
-                        <ul style="padding-left: 15px; margin-bottom: 0px">
-                            <li v-for="(message, index) in job.job_messages" :key="index">{{ message }}</li>
+                        <ul v-if="Array.isArray(job.job_messages)" class="pl-2 mb-0">
+                            <div v-for="(message, m) in filterMetadata(job.job_messages)" :key="m" class="job-message">
+                                <div v-if="job.job_messages.length > 1">
+                                    <u>Job Message {{ m + 1 }}:</u>
+                                </div>
+                                <li v-for="(value, name, i) in message" :key="i">
+                                    <span
+                                        v-if="metadataDetail[name]"
+                                        v-g-tooltip.html
+                                        class="tooltipJobInfo"
+                                        :title="metadataDetail[name]">
+                                        <strong>{{ name }}:</strong>
+                                    </span>
+                                    <strong v-else>{{ name }}:</strong>
+                                    {{ value }}
+                                </li>
+                                <hr v-if="m + 1 < job.job_messages.length" />
+                            </div>
                         </ul>
+                        <div v-else>
+                            {{ job.job_messages }}
+                        </div>
                     </td>
                 </tr>
                 <slot></slot>
                 <tr v-if="job && job.id">
                     <td>Job API ID</td>
-                    <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
+                    <td id="encoded-job-id">{{ job.id }} <DecodedId :id="job.id" /></td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
                     <td>Copied from Job API ID</td>
                     <td id="encoded-copied-from-job-id">
-                        {{ job.copied_from_job_id }} <decoded-id :id="job.copied_from_job_id" />
+                        {{ job.copied_from_job_id }} <DecodedId :id="job.copied_from_job_id" />
+                    </td>
+                </tr>
+                <tr v-if="fetchedInvocationId">
+                    <td>Workflow Invocation</td>
+                    <td>
+                        <router-link :to="routeToInvocation">{{ fetchedInvocationId }}</router-link>
                     </td>
                 </tr>
             </tbody>
         </table>
     </div>
 </template>
+<style scoped lang="scss">
+@import "@/style/scss/theme/blue.scss";
 
-<script>
-import { getAppRoot } from "onload/loadConfig";
-import DecodedId from "../DecodedId.vue";
-import CodeRow from "./CodeRow.vue";
-import { JobDetailsProvider } from "components/providers/JobProvider";
-import UtcDate from "components/UtcDate";
-import CopyToClipboard from "components/CopyToClipboard";
-import JOB_STATES_MODEL from "utils/job-states-model";
-import { formatDuration, intervalToDuration } from "date-fns";
+.tooltipJobInfo {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+}
 
-export default {
-    components: {
-        CodeRow,
-        DecodedId,
-        JobDetailsProvider,
-        UtcDate,
-        CopyToClipboard,
-    },
-    props: {
-        job_id: {
-            type: String,
-            required: true,
-        },
-        includeTimes: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            job: null,
-        };
-    },
-    computed: {
-        runTime: function () {
-            return formatDuration(
-                intervalToDuration({ start: new Date(this.job.create_time), end: new Date(this.job.update_time) })
-            );
-        },
-        jobIsTerminal() {
-            return this.job && !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(this.job.state);
-        },
-    },
-    methods: {
-        getAppRoot() {
-            return getAppRoot();
-        },
-        updateJob(job) {
-            this.job = job;
-        },
-    },
-};
-</script>
+.job-information-state-badge {
+    font-size: $h5-font-size;
+}
+</style>

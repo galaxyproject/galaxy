@@ -1,0 +1,15 @@
+type: cloud
+store_by: uuid
+provider: aws
+auth:
+  access_key: ${GALAXY_TEST_AWS_ACCESS_KEY}
+  secret_key: ${GALAXY_TEST_AWS_SECRET_KEY}
+
+bucket:
+  name: ${GALAXY_TEST_AWS_BUCKET}
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure

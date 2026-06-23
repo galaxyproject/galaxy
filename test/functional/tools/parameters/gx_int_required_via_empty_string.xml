@@ -1,0 +1,12 @@
+<tool id="gx_int_required_via_empty_string" name="gx_int_required_via_empty_string" version="1.0.0">
+    <command><![CDATA[
+echo '$parameter' >> '$output'
+    ]]></command>
+    <inputs>
+        <!-- https://github.com/galaxyproject/galaxy/pull/16966/files -->
+        <param name="parameter" value="" type="integer" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+</tool>

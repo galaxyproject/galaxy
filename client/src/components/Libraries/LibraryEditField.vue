@@ -3,16 +3,17 @@
         <div class="text-field">
             <!-- edit mode -->
             <div v-if="isEditMode">
-                <b-form-textarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
+                <BFormTextarea class="form-control" :value="text" rows="3" no-resize @change="updateValue" />
             </div>
             <!-- shrink long text -->
-            <div v-else-if="text.length > maxDescriptionLength && !isExpanded">
+            <div v-else-if="text && text.length > maxDescriptionLength && !isExpanded">
                 <!-- eslint-disable vue/no-v-html -->
                 <span
                     class="shrinked-description"
                     :title="text"
                     v-html="linkify(sanitize(text.substring(0, maxDescriptionLength)))">
                 </span>
+
                 <!-- eslint-enable vue/no-v-html -->
                 <span :title="text">...</span>
                 <a class="more-text-btn" href="javascript:void(0)" @click="toggleDescriptionExpand">(more) </a>
@@ -20,14 +21,15 @@
             <!-- Regular -->
             <div v-else>
                 <!-- eslint-disable-next-line vue/no-v-html -->
-                <div v-html="linkify(sanitize(text))"></div>
+                <div v-html="linkify(sanitize(text ?? ''))"></div>
+
                 <!-- hide toggle expand if text is too short -->
                 <a
-                    v-if="text.length > maxDescriptionLength"
+                    v-if="text && text.length > maxDescriptionLength"
                     class="more-text-btn"
                     href="javascript:void(0)"
-                    @click="toggleDescriptionExpand"
-                    >(less)
+                    @click="toggleDescriptionExpand">
+                    (less)
                 </a>
             </div>
         </div>
@@ -35,18 +37,20 @@
 </template>
 
 <script>
-import { MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
+import { BFormTextarea } from "bootstrap-vue";
+import purify from "dompurify";
 import linkifyHtml from "linkify-html";
-import { sanitize } from "dompurify";
-Vue.use(BootstrapVue);
+
+import { MAX_DESCRIPTION_LENGTH } from "@/components/Libraries/library-utils";
 
 export default {
+    components: {
+        BFormTextarea,
+    },
     props: {
         text: {
             type: String,
+            required: false,
         },
         changedValue: {
             type: String,
@@ -58,13 +62,18 @@ export default {
             type: Boolean,
         },
     },
+    setup() {
+        return { purify };
+    },
     data() {
         return {
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
         };
     },
     methods: {
-        sanitize,
+        sanitize(text) {
+            return purify.sanitize(text);
+        },
         updateValue(value) {
             this.$emit("update:changedValue", value);
         },

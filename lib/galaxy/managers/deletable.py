@@ -8,10 +8,9 @@ models have some backing/supporting resources that can be removed as well
 the supporting resources as well. These models also have the boolean
 attribute 'purged'.
 """
+
 from typing import (
     Any,
-    Dict,
-    Set,
 )
 
 from galaxy.model import Base
@@ -32,8 +31,7 @@ class DeletableManagerMixin:
     removed by an admin/script.
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
-        ...
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
 
     def delete(self, item, flush=True, **kwargs):
         """
@@ -49,7 +47,7 @@ class DeletableManagerMixin:
 
 
 class DeletableSerializerMixin:
-    serializable_keyset: Set[str]
+    serializable_keyset: set[str]
 
     def add_serializers(self):
         self.serializable_keyset.add("deleted")
@@ -57,7 +55,7 @@ class DeletableSerializerMixin:
 
 # TODO: these are of questionable value if we don't want to enable users to delete/purge via update
 class DeletableDeserializerMixin:
-    deserializers: Dict[str, Deserializer]
+    deserializers: dict[str, Deserializer]
 
     def add_deserializers(self):
         self.deserializers["deleted"] = self.deserialize_deleted
@@ -91,8 +89,7 @@ class PurgableManagerMixin(DeletableManagerMixin):
     file).
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
-        ...
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True): ...
 
     def purge(self, item, flush=True, **kwargs):
         """
@@ -105,7 +102,7 @@ class PurgableManagerMixin(DeletableManagerMixin):
 
 
 class PurgableSerializerMixin(DeletableSerializerMixin):
-    serializable_keyset: Set[str]
+    serializable_keyset: set[str]
 
     def add_serializers(self):
         DeletableSerializerMixin.add_serializers(self)
@@ -113,7 +110,7 @@ class PurgableSerializerMixin(DeletableSerializerMixin):
 
 
 class PurgableDeserializerMixin(DeletableDeserializerMixin):
-    deserializers: Dict[str, Deserializer] = {}
+    deserializers: dict[str, Deserializer] = {}
 
     def add_deserializers(self):
         DeletableDeserializerMixin.add_deserializers(self)

@@ -1,13 +1,13 @@
 """
 API for updating Galaxy Pages
 """
+
 import io
 import logging
 from typing import Optional
 
 from fastapi import (
     Body,
-    Path,
     Query,
     Response,
     status,
@@ -21,14 +21,17 @@ from galaxy.schema.schema import (
     CreatePagePayload,
     PageDetails,
     PageIndexQueryPayload,
+    PageRevisionDetails,
+    PageRevisionList,
     PageSortByEnum,
-    PageSummary,
     PageSummaryList,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    UpdatePagePayload,
 )
+from galaxy.webapps.base.api import GalaxyStreamingResponse
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
@@ -36,6 +39,7 @@ from galaxy.webapps.galaxy.api import (
     Router,
     search_query_param,
 )
+from galaxy.webapps.galaxy.api.common import PageIdPathParam
 from galaxy.webapps.galaxy.services.pages import PagesService
 
 log = logging.getLogger(__name__)
@@ -51,9 +55,7 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
     title="Encoded user ID to restrict query to, must be own id if not an admin user",
 )
 
-PageIdPathParam: DecodedDatabaseIdField = Path(
-    ..., title="Page ID", description="The encoded database identifier of the Page."  # Required
-)
+ShowOwnQueryParam: bool = Query(default=True, title="Show pages owned by user.", description="")
 
 ShowPublishedQueryParam: bool = Query(default=True, title="Include published pages.", description="")
 
@@ -73,18 +75,31 @@ SortDescQueryParam: bool = Query(
     description="Sort in descending order?",
 )
 
-LimitQueryParam: int = Query(default=100, lt=1000, title="Limit number of queries.")
+LimitQueryParam: int = Query(default=100, ge=1, lt=1000, title="Limit number of queries.")
 
 OffsetQueryParam: int = Query(
     default=0,
+    ge=0,
     title="Number of pages to skip in sorted query (to enable pagination).",
 )
+
+InvocationIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None, title="Invocation ID", description="Filter pages by this workflow invocation ID."
+)
+
+HistoryIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Filter pages by history ID.",
+)
+
+PageIdRevisionPathParam = DecodedDatabaseIdField
 
 query_tags = [
     IndexQueryTag("title", "The page's title."),
     IndexQueryTag("slug", "The page's slug.", "s"),
     IndexQueryTag("tag", "The page's tags.", "t"),
     IndexQueryTag("user", "The page's owner's username.", "u"),
+    IndexQueryTag("type", "Page type filter: 'standalone', 'history_attached', or 'all'."),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(
@@ -103,31 +118,37 @@ class FastAPIPages:
         summary="Lists all Pages viewable by the user.",
         response_description="A list with summary page information.",
     )
-    async def index(
+    def index(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
+        show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: PageSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
-        limit: int = LimitQueryParam,
-        offset: int = OffsetQueryParam,
-        search: Optional[str] = SearchQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        invocation_id: Optional[DecodedDatabaseIdField] = InvocationIdQueryParam,
+        history_id: Optional[DecodedDatabaseIdField] = HistoryIdQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
-        payload = PageIndexQueryPayload.construct(
+        payload = PageIndexQueryPayload.model_construct(
             deleted=deleted,
-            user_id=user_id,
+            limit=limit,
+            offset=offset,
+            search=search,
+            show_own=show_own,
             show_published=show_published,
             show_shared=show_shared,
             sort_by=sort_by,
             sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
+            user_id=user_id,
+            invocation_id=invocation_id,
+            history_id=history_id,
         )
         pages, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
@@ -135,15 +156,15 @@ class FastAPIPages:
 
     @router.post(
         "/api/pages",
-        summary="Create a page and return summary information.",
-        response_description="The page summary information.",
+        summary="Create a page and return it.",
+        response_description="The page including the content of its latest revision.",
     )
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         payload: CreatePagePayload = Body(...),
-    ) -> PageSummary:
-        """Get a list with details of all Pages available to the user."""
+    ) -> PageDetails:
+        """Creates a new Page."""
         return self.service.create(trans, payload)
 
     @router.delete(
@@ -151,13 +172,27 @@ class FastAPIPages:
         summary="Marks the specific Page as deleted.",
         status_code=status.HTTP_204_NO_CONTENT,
     )
-    async def delete(
+    def delete(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ):
         """Marks the Page with the given ID as deleted."""
         self.service.delete(trans, id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/pages/{id}/undelete",
+        summary="Undelete the specific Page.",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    def undelete(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """Marks the Page with the given ID as undeleted."""
+        self.service.undelete(trans, id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.get(
@@ -172,17 +207,17 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def show_pdf(
+    def show_pdf(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ):
         """Return a PDF document of the last revision of the Page.
 
         This feature may not be available in this Galaxy.
         """
         pdf_bytes = self.service.show_pdf(trans, id)
-        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
+        return GalaxyStreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf")
 
     @router.post(
         "/api/pages/{id}/prepare_download",
@@ -194,10 +229,10 @@ class FastAPIPages:
             501: {"description": "PDF conversion service not available."},
         },
     )
-    async def prepare_pdf(
+    def prepare_pdf(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> AsyncFile:
         """Return a STS download link for this page to be downloaded as a PDF.
 
@@ -210,10 +245,10 @@ class FastAPIPages:
         summary="Return a page summary and the content of the last revision.",
         response_description="The page summary information.",
     )
-    async def show(
+    def show(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> PageDetails:
         """Return summary information about a specific Page and the content of the last revision."""
         return self.service.show(trans, id)
@@ -224,8 +259,8 @@ class FastAPIPages:
     )
     def sharing(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -236,8 +271,8 @@ class FastAPIPages:
     )
     def enable_link_access(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -248,8 +283,8 @@ class FastAPIPages:
     )
     def disable_link_access(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -260,8 +295,8 @@ class FastAPIPages:
     )
     def publish(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -272,8 +307,8 @@ class FastAPIPages:
     )
     def unpublish(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -284,8 +319,8 @@ class FastAPIPages:
     )
     def share_with_users(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -298,10 +333,67 @@ class FastAPIPages:
     )
     def set_slug(
         self,
+        id: PageIdPathParam,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: DecodedDatabaseIdField = PageIdPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.put(
+        "/api/pages/{id}",
+        summary="Update a page and return it.",
+        response_description="The page including the content of its latest revision.",
+    )
+    def update(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: UpdatePagePayload = Body(...),
+    ) -> PageDetails:
+        """Updates an existing Page."""
+        return self.service.update(trans, id, payload)
+
+    @router.get(
+        "/api/pages/{id}/revisions",
+        summary="List all revisions of a page.",
+    )
+    def list_revisions(
+        self,
+        id: PageIdPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+        sort_desc: bool = Query(
+            default=False,
+            title="Sort Descending",
+            description="Sort by creation time descending (newest first) when true.",
+        ),
+    ) -> PageRevisionList:
+        """List all revisions of a page, ordered by creation time."""
+        return self.service.list_revisions(trans, id, sort_desc=sort_desc)
+
+    @router.get(
+        "/api/pages/{id}/revisions/{revision_id}",
+        summary="Get a specific revision of a page.",
+    )
+    def show_revision(
+        self,
+        id: PageIdPathParam,
+        revision_id: PageIdRevisionPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PageRevisionDetails:
+        """Return the details of a specific page revision."""
+        return self.service.show_revision(trans, id, revision_id)
+
+    @router.post(
+        "/api/pages/{id}/revisions/{revision_id}/revert",
+        summary="Revert page to a specific revision.",
+    )
+    def revert_revision(
+        self,
+        id: PageIdPathParam,
+        revision_id: PageIdRevisionPathParam,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> PageRevisionDetails:
+        """Restore a page to the content of a specific revision."""
+        return self.service.revert_revision(trans, id, revision_id)

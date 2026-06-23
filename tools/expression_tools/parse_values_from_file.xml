@@ -1,4 +1,4 @@
-<tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression">
+<tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression" profile="19.05">
     <description>from dataset</description>
     <macros>
         <import>expression_macros.xml</import>

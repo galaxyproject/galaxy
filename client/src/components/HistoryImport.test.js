@@ -1,36 +1,63 @@
+import { getLocalVue, wait } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, wait } from "tests/jest/helpers";
-import HistoryImport from "./HistoryImport.vue";
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
 import flushPromises from "flush-promises";
-import { waitOnJob } from "components/JobStates/wait";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import VueRouter from "vue-router";
+
+import { useServerMock } from "@/api/client/__mocks__";
+import { waitOnJob } from "@/components/JobStates/wait";
+
+import HistoryImport from "./HistoryImport.vue";
 
 const localVue = getLocalVue();
-const TEST_JOB_ID = "job123789";
-const TEST_HISTORY_URI = "/api/histories";
-const TEST_SOURCE_URL = "http://galaxy.example/import";
-const TEST_PLUGINS_URL = "/api/remote_files/plugins";
+localVue.use(VueRouter);
+const router = new VueRouter();
 
-jest.mock("components/JobStates/wait");
+const TEST_JOB_ID = "job123789";
+const TEST_SOURCE_URL = "http://galaxy.example/import";
+
+vi.mock("@/components/JobStates/wait", () => ({
+    waitOnJob: vi.fn(),
+}));
+
+const { server, http } = useServerMock();
 
 describe("HistoryImport.vue", () => {
-    let axiosMock;
     let wrapper;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
+        server.use(
+            http.get("/api/remote_files/plugins", ({ response }) => {
+                return response(200).json([
+                    {
+                        id: "_ftp",
+                        type: "gxftp",
+                        uri_root: "gxftp://",
+                        label: "FTP Directory",
+                        doc: "Galaxy User's FTP Directory",
+                        writable: false,
+                        browsable: true,
+                        supports: {
+                            pagination: false,
+                            search: false,
+                            sorting: false,
+                        },
+                    },
+                ]);
+            }),
+        );
+
         wrapper = mount(HistoryImport, {
             propsData: {},
             localVue,
+            router,
         });
         await flushPromises();
     });
 
     it("should render a form with submit disabled because inputs empty", async () => {
         expect(wrapper.find(".import-button").exists()).toBeTruthy();
-        expect(wrapper.find(".import-button").attributes("disabled")).toBeTruthy();
+        expect(wrapper.find(".import-button").attributes("aria-disabled")).toBeTruthy();
         expect(wrapper.vm.importReady).toBeFalsy();
     });
 
@@ -54,15 +81,19 @@ describe("HistoryImport.vue", () => {
             sourceURL: TEST_SOURCE_URL,
         });
         let formData;
-        axiosMock.onPost(TEST_HISTORY_URI).reply((request) => {
-            formData = request.data;
-            return [200, { job_id: TEST_JOB_ID }];
-        });
+
+        server.use(
+            http.post("/api/histories", async ({ response, request }) => {
+                formData = await request.formData();
+                return response(200).json({ job_id: TEST_JOB_ID });
+            }),
+        );
+
         let then;
-        waitOnJob.mockReturnValue(
+        vi.mocked(waitOnJob).mockReturnValue(
             new Promise((then_) => {
                 then = then_;
-            })
+            }),
         );
         wrapper.vm.submit();
         await flushPromises();
@@ -85,15 +116,11 @@ describe("HistoryImport.vue", () => {
         const alert = wrapper.find(".alert");
         expect(alert.classes()).toContain("alert-warning");
         expect(alert.text()).toContain(
-            "It looks like you are trying to import a published history from another galaxy instance"
+            "It looks like you are trying to import a published history from another galaxy instance",
         );
 
         // Link to the GTN
         const link = alert.find("a");
         expect(link.text()).toContain("GTN");
-    });
-
-    afterEach(() => {
-        axiosMock.restore();
     });
 });

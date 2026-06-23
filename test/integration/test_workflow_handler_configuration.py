@@ -7,6 +7,7 @@ import tempfile
 import time
 from json import dumps
 
+from galaxy import model
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
@@ -16,8 +17,7 @@ from galaxy_test.driver import integration_util
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 WORKFLOW_HANDLER_CONFIGURATION_JOB_CONF = os.path.join(SCRIPT_DIRECTORY, "workflow_handler_configuration_job_conf.xml")
 
-WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template(
-    """
+WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template("""
 <job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
@@ -41,11 +41,9 @@ WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE = string.Template(
         </destination>
     </destinations>
 </job_conf>
-"""
-)
+""")
 
-POOL_JOB_CONFIG_TEMPLATE = string.Template(
-    """<job_conf>
+POOL_JOB_CONFIG_TEMPLATE = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
     </plugins>
@@ -56,11 +54,9 @@ POOL_JOB_CONFIG_TEMPLATE = string.Template(
         </destination>
     </destinations>
 </job_conf>
-"""
-)
+""")
 
-WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template(
-    """
+WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template("""
 <workflow_schedulers default="core">
   <core id="core" />
   <handlers default="workflow_handlers" $assign_with>
@@ -68,16 +64,15 @@ WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE = string.Template(
     <handler id="work2" tags="workflow_handlers" />
   </handlers>
 </workflow_schedulers>
-"""
-)
+""")
 JOB_HANDLER_PATTERN = re.compile(r"handler\d")
 WORKFLOW_SCHEDULER_HANDLER_PATTERN = re.compile(r"work\d")
 
 PAUSE_WORKFLOW = """
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-- label: test_input
-  type: input
 - label: the_pause
   type: pause
   connect:
@@ -120,15 +115,15 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         request["inputs_by"] = "step_index"
         url = f"workflows/{workflow_id}/invocations"
         for _ in range(n):
-            self._post(url, data=request)
+            self._post(url, data=request, json=True)
 
     def _get_workflow_invocations(self, history_id: str):
         # Consider exposing handler via the API to reduce breaking
         # into Galaxy's internal state.
         app = self._app
         history_id = app.security.decode_id(history_id)
-        sa_session = app.model.context.current
-        history = sa_session.query(app.model.History).get(history_id)
+        history = app.model.session.get(model.History, history_id)
+        assert history is not None
         workflow_invocations = history.workflow_invocations
         return workflow_invocations
 

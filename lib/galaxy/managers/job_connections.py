@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
     literal,
     union,
@@ -9,13 +11,15 @@ from sqlalchemy.sql import (
 
 from galaxy import model
 from galaxy.managers.base import get_class
-from galaxy.model.scoped_session import galaxy_scoped_session
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import scoped_session
 
 
 class JobConnectionsManager:
     """Get connections graph of inputs and outputs for given item"""
 
-    def __init__(self, sa_session: galaxy_scoped_session):
+    def __init__(self, sa_session: "scoped_session"):
         self.sa_session = sa_session
 
     def get_connections_graph(self, id: int, src: str):
@@ -54,7 +58,7 @@ class JobConnectionsManager:
             for val in graph["outputs"] + graph["inputs"]:
                 item_class = get_class(val["src"])
                 item_hid = self.sa_session.execute(select(item_class.hid).where(item_class.id == val["id"])).scalar()
-                result.append(item_hid)
+                result.append(item_hid)  # type: ignore[arg-type]
         return result
 
     def _get_union_results(self, *selects):
@@ -66,10 +70,8 @@ class JobConnectionsManager:
     def outputs_derived_from_input_hda(self, input_hda_id: int):
         hda_select = (
             select(
-                [
-                    literal("HistoryDatasetAssociation").label("src"),
-                    model.JobToOutputDatasetAssociation.dataset_id.label("id"),
-                ]
+                literal("HistoryDatasetAssociation").label("src"),
+                model.JobToOutputDatasetAssociation.dataset_id.label("id"),
             )
             .join(
                 model.JobToInputDatasetAssociation,
@@ -80,10 +82,8 @@ class JobConnectionsManager:
         )
         hdca_select = (
             select(
-                [
-                    literal("HistoryDatasetCollectionAssociation").label("src"),
-                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
-                ]
+                literal("HistoryDatasetCollectionAssociation").label("src"),
+                model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
             )
             .join(
                 model.JobToInputDatasetAssociation,
@@ -97,10 +97,8 @@ class JobConnectionsManager:
     def outputs_derived_from_input_hdca(self, input_hdca_id: int):
         hda_select = (
             select(
-                [
-                    literal("HistoryDatasetAssociation").label("src"),
-                    model.JobToOutputDatasetAssociation.dataset_id.label("id"),
-                ]
+                literal("HistoryDatasetAssociation").label("src"),
+                model.JobToOutputDatasetAssociation.dataset_id.label("id"),
             )
             .join(
                 model.JobToInputDatasetCollectionAssociation,
@@ -111,10 +109,8 @@ class JobConnectionsManager:
         )
         hdca_select = (
             select(
-                [
-                    literal("HistoryDatasetCollectionAssociation").label("src"),
-                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
-                ]
+                literal("HistoryDatasetCollectionAssociation").label("src"),
+                model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
             )
             .join(
                 model.JobToInputDatasetCollectionAssociation,
@@ -129,10 +125,8 @@ class JobConnectionsManager:
     def inputs_for_hda(self, input_hda_id: int):
         input_hdas = (
             select(
-                [
-                    literal("HistoryDatasetAssociation").label("src"),
-                    model.JobToInputDatasetAssociation.dataset_id.label("id"),
-                ]
+                literal("HistoryDatasetAssociation").label("src"),
+                model.JobToInputDatasetAssociation.dataset_id.label("id"),
             )
             .join(
                 model.JobToOutputDatasetAssociation,
@@ -143,10 +137,8 @@ class JobConnectionsManager:
         )
         input_hdcas = (
             select(
-                [
-                    literal("HistoryDatasetCollectionAssociation").label("src"),
-                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
-                ]
+                literal("HistoryDatasetCollectionAssociation").label("src"),
+                model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
             )
             .join(
                 model.JobToOutputDatasetAssociation,
@@ -160,10 +152,8 @@ class JobConnectionsManager:
     def inputs_for_hdca(self, input_hdca_id: int):
         input_hdas = (
             select(
-                [
-                    literal("HistoryDatasetAssociation").label("src"),
-                    model.JobToInputDatasetAssociation.dataset_id.label("id"),
-                ]
+                literal("HistoryDatasetAssociation").label("src"),
+                model.JobToInputDatasetAssociation.dataset_id.label("id"),
             )
             .join(
                 model.JobToOutputDatasetCollectionAssociation,
@@ -174,10 +164,8 @@ class JobConnectionsManager:
         )
         input_hdcas = (
             select(
-                [
-                    literal("HistoryDatasetCollectionAssociation").label("src"),
-                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
-                ]
+                literal("HistoryDatasetCollectionAssociation").label("src"),
+                model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
             )
             .join(
                 model.JobToOutputDatasetCollectionAssociation,
