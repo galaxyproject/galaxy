@@ -1370,19 +1370,6 @@ class ZarrDirectory(Directory):
         return None
 
 
-class Kraken2DatabaseDirectory(Directory):
-    """Class representing a Kraken2 database"""
-
-    file_ext = "kraken2db"
-
-    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
-        if not dataset.dataset.purged:
-            dataset.blurb = "Kraken2 database"
-        else:
-            dataset.peek = "file does not exist"
-            dataset.blurb = "file purged from disk"
-
-
 class GenericAsn1(Text):
     """Class for generic ASN.1 text format"""
 
