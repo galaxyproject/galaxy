@@ -669,13 +669,21 @@ def validate_test_cases_for_tool_source(
     tool_source: ToolSource, use_latest_profile: bool = False, name: Optional[str] = None
 ) -> List[TestCaseStateValidationResult]:
     name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
-    tool_parameter_bundle = input_models_for_tool_source(tool_source)
     if use_latest_profile:
         # this might get old but it is fine, just needs to be updated when test case changes are made
         profile = "26.1"
     else:
         profile = tool_source.parse_profile()
-    test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    # Building the parameter model or parsing the test cases can itself raise on a tool
+    # whose parameters cannot be modeled (e.g. an unknown parameter type) or whose
+    # <test> block is malformed. This function's contract is to *report* such problems,
+    # so capture the failure as a single validation result rather than raising out to
+    # the caller (the upgrade advisor, planemo / lint, CI).
+    try:
+        tool_parameter_bundle = input_models_for_tool_source(tool_source)
+        test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    except Exception as e:
+        return [TestCaseStateValidationResult(TestCaseToolState({}), [], e, [], profile)]
     results_by_test: List[TestCaseStateValidationResult] = []
     for test_case in test_cases:
         validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile, name=name)

@@ -243,7 +243,11 @@ def _parse_int(xml_el: Element, attribute: str) -> Optional[int]:
 
 def _parse_number(xml_el: Element, attribute: str) -> Optional[Union[float, int]]:
     raw_value = xml_el.get(attribute)
-    if raw_value and ("." in raw_value or "e" in raw_value or "inf" in raw_value):
+    # Match the float forms case-insensitively: "Infinity"/"Inf"/"INF" and scientific
+    # notation such as "1E5" would otherwise fall through to int() and raise, even
+    # though float() parses them (e.g. an in_range validator with max="Infinity").
+    lowered = raw_value.lower() if raw_value else ""
+    if raw_value and ("." in lowered or "e" in lowered or "inf" in lowered):
         return float(raw_value)
     elif raw_value:
         return int(raw_value)
