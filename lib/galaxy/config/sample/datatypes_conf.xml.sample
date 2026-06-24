@@ -359,7 +359,7 @@
     <datatype extension="tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
       <converter file="archive_to_directory.xml" target_datatype="directory"/>
     </datatype>
-    <datatype extension="kraken2db.tar.gz" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Kraken2 database compressed as a .tar.gz file">
+    <datatype extension="kraken2db.tar" auto_compressed_types="gz,bz2" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true" description="Kraken2 database archive">
       <converter file="archive_to_directory.xml" target_datatype="kraken2db"/>
     </datatype>
     <datatype extension="kraken2db" type="galaxy.datatypes.data:Directory" subclass="true" description="Kraken2 database directory">
