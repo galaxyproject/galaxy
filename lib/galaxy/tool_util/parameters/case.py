@@ -680,13 +680,16 @@ def validate_test_cases_for_tool_source(
     tool_source: ToolSource, use_latest_profile: bool = False, name: str | None = None
 ) -> list[TestCaseStateValidationResult]:
     name = name or f"PydanticModelFor[{tool_source.parse_id()}]"
-    tool_parameter_bundle = input_models_for_tool_source(tool_source)
     if use_latest_profile:
         # this might get old but it is fine, just needs to be updated when test case changes are made
         profile = "26.1"
     else:
         profile = tool_source.parse_profile()
-    test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    try:
+        tool_parameter_bundle = input_models_for_tool_source(tool_source)
+        test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    except Exception as e:
+        return [TestCaseStateValidationResult(TestCaseToolState({}), [], e, [], profile)]
     results_by_test: list[TestCaseStateValidationResult] = []
     for test_case in test_cases:
         validation_result = test_case_validation(test_case, tool_parameter_bundle.parameters, profile, name=name)
