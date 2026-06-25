@@ -85,6 +85,44 @@ def test_parameter_test_cases_validate():
     assert validation_result[2].validation_error
 
 
+def test_unmodelable_tool_is_reported_not_raised(tmp_path):
+    # A tool whose parameter model cannot be built (here, an unknown parameter type)
+    # must be reported as a validation error, not raise out of the validator.
+    tool = (
+        '<tool id="badtype" name="t" version="1.0" profile="24.2"><command>echo</command>'
+        '<inputs><param name="n" type="not_a_real_type"/></inputs>'
+        '<outputs><data name="o" format="txt"/></outputs>'
+        '<tests><test><param name="n" value="x"/>'
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests></tool>"
+    )
+    path = tmp_path / "badtype.xml"
+    path.write_text(tool)
+    results = validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+    assert results
+    assert results[0].validation_error is not None
+
+
+def test_infinity_in_range_validator_bound_does_not_crash(tmp_path):
+    # An in_range validator bound written as "Infinity" must parse as float("inf")
+    # rather than crash int("Infinity") while building the parameter model, so a
+    # tool that uses it validates normally. (A float parameter is used because an
+    # integer field cannot carry an le=inf bound in the underlying pydantic model.)
+    tool = (
+        '<tool id="inf" name="t" version="1.0" profile="24.2"><command>echo</command>'
+        '<inputs><param name="n" type="float" value="1">'
+        '<validator type="in_range" min="0" max="Infinity"/></param></inputs>'
+        '<outputs><data name="o" format="txt"/></outputs>'
+        '<tests><test><param name="n" value="5"/>'
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests></tool>"
+    )
+    path = tmp_path / "inf.xml"
+    path.write_text(tool)
+    results = validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+    assert results[0].validation_error is None
+
+
 def test_legacy_features_fail_validation_with_24_2(tmp_path):
     for filename in TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS:
         _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename, index=None)
