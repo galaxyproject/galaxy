@@ -85,6 +85,54 @@ def test_parameter_test_cases_validate():
     assert validation_result[2].validation_error
 
 
+def _validate_inline_tool(tmp_path, name: str, inputs: str, test_body: str):
+    tool = (
+        f'<tool id="{name}" name="t" version="1.0" profile="24.2">'
+        "<command>echo</command>"
+        f"<inputs>{inputs}</inputs>"
+        '<outputs><data name="o" format="txt"/></outputs>'
+        f"<tests><test>{test_body}"
+        '<output name="o"><assert_contents><has_text text="x"/></assert_contents></output>'
+        "</test></tests>"
+        "</tool>"
+    )
+    path = tmp_path / f"{name}.xml"
+    path.write_text(tool)
+    return validate_test_cases_for_tool_source(get_tool_source(str(path)), use_latest_profile=True)
+
+
+def test_malformed_test_case_is_reported_not_raised(tmp_path):
+    # Building the test-case state can fail on a malformed test (coercing a typed
+    # value, resolving a conditional ``when`` branch). validate_test_cases_for_tool_source
+    # must report these as a validation error rather than raising out of the call.
+
+    # A non-numeric value for an integer/float parameter (int()/float() coercion).
+    for param_type in ("integer", "float"):
+        results = _validate_inline_tool(
+            tmp_path,
+            f"numeric_{param_type}",
+            f'<param name="n" type="{param_type}" value="1"/>',
+            '<param name="n" value="not_a_number"/>',
+        )
+        assert results[0].validation_error is not None
+
+    # A conditional test value that selects no ``when`` branch.
+    cond_inputs = (
+        '<conditional name="c"><param name="mode" type="select">'
+        '<option value="a">A</option><option value="b">B</option></param>'
+        '<when value="a"><param name="x" type="integer" value="1"/></when>'
+        '<when value="b"><param name="y" type="integer" value="1"/></when>'
+        "</conditional>"
+    )
+    results = _validate_inline_tool(
+        tmp_path,
+        "cond_unknown",
+        cond_inputs,
+        '<conditional name="c"><param name="mode" value="nosuch"/></conditional>',
+    )
+    assert results[0].validation_error is not None
+
+
 def test_legacy_features_fail_validation_with_24_2(tmp_path):
     for filename in TOOLS_THAT_USE_UNQUALIFIED_PARAMETER_ACCESS:
         _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename, index=None)

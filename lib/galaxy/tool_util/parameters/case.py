@@ -358,17 +358,26 @@ def _input_name_was_handled_by_legacy_fallback(input_name: str, handled_inputs: 
 def test_case_validation(
     test_dict: ToolSourceTest, tool_parameter_bundle: List[ToolParameterT], profile: str, name: Optional[str] = None
 ) -> TestCaseStateValidationResult:
-    test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
     exception: Optional[Exception] = None
+    # Build the test-case state inside the try as well: turning the test inputs into
+    # state (resolving conditional ``when`` branches, coercing typed values, expanding
+    # repeats) can itself raise on a malformed test case. This function's contract is
+    # to *report* such problems as a validation error, so any failure here is captured
+    # like a model-validation failure rather than escaping to the caller.
+    tool_state: TestCaseToolState = TestCaseToolState({})
+    warnings: List[str] = []
     try:
-        test_case_state_and_warnings.tool_state.validate(tool_parameter_bundle, name=name)
+        test_case_state_and_warnings = test_case_state(test_dict, tool_parameter_bundle, profile, validate=False)
+        tool_state = test_case_state_and_warnings.tool_state
+        warnings = test_case_state_and_warnings.warnings
+        tool_state.validate(tool_parameter_bundle, name=name)
         for input_name in test_case_state_and_warnings.unhandled_inputs:
             raise Exception(f"Invalid parameter name found {input_name}")
     except Exception as e:
         exception = e
     return TestCaseStateValidationResult(
-        test_case_state_and_warnings.tool_state,
-        test_case_state_and_warnings.warnings,
+        tool_state,
+        warnings,
         exception,
         tool_parameter_bundle,
         profile,
