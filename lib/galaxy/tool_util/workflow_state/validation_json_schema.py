@@ -420,7 +420,9 @@ def validate_native_workflow_json_schema(
 
         state = copy.deepcopy(tool_state)
 
-        connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
+        connections: Dict[str, object] = {
+            key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
+        }
         inject_connections_into_state(list(parsed_tool.inputs), state, connections)
 
         # Build/cache validator

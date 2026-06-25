@@ -16,6 +16,7 @@ from pydantic import (
     BaseModel,
     ValidationError,
 )
+from pydantic_core import ErrorDetails
 
 from galaxy.tool_util_models import Tests
 
@@ -60,7 +61,7 @@ def validate_tests_file(parsed: Any) -> TestsValidationResult:
     return TestsValidationResult(valid=True)
 
 
-def _error_to_diagnostic(err: dict) -> TestDiagnostic:
+def _error_to_diagnostic(err: ErrorDetails) -> TestDiagnostic:
     loc = err.get("loc", ())
     path = "/".join(str(p) for p in loc)
     return TestDiagnostic(

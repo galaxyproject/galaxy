@@ -9,6 +9,7 @@ import argparse
 import json
 import sys
 from typing import (
+    Dict,
     List,
     Optional,
 )
@@ -60,7 +61,7 @@ def run(args) -> int:
     revisions = [{"changesetRevision": m.changeset_revision, "toolVersion": m.tool_version} for m in selected]
 
     if args.json:
-        envelope = {"trsToolId": trs_tool_id}
+        envelope: Dict[str, object] = {"trsToolId": trs_tool_id}
         if args.tool_version is not None:
             envelope["version"] = args.tool_version
         envelope["revisions"] = revisions

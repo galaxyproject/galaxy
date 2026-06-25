@@ -358,15 +358,15 @@ def run_export(options: ExportOptions) -> int:
             enc_errors = validate_encoding_native(raw_dict)
             if enc_errors:
                 print("Error: strict-encoding (input):", file=sys.stderr)
-                for e in enc_errors:
-                    print(f"  {e}", file=sys.stderr)
+                for error in enc_errors:
+                    print(f"  {error}", file=sys.stderr)
                 return 2
         if options.strict_structure:
             struct_errors = _check_strict_structure(raw_dict)
             if struct_errors:
                 print("Error: strict-structure (input):", file=sys.stderr)
-                for e in struct_errors:
-                    print(f"  {e}", file=sys.stderr)
+                for error in struct_errors:
+                    print(f"  {error}", file=sys.stderr)
                 return 2
 
     try:
@@ -400,8 +400,8 @@ def run_export(options: ExportOptions) -> int:
         enc_errors = validate_encoding_format2(result.format2_dict)
         if enc_errors:
             print("Error: strict-encoding (output):", file=sys.stderr)
-            for e in enc_errors:
-                print(f"  {e}", file=sys.stderr)
+            for error in enc_errors:
+                print(f"  {error}", file=sys.stderr)
             return 2
 
     # Format output
@@ -449,7 +449,8 @@ def run_export(options: ExportOptions) -> int:
 class WorkflowExportResult(WorkflowResultBase):
     """Per-workflow export result."""
 
-    skipped_reason: str | None = None  # override: free-form skip reasons beyond SkipWorkflowReason
+    # free-form skip reasons beyond SkipWorkflowReason; base field is the enum type
+    skipped_reason: str | None = None  # type: ignore[assignment]
     ok: bool = False
     steps_converted: int = 0
     steps_fallback: int = 0

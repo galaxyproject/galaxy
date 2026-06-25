@@ -141,6 +141,7 @@ class TestToolshedTools:
             assert url == entry["expected_url"]
             assert trs_id == entry["expected_trs_id"]
             assert version == entry["expected_version"]
+            assert version is not None
             key = _cache_key(url, trs_id, version)
             assert (
                 key == entry["expected_cache_key"]
