@@ -2,6 +2,16 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import example_datatype_registry_for_sample
 
 
+def test_rmsx_json_datatype_registered():
+    datatypes_registry = example_datatype_registry_for_sample()
+    rmsx_json_datatype = datatypes_registry.get_datatype_by_extension("rmsx.json")
+
+    assert datatypes_registry.datatypes_by_extension["rmsx.json"] is rmsx_json_datatype
+    assert rmsx_json_datatype.__class__.__name__ == "Json"
+    assert rmsx_json_datatype.get_mime() == "application/json"
+    assert "rmsx.json" in datatypes_registry.upload_file_formats
+
+
 def test_matches_any():
     datatypes_registry = example_datatype_registry_for_sample()
     data_datatype = datatypes_registry.get_datatype_by_extension("data")
