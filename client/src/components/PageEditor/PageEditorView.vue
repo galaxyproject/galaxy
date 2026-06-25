@@ -233,7 +233,7 @@ function handleRevisionRestore(revisionId: string) {
                 <template v-if="isStandalone" v-slot:extra-actions>
                     <ObjectPermissionsModal
                         id="object-permissions-modal"
-                        v-model="showPermissions"
+                        :show.sync="showPermissions"
                         :markdown-content="store.currentContent" />
                     <GButton
                         v-b-modal:object-permissions-modal
