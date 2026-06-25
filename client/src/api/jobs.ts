@@ -62,3 +62,17 @@ export async function deleteJob(jobId: string, message?: string): Promise<boolea
 
     return data;
 }
+
+/**
+ * Fetch running jobs
+ * @returns List of running jobs
+ */
+export async function fetchJobs(){
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
+}
