@@ -111,3 +111,17 @@ export async function submitJobRequest(jobRequest: JobRequest) {
     }
     return data;
 }
+
+/**
+ * Fetch running jobs.
+ * @returns A promise that resolves to the list of running jobs.
+ */
+export async function fetchJobs() {
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
+}

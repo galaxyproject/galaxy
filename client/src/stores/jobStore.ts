@@ -7,12 +7,17 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
+import { fetchJobs, type JobBaseModel, type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { type FetchParams, useKeyedCache } from "@/composables/keyedCache";
 import { rethrowSimpleWithStatus } from "@/utils/simple-error";
 
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
+    const allJobs = ref<JobBaseModel[]>([]);
+
+    async function fetchAllJobs(){
+        allJobs.value =  await fetchJobs();
+    }
 
     async function fetchJobById(params: FetchParams): Promise<ShowFullJobResponse> {
         const { data, error, response } = await GalaxyApi().GET("/api/jobs/{job_id}", {
@@ -57,6 +62,8 @@ export const useJobStore = defineStore("jobStore", () => {
 
     return {
         fetchJob,
+        fetchAllJobs,
+        allJobs,
         saveLatestResponse,
         getJob,
         getJobLoadError,
@@ -65,3 +72,4 @@ export const useJobStore = defineStore("jobStore", () => {
         pollJobUntilTerminal,
     };
 });
+
