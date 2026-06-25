@@ -7,6 +7,7 @@ Expectation files live in test/unit/tool_util/workflow_state/expectations/.
 import copy
 import os
 
+import pytest
 from gxformat2.normalized import ensure_native
 from gxformat2.testing import DeclarativeTestSuite
 
@@ -50,7 +51,10 @@ class _CombinedToolInfo:
 _tool_info = _CombinedToolInfo()
 
 
-INLINE_UDT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "inline_udt"))
+INLINE_UDT_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "inline_udt")
+# IWC-vendored workflows are shared with test/unit/workflows and live outside this
+# package's symlinked test tree, so they're absent in the isolated tool_util package test.
+IWC_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "iwc"))
 
 
 def _resolve_fixture_path(name: str) -> str:
@@ -63,8 +67,7 @@ def _resolve_fixture_path(name: str) -> str:
         candidate = os.path.join(base, name)
         if os.path.exists(candidate):
             return candidate
-    iwc_dir = os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "iwc")
-    candidate = os.path.normpath(os.path.join(iwc_dir, name))
+    candidate = os.path.join(IWC_DIR, name)
     if os.path.exists(candidate):
         return candidate
     if os.path.isabs(name) and os.path.exists(name):
@@ -73,7 +76,12 @@ def _resolve_fixture_path(name: str) -> str:
 
 
 def _load_fixture(name: str) -> dict:
-    path = _resolve_fixture_path(name)
+    try:
+        path = _resolve_fixture_path(name)
+    except FileNotFoundError:
+        if not os.path.isdir(IWC_DIR):
+            pytest.skip(f"IWC fixture unavailable in this environment: {name}")
+        raise
     return load_workflow(path)
 
 

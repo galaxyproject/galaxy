@@ -1,6 +1,6 @@
 """Shared loaders for the on-disk inline-UDT workflow fixtures.
 
-The fixtures live at ``test/unit/workflows/inline_udt/`` and embed the same
+The fixtures live at ``fixtures/inline_udt/`` (beside this module) and embed the same
 ``cat_user_defined`` UDT body that ``test/functional/tools/cat_user_defined.yml``
 defines, so a fixture written for offline workflow_state validation has the
 same shape Galaxy would emit on export.
@@ -21,9 +21,7 @@ from typing import (
 
 import yaml
 
-INLINE_UDT_FIXTURE_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "workflows", "inline_udt")
-)
+INLINE_UDT_FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "inline_udt")
 
 NATIVE_FIXTURE_PATH = os.path.join(INLINE_UDT_FIXTURE_DIR, "cat_udt_native.ga")
 FORMAT2_FIXTURE_PATH = os.path.join(INLINE_UDT_FIXTURE_DIR, "cat_udt_format2.gxwf.yml")
