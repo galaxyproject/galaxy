@@ -55,6 +55,12 @@ class _ExtractionHelpersMixin:
             self, workflow: dict[str, Any], step_type: str, expected_len: Optional[int] = None
         ) -> list[dict[str, Any]]: ...
 
+    def _tool_step(self, tool_steps: list[dict[str, Any]], tool_id: str) -> dict[str, Any]:
+        """Return the single tool step with ``tool_id``, asserting it is present."""
+        step = next((s for s in tool_steps if s.get("tool_id") == tool_id), None)
+        assert step is not None, f"No tool step with tool_id {tool_id!r}; have {[s.get('tool_id') for s in tool_steps]}"
+        return step
+
     def _setup_extract_dataset_then_cat(self, history_id):
         """Build a list, extract its first element, and feed the result to cat1.
 
@@ -89,10 +95,8 @@ class _ExtractionHelpersMixin:
         """
         collection_step = self.assert_steps_of_type(downloaded, "data_collection_input", expected_len=1)[0]
         tool_steps = self.assert_steps_of_type(downloaded, "tool", expected_len=2)
-        extract_step = next((s for s in tool_steps if s.get("tool_id") == "__EXTRACT_DATASET__"), None)
-        cat_step = next((s for s in tool_steps if s.get("tool_id") == "cat1"), None)
-        assert extract_step is not None, f"Extract Dataset step missing: {[s.get('tool_id') for s in tool_steps]}"
-        assert cat_step is not None, f"cat1 step missing: {[s.get('tool_id') for s in tool_steps]}"
+        extract_step = self._tool_step(tool_steps, "__EXTRACT_DATASET__")
+        cat_step = self._tool_step(tool_steps, "cat1")
         extract_connections = extract_step["input_connections"]
         cat_connections = cat_step["input_connections"]
         assert _connection_step_id(extract_connections["input"]) == collection_step["id"], extract_connections
@@ -192,13 +196,6 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
     def test_extract_udt_step_with_downstream_tool(self, history_id):
-        # A UDT job used to be silently dropped from the extraction because
-        # get_tool(job.tool_id) returned None for UUID-based tool IDs. The fix
-        # uses tool_for_job() instead, which looks up UDTs via job.dynamic_tool.
-        # This test verifies that:
-        # 1. The UDT step itself appears in the extracted workflow.
-        # 2. The downstream tool step that consumes the UDT output is also present
-        #    and carries an input_connection back to the UDT step.
         with self.dataset_populator.user_tool_execute_permissions():
             dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
 
@@ -232,11 +229,16 @@ class TestWorkflowExtractionApi(_ExtractionHelpersMixin, BaseWorkflowsApiTestCas
         assert len(steps) == 3, f"Expected 3 steps (1 input + UDT + cat1), got {len(steps)}: {list(steps.values())}"
 
         tool_steps = self.assert_steps_of_type(downloaded_workflow, "tool", expected_len=2)
-        udt_step = next(s for s in tool_steps if s.get("tool_id") == dynamic_tool["tool_id"])
-        cat1_step = next(s for s in tool_steps if s.get("tool_id") == "cat1")
+        udt_step = self._tool_step(tool_steps, dynamic_tool["tool_id"])
+        cat1_step = self._tool_step(tool_steps, "cat1")
 
-        # The UDT step must be linked to its dynamic tool.
+        # The UDT step must be linked to its dynamic tool and embed its own tool
+        # representation, so the extracted workflow is self-contained.
         assert udt_step.get("tool_uuid") is not None, udt_step
+        udt_representation = udt_step.get("tool_representation")
+        assert udt_representation is not None, udt_step
+        assert udt_representation["class"] == "GalaxyUserTool", udt_representation
+        assert udt_representation["shell_command"] == TOOL_WITH_SHELL_COMMAND["shell_command"], udt_representation
 
         # The cat1 step must have an input connection pointing back to the UDT step.
         assert "input_connections" in cat1_step, cat1_step
@@ -853,6 +855,58 @@ class TestWorkflowExtractionByIdsApi(_ExtractionHelpersMixin, BaseWorkflowsApiTe
         assert downloaded["name"] == "test import from history (by id)"
         self.assert_cat1_workflow_structure(downloaded)
 
+    @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
+    def test_extract_udt_step_with_downstream_tool_by_ids(self, history_id):
+        # ID-path sibling of test_extract_udt_step_with_downstream_tool.
+        with self.dataset_populator.user_tool_execute_permissions():
+            dynamic_tool = self.dataset_populator.create_unprivileged_tool(UserToolSource(**TOOL_WITH_SHELL_COMMAND))
+
+            # Run the UDT on an uploaded dataset.
+            hda = self.dataset_populator.new_dataset(history_id, content="hello world", wait=True)
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id=None,
+                inputs={"input": {"src": "hda", "id": hda["id"]}},
+                history_id=history_id,
+            )
+            payload["tool_uuid"] = dynamic_tool["uuid"]
+            run_response = self.dataset_populator.tools_post(payload)
+            self._assert_status_code_is(run_response, 200)
+            udt_job_id = run_response.json()["jobs"][0]["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            # Run cat1 on the UDT output so there is a downstream tool step.
+            udt_output = run_response.json()["outputs"][0]
+            cat1_inputs = {"input1": {"src": "hda", "id": udt_output["id"]}}
+            cat1_run = self.dataset_populator.run_tool("cat1", cat1_inputs, history_id)
+            cat1_job_id = cat1_run["jobs"][0]["id"]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            downloaded_workflow = self._extract_and_download_workflow_by_ids(
+                hda_ids=[hda["id"]],
+                job_ids=[udt_job_id, cat1_job_id],
+            )
+
+        steps = downloaded_workflow["steps"]
+        assert len(steps) == 3, f"Expected 3 steps (1 input + UDT + cat1), got {len(steps)}: {list(steps.values())}"
+
+        tool_steps = self.assert_steps_of_type(downloaded_workflow, "tool", expected_len=2)
+        udt_step = self._tool_step(tool_steps, dynamic_tool["tool_id"])
+        cat1_step = self._tool_step(tool_steps, "cat1")
+
+        # The UDT step must be linked to its dynamic tool and embed its own tool
+        # representation, so the extracted workflow is self-contained.
+        assert udt_step.get("tool_uuid") is not None, udt_step
+        udt_representation = udt_step.get("tool_representation")
+        assert udt_representation is not None, udt_step
+        assert udt_representation["class"] == "GalaxyUserTool", udt_representation
+        assert udt_representation["shell_command"] == TOOL_WITH_SHELL_COMMAND["shell_command"], udt_representation
+
+        # The cat1 step must have an input connection pointing back to the UDT step.
+        assert "input_connections" in cat1_step, cat1_step
+        assert "input1" in cat1_step["input_connections"], cat1_step
+        assert _connection_step_id(cat1_step["input_connections"]["input1"]) == udt_step["id"], cat1_step
+
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
     def test_extract_mapping_workflow_by_ids(self, history_id):
@@ -1288,9 +1342,7 @@ class TestWorkflowExtractionSummaryApi(_ExtractionHelpersMixin, BaseWorkflowsApi
             assert len(tool_job["outputs"]) >= 1
 
     def test_extraction_summary_includes_udt_step(self):
-        # UDT (unprivileged/user-defined tool) jobs were silently skipped in the
-        # extraction summary because get_tool(job.tool_id) returned None for UUID-based
-        # tool IDs. After the fix they must appear as "tool" steps.
+        # A UDT job must appear as a "tool" step in the extraction summary.
         with (
             self.dataset_populator.test_history() as history_id,
             self.dataset_populator.user_tool_execute_permissions(),
