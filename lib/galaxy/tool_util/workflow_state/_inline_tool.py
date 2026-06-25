@@ -250,7 +250,7 @@ def _walk_inline_tools_format2(
         if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
             entries.extend(_walk_inline_tools_format2(run, prefix=f"{step_label}.", workflow_path=workflow_path))
             continue
-        if inline_class_from_run(run) is not None:
+        if isinstance(run, dict) and inline_class_from_run(run) is not None:
             entries.append(_entry_from_representation(run, step_label, workflow_path))
     return entries
 

@@ -2,6 +2,7 @@
 
 import json
 import os
+from typing import Any
 
 import pytest
 from gxformat2.normalized import ensure_native
@@ -484,7 +485,7 @@ class TestGalaxySource:
         """fetch_from_galaxy calls the /parsed endpoint and returns ParsedTool."""
         import requests
 
-        fake_parsed = {
+        fake_parsed: dict[str, Any] = {
             "id": "param_value_from_file",
             "version": "0.1.0",
             "name": "Parse parameter value",
@@ -522,7 +523,7 @@ class TestGalaxySource:
 
         from galaxy.tool_util.workflow_state.cache import add_tool as _add_tool
 
-        fake_parsed = {
+        fake_parsed: dict[str, Any] = {
             "id": "param_value_from_file",
             "version": "0.1.0",
             "name": "Parse parameter value",

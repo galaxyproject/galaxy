@@ -16,6 +16,7 @@ from galaxy.tool_util.workflow_state.cache import (
     run_embedded_schema,
     run_list_inline_tools,
 )
+from galaxy.tool_util.workflow_state.toolshed_tool_info import ToolShedGetToolInfo
 from galaxy.tool_util.workflow_state.validation_json_schema import (
     _load_tool_state_validator_from_dir,
     validate_native_workflow_json_schema,
@@ -227,7 +228,9 @@ def test_cache_populate_skips_inline_tools(tmp_path):
     orig = cache_mod.add_tool
     cache_mod.add_tool = spy
     try:
-        cache_mod.populate_cache(tool_info=None, path=str(wf_path), offline=False)
+        cache_mod.populate_cache(
+            tool_info=ToolShedGetToolInfo(cache_dir=str(tmp_path)), path=str(wf_path), offline=False
+        )
     finally:
         cache_mod.add_tool = orig
 

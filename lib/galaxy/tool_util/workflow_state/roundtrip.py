@@ -1086,7 +1086,8 @@ class RoundTripValidationResult(BaseModel):
                 return f"{name}: OK ({n_steps} steps, {benign} benign diff(s))"
             return f"{name}: OK ({n_steps} steps)"
         elif status == "skipped":
-            return f"{name}: SKIPPED ({self.skipped_reason.value})"
+            reason = self.skipped_reason.value if self.skipped_reason else "unknown"
+            return f"{name}: SKIPPED ({reason})"
         elif status == "conversion_fail":
             assert self.conversion_result is not None
             failures = [r for r in self.conversion_result.step_results if not r.success]

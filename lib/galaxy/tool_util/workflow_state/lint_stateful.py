@@ -252,16 +252,16 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
         enc_errors = _check_strict_encoding(workflow_dict)
         if enc_errors:
             print("Error: strict-encoding:", file=sys.stderr)
-            for e in enc_errors:
-                print(f"  {e}", file=sys.stderr)
+            for error in enc_errors:
+                print(f"  {error}", file=sys.stderr)
             return 2
 
     if options.strict_structure:
         struct_errors = _check_strict_structure(workflow_dict)
         if struct_errors:
             print("Error: strict-structure:", file=sys.stderr)
-            for e in struct_errors:
-                print(f"  {e}", file=sys.stderr)
+            for error in struct_errors:
+                print(f"  {error}", file=sys.stderr)
             return 2
 
     # Phase 1: structural lint

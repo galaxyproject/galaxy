@@ -66,7 +66,9 @@ def validate_native_state(
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     tool_state = step_tool_state(step)
     input_connections = step_input_connections(step)
-    connections = {key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()}
+    connections: Dict[str, object] = {
+        key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
+    }
     validate_native_state(list(parsed_tool.inputs), tool_state, connections)
 
 

@@ -23,11 +23,11 @@ from galaxy.tool_util.workflow_state import (
 from galaxy.tool_util.workflow_state._inline_tool import _parse_inline_tool
 from galaxy.tool_util_models import ParsedTool
 
-from .test_inline_udt_workflows import (
-    _format2_with_inline_udt,
-    _native_with_inline_udt,
-    _EmptyGetToolInfo,
+from .inline_udt_fixtures import (
+    load_format2_inline_udt as _format2_with_inline_udt,
+    load_native_inline_udt as _native_with_inline_udt,
 )
+from .test_inline_udt_workflows import _EmptyGetToolInfo
 
 
 class _CountingGetToolInfo:

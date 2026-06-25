@@ -154,7 +154,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
                 format2_in[state_path] = "placeholder"
                 return SKIP_VALUE
             if is_runtime_value(value):
-                if not tool_input.optional:
+                if not getattr(tool_input, "optional", False):
                     format2_in[state_path] = "placeholder"
                 return SKIP_VALUE
             return SKIP_VALUE
@@ -171,7 +171,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if is_runtime_value(value):
-            if not tool_input.optional:
+            if not getattr(tool_input, "optional", False):
                 format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if value is not None and value != "null":

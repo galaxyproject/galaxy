@@ -17,6 +17,8 @@ from typing import (
     TypeVar,
 )
 
+from pydantic import BaseModel
+
 from ._report_output import (
     emit_reports,
     HasReportDests,
@@ -29,7 +31,7 @@ from .workflow_tree import (
 )
 
 T = TypeVar("T")
-R = TypeVar("R")
+R = TypeVar("R", bound=BaseModel)
 
 
 class _SkipWorkflow(Exception):

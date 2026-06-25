@@ -4,6 +4,8 @@ Validates format2 workflow dicts against gxformat2 GalaxyWorkflow JSON Schema
 using jsonschema.Draft202012Validator — the same schema external consumers use.
 """
 
+from typing import Any
+
 from galaxy.tool_util.workflow_state.validation_json_schema import (
     validate_structural_json_schema,
     validate_workflow_json_schema,
@@ -81,7 +83,7 @@ class TestMissingRequiredFields:
 
     def test_missing_class_allowed_with_default(self):
         # class_ has default="GalaxyWorkflow", so omitting it is valid
-        wf = {
+        wf: dict[str, Any] = {
             "inputs": {},
             "outputs": {},
             "steps": {},

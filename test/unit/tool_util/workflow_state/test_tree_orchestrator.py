@@ -5,6 +5,10 @@ using mock workflows and processing functions.
 """
 
 import json
+from typing import (
+    List,
+    Optional,
+)
 
 from pydantic import BaseModel
 
@@ -13,6 +17,7 @@ from galaxy.tool_util.workflow_state._tree_orchestrator import (
     run_tree,
     skip_workflow,
     TreeContext,
+    WorkflowOutcome,
 )
 
 
@@ -48,8 +53,8 @@ class MockReport(BaseModel):
 
 
 class _MockReportDests:
-    report_json = None
-    report_markdown = None
+    report_json: Optional[str] = None
+    report_markdown: Optional[str] = None
 
 
 class _NullToolInfo:
@@ -147,7 +152,7 @@ class TestRunTree:
         def process_one(info, wf_dict, tool_info):
             raise ValueError("something broke")
 
-        errors_seen = []
+        errors_seen: List[WorkflowOutcome] = []
 
         def aggregate(tree_result):
             errors_seen.extend(o for o in tree_result.outcomes if o.error)
@@ -166,6 +171,7 @@ class TestRunTree:
         )
         assert exit_code == 1
         assert len(errors_seen) == 1
+        assert errors_seen[0].error is not None
         assert "something broke" in errors_seen[0].error
 
     def test_include_format2_false(self, tmp_path):

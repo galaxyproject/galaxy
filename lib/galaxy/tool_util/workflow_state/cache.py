@@ -463,6 +463,9 @@ def run_schema(options: SchemaOptions):
 
     entry = matches[0]
     cache_key = entry.get("cache_key")
+    if not cache_key:
+        print(f"Cached entry missing cache_key: {entry.get('tool_id', '?')}", file=sys.stderr)
+        sys.exit(1)
     parsed_tool = tool_info.load_cached(cache_key)
     if parsed_tool is None:
         print(f"Failed to load cached tool: {cache_key}", file=sys.stderr)
@@ -577,7 +580,7 @@ def _walk_representations(workflow_dict: dict, *, prefix: str, out: dict[str, di
             run = step_def.get("run")
             if isinstance(run, dict) and run.get("class") == "GalaxyWorkflow":
                 _walk_representations(run, prefix=f"{label}.", out=out)
-            elif inline_class_from_run(run) is not None:
+            elif isinstance(run, dict) and inline_class_from_run(run) is not None:
                 out[label] = run
         return
     steps = workflow_dict.get("steps", {})

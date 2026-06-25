@@ -161,7 +161,7 @@ class TestIWCSweepToNativeStateful:
         with open(f2_path, "w") as f:
             json.dump(f2_result.format2_dict, f, indent=2)
         result = convert_to_native_stateful(f2_path, tool_info)
-        assert result.native is not None
+        assert result.native_dict is not None
         assert result.native_dict.get("a_galaxy_workflow") == "true"
 
 

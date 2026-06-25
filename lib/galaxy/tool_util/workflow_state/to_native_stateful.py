@@ -176,7 +176,8 @@ class ToNativeTreeOptions(ToolCacheOptions, StrictOptions):
 class WorkflowToNativeResult(WorkflowResultBase):
     """Per-workflow format2→native conversion result."""
 
-    skipped_reason: Optional[str] = None  # override: free-form skip reasons beyond SkipWorkflowReason
+    # free-form skip reasons beyond SkipWorkflowReason; base field is the enum type
+    skipped_reason: Optional[str] = None  # type: ignore[assignment]
     ok: bool = False
     steps_encoded: int = 0
     steps_fallback: int = 0

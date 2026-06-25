@@ -10,7 +10,6 @@ from dataclasses import (
     field,
 )
 from typing import (
-    cast,
     Dict,
     List,
     Optional,
@@ -26,7 +25,6 @@ from gxformat2.normalized import (
 from gxformat2.schema.native import NativeStepType
 
 from galaxy.tool_util.parameters import (
-    ConditionalParameterModel,
     ToolParameterT,
 )
 from galaxy.tool_util_models.tool_outputs import (
@@ -367,12 +365,11 @@ def _collect_inputs(
             if not isinstance(cond_state, dict):
                 cond_state = {}
 
-            conditional = cast(ConditionalParameterModel, param)
-            target_when = _select_which_when_native(conditional, cond_state)
+            target_when = _select_which_when_native(param, cond_state)
             if target_when is not None:
                 result.update(_collect_inputs(target_when.parameters, cond_state, prefix=state_path))
             else:
-                for when in conditional.whens:
+                for when in param.whens:
                     result.update(_collect_inputs(when.parameters, cond_state, prefix=state_path))
 
         elif param.parameter_type == "gx_repeat":

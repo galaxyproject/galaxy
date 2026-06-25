@@ -10,6 +10,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from typing_extensions import Self
+
 from pydantic import (
     BaseModel,
     model_validator,
@@ -208,7 +210,7 @@ class ToolCacheOptions(BaseModel):
     offline: bool = False
 
     @classmethod
-    def from_namespace(cls, args: argparse.Namespace) -> "ToolCacheOptions":
+    def from_namespace(cls, args: argparse.Namespace) -> Self:
         fields = set(cls.model_fields)
         return cls(**{k: v for k, v in vars(args).items() if k in fields})
 

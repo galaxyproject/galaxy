@@ -66,6 +66,7 @@ def test_validate_surfaces_blank_version_lint_finding_native():
     udt_rows = [r for r in results if r.inline_source is not None]
     assert udt_rows
     inline = udt_rows[0].inline_source
+    assert inline is not None
     # Blank version is caught at the pydantic gate (post PR #22615).
     assert inline.validation_errors
 
@@ -79,6 +80,7 @@ def test_validate_admin_class_unsupported_native():
     udt_rows = [r for r in results if r.inline_source is not None]
     assert udt_rows
     inline = udt_rows[0].inline_source
+    assert inline is not None
     assert not inline.supported
     assert inline.inline_class == "GalaxyTool"
 
@@ -88,7 +90,9 @@ def test_validate_attaches_inline_source_format2():
     results, _, _ = validate_workflow_cli(wf, _EmptyGetToolInfo())
     udt_rows = [r for r in results if r.inline_source is not None]
     assert len(udt_rows) == 1
-    assert udt_rows[0].inline_source.supported
+    inline = udt_rows[0].inline_source
+    assert inline is not None
+    assert inline.supported
 
 
 # -- §9.6 strict-inline-source -------------------------------------------------
@@ -157,51 +161,45 @@ def test_lint_single_attaches_inline_source(tmp_path):
     report = lint_single(str(wf_path), tool_info=_EmptyGetToolInfo())
     udt_rows = [r for r in report.results if r.inline_source is not None]
     assert udt_rows, "lint_single did not surface inline_source diagnostics"
-    assert udt_rows[0].inline_source.validation_errors
+    inline = udt_rows[0].inline_source
+    assert inline is not None
+    assert inline.validation_errors
 
 
 # -- §9.6 offline plumbing -----------------------------------------------------
 
 
-def test_offline_skips_network_linters_during_validate():
+def test_offline_skips_network_linters_during_validate(monkeypatch):
     """When offline=True, lint_user_tool_source_structured is called with skip_network=True."""
     captured = {}
 
+    from galaxy.tool_util.lint import lint_user_tool_source_structured
     from galaxy.tool_util.workflow_state import _inline_tool as inline_mod
-
-    orig = inline_mod.lint_user_tool_source_structured
 
     def spy(source, *, skip_network=False, **kw):
         captured["skip_network"] = skip_network
-        return orig(source, skip_network=skip_network, **kw)
+        return lint_user_tool_source_structured(source, skip_network=skip_network, **kw)
 
-    inline_mod.lint_user_tool_source_structured = spy
-    try:
-        wf = _native_with_inline_udt()
-        validate_workflow_cli(wf, _EmptyGetToolInfo(), offline=True)
-        assert captured.get("skip_network") is True
-    finally:
-        inline_mod.lint_user_tool_source_structured = orig
+    monkeypatch.setattr(inline_mod, "lint_user_tool_source_structured", spy)
+    wf = _native_with_inline_udt()
+    validate_workflow_cli(wf, _EmptyGetToolInfo(), offline=True)
+    assert captured.get("skip_network") is True
 
 
-def test_offline_default_runs_network_linters_during_validate():
+def test_offline_default_runs_network_linters_during_validate(monkeypatch):
     captured = {}
 
+    from galaxy.tool_util.lint import lint_user_tool_source_structured
     from galaxy.tool_util.workflow_state import _inline_tool as inline_mod
-
-    orig = inline_mod.lint_user_tool_source_structured
 
     def spy(source, *, skip_network=False, **kw):
         captured["skip_network"] = skip_network
-        return orig(source, skip_network=skip_network, **kw)
+        return lint_user_tool_source_structured(source, skip_network=skip_network, **kw)
 
-    inline_mod.lint_user_tool_source_structured = spy
-    try:
-        wf = _native_with_inline_udt()
-        validate_workflow_cli(wf, _EmptyGetToolInfo(), offline=False)
-        assert captured.get("skip_network") is False
-    finally:
-        inline_mod.lint_user_tool_source_structured = orig
+    monkeypatch.setattr(inline_mod, "lint_user_tool_source_structured", spy)
+    wf = _native_with_inline_udt()
+    validate_workflow_cli(wf, _EmptyGetToolInfo(), offline=False)
+    assert captured.get("skip_network") is False
 
 
 # -- CLI surface: --strict-inline-source / --offline -----------------------------
@@ -316,4 +314,6 @@ def test_validate_single_strict_inline_source_exit_code(tmp_path):
     # Confirm inline-source surfaces the issue.
     udt_rows = [r for r in report.results if r.inline_source is not None]
     assert udt_rows
-    assert udt_rows[0].inline_source.validation_errors
+    inline = udt_rows[0].inline_source
+    assert inline is not None
+    assert inline.validation_errors

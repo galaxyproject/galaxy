@@ -105,12 +105,11 @@ def step_tool_state(step: StepLike) -> dict:
     json.loads on string values like "2" corrupts them (str→int).
     """
     if isinstance(step, NormalizedNativeStep):
-        tool_state = dict(step.tool_state)
-    else:
-        tool_state = step.get("tool_state")
-        assert tool_state is not None
-        if isinstance(tool_state, str):
-            tool_state = json.loads(tool_state)
+        return dict(step.tool_state)
+    tool_state = step.get("tool_state")
+    assert tool_state is not None
+    if isinstance(tool_state, str):
+        tool_state = json.loads(tool_state)
     return tool_state
 
 

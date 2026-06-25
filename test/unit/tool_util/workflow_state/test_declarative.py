@@ -113,7 +113,7 @@ def _validate_op(wf_dict: dict) -> dict:
     workflow = copy.deepcopy(wf_dict)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
     if precheck is not None and not precheck.can_process:
-        raise RuntimeError(f"Validation skipped: {precheck.reason}")
+        raise RuntimeError(f"Validation skipped: {precheck.detail}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
         msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
@@ -144,7 +144,7 @@ def _clean_then_validate_op(wf_dict: dict) -> dict:
     clean_stale_state(normalized, workflow, _tool_info, policy=policy)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
     if precheck is not None and not precheck.can_process:
-        raise RuntimeError(f"Validation skipped after clean: {precheck.reason}")
+        raise RuntimeError(f"Validation skipped after clean: {precheck.detail}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
         msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
@@ -176,7 +176,7 @@ def _strict_state_validate_op(wf_dict: dict) -> dict:
     workflow = copy.deepcopy(wf_dict)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info)
     if precheck is not None and not precheck.can_process:
-        raise RuntimeError(f"Strict-state: cannot process: {precheck.reason}")
+        raise RuntimeError(f"Strict-state: cannot process: {precheck.detail}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
         msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]
@@ -198,7 +198,7 @@ def _validate_clean_op(wf_dict: dict) -> dict:
     workflow = copy.deepcopy(wf_dict)
     results, precheck, _conn = validate_workflow_cli(workflow, _tool_info, clean=True)
     if precheck is not None and not precheck.can_process:
-        raise RuntimeError(f"Validation skipped: {precheck.reason}")
+        raise RuntimeError(f"Validation skipped: {precheck.detail}")
     failures = [r for r in results if r.status == "fail"]
     if failures:
         msgs = [f"step {r.step} ({r.tool_id}): {r.errors}" for r in failures]

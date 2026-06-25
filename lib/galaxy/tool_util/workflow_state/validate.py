@@ -954,13 +954,13 @@ def run_validate(options: ValidateOptions) -> int:
 
     if report.encoding_errors:
         print("Error: strict-encoding:", file=sys.stderr)
-        for e in report.encoding_errors:
-            print(f"  {e}", file=sys.stderr)
+        for error in report.encoding_errors:
+            print(f"  {error}", file=sys.stderr)
         return 2
     if report.structure_errors:
         print("Error: strict-structure:", file=sys.stderr)
-        for e in report.structure_errors:
-            print(f"  {e}", file=sys.stderr)
+        for error in report.structure_errors:
+            print(f"  {error}", file=sys.stderr)
         return 2
 
     if not report.results:

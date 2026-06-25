@@ -17,7 +17,7 @@ def _run(argv, expected_exit=None):
         main(argv)
         code = 0
     except SystemExit as e:
-        code = e.code if e.code is not None else 0
+        code = e.code if isinstance(e.code, int) else 0
     if expected_exit is not None:
         assert code == expected_exit, f"expected exit {expected_exit}, got {code}"
     return code
