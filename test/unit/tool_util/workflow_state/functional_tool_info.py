@@ -19,7 +19,7 @@ def _find_tool_source(tool_id: str):
     """Find a tool source, searching subdirectories if not found at root."""
     try:
         return functional_test_tool_source(tool_id)
-    except (FileNotFoundError, OSError):
+    except OSError:
         pass
     # Search subdirectories
     root = functional_test_tool_directory()
