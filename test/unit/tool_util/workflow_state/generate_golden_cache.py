@@ -78,6 +78,7 @@ def main():
         assert result is not None, f"Fetch failed: {tool_id}"
 
         parsed = parse_toolshed_tool_id(tool_id)
+        assert parsed is not None, f"Failed to parse: {tool_id}"
         key = _cache_key(parsed[0], parsed[1], version)
         print(f"  {tool_id}")
         print(f"    name={result.name!r}, inputs={len(result.inputs)}, outputs={len(result.outputs)}")

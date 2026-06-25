@@ -50,12 +50,12 @@ def _discover_native_workflows() -> list[str]:
 _IWC_TESTS_SUFFIXES = ("-tests.yml", "-tests.yaml", "-test.yml", "-test.yaml")
 
 
-def _discover_tests_files() -> List[str]:
+def _discover_tests_files() -> list[str]:
     iwc_dir = os.environ.get(IWC_ENV, "")
     if not iwc_dir:
         return []
     workflows_root = Path(iwc_dir) / "workflows"
-    results: List[str] = []
+    results: list[str] = []
     for suffix in _IWC_TESTS_SUFFIXES:
         results.extend(str(p) for p in workflows_root.rglob(f"*{suffix}") if p.is_file())
     return sorted(set(results))
@@ -157,7 +157,7 @@ class TestIWCSweepToNativeStateful:
         with open(f2_path, "w") as f:
             json.dump(f2_result.format2_dict, f, indent=2)
         result = convert_to_native_stateful(f2_path, tool_info)
-        assert result.native is not None
+        assert result.native_dict is not None
         assert result.native_dict.get("a_galaxy_workflow") == "true"
 
 

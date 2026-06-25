@@ -388,7 +388,7 @@ def _write_format2_with_extra_key(tmp_path, extra_key="bogus_root_key"):
 
 
 def test_check_strict_structure_clean_native():
-    from galaxy.tool_util.workflow_state.validate import _check_strict_structure
+    from galaxy.tool_util.workflow_state._encoding import check_strict_structure as _check_strict_structure
 
     wf = {
         "a_galaxy_workflow": "true",
@@ -399,7 +399,7 @@ def test_check_strict_structure_clean_native():
 
 
 def test_check_strict_structure_native_extra_key():
-    from galaxy.tool_util.workflow_state.validate import _check_strict_structure
+    from galaxy.tool_util.workflow_state._encoding import check_strict_structure as _check_strict_structure
 
     wf = {
         "a_galaxy_workflow": "true",
@@ -413,7 +413,7 @@ def test_check_strict_structure_native_extra_key():
 
 
 def test_check_strict_structure_clean_format2():
-    from galaxy.tool_util.workflow_state.validate import _check_strict_structure
+    from galaxy.tool_util.workflow_state._encoding import check_strict_structure as _check_strict_structure
 
     wf = {
         "class": "GalaxyWorkflow",
@@ -425,7 +425,7 @@ def test_check_strict_structure_clean_format2():
 
 
 def test_check_strict_structure_format2_extra_key():
-    from galaxy.tool_util.workflow_state.validate import _check_strict_structure
+    from galaxy.tool_util.workflow_state._encoding import check_strict_structure as _check_strict_structure
 
     wf = {
         "class": "GalaxyWorkflow",

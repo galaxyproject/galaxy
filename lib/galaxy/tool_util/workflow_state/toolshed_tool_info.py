@@ -25,6 +25,7 @@ from typing import (
     Optional,
     Tuple,
 )
+from urllib.parse import quote
 
 from galaxy.tool_util_models import ParsedTool
 
@@ -354,7 +355,7 @@ class ToolShedGetToolInfo:
         """Fetch ParsedTool from a Galaxy instance's /api/tools/{id}/parsed endpoint."""
         import requests
 
-        encoded_id = requests.utils.quote(tool_id, safe="")
+        encoded_id = quote(tool_id, safe="")
         url = f"{galaxy_url}/api/tools/{encoded_id}/parsed"
         params = {}
         if tool_version:

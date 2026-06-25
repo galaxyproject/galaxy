@@ -135,7 +135,7 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs, 
     inputs = list(parsed_tool.inputs)
     probe: dict = {}
     unmatched = inject_connections_into_state(inputs, probe, dict.fromkeys(input_connections, "placeholder"))
-    connections: Dict[str, object] = {k: "placeholder" for k in input_connections if k not in unmatched}
+    connections: dict[str, object] = {k: "placeholder" for k in input_connections if k not in unmatched}
     connections.update(result.inputs)
     validate_format2_state(inputs, result.state, connections)
 
@@ -154,7 +154,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
                 format2_in[state_path] = "placeholder"
                 return SKIP_VALUE
             if is_runtime_value(value):
-                if not tool_input.optional:
+                if not getattr(tool_input, "optional", False):
                     format2_in[state_path] = "placeholder"
                 return SKIP_VALUE
             return SKIP_VALUE
@@ -171,7 +171,7 @@ def _convert_valid_state_to_format2(native_step: StepLike, parsed_tool: ToolInpu
             format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if is_runtime_value(value):
-            if not tool_input.optional:
+            if not getattr(tool_input, "optional", False):
                 format2_in[state_path] = "placeholder"
             return SKIP_VALUE
         if value is not None and value != "null":

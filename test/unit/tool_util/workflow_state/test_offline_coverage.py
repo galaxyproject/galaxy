@@ -8,6 +8,7 @@ deeper network-linter side-effects are exercised in test_inline_source_validatio
 import pytest
 
 from galaxy.tool_util.workflow_state._cli_common import build_base_parser
+from galaxy.tool_util.workflow_state.toolshed_tool_info import ToolShedGetToolInfo
 
 # -- Every gxwf-style parser accepts --offline -------------------------------
 
@@ -93,7 +94,9 @@ def test_populate_cache_offline_skips_add_tool(tmp_path):
     orig = cache_mod.add_tool
     cache_mod.add_tool = spy
     try:
-        cache_mod.populate_cache(tool_info=None, path=str(wf_path), offline=True)
+        cache_mod.populate_cache(
+            tool_info=ToolShedGetToolInfo(cache_dir=str(tmp_path)), path=str(wf_path), offline=True
+        )
     finally:
         cache_mod.add_tool = orig
 
@@ -134,7 +137,9 @@ def test_populate_cache_default_calls_add_tool(tmp_path):
     orig = cache_mod.add_tool
     cache_mod.add_tool = spy
     try:
-        cache_mod.populate_cache(tool_info=None, path=str(wf_path), offline=False)
+        cache_mod.populate_cache(
+            tool_info=ToolShedGetToolInfo(cache_dir=str(tmp_path)), path=str(wf_path), offline=False
+        )
     finally:
         cache_mod.add_tool = orig
 
