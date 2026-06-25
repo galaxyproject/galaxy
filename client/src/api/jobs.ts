@@ -167,3 +167,17 @@ export async function stopJobs(
     await Promise.all(Array.from({ length: Math.min(STOP_JOBS_CONCURRENCY, jobIds.length) }, worker));
     return result;
 }
+
+/**
+ * Fetch running jobs.
+ * @returns A promise that resolves to the list of running jobs.
+ */
+export async function fetchJobs() {
+    const { data, error } = await GalaxyApi().GET("/api/jobs");
+
+    if (error) {
+        rethrowSimple(error);
+    }
+
+    return data;
+}

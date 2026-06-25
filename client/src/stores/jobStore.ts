@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { GalaxyApi } from "@/api";
-import { type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
+import { fetchJobs, type JobBaseModel, type ResponseVal, type ShowFullJobResponse, TERMINAL_STATES } from "@/api/jobs";
 import { useResourceWatcher } from "@/composables/resourceWatcher";
 import { isRetryableApiError, MAX_RETRIES, rethrowSimpleWithStatus } from "@/utils/simple-error";
 
@@ -34,6 +34,11 @@ export const MAX_CACHED_JOBS = 40;
  */
 export const useJobStore = defineStore("jobStore", () => {
     const latestResponse = ref<ResponseVal | null>(null);
+    const allJobs = ref<JobBaseModel[]>([]);
+
+    async function fetchAllJobs(){
+        allJobs.value =  await fetchJobs();
+    }
 
     const storedJobs = ref<{ [id: string]: ShowFullJobResponse }>({});
     const loadingErrors = ref<{ [id: string]: Error }>({});
@@ -348,6 +353,8 @@ export const useJobStore = defineStore("jobStore", () => {
 
     return {
         fetchJob,
+        fetchAllJobs,
+        allJobs,
         saveLatestResponse,
         getJob,
         getCachedJob,
@@ -358,3 +365,4 @@ export const useJobStore = defineStore("jobStore", () => {
         pollJobUntilTerminal,
     };
 });
+
