@@ -152,8 +152,8 @@ def _validate_string_contains_number(v: Any) -> Any:
     return v
 
 
-NativeInt = Annotated[union_type([StrictInt, StrictStr]), AfterValidator(_validate_string_contains_int)]
-NativeFloat = Annotated[
+NativeInt: Any = Annotated[union_type([StrictInt, StrictStr]), AfterValidator(_validate_string_contains_int)]
+NativeFloat: Any = Annotated[
     union_type([StrictInt, StrictFloat, StrictStr]), AfterValidator(_validate_string_contains_number)
 ]
 
@@ -2414,7 +2414,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             if is_boolean and state_representation == "workflow_step_native":
                 # native booleans can be actual bool or string "true"/"false"
                 str_form = str(discriminator).lower()
-                test_field_type: type = union_type([Literal[when.discriminator], Literal[str_form]])
+                test_field_type: Any = union_type([Literal[when.discriminator], Literal[str_form]])
             else:
                 test_field_type = Literal[when.discriminator]
             extra_kwd = {safe_test_name: (test_field_type, Field(initialize_test, alias=test_field_alias))}
@@ -2475,7 +2475,7 @@ class ConditionalParameterModel(BaseGalaxyToolParameterModelDefinition):
             test_field_alias = test_param_name if safe_test_name != test_param_name else None
             if is_boolean and state_representation == "workflow_step_native":
                 str_form = str(disc_value).lower()
-                empty_test_type: type = union_type([Literal[disc_value], Literal[str_form]])
+                empty_test_type: Any = union_type([Literal[disc_value], Literal[str_form]])
             else:
                 empty_test_type = Literal[disc_value]
             empty_kwd = {safe_test_name: (empty_test_type, Field(initialize_test, alias=test_field_alias))}

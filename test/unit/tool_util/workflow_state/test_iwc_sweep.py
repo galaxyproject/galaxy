@@ -84,7 +84,7 @@ class _LenientToolInfo:
     def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
         try:
             return self._delegate.get_tool_info(tool_id, tool_version)
-        except (KeyError, Exception):
+        except Exception:
             return None
 
 

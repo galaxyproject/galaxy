@@ -25,7 +25,7 @@ def optional_if_needed(type_: type, is_optional: bool) -> type:
     return optional(type_) if is_optional else type_
 
 
-def union_type(args: list[type]) -> type:
+def union_type(args: list[Any]) -> type:
     result = args[0]
     for t in args[1:]:
         result = cast(type, result | t)
