@@ -1,9 +1,18 @@
 <script setup lang="ts">
-import { faDatabase, faHistory, faThumbsDown, faThumbsUp } from "@fortawesome/free-solid-svg-icons";
+import {
+    faChevronDown,
+    faChevronUp,
+    faDatabase,
+    faExternalLinkAlt,
+    faHistory,
+    faLink,
+    faThumbsDown,
+    faThumbsUp,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
-import type { ActionSuggestion, AgentResponse } from "@/composables/agentActions";
+import { ActionType, type ActionSuggestion, type AgentResponse } from "@/composables/agentActions";
 import { type EntityType, MENTION_PATTERN_SOURCE } from "@/composables/useEntityMentions";
 
 import { formatModelName, getAgentIcon, getAgentLabel, getAgentResponseOrEmpty } from "./agentTypes";
@@ -15,6 +24,11 @@ import ClarificationCard from "./ClarificationCard.vue";
 const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
 type Segment = { kind: "text"; value: string } | { kind: "mention"; entityType: EntityType; identifier: string };
+type ResponseLink = { label: string; url: string };
+
+const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+const BARE_URL_RE = /https?:\/\/[^\s<>"')]+/g;
+const LINK_METADATA_KEYS = new Set(["link", "links", "url", "urls", "source", "sources", "reference", "references"]);
 
 function parseSegments(text: string): Segment[] {
     const segments: Segment[] = [];
@@ -48,6 +62,87 @@ const emit = defineEmits<{
 
 const isClarification = computed(() => props.message.agentType === "clarification");
 const clarificationOptions = computed<string[]>(() => props.message.agentResponse?.metadata?.options ?? []);
+const linksExpanded = ref(false);
+
+function trimUrl(url: string) {
+    return url.replace(/[.,;:!?]+$/, "");
+}
+
+function isHttpUrl(value: string) {
+    return /^https?:\/\//i.test(value);
+}
+
+function addLink(links: ResponseLink[], seen: Set<string>, label: string | undefined, url: string | undefined) {
+    if (!url || !isHttpUrl(url)) {
+        return;
+    }
+    const normalizedUrl = trimUrl(url);
+    if (seen.has(normalizedUrl)) {
+        return;
+    }
+    seen.add(normalizedUrl);
+    links.push({ label: label?.trim() || normalizedUrl, url: normalizedUrl });
+}
+
+function collectMetadataLinks(value: unknown, links: ResponseLink[], seen: Set<string>, keyHint?: string) {
+    if (!value) {
+        return;
+    }
+
+    if (typeof value === "string") {
+        if (!keyHint || LINK_METADATA_KEYS.has(keyHint.toLowerCase()) || isHttpUrl(value)) {
+            addLink(links, seen, undefined, value);
+        }
+        return;
+    }
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => collectMetadataLinks(item, links, seen, keyHint));
+        return;
+    }
+
+    if (typeof value === "object") {
+        const record = value as Record<string, unknown>;
+        const url =
+            typeof record.url === "string" ? record.url : typeof record.link === "string" ? record.link : undefined;
+        const label =
+            typeof record.title === "string"
+                ? record.title
+                : typeof record.label === "string"
+                  ? record.label
+                  : typeof record.name === "string"
+                    ? record.name
+                    : undefined;
+        addLink(links, seen, label, url);
+
+        Object.entries(record).forEach(([key, child]) => collectMetadataLinks(child, links, seen, key));
+    }
+}
+
+const responseLinks = computed<ResponseLink[]>(() => {
+    const links: ResponseLink[] = [];
+    const seen = new Set<string>();
+    const content = props.message.content;
+
+    for (const match of content.matchAll(MARKDOWN_LINK_RE)) {
+        addLink(links, seen, match[1], match[2]);
+    }
+
+    for (const match of content.matchAll(BARE_URL_RE)) {
+        addLink(links, seen, undefined, match[0]);
+    }
+
+    props.message.suggestions?.forEach((suggestion) => {
+        const url = typeof suggestion.parameters?.url === "string" ? suggestion.parameters.url : undefined;
+        if (suggestion.action_type === ActionType.VIEW_EXTERNAL || url) {
+            addLink(links, seen, suggestion.description, url);
+        }
+    });
+
+    collectMetadataLinks(props.message.agentResponse?.metadata, links, seen);
+
+    return links;
+});
 </script>
 
 <template>
@@ -130,6 +225,29 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
+                            <div v-if="responseLinks.length" class="response-links">
+                                <button
+                                    class="links-toggle"
+                                    :aria-expanded="linksExpanded ? 'true' : 'false'"
+                                    title="Show response links"
+                                    @click="linksExpanded = !linksExpanded">
+                                    <FontAwesomeIcon :icon="faLink" fixed-width />
+                                    <span class="links-count">{{ responseLinks.length }}</span>
+                                    <FontAwesomeIcon :icon="linksExpanded ? faChevronDown : faChevronUp" fixed-width />
+                                </button>
+                                <div v-if="linksExpanded" class="links-popover">
+                                    <a
+                                        v-for="link in responseLinks"
+                                        :key="link.url"
+                                        class="response-link"
+                                        :href="link.url"
+                                        target="_blank"
+                                        rel="noopener noreferrer">
+                                        <span class="response-link-label">{{ link.label }}</span>
+                                        <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
+                                    </a>
+                                </div>
+                            </div>
                             <span class="meta-tag">{{ getAgentLabel(props.message.agentType) }}</span>
                             <span v-if="props.message.agentResponse?.metadata?.model" class="meta-tag">
                                 {{ formatModelName(props.message.agentResponse.metadata.model) }}
@@ -327,6 +445,7 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
 }
 
 .meta-right {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -370,6 +489,79 @@ const clarificationOptions = computed<string[]>(() => props.message.agentRespons
     font-size: 0.675rem;
     color: $text-light;
     margin-left: 0.25rem;
+}
+
+.response-links {
+    position: relative;
+}
+
+.links-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    min-height: 1.4rem;
+    padding: 0.125rem 0.35rem;
+    border: 1px solid rgba($border-color, 0.7);
+    border-radius: $border-radius-base;
+    background: $white;
+    color: $text-light;
+    font-size: 0.675rem;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover {
+        color: $brand-primary;
+        border-color: rgba($brand-primary, 0.35);
+        background: rgba($brand-primary, 0.04);
+    }
+}
+
+.links-count {
+    font-weight: 600;
+}
+
+.links-popover {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.375rem);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    min-width: 14rem;
+    max-width: min(22rem, 70vw);
+    max-height: 14rem;
+    overflow-y: auto;
+    padding: 0.35rem;
+    border: $border-default;
+    border-radius: $border-radius-base;
+    background: $white;
+    box-shadow: 0 0.25rem 0.75rem rgba($brand-dark, 0.12);
+}
+
+.response-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.35rem 0.45rem;
+    border-radius: $border-radius-base;
+    color: $text-color;
+    font-size: 0.75rem;
+    line-height: 1.25;
+    text-decoration: none;
+
+    &:hover {
+        color: $brand-primary;
+        background: rgba($brand-primary, 0.06);
+        text-decoration: none;
+    }
+}
+
+.response-link-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 // --- Animation ---
