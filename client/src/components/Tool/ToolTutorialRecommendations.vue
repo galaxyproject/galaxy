@@ -3,6 +3,7 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
+import Vue from "vue";
 
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 
@@ -34,6 +35,10 @@ const tutorialText = computed(() => {
         return "There is 1 tutorial available which uses this tool.";
     }
 });
+
+function toggleCategory(category: string) {
+    Vue.set(categoryOpen, category, !categoryOpen[category]);
+}
 </script>
 
 <template>
@@ -58,7 +63,7 @@ const tutorialText = computed(() => {
         </BButton>
         <GCollapse v-model="mainOpen">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton class="ui-link ml-3" @click="categoryOpen[category] = !categoryOpen[category]">
+                <BButton class="ui-link ml-3" @click="toggleCategory(category)">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon :icon="faCaretDown" />
                 </BButton>
