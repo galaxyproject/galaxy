@@ -98,6 +98,32 @@ class TutorAnalyticsManager:
             "demonstration_reliance": (total_demonstrations / total_interactions) if total_interactions else 0.0,
         }
 
+    def get_downvoted_tutor_queries(self, trans: ProvidesUserContext) -> list[str]:
+        """Return the learner queries from downvoted tutor exchanges.
+
+        These are regression candidates for the tutor eval dataset -- real
+        questions where the tutor's answer was rated unhelpful. Feed them to
+        ``tutor_socratic_dataset(extra_queries=...)`` to keep known-bad cases
+        from regressing.
+        """
+        messages = trans.sa_session.execute(select(ChatExchangeMessage)).scalars().all()
+        return self._downvoted_tutor_queries(messages)
+
+    def _downvoted_tutor_queries(self, messages: Iterable[Any]) -> list[str]:
+        queries: list[str] = []
+        for msg in messages:
+            if msg.feedback != 0:
+                continue
+            try:
+                data = json.loads(msg.message)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if isinstance(data, dict) and data.get("agent_type") == TUTOR_AGENT_TYPE:
+                query = data.get("query")
+                if query:
+                    queries.append(query)
+        return queries
+
     def _agent_type(self, message: str) -> str:
         try:
             data = json.loads(message)

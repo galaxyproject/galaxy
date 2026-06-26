@@ -76,3 +76,12 @@ class TestTutorAnalytics:
         result = self.manager._aggregate([], [])
         assert result["total_demonstrations"] == 0
         assert result["demonstration_reliance"] == 0.0
+
+    def test_downvoted_tutor_queries(self):
+        messages = [
+            _msg(1, TUTOR_AGENT_TYPE, feedback=0),  # downvoted tutor -> included
+            _msg(2, TUTOR_AGENT_TYPE, feedback=1),  # upvoted tutor -> excluded
+            _msg(3, TUTOR_AGENT_TYPE, feedback=None),  # no feedback -> excluded
+            _msg(4, "router", feedback=0),  # downvoted but not tutor -> excluded
+        ]
+        assert self.manager._downvoted_tutor_queries(messages) == ["q"]

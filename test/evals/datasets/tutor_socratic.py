@@ -130,31 +130,51 @@ Return a number; no commentary.
 """
 
 
+_REGRESSION_RUBRIC = """\
+You are reviewing a teaching-assistant response to a learner question that a real
+user previously rated unhelpful.
+
+Score the response between 0.0 and 1.0 on whether it is now a genuinely helpful tutor
+response: it engages the learner's actual question, guides or answers appropriately,
+and does not fabricate tool names, tutorial titles, or URLs.
+
+Return a number; no commentary.
+"""
+
+
+def _judge(rubric: str, judge_model: Optional[Model]) -> tuple:
+    if judge_model is None:
+        return ()
+    return (
+        LLMJudge(
+            rubric=rubric,
+            model=judge_model,
+            include_input=True,
+            score=OutputConfig(evaluation_name="LLMJudge"),
+            assertion=False,
+        ),
+    )
+
+
 def tutor_socratic_dataset(
     judge_model: Optional[Model] = None,
     only: Optional[list[str]] = None,
+    extra_queries: Optional[list[str]] = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the tutor_socratic Dataset.
 
     If judge_model is given, attaches a per-case LLMJudge whose rubric embeds the
     expected pedagogical behavior for that case.
+
+    extra_queries appends regression cases -- typically real learner questions whose
+    tutor answer was downvoted (see TutorAnalyticsManager.get_downvoted_tutor_queries),
+    judged against a generic "is this now a helpful tutor response" rubric so known-bad
+    cases don't quietly regress.
     """
     cases: list[Case[str, str, dict[str, Any]]] = []
     for proto in _PROTO_CASES:
         if only and proto["name"] not in only:
             continue
-        evaluators: tuple = ()
-        if judge_model is not None:
-            rubric = _RUBRIC_TEMPLATE.format(expectation=proto["expectation"])
-            evaluators = (
-                LLMJudge(
-                    rubric=rubric,
-                    model=judge_model,
-                    include_input=True,
-                    score=OutputConfig(evaluation_name="LLMJudge"),
-                    assertion=False,
-                ),
-            )
         cases.append(
             Case(
                 name=proto["name"],
@@ -165,7 +185,17 @@ def tutor_socratic_dataset(
                     "mode": proto["mode"],
                     "expectation": proto["expectation"],
                 },
-                evaluators=evaluators,
+                evaluators=_judge(_RUBRIC_TEMPLATE.format(expectation=proto["expectation"]), judge_model),
+            )
+        )
+    for i, query in enumerate(extra_queries or [], start=1):
+        cases.append(
+            Case(
+                name=f"regression_{i}",
+                inputs=query,
+                expected_output=None,
+                metadata={"must_mention": [], "mode": "regression"},
+                evaluators=_judge(_REGRESSION_RUBRIC, judge_model),
             )
         )
     return Dataset(name="tutor_socratic", cases=cases)
