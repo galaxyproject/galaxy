@@ -28,13 +28,11 @@ concurrency:
   cancel-in-progress: true
 permissions: {}
 jobs:
-  setup-selenium:
-    uses: ./.github/workflows/setup_selenium.yaml
   build-client:
     uses: ./.github/workflows/build_client.yaml
   test:
     name: Test
-    needs: [setup-selenium, build-client]
+    needs: [build-client]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
