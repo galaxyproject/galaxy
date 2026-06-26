@@ -26,7 +26,6 @@ FILES_SOURCES_CONFIG = """
 - type: dropbox
 - type: googledrive
 - type: irods
-- type: irods-fsspec
 """
 JOB_CONF_YAML = """
 runners:
