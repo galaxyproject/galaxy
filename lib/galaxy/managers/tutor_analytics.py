@@ -66,11 +66,15 @@ class TutorAnalyticsManager:
         task_lengths = [c for eid, c in exchange_msg_counts.items() if eid not in tutor_exchange_ids]
 
         tutor_enabled_users = 0
+        total_interactions = 0
+        total_demonstrations = 0
         scaffolding_distribution: dict[int, int] = {}
         expertise_distribution: dict[str, int] = {}
         for state in states:
             if state.get("tutor_mode_enabled"):
                 tutor_enabled_users += 1
+            total_interactions += state.get("interaction_count", 0)
+            total_demonstrations += state.get("demonstrations_count", 0)
             level = state.get("scaffolding_level", DEFAULT_LEARNING_STATE["scaffolding_level"])
             scaffolding_distribution[level] = scaffolding_distribution.get(level, 0) + 1
             expertise = state.get("expertise_level", DEFAULT_LEARNING_STATE["expertise_level"])
@@ -88,6 +92,10 @@ class TutorAnalyticsManager:
             "learning_state_users": tutor_enabled_users,
             "scaffolding_distribution": scaffolding_distribution,
             "expertise_distribution": expertise_distribution,
+            # Empower-vs-dependence signal: how often learners are shown vs. guided.
+            "total_interactions": total_interactions,
+            "total_demonstrations": total_demonstrations,
+            "demonstration_reliance": (total_demonstrations / total_interactions) if total_interactions else 0.0,
         }
 
     def _agent_type(self, message: str) -> str:

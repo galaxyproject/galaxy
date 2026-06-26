@@ -258,6 +258,7 @@ class LearningState(BaseModel):
     pathway_progress: dict[str, int] = Field(default_factory=dict, description="Step index per pathway topic")
     topics_explored: list[str] = Field(default_factory=list, description="Topics the user has explored")
     interaction_count: int = Field(default=0, description="Total tutor interactions")
+    demonstrations_count: int = Field(default=0, description="Times the tutor demonstrated a concept")
     tutor_mode_enabled: bool = Field(default=False, description="Whether tutor mode is active")
     last_interaction: str | None = Field(default=None, description="ISO timestamp of last interaction")
 

@@ -84,5 +84,7 @@ class TestChatTutorApi(ApiTestCase):
             "avg_conversation_length",
             "scaffolding_distribution",
             "expertise_distribution",
+            "total_demonstrations",
+            "demonstration_reliance",
         ):
             assert key in data

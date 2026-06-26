@@ -204,6 +204,12 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             except json.JSONDecodeError:
                 return f"Invalid inputs JSON: {inputs_json}"
 
+            # Count the demonstration (shown vs. coached) for the empower-vs-dependence signal.
+            try:
+                teaching_assistant.learning_state_manager.record_demonstration(teaching_assistant.deps.trans)
+            except Exception as e:
+                log.warning(f"Failed to record demonstration: {e}")
+
             if not teaching_assistant._tool_execution_allowed():
                 # Safe default: describe the tool instead of running it (no side effects).
                 try:

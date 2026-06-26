@@ -32,6 +32,7 @@ DEFAULT_LEARNING_STATE: dict[str, Any] = {
     "pathway_progress": {},
     "topics_explored": [],
     "interaction_count": 0,
+    "demonstrations_count": 0,
     "tutor_mode_enabled": False,
     "last_interaction": None,
 }
@@ -73,6 +74,18 @@ class LearningStateManager:
         state = self.get_learning_state(trans)
         state["interaction_count"] = state.get("interaction_count", 0) + 1
         state["last_interaction"] = datetime.now(timezone.utc).isoformat()
+        self._set_preference(trans, LEARNING_STATE_KEY, json.dumps(state))
+        return state
+
+    def record_demonstration(self, trans: ProvidesUserContext) -> dict[str, Any]:
+        """Count a time the tutor demonstrated a concept rather than coaching.
+
+        Demonstrations are powerful but can foster dependence, so tracking how
+        often a learner is shown vs. guided is the signal for the grant's
+        empower-vs-dependence question.
+        """
+        state = self.get_learning_state(trans)
+        state["demonstrations_count"] = state.get("demonstrations_count", 0) + 1
         self._set_preference(trans, LEARNING_STATE_KEY, json.dumps(state))
         return state
 

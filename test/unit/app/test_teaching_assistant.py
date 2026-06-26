@@ -245,6 +245,11 @@ class TestLearningStateManager:
         assert state["interaction_count"] == 1
         assert state["last_interaction"] is not None
 
+    def test_record_demonstration(self):
+        """Should increment the demonstrations count (empower-vs-dependence signal)."""
+        state = self.manager.record_demonstration(self.mock_trans)
+        assert state["demonstrations_count"] == 1
+
     def test_set_current_pathway(self):
         """Should set the current learning pathway."""
         state = self.manager.set_current_pathway(self.mock_trans, "transcriptomics")
