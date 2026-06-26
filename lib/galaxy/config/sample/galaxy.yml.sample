@@ -3326,6 +3326,14 @@ galaxy:
   # celery.
   #iwc_manifest_refresh_interval: 3600
 
+  # Allow the teaching assistant (tutor mode) to actually run tools on
+  # the user's data when demonstrating a concept. Off by default: with
+  # this disabled the tutor describes a tool and its inputs instead of
+  # executing it, so demonstrations never create jobs or modify
+  # histories without an explicit opt-in. Enable only in trusted or
+  # evaluation deployments.
+  #tutor_allow_tool_execution: false
+
   # Allow the display of tool recommendations in workflow editor and
   # after tool execution. If it is enabled and set to true, please
   # enable 'tool_recommendation_model_path' as well

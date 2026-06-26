@@ -338,3 +338,15 @@ class TestTeachingAssistantWiring:
         """The stub package should be gone after the de-stub rewire."""
         with pytest.raises(ImportError):
             __import__("galaxy.agents.stubs")
+
+    def test_tool_execution_gated_off_by_default(self):
+        """demonstrate_concept must not run tools unless explicitly enabled."""
+        self.mock_config.tutor_allow_tool_execution = False
+        agent = TeachingAssistantAgent(self.deps)
+        assert agent._tool_execution_allowed() is False
+
+    def test_tool_execution_can_be_enabled(self):
+        """Trusted deployments can opt in to live tool execution."""
+        self.mock_config.tutor_allow_tool_execution = True
+        agent = TeachingAssistantAgent(self.deps)
+        assert agent._tool_execution_allowed() is True

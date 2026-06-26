@@ -63,6 +63,14 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         super().__init__(deps)
 
+    def _tool_execution_allowed(self) -> bool:
+        """Whether the tutor may actually run tools on the user's data.
+
+        Off by default: demonstrate_concept describes tools instead of executing
+        them unless a deployment opts in via ``tutor_allow_tool_execution``.
+        """
+        return bool(getattr(self.deps.config, "tutor_allow_tool_execution", False))
+
     def _create_agent(self) -> Agent[GalaxyAgentDependencies, str]:
         """Create the teaching assistant agent with tools."""
         agent = Agent(
@@ -185,11 +193,29 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         @agent.tool
         async def demonstrate_concept(ctx, tool_id: str, inputs_json: str) -> str:
-            """Run a tool to demonstrate a concept. Use sparingly -- prefer coaching over showing."""
+            """Demonstrate a tool. Use sparingly -- prefer coaching over showing.
+
+            Runs the tool only when live execution is enabled for this deployment;
+            otherwise it describes the tool and its inputs without touching the
+            user's data.
+            """
             try:
                 inputs = json.loads(inputs_json) if inputs_json else {}
             except json.JSONDecodeError:
                 return f"Invalid inputs JSON: {inputs_json}"
+
+            if not teaching_assistant._tool_execution_allowed():
+                # Safe default: describe the tool instead of running it (no side effects).
+                try:
+                    details = teaching_assistant.ops.get_tool_details(tool_id, io_details=True)
+                except Exception as e:
+                    return f"Could not look up tool '{tool_id}': {e}"
+                return (
+                    f"(Live tool execution is turned off here, so rather than running it, "
+                    f"here's how '{tool_id}' works.)\n"
+                    f"{json.dumps(details, default=str)[:800]}\n"
+                    f"Proposed inputs: {json.dumps(inputs, default=str)[:300]}"
+                )
 
             history = teaching_assistant.deps.trans.get_history()
             if history is None:
