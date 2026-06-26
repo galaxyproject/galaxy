@@ -353,7 +353,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
                 parts.append(f"\n{i}. **{title}**")
                 if snippet:
                     parts.append(f"   {snippet}")
-                if topic and topic != "Unknown":    
+                if topic and topic != "Unknown":
                     parts.append(f"   - Topic: {topic}")
                 if difficulty and difficulty != "Unknown":
                     parts.append(f"   - Difficulty: {difficulty}")
