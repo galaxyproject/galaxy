@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faLightbulb, faMagic, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BSkeleton } from "bootstrap-vue";
+import { BFormCheckbox, BSkeleton } from "bootstrap-vue";
 import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
@@ -13,6 +13,7 @@ import { useToast } from "@/composables/toast";
 import { useActiveContext } from "@/composables/useActiveContext";
 import { buildEntityContext, parseMentions, resolveMentions } from "@/composables/useEntityMentions";
 import { usePageProposals } from "@/composables/usePageProposals";
+import { useTutorMode } from "@/composables/useTutorMode";
 import { useChatStore } from "@/stores/chatStore";
 import { usePageEditorStore } from "@/stores/pageEditorStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -112,7 +113,9 @@ const query = ref("");
 const messages = ref<ChatMessage[]>([]);
 const busy = ref(false);
 const chatContainer = ref<HTMLElement>();
-const selectedAgentType = ref("auto");
+// Tutor ("learning") mode: when on, exchanges route to the teaching_assistant agent.
+const { tutorModeEnabled, scaffoldingLevel, fetchTutorState, setTutorMode } = useTutorMode();
+const selectedAgentType = computed(() => (tutorModeEnabled.value ? "teaching_assistant" : "auto"));
 const currentChatId = ref<string | null>(null);
 const hasLoadedInitialChat = ref(false);
 
@@ -138,6 +141,9 @@ const {
 } = usePageProposals(activeContext);
 
 onMounted(async () => {
+    // Load persisted learning state so the toggle reflects the user's saved preference.
+    // Non-critical (and unavailable to anonymous users), so failures fall back to the default off state.
+    fetchTutorState().catch(() => {});
     if (props.exchangeId && props.exchangeId !== "new") {
         await fetchConversation(props.exchangeId);
     } else if (props.exchangeId === "new") {
@@ -659,6 +665,13 @@ watch(currentChatId, async (newId) => {
         </div>
 
         <div class="galaxyai-footer">
+            <BFormCheckbox :checked="tutorModeEnabled" switch size="sm" class="tutor-toggle" @change="setTutorMode">
+                <FontAwesomeIcon :icon="faLightbulb" fixed-width />
+                Learning mode
+                <span v-if="tutorModeEnabled && scaffoldingLevel" class="tutor-scaffolding">
+                    · scaffolding {{ scaffoldingLevel }}/5
+                </span>
+            </BFormCheckbox>
             <ChatInput :value="query" :busy="busy" @input="(v: string) => (query = v)" @submit="submitQuery" />
         </div>
     </div>
@@ -761,6 +774,15 @@ watch(currentChatId, async (newId) => {
     background: $panel-bg-color;
     border-top: $border-default;
     box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.05);
+
+    .tutor-toggle {
+        margin-bottom: 0.5rem;
+        font-size: 0.85rem;
+
+        .tutor-scaffolding {
+            color: $text-light;
+        }
+    }
 }
 
 .chat-messages {
