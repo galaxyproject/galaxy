@@ -202,8 +202,29 @@ Galaxy registers the following agent types:
 | `orchestrator`        | Coordinates multi-step workflow tasks                            |
 | `tool_recommendation` | Recommends tools from the toolbox for a given task               |
 | `page_assistant`      | Assists with Galaxy page editing                                 |
+| `teaching_assistant`  | Socratic "learning mode" that guides users instead of answering  |
 
 All registered agents are enabled when the AI system is active.
+
+### Tutor (learning) mode
+
+The `teaching_assistant` agent powers an opt-in "learning mode" in the Galaxy AI
+panel. With it off (the default), the panel answers questions directly. With it on,
+the agent uses Socratic questioning and scaffolded hints, grounds its answers in GTN
+training material, and tracks per-user learning state (expertise level, scaffolding
+level, completed tutorials). That state is stored as a user preference, so no database
+migration is required.
+
+To demonstrate a concept, the tutor can run a Galaxy tool on the user's data. This is
+disabled by default for safety: with it off, the tutor describes the tool and its
+inputs instead of executing anything. Set `tutor_allow_tool_execution: true` to allow
+live demonstrations in trusted or evaluation deployments.
+
+```yaml
+galaxy:
+    # Allow the tutor to run tools on the user's data when demonstrating a concept.
+    tutor_allow_tool_execution: false
+```
 
 ## Prerequisites and Dependencies
 
