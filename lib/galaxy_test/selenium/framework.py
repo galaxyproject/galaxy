@@ -14,7 +14,6 @@ from functools import (
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -975,8 +974,7 @@ class RunsToolTests(NavigatesGalaxyMixin):
     def _parse_repeat_key(key: str):
         import re
 
-        match = re.match(r"^(.+?)_(\d+)\|(.+)$", key)
-        if match:
+        if match := re.match(r"^(.+?)_(\d+)\|(.+)$", key):
             return match.group(1), int(match.group(2)), match.group(3)
         return None
 
@@ -1221,15 +1219,13 @@ class RunsToolTests(NavigatesGalaxyMixin):
             wait=False,
         )
 
-        expected_type = oc_def.get("attributes", {}).get("type")
-        if expected_type:
+        if expected_type := oc_def.get("attributes", {}).get("type"):
             actual_type = data_collection["collection_type"]
             assert (
                 actual_type == expected_type
             ), f"Collection '{oc_def['name']}': expected type '{expected_type}', got '{actual_type}'"
 
-        expected_count = oc_def.get("attributes", {}).get("count")
-        if expected_count is not None:
+        if (expected_count := oc_def.get("attributes", {}).get("count")) is not None:
             actual_count = len(data_collection["elements"])
             assert actual_count == int(
                 expected_count
@@ -1340,7 +1336,7 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
         return name
 
-    def workflow_run_setup_inputs(self, content: Optional[str]) -> tuple[str, dict[str, Any]]:
+    def workflow_run_setup_inputs(self, content: str | None) -> tuple[str, dict[str, Any]]:
         history_id = self.current_history_id()
         if content:
             yaml_content = yaml.safe_load(content)
@@ -1379,9 +1375,9 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
     def workflow_run_and_submit(
         self,
         workflow_content: str,
-        test_data_content: Optional[str] = None,
+        test_data_content: str | None = None,
         landing_screenshot_name=None,
-        inputs_specified_screenshot_name: Optional[str] = None,
+        inputs_specified_screenshot_name: str | None = None,
         ensure_expanded: bool = False,
     ):
         history_id, inputs = self.workflow_run_setup_inputs(test_data_content)

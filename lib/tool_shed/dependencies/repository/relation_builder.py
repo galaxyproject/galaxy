@@ -1,7 +1,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -164,7 +163,7 @@ class RelationBuilder:
         This method ensures that all required repositories to the nth degree are returned.
         """
         # Assume the current repository does not have repository dependencies defined for it.
-        current_repository_key: Optional[str] = None
+        current_repository_key: str | None = None
         if metadata := self.repository_metadata.metadata:
             # The value of self.tool_shed_url must include the port, but doesn't have to include
             # the protocol.

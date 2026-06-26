@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from sqlalchemy import (
     false,
@@ -101,7 +100,7 @@ class QuotasService(ServiceBase):
         return "; ".join(messages)
 
     def delete(
-        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: Optional[DeleteQuotaPayload] = None
+        self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, payload: DeleteQuotaPayload | None = None
     ) -> str:
         """Marks a quota as deleted."""
         quota = self.quota_manager.get_quota(

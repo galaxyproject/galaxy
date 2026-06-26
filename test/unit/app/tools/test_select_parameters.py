@@ -9,7 +9,6 @@ from .util import BaseParameterTestCase
 
 
 class TestSelectToolParameter(BaseParameterTestCase):
-
     def new_hda(self):
         hda = model.HistoryDatasetAssociation()
         hda._state = model.Dataset.states.OK

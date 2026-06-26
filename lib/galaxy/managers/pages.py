@@ -12,9 +12,7 @@ from collections.abc import Callable
 from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy import (
@@ -144,7 +142,7 @@ class PageManager(sharable.SharableModelManager[model.Page], UsesAnnotations):
 
     def index_query(
         self, trans: ProvidesUserContext, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> tuple["ScalarResult[model.Page]", Union[int, None]]:
+    ) -> tuple["ScalarResult[model.Page]", int | None]:
         show_deleted = payload.deleted
         show_own = payload.show_own
         show_published = payload.show_published
@@ -739,7 +737,7 @@ def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id)
 
 def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
-    item_name: Optional[str] = ""
+    item_name: str | None = ""
     if item_class == "History":
         history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)

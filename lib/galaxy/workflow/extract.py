@@ -9,7 +9,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -82,13 +81,13 @@ def _connect(step: WorkflowStep, input_name: str, source: tuple[WorkflowStep, st
 def extract_workflow(
     trans: ProvidesHistoryContext,
     user: User,
-    history: Optional[History] = None,
-    job_ids: Optional[list[int]] = None,
-    dataset_ids: Optional[list[int]] = None,
-    dataset_collection_ids: Optional[list[int]] = None,
-    workflow_name: Optional[str] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
+    history: History | None = None,
+    job_ids: list[int] | None = None,
+    dataset_ids: list[int] | None = None,
+    dataset_collection_ids: list[int] | None = None,
+    workflow_name: str | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
 ) -> StoredWorkflow:
     steps = extract_steps(
         trans,
@@ -105,7 +104,7 @@ def extract_workflow(
 def _finalize_workflow(
     trans: ProvidesHistoryContext,
     user: User,
-    workflow_name: Optional[str],
+    workflow_name: str | None,
     steps: list[WorkflowStep],
 ) -> StoredWorkflow:
     workflow = model.Workflow()
@@ -131,12 +130,12 @@ def _finalize_workflow(
 
 def extract_steps(
     trans: ProvidesHistoryContext,
-    history: Optional[History] = None,
-    job_ids: Optional[list[int]] = None,
-    dataset_ids: Optional[list[int]] = None,
-    dataset_collection_ids: Optional[list[int]] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
+    history: History | None = None,
+    job_ids: list[int] | None = None,
+    dataset_ids: list[int] | None = None,
+    dataset_collection_ids: list[int] | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
 ) -> list[WorkflowStep]:
     # Ensure job_ids and dataset_ids are lists (possibly empty)
     job_ids = listify(job_ids)
@@ -217,7 +216,7 @@ def extract_steps(
             if _skip_output_assoc_name(assoc_name):
                 continue
             if job in summary.implicit_map_jobs:
-                hid: Optional[int] = None
+                hid: int | None = None
                 for implicit_pair in jobs[job]:
                     query_assoc_name, dataset_collection = implicit_pair
                     if query_assoc_name == assoc_name or assoc_name.startswith(
@@ -254,7 +253,7 @@ class FakeJob:
         self.id = f"fake_{dataset.id}"
         self.name = self._guess_name_from_dataset(dataset)
 
-    def _guess_name_from_dataset(self, dataset: HistoryDatasetAssociation) -> Optional[str]:
+    def _guess_name_from_dataset(self, dataset: HistoryDatasetAssociation) -> str | None:
         """Tries to guess the name of the fake job from the dataset associations."""
         if dataset.copied_from_history_dataset_association:
             return "Import from History"
@@ -267,7 +266,7 @@ class DatasetCollectionCreationJob:
     def __init__(self, dataset_collection: HistoryDatasetCollectionAssociation) -> None:
         self.is_fake = True
         self.id = f"fake_{dataset_collection.id}"
-        self.from_jobs: Optional[list[Job]] = None
+        self.from_jobs: list[Job] | None = None
         self.name = "Dataset Collection Creation"
         self.disabled_why = "Dataset collection created in a way not compatible with workflows"
 
@@ -277,8 +276,8 @@ class DatasetCollectionCreationJob:
 
 
 def summarize(
-    trans: ProvidesHistoryContext, history: Optional[History] = None
-) -> tuple[dict[Any, list[tuple[Optional[str], HistoryItem]]], set[str]]:
+    trans: ProvidesHistoryContext, history: History | None = None
+) -> tuple[dict[Any, list[tuple[str | None, HistoryItem]]], set[str]]:
     """Return mapping of job description to datasets for active items in
     supplied history - needed for building workflow from a history.
 
@@ -295,7 +294,7 @@ class BaseWorkflowSummary:
         self.trans = trans
         self.warnings: set[str] = set()
 
-    def _check_state(self, hda: HistoryDatasetAssociation) -> Optional[HistoryDatasetAssociation]:
+    def _check_state(self, hda: HistoryDatasetAssociation) -> HistoryDatasetAssociation | None:
         # FIXME: Create "Dataset.is_finished"
         if hda.state in ("new", "running", "queued"):
             self.warnings.add(WARNING_SOME_DATASETS_NOT_READY)
@@ -304,13 +303,13 @@ class BaseWorkflowSummary:
 
 
 class WorkflowSummary(BaseWorkflowSummary):
-    def __init__(self, trans: ProvidesHistoryContext, history: Optional[History]) -> None:
+    def __init__(self, trans: ProvidesHistoryContext, history: History | None) -> None:
         super().__init__(trans)
         if not history:
             history = trans.history
         assert history is not None
         self.history: History = history
-        self.jobs: dict[Any, list[tuple[Optional[str], HistoryItem]]] = {}
+        self.jobs: dict[Any, list[tuple[str | None, HistoryItem]]] = {}
         self.job_id2representative_job: dict[int, Job] = {}  # map a non-fake job id to its representative job
         self.implicit_map_jobs: list[Job] = []
         self.collection_types: dict[int, str] = {}
@@ -548,13 +547,13 @@ def extract_workflow_by_ids(
     user: User,
     workflow_name: str,
     job_manager: JobManager,
-    job_ids: Optional[list[int]] = None,
-    implicit_collection_jobs_ids: Optional[list[int]] = None,
-    hda_ids: Optional[list[int]] = None,
-    hdca_ids: Optional[list[int]] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
-    output_labels: Optional[list[Any]] = None,
+    job_ids: list[int] | None = None,
+    implicit_collection_jobs_ids: list[int] | None = None,
+    hda_ids: list[int] | None = None,
+    hdca_ids: list[int] | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
+    output_labels: list[Any] | None = None,
 ) -> StoredWorkflow:
     """ID-based variant of :func:`extract_workflow`."""
     steps = extract_steps_by_ids(
@@ -603,9 +602,9 @@ def normalize_output_label_key(trans: ProvidesHistoryContext, kind: OutputLabelK
 
 def collect_output_label_targets(
     trans: ProvidesHistoryContext,
-    job_manager: Optional[JobManager] = None,
-    job_ids: Optional[list[int]] = None,
-    implicit_collection_jobs_ids: Optional[list[int]] = None,
+    job_manager: JobManager | None = None,
+    job_ids: list[int] | None = None,
+    implicit_collection_jobs_ids: list[int] | None = None,
 ) -> dict[OutputLabelKey, OutputLabelTarget]:
     """Collect concrete outputs produced by the selected extraction steps."""
     job_ids = list(job_ids or [])
@@ -648,14 +647,14 @@ def collect_output_label_targets(
 
 def extract_steps_by_ids(
     trans: ProvidesHistoryContext,
-    job_manager: Optional[JobManager] = None,
-    job_ids: Optional[list[int]] = None,
-    implicit_collection_jobs_ids: Optional[list[int]] = None,
-    hda_ids: Optional[list[int]] = None,
-    hdca_ids: Optional[list[int]] = None,
-    dataset_names: Optional[list[str]] = None,
-    dataset_collection_names: Optional[list[str]] = None,
-    output_labels: Optional[list[Any]] = None,
+    job_manager: JobManager | None = None,
+    job_ids: list[int] | None = None,
+    implicit_collection_jobs_ids: list[int] | None = None,
+    hda_ids: list[int] | None = None,
+    hdca_ids: list[int] | None = None,
+    dataset_names: list[str] | None = None,
+    dataset_collection_names: list[str] | None = None,
+    output_labels: list[Any] | None = None,
 ) -> list[WorkflowStep]:
     """ID-based variant of :func:`extract_steps`.
 

@@ -3,7 +3,6 @@ API operations on Group objects.
 """
 
 import logging
-from typing import Optional
 
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.group_roles import GroupRolesManager
@@ -28,7 +27,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["group_roles"])
 
 
-def group_role_to_model(trans, group_id: int, role, displayed_name: Optional[str] = None) -> GroupRoleResponse:
+def group_role_to_model(trans, group_id: int, role, displayed_name: str | None = None) -> GroupRoleResponse:
     encoded_group_id = Security.security.encode_id(group_id)
     encoded_role_id = Security.security.encode_id(role.id)
     url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)

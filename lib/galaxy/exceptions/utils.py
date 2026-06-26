@@ -43,8 +43,7 @@ def validation_error_to_message_exception(e: Union["ValidationError", "RequestVa
 
 def api_error_to_dict(**kwds):
     UNKNOWN_ERROR_CODE = error_codes.error_codes_by_name["UNKNOWN"]
-    exception = kwds.get("exception", None)
-    if exception:
+    if exception := kwds.get("exception", None):
         # If we are passed a MessageException use err_msg.
         default_error_code = getattr(exception, "err_code", UNKNOWN_ERROR_CODE)
         default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)

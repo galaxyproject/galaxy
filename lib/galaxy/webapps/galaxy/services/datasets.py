@@ -7,8 +7,6 @@ import os
 from enum import Enum
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -119,7 +117,7 @@ class DatasetContentType(str, Enum):
 
 
 class ConcreteObjectStoreQuotaSourceDetails(Model):
-    source: Optional[str] = Field(
+    source: str | None = Field(
         description="The quota source label corresponding to the object store the dataset is stored in (or would be stored in)"
     )
     enabled: bool = Field(
@@ -128,16 +126,16 @@ class ConcreteObjectStoreQuotaSourceDetails(Model):
 
 
 class DatasetStorageDetails(Model):
-    object_store_id: Optional[str] = Field(
+    object_store_id: str | None = Field(
         description="The identifier of the destination ObjectStore for this dataset.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         description="The display name of the destination ObjectStore for this dataset.",
     )
-    description: Optional[str] = Field(
+    description: str | None = Field(
         description="A description of how this dataset is stored.",
     )
-    percent_used: Optional[float] = Field(
+    percent_used: float | None = Field(
         description="The percentage indicating how full the store is.",
     )
     dataset_state: str = Field(
@@ -172,7 +170,7 @@ class DatasetInheritanceChainEntry(Model):
     dep: str = Field(
         description="Name of the source of the referenced dataset at this point of the inheritance chain.",
     )
-    user_id: Optional[EncodedDatabaseIdField] = Field(
+    user_id: EncodedDatabaseIdField | None = Field(
         description="ID of the user who owns the referenced dataset.",
     )
 
@@ -206,7 +204,7 @@ class DatasetExtraFiles(RootModel):
 
 
 class DatasetTextContentDetails(Model):
-    item_data: Optional[str] = Field(
+    item_data: str | None = Field(
         description="First chunk of text content (maximum 1MB) of the dataset.",
     )
     truncated: bool = Field(
@@ -237,9 +235,9 @@ class DataMode(str, Enum):
 
 class DataResult(Model):
     data: list[Any]
-    dataset_type: Optional[str] = None
-    message: Optional[str] = None
-    extra_info: Optional[Any] = None  # Seems to be always None, deprecate?
+    dataset_type: str | None = None
+    message: str | None = None
+    extra_info: Any | None = None  # Seems to be always None, deprecate?
 
 
 class BamDataResult(DataResult):
@@ -251,7 +249,7 @@ class DeleteDatasetBatchPayload(Model):
     datasets: list[DatasetSourceId] = Field(
         description="The list of datasets IDs with their sources to be deleted/purged.",
     )
-    purge: Optional[bool] = Field(
+    purge: bool | None = Field(
         default=False,
         description=(
             "Whether to permanently delete from disk the specified datasets. "
@@ -261,10 +259,10 @@ class DeleteDatasetBatchPayload(Model):
 
 
 class ComputeDatasetHashPayload(Model):
-    hash_function: Optional[HashFunctionNameEnum] = Field(
+    hash_function: HashFunctionNameEnum | None = Field(
         default=HashFunctionNameEnum.md5, description="Hash function name to use to compute dataset hashes."
     )
-    extra_files_path: Optional[str] = Field(default=None, description="If set, extra files path to compute a hash for.")
+    extra_files_path: str | None = Field(default=None, description="If set, extra files path to compute a hash for.")
     model_config = ConfigDict(use_enum_values=True)
 
 
@@ -288,7 +286,7 @@ class DeleteDatasetBatchResult(Model):
     success_count: int = Field(
         description="The number of datasets successfully processed.",
     )
-    errors: Optional[list[DatasetErrorMessage]] = Field(
+    errors: list[DatasetErrorMessage] | None = Field(
         default=None,
         description=(
             "A list of dataset IDs and the corresponding error message if something "
@@ -333,7 +331,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def index(
         self,
         trans: ProvidesHistoryContext,
-        history_id: Optional[DecodedDatabaseIdField],
+        history_id: DecodedDatabaseIdField | None,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
     ) -> tuple[list[AnyHistoryContentItem], int]:
@@ -377,7 +375,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
         hda_ldda: DatasetSourceType,
         serialization_params: SerializationParams,
-        data_type: Optional[RequestDataType] = None,
+        data_type: RequestDataType | None = None,
         **extra_params,
     ):
         """
@@ -641,11 +639,11 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
         hda_ldda: DatasetSourceType = DatasetSourceType.hda,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         raw: bool = False,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         """
@@ -689,7 +687,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         return rval, headers
 
     def get_content_as_text(
-        self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField, filename: Optional[str]
+        self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField, filename: str | None
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
         user = trans.user
@@ -875,9 +873,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans,
         dataset: model.DatasetInstance,
-        chrom: Optional[str] = None,
+        chrom: str | None = None,
         retry: bool = False,
-    ) -> Union[model.Dataset.conversion_messages, dict]:
+    ) -> model.Dataset.conversion_messages | dict:
         """
         Init-like method that returns state of dataset's converted datasets.
         Returns valid chroms for that dataset as well.
@@ -913,7 +911,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         self,
         trans,
         dataset: model.DatasetInstance,
-        query: Optional[str],
+        query: str | None,
     ) -> list[list[str]]:
         """
         Returns features, locations in dataset that match query. Format is a
@@ -940,9 +938,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         low: int,
         high: int,
         start_val: int = 0,
-        max_vals: Optional[int] = None,
+        max_vals: int | None = None,
         **kwargs,
-    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
+    ) -> model.Dataset.conversion_messages | BamDataResult | DataResult:
         """
         Provides a block of data from a dataset.
         """
@@ -1043,7 +1041,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset,
         provider=None,
         **kwargs,
-    ) -> Union[model.Dataset.conversion_messages, BamDataResult, DataResult]:
+    ) -> model.Dataset.conversion_messages | BamDataResult | DataResult:
         """
         Uses original (raw) dataset to return data. This method is useful
         when the dataset is not yet indexed and hence using data would

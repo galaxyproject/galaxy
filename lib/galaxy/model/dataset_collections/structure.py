@@ -1,9 +1,8 @@
 """Module for reasoning about structure of and matching hierarchical collections of data."""
 
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
+    TypeAlias,
 )
 
 from galaxy.model import DatasetCollectionElement
@@ -15,7 +14,7 @@ if TYPE_CHECKING:
     )
     from .type_description import CollectionTypeDescription
 
-    CollectionLike = Union[DatasetCollectionElement, "HistoryDatasetCollectionAssociation"]
+    CollectionLike: TypeAlias = DatasetCollectionElement | HistoryDatasetCollectionAssociation
 
 
 class Leaf:
@@ -261,7 +260,7 @@ def get_collection(
 def get_structure(
     collection: "DatasetCollection",
     collection_type_description: "CollectionTypeDescription",
-    leaf_subcollection_type: Optional[str] = None,
+    leaf_subcollection_type: str | None = None,
 ):
     """Build a Tree (or UninitializedTree) describing a collection's shape.
 

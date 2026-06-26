@@ -6,7 +6,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import (
@@ -42,9 +41,9 @@ class GTNSearchResponse(BaseModel):
     tutorials: list[dict[str, Any]] = Field(default_factory=list, description="List of matching tutorials")
     faqs: list[dict[str, Any]] = Field(default_factory=list, description="List of matching FAQs")
     summary: str = Field(..., description="Natural language summary of findings")
-    learning_path: Optional[str] = Field(None, description="Suggested learning progression")
+    learning_path: str | None = Field(None, description="Suggested learning progression")
     prerequisites: list[str] = Field(default_factory=list, description="Recommended prerequisites")
-    total_time: Optional[str] = Field(None, description="Estimated total time for suggested tutorials")
+    total_time: str | None = Field(None, description="Estimated total time for suggested tutorials")
 
 
 class GTNTrainingAgent(BaseGalaxyAgent):
@@ -90,7 +89,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
             log.warning(f"GTN database not available: {e}")
             self.gtn_db = None
 
-    def _charge_tool_budget(self) -> Optional[str]:
+    def _charge_tool_budget(self) -> str | None:
         """Count a data-gathering tool call; once over budget return a stop
         message instead of more data so the model answers from what it has."""
         self._tool_calls += 1
@@ -123,8 +122,8 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         async def search_gtn_tutorials(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
-            topic: Optional[str] = None,
-            difficulty: Optional[str] = None,
+            topic: str | None = None,
+            difficulty: str | None = None,
             hands_on_only: bool = False,
             limit: int = 5,
         ) -> str:
@@ -188,7 +187,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         async def search_gtn_faqs(
             ctx: RunContext[GalaxyAgentDependencies],
             query: str,
-            category: Optional[str] = None,
+            category: str | None = None,
             limit: int = 5,
         ) -> str:
             """Search Galaxy / GTN FAQs for short, definitional or how-do-I questions.
@@ -246,7 +245,7 @@ class GTNTrainingAgent(BaseGalaxyAgent):
         prompt_path = Path(__file__).parent / "prompts" / "gtn_training.md"
         return prompt_path.read_text()
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)

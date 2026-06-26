@@ -4,7 +4,6 @@ from io import BytesIO
 from typing import (
     Annotated,
     Any,
-    Optional,
 )
 
 from fastapi import (
@@ -119,48 +118,48 @@ QuotaIdPathParam = Annotated[
 ]
 
 SerializationViewQueryParam = Annotated[
-    Optional[str],
+    str | None,
     Query(
         title="View",
         description="View to be passed to the serializer",
     ),
 ]
 
-SerializationKeysQueryParam: Optional[str] = Query(
+SerializationKeysQueryParam: str | None = Query(
     None,
     title="Keys",
     description="Comma-separated list of keys to be passed to the serializer",
 )
 
-FilterQueryQueryParam: Optional[list[str]] = Query(
+FilterQueryQueryParam: list[str] | None = Query(
     default=None,
     title="Filter Query",
     description="Generally a property name to filter by followed by an (often optional) hyphen and operator string.",
     examples=["create_time-gt"],
 )
 
-FilterValueQueryParam: Optional[list[str]] = Query(
+FilterValueQueryParam: list[str] | None = Query(
     default=None,
     title="Filter Value",
     description="The value to filter by.",
     examples=["2015-01-29"],
 )
 
-OffsetQueryParam: Optional[int] = Query(
+OffsetQueryParam: int | None = Query(
     default=0,
     ge=0,
     title="Offset",
     description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item",
 )
 
-LimitQueryParam: Optional[int] = Query(
+LimitQueryParam: int | None = Query(
     default=None,
     ge=1,
     title="Limit",
     description="The maximum number of items to return.",
 )
 
-OrderQueryParam: Optional[str] = Query(
+OrderQueryParam: str | None = Query(
     default=None,
     title="Order",
     description=(
@@ -172,9 +171,9 @@ OrderQueryParam: Optional[str] = Query(
 
 
 def parse_serialization_params(
-    view: Optional[str] = None,
-    keys: Optional[str] = None,
-    default_view: Optional[str] = None,
+    view: str | None = None,
+    keys: str | None = None,
+    default_view: str | None = None,
     **_,  # Additional params are ignored
 ) -> SerializationParams:
     key_list = None
@@ -185,14 +184,14 @@ def parse_serialization_params(
 
 def query_serialization_params(
     view: SerializationViewQueryParam = None,
-    keys: Optional[str] = SerializationKeysQueryParam,
+    keys: str | None = SerializationKeysQueryParam,
 ) -> SerializationParams:
     return parse_serialization_params(view=view, keys=keys)
 
 
 def get_value_filter_query_params(
-    q: Optional[list[str]] = FilterQueryQueryParam,
-    qv: Optional[list[str]] = FilterValueQueryParam,
+    q: list[str] | None = FilterQueryQueryParam,
+    qv: list[str] | None = FilterValueQueryParam,
 ) -> ValueFilterQueryParams:
     """
     This function is meant to be used as a Dependency.
@@ -205,11 +204,11 @@ def get_value_filter_query_params(
 
 
 def get_filter_query_params(
-    q: Optional[list[str]] = FilterQueryQueryParam,
-    qv: Optional[list[str]] = FilterValueQueryParam,
-    offset: Optional[int] = OffsetQueryParam,
-    limit: Optional[int] = LimitQueryParam,
-    order: Optional[str] = OrderQueryParam,
+    q: list[str] | None = FilterQueryQueryParam,
+    qv: list[str] | None = FilterValueQueryParam,
+    offset: int | None = OffsetQueryParam,
+    limit: int | None = LimitQueryParam,
+    order: str | None = OrderQueryParam,
 ) -> FilterQueryParams:
     """
     This function is meant to be used as a Dependency.
@@ -286,8 +285,8 @@ def query_parameter_as_list(query):
     """
 
     def parse_elements(
-        elements: Optional[list[str]] = query,
-    ) -> Optional[list[Any]]:
+        elements: list[str] | None = query,
+    ) -> list[Any] | None:
         if query.default != Ellipsis and not elements:
             return query.default
         if elements and len(elements) == 1:
@@ -297,7 +296,7 @@ def query_parameter_as_list(query):
     return parse_elements
 
 
-def serve_workbook(content: BytesIO, filename: Optional[str]) -> StreamingResponse:
+def serve_workbook(content: BytesIO, filename: str | None) -> StreamingResponse:
     filename = filename or "galaxy_sample_sheet_workbook.xlsx"
     return GalaxyStreamingResponse(
         content,

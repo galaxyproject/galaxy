@@ -11,7 +11,6 @@ from typing import (
     Any,
     ClassVar,
     Generic,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -113,7 +112,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         source_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ):
         """Realize source path (relative to uri root) to local file system path.
 
@@ -133,7 +132,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         target_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> str:
         """Write file at native path to target_path (relative to uri root).
 
@@ -218,11 +217,11 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         path="/",
         recursive=False,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        opts: FilesSourceOptions | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return a list of 'Directory's and 'File's and the total count in a tuple."""
 
@@ -299,7 +298,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
     def get_browsable(self) -> bool:
         return file_source_type_is_browsable(type(self))
 
-    def get_prefix(self) -> Optional[str]:
+    def get_prefix(self) -> str | None:
         return self.id
 
     def get_scheme(self) -> str:
@@ -332,7 +331,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             root = uri_join(root, prefix)
         return root
 
-    def get_url(self) -> Optional[str]:
+    def get_url(self) -> str | None:
         """Returns a URL that can be used to link to the remote source."""
         return None
 
@@ -365,7 +364,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self.requires_groups = config.requires_groups
         self.disable_templating = config.disable_templating
         self._validate_security_rules()
-        self._auth_expires_at: Optional[datetime] = (
+        self._auth_expires_at: datetime | None = (
             datetime.fromisoformat(config.auth_expires_at) if config.auth_expires_at else None
         )
 
@@ -375,7 +374,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
             raise FileSourceCredentialExpired()
 
-    def _compute_auth_expires_at(self, user_context: "OptionalUserContext") -> Optional[datetime]:
+    def _compute_auth_expires_at(self, user_context: "OptionalUserContext") -> datetime | None:
         if user_context is None:
             return None
         provider = self.template_config.oidc_auth_provider
@@ -388,7 +387,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         http_headers: dict[str, str],
         user_context: "OptionalUserContext",
-    ) -> Optional[dict[str, str]]:
+    ) -> dict[str, str] | None:
         """Return a copy of http_headers with a Bearer token added for the configured OIDC provider.
 
         Returns None if no provider is configured, no user context is available, or the user has
@@ -451,7 +450,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
             exclude=COMMON_FILE_SOURCE_PROP_NAMES,
         )
 
-    def to_dict_time(self, ctime) -> Optional[str]:
+    def to_dict_time(self, ctime) -> str | None:
         if ctime is None:
             return None
         elif isinstance(ctime, (int, float)):
@@ -461,7 +460,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
 
     def _get_runtime_context(
         self,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
         user_context: "OptionalUserContext" = None,
     ) -> FilesSourceRuntimeContext:
         """
@@ -495,7 +494,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         defaults.update(template_updates)
         return self.template_config_class(**defaults)
 
-    def _evaluate_template_config(self, user_data: Optional[UserData] = None) -> TResolvedConfig:
+    def _evaluate_template_config(self, user_data: UserData | None = None) -> TResolvedConfig:
         if self.disable_templating:
             # Convert template config to resolved config without template evaluation
             config_dict = self.template_config.model_dump(exclude_unset=True, exclude_none=True)
@@ -513,11 +512,11 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         path="/",
         recursive=False,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        opts: FilesSourceOptions | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         self._check_user_access(user_context)
         self._check_credentials_fresh()
@@ -543,10 +542,10 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[builtins.list[AnyRemoteEntry], int]:
         raise NotImplementedError()
 
@@ -554,7 +553,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         self,
         entry_data: EntryData,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> Entry:
         self._ensure_writeable()
         self._check_user_access(user_context)
@@ -574,7 +573,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         target_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ) -> str:
         self._ensure_writeable()
         self._check_user_access(user_context)
@@ -588,7 +587,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         target_path: str,
         native_path: str,
         context: FilesSourceRuntimeContext[TResolvedConfig],
-    ) -> Optional[str]:
+    ) -> str | None:
         pass
 
     def realize_to(
@@ -596,7 +595,7 @@ class BaseFilesSource(FilesSource, Generic[TTemplateConfig, TResolvedConfig]):
         source_path: str,
         native_path: str,
         user_context: "OptionalUserContext" = None,
-        opts: Optional[FilesSourceOptions] = None,
+        opts: FilesSourceOptions | None = None,
     ):
         self._check_user_access(user_context)
         self._check_credentials_fresh()

@@ -2,7 +2,6 @@ import re
 from dataclasses import dataclass
 from typing import (
     Generic,
-    Optional,
     Protocol,
     TypeVar,
 )
@@ -25,7 +24,7 @@ COMMON_FILTERS: dict[str, tuple[str, str]] = {
 }
 
 
-def paired_element_list_identifier(forward: str, reverse: str) -> Optional[str]:
+def paired_element_list_identifier(forward: str, reverse: str) -> str | None:
     for forward_filter, reverse_filter in COMMON_FILTERS.values():
         if forward_filter in forward and reverse_filter in reverse:
             forward_base = filename_to_element_identifier(re.sub(f"{forward_filter}", "", forward))
@@ -60,8 +59,8 @@ class Pair(Generic[T]):
 @dataclass
 class PartialPair(Generic[T]):
     name: str
-    forward: Optional[T]
-    reverse: Optional[T]
+    forward: T | None
+    reverse: T | None
 
     def to_pair(self) -> Pair[T]:
         assert self.forward
@@ -113,7 +112,7 @@ def auto_pair(elements: list[T]) -> AutoPairResponse[T]:
         return AutoPairResponse(paired=[], unpaired=elements)
 
 
-def guess_initial_filter_type(elements: list[T]) -> Optional[str]:
+def guess_initial_filter_type(elements: list[T]) -> str | None:
     illumina = 0
     dot12s = 0
     Rs = 0

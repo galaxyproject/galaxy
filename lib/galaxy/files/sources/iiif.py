@@ -1,5 +1,4 @@
 import os
-from typing import Union
 
 from fsspec import AbstractFileSystem
 
@@ -26,7 +25,7 @@ except ImportError:
 
 
 class IIIFFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    manifest_url: Union[str, TemplateExpansion]
+    manifest_url: str | TemplateExpansion
 
 
 class IIIFFileSourceConfiguration(FsspecBaseFileSourceConfiguration):

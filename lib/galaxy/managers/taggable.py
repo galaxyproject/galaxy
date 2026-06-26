@@ -6,7 +6,6 @@ Mixins for Taggable model managers and serializers.
 
 import logging
 import re
-from typing import Optional
 
 from sqlalchemy import (
     func,
@@ -61,7 +60,7 @@ class TaggableDeserializerMixin:
         self.deserializers["tags"] = self.deserialize_tags
 
     def deserialize_tags(
-        self, item, key, val, *, user: Optional[model.User] = None, trans: ProvidesUserContext, **context
+        self, item, key, val, *, user: model.User | None = None, trans: ProvidesUserContext, **context
     ):
         """
         Make sure `val` is a valid list of tag strings and assign them.

@@ -7,7 +7,6 @@ from typing import (
     Any,
     cast,
     ClassVar,
-    Optional,
     TypeVar,
 )
 
@@ -55,12 +54,12 @@ class FsspecCommonCacheOptions(StrictModel):
     ] = True
 
     listings_expiry_time: Annotated[
-        Optional[int],
+        int | None,
         Field(description="Time in seconds that a listing is considered valid. If None, listings do not expire."),
     ] = None
 
     max_paths: Annotated[
-        Optional[int],
+        int | None,
         Field(
             description="The number of most recent listings that are considered valid; 'recent' refers to when the entry was set.",
         ),
@@ -89,7 +88,7 @@ FsspecResolvedConfigurationType = TypeVar("FsspecResolvedConfigurationType", bou
 
 
 class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolvedConfigurationType]):
-    required_module: ClassVar[Optional[type[AbstractFileSystem]]]
+    required_module: ClassVar[type[AbstractFileSystem] | None]
     required_package: ClassVar[str]
     supports_pagination = True
     supports_search = True
@@ -128,10 +127,10 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """Return the list of 'Directory's and 'File's under the given path.
 
@@ -215,7 +214,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return path
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> str | None:
         """Extract the timestamp from fsspec file info to use it in the RemoteFile entry.
 
         Subclasses can override this to customize timestamp extraction.
@@ -223,13 +222,13 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         """
         return info.get("mtime") or info.get("modified") or info.get("LastModified")
 
-    def _get_formatted_timestamp(self, info: dict) -> Optional[str]:
+    def _get_formatted_timestamp(self, info: dict) -> str | None:
         """Get a formatted timestamp for the RemoteFile entry."""
         mtime = self._extract_timestamp(info)
         formatted_timestamp = self.to_dict_time(mtime)
         return formatted_timestamp
 
-    def _get_file_hashes(self, info: dict) -> Optional[list[RemoteFileHash]]:
+    def _get_file_hashes(self, info: dict) -> list[RemoteFileHash] | None:
         """Get optional file hashes provided by the remote filesystem for the RemoteFile entry.
 
         Subclasses can override this to extract hashes from the file info.
@@ -314,7 +313,7 @@ class FsspecFilesSource(BaseFilesSource[FsspecTemplateConfigType, FsspecResolved
         return entries_list
 
     def _apply_pagination(
-        self, entries_list: list[AnyRemoteEntry], limit: Optional[int], offset: Optional[int]
+        self, entries_list: list[AnyRemoteEntry], limit: int | None, offset: int | None
     ) -> list[AnyRemoteEntry]:
         """Apply pagination to the entries list."""
         if offset is not None and limit is not None:

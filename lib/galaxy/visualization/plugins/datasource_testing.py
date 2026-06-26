@@ -1,7 +1,4 @@
 import logging
-from typing import (
-    Optional,
-)
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +21,7 @@ def _check_uri_support(target_object, supported_protocols: list[str]) -> bool:
     return False
 
 
-def _deferred_source_uri(target_object) -> Optional[str]:
+def _deferred_source_uri(target_object) -> str | None:
     """Get the source uri from a deferred object."""
     sources = getattr(target_object, "sources", None)
     if sources and sources[0]:

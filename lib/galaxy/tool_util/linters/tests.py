@@ -1,11 +1,8 @@
 """This module contains a linting functions for tool tests."""
 
+from collections.abc import Iterator
 from io import StringIO
 from typing import (
-    Iterator,
-    List,
-    Set,
-    Tuple,
     TYPE_CHECKING,
 )
 
@@ -215,7 +212,7 @@ def _cleanup_pydantic_error(error) -> str:
     return new_error.getvalue().strip()
 
 
-def _collect_multiple_select_names(parameters: List["ToolParameterT"]) -> Set[str]:
+def _collect_multiple_select_names(parameters: list["ToolParameterT"]) -> set[str]:
     return {
         param.name
         for param in iter_parameter_models(parameters)
@@ -648,7 +645,7 @@ class TestsValid(Linter):
             lint_ctx.warn("No valid test(s) found.", linter=cls.name(), node=general_node)
 
 
-def _iter_tests(tests: List["Element"], valid: bool) -> Iterator[Tuple[int, "Element"]]:
+def _iter_tests(tests: list["Element"], valid: bool) -> Iterator[tuple[int, "Element"]]:
     for test_idx, test in enumerate(tests, start=1):
         is_valid = False
         is_valid |= bool(set(test.attrib) & {"expect_failure", "expect_exit_code", "expect_num_outputs"})

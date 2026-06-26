@@ -46,7 +46,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -85,7 +84,7 @@ class ProvidesAppContext:
 
     @property
     @abc.abstractmethod
-    def url_builder(self) -> Optional[Callable[..., str]]:
+    def url_builder(self) -> Callable[..., str] | None:
         """
         Provide access to Galaxy URLs (if available).
 
@@ -207,8 +206,8 @@ class ProvidesUserContext(ProvidesAppContext):
     """
 
     workflow_building_mode: Literal[1, True, False] = False
-    galaxy_session: Optional[GalaxySession] = None
-    _tag_handler: Optional[GalaxyTagHandlerSession] = None
+    galaxy_session: GalaxySession | None = None
+    _tag_handler: GalaxyTagHandlerSession | None = None
     _short_term_cache: dict[tuple[Hashable, ...], Any]
 
     def set_cache_value(self, args: tuple[Hashable, ...], value: Any):
@@ -251,8 +250,8 @@ class ProvidesUserContext(ProvidesAppContext):
         """Provide access to a user's personal vault."""
         return UserVaultWrapper(self.app.vault, self.user)
 
-    def get_user(self) -> Optional[User]:
-        user = cast(Optional[User], self.user or self.galaxy_session and self.galaxy_session.user)
+    def get_user(self) -> User | None:
+        user = cast(User | None, self.user or self.galaxy_session and self.galaxy_session.user)
         return user
 
     @property
@@ -289,7 +288,7 @@ class ProvidesUserContext(ProvidesAppContext):
             raise UserActivationRequiredException()
 
     @property
-    def user_ftp_dir(self) -> Optional[str]:
+    def user_ftp_dir(self) -> str | None:
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None or self.user is None:
             return None
@@ -317,13 +316,13 @@ class ProvidesHistoryContext(ProvidesUserContext):
 
     @property
     @abc.abstractmethod
-    def history(self) -> Optional[History]:
+    def history(self) -> History | None:
         """Provide access to the user's current history model object.
 
         :rtype: Optional[galaxy.model.History]
         """
 
-    def db_dataset_for(self, dbkey) -> Optional[HistoryDatasetAssociation]:
+    def db_dataset_for(self, dbkey) -> HistoryDatasetAssociation | None:
         """Optionally return the db_file dataset associated/needed by `dataset`."""
         # If no history, return None.
         if self.history is None:

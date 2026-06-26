@@ -7,7 +7,6 @@ requires_galaxy=True need a running Galaxy session and are skipped by default.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -234,7 +233,7 @@ ROUTING_CASES: list[Case[str, str, dict[str, Any]]] = [
 
 def routing_dataset(
     include_galaxy_required: bool = False,
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, str, dict[str, Any]]:
     """Build the routing Dataset.
 

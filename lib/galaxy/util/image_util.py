@@ -1,10 +1,6 @@
 """Provides utilities for working with image files."""
 
 import logging
-from typing import (
-    List,
-    Optional,
-)
 
 try:
     from PIL import Image
@@ -14,7 +10,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 
-def image_type(filename: str) -> Optional[str]:
+def image_type(filename: str) -> str | None:
     fmt = None
     if Image is not None:
         try:
@@ -28,7 +24,7 @@ def image_type(filename: str) -> Optional[str]:
         return None
 
 
-def check_image_type(filename: str, types: List[str]) -> bool:
+def check_image_type(filename: str, types: list[str]) -> bool:
     fmt = image_type(filename)
     if fmt in types:
         return True

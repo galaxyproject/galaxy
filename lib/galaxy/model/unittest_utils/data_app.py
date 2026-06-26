@@ -10,7 +10,6 @@ import os
 import shutil
 import tempfile
 from types import SimpleNamespace
-from typing import Optional
 
 from galaxy import (
     model,
@@ -97,7 +96,7 @@ class GalaxyDataTestApp:
     security_agent: GalaxyRBACAgent
     file_sources: ConfiguredFileSources = NullConfiguredFileSources()
 
-    def __init__(self, config: Optional[GalaxyDataTestConfig] = None, **kwd):
+    def __init__(self, config: GalaxyDataTestConfig | None = None, **kwd):
         config = config or GalaxyDataTestConfig(**kwd)
         self.config = config
         self.security = config.security

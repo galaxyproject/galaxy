@@ -79,7 +79,7 @@ def connection_reset_server():
         while not stop.is_set():
             try:
                 conn, _ = sock.accept()
-            except socket.timeout:  # noqa: UP041  # Python <=3.9 support, replace with TimeoutError in Python 3.10+
+            except TimeoutError:
                 continue
             except OSError:
                 break

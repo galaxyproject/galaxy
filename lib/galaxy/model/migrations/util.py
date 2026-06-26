@@ -7,7 +7,6 @@ from collections.abc import Sequence
 from contextlib import contextmanager
 from typing import (
     Any,
-    Optional,
 )
 
 import sqlalchemy as sa
@@ -23,7 +22,7 @@ log = logging.getLogger(__name__)
 class DDLOperation(ABC):
     """Base class for all DDL operations."""
 
-    def run(self) -> Optional[Any]:
+    def run(self) -> Any | None:
         if not self._is_repair_mode():
             return self.execute()
         else:
@@ -34,7 +33,7 @@ class DDLOperation(ABC):
                 return None
 
     @abstractmethod
-    def execute(self) -> Optional[Any]: ...
+    def execute(self) -> Any | None: ...
 
     @abstractmethod
     def pre_execute_check(self) -> bool: ...
@@ -64,13 +63,13 @@ class DDLAlterOperation(DDLOperation):
     def __init__(self, table_name: str) -> None:
         self.table_name = table_name
 
-    def run(self) -> Optional[Any]:
+    def run(self) -> Any | None:
         if context.is_offline_mode():
             log.info("Generation of `alter` statements is disabled in offline mode.")
             return None
         return super().run()
 
-    def execute(self) -> Optional[Any]:
+    def execute(self) -> Any | None:
         if _is_sqlite():
             with legacy_alter_table(), op.batch_alter_table(self.table_name) as batch_op:
                 return self.batch_execute(batch_op)
@@ -78,10 +77,10 @@ class DDLAlterOperation(DDLOperation):
             return self.non_batch_execute()  # use regular op context for non-sqlite db
 
     @abstractmethod
-    def batch_execute(self, batch_op) -> Optional[Any]: ...
+    def batch_execute(self, batch_op) -> Any | None: ...
 
     @abstractmethod
-    def non_batch_execute(self) -> Optional[Any]: ...
+    def non_batch_execute(self) -> Any | None: ...
 
 
 class CreateTable(DDLOperation):
@@ -91,7 +90,7 @@ class CreateTable(DDLOperation):
         self.table_name = table_name
         self.columns = columns
 
-    def execute(self) -> Optional[sa.Table]:
+    def execute(self) -> sa.Table | None:
         return op.create_table(self.table_name, *self.columns)
 
     def pre_execute_check(self) -> bool:
@@ -297,7 +296,7 @@ class DropConstraint(DDLAlterOperation):
         self._log_object_does_not_exist_message(name)
 
 
-def create_table(table_name: str, *columns: sa.schema.SchemaItem) -> Optional[sa.Table]:
+def create_table(table_name: str, *columns: sa.schema.SchemaItem) -> sa.Table | None:
     return CreateTable(table_name, *columns).run()
 
 

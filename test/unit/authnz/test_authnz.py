@@ -2,7 +2,6 @@ import tempfile
 from typing import (
     Any,
     cast,
-    Optional,
 )
 from unittest.mock import (
     MagicMock,
@@ -123,7 +122,7 @@ class AuthenticatedStubGalaxyWebTransaction(StubGalaxyWebTransaction):
         self.user = self.auth_user
         self.galaxy_session = None
 
-    def _authenticate_api(self, session_cookie: str) -> Optional[str]:
+    def _authenticate_api(self, session_cookie: str) -> str | None:
         self.user = self.auth_user
         self.galaxy_session = None
         return None
@@ -233,7 +232,7 @@ def test_psa_authnz_config(mock_app):
     assert psa_authnz.config[setting_name("USERNAME_KEY")] == config_values["username_key"]
 
 
-def _create_backend_config_with_idphint(idphint_value: Optional[str] = None) -> tuple[str, str]:
+def _create_backend_config_with_idphint(idphint_value: str | None = None) -> tuple[str, str]:
     """Create a Keycloak backend config, optionally including an <idphint> element."""
     idphint_element = f"        <idphint>{idphint_value}</idphint>" if idphint_value else ""
     contents = f"""<?xml version="1.0"?>

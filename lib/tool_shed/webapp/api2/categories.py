@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from fastapi import Body
 
 from tool_shed.context import SessionRequestContext
@@ -79,7 +75,7 @@ class FastAPICategories:
         installable: bool = CategoryRepositoriesInstallableQueryParam,
         sort_key: str = CategoryRepositoriesSortKeyQueryParam,
         sort_order: str = CategoryRepositoriesSortOrderQueryParam,
-        page: Optional[int] = CategoryRepositoriesPageQueryParam,
+        page: int | None = CategoryRepositoriesPageQueryParam,
     ) -> RepositoriesByCategory:
         return repositories_by_category(
             trans.app,

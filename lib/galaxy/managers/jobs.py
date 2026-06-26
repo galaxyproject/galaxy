@@ -11,10 +11,8 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 
 import sqlalchemy
@@ -136,7 +134,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 JobStateT = str
-JobStatesT = Union[JobStateT, Iterable[JobStateT]]
+JobStatesT = JobStateT | Iterable[JobStateT]
 
 
 STDOUT_LOCATION = "outputs/tool_stdout"
@@ -166,7 +164,7 @@ def get_path_key(path_tuple: tuple):
     return path_key
 
 
-def safe_label_or_none(label: str) -> Optional[str]:
+def safe_label_or_none(label: str) -> str | None:
     if len(label) > 63:
         return None
     return label
@@ -370,7 +368,7 @@ class JobManager:
         trans.sa_session.refresh(job)
         return job
 
-    def _user_can_access_job(self, job: Job, user: Optional[User]) -> bool:
+    def _user_can_access_job(self, job: Job, user: User | None) -> bool:
         has_outputs = bool(job.output_datasets) or bool(job.output_dataset_collection_instances)
         if has_outputs:
             datasets_ok = all(
@@ -478,13 +476,13 @@ class JobSearch:
         self,
         user: User,
         tool_id: str,
-        tool_version: Optional[str],
+        tool_version: str | None,
         param: ToolStateJobInstancePopulatedT,
         param_dump: ToolStateDumpedToJsonInternalT,
-        job_state: Optional[JobStatesT] = (Job.states.OK,),
-        history_id: Union[int, None] = None,
+        job_state: JobStatesT | None = (Job.states.OK,),
+        history_id: int | None = None,
         require_name_match: bool = True,
-    ) -> Union[Job, None]:
+    ) -> Job | None:
         """Search for jobs producing same results using the 'inputs' part of a tool POST."""
         input_data: dict[Any, list[dict[str, Any]]] = defaultdict(list)
 
@@ -534,15 +532,15 @@ class JobSearch:
     def __search(
         self,
         tool_id: str,
-        tool_version: Optional[str],
+        tool_version: str | None,
         user: model.User,
         input_data: dict[Any, list[dict[str, Any]]],
-        job_state: Optional[JobStatesT],
+        job_state: JobStatesT | None,
         param_dump: ToolStateDumpedToJsonInternalT,
         wildcard_param_dump=None,
-        history_id: Union[int, None] = None,
+        history_id: int | None = None,
         require_name_match: bool = True,
-    ) -> Union[Job, None]:
+    ) -> Job | None:
         search_timer = ExecutionTimer()
 
         def replace_dataset_ids(path, key, value):
@@ -678,10 +676,10 @@ class JobSearch:
         stmt: "Select[tuple[int]]",
         tool_id: str,
         user_id: int,
-        tool_version: Optional[str],
-        job_state: Union[JobStatesT, None],
+        tool_version: str | None,
+        job_state: JobStatesT | None,
         wildcard_param_dump,
-        history_id: Union[int, None],
+        history_id: int | None,
     ) -> "Select[tuple[int]]":
         """Build subquery that selects a job with correct job parameters."""
         # Apply job-level filters BEFORE the CTE so they are included in the
@@ -1604,7 +1602,7 @@ def _get_direct_job_metrics(sa_session: galaxy_scoped_session, invocation_id: in
 def _get_job_metrics_recursive(
     sa_session: galaxy_scoped_session,
     invocation_id: int,
-    parent_step_prefix: Optional[str] = None,
+    parent_step_prefix: str | None = None,
 ):
     """
     Recursively get job metrics including subworkflows.
@@ -1859,7 +1857,7 @@ class JobsSummary(TypedDict):
     id: int
 
 
-def summarize_jobs_to_dict(sa_session, jobs_source) -> Optional[JobsSummary]:
+def summarize_jobs_to_dict(sa_session, jobs_source) -> JobsSummary | None:
     """Produce a summary of jobs for job summary endpoints.
 
     :type   jobs_source: a Job or ImplicitCollectionJobs or None
@@ -1868,7 +1866,7 @@ def summarize_jobs_to_dict(sa_session, jobs_source) -> Optional[JobsSummary]:
     :rtype:     dict
     :returns:   dictionary containing job summary information
     """
-    rval: Optional[JobsSummary] = None
+    rval: JobsSummary | None = None
     if jobs_source is None:
         pass
     elif isinstance(jobs_source, model.Job):
@@ -2023,7 +2021,7 @@ def summarize_job_parameters(trans: ProvidesUserContext, job: Job) -> dict[str, 
                     or input.type == "data_collection"
                     or isinstance(input_value, model.HistoryDatasetAssociation)
                 ):
-                    value: list[Union[dict[str, Any], None]] = []
+                    value: list[dict[str, Any] | None] = []
                     for element in listify(input_value):
                         if isinstance(element, model.HistoryDatasetAssociation):
                             hda = element

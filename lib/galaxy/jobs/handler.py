@@ -15,7 +15,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy.exc import OperationalError
@@ -114,13 +113,13 @@ class JobHandler(JobHandlerI):
 
 
 class ItemGrabber:
-    grab_model: Union[type[model.Job], type[model.WorkflowInvocation]]
+    grab_model: type[model.Job] | type[model.WorkflowInvocation]
 
     def __init__(
         self,
         app: MinimalManagerApp,
         handler_assignment_method=None,
-        max_grab: Union[int, None] = None,
+        max_grab: int | None = None,
         self_handler_tags=None,
         handler_tags=None,
     ) -> None:
@@ -251,7 +250,7 @@ class BaseJobHandlerQueue(JobQueueI, Monitors):
         # Keep track of the pid that started the job manager, only it has valid threads
         self.parent_pid = os.getpid()
         # This queue is not used if track_jobs_in_database is True.
-        self.queue: Queue[tuple[int, Optional[str]]] = Queue()
+        self.queue: Queue[tuple[int, str | None]] = Queue()
 
 
 class JobHandlerQueue(BaseJobHandlerQueue):
@@ -1109,7 +1108,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
             # Sleep
             self._monitor_sleep(1)
 
-    def __delete(self, job: model.Job, error_msg: Optional[str]):
+    def __delete(self, job: model.Job, error_msg: str | None):
         final_state = job.states.DELETED
         if error_msg is not None:
             final_state = job.states.ERROR
@@ -1128,7 +1127,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         Called repeatedly by `monitor` to stop jobs.
         """
         # Pull all new jobs from the queue at once
-        jobs_to_check: list[tuple[model.Job, Optional[str]]] = []
+        jobs_to_check: list[tuple[model.Job, str | None]] = []
         with self.sa_session.begin():
             self._add_newly_deleted_jobs(jobs_to_check)
             try:
@@ -1137,7 +1136,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
                 return
             self._check_jobs(jobs_to_check)
 
-    def put(self, job_id: int, error_msg: Optional[str] = None):
+    def put(self, job_id: int, error_msg: str | None = None):
         if not self.track_jobs_in_database:
             self.queue.put((job_id, error_msg))
 
@@ -1154,7 +1153,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
             self.shutdown_monitor()
             log.info("job handler stop queue stopped")
 
-    def _add_newly_deleted_jobs(self, jobs_to_check: list[tuple[model.Job, Optional[str]]]):
+    def _add_newly_deleted_jobs(self, jobs_to_check: list[tuple[model.Job, str | None]]):
         if self.track_jobs_in_database:
             newly_deleted_jobs = self._get_new_jobs()
             for job in newly_deleted_jobs:
@@ -1170,7 +1169,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         )
         return self.sa_session.scalars(stmt).all()
 
-    def _pull_from_queue(self, jobs_to_check: list[tuple[model.Job, Optional[str]]]):
+    def _pull_from_queue(self, jobs_to_check: list[tuple[model.Job, str | None]]):
         # Pull jobs from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:
@@ -1184,7 +1183,7 @@ class JobHandlerStopQueue(BaseJobHandlerQueue):
         except Empty:
             pass
 
-    def _check_jobs(self, jobs_to_check: list[tuple[model.Job, Optional[str]]]):
+    def _check_jobs(self, jobs_to_check: list[tuple[model.Job, str | None]]):
         for job, error_msg in jobs_to_check:
             if (
                 job.state

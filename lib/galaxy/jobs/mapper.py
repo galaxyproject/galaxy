@@ -5,7 +5,6 @@ from inspect import getfullargspec
 from types import ModuleType
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 import galaxy.jobs.rules
@@ -161,7 +160,7 @@ class JobRunnerMapper:
         dest.id = DYNAMIC_DESTINATION_ID
         return dest
 
-    def __find_function_by_tool_id(self, rule_modules: list[ModuleType]) -> Union[Callable, None]:
+    def __find_function_by_tool_id(self, rule_modules: list[ModuleType]) -> Callable | None:
         assert self.job_wrapper.tool is not None
         # default look for function with name matching an id of tool, unless one specified
         for tool_id in self.job_wrapper.tool.all_ids:
@@ -190,7 +189,7 @@ class JobRunnerMapper:
                 raise JobMappingConfigurationException(message)
         return expand_function
 
-    def __get_rule_modules_or_defaults(self, rules_module_name: Union[str, None]) -> list[ModuleType]:
+    def __get_rule_modules_or_defaults(self, rules_module_name: str | None) -> list[ModuleType]:
         """
         Returns the rules under the given rules_module_name or default
         to returning the rules of the top-level rules module for the plugin
@@ -203,7 +202,7 @@ class JobRunnerMapper:
 
     def __last_matching_function_in_modules(
         self, rule_modules: list[ModuleType], function_name: str
-    ) -> Union[Callable, None]:
+    ) -> Callable | None:
         # self.rule_modules is sorted in reverse order, so find first
         # with function
         for rule_module in rule_modules:
@@ -253,7 +252,7 @@ class JobRunnerMapper:
         return job_destination
 
     def __determine_job_destination(
-        self, params: Union[dict, None], raw_job_destination: Union[JobDestination, None] = None
+        self, params: dict | None, raw_job_destination: JobDestination | None = None
     ) -> JobDestination:
         if raw_job_destination is None:
             if self.job_wrapper.tool is None:
@@ -272,7 +271,7 @@ class JobRunnerMapper:
         return job_destination
 
     def __cache_job_destination(
-        self, params: Union[dict, None], raw_job_destination: Union[JobDestination, None] = None
+        self, params: dict | None, raw_job_destination: JobDestination | None = None
     ) -> JobDestination:
         try:
             self.cached_job_destination = self.__determine_job_destination(
@@ -287,7 +286,7 @@ class JobRunnerMapper:
             raise JobMappingException(ERROR_MESSAGE_RULE_EXCEPTION)
         return self.cached_job_destination
 
-    def get_job_destination(self, params: Union[dict, None]) -> JobDestination:
+    def get_job_destination(self, params: dict | None) -> JobDestination:
         """
         cached_job_destination is a public property that is sometimes
         externally set to short-circuit the mapper, such as during resubmits.
@@ -297,7 +296,7 @@ class JobRunnerMapper:
             return self.__cache_job_destination(params)
         return self.cached_job_destination
 
-    def cache_job_destination(self, raw_job_destination: Union[JobDestination, None]) -> JobDestination:
+    def cache_job_destination(self, raw_job_destination: JobDestination | None) -> JobDestination:
         """
         Force update of cached_job_destination to mapper determined job
         destination, overwriting any externally set cached_job_destination

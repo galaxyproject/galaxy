@@ -7,7 +7,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import anyio
@@ -122,18 +121,18 @@ class GalaxyFileResponse(FileResponse):
     database after the response is constructed.
     """
 
-    nginx_x_accel_redirect_base: Optional[str] = None
-    apache_xsendfile: Optional[bool] = None
+    nginx_x_accel_redirect_base: str | None = None
+    apache_xsendfile: bool | None = None
 
     def __init__(
         self,
         path: StrPath,
         status_code: int = 200,
-        headers: Optional[Mapping[str, str]] = None,
-        media_type: Optional[str] = None,
+        headers: Mapping[str, str] | None = None,
+        media_type: str | None = None,
         background: Optional["BackgroundTask"] = None,
-        filename: Optional[str] = None,
-        stat_result: Optional[os.stat_result] = None,
+        filename: str | None = None,
+        stat_result: os.stat_result | None = None,
         content_disposition_type: str = "attachment",
     ) -> None:
         super().__init__(
@@ -301,7 +300,7 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
     else:
         content = error_dict
 
-    retry_after: Optional[int] = getattr(exc, "retry_after", None)
+    retry_after: int | None = getattr(exc, "retry_after", None)
     headers: dict[str, str] = {}
     if retry_after:
         headers["Retry-After"] = str(retry_after)
@@ -325,7 +324,6 @@ def add_exception_handler(app: FastAPI) -> None:
 
 
 class AccessLoggingMiddleware(Plugin):
-
     key = "access_line"
 
     async def process_request(self, request):
@@ -369,7 +367,7 @@ def build_route_name_index(app: FastAPI) -> dict[str, list["BaseRoute"]]:
 
 
 def include_all_package_routers(app: FastAPI, package_name: str):
-    responses: dict[Union[int, str], dict[str, Any]] = {
+    responses: dict[int | str, dict[str, Any]] = {
         "4XX": {
             "description": "Request Error",
             "model": MessageExceptionModel,

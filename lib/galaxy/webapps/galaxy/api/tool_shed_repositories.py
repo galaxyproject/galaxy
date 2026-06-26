@@ -3,7 +3,6 @@ import logging
 from time import strftime
 from typing import (
     Annotated,
-    Optional,
 )
 
 from fastapi import (
@@ -390,17 +389,17 @@ InstalledToolShedRepositoryIDPathParam = Annotated[
     ),
 ]
 
-NameQueryParam: Optional[str] = Query(default=None, title="Name", description="Filter by repository name.")
+NameQueryParam: str | None = Query(default=None, title="Name", description="Filter by repository name.")
 
-OwnerQueryParam: Optional[str] = Query(default=None, title="Owner", description="Filter by repository owner.")
+OwnerQueryParam: str | None = Query(default=None, title="Owner", description="Filter by repository owner.")
 
-ChangesetQueryParam: Optional[str] = Query(default=None, title="Changeset", description="Filter by changeset revision.")
+ChangesetQueryParam: str | None = Query(default=None, title="Changeset", description="Filter by changeset revision.")
 
-DeletedQueryParam: Optional[bool] = Query(
+DeletedQueryParam: bool | None = Query(
     default=None, title="Deleted?", description="Filter by whether the repository has been deleted."
 )
 
-UninstalledQueryParam: Optional[bool] = Query(
+UninstalledQueryParam: bool | None = Query(
     default=None, title="Uninstalled?", description="Filter by whether the repository has been uninstalled."
 )
 
@@ -417,11 +416,11 @@ class FastAPIToolShedRepositories:
     )
     def index(
         self,
-        name: Optional[str] = NameQueryParam,
-        owner: Optional[str] = OwnerQueryParam,
-        changeset: Optional[str] = ChangesetQueryParam,
-        deleted: Optional[bool] = DeletedQueryParam,
-        uninstalled: Optional[bool] = UninstalledQueryParam,
+        name: str | None = NameQueryParam,
+        owner: str | None = OwnerQueryParam,
+        changeset: str | None = ChangesetQueryParam,
+        deleted: bool | None = DeletedQueryParam,
+        uninstalled: bool | None = UninstalledQueryParam,
     ) -> list[InstalledToolShedRepository]:
         request = InstalledToolShedRepositoryIndexRequest(
             name=name,
@@ -438,7 +437,7 @@ class FastAPIToolShedRepositories:
         response_description="A description of the state and updates message.",
         require_admin=True,
     )
-    def check_for_updates(self, id: Optional[DecodedDatabaseIdField] = None) -> CheckForUpdatesResponse:
+    def check_for_updates(self, id: DecodedDatabaseIdField | None = None) -> CheckForUpdatesResponse:
         return self.service.check_for_updates(id and int(id))
 
     @router.get(

@@ -42,7 +42,6 @@ def test_dataset_state_coercion():
 
 
 class TestTagPattern:
-
     def test_valid(self):
         tag_strings = [
             "a",

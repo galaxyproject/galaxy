@@ -1,7 +1,6 @@
 import os
 from typing import (
     Annotated,
-    Union,
 )
 
 from fsspec.implementations.local import LocalFileSystem
@@ -27,7 +26,7 @@ class TempFileSourceCommonProperties(StrictModel):
 
 
 class TempFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration, TempFileSourceCommonProperties):
-    root_path: Union[str, TemplateExpansion]
+    root_path: str | TemplateExpansion
 
 
 class TempFileSourceConfiguration(FsspecBaseFileSourceConfiguration, TempFileSourceCommonProperties):

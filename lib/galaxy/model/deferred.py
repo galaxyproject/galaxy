@@ -4,8 +4,6 @@ import os
 import shutil
 from typing import (
     NamedTuple,
-    Optional,
-    Union,
 )
 
 from sqlalchemy.orm import Session
@@ -78,10 +76,10 @@ class DatasetInstanceMaterializer:
     def __init__(
         self,
         attached: bool,
-        object_store_populator: Optional[ObjectStorePopulator] = None,
-        transient_path_mapper: Optional[TransientPathMapper] = None,
-        file_sources: Optional[ConfiguredFileSources] = None,
-        sa_session: Optional[Session] = None,
+        object_store_populator: ObjectStorePopulator | None = None,
+        transient_path_mapper: TransientPathMapper | None = None,
+        file_sources: ConfiguredFileSources | None = None,
+        sa_session: Session | None = None,
         user_context: OptionalUserContext = None,
     ):
         """Constructor for DatasetInstanceMaterializer.
@@ -104,8 +102,8 @@ class DatasetInstanceMaterializer:
 
     def ensure_materialized(
         self,
-        dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation],
-        target_history: Optional[History] = None,
+        dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation,
+        target_history: History | None = None,
         in_place: bool = False,
     ) -> HistoryDatasetAssociation:
         """Create a new detached dataset instance from the supplied instance.
@@ -153,9 +151,9 @@ class DatasetInstanceMaterializer:
             materialized_dataset.hashes = materialized_dataset_hashes
         target_source = self._find_closest_dataset_source(dataset)
         transient_paths = None
-        replacement_dataset: Optional[HistoryDatasetAssociation] = None
+        replacement_dataset: HistoryDatasetAssociation | None = None
 
-        exception_materializing: Optional[Exception] = None
+        exception_materializing: Exception | None = None
         history = target_history
         if history is None and isinstance(dataset_instance, HistoryDatasetAssociation):
             try:
@@ -176,7 +174,7 @@ class DatasetInstanceMaterializer:
                 sa_session.add(materialized_dataset)
                 sa_session.commit()
             object_store_populator.set_dataset_object_store_id(materialized_dataset)
-            user: Optional[User] = None
+            user: User | None = None
             if history:
                 user = history.user
             replacement_dataset = get_replacement_dataset(
@@ -327,7 +325,7 @@ class DatasetInstanceMaterializer:
         return best_source
 
 
-CollectionInputT = Union[HistoryDatasetCollectionAssociation, DatasetCollectionElement]
+CollectionInputT = HistoryDatasetCollectionAssociation | DatasetCollectionElement
 
 
 def materialize_collection_input(
@@ -370,7 +368,7 @@ def _materialize_collection(
 def _materialize_collection_element(
     element: DatasetCollectionElement, materializer: DatasetInstanceMaterializer
 ) -> DatasetCollectionElement:
-    materialized_object: Union[DatasetCollection, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation]
+    materialized_object: DatasetCollection | HistoryDatasetAssociation | LibraryDatasetDatasetAssociation
     if element.is_collection:
         assert element.child_collection
         materialized_object = _materialize_collection(element.child_collection, materializer)
@@ -389,12 +387,12 @@ def _materialize_collection_element(
 
 def materializer_factory(
     attached: bool,
-    object_store: Optional[ObjectStore] = None,
-    object_store_populator: Optional[ObjectStorePopulator] = None,
-    transient_path_mapper: Optional[TransientPathMapper] = None,
-    transient_directory: Optional[str] = None,
-    file_sources: Optional[ConfiguredFileSources] = None,
-    sa_session: Optional[Session] = None,
+    object_store: ObjectStore | None = None,
+    object_store_populator: ObjectStorePopulator | None = None,
+    transient_path_mapper: TransientPathMapper | None = None,
+    transient_directory: str | None = None,
+    file_sources: ConfiguredFileSources | None = None,
+    sa_session: Session | None = None,
     user_context: OptionalUserContext = None,
 ) -> DatasetInstanceMaterializer:
     if object_store_populator is None and object_store is not None:

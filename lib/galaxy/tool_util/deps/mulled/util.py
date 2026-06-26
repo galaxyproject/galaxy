@@ -7,16 +7,15 @@ import os
 import re
 import sys
 import threading
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
     NamedTuple,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from conda_package_streaming.package_streaming import stream_conda_info
@@ -51,12 +50,12 @@ CONDA_IMAGE = os.environ.get("CONDA_IMAGE", "quay.io/condaforge/miniforge3:lates
 
 class PARSED_TAG(NamedTuple):
     tag: str
-    version: Union[LegacyVersion, Version]
-    build_string: Union[LegacyVersion, Version]
+    version: LegacyVersion | Version
+    build_string: LegacyVersion | Version
     build_number: int
 
 
-def default_mulled_conda_channels_from_env() -> Optional[List[str]]:
+def default_mulled_conda_channels_from_env() -> list[str] | None:
     if "DEFAULT_MULLED_CONDA_CHANNELS" in os.environ:
         return os.environ["DEFAULT_MULLED_CONDA_CHANNELS"].split(",")
     else:
@@ -69,12 +68,12 @@ DEFAULT_CHANNELS = default_mulled_conda_channels_from_env() or ["conda-forge", "
 class CondaInDockerContext(CondaContext):
     def __init__(
         self,
-        conda_prefix: Optional[str] = None,
-        conda_exec: Optional[Union[str, List[str]]] = None,
-        shell_exec: Optional[Callable[..., int]] = None,
+        conda_prefix: str | None = None,
+        conda_exec: str | list[str] | None = None,
+        shell_exec: Callable[..., int] | None = None,
         debug: bool = False,
-        ensure_channels: Union[str, List[str]] = DEFAULT_CHANNELS,
-        condarc_override: Optional[str] = None,
+        ensure_channels: str | list[str] = DEFAULT_CHANNELS,
+        condarc_override: str | None = None,
     ):
         if not conda_exec:
             binds = []
@@ -106,7 +105,7 @@ def create_repository(namespace: str, repo_name: str, oauth_token: str) -> None:
     response.raise_for_status()
 
 
-def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = None) -> List[str]:
+def quay_versions(namespace: str, pkg_name: str, session: Session | None = None) -> list[str]:
     """Get all version tags for a Docker image stored on quay.io for supplied package name."""
     data = quay_repository(namespace, pkg_name, session=session)
 
@@ -119,7 +118,7 @@ def quay_versions(namespace: str, pkg_name: str, session: Optional[Session] = No
     return [tag for tag in data["tags"].keys() if tag != "latest"]
 
 
-def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = None) -> Dict[str, Any]:
+def quay_repository(namespace: str, pkg_name: str, session: Session | None = None) -> dict[str, Any]:
     assert namespace is not None
     assert pkg_name is not None
     url = f"{QUAY_REPOSITORY_API_ENDPOINT}/{namespace}/{pkg_name}"
@@ -131,7 +130,7 @@ def quay_repository(namespace: str, pkg_name: str, session: Optional[Session] = 
     return data
 
 
-def _get_namespace(namespace: str) -> List[str]:
+def _get_namespace(namespace: str) -> list[str]:
     log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
     next_page = None
     repo_names = []
@@ -176,11 +175,11 @@ def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "
 def mulled_tags_for(
     namespace: str,
     image: str,
-    tag_prefix: Optional[str] = None,
+    tag_prefix: str | None = None,
     resolution_cache: Optional["ResolutionCache"] = None,
-    session: Optional[Session] = None,
+    session: Session | None = None,
     expire: float = QUAY_VERSIONS_CACHE_EXPIRY,
-) -> List[str]:
+) -> list[str]:
     """Fetch remote tags available for supplied image name.
 
     The result will be sorted so newest tags are first.
@@ -223,7 +222,7 @@ def mulled_tags_for(
     return tags
 
 
-def split_tag(tag: str) -> List[str]:
+def split_tag(tag: str) -> list[str]:
     """Split mulled image tag into conda version and conda build."""
     return tag.rsplit("--", 1)
 
@@ -233,8 +232,7 @@ def parse_tag(tag: str) -> PARSED_TAG:
     version = tag.rsplit(":")[-1]
     build_string = "-1"
     build_number = -1
-    match = BUILD_NUMBER_REGEX.search(version)
-    if match:
+    if match := BUILD_NUMBER_REGEX.search(version):
         build_number = int(match.group(0))
     if "--" in version:
         version, build_string = version.rsplit("--", 1)
@@ -254,7 +252,7 @@ def parse_tag(tag: str) -> PARSED_TAG:
     )
 
 
-def version_sorted(elements: Iterable[str]) -> List[str]:
+def version_sorted(elements: Iterable[str]) -> list[str]:
     """Sort iterable based on loose description of "version" from newest to oldest."""
     parsed_tags_iter = (parse_tag(tag) for tag in elements)
     sorted_tags = sorted(parsed_tags_iter, key=lambda tag: tag.build_string, reverse=True)
@@ -264,7 +262,7 @@ def version_sorted(elements: Iterable[str]) -> List[str]:
 
 
 def build_target(
-    package_name: str, version: Optional[str] = None, build: Optional[str] = None, tag: Optional[str] = None
+    package_name: str, version: str | None = None, build: str | None = None, tag: str | None = None
 ) -> CondaTarget:
     """Use supplied arguments to build a :class:`CondaTarget` object."""
     if tag is not None:
@@ -287,7 +285,7 @@ def conda_build_target_str(target: CondaTarget) -> str:
     return rval
 
 
-def _simple_image_name(targets: List[CondaTarget], image_build: Optional[str] = None) -> str:
+def _simple_image_name(targets: list[CondaTarget], image_build: str | None = None) -> str:
     target = targets[0]
     suffix = ""
     if target.version is not None:
@@ -303,7 +301,7 @@ def _simple_image_name(targets: List[CondaTarget], image_build: Optional[str] = 
 
 
 def v1_image_name(
-    targets: Iterable[CondaTarget], image_build: Optional[str] = None, name_override: Optional[str] = None
+    targets: Iterable[CondaTarget], image_build: str | None = None, name_override: str | None = None
 ) -> str:
     """Generate mulled hash version 1 container identifier for supplied arguments.
 
@@ -344,7 +342,7 @@ def v1_image_name(
 
 
 def v2_image_name(
-    targets: Iterable[CondaTarget], image_build: Optional[str] = None, name_override: Optional[str] = None
+    targets: Iterable[CondaTarget], image_build: str | None = None, name_override: str | None = None
 ) -> str:
     """Generate mulled hash version 2 container identifier for supplied arguments.
 
@@ -418,7 +416,7 @@ def v2_image_name(
         return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
-def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> Dict[str, bytes]:
+def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> dict[str, bytes]:
     """
     Get content of specified files in a conda package.
     The url can be a path to a local file or an url.
@@ -445,7 +443,7 @@ def get_files_from_conda_package(url: str, filepaths: Iterable[str]) -> Dict[str
     return ret
 
 
-def split_container_name(name: str) -> List[str]:
+def split_container_name(name: str) -> list[str]:
     """
     Takes a container name (e.g. samtools:1.7--1) and returns a list (e.g. ['samtools', '1.7', '1'])
     >>> split_container_name('samtools:1.7--1')

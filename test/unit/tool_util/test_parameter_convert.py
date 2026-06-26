@@ -1,7 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 from galaxy.tool_util.parameters import (
@@ -39,7 +37,7 @@ EXAMPLE_ID_1 = 13
 EXAMPLE_ID_2_ENCODED = "123456789abcd2"
 EXAMPLE_ID_2 = 14
 
-ID_MAP: Dict[int, str] = {
+ID_MAP: dict[int, str] = {
     EXAMPLE_ID_1: EXAMPLE_ID_1_ENCODED,
     EXAMPLE_ID_2: EXAMPLE_ID_2_ENCODED,
 }
@@ -174,7 +172,7 @@ def test_dereference():
     request_state = RequestInternalToolState(raw_request_state)
     request_state.validate(bundle)
 
-    exception: Optional[Exception] = None
+    exception: Exception | None = None
     try:
         # quickly verify this request needs to be dereferenced
         bad_state = RequestInternalDereferencedToolState(raw_request_state)
@@ -389,7 +387,7 @@ def test_strictify():
     assert strict_state["parameter"] == ""
 
 
-def strictify_for(tool_state: Dict[str, Any], tool_path: str) -> Dict[str, Any]:
+def strictify_for(tool_state: dict[str, Any], tool_path: str) -> dict[str, Any]:
     tool_source = tool_source_for(tool_path)
     bundle = input_models_for_tool_source(tool_source)
     relaxed_state = RelaxedRequestToolState(tool_state)
@@ -401,7 +399,7 @@ def strictify_for(tool_state: Dict[str, Any], tool_path: str) -> Dict[str, Any]:
 # Keying on the URL (rather than returning a constant) makes the dereference tests assert the
 # *configured* URL actually reached the dereference boundary - an unexpected/empty URL raises
 # KeyError instead of silently passing.
-URL_ID_MAP: Dict[str, int] = {
+URL_ID_MAP: dict[str, int] = {
     "https://example.com/1.bed": EXAMPLE_ID_1,
     "gxfiles://mystorage/1.bed": EXAMPLE_ID_2,
 }
@@ -424,7 +422,7 @@ def _fake_encode(input: int) -> str:
 
 
 def _strict_async_decode_and_dereference(
-    tool_state: Dict[str, Any], bundle: ToolParameterBundleModel
+    tool_state: dict[str, Any], bundle: ToolParameterBundleModel
 ) -> RequestInternalDereferencedToolState:
     request_state = RequestToolState(tool_state)
     request_state.validate(bundle)
@@ -432,7 +430,7 @@ def _strict_async_decode_and_dereference(
     return dereference(request_internal_state, bundle, _fake_dereference, _fake_collection_deference)
 
 
-def fill_state_for(tool_state: Dict[str, Any], tool_path: str, partial: bool = False) -> Dict[str, Any]:
+def fill_state_for(tool_state: dict[str, Any], tool_path: str, partial: bool = False) -> dict[str, Any]:
     tool_source = tool_source_for(tool_path)
     bundle = input_models_for_tool_source(tool_source)
     profile = parse_profile_version(tool_source)

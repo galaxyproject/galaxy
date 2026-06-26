@@ -2,17 +2,17 @@ name: Labels Verifier
 on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [closed]
+permissions: {}
 jobs:
-  onMerged:
+  check-pr-labels:
     name: Check PR labels on merge
-    if: github.repository_owner == 'galaxyproject'
+    if: github.repository_owner == 'galaxyproject' && github.event.pull_request.merged == true
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Check PR labels on merge
         if: |
-          github.event.pull_request.merged == true &&
           ! contains(join(github.event.pull_request.labels.*.name, ', '), 'kind/') &&
           ! contains(github.event.pull_request.labels.*.name, 'merge') &&
           ! contains(github.event.pull_request.labels.*.name, 'minor')
@@ -25,3 +25,54 @@ jobs:
               issue_number: context.issue.number,
               body: 'This PR was merged without a "kind/" label, please correct.',
             })
+  update-milestone:
+    if: github.repository_owner == 'galaxyproject' && github.event.pull_request.merged == true
+    permissions:
+      issues: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update PR milestone on merge
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const targetBranch = process.env.GITHUB_BASE_REF;
+            const prNumber = context.issue.number;
+            // Get all open milestones
+            const { data: milestones } = await github.rest.issues.listMilestones({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            if (milestones.length === 0) {
+              core.setFailed('No open milestones found.');
+              return;
+            }
+
+            // Sort the milestones by number in descending order
+            const sortedMilestones = milestones.sort((a, b) => b.number - a.number);
+            // Every merged pull request should be assigned to the milestone
+            // corresponding to the Galaxy release it will first appear in, see:
+            // https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
+            let targetMilestone = null;
+            // If targeting 'dev', use the latest (highest number) open milestone
+            if (targetBranch === 'dev') {
+              targetMilestone = sortedMilestones[0];
+            }
+            // If targeting 'release_\d+.\d+' and there are multiple open
+            // milestones, use the second latest open milestone
+            else if (/^release_\d+\.\d+$/.test(targetBranch)) {
+              targetMilestone = sortedMilestones[1] || sortedMilestones[0];
+            }
+
+            // Update the Pull Request with the selected milestone
+            if (targetMilestone) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                milestone: targetMilestone.number
+              });
+              console.log(`Successfully updated PR #${prNumber} to milestone: "${targetMilestone.title}"`);
+            } else {
+              console.log('Target branch did not match routing rules. No milestone updated.');
+            }

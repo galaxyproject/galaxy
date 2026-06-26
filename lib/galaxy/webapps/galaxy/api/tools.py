@@ -8,7 +8,6 @@ from json import loads
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 from fastapi import (
@@ -138,7 +137,7 @@ FetchWorkbookCollectionTypeQueryParam: FetchWorkbookCollectionType = Query(
     title="Collection Type",
     description="Generate workbook for specified collection type (not all collection types are supported)",
 )
-FetchWorkbookFilenameQueryParam: Optional[str] = Query(
+FetchWorkbookFilenameQueryParam: str | None = Query(
     None,
     description="Filename of the workbook download to generate",
 )
@@ -153,10 +152,10 @@ ToolIDPathParam: str = Path(
     title="Tool ID",
     description="The tool ID for the lineage stored in Galaxy's toolbox.",
 )
-ToolVersionQueryParam: Optional[str] = Query(default=None, title="Tool Version", description="")
+ToolVersionQueryParam: str | None = Query(default=None, title="Tool Version", description="")
 
 
-async def get_files(request: Request, files: Optional[list[UploadFile]] = None):
+async def get_files(request: Request, files: list[UploadFile] | None = None):
     # FastAPI's UploadFile is a very light wrapper around starlette's UploadFile
     files2: list[StarletteUploadFile] = cast(list[StarletteUploadFile], files or [])
     if not files2:
@@ -200,7 +199,7 @@ class FetchTools:
         trans: ProvidesHistoryContext = DependsOnTrans,
         type: FetchWorkbookType = FetchWorkbookTypeQueryParam,
         collection_type: FetchWorkbookCollectionType = FetchWorkbookCollectionTypeQueryParam,
-        filename: Optional[str] = FetchWorkbookFilenameQueryParam,
+        filename: str | None = FetchWorkbookFilenameQueryParam,
     ):
         generate_request = GenerateFetchWorkbookRequest(
             type=type,
@@ -328,7 +327,7 @@ class FetchTools:
     def tool_inputs(
         self,
         tool_id: str = ToolIDPathParam,
-        tool_version: Optional[str] = ToolVersionQueryParam,
+        tool_version: str | None = ToolVersionQueryParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> list[ToolParameterT]:
         tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
@@ -359,7 +358,7 @@ class FetchTools:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         uuid: UUID4 = LandingUuidPathParam,
-        payload: Optional[ClaimLandingPayload] = Body(...),
+        payload: ClaimLandingPayload | None = Body(...),
     ) -> ToolLandingRequest:
         return self.landing_manager.claim_tool_landing_request(trans, uuid, payload)
 
@@ -380,7 +379,7 @@ class FetchTools:
     def tool_state_request(
         self,
         tool_id: str = ToolIDPathParam,
-        tool_version: Optional[str] = ToolVersionQueryParam,
+        tool_version: str | None = ToolVersionQueryParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Response:
         tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
@@ -398,7 +397,7 @@ class FetchTools:
     def tool_state_landing_request(
         self,
         tool_id: str = ToolIDPathParam,
-        tool_version: Optional[str] = ToolVersionQueryParam,
+        tool_version: str | None = ToolVersionQueryParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Response:
         tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
@@ -416,7 +415,7 @@ class FetchTools:
     def tool_state_test_case_xml(
         self,
         tool_id: str = ToolIDPathParam,
-        tool_version: Optional[str] = ToolVersionQueryParam,
+        tool_version: str | None = ToolVersionQueryParam,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> Response:
         tool_run_ref = ToolRunReference(tool_id=tool_id, tool_version=tool_version, tool_uuid=None)
@@ -788,7 +787,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             lineage_dict = tool.lineage.to_dict()
         else:
             lineage_dict = None
-        tool_shed_dependencies_dict: Optional[list] = None
+        tool_shed_dependencies_dict: list | None = None
         if tool_shed_dependencies := tool.installed_tool_dependencies:
             tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
         return {
@@ -955,7 +954,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         return self.service._create(trans, payload, **kwd)
 
 
-def validate_not_protected(tool_id: Optional[str]):
+def validate_not_protected(tool_id: str | None):
     if tool_id in PROTECTED_TOOLS:
         raise exceptions.RequestParameterInvalidException(
             f"Cannot execute tool [{tool_id}] directly, must use alternative endpoint."
@@ -971,7 +970,7 @@ def _kwd_or_payload(kwd: dict[str, Any]) -> dict[str, Any]:
     return kwd
 
 
-def _parse_options_pagination(value: Any) -> Optional[OptionsPaginationT]:
+def _parse_options_pagination(value: Any) -> OptionsPaginationT | None:
     """Accept ``options_pagination`` as a dict (POST body) or JSON-encoded string
     (GET query param). Returns ``None`` if not provided. Server-side clamps are
     applied later in ``_normalize_pagination`` so individual entries don't need

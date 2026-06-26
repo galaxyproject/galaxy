@@ -6,7 +6,6 @@ from typing import (
     NamedTuple,
     NewType,
     NoReturn,
-    Optional,
 )
 
 import alembic
@@ -103,13 +102,13 @@ class AlembicManager(BaseAlembicManager):
                     log.info(f"Revision {db_head} does not exist in the script directory.")
         return False
 
-    def get_model_db_head(self, model: ModelId) -> Optional[str]:
+    def get_model_db_head(self, model: ModelId) -> str | None:
         return self._get_head_revision(model, cast(Iterable[str], self.db_heads))
 
-    def get_model_script_head(self, model: ModelId) -> Optional[str]:
+    def get_model_script_head(self, model: ModelId) -> str | None:
         return self._get_head_revision(model, self.script_directory.get_heads())
 
-    def _get_head_revision(self, model: ModelId, heads: Iterable[str]) -> Optional[str]:
+    def _get_head_revision(self, model: ModelId, heads: Iterable[str]) -> str | None:
         for head in heads:
             revision = self._get_revision(head)
             if revision and model in revision.branch_labels:
@@ -145,11 +144,11 @@ def verify_databases_via_script(
 
 def verify_databases(
     gxy_engine: Engine,
-    gxy_template: Optional[str],
-    gxy_encoding: Optional[str],
-    tsi_engine: Optional[Engine],
-    tsi_template: Optional[str],
-    tsi_encoding: Optional[str],
+    gxy_template: str | None,
+    gxy_encoding: str | None,
+    tsi_engine: Engine | None,
+    tsi_template: str | None,
+    tsi_encoding: str | None,
     is_auto_migrate: bool,
 ) -> None:
     # Verify gxy model.
@@ -172,10 +171,10 @@ class DatabaseStateVerifier:
         self,
         engine: Engine,
         model: ModelId,
-        database_template: Optional[str],
-        database_encoding: Optional[str],
+        database_template: str | None,
+        database_encoding: str | None,
         is_auto_migrate: bool,
-        is_new_database: Optional[bool] = False,
+        is_new_database: bool | None = False,
     ) -> None:
         self.engine = engine
         self.model = model
@@ -186,8 +185,8 @@ class DatabaseStateVerifier:
         # True if database has been initialized for another model.
         self.is_new_database = is_new_database
         # These values may or may not be required, so do a lazy load.
-        self._db_state: Optional[DatabaseStateCache] = None
-        self._alembic_manager: Optional[AlembicManager] = None
+        self._db_state: DatabaseStateCache | None = None
+        self._alembic_manager: AlembicManager | None = None
 
     @property
     def is_auto_migrate(self) -> bool:

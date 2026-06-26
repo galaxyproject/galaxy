@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     AnyRemoteEntry,
@@ -30,14 +26,14 @@ log = logging.getLogger(__name__)
 
 
 class AzureFlatFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    account_name: Union[str, TemplateExpansion]
-    container_name: Union[str, TemplateExpansion, None] = None
-    account_key: Union[str, TemplateExpansion]
+    account_name: str | TemplateExpansion
+    container_name: str | TemplateExpansion | None = None
+    account_key: str | TemplateExpansion
 
 
 class AzureFlatFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     account_name: str
-    container_name: Optional[str] = None
+    container_name: str | None = None
     account_key: str
 
 
@@ -85,10 +81,10 @@ class AzureFlatFilesSource(
         path: str = "/",
         recursive: bool = False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         if context.config.container_name is None and path == "/":
             fs = self._open_fs(context, {})

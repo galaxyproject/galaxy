@@ -6,7 +6,6 @@ import logging
 import re
 from typing import (
     IO,
-    Optional,
 )
 
 from galaxy.datatypes import data
@@ -66,7 +65,7 @@ class Wiff(Binary):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
@@ -108,7 +107,7 @@ class Wiff2(Binary):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
@@ -207,8 +206,8 @@ class MzTab2(MzTab):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ):
         if to_ext == self.file_ext:
@@ -500,7 +499,7 @@ class Dta2d(TabularData):
     file_ext = "dta2d"
     comment_lines = 0
 
-    def _parse_header(self, line: list) -> Optional[list]:
+    def _parse_header(self, line: list) -> list | None:
         if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
             return None
         line[0] = line[0].lstrip("#")
@@ -509,7 +508,7 @@ class Dta2d(TabularData):
             return None
         return line
 
-    def _parse_delimiter(self, line: str) -> Optional[str]:
+    def _parse_delimiter(self, line: str) -> str | None:
         if len(line.split(" ")) == 3:
             return " "
         elif len(line.split("\t")) == 3:
@@ -602,7 +601,7 @@ class Edta(TabularData):
     file_ext = "edta"
     comment_lines = 0
 
-    def _parse_delimiter(self, line: str) -> Optional[str]:
+    def _parse_delimiter(self, line: str) -> str | None:
         if len(line.split(" ")) >= 3:
             return " "
         elif len(line.split("\t")) >= 3:
@@ -611,7 +610,7 @@ class Edta(TabularData):
             return "\t"
         return None
 
-    def _parse_type(self, line: list) -> Optional[int]:
+    def _parse_type(self, line: list) -> int | None:
         """
         parse the type from the header line
         types 1-3 as in the class docs, 0: type 1 wo/wrong header
@@ -631,7 +630,7 @@ class Edta(TabularData):
         else:
             return 3
 
-    def _parse_dataline(self, line: list, tpe: Optional[int]) -> bool:
+    def _parse_dataline(self, line: list, tpe: int | None) -> bool:
         if tpe == 2 or tpe == 3:
             idx = 4
         else:
@@ -1055,7 +1054,7 @@ class SPLib(Msp):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
@@ -1142,7 +1141,7 @@ class ImzML(Binary):
             opt_text = ""
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')

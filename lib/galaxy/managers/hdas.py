@@ -10,9 +10,7 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import quote_plus
 
@@ -131,7 +129,7 @@ class HDAManager(
         return self.list(filters=filters)
 
     # .... security and permissions
-    def is_owner(self, item, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(self, item, user: model.User | None, current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
@@ -188,7 +186,7 @@ class HDAManager(
             user_context=user_context,
         )
         if request.source == DatasetSourceType.hda:
-            dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = self.get_accessible(
+            dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation = self.get_accessible(
                 request.content, user
             )
         else:
@@ -362,7 +360,7 @@ class HDAManager(
 
 def dereference_input_to_hda(
     trans: ProvidesHistoryContext,
-    data_request: Union[DataRequestUri, FileRequestUri],
+    data_request: DataRequestUri | FileRequestUri,
     history: model.History,
 ) -> HistoryDatasetAssociation:
     permissions = trans.app.security_agent.history_get_default_permissions(history)
@@ -420,9 +418,9 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     def get_discarded(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
     ) -> list[StoredItem]:
         stmt = (
             select(
@@ -488,7 +486,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             errors=errors,
         )
 
-    def _request_full_delete_all(self, dataset_ids_to_remove: set[int], user: Optional[model.User]):
+    def _request_full_delete_all(self, dataset_ids_to_remove: set[int], user: model.User | None):
         use_tasks = self.dataset_manager.app.config.enable_celery_tasks
         request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
         if use_tasks:

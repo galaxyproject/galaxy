@@ -27,7 +27,6 @@ from typing import (
     overload,
     TypedDict,
     TypeVar,
-    Union,
 )
 
 from .framework import NavigatesGalaxyMixin
@@ -146,11 +145,10 @@ class DataLibraryUploadItem(UploadItem):
 
 
 class UploadContext:
-
     def __init__(self, method_id: UploadMethodId, driver_wrapper: NavigatesGalaxyMixin):
         self.driver_wrapper = driver_wrapper
         self._item_count = 0
-        self._current_method_id: Optional[UploadMethodId] = None
+        self._current_method_id: UploadMethodId | None = None
 
         # Navigate to the upload method
         self.driver_wrapper.home()
@@ -363,7 +361,7 @@ class UploadContext:
             if option_id:
                 candidates.append((option_id, option_label))
 
-        target_id: Optional[str] = None
+        target_id: str | None = None
         for option_id, option_label in candidates:
             if option_id.lower() == composite_type_lower or option_label.lower() == composite_type_lower:
                 target_id = option_id
@@ -539,13 +537,11 @@ class BaseUploadContext:
 
 
 class LocalFileContext(BaseUploadContext):
-
     def stage_local_file(self, test_path: str, metadata: Optional["UploadMetadata"] = None) -> LocalUploadItem:
         return self._context.stage_local_file(test_path, metadata)
 
 
 class PasteContentContext(BaseUploadContext):
-
     def stage_paste_content(self, content: str, metadata: Optional["UploadMetadata"] = None) -> PasteContentUploadItem:
         return self._context.stage_paste_content(content, metadata)
 
@@ -577,7 +573,6 @@ class PasteLinksContext(BaseUploadContext):
 
 
 class RemoteFilesContext(BaseUploadContext):
-
     def stage_remote_file(
         self, source_label: str, file_label: str, metadata: Optional["UploadMetadata"] = None
     ) -> RemoteFileUploadItem:
@@ -585,7 +580,6 @@ class RemoteFilesContext(BaseUploadContext):
 
 
 class CompositeFileContext(BaseUploadContext):
-
     def select_composite(self, composite_type: str) -> "CompositeFileContext":
         """Select composite datatype in the composite-file method."""
         self._context.select_composite(composite_type)
@@ -608,7 +602,6 @@ class CompositeFileContext(BaseUploadContext):
 
 
 class DataLibraryContext(BaseUploadContext):
-
     def stage_data_library_dataset(self, library_label: str, dataset_label: str) -> DataLibraryUploadItem:
         return self._context.stage_data_library_dataset(library_label, dataset_label)
 
@@ -645,14 +638,16 @@ class UsesUploadActivity(NavigatesGalaxyMixin):
     @overload
     def upload_context(self, method_id: Literal["data-library"]) -> DataLibraryContext: ...
 
-    def upload_context(self, method_id: UploadMethodId) -> Union[
-        LocalFileContext,
-        PasteContentContext,
-        PasteLinksContext,
-        RemoteFilesContext,
-        CompositeFileContext,
-        DataLibraryContext,
-    ]:
+    def upload_context(
+        self, method_id: UploadMethodId
+    ) -> (
+        LocalFileContext
+        | PasteContentContext
+        | PasteLinksContext
+        | RemoteFilesContext
+        | CompositeFileContext
+        | DataLibraryContext
+    ):
         """Create an upload context for the specified method.
 
         Args:

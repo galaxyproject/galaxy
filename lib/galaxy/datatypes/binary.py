@@ -17,9 +17,7 @@ from collections.abc import Iterable
 from json import dumps
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import defusedxml.ElementTree as ET
@@ -504,7 +502,7 @@ class CompressedZarrZipArchive(CompressedZipArchive):
             meta_file = self._find_zarr_metadata_file(zf)
         return meta_file is not None
 
-    def _find_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+    def _find_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> str | None:
         """Returns the path to the metadata file in the Zarr store if found."""
         # Depending on the Zarr version, the metadata file can be in different locations
         # In v1 the metadata is in a file named "meta" https://zarr-specs.readthedocs.io/en/latest/v1/v1.0.html
@@ -535,7 +533,7 @@ class CompressedOMEZarrZipArchive(CompressedZarrZipArchive):
             meta_file = self._find_ome_zarr_metadata_file(zf)
         return meta_file is not None
 
-    def _find_ome_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> Optional[str]:
+    def _find_ome_zarr_metadata_file(self, zip_file: zipfile.ZipFile) -> str | None:
         expected_meta_file_name = "OME/METADATA.ome.xml"
         for file in zip_file.namelist():
             if file.endswith(expected_meta_file_name):
@@ -573,8 +571,8 @@ class _BamOrSam:
                     ]
                 else:
                     dataset.metadata.metadata_incomplete = True
-                dataset.metadata.sort_order = bam_file.header.get("HD", {}).get("SO", None)  # type: ignore [attr-defined]
-                dataset.metadata.bam_version = bam_file.header.get("HD", {}).get("VN", None)  # type: ignore [attr-defined]
+                dataset.metadata.sort_order = bam_file.header.get("HD", {}).get("SO", None)  # type: ignore[attr-defined]
+                dataset.metadata.bam_version = bam_file.header.get("HD", {}).get("VN", None)  # type: ignore[attr-defined]
         except Exception:
             # Per Dan, don't log here because doing so will cause datasets that
             # fail metadata to end in the error state
@@ -587,7 +585,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     edam_format = "format_2572"
     edam_data = "data_0863"
     file_ext = "unsorted.bam"
-    sort_flag: Optional[str] = None
+    sort_flag: str | None = None
 
     MetadataElement(name="columns", default=12, desc="Number of columns", readonly=True, visible=False, no_value=0)
     MetadataElement(
@@ -691,7 +689,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         """
         pysam.merge("-O", "BAM", output_file, *split_files)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def sniff(self, filename: str) -> bool:
@@ -766,7 +764,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.get_file_name(), "rb", check_sq=False) as bamfile:
@@ -818,10 +816,10 @@ class BamNative(CompressedArchive, _BamOrSam):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         headers = kwd.get("headers", {})
@@ -924,7 +922,7 @@ class Bam(BamNative):
         return needs_sorting
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         # These metadata values are not accessible by users, always overwrite
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
@@ -1111,7 +1109,7 @@ class CRAM(Binary):
     )
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         major_version, minor_version = self.get_cram_version(dataset.get_file_name())
         if major_version != -1:
@@ -1195,7 +1193,7 @@ class Bcf(BaseBcf):
             return False
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """Creates the index for the BCF file."""
         # These metadata values are not accessible by users, always overwrite
@@ -1594,7 +1592,7 @@ class Anndata(H5):
             dataset.metadata.layers_count = len(anndata_file)
             dataset.metadata.layers_names = list(anndata_file.keys())
 
-            def get_index_value(tmp: Union[h5py.Dataset, h5py.Datatype, h5py.Group]):
+            def get_index_value(tmp: h5py.Dataset | h5py.Datatype | h5py.Group):
                 if isinstance(tmp, (h5py.Dataset, h5py.Datatype)):
                     if "index" in tmp.dtype.names:
                         return tmp["index"]
@@ -1676,7 +1674,6 @@ class Anndata(H5):
 
             # Resolving the problematic shape parameter
             if "X" in dataset.metadata.layers_names:
-
                 # Check if X is a null/empty matrix (common in fragment-only files of snapatac data for example)
                 if (
                     anndata_file["X"].attrs.get("encoding-type") == "null"
@@ -1804,7 +1801,7 @@ class GmxBinary(Binary):
     Base class for GROMACS binary files - xtc, trr, cpt
     """
 
-    magic_number: Optional[int] = None  # variables to be overwritten in the child class
+    magic_number: int | None = None  # variables to be overwritten in the child class
     file_ext = ""
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -2135,7 +2132,7 @@ class H5MLM(H5):
     )
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         try:
             spec_key = "hyper_params"
@@ -2218,8 +2215,8 @@ class H5MLM(H5):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ):
         headers = kwd.pop("headers", {})
@@ -2517,7 +2514,7 @@ class SQlite(Binary):
     file_ext = "sqlite"
     edam_format = "format_3621"
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
@@ -3803,7 +3800,7 @@ class MongoDBArchive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"MongoDB Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = f'MongoDB version {dataset.metadata.version or "unknown"}'
+            dataset.blurb = f"MongoDB version {dataset.metadata.version or 'unknown'}"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"

@@ -9,7 +9,6 @@ from tempfile import (
 )
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.security.idencoding import IdEncodingHelper
@@ -45,8 +44,8 @@ class TestToolShedConfig:
     user_activation_on = False
     file_path: str
     id_secret: str = "thisistheshedunittestsecret"
-    smtp_server: Optional[str] = None
-    tool_shed_url: Optional[str] = "shed_unit_test://localhost"
+    smtp_server: str | None = None
+    tool_shed_url: str | None = "shed_unit_test://localhost"
     hgweb_repo_prefix = "repos/"
     config_hg_for_dev = False
 
@@ -83,7 +82,7 @@ class TestToolShedApp(ToolShedApp):
         self.security_agent = self.model.security_agent
 
 
-def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:
+def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: str | None = None) -> User:
     email = email or f"{username}@galaxyproject.org"
     return create_user(
         app,
@@ -118,7 +117,7 @@ def provides_repositories_fixture(
     return ProvidesRepositoriesImpl(app, user)
 
 
-def repository_fixture(app: ToolShedApp, user: User, name: str, category: Optional[Category] = None) -> Repository:
+def repository_fixture(app: ToolShedApp, user: User, name: str, category: Category | None = None) -> Repository:
     type = rt_util.UNRESTRICTED
     description = f"test repo named {name}"
     long_description = f"test repo named {name} a longer description"
@@ -153,7 +152,7 @@ def upload(
     provides_repositories: ProvidesRepositoriesContext,
     repository: Repository,
     path: Path,
-    arcname: Optional[str] = None,
+    arcname: str | None = None,
 ):
     if path.is_dir():
         tf = NamedTemporaryFile(delete=False)

@@ -1,7 +1,6 @@
 import os
 from typing import (
     cast,
-    Optional,
 )
 from uuid import uuid4
 
@@ -53,8 +52,8 @@ SIMPLE_FILE_SOURCE_DESCRIPTION = "a description of my file source"
 
 
 class Config:
-    file_source_templates: Optional[list[RawTemplateConfig]] = None
-    file_source_templates_config_file: Optional[str] = None
+    file_source_templates: list[RawTemplateConfig] | None = None
+    file_source_templates_config_file: str | None = None
 
     def __init__(self, templates: list[RawTemplateConfig]):
         self.file_source_templates = templates
@@ -309,7 +308,6 @@ class TestFileSourcesTestCase(BaseTestCase):
         fsspec_fs_init_kwd = {}
 
         class MockDropboxDriveFileSystem:
-
             def __init__(self, **kwd):
                 fsspec_fs_init_kwd.update(kwd)
 
@@ -1042,7 +1040,6 @@ class MockResponse:
 
 
 class MockExceptionResponse:
-
     def __init__(self, exception_msg: str):
         self._exception_msg = exception_msg
 
@@ -1051,7 +1048,6 @@ class MockExceptionResponse:
 
 
 class OneDriveMockResponse:
-
     def __init__(self, status_code=200, json_data=None, text=""):
         self.status_code = status_code
         self._json_data = json_data or {}

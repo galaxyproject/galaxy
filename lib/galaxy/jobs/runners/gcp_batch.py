@@ -119,8 +119,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
     def _init_batch_client(self):
         """Initialize the Google Cloud Batch client."""
         # Set up authentication
-        service_account_file = self.runner_params.get("service_account_file")
-        if service_account_file:
+        if service_account_file := self.runner_params.get("service_account_file"):
             os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = service_account_file
 
         try:
@@ -408,8 +407,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         allocation_policy.instances = [instance_template]
 
         # Configure service account for job execution
-        service_account_email = params.get("service_account_email")
-        if service_account_email:
+        if service_account_email := params.get("service_account_email"):
             service_account = batch_v1.ServiceAccount()
             service_account.email = service_account_email
             allocation_policy.service_account = service_account
@@ -558,8 +556,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
             nfs_mount_path = DEFAULT_NFS_MOUNT_PATH
 
         # Build Docker volume arguments from docker_extra_volumes parameter
-        docker_volumes_param = params.get("docker_extra_volumes")
-        if docker_volumes_param:
+        if docker_volumes_param := params.get("docker_extra_volumes"):
             docker_volume_args = parse_docker_volumes_param(docker_volumes_param)
         else:
             # Default to CVMFS mount if no extra volumes specified
@@ -789,8 +786,7 @@ class GoogleCloudBatchJobRunner(AsynchronousJobRunner):
         job = job_wrapper.get_job()
         log.debug("Starting stop_job for job %s", job.id)
 
-        batch_job_name = job.get_job_runner_external_id()
-        if batch_job_name:
+        if batch_job_name := job.get_job_runner_external_id():
             if not self.runner_params.get("delete_completed_jobs", True):
                 try:
                     job_path = f"projects/{self.runner_params['project_id']}/locations/{self.runner_params['region']}/jobs/{batch_job_name}"

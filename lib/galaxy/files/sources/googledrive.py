@@ -9,8 +9,6 @@ except ImportError:
 from datetime import datetime
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
 
 from fsspec import AbstractFileSystem
@@ -28,7 +26,7 @@ from ._fsspec import (
     FsspecFilesSource,
 )
 
-GalaxyGoogleDriveFileSystem: Optional[type[AbstractFileSystem]]
+GalaxyGoogleDriveFileSystem: type[AbstractFileSystem] | None
 
 if GoogleDriveFileSystem is not None:
 
@@ -63,7 +61,7 @@ AccessTokenField = Field(
 
 
 class GoogleDriveFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+    access_token: Annotated[str | TemplateExpansion, AccessTokenField]
 
 
 class GoogleDriveFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):

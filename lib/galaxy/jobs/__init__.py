@@ -30,7 +30,6 @@ from typing import (
     Optional,
     TYPE_CHECKING,
     TypedDict,
-    Union,
 )
 
 import yaml
@@ -140,10 +139,10 @@ VALID_TOOL_CLASSES = ["local", "requires_galaxy", "user_defined"]
 
 
 class ResubmitConfigDict(TypedDict, total=False):
-    environment: Union[str, None]
-    condition: Union[str, None]
-    handler: Union[str, None]
-    delay: Union[str, None]
+    environment: str | None
+    condition: str | None
+    handler: str | None
+    delay: str | None
 
 
 class JobToolConfiguration(Bunch):
@@ -210,7 +209,7 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
         environment: dict[str, Any] = {"id": destination_id}
 
-        metrics_to_dict: dict[str, Union[str, Element]] = {"src": "default"}
+        metrics_to_dict: dict[str, str | Element] = {"src": "default"}
         if destination_metrics:
             if not util.asbool(destination_metrics):
                 metrics_to_dict = {"src": "disabled"}
@@ -295,7 +294,7 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
                 value = limit.get(key)
                 if value:
                     if key == "type" and value.startswith("destination_"):
-                        value = f"environment_{value[len('destination_'):]}"
+                        value = f"environment_{value[len('destination_') :]}"
                     limit_dict[key] = value
             limits_config.append(limit_dict)
 
@@ -305,12 +304,12 @@ def job_config_xml_to_dict(config, root: "Element") -> dict[str, Any]:
 
 @dataclass
 class JobConfigurationLimits:
-    registered_user_concurrent_jobs: Optional[int] = None
-    anonymous_user_concurrent_jobs: Optional[int] = None
-    walltime: Optional[str] = None
-    walltime_delta: Optional[datetime.timedelta] = None
+    registered_user_concurrent_jobs: int | None = None
+    anonymous_user_concurrent_jobs: int | None = None
+    walltime: str | None = None
+    walltime_delta: datetime.timedelta | None = None
     total_walltime: dict[str, Any] = field(default_factory=dict)
-    output_size: Optional[int] = None
+    output_size: int | None = None
     destination_user_concurrent_jobs: dict[str, int] = field(default_factory=dict)
     destination_total_concurrent_jobs: dict[str, int] = field(default_factory=dict)
 
@@ -340,16 +339,16 @@ class JobConfiguration(ConfiguresHandlers):
         """Parse the job configuration XML."""
         super().__init__(app)
         self.runner_plugins: list[dict] = []
-        self.dynamic_params: Optional[dict[str, Any]] = None
+        self.dynamic_params: dict[str, Any] | None = None
         self.handler_runner_plugins: dict[str, str] = {}
-        self.default_handler_id: Union[str, None] = None
-        self.handler_ready_window_size: Union[int, None] = None
+        self.default_handler_id: str | None = None
+        self.handler_ready_window_size: int | None = None
         self.destinations: dict[str, list[JobDestination]] = {}
-        self.default_destination_id: Union[str, None] = None
+        self.default_destination_id: str | None = None
         self.tools: dict[str, list[JobToolConfiguration]] = {}
         self.tool_classes: dict[str, list[JobToolConfiguration]] = {}
         self.resource_groups: dict[str, list[str]] = {}
-        self.default_resource_group: Union[str, None] = None
+        self.default_resource_group: str | None = None
         self.resource_parameters: dict[str, Any] = {}
         self.limits = JobConfigurationLimits()
 
@@ -570,7 +569,7 @@ class JobConfiguration(ConfiguresHandlers):
         for limit_dict in job_config_dict.get("limits", []):
             limit_type = limit_dict.get("type")
             if limit_type.startswith("environment_"):
-                limit_type = f"destination_{limit_type[len('environment_'):]}"
+                limit_type = f"destination_{limit_type[len('environment_') :]}"
 
             limit_value = limit_dict.get("value")
             # concurrent_jobs renamed to destination_user_concurrent_jobs in job_conf.xml
@@ -767,9 +766,7 @@ class JobConfiguration(ConfiguresHandlers):
         )
 
     # Called upon instantiation of a Tool object
-    def get_job_tool_configurations(
-        self, ids: Union[str, list[str]], tool_classes: list[str]
-    ) -> list[JobToolConfiguration]:
+    def get_job_tool_configurations(self, ids: str | list[str], tool_classes: list[str]) -> list[JobToolConfiguration]:
         """
         Get all configured JobToolConfigurations for a tool ID, or, if given
         a list of IDs, the JobToolConfigurations for the first id in ``ids``
@@ -813,7 +810,7 @@ class JobConfiguration(ConfiguresHandlers):
             rval.append(self.default_job_tool_configuration)
         return rval
 
-    def get_destination(self, id_or_tag: Union[str, None]) -> JobDestination:
+    def get_destination(self, id_or_tag: str | None) -> JobDestination:
         """Given a destination ID or tag, return the JobDestination matching the provided ID or tag
 
         :param id_or_tag: A destination ID or tag.
@@ -1014,7 +1011,7 @@ class MinimalJobWrapper(HasResourceParameters):
         self.extra_filenames: list[str] = []
         self.environment_variables: list[dict[str, str]] = []
         self.interactivetools: list[dict[str, Any]] = []
-        self.command_line: Union[str, None] = None
+        self.command_line: str | None = None
         self.version_command_line = None
         self._dependency_shell_commands = None
         # Tool versioning variables
@@ -1027,7 +1024,7 @@ class MinimalJobWrapper(HasResourceParameters):
             self._setup_working_directory(job=job)
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
-        self._job_io: Optional[JobIO] = None
+        self._job_io: JobIO | None = None
         self.tool_provided_job_metadata = None
         self.params = None  # unused
         self.runner_command_line = None
@@ -1816,9 +1813,9 @@ class MinimalJobWrapper(HasResourceParameters):
     def set_job_destination(
         self,
         job_destination: JobDestination,
-        external_id: Union[str, None] = None,
+        external_id: str | None = None,
         flush: bool = True,
-        job: Union[Job, None] = None,
+        job: Job | None = None,
     ) -> None:
         """Subclasses should implement this to persist a destination, if necessary."""
 
@@ -1858,8 +1855,8 @@ class MinimalJobWrapper(HasResourceParameters):
     def _set_object_store_ids_full(self, job: Job):
         user = job.user
         object_store_id = self.get_destination_configuration("object_store_id", None)
-        split_object_stores: Optional[Callable[[str], ObjectStorePopulator]] = None
-        object_store_id_overrides: Optional[dict[str, Optional[str]]] = None
+        split_object_stores: Callable[[str], ObjectStorePopulator] | None = None
+        object_store_id_overrides: dict[str, str | None] | None = None
 
         if object_store_id is None:
             object_store_id = job.preferred_object_store_id
@@ -2481,7 +2478,7 @@ class MinimalJobWrapper(HasResourceParameters):
         """Return complete command line, including possible version command."""
         if self.remote_command_line:
             return None
-        return f'{self.version_command_line or ""}{self.command_line}'
+        return f"{self.version_command_line or ''}{self.command_line}"
 
     def get_env_setup_clause(self):
         if self.app.config.environment_setup_file is None:
@@ -2840,9 +2837,9 @@ class JobWrapper(MinimalJobWrapper):
     def set_job_destination(
         self,
         job_destination: JobDestination,
-        external_id: Union[str, None] = None,
+        external_id: str | None = None,
         flush: bool = True,
-        job: Union[Job, None] = None,
+        job: Job | None = None,
     ) -> None:
         """
         Persist job destination params in the database for recovery.

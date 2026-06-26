@@ -9,8 +9,6 @@ import re
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -150,7 +148,7 @@ CustomBuildCreationBody = Body(
     default=..., title="Add custom build", description="The values to add a new custom build."
 )
 UserCreationBody = Body(default=..., title="Create User", description="The values to add create a user.")
-AnyUserModel = Union[DetailedUserModel, AnonUserModel]
+AnyUserModel = DetailedUserModel | AnonUserModel
 
 
 @router.cbv
@@ -207,9 +205,9 @@ class FastAPIUsers:
     def index_deleted(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
     ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(trans=trans, deleted=True, f_email=f_email, f_name=f_name, f_any=f_any)
 
@@ -337,8 +335,8 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
-    ) -> Optional[UserQuotaUsage]:
-        effective_label: Optional[str] = label
+    ) -> UserQuotaUsage | None:
+        effective_label: str | None = label
         if label == "__null__":
             effective_label = None
         if user := self.service.get_user_full(trans, user_id, False):
@@ -593,7 +591,7 @@ class FastAPIUsers:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Union[UserCreationPayload, RemoteUserCreationPayload] = UserCreationBody,
+        payload: UserCreationPayload | RemoteUserCreationPayload = UserCreationBody,
     ) -> CreatedUserModel:
         if isinstance(payload, UserCreationPayload):
             email = payload.email
@@ -634,13 +632,11 @@ class FastAPIUsers:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = UsersDeletedQueryParam,
-        f_email: Optional[str] = FilterEmailQueryParam,
-        f_name: Optional[str] = FilterNameQueryParam,
-        f_any: Optional[str] = FilterAnyQueryParam,
-        limit: Optional[int] = Query(
-            default=None, ge=1, title="Limit", description="Maximum number of users to return."
-        ),
-        offset: Optional[int] = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
+        f_email: str | None = FilterEmailQueryParam,
+        f_name: str | None = FilterNameQueryParam,
+        f_any: str | None = FilterAnyQueryParam,
+        limit: int | None = Query(default=None, ge=1, title="Limit", description="Maximum number of users to return."),
+        offset: int | None = Query(default=0, ge=0, title="Offset", description="Number of users to skip."),
     ) -> list[MaybeLimitedUserModel]:
         return self.service.get_index(
             trans=trans, deleted=deleted, f_email=f_email, f_name=f_name, f_any=f_any, limit=limit, offset=offset
@@ -655,7 +651,7 @@ class FastAPIUsers:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> AnyUserModel:
         user_deleted = deleted or False
         return self.service.show_user(trans=trans, user_id=user_id, deleted=user_deleted)
@@ -668,7 +664,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         payload: UserUpdatePayload = UserUpdateBody,
-        deleted: Optional[bool] = UserDeletedQueryParam,
+        deleted: bool | None = UserDeletedQueryParam,
     ) -> DetailedUserModel:
         deleted = deleted or False
         current_user = trans.user
@@ -693,7 +689,7 @@ class FastAPIUsers:
                 description="Whether to definitely remove this user. Only deleted users can be purged.",
             ),
         ] = False,
-        payload: Optional[UserDeletionPayload] = None,
+        payload: UserDeletionPayload | None = None,
     ) -> DetailedUserModel:
         user_to_update = self.service.user_manager.by_id(user_id)
         assert user_to_update is not None
@@ -950,7 +946,11 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if "email" in payload:
             email = payload.get("email")
             self.user_manager.update_email(
-                trans, user, email, commit=False, send_activation_email=True  # commit at the end of the handler
+                trans,
+                user,
+                email,
+                commit=False,
+                send_activation_email=True,  # commit at the end of the handler
             )
         # Update public name
         if "username" in payload:

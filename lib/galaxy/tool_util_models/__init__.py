@@ -6,13 +6,10 @@ for reasoning about tool state externally from Galaxy.
 
 import re
 from typing import (
+    Annotated,
     Any,
     ClassVar,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
+    Literal,
     Union,
 )
 
@@ -32,8 +29,6 @@ from pydantic import (
 )
 from pydantic_core import PydanticCustomError
 from typing_extensions import (
-    Annotated,
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -69,7 +64,7 @@ from .tool_source import (
 from .yaml_parameters import YamlGalaxyToolParameter
 
 
-def normalize_dict(values, keys: List[str]):
+def normalize_dict(values, keys: list[str]):
     for key in keys:
         items = values.get(key)
         if isinstance(items, dict):  # dict-of-dicts format
@@ -93,8 +88,8 @@ _TEMPLATE_BLOCK_RE = re.compile(r"\$\((.*?)\)", re.DOTALL)
 _INPUTS_REF_RE = re.compile(r"\binputs\.([A-Za-z_][A-Za-z0-9_]*)")
 
 
-def _command_input_refs(text: Optional[str]) -> Set[str]:
-    refs: Set[str] = set()
+def _command_input_refs(text: str | None) -> set[str]:
+    refs: set[str] = set()
     if not text:
         return refs
     for block in _TEMPLATE_BLOCK_RE.findall(text):
@@ -103,14 +98,14 @@ def _command_input_refs(text: Optional[str]) -> Set[str]:
     return refs
 
 
-def format_validation_errors(exc: ValidationError) -> List[str]:
+def format_validation_errors(exc: ValidationError) -> list[str]:
     """Distill a pydantic ValidationError into a human-readable list.
 
     Each entry is `<dotted.location>: <message>`, or just `<message>` for
     model-level errors with no location. Suitable for surfacing directly to
     a user (in the agent's bullet list, or as an API 4xx body).
     """
-    lines: List[str] = []
+    lines: list[str] = []
     for err in exc.errors():
         loc_parts = [str(p) for p in err.get("loc", ()) if p not in ("__root__",)]
         loc = ".".join(loc_parts)
@@ -128,7 +123,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
     )
 
     id: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description=(
                 "Unique identifier for the tool. Lowercase, must start with a letter, "
@@ -140,7 +135,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
             pattern=TOOL_ID_PATTERN,
         ),
     ] = None
-    version: Annotated[Optional[str], Field(description="Version for the tool.", examples=["0.1.0"])] = None
+    version: Annotated[str | None, Field(description="Version for the tool.", examples=["0.1.0"])] = None
     name: Annotated[
         str,
         Field(
@@ -149,16 +144,16 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
         ),
     ]
     description: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="The description is displayed in the tool menu immediately following the hyperlink for the tool."
         ),
     ] = None
     configfiles: Annotated[
-        Optional[List[YamlTemplateConfigFile]], Field(description="A list of config files for this tool.")
+        list[YamlTemplateConfigFile] | None, Field(description="A list of config files for this tool.")
     ] = None
     requirements: Annotated[
-        Optional[List[Union[JavascriptRequirement, ResourceRequirement, ContainerRequirement]]],
+        list[JavascriptRequirement | ResourceRequirement | ContainerRequirement] | None,
         Field(
             description="A list of requirements needed to execute this tool. These can be javascript expressions, resource requirements or container images."
         ),
@@ -171,21 +166,21 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
             examples=["head -n '$(inputs.num_lines)' '$(inputs.input_file.path)' > output.txt"],
         ),
     ]
-    inputs: List[YamlGalaxyToolParameter] = []
-    outputs: List[IncomingToolOutput] = []
-    citations: Optional[List[Citation]] = None
+    inputs: list[YamlGalaxyToolParameter] = []
+    outputs: list[IncomingToolOutput] = []
+    citations: list[Citation] | None = None
     license: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="A full URI or a a short [SPDX](https://spdx.org/licenses/) identifier for a license for this tool wrapper. The tool wrapper license can be independent of the underlying tool license. This license covers the tool yaml and associated scripts shipped with the tool.",
             examples=["MIT"],
         ),
     ] = None
-    edam_operations: Optional[List[str]] = None
-    edam_topics: Optional[List[str]] = None
-    xrefs: Optional[List[XrefDict]] = None
-    profile: Optional[float] = None
-    help: Annotated[Optional[HelpContent], Field(description="Help text shown below the tool interface.")] = None
+    edam_operations: list[str] | None = None
+    edam_topics: list[str] | None = None
+    xrefs: list[XrefDict] | None = None
+    profile: float | None = None
+    help: Annotated[HelpContent | None, Field(description="Help text shown below the tool interface.")] = None
     # NOTE: `tests` is intentionally NOT declared here. It lives on the concrete
     # subclasses (`UserToolSource`, `YamlToolSource`) so that the slim
     # `UserToolSourceAuthoringView` can inherit everything *except* the test
@@ -202,7 +197,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
 
     @field_validator("name", "version", mode="after")
     @classmethod
-    def _reject_blank_strings(cls, v: Optional[str]) -> Optional[str]:
+    def _reject_blank_strings(cls, v: str | None) -> str | None:
         if v is not None and not v.strip():
             raise PydanticCustomError(
                 "dynamic_tool.blank_string",
@@ -212,12 +207,11 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
 
     @model_validator(mode="after")
     def _check_input_refs(self) -> "_DynamicToolSourceBase":
-        declared_inputs: Set[str] = {param.root.name for param in self.inputs}
-        referenced: Set[str] = _command_input_refs(self.shell_command)
+        declared_inputs: set[str] = {param.root.name for param in self.inputs}
+        referenced: set[str] = _command_input_refs(self.shell_command)
         for configfile in self.configfiles or []:
             referenced |= _command_input_refs(configfile.content)
-        undeclared = sorted(referenced - declared_inputs)
-        if undeclared:
+        if undeclared := sorted(referenced - declared_inputs):
             joined = "; ".join(
                 f"references inputs.{name} but no input named '{name}' is declared" for name in undeclared
             )
@@ -229,7 +223,7 @@ class _DynamicToolSourceBase(ToolSourceBaseModel):
 
     @model_validator(mode="after")
     def _check_output_claims(self) -> "_DynamicToolSourceBase":
-        errors: List[str] = []
+        errors: list[str] = []
         for output in self.outputs:
             if isinstance(output, IncomingToolOutputDataset):
                 if not output.from_work_dir and not output.discover_datasets:
@@ -293,7 +287,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
     # Field declaration order puts subclass fields (class_, container) after
     # parent ones, which serializes them at the end. Re-order on dump so the
     # YAML the tool editor renders leads with identity + runtime.
-    _CANONICAL_FIELD_ORDER: ClassVar[Tuple[str, ...]] = (
+    _CANONICAL_FIELD_ORDER: ClassVar[tuple[str, ...]] = (
         "class_",
         "id",
         "name",
@@ -337,7 +331,7 @@ class UserToolSourceAuthoringView(_DynamicToolSourceBase):
             return data
         by_alias = bool(getattr(info, "by_alias", False))
         fields = type(self).model_fields
-        ordered: Dict[str, Any] = {}
+        ordered: dict[str, Any] = {}
         for field_name in self._CANONICAL_FIELD_ORDER:
             field_info = fields.get(field_name)
             key = (field_info.alias or field_name) if by_alias and field_info and field_info.alias else field_name
@@ -360,22 +354,22 @@ class UserToolSource(UserToolSourceAuthoringView):
     # ``version`` is required (inherited from UserToolSourceAuthoringView). A stored
     # row that predates the requirement won't validate; ``lift_user_tool_source``
     # returns it as the raw dict with status "invalid" so its author still sees it.
-    tests: Optional[List["YamlToolTest"]] = None
+    tests: list["YamlToolTest"] | None = None
 
 
 class YamlToolSource(_DynamicToolSourceBase):
     class_: Annotated[Literal["GalaxyTool"], Field(alias="class")]
     container: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="Container image to use for this tool.",
             examples=["quay.io/biocontainers/python:3.13"],
         ),
     ] = None
-    tests: Optional[List["YamlToolTest"]] = None
+    tests: list["YamlToolTest"] | None = None
 
 
-DynamicToolSources = Annotated[Union[UserToolSource, YamlToolSource], Field(discriminator="class_")]
+DynamicToolSources = Annotated[UserToolSource | YamlToolSource, Field(discriminator="class_")]
 
 
 # ---------------------------------------------------------------------------
@@ -399,7 +393,7 @@ DynamicToolSources = Annotated[Union[UserToolSource, YamlToolSource], Field(disc
 LiftStatus = Literal["ok", "lifted", "invalid"]
 
 
-def _navigable_path(value: Any, loc: tuple) -> Tuple[Optional[Any], List[Any]]:
+def _navigable_path(value: Any, loc: tuple) -> tuple[Any | None, list[Any]]:
     """Walk `loc` against the structure of `value`, skipping steps that don't
     correspond to a real key/index (pydantic inserts discriminator literals
     like `"data"` into the loc for tagged unions). Returns the parent
@@ -409,7 +403,7 @@ def _navigable_path(value: Any, loc: tuple) -> Tuple[Optional[Any], List[Any]]:
     if not loc:
         return cur, []
     *prefix, leaf = loc
-    cleaned: List[Any] = []
+    cleaned: list[Any] = []
     for step in prefix:
         if isinstance(cur, list) and isinstance(step, int) and 0 <= step < len(cur):
             cur = cur[step]
@@ -433,8 +427,7 @@ def _strip_path(value: dict, loc: tuple) -> bool:
     parent, cleaned = _navigable_path(value, loc)
     if not cleaned or not isinstance(parent, dict):
         return False
-    leaf = cleaned[-1]
-    if leaf in parent:
+    if (leaf := cleaned[-1]) in parent:
         del parent[leaf]
         return True
     return False
@@ -442,7 +435,7 @@ def _strip_path(value: dict, loc: tuple) -> bool:
 
 def lift_user_tool_source(
     value: dict,
-) -> Tuple[LiftStatus, Union["UserToolSource", Dict[str, Any]], List[str]]:
+) -> tuple[LiftStatus, Union["UserToolSource", dict[str, Any]], list[str]]:
     """Validate `value` against the strict UserToolSource, lifting drift where
     safe. See module docstring above for the contract.
     """
@@ -457,7 +450,7 @@ def lift_user_tool_source(
     other = [err for err in errors if err.get("type") != "extra_forbidden"]
     if extra_forbidden and not other:
         stripped = copy.deepcopy(value)
-        dropped: List[str] = []
+        dropped: list[str] = []
         for err in extra_forbidden:
             loc = tuple(err["loc"])
             if _strip_path(stripped, loc):
@@ -473,29 +466,29 @@ def lift_user_tool_source(
 
 class ParsedTool(ToolSourceBaseModel):
     id: str
-    version: Optional[str]
+    version: str | None
     name: str
-    description: Optional[str]
-    requirements: List[
-        Union[PackageRequirement, SetEnvironmentRequirement, ResourceRequirement, JavascriptRequirement]
-    ] = Field(default_factory=list)
-    containers: List[Container] = Field(default_factory=list)
+    description: str | None
+    requirements: list[PackageRequirement | SetEnvironmentRequirement | ResourceRequirement | JavascriptRequirement] = (
+        Field(default_factory=list)
+    )
+    containers: list[Container] = Field(default_factory=list)
     stdio: Stdio = Field(default_factory=Stdio)
-    inputs: List[ToolParameterT]
-    outputs: List[ToolOutput]
-    citations: List[Citation]
-    license: Optional[str]
-    profile: Optional[str]
-    edam_operations: List[str]
-    edam_topics: List[str]
-    xrefs: List[XrefDict]
-    help: Optional[HelpContent]
+    inputs: list[ToolParameterT]
+    outputs: list[ToolOutput]
+    citations: list[Citation]
+    license: str | None
+    profile: str | None
+    edam_operations: list[str]
+    edam_topics: list[str]
+    xrefs: list[XrefDict]
+    help: HelpContent | None
 
 
 class BaseTestOutputModel(StrictModel):
     model_config = ConfigDict(extra="forbid", title="BaseTestOutputModel")
     file: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="File",
             description=(
@@ -505,11 +498,11 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     path: Annotated[
-        Optional[str],
+        str | None,
         Field(title="Path", description="Filesystem path to a local output file used for comparison."),
     ] = None
     location: Annotated[
-        Optional[AnyUrl],
+        AnyUrl | None,
         Field(
             title="Location",
             description=(
@@ -521,7 +514,7 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     ftype: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="File Type",
             description=(
@@ -531,7 +524,7 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     sort: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             title="Sort",
             description=(
@@ -542,14 +535,14 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     compare: Annotated[
-        Optional[OutputCompareType],
+        OutputCompareType | None,
         Field(
             title="Compare",
             description="Comparison mode used when matching the output against the reference file.",
         ),
     ] = None
     checksum: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="Checksum",
             description=(
@@ -560,18 +553,18 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     metadata: Annotated[
-        Optional[Dict[str, Any]],
+        dict[str, Any] | None,
         Field(
             title="Metadata",
             description="Mapping of metadata keys to expected values for this output.",
         ),
     ] = None
     asserts: Annotated[
-        Optional[assertions],
+        assertions | None,
         Field(title="Asserts", description="Assertions about the content of the output."),
     ] = None
     delta: Annotated[
-        Optional[int],
+        int | None,
         Field(
             title="Delta",
             description=(
@@ -582,7 +575,7 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     delta_frac: Annotated[
-        Optional[float],
+        float | None,
         Field(
             title="Delta Frac",
             description=(
@@ -594,7 +587,7 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     lines_diff: Annotated[
-        Optional[int],
+        int | None,
         Field(
             title="Lines Diff",
             description=(
@@ -605,7 +598,7 @@ class BaseTestOutputModel(StrictModel):
         ),
     ] = None
     decompress: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             title="Decompress",
             description=(
@@ -621,25 +614,25 @@ class BaseTestOutputModel(StrictModel):
 
 class TestDataOutputAssertions(BaseTestOutputModel):
     model_config = ConfigDict(extra="forbid", title="TestDataOutputAssertions")
-    class_: Optional[Literal["File"]] = Field("File", alias="class", title="Class")
+    class_: Literal["File"] | None = Field("File", alias="class", title="Class")
 
 
 class TestCollectionCollectionElementAssertions(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionCollectionElementAssertions")
-    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class", title="Class")
+    class_: Literal["Collection"] | None = Field("Collection", alias="class", title="Class")
     elements: Annotated[
-        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        dict[str, "TestCollectionElementAssertion"] | None,
         Field(title="Elements"),
     ] = None
     element_tests: Annotated[
-        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        dict[str, "TestCollectionElementAssertion"] | None,
         Field(title="Element Tests"),
     ] = None
 
 
 class TestCollectionDatasetElementAssertions(BaseTestOutputModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionDatasetElementAssertions")
-    class_: Optional[Literal["File"]] = Field("File", alias="class", title="Class")
+    class_: Literal["File"] | None = Field("File", alias="class", title="Class")
 
 
 def _discriminate_collection_element(v):
@@ -655,10 +648,8 @@ def _discriminate_collection_element(v):
 
 
 TestCollectionElementAssertion = Annotated[
-    Union[
-        Annotated[TestCollectionDatasetElementAssertions, Tag("File")],
-        Annotated[TestCollectionCollectionElementAssertions, Tag("Collection")],
-    ],
+    Annotated[TestCollectionDatasetElementAssertions, Tag("File")]
+    | Annotated[TestCollectionCollectionElementAssertions, Tag("Collection")],
     Discriminator(_discriminate_collection_element),
 ]
 TestCollectionCollectionElementAssertions.model_rebuild()
@@ -671,21 +662,21 @@ class CollectionAttributes(StrictModel):
 
 class TestCollectionOutputAssertions(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestCollectionOutputAssertions")
-    class_: Optional[Literal["Collection"]] = Field("Collection", alias="class", title="Class")
+    class_: Literal["Collection"] | None = Field("Collection", alias="class", title="Class")
     elements: Annotated[
-        Optional[Dict[str, TestCollectionElementAssertion]],
+        dict[str, TestCollectionElementAssertion] | None,
         Field(title="Elements"),
     ] = None
     element_tests: Annotated[
-        Optional[Dict[str, "TestCollectionElementAssertion"]],
+        dict[str, "TestCollectionElementAssertion"] | None,
         Field(title="Element Tests"),
     ] = None
-    element_count: Annotated[Optional[int], Field(title="Element Count")] = None
-    attributes: Annotated[Optional[CollectionAttributes], Field(title="Attributes")] = None
+    element_count: Annotated[int | None, Field(title="Element Count")] = None
+    attributes: Annotated[CollectionAttributes | None, Field(title="Attributes")] = None
     collection_type: Annotated[CollectionType, Field(title="Collection Type")] = None
 
 
-TestOutputLiteral = Union[bool, int, float, str]
+TestOutputLiteral = bool | int | float | str
 
 
 def _discriminate_output(v):
@@ -703,16 +694,14 @@ def _discriminate_output(v):
 
 
 TestOutputAssertions = Annotated[
-    Union[
-        Annotated[TestCollectionOutputAssertions, Tag("Collection")],
-        Annotated[TestDataOutputAssertions, Tag("File")],
-        Annotated[TestOutputLiteral, Tag("scalar")],
-    ],
+    Annotated[TestCollectionOutputAssertions, Tag("Collection")]
+    | Annotated[TestDataOutputAssertions, Tag("File")]
+    | Annotated[TestOutputLiteral, Tag("scalar")],
     Discriminator(_discriminate_output),
 ]
 
 
-TestInputValue = Union[bool, int, float, str, List[Any], Dict[str, Any]]
+TestInputValue = bool | int | float | str | list[Any] | dict[str, Any]
 
 
 class YamlTestCredentialValue(StrictModel):
@@ -725,15 +714,15 @@ class YamlTestCredential(StrictModel):
     model_config = ConfigDict(extra="forbid", title="YamlTestCredential")
     name: Annotated[str, Field(title="Name", description="Name of the credentials group.")]
     variables: Annotated[
-        List[YamlTestCredentialValue],
+        list[YamlTestCredentialValue],
         Field(title="Variables", description="Variables exposed to the tool environment."),
     ] = []
     secrets: Annotated[
-        List[YamlTestCredentialValue],
+        list[YamlTestCredentialValue],
         Field(title="Secrets", description="Secrets exposed to the tool environment."),
     ] = []
     version: Annotated[
-        Optional[str],
+        str | None,
         Field(title="Version", description="Version of the credential definition."),
     ] = None
 
@@ -743,41 +732,41 @@ class YamlToolTest(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    doc: Annotated[Optional[str], Field(description="Human-readable description of this test case.")] = None
+    doc: Annotated[str | None, Field(description="Human-readable description of this test case.")] = None
     inputs: Annotated[
-        Optional[Dict[str, TestInputValue]],
+        dict[str, TestInputValue] | None,
         Field(description="Mapping of input parameter names to test values."),
     ] = None
     outputs: Annotated[
-        Dict[str, TestOutputAssertions],
+        dict[str, TestOutputAssertions],
         Field(description="Mapping of output names to expected values or assertions."),
     ] = {}
     assert_stdout: Annotated[
-        Optional[assertions],
+        assertions | None,
         Field(description="Assertions to apply against the tool's standard output."),
     ] = None
     assert_stderr: Annotated[
-        Optional[assertions],
+        assertions | None,
         Field(description="Assertions to apply against the tool's standard error."),
     ] = None
     command: Annotated[
-        Optional[assertions],
+        assertions | None,
         Field(description="Assertions to apply against the executed command line."),
     ] = None
     expect_exit_code: Annotated[
-        Optional[int],
+        int | None,
         Field(description="Expected process exit code."),
     ] = None
     expect_failure: Annotated[
-        Optional[bool],
+        bool | None,
         Field(description="If true, the tool is expected to produce an error."),
     ] = None
     expect_test_failure: Annotated[
-        Optional[bool],
+        bool | None,
         Field(description="If true, the test itself is expected to fail."),
     ] = None
     credentials: Annotated[
-        Optional[List[YamlTestCredential]],
+        list[YamlTestCredential] | None,
         Field(description="Credentials to inject for this test case."),
     ] = None
 
@@ -788,13 +777,13 @@ YamlToolSource.model_rebuild()
 # Loose alias retained for TestJobDict / TypedDict consumers where helpers
 # still tolerate Dict[str, Any]. The strict, validated shape is `Job` (see
 # galaxy.tool_util_models.test_job).
-JobDict = Dict[str, Any]
+JobDict = dict[str, Any]
 
 
 class TestJob(StrictModel):
     model_config = ConfigDict(extra="forbid", title="TestJob")
     doc: Annotated[
-        Optional[str],
+        str | None,
         Field(title="Doc", description="Describes the purpose of the test."),
     ] = None
     job: Annotated[
@@ -802,13 +791,12 @@ class TestJob(StrictModel):
         Field(
             title="Job",
             description=(
-                "Defines the job to execute. Can be a path to a file or an inline dictionary describing "
-                "the job inputs."
+                "Defines the job to execute. Can be a path to a file or an inline dictionary describing the job inputs."
             ),
         ),
     ]
     outputs: Annotated[
-        Dict[str, TestOutputAssertions],
+        dict[str, TestOutputAssertions],
         Field(
             title="Outputs",
             description=(
@@ -818,7 +806,7 @@ class TestJob(StrictModel):
         ),
     ]
     expect_failure: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             title="Expect Failure",
             description="If true, the workflow is expected to produce an error.",
@@ -826,7 +814,7 @@ class TestJob(StrictModel):
     ] = False
 
 
-class Tests(RootModel[List[TestJob]]):
+class Tests(RootModel[list[TestJob]]):
     model_config = ConfigDict(
         title="GalaxyWorkflowTests",
         json_schema_extra={
@@ -841,8 +829,8 @@ class Tests(RootModel[List[TestJob]]):
 
 # TODO: typed dict versions of all thee above for verify code - make this Dict[str, Any] here more
 # specific.
-OutputChecks = Union[TestOutputLiteral, Dict[str, Any]]
-OutputsDict = Dict[str, OutputChecks]
+OutputChecks = TestOutputLiteral | dict[str, Any]
+OutputsDict = dict[str, OutputChecks]
 
 
 class JobTestDict(TypedDict):
@@ -852,4 +840,4 @@ class JobTestDict(TypedDict):
     outputs: OutputsDict
 
 
-TestDicts = List[JobTestDict]
+TestDicts = list[JobTestDict]

@@ -5,11 +5,6 @@ import math
 import tempfile
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Type,
 )
 
 import numpy
@@ -32,7 +27,7 @@ F4 = b"A\r\nB\nC"
 MULTILINE_MATCH = b".*"
 TestFile = collections.namedtuple("TestFile", "value path")
 
-TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
+TestDef = tuple[bytes, bytes, dict[str, Any] | None, type[AssertionError] | None]
 
 
 def _encode_image(im, **kwargs):
@@ -125,7 +120,7 @@ def _test_file_list():
 
 def generate_tests(multiline=False):
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
-    tests: List[TestDef]
+    tests: list[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
     else:
@@ -144,7 +139,7 @@ def generate_tests(multiline=False):
 def generate_tests_sim_size():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     # tests for equal files
-    tests: List[TestDef] = [
+    tests: list[TestDef] = [
         (f1, f1, None, None),  # pass default values
         (f1, f1, {"delta": 0}, None),  # pass for values that should always pass
         (f1, f1, {"delta_frac": 0.0}, None),
@@ -171,7 +166,7 @@ def generate_tests_image_diff():
     f1, f2, f3, f4, multiline_match, f5, f6, f7, f8, f9, f10 = _test_file_list()
     metrics = ["mae", "mse", "rms", "fro", "iou"]
     # tests for equal files (uint8, PNG)
-    tests: List[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
+    tests: list[TestDef] = [(f6, f6, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (uint8, TIFF)
     tests += [(f7, f7, {"metric": metric}, None) for metric in metrics]
     # tests for equal files (float, TIFF)

@@ -338,7 +338,6 @@ class TestAscpFilesSource:
         }
 
         with patch("shutil.which", return_value="/usr/bin/ascp"):
-
             with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
                 import yaml
 

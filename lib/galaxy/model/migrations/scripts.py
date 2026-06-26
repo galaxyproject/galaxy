@@ -1,8 +1,5 @@
 import os
 import sys
-from typing import (
-    Optional,
-)
 
 import alembic.config
 from alembic.config import Config
@@ -75,7 +72,7 @@ def get_configuration(argv: list[str], cwd: str) -> tuple[DatabaseConfig, Databa
 
 
 def get_configuration_from_file(
-    cwd: str, config_file: Optional[str] = None
+    cwd: str, config_file: str | None = None
 ) -> tuple[DatabaseConfig, DatabaseConfig, bool]:
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]

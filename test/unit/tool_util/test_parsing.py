@@ -2,11 +2,9 @@ import os
 import os.path
 import shutil
 import tempfile
+from collections.abc import Sequence
 from math import isinf
 from typing import (
-    Optional,
-    Sequence,
-    Type,
     TypeVar,
 )
 
@@ -279,8 +277,8 @@ def get_test_tool_source(source_file_name=None, source_contents=None, macro_cont
 
 
 class BaseLoaderTestCase(TestCase):
-    source_file_name: Optional[str] = None
-    source_contents: Optional[str] = None
+    source_file_name: str | None = None
+    source_contents: str | None = None
 
     def setUp(self):
         self.temp_directory = tempfile.mkdtemp()
@@ -1102,6 +1100,6 @@ class TestToolProvidedMetadata2(FunctionalTestToolTestCase):
 T = TypeVar("T")
 
 
-def assert_output_model_of_type(obj, clazz: Type[T]) -> T:
+def assert_output_model_of_type(obj, clazz: type[T]) -> T:
     assert isinstance(obj, clazz)
     return obj

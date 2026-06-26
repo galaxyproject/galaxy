@@ -7,21 +7,18 @@ import argparse
 import inspect
 import os
 from shutil import move
+from types import UnionType
 from typing import (
+    Annotated,
     cast,
-    List,
-    Optional,
+    get_args,
+    get_origin,
+    Literal,
     Union,
 )
 
 import lxml.etree as ET
 from jinja2 import Environment
-from typing_extensions import (
-    Annotated,
-    get_args,
-    get_origin,
-    Literal,
-)
 
 from galaxy.tool_util.verify.asserts import assertion_module_and_functions
 from galaxy.tool_util.verify.asserts._types import AssertionParameter as AssertionParameterAnnotation
@@ -343,7 +340,6 @@ def rewrite_galaxy_xsd(assertions):
 
 
 class AssertionParameter:
-
     def __init__(self, name: str, type: str, default_value):
         self.name = name
         self.type = type
@@ -406,21 +402,19 @@ class AssertionParameter:
 
     @property
     def is_deprecated(self) -> bool:
-        assertion_parameter = self._get_type_annotation()
-        if assertion_parameter is not None:
+        if (assertion_parameter := self._get_type_annotation()) is not None:
             return assertion_parameter.deprecated
 
         return False
 
     @property
-    def validators(self) -> List[str]:
-        assertion_parameter = self._get_type_annotation()
-        if assertion_parameter is not None:
+    def validators(self) -> list[str]:
+        if (assertion_parameter := self._get_type_annotation()) is not None:
             return assertion_parameter.validators
 
         return []
 
-    def _get_type_annotation(self) -> Optional[AssertionParameterAnnotation]:
+    def _get_type_annotation(self) -> AssertionParameterAnnotation | None:
         target_type = self.type
         if get_origin(target_type) is Annotated:
             args = get_args(target_type)
@@ -447,7 +441,7 @@ def as_xml_type(target_type) -> str:
                 return assertion_parameter.xml_type
 
         return as_xml_type(args[0])
-    elif get_origin(target_type) is Union:
+    elif get_origin(target_type) in (Union, UnionType):
         types = _non_optional_types(target_type)
         if len(types) == 2:
             non_str_types = [t for t in types if t is not str]
@@ -469,7 +463,7 @@ def as_type_str(target_type, strict=True):
                 return args[1].json_type
 
         return as_type_str(args[0])
-    elif get_origin(target_type) is Union:
+    elif get_origin(target_type) in (Union, UnionType):
         is_optional = any(_is_none_type(t) for t in get_args(target_type))
         types_as_str = ", ".join(map(as_type_str, _non_optional_types(target_type)))
         union_type = f"typing.Union[{types_as_str}]"
@@ -490,12 +484,11 @@ def as_type_str(target_type, strict=True):
 
 
 class Assertion:
-
     def __init__(
         self,
         name: str,
         docstring: str,
-        parameters: List[AssertionParameter],
+        parameters: list[AssertionParameter],
         children: Children,
         module_and_function: str,
     ):

@@ -13,7 +13,6 @@ from collections.abc import (
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
 )
 from unittest.mock import MagicMock
@@ -33,7 +32,7 @@ from galaxy.agents.router import QueryRouterAgent
 from galaxy.agents.tools import ToolRecommendationAgent
 from .datasets import build_history
 
-UsageBuffer = Optional[list[dict[str, int]]]
+UsageBuffer = list[dict[str, int]] | None
 
 
 def _record_response_usage(buffer: UsageBuffer, response: Any) -> None:
@@ -185,7 +184,7 @@ def make_live_deps(
 
 def make_router_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> router's chosen agent_type."""
@@ -292,7 +291,7 @@ def make_router_followup_task(
 
 def make_router_content_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> router final response content.
@@ -314,7 +313,7 @@ def make_router_content_task(
 
 def make_error_analysis_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> error-analysis response content."""
@@ -330,7 +329,7 @@ def make_error_analysis_task(
 
 def make_tool_recommendation_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[str]]:
     """Build an async callable: query -> tool-recommendation response content.
@@ -354,7 +353,7 @@ def make_tool_recommendation_task(
 
 def make_custom_tool_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[dict[str, Any]]]:
     """Build an async callable: NL request -> custom-tool generation result dict.
@@ -413,7 +412,7 @@ def _extract_tool_calls(result: Any) -> list[dict[str, Any]]:
 
 def make_orchestrator_plan_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[dict[str, Any]]]:
     """Build an async callable: query -> {"agent_type": str, "agents_used": list[str]}.
@@ -451,7 +450,7 @@ def make_orchestrator_plan_task(
 
 def make_router_inspect_task(
     deps: GalaxyAgentDependencies,
-    context: Optional[dict] = None,
+    context: dict | None = None,
     usage_buffer: UsageBuffer = None,
 ) -> Callable[[str], Awaitable[dict[str, Any]]]:
     """Build an async callable: query -> {"content": str, "tool_calls": list}.

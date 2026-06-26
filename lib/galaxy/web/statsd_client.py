@@ -1,7 +1,4 @@
 import sys
-from typing import (
-    Optional,
-)
 
 try:
     import statsd
@@ -51,8 +48,8 @@ class VanillaGalaxyStatsdClient:
             return ""
 
 
-CURRENT_TEST: Optional[str] = None
-CURRENT_TEST_METRICS: Optional[dict[str, dict]] = None
+CURRENT_TEST: str | None = None
+CURRENT_TEST_METRICS: dict[str, dict] | None = None
 
 
 class PyTestGalaxyStatsdClient(VanillaGalaxyStatsdClient):

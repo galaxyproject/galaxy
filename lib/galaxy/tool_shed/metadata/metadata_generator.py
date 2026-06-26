@@ -4,7 +4,6 @@ import tempfile
 from typing import (
     Any,
     cast,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -70,12 +69,12 @@ class RepositoryMetadataToolDict(TypedDict):
     name: str
     version: str
     profile: str
-    description: Optional[str]
-    version_string_cmd: Optional[str]
+    description: str | None
+    version_string_cmd: str | None
     tool_config: str
     tool_type: str
-    requirements: Optional[Any]
-    tests: Optional[Any]
+    requirements: Any | None
+    tests: Any | None
     add_to_tool_panel: bool
 
 
@@ -83,19 +82,19 @@ class RepositoryProtocol(Protocol):
     name: str
     id: str
 
-    def repo_path(self, app) -> Optional[str]: ...
+    def repo_path(self, app) -> str | None: ...
 
 
 class BaseMetadataGenerator:
     app: Union["BasicSharedApp", InstallationTarget]
-    repository: Optional[RepositoryProtocol]
+    repository: RepositoryProtocol | None
     invalid_file_tups: list[InvalidFileT]
-    changeset_revision: Optional[str]
-    repository_clone_url: Optional[str]
+    changeset_revision: str | None
+    repository_clone_url: str | None
     shed_config_dict: dict[str, Any]
     metadata_dict: dict[str, Any]
-    relative_install_dir: Optional[str]
-    repository_files_dir: Optional[str]
+    relative_install_dir: str | None
+    repository_files_dir: str | None
     persist: bool
 
     def initial_metadata_dict(self) -> dict[str, Any]:
@@ -823,13 +822,13 @@ class BaseMetadataGenerator:
                 return False
         return True
 
-    def set_changeset_revision(self, changeset_revision: Optional[str]):
+    def set_changeset_revision(self, changeset_revision: str | None):
         self.changeset_revision = changeset_revision
 
-    def set_relative_install_dir(self, relative_install_dir: Optional[str]):
+    def set_relative_install_dir(self, relative_install_dir: str | None):
         self.relative_install_dir = relative_install_dir
 
-    def _reset_attributes_after_repository_update(self, relative_install_dir: Optional[str]):
+    def _reset_attributes_after_repository_update(self, relative_install_dir: str | None):
         self.metadata_dict = self.initial_metadata_dict()
         self.set_relative_install_dir(relative_install_dir)
         self.set_repository_files_dir()
@@ -838,7 +837,7 @@ class BaseMetadataGenerator:
         self.persist = False
         self.invalid_file_tups = []
 
-    def set_repository_files_dir(self, repository_files_dir: Optional[str] = None):
+    def set_repository_files_dir(self, repository_files_dir: str | None = None):
         self.repository_files_dir = repository_files_dir
 
     def _update_repository_dependencies_metadata(
@@ -846,7 +845,7 @@ class BaseMetadataGenerator:
         metadata: dict[str, Any],
         repository_dependency_tups: list[tuple],
         is_valid: bool,
-        description: Optional[str],
+        description: str | None,
     ) -> dict[str, Any]:
         if is_valid:
             repository_dependencies_dict = metadata.get("repository_dependencies", None)
@@ -875,15 +874,15 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on Galaxy's app and repository constructs."""
 
     app: InstallationTarget
-    repository: Optional[ToolShedRepository]  # type: ignore[assignment]
+    repository: ToolShedRepository | None  # type: ignore[assignment]
 
     def __init__(
         self,
         app: InstallationTarget,
         repository=None,
-        changeset_revision: Optional[str] = None,
-        repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[dict[str, Any]] = None,
+        changeset_revision: str | None = None,
+        repository_clone_url: str | None = None,
+        shed_config_dict: dict[str, Any] | None = None,
         relative_install_dir=None,
         repository_files_dir=None,
         resetting_all_metadata_on_repository=False,
@@ -933,7 +932,7 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
         return metadata_dict
 
     def set_repository(
-        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+        self, repository, relative_install_dir: str | None = None, changeset_revision: str | None = None
     ):
         self.repository = repository
         if relative_install_dir is None and self.repository is not None:

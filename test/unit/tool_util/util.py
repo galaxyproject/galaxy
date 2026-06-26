@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from os import environ
 from typing import (
     Any,
-    List,
 )
 
 import pytest
@@ -11,7 +10,7 @@ import pytest
 external_dependency_management = pytest.mark.external_dependency_management
 
 
-def dict_verify_each(target_dict: dict, expectations: List[Any]):
+def dict_verify_each(target_dict: dict, expectations: list[Any]):
     assert_json_encodable(target_dict)
     for path, expectation in expectations:
         exception = target_dict.get("exception")
@@ -19,7 +18,7 @@ def dict_verify_each(target_dict: dict, expectations: List[Any]):
         dict_verify(target_dict, path, expectation)
 
 
-def dict_verify(target_dict: dict, expectation_path: List[Any], expectation: Any):
+def dict_verify(target_dict: dict, expectation_path: list[Any], expectation: Any):
     rest = target_dict
     for path_part in expectation_path:
         rest = rest[path_part]

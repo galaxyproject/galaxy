@@ -9,7 +9,6 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
-    Optional,
 )
 
 from beaker.cache import CacheManager
@@ -296,8 +295,8 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
     object_store: BaseObjectStore
-    _tool_data_tables: Optional[BaseToolDataTableManager]
-    _genome_builds: Optional[GenomeBuilds]
+    _tool_data_tables: BaseToolDataTableManager | None
+    _genome_builds: GenomeBuilds | None
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
@@ -344,7 +343,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         if self.config.fluent_log:
             from galaxy.util.custom_logging.fluent_log import FluentTraceLogger
 
-            self.trace_logger: Optional[FluentTraceLogger] = FluentTraceLogger(
+            self.trace_logger: FluentTraceLogger | None = FluentTraceLogger(
                 "galaxy", self.config.fluent_host, self.config.fluent_port
             )
         else:
@@ -613,7 +612,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 time.sleep(pause)
 
     @property
-    def tool_dependency_dir(self) -> Optional[str]:
+    def tool_dependency_dir(self) -> str | None:
         return self.toolbox.dependency_manager.default_base_path
 
     def _shutdown_object_store(self):
@@ -990,7 +989,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # but monitor only runs on workflow scheduler processes)
         self.workflow_completion_manager = WorkflowCompletionManager(self)
         self.workflow_completion_hook_registry = WorkflowCompletionHookRegistry(self)
-        self.workflow_completion_monitor: Optional[WorkflowCompletionMonitor] = None
+        self.workflow_completion_monitor: WorkflowCompletionMonitor | None = None
         if self.workflow_scheduling_manager._is_workflow_handler():
             self.workflow_completion_monitor = WorkflowCompletionMonitor(
                 self,
@@ -1039,7 +1038,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication, InstallationT
         # only when statsd is actually configured (a non-None client) and the
         # shared queue_metrics_interval cadence is enabled. The server_name is
         # read post-fork so each worker tags its own series.
-        self.sse_connection_gauge_emitter: Optional[SSEConnectionGaugeEmitter] = None
+        self.sse_connection_gauge_emitter: SSEConnectionGaugeEmitter | None = None
         statsd_client = self.execution_timer_factory.galaxy_statsd_client
         if (
             statsd_client is not None
@@ -1132,7 +1131,7 @@ class ExecutionTimerFactory:
         if statsd_host := getattr(config, "statsd_host", None):
             from galaxy.web.statsd_client import GalaxyStatsdClient
 
-            self.galaxy_statsd_client: Optional[GalaxyStatsdClient] = GalaxyStatsdClient(
+            self.galaxy_statsd_client: GalaxyStatsdClient | None = GalaxyStatsdClient(
                 statsd_host,
                 getattr(config, "statsd_port", 8125),
                 getattr(config, "statsd_prefix", "galaxy"),

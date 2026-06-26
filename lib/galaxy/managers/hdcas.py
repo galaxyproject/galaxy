@@ -6,7 +6,6 @@ history.
 """
 
 import logging
-from typing import Optional
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -109,7 +108,7 @@ class HDCAManager(
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
 
     # .... security and permissions
-    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: Optional[model.User], **kwargs) -> bool:
+    def is_owner(self, item: model.HistoryDatasetCollectionAssociation, user: model.User | None, **kwargs) -> bool:
         """
         Use history to see if current user owns HDCA.
         """

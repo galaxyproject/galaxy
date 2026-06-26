@@ -5,7 +5,6 @@ import json
 from dataclasses import dataclass
 from typing import (
     cast,
-    Optional,
     Protocol,
     TypeVar,
 )
@@ -90,9 +89,9 @@ class KeysetPagination:
 
     def decode_token(
         self,
-        encoded: Optional[str],
+        encoded: str | None,
         token_class: type[T],
-    ) -> Optional[T]:
+    ) -> T | None:
         """Decode token using provided token class.
 
         Args:

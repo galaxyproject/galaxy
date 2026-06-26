@@ -45,20 +45,17 @@ CLIENT_SECRET = "mycoolsecret"
 
 
 class MockApp:
-
     @property
     def toolbox(self):
         return MockToolbox()
 
 
 class MockToolbox:
-
     def get_tool(self, tool_id, tool_uuid, tool_version, user):
         return MockTool()
 
 
 class MockTool:
-
     id = TEST_TOOL_ID
 
     @property
@@ -67,7 +64,6 @@ class MockTool:
 
 
 class TestLanding(BaseTestCase):
-
     def setUp(self):
         super().setUp()
         self.workflow_contents_manager = WorkflowContentsManager(self.app, self.app.trs_proxy)

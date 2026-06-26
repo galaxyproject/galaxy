@@ -3,7 +3,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.agents import GalaxyAgentDependencies
@@ -50,7 +49,7 @@ class AgentService:
         query: str,
         trans: ProvidesUserContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Execute a specific agent and return response."""
         deps = self.create_dependencies(trans, user)
@@ -99,7 +98,7 @@ class AgentService:
         query: str,
         trans: ProvidesUserContext,
         user: User,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
         agent_type: str = "auto",
     ) -> AgentResponse:
         """

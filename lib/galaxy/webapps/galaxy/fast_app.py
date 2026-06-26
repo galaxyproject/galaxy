@@ -338,8 +338,7 @@ def galaxy_rate_limit_key(request: Request) -> str:
     api_key = request.headers.get("x-api-key") or request.query_params.get("key")
     if api_key:
         return f"api_key:{api_key}"
-    session_key = request.cookies.get("galaxysession")
-    if session_key:
+    if session_key := request.cookies.get("galaxysession"):
         return f"session:{session_key}"
     return get_remote_address(request)
 

@@ -1,15 +1,10 @@
 import re
 from typing import (
-    Dict,
-    List,
     NamedTuple,
-    Optional,
-    Tuple,
-    Union,
 )
 
-KeyedQueryT = Tuple[str, str]
-ParseFilterResultT = Tuple[Optional[List["FilteredTerm"]], Optional[str]]
+KeyedQueryT = tuple[str, str]
+ParseFilterResultT = tuple[list["FilteredTerm"] | None, str | None]
 QUOTE_PATTERN = re.compile(r"\'(.*?)\'")
 
 # Defaults for `filter_terms` used by index-search callers. A whitespace-rich
@@ -19,7 +14,7 @@ DEFAULT_MIN_RAW_TERM_LENGTH = 4
 DEFAULT_MAX_RAW_TERMS = 7
 
 
-def parse_filters(search_term: str, filters: Optional[Dict[str, str]] = None) -> ParseFilterResultT:
+def parse_filters(search_term: str, filters: dict[str, str] | None = None) -> ParseFilterResultT:
     """Support github-like filters for narrowing the results.
 
     Order of chunks does not matter, only recognized filter names are allowed.
@@ -36,7 +31,7 @@ def parse_filters(search_term: str, filters: Optional[Dict[str, str]] = None) ->
 
 def parse_filters_structured(
     search_term: str,
-    filters: Optional[Dict[str, str]] = None,
+    filters: dict[str, str] | None = None,
     preserve_quotes: bool = True,
 ) -> "ParsedSearch":
     search_space = search_term.replace('"', "'")
@@ -81,13 +76,13 @@ class FilteredTerm(NamedTuple):
     quoted: bool
 
 
-TermT = Union[RawTextTerm, FilteredTerm]
+TermT = RawTextTerm | FilteredTerm
 
 
 class ParsedSearch:
-    terms: List[TermT]
-    text_terms: List[RawTextTerm]
-    filter_terms: List[FilteredTerm]
+    terms: list[TermT]
+    text_terms: list[RawTextTerm]
+    filter_terms: list[FilteredTerm]
 
     def __init__(self):
         self.terms = []
@@ -119,7 +114,7 @@ class ParsedSearch:
 def filter_terms(
     parsed: "ParsedSearch",
     min_raw_term_length: int = DEFAULT_MIN_RAW_TERM_LENGTH,
-    max_raw_terms: Optional[int] = DEFAULT_MAX_RAW_TERMS,
+    max_raw_terms: int | None = DEFAULT_MAX_RAW_TERMS,
 ) -> "ParsedSearch":
     """Return a new ParsedSearch with short / excess raw text terms dropped.
 

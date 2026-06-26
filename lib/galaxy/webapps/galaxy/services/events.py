@@ -8,9 +8,6 @@ skipped; the stream still delivers other push events.
 """
 
 from collections.abc import AsyncIterator
-from typing import (
-    Optional,
-)
 
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.sse import (
@@ -36,7 +33,7 @@ class EventsService(ServiceBase):
     def open_stream(
         self,
         user_context: ProvidesUserContext,
-        last_event_id: Optional[str],
+        last_event_id: str | None,
         is_disconnected: IsDisconnected,
     ) -> AsyncIterator[str]:
         """Open an SSE events stream.

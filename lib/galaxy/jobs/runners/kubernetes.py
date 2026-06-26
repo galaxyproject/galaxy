@@ -12,7 +12,6 @@ from datetime import datetime
 from typing import (
     Any,
     TYPE_CHECKING,
-    Union,
 )
 
 import yaml
@@ -695,7 +694,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
     def __get_k8s_job_name(self, prefix, job_wrapper):
         return f"{prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
 
-    def check_watched_item(self, job_state: AsynchronousJobState) -> Union[AsynchronousJobState, None]:
+    def check_watched_item(self, job_state: AsynchronousJobState) -> AsynchronousJobState | None:
         """Checks the state of a job already submitted on k8s. Job state is an AsynchronousJobState"""
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
 
@@ -1090,7 +1089,7 @@ class KubernetesJobRunner(AsynchronousJobRunner[AsynchronousJobState]):
         job_state: "JobState",
         exception: bool = False,
         message: str = "Job failed",
-        full_status: Union[dict[str, Any], None] = None,
+        full_status: dict[str, Any] | None = None,
     ) -> None:
         log.debug("PP Getting into fail_job in k8s runner")
         gxy_job = job_state.job_wrapper.get_job()

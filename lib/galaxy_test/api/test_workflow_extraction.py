@@ -11,7 +11,6 @@ from json import (
 )
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -52,7 +51,7 @@ class _ExtractionHelpersMixin:
         def _assert_status_code_is(self, response: "Response", expected_status_code: int) -> None: ...
 
         def assert_steps_of_type(
-            self, workflow: dict[str, Any], step_type: str, expected_len: Optional[int] = None
+            self, workflow: dict[str, Any], step_type: str, expected_len: int | None = None
         ) -> list[dict[str, Any]]: ...
 
     def _setup_extract_dataset_then_cat(self, history_id):

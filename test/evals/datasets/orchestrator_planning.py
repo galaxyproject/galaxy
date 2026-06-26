@@ -19,7 +19,6 @@ use) is captured before sub-execution and is what we score here.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -72,7 +71,7 @@ ORCHESTRATOR_CASES = [
 
 
 def orchestrator_planning_dataset(
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, dict[str, Any], dict[str, Any]]:
     cases = [c for c in ORCHESTRATOR_CASES if not only or c.name in only]
     return Dataset(name="orchestrator_planning", cases=cases)

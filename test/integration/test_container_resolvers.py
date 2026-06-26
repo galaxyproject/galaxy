@@ -5,7 +5,6 @@ from typing import (
     Any,
     ClassVar,
     Literal,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -66,7 +65,7 @@ JOB_CONFIG_FOR_CONTAINER_TYPE = {
 
 
 def _assert_container_in_cache_docker(
-    cached: bool, container_name: str, namespace: Optional[str] = None, hash_func: Literal["v1", "v2"] = "v2"
+    cached: bool, container_name: str, namespace: str | None = None, hash_func: Literal["v1", "v2"] = "v2"
 ):
     cache_list = list_docker_cached_mulled_images(namespace, hash_func)
     imageid_list = [_.image_identifier for _ in cache_list]
@@ -154,7 +153,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
             config["conda_prefix"] = os.path.join(cls.conda_tmp_prefix, "conda")
 
     def _remove_tested_docker_image_from_cache(self):
-        cmd1 = ["docker", "image", "ls", "--quiet", "--filter", f'reference={self.assumptions["run"]["cache_name"]}']
+        cmd1 = ["docker", "image", "ls", "--quiet", "--filter", f"reference={self.assumptions['run']['cache_name']}"]
         if image_ids := execute(cmd1):
             image_id_list = image_ids.splitlines()
             assert len(image_id_list) == 1
@@ -171,7 +170,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ) -> None:
@@ -192,7 +191,7 @@ class DockerContainerResolverTestCase(IntegrationTestCase):
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ):
@@ -217,7 +216,7 @@ class SingularityContainerResolverTestCase(DockerContainerResolverTestCase):
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ) -> None:
@@ -278,7 +277,7 @@ class ContainerResolverTestProtocol(Protocol):
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ) -> None:
@@ -291,7 +290,7 @@ class ContainerResolverTestProtocol(Protocol):
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ) -> None:
@@ -608,7 +607,7 @@ class TestDefaultSingularityContainerResolvers(
         self,
         cached: bool,
         container_name: str,
-        namespace: Optional[str] = None,
+        namespace: str | None = None,
         hash_func: Literal["v1", "v2"] = "v2",
         **kwargs,
     ) -> None:

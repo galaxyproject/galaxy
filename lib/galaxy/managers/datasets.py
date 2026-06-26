@@ -7,7 +7,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
     TypeVar,
 )
 
@@ -98,7 +97,7 @@ class DatasetManager(
         """
         self.error_unless_dataset_purge_allowed()
         for dataset_id in request.dataset_ids:
-            dataset: Optional[Dataset] = self.session().get(Dataset, dataset_id)
+            dataset: Dataset | None = self.session().get(Dataset, dataset_id)
             if dataset and dataset.user_can_purge:
                 try:
                     dataset.full_delete()
@@ -116,7 +115,7 @@ class DatasetManager(
     # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
-    def is_accessible(self, item: Any, user: Optional[model.User], **kwargs) -> bool:
+    def is_accessible(self, item: Any, user: model.User | None, **kwargs) -> bool:
         """
         Is this dataset readable/viewable to user?
         """
@@ -358,7 +357,7 @@ class DatasetAssociationManager(
         super().__init__(app)
         self.dataset_manager = DatasetManager(app)
 
-    def is_accessible(self, item: U, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_accessible(self, item: U, user: model.User | None, **kwargs: Any) -> bool:
         """
         Is this DA accessible to `user`?
         """
@@ -672,7 +671,9 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # TODO: Replace string cast with https://github.com/pydantic/pydantic/pull/9137 on 24.1
             "genome_build": lambda item, key, **context: str(item.dbkey) if item.dbkey is not None else None,
             # derived (not mapped) attributes
-            "data_type": lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
+            "data_type": lambda item, key, **context: (
+                f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}"
+            ),
             "converted": self.serialize_converted_datasets,
             # TODO: metadata/extra files
         }
@@ -681,7 +682,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
         # because of that: we need to add a few keys that will use the default serializer
         self.serializable_keyset.update(["name", "state", "tool_version", "extension", "visible", "dbkey"])
 
-    def _proxy_to_dataset(self, serializer: Optional[base.Serializer] = None, proxy_key: Optional[str] = None):
+    def _proxy_to_dataset(self, serializer: base.Serializer | None = None, proxy_key: str | None = None):
         # dataset associations are (rough) proxies to datasets - access their serializer using this remapping fn
         # remapping done by either kwarg key: IOW dataset attr key (e.g. uuid)
         # or by kwarg serializer: a function that's passed in (e.g. permissions)

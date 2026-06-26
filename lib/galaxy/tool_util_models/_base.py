@@ -1,13 +1,12 @@
 """Base model classes for tool utilities."""
 
-from typing import Optional
+from typing import Annotated
 
 from pydantic import (
     AfterValidator,
     BaseModel,
     ConfigDict,
 )
-from typing_extensions import Annotated
 
 
 class ToolSourceBaseModel(BaseModel):
@@ -27,4 +26,4 @@ def _check_collection_type(v: str) -> str:
     return v
 
 
-CollectionType = Annotated[Optional[str], AfterValidator(_check_collection_type)]
+CollectionType = Annotated[str | None, AfterValidator(_check_collection_type)]

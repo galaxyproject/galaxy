@@ -14,7 +14,6 @@ import time
 from collections.abc import Callable
 from typing import (
     Any,
-    Optional,
 )
 
 from cachetools import TTLCache
@@ -52,15 +51,15 @@ class SSEEventDispatcher:
 
     def __init__(
         self,
-        queue_worker: Optional[GalaxyQueueWorker],
+        queue_worker: GalaxyQueueWorker | None,
         application_stack: ApplicationStack,
-        statsd_client: Optional[VanillaGalaxyStatsdClient] = None,
+        statsd_client: VanillaGalaxyStatsdClient | None = None,
         clock: Callable[[], float] = time.monotonic,
         # Factory return is typed ``Any`` so ``ControlTask`` itself and test-only
         # duck-typed doubles (FakeControlTask/BoomControlTask/NoopControlTask)
         # all satisfy the signature under mypy.
         control_task_factory: Callable[[GalaxyQueueWorker], Any] = ControlTask,
-        queues_provider: Optional[Callable[[], list[Queue]]] = None,
+        queues_provider: Callable[[], list[Queue]] | None = None,
     ) -> None:
         self._queue_worker = queue_worker
         self._application_stack = application_stack
@@ -115,7 +114,7 @@ class SSEEventDispatcher:
                 dt_ms = int((time.perf_counter() - start_time) * 1000)
                 self._statsd_client.timing("galaxy.sse.dispatch.latency_ms", dt_ms, tags={"task": task})
 
-    def notify_users(self, user_ids: list[int], payload: str, event_id: Optional[str] = None) -> None:
+    def notify_users(self, user_ids: list[int], payload: str, event_id: str | None = None) -> None:
         self._send(
             "notify_users",
             {
@@ -125,7 +124,7 @@ class SSEEventDispatcher:
             },
         )
 
-    def notify_broadcast(self, payload: str, event_id: Optional[str] = None) -> None:
+    def notify_broadcast(self, payload: str, event_id: str | None = None) -> None:
         self._send(
             "notify_broadcast",
             {
@@ -137,8 +136,8 @@ class SSEEventDispatcher:
     def history_update(
         self,
         user_updates: dict[str, list[int]],
-        event_id: Optional[str] = None,
-        session_updates: Optional[dict[str, list[int]]] = None,
+        event_id: str | None = None,
+        session_updates: dict[str, list[int]] | None = None,
     ) -> None:
         kwargs: dict[str, Any] = {
             "user_updates": user_updates,
@@ -153,8 +152,8 @@ class SSEEventDispatcher:
     def subscribe_history_viewer(
         self,
         history_id: str,
-        user_id: Optional[int] = None,
-        session_id: Optional[int] = None,
+        user_id: int | None = None,
+        session_id: int | None = None,
     ) -> None:
         """Broadcast a viewer-subscription record so every webapp worker can
         push history_update events to a user/session watching a history they
@@ -173,8 +172,8 @@ class SSEEventDispatcher:
     def unsubscribe_history_viewer(
         self,
         history_id: str,
-        user_id: Optional[int] = None,
-        session_id: Optional[int] = None,
+        user_id: int | None = None,
+        session_id: int | None = None,
     ) -> None:
         kwargs: dict[str, Any] = {"history_id": history_id}
         if user_id is not None:
@@ -183,7 +182,7 @@ class SSEEventDispatcher:
             kwargs["session_id"] = session_id
         self._send("unsubscribe_history_viewer", kwargs)
 
-    def entry_point_update(self, user_id: int, event_id: Optional[str] = None) -> None:
+    def entry_point_update(self, user_id: int, event_id: str | None = None) -> None:
         """Fan out a wake-up ``entry_point_update`` event for one user.
 
         The client always refetches the canonical entry-point list on receipt,

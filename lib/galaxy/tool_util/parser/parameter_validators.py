@@ -1,15 +1,10 @@
 import json
+from collections.abc import Sequence
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Union,
+    get_args,
 )
-
-from typing_extensions import get_args
 
 from galaxy.tool_util_models.parameter_validators import (
     AnyValidatorModel,
@@ -47,7 +42,7 @@ class UnsafeValidatorConfiguredInUntrustedContext(AssertionError):
     pass
 
 
-def parse_dict_validators(validator_dicts: List[Dict[str, Any]], trusted: bool) -> List[AnyValidatorModel]:
+def parse_dict_validators(validator_dicts: list[dict[str, Any]], trusted: bool) -> list[AnyValidatorModel]:
     validator_models = []
     for validator_dict in validator_dicts:
         validator = DiscriminatedAnyValidatorModel.validate_python(validator_dict)
@@ -59,15 +54,15 @@ def parse_dict_validators(validator_dicts: List[Dict[str, Any]], trusted: bool) 
     return validator_models
 
 
-def parse_xml_validators(input_elem: Element) -> List[AnyValidatorModel]:
-    validator_els: List[Element] = input_elem.findall("validator") or []
+def parse_xml_validators(input_elem: Element) -> list[AnyValidatorModel]:
+    validator_els: list[Element] = input_elem.findall("validator") or []
     models = []
     for validator_el in validator_els:
         models.append(parse_xml_validator(validator_el))
     return models
 
 
-def static_validators(validator_models: List[AnyValidatorModel]) -> List[AnyValidatorModel]:
+def static_validators(validator_models: list[AnyValidatorModel]) -> list[AnyValidatorModel]:
     static_validators = []
     for validator_model in validator_models:
         if validator_model._static:
@@ -228,20 +223,19 @@ def parse_xml_validator(validator_el: Element) -> AnyValidatorModel:
         raise ValueError(f"Unhandled 'type' attribute in validator {validator_type}")
 
 
-def _parse_message(xml_el: Element) -> Optional[str]:
+def _parse_message(xml_el: Element) -> str | None:
     message = xml_el.get("message")
     return message
 
 
-def _parse_int(xml_el: Element, attribute: str) -> Optional[int]:
-    raw_value = xml_el.get(attribute)
-    if raw_value:
+def _parse_int(xml_el: Element, attribute: str) -> int | None:
+    if raw_value := xml_el.get(attribute):
         return int(raw_value)
     else:
         return None
 
 
-def _parse_number(xml_el: Element, attribute: str) -> Optional[Union[float, int]]:
+def _parse_number(xml_el: Element, attribute: str) -> float | int | None:
     raw_value = xml_el.get(attribute)
     if raw_value and ("." in raw_value or "e" in raw_value or "inf" in raw_value):
         return float(raw_value)
@@ -259,7 +253,7 @@ def _parse_bool(xml_el: Element, attribute: str, default_value: bool) -> bool:
     return asbool(xml_el.get(attribute, default_value))
 
 
-def _parse_str_list(xml_el: Element, attribute: str) -> List[str]:
+def _parse_str_list(xml_el: Element, attribute: str) -> list[str]:
     raw_value = xml_el.get(attribute)
     if not raw_value:
         return []
@@ -272,7 +266,7 @@ def _parse_json_value(xml_el: Element) -> Any:
     return value
 
 
-def _parse_metadata_column(xml_el: Element) -> Union[int, str]:
+def _parse_metadata_column(xml_el: Element) -> int | str:
     column = xml_el.get("metadata_column", 0)
     try:
         return int(column)
@@ -280,8 +274,8 @@ def _parse_metadata_column(xml_el: Element) -> Union[int, str]:
         return column
 
 
-def static_tool_validators(validators: Sequence[ParameterValidatorModel]) -> List[StaticValidatorModel]:
-    static_validators: List[StaticValidatorModel] = []
+def static_tool_validators(validators: Sequence[ParameterValidatorModel]) -> list[StaticValidatorModel]:
+    static_validators: list[StaticValidatorModel] = []
     for validator in validators:
         if isinstance(validator, StaticValidatorModel):
             static_validators.append(validator)

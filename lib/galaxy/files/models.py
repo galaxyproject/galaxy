@@ -5,10 +5,8 @@ from typing import (
     Any,
     Generic,
     Literal,
-    Optional,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 
 from pydantic import (
@@ -47,12 +45,12 @@ class FlexibleModel(BaseModel):
 class FileSourcePluginsConfig(BaseModel):
     symlink_allowlist: list[str] = []
     fetch_url_allowlist: list[IpAllowedListEntryT] = []
-    library_import_dir: Optional[str] = None
-    user_library_import_dir: Optional[str] = None
-    ftp_upload_dir: Optional[str] = None
+    library_import_dir: str | None = None
+    user_library_import_dir: str | None = None
+    ftp_upload_dir: str | None = None
     ftp_upload_purge: bool = True
-    tmp_dir: Optional[str] = None
-    listings_expiry_time: Optional[int] = None
+    tmp_dir: str | None = None
+    listings_expiry_time: int | None = None
 
     @staticmethod
     def from_app_config(config):
@@ -104,11 +102,11 @@ class UserData:
         self.context = context
 
     @property
-    def email(self) -> Optional[str]:
+    def email(self) -> str | None:
         return self.context.email if self.context else None
 
     @property
-    def username(self) -> Optional[str]:
+    def username(self) -> str | None:
         return self.context.username if self.context else None
 
     @property
@@ -150,14 +148,14 @@ class FilesSourceProperties(StrictModel):
         ),
     ]
     label: Annotated[
-        Optional[str],
+        str | None,
         Field(
             ...,
             description="The display label for this plugin.",
         ),
     ] = None
     doc: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="Documentation",
             description="Documentation or extended description for this plugin.",
@@ -180,7 +178,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = DEFAULT_WRITABLE
     requires_roles: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="Requires roles",
             description=(
@@ -192,7 +190,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = None
     requires_groups: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="Requires groups",
             description=(
@@ -204,7 +202,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = None
     oidc_auth_provider: Annotated[
-        Optional[str],
+        str | None,
         Field(
             None,
             title="OIDC authorization provider",
@@ -212,7 +210,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = None
     auth_expires_at: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="Auth expires at",
             description=(
@@ -223,7 +221,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = None
     disable_templating: Annotated[
-        Optional[bool],
+        bool | None,
         Field(
             False,
             title="Disable Templating",
@@ -234,7 +232,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = False
     scheme: Annotated[
-        Optional[str],
+        str | None,
         Field(
             DEFAULT_SCHEME,
             title="Scheme",
@@ -242,7 +240,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = DEFAULT_SCHEME
     uri_root: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="URI root",
             description=(
@@ -252,7 +250,7 @@ class FilesSourceProperties(StrictModel):
         ),
     ] = None
     url: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="URL",
             description="Optional URL that might be provided by some plugins to link to the remote source.",
@@ -301,7 +299,7 @@ class FilesSourceOptions(StrictModel):
     # are merged with constructor defined http_headers. The interpretation of these properties
     # are filesystem specific.
     extra_props: Annotated[
-        Optional[PartialFilesSourceProperties],
+        PartialFilesSourceProperties | None,
         Field(
             description="Additional properties to override the initial properties defined in the constructor.",
         ),
@@ -321,7 +319,7 @@ class Entry(FlexibleModel):
     name: str
     uri: str
     # May contain additional properties depending on the file source
-    external_link: Optional[str]
+    external_link: str | None
 
 
 class RemoteEntry(StrictModel):
@@ -344,9 +342,9 @@ class RemoteFileHash(StrictModel):
 class RemoteFile(RemoteEntry):
     class_: Annotated[Literal["File"], Field(..., serialization_alias="class")] = "File"
     size: Annotated[int, Field(..., title="Size", description="The size of the file in bytes.")] = 0
-    ctime: Annotated[Optional[str], Field(title="Creation time", description="The creation time of the file.")] = None
+    ctime: Annotated[str | None, Field(title="Creation time", description="The creation time of the file.")] = None
     hashes: Annotated[
-        Optional[list[RemoteFileHash]],
+        list[RemoteFileHash] | None,
         Field(
             title="Hashes",
             description="List of precomputed hashes for the file, if available.",
@@ -354,7 +352,7 @@ class RemoteFile(RemoteEntry):
     ] = None
 
 
-AnyRemoteEntry = Union[RemoteDirectory, RemoteFile]
+AnyRemoteEntry = RemoteDirectory | RemoteFile
 
 
 # Fields to skip during template expansion
@@ -385,9 +383,9 @@ class FilesSourceTemplateContext:
 
     def __init__(
         self,
-        user_data: Optional[UserData] = None,
-        environment: Optional[EnvironmentDict] = None,
-        file_sources_config: Optional[FileSourcePluginsConfig] = None,
+        user_data: UserData | None = None,
+        environment: EnvironmentDict | None = None,
+        file_sources_config: FileSourcePluginsConfig | None = None,
     ):
         self.user_data = user_data or UserData()
         self.environment = environment or {}

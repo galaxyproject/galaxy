@@ -10,7 +10,6 @@ from galaxy.webapps.base.controller import (
 
 
 class PageController(BaseUIController, SharableMixin, SharableItemSecurityMixin):
-
     def __init__(self, app: StructuredApp):
         super().__init__(app)
 

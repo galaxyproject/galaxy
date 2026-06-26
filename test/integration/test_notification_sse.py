@@ -1,7 +1,6 @@
 """Integration tests for the notification SSE (Server-Sent Events) endpoint."""
 
 import json
-from typing import Optional
 from urllib.parse import urljoin
 from uuid import uuid4
 
@@ -10,7 +9,7 @@ from galaxy_test.base.sse import SSELineListener
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-def notification_test_data(subject: Optional[str] = None, message: Optional[str] = None) -> dict:
+def notification_test_data(subject: str | None = None, message: str | None = None) -> dict:
     return {
         "source": "integration_tests",
         "variant": "info",
@@ -23,7 +22,7 @@ def notification_test_data(subject: Optional[str] = None, message: Optional[str]
     }
 
 
-def notification_broadcast_test_data(subject: Optional[str] = None, message: Optional[str] = None) -> dict:
+def notification_broadcast_test_data(subject: str | None = None, message: str | None = None) -> dict:
     return {
         "source": "integration_tests",
         "variant": "info",

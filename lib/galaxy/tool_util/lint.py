@@ -49,15 +49,11 @@ from abc import (
     ABC,
     abstractmethod,
 )
+from collections.abc import Callable
 from enum import IntEnum
 from typing import (
-    Callable,
-    List,
-    Optional,
-    Type,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 
 import galaxy.tool_util.linters
@@ -104,14 +100,14 @@ class Linter(ABC):
         return cls.__name__
 
     @classmethod
-    def list_linters(cls) -> List[str]:
+    def list_linters(cls) -> list[str]:
         """
         list the names of all linter derived from Linter
         """
         submodules.import_submodules(galaxy.tool_util.linters)
         return [s.__name__ for s in cls.__subclasses__()]
 
-    list_listers: Callable[[], List[str]]  # deprecated alias
+    list_listers: Callable[[], list[str]]  # deprecated alias
 
 
 # Define the `list_listers` alias outside of the `Linter` class so that
@@ -125,7 +121,7 @@ class LintMessage:
     a message from the linter
     """
 
-    def __init__(self, level: str, message: str, linter: Optional[str] = None, **kwargs):
+    def __init__(self, level: str, message: str, linter: str | None = None, **kwargs):
         self.level = level
         self.message = message
         self.linter = linter
@@ -156,7 +152,7 @@ class LintMessage:
 
 
 class XMLLintMessageLine(LintMessage):
-    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
+    def __init__(self, level: str, message: str, linter: str | None = None, node: Element | None = None):
         super().__init__(level, message, linter)
         self.line = None
         if node is not None:
@@ -172,7 +168,7 @@ class XMLLintMessageLine(LintMessage):
 
 
 class XMLLintMessageXPath(LintMessage):
-    def __init__(self, level: str, message: str, linter: Optional[str] = None, node: Optional[Element] = None):
+    def __init__(self, level: str, message: str, linter: str | None = None, node: Element | None = None):
         super().__init__(level, message, linter)
         self.xpath = None
         if node is not None:
@@ -193,18 +189,18 @@ LintTargetType = TypeVar("LintTargetType")
 # it is reused for repositories in planemo. Therefore, it should probably
 # be moved to galaxy.util.lint.
 class LintContext:
-    skip_types: List[str]
+    skip_types: list[str]
     level: LintLevel
-    lint_message_class: Type[LintMessage]
-    object_name: Optional[str]
-    message_list: List[LintMessage]
+    lint_message_class: type[LintMessage]
+    object_name: str | None
+    message_list: list[LintMessage]
 
     def __init__(
         self,
-        level: Union[LintLevel, str],
-        lint_message_class: Type[LintMessage] = LintMessage,
-        skip_types: Optional[List[str]] = None,
-        object_name: Optional[str] = None,
+        level: LintLevel | str,
+        lint_message_class: type[LintMessage] = LintMessage,
+        skip_types: list[str] | None = None,
+        object_name: str | None = None,
     ):
         self.skip_types = skip_types or []
         if isinstance(level, str):
@@ -228,7 +224,7 @@ class LintContext:
         name: str,
         lint_func: Callable[[LintTargetType, "LintContext"], None],
         lint_target: LintTargetType,
-        module_name: Optional[str] = None,
+        module_name: str | None = None,
     ):
         if name.startswith("lint_"):
             name = name[len("lint_") :]
@@ -266,39 +262,39 @@ class LintContext:
             self.message_list = tmp_message_list + self.message_list
 
     @property
-    def valid_messages(self) -> List[LintMessage]:
+    def valid_messages(self) -> list[LintMessage]:
         return [x for x in self.message_list if x.level == "check"]
 
     @property
-    def info_messages(self) -> List[LintMessage]:
+    def info_messages(self) -> list[LintMessage]:
         return [x for x in self.message_list if x.level == "info"]
 
     @property
-    def warn_messages(self) -> List[LintMessage]:
+    def warn_messages(self) -> list[LintMessage]:
         return [x for x in self.message_list if x.level == "warning"]
 
     @property
-    def error_messages(self) -> List[LintMessage]:
+    def error_messages(self) -> list[LintMessage]:
         return [x for x in self.message_list if x.level == "error"]
 
-    def __handle_message(self, level: str, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+    def __handle_message(self, level: str, message: str, linter: str | None = None, *args, **kwargs) -> None:
         if args:
             message = message % args
         self.message_list.append(self.lint_message_class(level=level, message=message, linter=linter, **kwargs))
 
-    def valid(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+    def valid(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("check", message, linter, *args, **kwargs)
 
-    def info(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+    def info(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("info", message, linter, *args, **kwargs)
 
-    def error(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+    def error(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("error", message, linter, *args, **kwargs)
 
-    def warn(self, message: str, linter: Optional[str] = None, *args, **kwargs) -> None:
+    def warn(self, message: str, linter: str | None = None, *args, **kwargs) -> None:
         self.__handle_message("warning", message, linter, *args, **kwargs)
 
-    def failed(self, fail_level: Union[LintLevel, str]) -> bool:
+    def failed(self, fail_level: LintLevel | str) -> bool:
         if isinstance(fail_level, str):
             fail_level = LintLevel[fail_level.upper()]
         found_warns = self.found_warns
@@ -316,7 +312,7 @@ class LintContext:
 NETWORK_LINTERS = ("BioToolsValid", "EDAMTermsValid")
 
 
-def lint_user_tool_source(user_tool_source: "UserToolSource") -> List[str]:
+def lint_user_tool_source(user_tool_source: "UserToolSource") -> list[str]:
     """Run the lint pipeline against a ``UserToolSource`` pydantic value.
 
     Returns a list of formatted ``"<linter>: <message>"`` bullets at WARN
@@ -330,7 +326,7 @@ def lint_user_tool_source(user_tool_source: "UserToolSource") -> List[str]:
     root_dict = user_tool_source.model_dump(by_alias=True, exclude_none=True)
     tool_source = YamlToolSource(root_dict)
     lint_context = get_lint_context_for_tool_source(tool_source, skip_types=list(NETWORK_LINTERS))
-    bullets: List[str] = []
+    bullets: list[str] = []
     for message in lint_context.error_messages + lint_context.warn_messages:
         prefix = f"{message.linter}: " if message.linter else ""
         bullets.append(f"{prefix}{message.message}")

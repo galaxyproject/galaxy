@@ -8,7 +8,6 @@ import tempfile
 from io import StringIO
 from typing import (
     Any,
-    Optional,
 )
 
 import bdbag.bdbag_api
@@ -60,7 +59,7 @@ def do_fetch(
     request_path: str,
     working_directory: str,
     registry: Registry,
-    file_sources_dict: Optional[dict] = None,
+    file_sources_dict: dict | None = None,
 ):
     assert os.path.exists(request_path)
     with open(request_path) as f:
@@ -279,7 +278,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             link_data_only, link_data_only_explicit = _link_data_only(item)
 
         name: str
-        path: Optional[str]
+        path: str | None
         default_in_place = False
         if not deferred:
             name, path, is_link = _has_src_to_path(
@@ -328,7 +327,7 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             requested_transform.append({"action": "to_posix_lines"})
         source_dict["requested_transform"] = requested_transform
         effective_state = "ok"
-        stdout: Optional[str] = None
+        stdout: str | None = None
         if not deferred and not error_message:
             in_place = item.get("in_place", default_in_place)
             purge_source = item.get("purge_source", True)
@@ -515,7 +514,7 @@ def _directory_to_items(directory):
     return items
 
 
-def _has_src_to_name(item) -> Optional[str]:
+def _has_src_to_name(item) -> str | None:
     # Logic should broadly match logic of _has_src_to_path but not resolve the item
     # into a path.
     name = item.get("name")
@@ -559,7 +558,7 @@ def _has_src_to_path(
                 return name, path, is_link
 
         headers = item.get("headers")
-        file_source_options: Optional[FilesSourceOptions] = None
+        file_source_options: FilesSourceOptions | None = None
         if headers:
             extra_props = PartialFilesSourceProperties(**{"http_headers": headers})
             file_source_options = FilesSourceOptions(extra_props=extra_props)
@@ -633,7 +632,7 @@ class UploadConfig:
         registry: Registry,
         working_directory: str,
         allow_failed_collections: bool,
-        file_sources_dict: Optional[dict] = None,
+        file_sources_dict: dict | None = None,
     ):
         self.registry = registry
         self.working_directory = working_directory

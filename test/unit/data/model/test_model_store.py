@@ -12,7 +12,6 @@ from tempfile import (
 from typing import (
     Any,
     NamedTuple,
-    Optional,
 )
 
 import pytest
@@ -1445,7 +1444,7 @@ def setup_fixture_context_with_history(
 def perform_import_from_store_dict(
     fixture_context: StoreFixtureContextWithHistory,
     import_dict: dict[str, Any],
-    import_options: Optional[store.ImportOptions] = None,
+    import_options: store.ImportOptions | None = None,
 ) -> None:
     import_options = import_options or store.ImportOptions()
     import_model_store = store.get_import_model_store_for_dict(

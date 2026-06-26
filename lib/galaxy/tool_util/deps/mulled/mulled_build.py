@@ -13,25 +13,26 @@ import json
 import logging
 import os
 import platform as _platform_module
+import shlex
 import shutil
 import stat
 import string
 import subprocess
 import sys
+from collections.abc import (
+    Callable,
+    Iterable,
+)
 from sys import platform as _platform
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Iterable,
-    List,
+    Literal,
     NoReturn,
     Optional,
     TYPE_CHECKING,
 )
 
 import yaml
-from typing_extensions import Literal
 
 from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import (
@@ -44,7 +45,6 @@ from galaxy.util import (
     commands,
     download_to_file,
     safe_makedirs,
-    shlex_join,
     unicodify,
 )
 from ._cli import arg_parser
@@ -89,14 +89,14 @@ DockerPlatform = Literal[
     "linux/riscv64",
 ]
 
-DOCKER_TO_CONDA_PLATFORM: Dict[DockerPlatform, str] = {
+DOCKER_TO_CONDA_PLATFORM: dict[DockerPlatform, str] = {
     "linux/amd64": "linux-64",
     "linux/arm64": "linux-aarch64",
     "linux/arm/v7": "linux-armv7l",
     "linux/ppc64le": "linux-ppc64le",
     "linux/riscv64": "linux-riscv64",
 }
-MACHINE_TO_DOCKER_PLATFORM: Dict[str, DockerPlatform] = {
+MACHINE_TO_DOCKER_PLATFORM: dict[str, DockerPlatform] = {
     "x86_64": "linux/amd64",
     "amd64": "linux/amd64",
     "aarch64": "linux/arm64",
@@ -161,7 +161,7 @@ def get_tests(args, pkg_path):
         if tests_imports and "python" in requirements:
             tests.append(" && ".join(f'python -c "import {imp}"' for imp in tests_imports))
         elif tests_imports and ("perl" in requirements or "perl-threaded" in requirements):
-            tests.append(" && ".join(f'''perl -e "use {imp};\"''' for imp in tests_imports))
+            tests.append(" && ".join(f"""perl -e "use {imp};\"""" for imp in tests_imports))
 
     tests = " && ".join(tests)
     tests = tests.replace("$R ", "Rscript ")
@@ -224,7 +224,7 @@ def conda_platform() -> str:
     return conda_arch_map.get(machine, default_platform)
 
 
-def docker_platform_to_conda_subdir(target_docker_platform: Optional[DockerPlatform]) -> str:
+def docker_platform_to_conda_subdir(target_docker_platform: DockerPlatform | None) -> str:
     """Return the conda subdir for an explicit Docker target, or for the host when unset."""
     if target_docker_platform is None:
         return conda_platform()
@@ -234,7 +234,7 @@ def docker_platform_to_conda_subdir(target_docker_platform: Optional[DockerPlatf
         raise ValueError(f"Unsupported target platform '{target_docker_platform}'") from None
 
 
-def docker_platform_tag_suffix(target_platform: Optional[DockerPlatform]) -> Optional[str]:
+def docker_platform_tag_suffix(target_platform: DockerPlatform | None) -> str | None:
     """Return an image-tag suffix, preserving unsuffixed tags for legacy amd64 images."""
     target_platform = target_platform or MACHINE_TO_DOCKER_PLATFORM.get(
         _platform_module.machine().lower(), "linux/amd64"
@@ -244,7 +244,7 @@ def docker_platform_tag_suffix(target_platform: Optional[DockerPlatform]) -> Opt
     return target_platform[len("linux/") :].replace("/", "-")
 
 
-def apply_platform_tag_suffix(image: str, target_platform: Optional[DockerPlatform]) -> str:
+def apply_platform_tag_suffix(image: str, target_platform: DockerPlatform | None) -> str:
     suffix = docker_platform_tag_suffix(target_platform)
     if suffix is None:
         return image
@@ -258,15 +258,15 @@ def apply_platform_tag_suffix(image: str, target_platform: Optional[DockerPlatfo
 
 
 def get_conda_hits_for_targets(
-    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: Optional[str] = None
-) -> List[Dict[str, Any]]:
+    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: str | None = None
+) -> list[dict[str, Any]]:
     platform = conda_platform_str or conda_platform()
     search_results = (best_search_result(t, conda_context, platform=platform)[0] for t in targets)
     return [r for r in search_results if r]
 
 
 def base_image_for_targets(
-    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: Optional[str] = None
+    targets: Iterable[CondaTarget], conda_context: CondaContext, conda_platform_str: str | None = None
 ) -> str:
     """
     determine base image (DEFAULT_BASE_IMAGE/DEFAULT_EXTENDED_BASE_IMAGE) for a
@@ -304,32 +304,32 @@ class BuildExistsException(Exception):
 
 
 def mull_targets(
-    targets: List[CondaTarget],
+    targets: list[CondaTarget],
     involucro_context: Optional["InvolucroContext"] = None,
     command: str = "build",
-    channels: List[str] = DEFAULT_CHANNELS,
+    channels: list[str] = DEFAULT_CHANNELS,
     namespace: str = "biocontainers",
     test: str = "true",
-    test_files: Optional[List[str]] = None,
-    image_build: Optional[str] = None,
-    name_override: Optional[str] = None,
+    test_files: list[str] | None = None,
+    image_build: str | None = None,
+    name_override: str | None = None,
     repository_template: str = DEFAULT_REPOSITORY_TEMPLATE,
     dry_run: bool = False,
-    conda_version: Optional[str] = None,
-    mamba_version: Optional[str] = None,
+    conda_version: str | None = None,
+    mamba_version: str | None = None,
     use_mamba: bool = False,
     verbose: bool = False,
-    binds: List[str] = DEFAULT_BINDS,
+    binds: list[str] = DEFAULT_BINDS,
     rebuild: bool = True,
-    oauth_token: Optional[str] = None,
+    oauth_token: str | None = None,
     hash_func: Literal["v1", "v2"] = "v2",
     singularity: bool = False,
     singularity_image_dir: "StrPath" = "singularity_import",
-    base_image: Optional[str] = None,
+    base_image: str | None = None,
     determine_base_image: bool = True,
     invfile: str = INVFILE,
     strict_channel_priority: bool = True,
-    target_platform: Optional[DockerPlatform] = None,
+    target_platform: DockerPlatform | None = None,
 ) -> int:
     conda_platform_str = docker_platform_to_conda_subdir(target_platform)
     if singularity and target_platform:
@@ -421,7 +421,7 @@ def mull_targets(
         involucro_args.extend(["-set", f"TEST={test}"])
 
     verbose_opt = "--verbose" if verbose else "--quiet"
-    specs: List[str] = []
+    specs: list[str] = []
     if conda_version is not None:
         specs.append(f"conda={conda_version}")
     conda_bin = "conda"
@@ -457,7 +457,7 @@ def mull_targets(
 
     if dry_run:
         cmd = involucro_context.build_command(involucro_args)
-        print(f"Executing: {shlex_join(cmd)}")
+        print(f"Executing: {shlex.join(cmd)}")
         return 0
 
     ensure_installed(involucro_context, True)
@@ -492,8 +492,8 @@ class InvolucroContext(installable.InstallableContext):
 
     def __init__(
         self,
-        involucro_bin: Optional[str] = None,
-        shell_exec: Optional[Callable[[List[str]], int]] = None,
+        involucro_bin: str | None = None,
+        shell_exec: Callable[[list[str]], int] | None = None,
         verbose: str = "3",
     ) -> None:
         if involucro_bin is None:
@@ -506,11 +506,11 @@ class InvolucroContext(installable.InstallableContext):
         self.shell_exec = shell_exec or commands.shell
         self.verbose = verbose
 
-    def build_command(self, involucro_args: List[str]) -> List[str]:
+    def build_command(self, involucro_args: list[str]) -> list[str]:
         cmd = [self.involucro_bin, f"-v={self.verbose}"]
         return cmd + involucro_args
 
-    def exec_command(self, involucro_args: List[str]) -> int:
+    def exec_command(self, involucro_args: list[str]) -> int:
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
         created_build_dir = False
@@ -643,7 +643,7 @@ def add_single_image_arguments(parser):
     )
 
 
-def target_str_to_targets(targets_raw: str) -> List[CondaTarget]:
+def target_str_to_targets(targets_raw: str) -> list[CondaTarget]:
     def parse_target(target_str: str) -> CondaTarget:
         if "=" in target_str:
             package_name, version_str = target_str.split("=", 1)

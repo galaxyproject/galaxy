@@ -11,9 +11,7 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 from uuid import UUID
 
@@ -127,7 +125,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
 
     def index_query(
         self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
-    ) -> tuple["ScalarResult[model.History]", Union[int, None]]:
+    ) -> tuple["ScalarResult[model.History]", int | None]:
         show_deleted = False
         show_own = payload.show_own
         show_published = payload.show_published
@@ -246,7 +244,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
     # .... sharable
     # overriding to handle anonymous users' current histories in both cases
     def by_user(
-        self, user: model.User, current_history: Optional[model.History] = None, **kwargs: Any
+        self, user: model.User, current_history: model.History | None = None, **kwargs: Any
     ) -> list[model.History]:
         """
         Get all the histories for a given user (allowing anon users' theirs)
@@ -260,8 +258,8 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
     def is_owner(
         self,
         item: model.Base,
-        user: Optional[model.User],
-        current_history: Optional[model.History] = None,
+        user: model.User | None,
+        current_history: model.History | None = None,
         **kwargs: Any,
     ) -> bool:
         """
@@ -443,7 +441,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
         return job
 
     def get_sharing_extra_information(
-        self, trans, item, users: set[model.User], errors: set[str], option: Optional[sharable.SharingOptions] = None
+        self, trans, item, users: set[model.User], errors: set[str], option: sharable.SharingOptions | None = None
     ) -> ShareHistoryExtra:
         """Returns optional extra information about the datasets of the history that can be accessed by the users."""
         extra = ShareHistoryExtra()
@@ -521,7 +519,7 @@ class HistoryManager(sharable.SharableModelManager[model.History], deletable.Pur
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
-    def archive_history(self, history: model.History, archive_export_id: Optional[int]):
+    def archive_history(self, history: model.History, archive_export_id: int | None):
         """Marks the history with the given id as archived and optionally associates it with the given archive export record.
 
         **Important**: The caller is responsible for passing a valid `archive_export_id` that belongs to the given history.
@@ -590,9 +588,9 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
     def get_discarded(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
     ) -> list[StoredItem]:
         stmt = select(model.History).where(
             model.History.user_id == user.id,
@@ -625,9 +623,9 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
     def get_archived(
         self,
         user: model.User,
-        offset: Optional[int],
-        limit: Optional[int],
-        order: Optional[StoredItemOrderBy],
+        offset: int | None,
+        limit: int | None,
+        order: StoredItemOrderBy | None,
     ) -> list[StoredItem]:
         stmt = select(model.History).where(
             model.History.user_id == user.id,
@@ -687,7 +685,7 @@ class HistoryExportManager:
         self.app = app
         self.export_tracker = export_tracker
 
-    def get_task_exports(self, trans, history_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
+    def get_task_exports(self, trans, history_id: int, limit: int | None = None, offset: int | None = None):
         """Returns task-based exports associated with this history"""
         history = self._history(trans, history_id)
         export_associations = self.export_tracker.get_object_exports(
@@ -701,8 +699,8 @@ class HistoryExportManager:
     def create_export_association(self, history_id: int) -> model.StoreExportAssociation:
         return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
 
-    def get_record_metadata(self, export: model.StoreExportAssociation) -> Optional[ExportObjectMetadata]:
-        metadata: Union[dict, str, None] = export.export_metadata
+    def get_record_metadata(self, export: model.StoreExportAssociation) -> ExportObjectMetadata | None:
+        metadata: dict | str | None = export.export_metadata
         if not metadata:
             return None
         if isinstance(metadata, str):
@@ -710,12 +708,11 @@ class HistoryExportManager:
         assert isinstance(metadata, dict)
         # Use model_construct to skip validation and avoid double-encoding of ID fields
         request_data_raw = metadata.get("request_data", {})
-        result_data_raw = metadata.get("result_data")
         payload_raw = request_data_raw.get("payload")
         if not payload_raw:
             raise MessageException("Export metadata is missing payload information")
         # Construct the appropriate payload model based on whether target_uri is present
-        payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
+        payload: WriteStoreToPayload | ShortTermStoreExportPayload
         if "target_uri" in payload_raw:
             payload = WriteStoreToPayload.model_construct(**payload_raw)
         else:
@@ -732,7 +729,7 @@ class HistoryExportManager:
             payload=payload,
         )
         result_data = None
-        if result_data_raw:
+        if result_data_raw := metadata.get("result_data"):
             result_data = ExportObjectResultMetadata.model_construct(
                 success=result_data_raw.get("success"),
                 uri=result_data_raw.get("uri"),
@@ -785,7 +782,7 @@ class HistoryExportManager:
         rval = trans.security.encode_all_ids(rval)
         return rval
 
-    def get_ready_jeha(self, trans, history_id: int, jeha_id: Union[int, Literal["latest"]] = "latest"):
+    def get_ready_jeha(self, trans, history_id: int, jeha_id: int | Literal["latest"] = "latest"):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         if jeha_id != "latest":

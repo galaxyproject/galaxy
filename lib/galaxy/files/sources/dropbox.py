@@ -7,8 +7,6 @@ except ImportError:
 import posixpath
 from typing import (
     Annotated,
-    Optional,
-    Union,
 )
 
 from pydantic import (
@@ -40,7 +38,7 @@ AccessTokenField = Field(
 
 
 class DropboxFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
+    access_token: Annotated[str | TemplateExpansion, AccessTokenField]
 
 
 class DropboxFilesSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -82,7 +80,7 @@ class DropboxFilesSource(FsspecFilesSource[DropboxFileSourceTemplateConfiguratio
             return "/"
         return filesystem_path if filesystem_path.startswith("/") else f"/{filesystem_path}"
 
-    def _extract_timestamp(self, info: dict) -> Optional[str]:
+    def _extract_timestamp(self, info: dict) -> str | None:
         return info.get("server_modified") or info.get("client_modified") or super()._extract_timestamp(info)
 
     def _write_from(

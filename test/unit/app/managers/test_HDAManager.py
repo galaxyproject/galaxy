@@ -231,8 +231,7 @@ class TestHDAManager(HDATestCase):
             )
 
         self.log(
-            "a copy of a restricted dataset in another users history should be inaccessible even to "
-            "the histories owner"
+            "a copy of a restricted dataset in another users history should be inaccessible even to the histories owner"
         )
         history2 = self.history_manager.create(name="history2", user=non_owner)
         self.trans.set_history(history2)

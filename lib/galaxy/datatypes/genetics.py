@@ -18,8 +18,6 @@ import re
 import sys
 from typing import (
     IO,
-    Optional,
-    Union,
 )
 from urllib.parse import quote_plus
 
@@ -84,7 +82,7 @@ class GenomeGraphs(Tabular):
         t[0] = "string"
         dataset.metadata.column_types = t
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> FileObjType | str:
         """
         Returns file
         """
@@ -309,7 +307,7 @@ class Rgenetics(Html):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"application/binary\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="application/binary">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="application/binary">{fn}</a>{opt_text}</li>')
@@ -819,7 +817,7 @@ class RexpBase(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         if copy_from:
             dataset.metadata = copy_from.metadata
 

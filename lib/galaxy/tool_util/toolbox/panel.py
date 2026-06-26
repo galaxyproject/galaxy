@@ -2,11 +2,7 @@ from abc import abstractmethod
 from enum import Enum
 from typing import (
     Any,
-    Dict,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from galaxy.util.dictifiable import UsesDictVisibleKeys
@@ -166,12 +162,12 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
     used both by tool panel itself (normal and integrated) and its sections.
     """
 
-    _section_by_tool: Dict[str, Tuple[str, str]] = {}
+    _section_by_tool: dict[str, tuple[str, str]] = {}
 
     def record_section_for_tool_id(self, tool_id: str, key: str, val: str):
         self._section_by_tool[tool_id] = (key, val)
 
-    def get_section_for_tool_id(self, tool_id: str) -> Union[Tuple[str, str], Tuple[None, None]]:
+    def get_section_for_tool_id(self, tool_id: str) -> tuple[str, str] | tuple[None, None]:
         if tool_id in self._section_by_tool:
             return self._section_by_tool[tool_id]
         return (None, None)
@@ -188,7 +184,7 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
                     break
 
     def get_or_create_section(
-        self, sec_id: str, sec_nm: str, description: Optional[str] = None, links: Optional[Dict[str, str]] = None
+        self, sec_id: str, sec_nm: str, description: str | None = None, links: dict[str, str] | None = None
     ) -> ToolSection:
         if sec_id not in self:
             section = ToolSection(
@@ -216,7 +212,7 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
         else:
             self.insert(index, key, value)
 
-    def get_label(self, label: str) -> Optional[ToolSection]:
+    def get_label(self, label: str) -> ToolSection | None:
         for element in self.values():
             if isinstance(element, ToolSection) and element.name == label:
                 return element
@@ -233,7 +229,7 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
         del self[previous_key]
         self.insert(index, new_key, tool)
 
-    def index_of_tool_id(self, tool_id: str) -> Optional[int]:
+    def index_of_tool_id(self, tool_id: str) -> int | None:
         query_key = f"tool_{tool_id}"
         for index, target_key in enumerate(self.keys()):
             if query_key == target_key:
@@ -275,7 +271,7 @@ class ToolPanelElements(odict[str, Any], HasPanelItems):
             if isinstance(item, ToolSection):
                 yield (key, item)
 
-    def closest_section(self, target_section_id: Optional[str], target_section_name: Optional[str]):
+    def closest_section(self, target_section_id: str | None, target_section_name: str | None):
         for section_id, section in self.walk_sections():
             if section_id == target_section_id:
                 return section

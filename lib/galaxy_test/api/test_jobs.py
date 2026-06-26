@@ -3,7 +3,6 @@ import json
 import os
 import time
 from operator import itemgetter
-from typing import Union
 from unittest import SkipTest
 
 import requests
@@ -1268,8 +1267,8 @@ steps:
         return tool_response
 
     def _search_payload(
-        self, tool_id: str, inputs: str, state: str = "ok", history_id: Union[str, None] = None
-    ) -> dict[str, Union[str, None]]:
+        self, tool_id: str, inputs: str, state: str = "ok", history_id: str | None = None
+    ) -> dict[str, str | None]:
         search_payload = dict(tool_id=tool_id, inputs=inputs, history_id=history_id, state=state)
         return search_payload
 

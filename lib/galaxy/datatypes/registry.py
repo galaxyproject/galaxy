@@ -123,8 +123,8 @@ class Registry:
 
     def load_datatypes(
         self,
-        root_dir: Optional[StrPath] = None,
-        config: Optional[Union[Element, StrPath]] = None,
+        root_dir: StrPath | None = None,
+        config: Element | StrPath | None = None,
         override: bool = True,
         use_converters: bool = True,
         use_display_applications: bool = True,
@@ -218,7 +218,7 @@ class Registry:
                         if override or extension not in self.datatypes_by_extension:
                             can_process_datatype = True
                 if can_process_datatype:
-                    datatype_class: Optional[type[Data]] = None
+                    datatype_class: type[Data] | None = None
                     if dtype is not None:
                         ok = True
                         try:
@@ -541,7 +541,7 @@ class Registry:
         self,
         root: Element,
         override: bool = False,
-        compressed_sniffers: Optional[dict[type["Data"], list["Data"]]] = None,
+        compressed_sniffers: dict[type["Data"], list["Data"]] | None = None,
     ) -> None:
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
@@ -934,10 +934,10 @@ class Registry:
 
     def find_conversion_destination_for_dataset_by_extensions(
         self,
-        dataset_or_ext: Union[str, DatasetProtocol],
+        dataset_or_ext: str | DatasetProtocol,
         accepted_formats: Iterable[Union[str, "Data"]],
         converter_safe: bool = True,
-    ) -> tuple[bool, Optional[str], Optional[DatasetProtocol]]:
+    ) -> tuple[bool, str | None, DatasetProtocol | None]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -1088,7 +1088,7 @@ class Registry:
         return state
 
 
-def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+def upload_warning(template: Template | None, auto_compressed_type: str | None = None) -> str | None:
     if template is None:
         return None
     template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}

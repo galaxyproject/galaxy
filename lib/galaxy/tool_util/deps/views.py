@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -353,16 +350,16 @@ class ContainerResolutionView:
     def __init__(self, app: "StructuredApp"):
         self._app = app
 
-    def index(self) -> List[Dict[str, Any]]:
+    def index(self) -> list[dict[str, Any]]:
         return [r.to_dict() for r in self._container_resolvers]
 
-    def show(self, index: str) -> Dict[str, Any]:
+    def show(self, index: str) -> dict[str, Any]:
         return self._container_resolver(int(index)).to_dict()
 
-    def resolve(self, index: Optional[str] = None, **kwds) -> Dict[str, Any]:
+    def resolve(self, index: str | None = None, **kwds) -> dict[str, Any]:
         class ResolveKwds(TypedDict):
             install: bool
-            enabled_container_types: List["str"]
+            enabled_container_types: list["str"]
             tool_info: "ToolInfo"
             resolution_cache: NotRequired["ResolutionCache"]
             session: NotRequired["Session"]
@@ -413,7 +410,7 @@ class ContainerResolutionView:
             status = NullDependency().to_dict()
         return {"tool_id": kwds["tool_id"], "status": status, "requirements": requirements.to_dict()}
 
-    def resolve_toolbox(self, **kwds) -> List[Dict[str, Any]]:
+    def resolve_toolbox(self, **kwds) -> list[dict[str, Any]]:
         rval = []
         resolve_kwds = kwds.copy()
         tool_ids = pop_tool_ids(resolve_kwds)
@@ -429,14 +426,14 @@ class ContainerResolutionView:
         return rval
 
     @property
-    def _container_resolvers(self) -> List["ContainerResolver"]:
+    def _container_resolvers(self) -> list["ContainerResolver"]:
         return self._app.container_finder.default_container_registry.container_resolvers
 
     def _container_resolver(self, index: int):
         return self._container_resolvers[index]
 
 
-def pop_tool_ids(kwds: Dict[str, Any]) -> Optional[List[str]]:
+def pop_tool_ids(kwds: dict[str, Any]) -> list[str] | None:
     tool_ids = None
     if "tool_ids" in kwds:
         tool_ids = listify(kwds.pop("tool_ids"))

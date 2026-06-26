@@ -2,15 +2,14 @@
 
 import logging
 import os
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
-    Dict,
+    Literal,
     TYPE_CHECKING,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -167,7 +166,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
         transfer_dict = config_dict.get("transfer") or {}
         typed_transfer_dict = {}
         for prefix in ["", "upload_", "download_"]:
-            options: Dict[str, Callable[[Any], Any]] = {
+            options: dict[str, Callable[[Any], Any]] = {
                 "multipart_threshold": int,
                 "max_concurrency": int,
                 "multipart_chunksize": int,

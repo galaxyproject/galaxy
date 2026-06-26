@@ -59,7 +59,12 @@ def alembic_env_dir(migrations_dir: Traversable) -> Traversable:
 
 @pytest.fixture(params=["one database", "two databases"])
 def config(
-    url_factory, alembic_env_dir: Traversable, alembic_config_text, tmp_directory, monkeypatch, request  # noqa: F811
+    url_factory,  # noqa: F811
+    alembic_env_dir: Traversable,
+    alembic_config_text,  # noqa: F811
+    tmp_directory,  # noqa: F811
+    monkeypatch,
+    request,
 ):
     """
     Construct Config object for staging; setup staging env.

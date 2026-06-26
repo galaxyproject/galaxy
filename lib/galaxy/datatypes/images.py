@@ -12,8 +12,6 @@ from collections.abc import Iterator
 from typing import (
     Any,
     Literal,
-    Optional,
-    Union,
 )
 
 import mrcfile
@@ -156,7 +154,7 @@ class Image(data.Data):
         return f"![{name}](data:image/{self.file_ext};base64,{base64_image_data})"
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Try to populate the metadata of the image using a generic image loading library (Pillow), if available.
@@ -204,7 +202,7 @@ class Png(Image):
     file_ext = "png"
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Try to populate the metadata of the image using PyPNG.
@@ -265,7 +263,7 @@ class Tiff(Image):
         )
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Populate the metadata of the TIFF image using the tifffile library.
@@ -300,7 +298,6 @@ class Tiff(Image):
 
                 # TIFF files can contain multiple images, each represented by a series of pages
                 for series in tif.series:
-
                     # Determine the metadata values that should be generally available
                     metadata["axes"].append(series.axes.upper())
                     metadata["dtype"].append(str(series.dtype))
@@ -318,7 +315,6 @@ class Tiff(Image):
                 # Populate the metadata fields based on the values determined above
                 for key, values in metadata.items():
                     if len(values) > 0:
-
                         # Populate as plain value, if there is just one value, and as a list otherwise
                         if len(values) == 1:
                             setattr(dataset.metadata, key, values[0])
@@ -352,14 +348,13 @@ class Tiff(Image):
         return shape[idx] if idx >= 0 else 0
 
     @staticmethod
-    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> Optional[int]:
+    def _get_num_unique_values(series: tifffile.TiffPageSeries) -> int | None:
         """
         Determines the number of unique values in a TIFF series of pages.
         """
         unique_values: list[Any] = []
         try:
             for page in series.pages:
-
                 if page is None:
                     continue  # No idea how this might occur, but mypy demands that we check it, just to be sure
 
@@ -372,19 +367,17 @@ class Tiff(Image):
 
     @staticmethod
     def _read_chunks(
-        page: Union[tifffile.TiffPage, tifffile.TiffFrame], mmap_chunk_size: int = 2**14
+        page: tifffile.TiffPage | tifffile.TiffFrame, mmap_chunk_size: int = 2**14
     ) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all chunks of values from a TIFF page.
         """
         if len(page.dataoffsets) > 1:
-
             # There are multiple segments that can be processed consecutively
             for segment in Tiff._read_segments(page):
                 yield segment.reshape(-1)
 
         else:
-
             # The page can be memory-mapped and processed chunk-wise
             arr = page.asarray(out="memmap")  # No considerable amounts of memory should be allocated here
             arr_flat = arr.reshape(-1)  # This should only produce a view without any new allocations
@@ -395,7 +388,7 @@ class Tiff(Image):
                 yield from np.array_split(arr_flat, chunks_count)
 
     @staticmethod
-    def _read_segments(page: Union[tifffile.TiffPage, tifffile.TiffFrame]) -> Iterator["np.typing.NDArray"]:
+    def _read_segments(page: tifffile.TiffPage | tifffile.TiffFrame) -> Iterator["np.typing.NDArray"]:
         """
         Generator that reads all segments of a TIFF page.
         """
@@ -576,7 +569,7 @@ class Dicom(Image):
         return "application/dicom"
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         """
         Populate the metadata of the DICOM file using the pydicom library.
@@ -635,17 +628,14 @@ class Dicom(Image):
         # Try to infer `num_unique_values` from metadata
         try:
             if dcm.SOPClassUID == "1.2.840.10008.5.1.4.1.1.66.4":  # https://www.dicomlibrary.com/dicom/sop
-
                 # The DICOM file contains segmentation, count +1 for the image background
                 dataset.metadata.num_unique_values = 1 + len(dcm.SegmentSequence)
 
             else:
-
                 # Otherwise, `num_unique_values` is not available from metadata
                 dataset.metadata.num_unique_values = None
 
         except AttributeError:
-
             # Ignore errors if metadata cannot be read
             dataset.metadata.num_unique_values = None
 
@@ -818,7 +808,7 @@ class Analyze75(Binary):
                 opt_text = " (optional)"
             if composite_file.get("description"):
                 rval.append(
-                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                    f'<li><a href="{fn}" type="text/plain">{fn} ({composite_file.get("description")})</a>{opt_text}</li>'
                 )
             else:
                 rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')

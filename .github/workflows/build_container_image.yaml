@@ -15,7 +15,7 @@ jobs:
     name: Build container image for GHCR
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -80,10 +80,10 @@ jobs:
       tag: ${{ steps.branch.outputs.name }}
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.12'
       # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
@@ -260,7 +260,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout Galaxy Helm chart
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           repository: galaxyproject/galaxy-helm
           persist-credentials: false

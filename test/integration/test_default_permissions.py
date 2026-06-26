@@ -1,12 +1,10 @@
-from typing import Optional
-
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
 class TestDefaultPermissionsIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
-    new_user_dataset_access_role_default_private: Optional[bool] = None
+    new_user_dataset_access_role_default_private: bool | None = None
     expected_access_status_code = 200
 
     def setUp(self) -> None:

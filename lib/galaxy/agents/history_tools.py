@@ -11,7 +11,6 @@ re-implement them.
 import logging
 import re
 from functools import partial
-from typing import Union
 
 import anyio
 from sqlalchemy import (
@@ -105,8 +104,7 @@ def _get_dataset_info_impl(trans: ProvidesUserContext, history_id: int, hid: int
     contents_manager = trans.app[HistoryContentsManager]
     encode_id = trans.security.encode_id
 
-    hda = contents_manager.get_hda_by_hid(history_id, hid)
-    if hda:
+    if hda := contents_manager.get_hda_by_hid(history_id, hid):
         lines = [
             f"Dataset: {hda.name} (HID {hid}, history_dataset_id={encode_id(hda.id)})",
             f"Format: {hda.extension}",
@@ -136,8 +134,7 @@ def _get_dataset_info_impl(trans: ProvidesUserContext, history_id: int, hid: int
             lines.append("Status: HIDDEN")
         return "\n".join(lines)
 
-    hdca = contents_manager.get_hdca_by_hid(history_id, hid)
-    if hdca:
+    if hdca := contents_manager.get_hdca_by_hid(history_id, hid):
         collection_type = hdca.collection.collection_type if hdca.collection else "unknown"
         lines = [
             f"Collection: {hdca.name} (HID {hid}, history_dataset_collection_id={encode_id(hdca.id)})",
@@ -233,8 +230,7 @@ def _resolve_hid_impl(trans: ProvidesUserContext, history_id: int, hid: int) -> 
     contents_manager = trans.app[HistoryContentsManager]
     encode_id = trans.security.encode_id
 
-    hda = contents_manager.get_hda_by_hid(history_id, hid)
-    if hda:
+    if hda := contents_manager.get_hda_by_hid(history_id, hid):
         lines = [
             f"HID {hid} is a dataset: {hda.name}",
             f"Directive argument: history_dataset_id={encode_id(hda.id)}",
@@ -243,8 +239,7 @@ def _resolve_hid_impl(trans: ProvidesUserContext, history_id: int, hid: int) -> 
             lines.append(f"Creating job: job_id={encode_id(hda.creating_job.id)}")
         return "\n".join(lines)
 
-    hdca = contents_manager.get_hdca_by_hid(history_id, hid)
-    if hdca:
+    if hdca := contents_manager.get_hdca_by_hid(history_id, hid):
         return (
             f"HID {hid} is a collection: {hdca.name}\n"
             f"Directive argument: history_dataset_collection_id={encode_id(hdca.id)}"
@@ -258,7 +253,7 @@ async def resolve_hid(trans: ProvidesUserContext, history_id: int, hid: int) -> 
     return await anyio.to_thread.run_sync(partial(_resolve_hid_impl, trans, history_id, hid))
 
 
-def _format_size(size_bytes: Union[int, float, None]) -> str:
+def _format_size(size_bytes: int | float | None) -> str:
     """Human-readable byte size via galaxy.util.nice_size; "" for missing/negative."""
     if size_bytes is None or size_bytes < 0:
         return ""

@@ -1,8 +1,6 @@
 import math
 from typing import (
     Any,
-    List,
-    Type,
     TypeVar,
 )
 
@@ -30,7 +28,7 @@ def parse_tool(tool_source: ToolSource) -> ParsedTool:
 P = TypeVar("P", bound=ParsedTool)
 
 
-def parse_tool_custom(tool_source: ToolSource, model_type: Type[P]) -> P:
+def parse_tool_custom(tool_source: ToolSource, model_type: type[P]) -> P:
     id = tool_source.parse_id()
     version = tool_source.parse_version()
     name = tool_source.parse_name()
@@ -71,8 +69,8 @@ def parse_tool_custom(tool_source: ToolSource, model_type: Type[P]) -> P:
     )
 
 
-def _parsed_requirements(tool_requirements, resource_requirements, javascript_requirements) -> List[Any]:
-    parsed_requirements: List[Any] = []
+def _parsed_requirements(tool_requirements, resource_requirements, javascript_requirements) -> list[Any]:
+    parsed_requirements: list[Any] = []
     for requirement in tool_requirements:
         if requirement.type == "package":
             parsed_requirements.append(

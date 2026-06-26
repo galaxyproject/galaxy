@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 
 class FileSourcePluginLoader:
-
     def __init__(self):
         self._plugin_classes = self._file_source_plugins_dict()
 

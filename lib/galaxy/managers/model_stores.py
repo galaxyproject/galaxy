@@ -1,8 +1,3 @@
-from typing import (
-    Optional,
-    Union,
-)
-
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.jobs.manager import JobManager
@@ -114,7 +109,7 @@ class ModelStoreManager:
         include_deleted = request.include_deleted
         export_metadata = self.set_history_export_request_metadata(request)
 
-        exception_exporting_history: Optional[Exception] = None
+        exception_exporting_history: Exception | None = None
         try:
             with storage_context(
                 request.short_term_storage_request_id, self._short_term_storage_monitor
@@ -159,7 +154,7 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         export_metadata = self.set_invocation_export_request_metadata(request)
 
-        exception_exporting_invocation: Optional[Exception] = None
+        exception_exporting_invocation: Exception | None = None
         try:
             with storage_context(
                 request.short_term_storage_request_id, self._short_term_storage_monitor
@@ -195,8 +190,8 @@ class ModelStoreManager:
         user_context = self._build_user_context(request.user.user_id)
         export_metadata = self.set_invocation_export_request_metadata(request)
 
-        exception_exporting_invocation: Optional[Exception] = None
-        uri: Optional[str] = None
+        exception_exporting_invocation: Exception | None = None
+        uri: str | None = None
         try:
             export_store = model.store.get_export_store_factory(
                 self._app,
@@ -263,8 +258,8 @@ class ModelStoreManager:
         user_context = self._build_user_context(request.user.user_id)
         export_metadata = self.set_history_export_request_metadata(request)
 
-        exception_exporting_history: Optional[Exception] = None
-        uri: Optional[str] = None
+        exception_exporting_history: Exception | None = None
+        uri: str | None = None
         try:
             export_store = model.store.get_export_store_factory(
                 self._app,
@@ -292,8 +287,8 @@ class ModelStoreManager:
             )
 
     def set_history_export_request_metadata(
-        self, request: Union[WriteHistoryTo, GenerateHistoryDownload]
-    ) -> Optional[ExportObjectMetadata]:
+        self, request: WriteHistoryTo | GenerateHistoryDownload
+    ) -> ExportObjectMetadata | None:
         if request.export_association_id is None:
             return None
         request_dict = request.model_dump()
@@ -315,19 +310,19 @@ class ModelStoreManager:
 
     def set_history_export_result_metadata(
         self,
-        export_association_id: Optional[int],
-        export_metadata: Optional[ExportObjectMetadata],
+        export_association_id: int | None,
+        export_metadata: ExportObjectMetadata | None,
         success: bool,
-        uri: Optional[str] = None,
-        error: Optional[str] = None,
+        uri: str | None = None,
+        error: str | None = None,
     ):
         if export_association_id is not None and export_metadata is not None:
             export_metadata.result_data = ExportObjectResultMetadata(success=success, uri=uri, error=error)
             self._export_tracker.set_export_association_metadata(export_association_id, export_metadata)
 
     def set_invocation_export_request_metadata(
-        self, request: Union[WriteInvocationTo, GenerateInvocationDownload]
-    ) -> Optional[ExportObjectMetadata]:
+        self, request: WriteInvocationTo | GenerateInvocationDownload
+    ) -> ExportObjectMetadata | None:
         if request.export_association_id is None:
             return None
         request_dict = request.model_dump()
@@ -349,11 +344,11 @@ class ModelStoreManager:
 
     def set_invocation_export_result_metadata(
         self,
-        export_association_id: Optional[int],
-        export_metadata: Optional[ExportObjectMetadata],
+        export_association_id: int | None,
+        export_metadata: ExportObjectMetadata | None,
         success: bool,
-        uri: Optional[str] = None,
-        error: Optional[str] = None,
+        uri: str | None = None,
+        error: str | None = None,
     ):
         if export_association_id is not None and export_metadata is not None:
             export_metadata.result_data = ExportObjectResultMetadata(success=success, uri=uri, error=error)
@@ -399,9 +394,9 @@ class ModelStoreManager:
 
 def create_objects_from_store(
     app: MinimalManagerApp,
-    galaxy_user: Optional[model.User],
+    galaxy_user: model.User | None,
     payload: StoreContentSource,
-    history: Optional[model.History] = None,
+    history: model.History | None = None,
     for_library: bool = False,
 ) -> ObjectImportTracker:
     # Note: Galaxy's base Model uses use_enum_values=True, so enum fields

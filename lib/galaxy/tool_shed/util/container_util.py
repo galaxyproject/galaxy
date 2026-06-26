@@ -1,5 +1,4 @@
 import logging
-from typing import Union
 
 from galaxy.util.tool_shed.common_util import remove_protocol_from_tool_shed_url
 
@@ -14,8 +13,8 @@ def generate_repository_dependencies_key_for_repository(
     repository_name: str,
     repository_owner: str,
     changeset_revision: str,
-    prior_installation_required: Union[bool, str],
-    only_if_compiling_contained_td: Union[bool, str],
+    prior_installation_required: bool | str,
+    only_if_compiling_contained_td: bool | str,
 ) -> str:
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds

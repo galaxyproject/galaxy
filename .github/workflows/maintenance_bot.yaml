@@ -2,6 +2,7 @@ name: Maintenance Bot
 on:  # zizmor: ignore[dangerous-triggers]
   pull_request_target:
     types: [opened, reopened, edited, ready_for_review, unlabeled]
+permissions: {}
 jobs:
   labeler:
     name: Assign labels and milestone

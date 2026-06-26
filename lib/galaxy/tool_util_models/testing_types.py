@@ -6,9 +6,6 @@ These live in ``tool_util_models`` so both ``tool_util_models`` and
 
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from typing_extensions import TypedDict
@@ -16,11 +13,11 @@ from typing_extensions import TypedDict
 
 class AssertionDict(TypedDict):
     tag: str
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
     children: "AssertionList"
 
 
-AssertionList = Optional[List[AssertionDict]]
+AssertionList = list[AssertionDict] | None
 
 
 class DirectCredentialValue(TypedDict):
@@ -32,8 +29,8 @@ class DirectCredentialValue(TypedDict):
 
 class _DirectCredentialRequired(TypedDict):
     name: str
-    variables: List[DirectCredentialValue]
-    secrets: List[DirectCredentialValue]
+    variables: list[DirectCredentialValue]
+    secrets: list[DirectCredentialValue]
 
 
 class DirectCredential(_DirectCredentialRequired, total=False):

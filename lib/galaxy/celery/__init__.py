@@ -93,8 +93,7 @@ class GalaxyTask(Task):
         """
         if status == "RETRY":
             return  # Don't clean up on retry — the task will run again
-        app = get_galaxy_app()
-        if app:
+        if app := get_galaxy_app():
             app[GalaxyTaskAfterReturn](self, task_id, args, kwargs)
 
 

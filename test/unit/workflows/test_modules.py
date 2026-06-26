@@ -2,8 +2,6 @@ import json
 from typing import (
     Any,
     NamedTuple,
-    Optional,
-    Union,
 )
 from unittest import mock
 
@@ -319,9 +317,9 @@ def test_to_cwl_dataset_collection_element():
 
 class MapOverTestCase(NamedTuple):
     data_input: str
-    step_input_def: Union[str, list[str]]
+    step_input_def: str | list[str]
     step_output_def: str
-    expected_collection_type: Optional[str]
+    expected_collection_type: str | None
     steps: dict[int, Any]
 
 
@@ -333,7 +331,7 @@ def _construct_steps_for_map_over() -> list[MapOverTestCase]:
     # step_output_definition = ['dataset', 'list', 'list:list']
     # list(itertools.product(data_input, step_input_definition, step_output_definition, [None])),
     # with the last item filled in manually
-    test_case_args: list[tuple[str, Union[str, list[str]], str, Optional[str]]] = [
+    test_case_args: list[tuple[str, str | list[str], str, str | None]] = [
         ("dataset", "dataset", "dataset", None),
         ("dataset", "dataset", "list", "list"),
         ("dataset", "dataset", "list:list", "list:list"),

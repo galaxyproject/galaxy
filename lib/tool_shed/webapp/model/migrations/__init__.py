@@ -3,7 +3,6 @@ import os
 from collections.abc import Iterable
 from typing import (
     cast,
-    Optional,
 )
 
 import alembic
@@ -82,13 +81,13 @@ class AlembicManager(BaseAlembicManager):
                     log.info(f"Revision {db_head} does not exist in the script directory.")
         return False
 
-    def get_db_head(self) -> Optional[str]:
+    def get_db_head(self) -> str | None:
         return self._get_head_revision(cast(Iterable[str], self.db_heads))
 
-    def get_script_head(self) -> Optional[str]:
+    def get_script_head(self) -> str | None:
         return self.script_directory.get_current_head()
 
-    def _get_head_revision(self, heads: Iterable[str]) -> Optional[str]:
+    def _get_head_revision(self, heads: Iterable[str]) -> str | None:
         for head in heads:
             if self._get_revision(head):
                 return head
@@ -100,8 +99,8 @@ class DatabaseStateVerifier:
         self.engine = engine
         self.metadata = Base.metadata
         # These values may or may not be required, so do a lazy load.
-        self._db_state: Optional[DatabaseStateCache] = None
-        self._alembic_manager: Optional[AlembicManager] = None
+        self._db_state: DatabaseStateCache | None = None
+        self._alembic_manager: AlembicManager | None = None
 
     @property
     def db_state(self) -> DatabaseStateCache:

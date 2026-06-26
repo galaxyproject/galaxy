@@ -1,9 +1,6 @@
 import os
 import tempfile
 from collections import namedtuple
-from typing import (
-    Optional,
-)
 
 from galaxy import exceptions
 from galaxy.exceptions import (
@@ -37,7 +34,7 @@ from tool_shed_client.schema import ShedParsedTool
 from .repositories import get_repository_revision_metadata_model
 from .trs import trs_tool_id_to_repository_metadata
 
-STOCK_TOOL_SOURCES: Optional[dict[str, dict[str, ToolSource]]] = None
+STOCK_TOOL_SOURCES: dict[str, dict[str, ToolSource]] | None = None
 
 
 def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int = 10) -> dict:
@@ -100,7 +97,7 @@ def get_repository_metadata_tool_dict(
 
 
 def parsed_tool_model_cached_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
 ) -> ShedParsedTool:
     model_cache = trans.app.model_cache
     parsed_tool = model_cache.get_cache_entry_for(ShedParsedTool, trs_tool_id, tool_version)
@@ -112,7 +109,7 @@ def parsed_tool_model_cached_for(
 
 
 def parsed_tool_model_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
 ) -> ShedParsedTool:
     tool_source, repository_metadata = tool_source_for(
         trans, trs_tool_id, tool_version, repository_clone_url=repository_clone_url
@@ -127,8 +124,8 @@ def parsed_tool_model_for(
 
 
 def tool_source_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
-) -> tuple[ToolSource, Optional[RepositoryMetadata]]:
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
+) -> tuple[ToolSource, RepositoryMetadata | None]:
     if "~" in trs_tool_id:
         return _shed_tool_source_for(trans, trs_tool_id, tool_version, repository_clone_url)
     else:
@@ -139,7 +136,7 @@ def tool_source_for(
 
 
 def _shed_tool_source_for(
-    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: Optional[str] = None
+    trans: ProvidesRepositoriesContext, trs_tool_id: str, tool_version: str, repository_clone_url: str | None = None
 ) -> tuple[ToolSource, RepositoryMetadata]:
     rval = get_repository_metadata_tool_dict(trans, trs_tool_id, tool_version)
     repository_metadata, tool_version_metadata = rval
@@ -171,7 +168,7 @@ def _shed_tool_source_for(
         remove_dir(work_dir)
 
 
-def _stock_tool_source_for(tool_id: str, tool_version: str) -> Optional[ToolSource]:
+def _stock_tool_source_for(tool_id: str, tool_version: str) -> ToolSource | None:
     _init_stock_tool_sources()
     assert STOCK_TOOL_SOURCES
     tool_version_sources = STOCK_TOOL_SOURCES.get(tool_id)

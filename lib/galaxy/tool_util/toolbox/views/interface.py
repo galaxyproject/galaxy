@@ -1,6 +1,5 @@
 from abc import abstractmethod
 from enum import Enum
-from typing import Optional
 
 from pydantic import (
     BaseModel,
@@ -30,7 +29,7 @@ class ToolPanelViewModel(BaseModel):
     id: str
     model_class: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     view_type: ToolPanelViewModelType
     searchable: bool  # Allow for more dynamic views that don't plug into fixed search indicies in the future...
     model_config = ConfigDict(protected_namespaces=())

@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from typing import (
     Any,
     Generic,
-    Optional,
     TypeVar,
 )
 
@@ -74,10 +73,10 @@ class BuiltDataset(Generic[CaseInputsT]):
 
 def build_routing(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = routing_dataset(include_galaxy_required=include_galaxy_required, only=only)
     dataset.add_evaluator(HandoffMatch())
@@ -91,8 +90,8 @@ def build_routing(
 def _build_routing_depth(
     deps: GalaxyAgentDependencies,
     representation: str,
-    only: Optional[list[str]],
-    usage_buffer: Optional[list[dict[str, int]]],
+    only: list[str] | None,
+    usage_buffer: list[dict[str, int]] | None,
 ) -> BuiltDataset:
     dataset = routing_depth_dataset(only=only)
     dataset.add_evaluator(HandoffMatch())
@@ -105,10 +104,10 @@ def _build_routing_depth(
 
 def build_routing_depth_turn1(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Turn-1 baseline: the final query with no conversation history."""
     return _build_routing_depth(deps, "none", only, usage_buffer)
@@ -116,10 +115,10 @@ def build_routing_depth_turn1(
 
 def build_routing_depth_prose(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Deep conversation as flattened prose. The router routes on the current message, so
     this should recover to ~the turn-1 baseline rather than degrading."""
@@ -128,10 +127,10 @@ def build_routing_depth_prose(
 
 def build_routing_ambiguous(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Genuinely-ambiguous queries; expected route is "clarification" (ask, don't guess)."""
     dataset = routing_ambiguous_dataset(only=only)
@@ -146,8 +145,8 @@ def build_routing_ambiguous(
 def _build_routing_clarification_followup(
     deps: GalaxyAgentDependencies,
     responding_to_clarification: bool,
-    only: Optional[list[str]],
-    usage_buffer: Optional[list[dict[str, int]]],
+    only: list[str] | None,
+    usage_buffer: list[dict[str, int]] | None,
 ) -> BuiltDataset:
     dataset = routing_clarification_followup_dataset(only=only)
     dataset.add_evaluator(HandoffMatch())
@@ -162,10 +161,10 @@ def _build_routing_clarification_followup(
 
 def build_routing_clarification_followup(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Route the answer to a clarifying question WITH the seam fix (the shipped behavior):
     the router sees the prior turn, so "the second one" routes to the right specialist."""
@@ -174,10 +173,10 @@ def build_routing_clarification_followup(
 
 def build_routing_clarification_followup_nofix(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """A/B control: route the same answers WITHOUT the seam (history withheld). The elliptical
     answers have no referent, so this should score well below the fixed variant -- that gap is
@@ -188,8 +187,8 @@ def build_routing_clarification_followup_nofix(
 def _build_routing_followup(
     deps: GalaxyAgentDependencies,
     route_followup: bool,
-    only: Optional[list[str]],
-    usage_buffer: Optional[list[dict[str, int]]],
+    only: list[str] | None,
+    usage_buffer: list[dict[str, int]] | None,
 ) -> BuiltDataset:
     dataset = routing_followup_dataset(only=only)
     dataset.add_evaluator(HandoffMatch())
@@ -202,10 +201,10 @@ def _build_routing_followup(
 
 def build_routing_followup(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Route a follow-up to a normal answer WITH the fix (the shipped behavior): the router
     sees the prior user turn, so "what about a workflow for this?" routes to the right
@@ -215,10 +214,10 @@ def build_routing_followup(
 
 def build_routing_followup_nofix(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """A/B control: route the same follow-ups WITHOUT the fix (prior user turn withheld). The
     elliptical follow-up has no referent, so this should score well below the fixed variant --
@@ -228,10 +227,10 @@ def build_routing_followup_nofix(
 
 def build_error_analysis(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = error_analysis_dataset(judge_model=judge_model, only=only)
     dataset.add_evaluator(MustMention())
@@ -244,10 +243,10 @@ def build_error_analysis(
 
 def build_tool_recommendation(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = tool_recommendation_dataset(judge_model=judge_model, only=only)
     dataset.add_evaluator(MustMentionAny())
@@ -260,10 +259,10 @@ def build_tool_recommendation(
 
 def build_custom_tool(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = custom_tool_dataset(judge_model=judge_model, only=only)
     # Headline pass/fail + the "got it right first try" and structural-shape checks.
@@ -279,10 +278,10 @@ def build_custom_tool(
 
 def build_router_tool_use(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = router_tool_use_dataset(only=only)
     dataset.add_evaluator(ToolCallMatch())
@@ -295,10 +294,10 @@ def build_router_tool_use(
 
 def build_bioinformatics_workflows(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = bioinformatics_workflows_dataset(judge_model=judge_model, only=only)
     return BuiltDataset(
@@ -310,10 +309,10 @@ def build_bioinformatics_workflows(
 
 def build_capabilities(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     """Groundedness of the router's "what can you do?" answer (no action over-claims)."""
     dataset = capabilities_dataset(judge_model=judge_model, only=only)
@@ -326,10 +325,10 @@ def build_capabilities(
 
 def build_staining_quantification(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = staining_quantification_dataset(
         judge_model=judge_model,
@@ -345,10 +344,10 @@ def build_staining_quantification(
 
 def build_orchestrator_planning(
     deps: GalaxyAgentDependencies,
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
     include_galaxy_required: bool = False,
-    usage_buffer: Optional[list[dict[str, int]]] = None,
+    usage_buffer: list[dict[str, int]] | None = None,
 ) -> BuiltDataset:
     dataset = orchestrator_planning_dataset(only=only)
     dataset.add_evaluator(OrchestratorPlanIncludes())

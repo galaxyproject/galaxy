@@ -7,7 +7,6 @@ import time
 from multiprocessing.util import register_after_fork
 from typing import (
     Any,
-    Union,
 )
 
 from sqlalchemy import (
@@ -52,7 +51,7 @@ def pretty_stack():
 
 def build_engine(
     url: str,
-    engine_options: Union[dict[str, Any], None] = None,
+    engine_options: dict[str, Any] | None = None,
     database_query_profiling_proxy=False,
     trace_logger=None,
     slow_query_log_threshold=0,

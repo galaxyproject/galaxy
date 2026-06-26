@@ -5,7 +5,6 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import (
     Any,
-    Optional,
 )
 
 import pytest
@@ -40,10 +39,10 @@ from galaxy_test.base.testcase import host_port_and_url
 @dataclass
 class ApiConfigObject:
     host: str
-    port: Optional[str]
+    port: str | None
     url: str
-    user_api_key: Optional[str]
-    admin_api_key: Optional[str]
+    user_api_key: str | None
+    admin_api_key: str | None
     test_data_resolver: Any
     keepOutdir: Any
 

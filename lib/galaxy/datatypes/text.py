@@ -10,7 +10,6 @@ import subprocess
 import tempfile
 from typing import (
     IO,
-    Optional,
 )
 
 import ijson
@@ -210,8 +209,8 @@ class Ipynb(Json):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ):
         config = trans.app.config
@@ -226,8 +225,8 @@ class Ipynb(Json):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
         **kwd,
     ) -> tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
@@ -950,7 +949,7 @@ class SnpEffDb(Text):
         super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
-    def getSnpeffVersionFromFile(self, path: str) -> Optional[str]:
+    def getSnpeffVersionFromFile(self, path: str) -> str | None:
         snpeff_version = None
         try:
             with gzip.open(path, "rt") as fh:

@@ -2,7 +2,6 @@ import hashlib
 import logging
 import os
 import shutil
-from typing import Optional
 
 try:
     import rucio.common
@@ -143,7 +142,7 @@ def parse_config_xml(config_xml):
 class RucioBroker:
     def __init__(self, rucio_object_store):
         self._temp_file_name = None
-        self.rucio_config_path: Optional[str] = None
+        self.rucio_config_path: str | None = None
         self.config = rucio_object_store.rucio_config
         self.extra_dirs = rucio_object_store.extra_dirs
         self.upload_scheme = self.config["upload_scheme"]
@@ -163,11 +162,11 @@ class RucioBroker:
             rucio_config_path = os.path.join(temp_directory, "rucio.cfg")
             with open(rucio_config_path, "w") as f:
                 f.write(f"""[client]
-rucio_host = {self.config['host']}
-auth_host = {self.config['auth_host']}
-account = {self.config['account']}
-auth_type = {self.config['auth_type']}
-username = {self.config['username']}
+rucio_host = {self.config["host"]}
+auth_host = {self.config["auth_host"]}
+account = {self.config["account"]}
+auth_type = {self.config["auth_type"]}
+username = {self.config["username"]}
 {key_for_pass} = {self.config[key_for_pass]}
 """)
             self.rucio_config_path = rucio_config_path
@@ -426,7 +425,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
         log.debug("rucio _size: %s", rel_path)
 
         if self._in_cache(rel_path):
-            size: Optional[int] = None
+            size: int | None = None
             try:
                 size = os.path.getsize(self._get_cache_path(rel_path))
             except OSError as ex:

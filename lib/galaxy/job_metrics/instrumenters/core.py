@@ -3,11 +3,9 @@
 import datetime
 import json
 import logging
+import zoneinfo
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from . import InstrumentPlugin
@@ -17,12 +15,6 @@ from ..formatting import (
     seconds_to_str,
 )
 from ..safety import Safety
-
-try:
-    import zoneinfo
-except ImportError:
-    # Python < 3.9
-    from backports import zoneinfo  # type: ignore[no-redef]
 
 log = logging.getLogger(__name__)
 
@@ -36,12 +28,12 @@ CONTAINER_TYPE = "container_type"
 
 
 class CorePluginFormatter(JobMetricFormatter):
-    def __init__(self, timezone: Optional[str]):
-        self.tz: Optional[zoneinfo.ZoneInfo] = None
+    def __init__(self, timezone: str | None):
+        self.tz: zoneinfo.ZoneInfo | None = None
         self.strftime_format = "%Y-%m-%d %H:%M:%S"
         self.__init_tz(timezone)
 
-    def __init_tz(self, timezone: Optional[str]):
+    def __init_tz(self, timezone: str | None):
         if timezone:
             self.tz = zoneinfo.ZoneInfo(timezone)
             self.strftime_format = "%Y-%m-%d %H:%M:%S %Z (%z)"
@@ -76,23 +68,23 @@ class CorePlugin(InstrumentPlugin):
     def __init__(self, **kwargs):
         self.__init_formatter(kwargs.get("timezone"))
 
-    def __init_formatter(self, timezone: Optional[str]):
+    def __init_formatter(self, timezone: str | None):
         if CorePlugin.formatter is None:
             CorePlugin.formatter = CorePluginFormatter(timezone)
 
-    def pre_execute_instrument(self, job_directory: str) -> List[str]:
+    def pre_execute_instrument(self, job_directory: str) -> list[str]:
         commands = []
         commands.append(self.__record_galaxy_slots_command(job_directory))
         commands.append(self.__record_galaxy_memory_mb_command(job_directory))
         commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "start"))
         return commands
 
-    def post_execute_instrument(self, job_directory: str) -> List[str]:
+    def post_execute_instrument(self, job_directory: str) -> list[str]:
         commands = []
         commands.append(self.__record_seconds_since_epoch_to_file(job_directory, "end"))
         return commands
 
-    def job_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+    def job_properties(self, job_id, job_directory: str) -> dict[str, Any]:
         galaxy_slots_file = self.__galaxy_slots_file(job_directory)
         galaxy_memory_mb_file = self.__galaxy_memory_mb_file(job_directory)
 
@@ -111,7 +103,7 @@ class CorePlugin(InstrumentPlugin):
     def get_container_file_path(self, job_directory):
         return self._instrument_file_path(job_directory, "container")
 
-    def __read_container_details(self, job_directory) -> Dict[str, str]:
+    def __read_container_details(self, job_directory) -> dict[str, str]:
         try:
             with open(self.get_container_file_path(job_directory)) as fh:
                 return json.load(fh)

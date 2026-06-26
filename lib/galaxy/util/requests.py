@@ -1,7 +1,4 @@
-from typing import (
-    Callable,
-    Union,
-)
+from collections.abc import Callable
 
 import requests
 from requests import (  # noqa: F401
@@ -27,7 +24,7 @@ class Session(requests.Session):
 
 class RetrySession(Session):
     def __init__(
-        self, total: Union[bool, int, None] = DEFAULT_RETRIES, backoff_factor: float = DEFAULT_BACKOFF_FACTOR, **kwargs
+        self, total: bool | int | None = DEFAULT_RETRIES, backoff_factor: float = DEFAULT_BACKOFF_FACTOR, **kwargs
     ) -> None:
         super().__init__()
         retry = Retry(total=total, backoff_factor=backoff_factor, **kwargs)

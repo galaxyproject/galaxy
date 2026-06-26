@@ -15,7 +15,6 @@ from dataclasses import (
 )
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy.managers.sse import (
@@ -36,7 +35,7 @@ class FakeStatsdClient:
     gauges: list[tuple[str, float, tuple[tuple[str, str], ...]]] = field(default_factory=list)
     recorded: threading.Event = field(default_factory=threading.Event)
 
-    def gauge(self, metric: str, value: float, tags: Optional[dict[str, str]] = None) -> None:
+    def gauge(self, metric: str, value: float, tags: dict[str, str] | None = None) -> None:
         self.gauges.append((metric, value, tuple(sorted((tags or {}).items()))))
         self.recorded.set()
 
@@ -44,8 +43,8 @@ class FakeStatsdClient:
         return [(v, dict(t)) for m, v, t in self.gauges if m == metric]
 
 
-def _manager(statsd: Optional[FakeStatsdClient]) -> SSEConnectionManager:
-    return SSEConnectionManager(statsd_client=cast(Optional[VanillaGalaxyStatsdClient], statsd))
+def _manager(statsd: FakeStatsdClient | None) -> SSEConnectionManager:
+    return SSEConnectionManager(statsd_client=cast(VanillaGalaxyStatsdClient | None, statsd))
 
 
 async def test_emit_connection_gauges_reports_own_counts_tagged_by_server_name():

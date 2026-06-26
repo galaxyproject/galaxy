@@ -9,8 +9,6 @@ from functools import partial
 from typing import (
     Annotated,
     Any,
-    Optional,
-    Union,
 )
 
 import anyio
@@ -93,7 +91,7 @@ Please only say that something went wrong when configuring the ai prompt in your
 """
 
 JobIdQueryParam = Annotated[
-    Optional[DecodedDatabaseIdField],
+    DecodedDatabaseIdField | None,
     Field(
         default=None,
         title="Job ID",
@@ -122,14 +120,14 @@ class ChatAPI:
     @router.post("/api/chat", unstable=True)
     async def query(
         self,
-        job_id: Optional[
+        job_id: (
             Annotated[
-                DecodedDatabaseIdField,
-                Query(title="Job ID", description="The Job ID for backwards compatibility"),
+                DecodedDatabaseIdField, Query(title="Job ID", description="The Job ID for backwards compatibility")
             ]
-        ] = None,
-        payload: Optional[ChatPayload] = None,
-        query: Optional[str] = Query(default=None, description="Query string for general chat"),
+            | None
+        ) = None,
+        payload: ChatPayload | None = None,
+        query: str | None = Query(default=None, description="Query string for general chat"),
         agent_type: str = Query(default="auto", description="Agent type to use for the query"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -399,7 +397,7 @@ class ChatAPI:
         feedback: int,
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
-    ) -> Union[int, None]:
+    ) -> int | None:
         """Provide feedback on the chatbot response."""
         job = self.job_manager.get_accessible_job(trans, job_id)
         chat_response = self.chat_manager.set_feedback_for_job(trans, job.id, feedback)
@@ -409,7 +407,7 @@ class ChatAPI:
     async def generate_report(
         self,
         workflow_id: str = Path(..., description="Workflow ID to generate the report for"),
-        version: Optional[int] = Query(None, description="Version of the workflow"),
+        version: int | None = Query(None, description="Version of the workflow"),
         instance: bool = Query(False, description="Whether the workflow_id is an instance ID"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
@@ -505,7 +503,7 @@ class ChatAPI:
         if self.config.ai_api_key is None:
             raise ConfigurationError("AI API key is not configured for this instance.")
 
-    async def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: Optional[str] = None) -> str:
+    async def _get_ai_response(self, query: str, trans: ProvidesUserContext, context_type: str | None = None) -> str:
         """Get response from AI using pydantic-ai Agent"""
         system_prompt = self._get_system_prompt()
         username = trans.user.username if trans.user else "Anonymous User"
@@ -568,7 +566,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Get response using the new agent system (legacy method for compatibility)."""
         result = await self._get_agent_response_full(query, agent_type, trans, user, job, context)
@@ -581,7 +579,7 @@ class ChatAPI:
         trans: ProvidesUserContext,
         user: User,
         job=None,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> AgentResponse:
         """Get full agent response with metadata and suggestions."""
         # Prepare context - merge passed context with job context

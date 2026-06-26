@@ -7,10 +7,8 @@ from typing import (
     Any,
     cast,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
     TypeAlias,
-    Union,
 )
 
 import yaml
@@ -169,7 +167,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
 
     def index_query(
         self, trans: ProvidesUserContext, payload: WorkflowIndexQueryPayload, include_total_count: bool = False
-    ) -> tuple["ScalarResult[model.StoredWorkflow]", Optional[int]]:
+    ) -> tuple["ScalarResult[model.StoredWorkflow]", int | None]:
         show_published = payload.show_published
         show_hidden = payload.show_hidden
         show_deleted = payload.show_deleted
@@ -573,7 +571,7 @@ class WorkflowsManager(sharable.SharableModelManager[model.StoredWorkflow], dele
         return invocations, total_matches
 
 
-MissingToolsT = list[tuple[str, str, Optional[str], str]]
+MissingToolsT = list[tuple[str, str, str | None, str]]
 
 
 class CreatedWorkflow(NamedTuple):
@@ -584,7 +582,7 @@ class CreatedWorkflow(NamedTuple):
 
 class RefactorRequest(RefactorActions):
     style: str = "export"
-    version: Optional[int] = None
+    version: int | None = None
 
 
 class WorkflowSerializer(sharable.SharableModelSerializer):
@@ -641,7 +639,6 @@ class RawWorkflowDescription:
 
 
 class WorkflowContentsManager(UsesAnnotations):
-
     def __init__(self, app: MinimalManagerApp, trs_proxy: TrsProxy):
         self.app = app
         self.trs_proxy = trs_proxy
@@ -1356,7 +1353,7 @@ class WorkflowContentsManager(UsesAnnotations):
     def _workflow_to_dict_editor(
         self,
         trans,
-        stored: Optional[StoredWorkflow],
+        stored: StoredWorkflow | None,
         workflow: Workflow,
         tooltip: bool = True,
         is_subworkflow: bool = False,
@@ -2027,8 +2024,8 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        DictConnection: TypeAlias = dict[str, Union[int, str]]
-        temp_input_connections: dict[str, Union[list[DictConnection], DictConnection]] = step_dict.get(
+        DictConnection: TypeAlias = dict[str, int | str]
+        temp_input_connections: dict[str, list[DictConnection] | DictConnection] = step_dict.get(
             "input_connections", {}
         )
         step.temp_input_connections = temp_input_connections  # type: ignore[assignment]
@@ -2358,10 +2355,10 @@ class WorkflowContentsManager(UsesAnnotations):
     def get_or_create_workflow_from_trs(
         self,
         trans: ProvidesUserContext,
-        trs_url: Optional[str],
-        trs_id: Optional[str] = None,
-        trs_version: Optional[str] = None,
-        trs_server: Optional[str] = None,
+        trs_url: str | None,
+        trs_id: str | None = None,
+        trs_version: str | None = None,
+        trs_server: str | None = None,
     ):
         user_id = trans.user and trans.user.id
         assert user_id, "Cannot create workflow for anonymous user"
@@ -2379,7 +2376,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow
 
     def create_workflow_from_trs_url(
-        self, trans: ProvidesUserContext, trs_url: str, trs_server: Optional[str] = None
+        self, trans: ProvidesUserContext, trs_url: str, trs_server: str | None = None
     ) -> StoredWorkflow:
         _, trs_tool_id, trs_version_id = self.trs_proxy.get_trs_id_and_version_from_trs_url(trs_url=trs_url)
         data = self.trs_proxy.get_version_from_trs_url(trs_url)
@@ -2425,8 +2422,8 @@ class WorkflowContentsManager(UsesAnnotations):
         return created_workflow.stored_workflow
 
     def get_workflow_by_trs_id_and_version(
-        self, trs_id: str, trs_version: str, user_id: Optional[int] = None
-    ) -> Optional[model.StoredWorkflow]:
+        self, trs_id: str, trs_version: str, user_id: int | None = None
+    ) -> model.StoredWorkflow | None:
         sa_session = self.app.model.session
 
         stmnt = (
@@ -2469,7 +2466,7 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
 
     publish: bool = False
     # true or false, effectively defaults to ``publish`` if None/unset
-    importable: Optional[bool] = None
+    importable: bool | None = None
 
     # following are install options, only used if import_tools is true
     install_repository_dependencies: bool = False
@@ -2478,14 +2475,14 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     new_tool_panel_section_label: str = ""
     tool_panel_section_id: str = ""
     tool_panel_section_mapping: dict = {}
-    shed_tool_conf: Optional[str] = None
+    shed_tool_conf: str | None = None
 
     # for workflows imported by archive source
-    archive_source: Optional[str] = None
-    trs_tool_id: Optional[str] = None
-    trs_version_id: Optional[str] = None
-    trs_server: Optional[str] = None
-    trs_url: Optional[str] = None
+    archive_source: str | None = None
+    trs_tool_id: str | None = None
+    trs_version_id: str | None = None
+    trs_server: str | None = None
+    trs_url: str | None = None
 
     @property
     def is_importable(self):

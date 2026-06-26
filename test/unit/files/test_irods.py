@@ -57,9 +57,8 @@ def _irods_live_settings() -> dict:
     with open(config_path, "rb") as handle:
         configs = yaml.safe_load(handle) or []
 
-    irods_id = os.environ.get("GALAXY_TEST_IRODS_SOURCE_ID")
     irods_configs = [c for c in configs if isinstance(c, dict) and c.get("type") == "irods"]
-    if irods_id:
+    if irods_id := os.environ.get("GALAXY_TEST_IRODS_SOURCE_ID"):
         irods_configs = [c for c in irods_configs if c.get("id") == irods_id]
 
     if not irods_configs:

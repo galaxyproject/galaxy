@@ -10,7 +10,6 @@ import re
 from threading import Lock
 from typing import (
     Any,
-    Optional,
 )
 
 from cachetools import TTLCache
@@ -160,7 +159,7 @@ def _score(query_tokens: list[str], text: str) -> int:
     return sum(1 for t in query_tokens if t in text_tokens)
 
 
-def search_workflows(workflows: list[dict[str, Any]], query: str, limit: Optional[int] = None) -> list[dict[str, Any]]:
+def search_workflows(workflows: list[dict[str, Any]], query: str, limit: int | None = None) -> list[dict[str, Any]]:
     """Rank workflows by token overlap against name/description/readme/tags.
 
     Each returned entry has ``match_score`` attached so callers can surface

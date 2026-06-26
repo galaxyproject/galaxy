@@ -3,7 +3,6 @@ API operations on Role objects.
 """
 
 import logging
-from typing import Optional
 
 from fastapi import (
     Body,
@@ -26,18 +25,18 @@ from galaxy.webapps.galaxy.services.roles import RolesService
 
 log = logging.getLogger(__name__)
 
-SearchRolesQueryParam: Optional[str] = Query(
+SearchRolesQueryParam: str | None = Query(
     default=None,
     title="Search filter",
     description="Search by role name or user email (for private roles).",
 )
-LimitRolesQueryParam: Optional[int] = Query(
+LimitRolesQueryParam: int | None = Query(
     default=None,
     ge=1,
     title="Limit",
     description="The maximum number of roles to return.",
 )
-OffsetRolesQueryParam: Optional[int] = Query(
+OffsetRolesQueryParam: int | None = Query(
     default=0,
     ge=0,
     title="Offset",
@@ -58,9 +57,9 @@ class FastAPIRoles:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        search: Optional[str] = SearchRolesQueryParam,
-        limit: Optional[int] = LimitRolesQueryParam,
-        offset: Optional[int] = OffsetRolesQueryParam,
+        search: str | None = SearchRolesQueryParam,
+        limit: int | None = LimitRolesQueryParam,
+        offset: int | None = OffsetRolesQueryParam,
     ) -> RoleListResponse:
         return self.service.get_index(trans=trans, search=search, limit=limit, offset=offset)
 

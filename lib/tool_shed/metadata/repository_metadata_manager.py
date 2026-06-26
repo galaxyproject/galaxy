@@ -7,7 +7,6 @@ from dataclasses import (
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from sqlalchemy import (
@@ -52,7 +51,7 @@ log = logging.getLogger(__name__)
 class ResetMetadataResult:
     """Result of reset_all_metadata_on_repository_in_tool_shed operation."""
 
-    changeset_details: Optional[list[ChangesetMetadataStatus]] = None
+    changeset_details: list[ChangesetMetadataStatus] | None = None
     # Regenerated metadata objects keyed by "{numeric_rev}:{changeset_hash}"
     # These are the in-memory objects (possibly not persisted if dry_run=True)
     regenerated_metadata: dict[str, RepositoryMetadata] = field(default_factory=dict)
@@ -62,20 +61,20 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
     app: ToolShedApp
-    repository: Optional[Repository]  # type: ignore[assignment]
+    repository: Repository | None  # type: ignore[assignment]
 
     # why is mypy making me re-annotate these things from the base class, it didn't
     # when they were in the same file
     invalid_file_tups: list[InvalidFileT]
-    repository_clone_url: Optional[str]
+    repository_clone_url: str | None
 
     def __init__(
         self,
         trans: ProvidesRepositoriesContext,
-        repository: Optional[Repository] = None,
-        changeset_revision: Optional[str] = None,
-        repository_clone_url: Optional[str] = None,
-        shed_config_dict: Optional[dict[str, Any]] = None,
+        repository: Repository | None = None,
+        changeset_revision: str | None = None,
+        repository_clone_url: str | None = None,
+        shed_config_dict: dict[str, Any] | None = None,
         relative_install_dir=None,
         repository_files_dir=None,
         resetting_all_metadata_on_repository=False,
@@ -120,7 +119,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         return {}
 
     def set_repository(
-        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+        self, repository, relative_install_dir: str | None = None, changeset_revision: str | None = None
     ):
         self.repository = repository
         if relative_install_dir is None and self.repository is not None:
@@ -486,7 +485,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
     def create_or_update_repository_metadata_with_details(
         self, changeset_revision, metadata_dict, dry_run: bool = False
-    ) -> tuple[Optional[RepositoryMetadata], Literal["created", "updated"]]:
+    ) -> tuple[RepositoryMetadata | None, Literal["created", "updated"]]:
         """Create or update a repository_metadata record in the tool shed.
 
         Returns tuple of (repository_metadata, record_operation) where record_operation is:
@@ -832,7 +831,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
-        changeset_revisions: list[Optional[str]] = []
+        changeset_revisions: list[str | None] = []
         # Collect per-changeset details if verbose mode
         changeset_details: list[ChangesetMetadataStatus] = []
         # Collect regenerated metadata objects (keyed by changeset_revision hash)
@@ -1100,7 +1099,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         return message, status
 
     def set_repository(
-        self, repository, relative_install_dir: Optional[str] = None, changeset_revision: Optional[str] = None
+        self, repository, relative_install_dir: str | None = None, changeset_revision: str | None = None
     ):
         super().set_repository(repository)
         self.repository_clone_url = relative_install_dir or common_util.generate_clone_url_for(self.trans, repository)

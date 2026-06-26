@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import (
     Annotated,
     Literal,
-    Optional,
-    Union,
 )
 from urllib.parse import quote
 
@@ -43,9 +41,9 @@ DriveMode = Literal["appfolder", "full"]
 
 
 class OneDriveFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    access_token: Annotated[Union[str, TemplateExpansion], AccessTokenField]
-    drive_api_base: Union[str, TemplateExpansion] = "https://graph.microsoft.com/v1.0/me/drive"
-    drive_mode: Union[DriveMode, TemplateExpansion] = "appfolder"
+    access_token: Annotated[str | TemplateExpansion, AccessTokenField]
+    drive_api_base: str | TemplateExpansion = "https://graph.microsoft.com/v1.0/me/drive"
+    drive_mode: DriveMode | TemplateExpansion = "appfolder"
 
 
 class OneDriveFilesSourceConfiguration(BaseFileSourceConfiguration):
@@ -79,8 +77,7 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
 
     def _item_url(self, config: OneDriveFilesSourceConfiguration, path: str) -> str:
         root_url = self._root_url(config)
-        encoded_path = self._encoded_path(path)
-        if encoded_path:
+        if encoded_path := self._encoded_path(path):
             return f"{root_url}:/{encoded_path}"
         return root_url
 
@@ -153,10 +150,10 @@ class OneDriveFilesSource(BaseFilesSource[OneDriveFileSourceTemplateConfiguratio
         path: str = "/",
         recursive: bool = False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         response = self._request("GET", self._children_url(context.config, path), context)
         items = response.json().get("value", [])

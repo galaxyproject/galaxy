@@ -13,8 +13,6 @@ from abc import (
 from typing import (
     Any,
     Generic,
-    Optional,
-    Union,
 )
 
 from galaxy.navigation.components import Target
@@ -83,7 +81,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
         """Get timeout handler for application specific wait types."""
         return self._driver_impl.timeout_handler
 
-    def wait(self, timeout=..., wait_type: Optional[WaitTypeT] = None, **kwds):
+    def wait(self, timeout=..., wait_type: WaitTypeT | None = None, **kwds):
         """Create a wait object with the specified timeout."""
         return self._driver_impl.wait(timeout, wait_type=wait_type, **kwds)
 
@@ -118,23 +116,23 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Element finding - by locator type
 
-    def find_element_by_id(self, id: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_id(self, id: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by ID attribute."""
         return self._driver_impl.find_element_by_id(id, element)
 
-    def find_element_by_selector(self, selector: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_selector(self, selector: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by CSS selector."""
         return self._driver_impl.find_element_by_selector(selector, element)
 
-    def find_element_by_xpath(self, xpath: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_xpath(self, xpath: str, element: Any | None = None) -> WebElementProtocol:
         """Find element by XPath expression."""
         return self._driver_impl.find_element_by_xpath(xpath, element)
 
-    def find_element_by_link_text(self, text: str, element: Optional[Any] = None) -> WebElementProtocol:
+    def find_element_by_link_text(self, text: str, element: Any | None = None) -> WebElementProtocol:
         """Find link element by visible text."""
         return self._driver_impl.find_element_by_link_text(text, element)
 
-    def find_elements_by_selector(self, selector: str, element: Optional[Any] = None) -> list[WebElementProtocol]:
+    def find_elements_by_selector(self, selector: str, element: Any | None = None) -> list[WebElementProtocol]:
         """Find all elements matching CSS selector."""
         return self._driver_impl.find_elements_by_selector(selector, element)
 
@@ -326,15 +324,15 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Keyboard interactions
 
-    def send_enter(self, element: Optional[WebElementProtocol] = None):
+    def send_enter(self, element: WebElementProtocol | None = None):
         """Send ENTER key to element or active element."""
         return self._driver_impl.send_enter(element)
 
-    def send_escape(self, element: Optional[WebElementProtocol] = None):
+    def send_escape(self, element: WebElementProtocol | None = None):
         """Send ESCAPE key to element or active element."""
         return self._driver_impl.send_escape(element)
 
-    def send_backspace(self, element: Optional[WebElementProtocol] = None):
+    def send_backspace(self, element: WebElementProtocol | None = None):
         """Send BACKSPACE key to element or active element."""
         return self._driver_impl.send_backspace(element)
 
@@ -379,7 +377,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Frame switching
 
-    def switch_to_frame(self, frame_reference: Union[str, int, Any] = "frame"):
+    def switch_to_frame(self, frame_reference: str | int | Any = "frame"):
         """Switch to iframe by name, id, index, or element."""
         return self._driver_impl.switch_to_frame(frame_reference)
 
@@ -407,7 +405,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Storage and cookies
 
-    def set_local_storage(self, key: str, value: Union[str, float]) -> None:
+    def set_local_storage(self, key: str, value: str | float) -> None:
         """Set localStorage item."""
         self._driver_impl.set_local_storage(key, value)
 
@@ -427,7 +425,7 @@ class HasDriverProxy(ABC, Generic[WaitTypeT]):
 
     # Accessibility
 
-    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+    def axe_eval(self, context: str | None = None, write_to: str | None = None) -> AxeResults:
         """Run axe-core accessibility tests."""
         return self._driver_impl.axe_eval(context, write_to)
 

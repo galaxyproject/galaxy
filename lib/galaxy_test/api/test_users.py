@@ -23,7 +23,6 @@ TEST_USER_EMAIL_SHOW = "user_for_show_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
-
     @requires_admin
     @requires_new_user
     def test_index(self):

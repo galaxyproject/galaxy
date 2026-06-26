@@ -8,7 +8,6 @@ from functools import partial
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 import anyio
@@ -104,7 +103,7 @@ class ErrorAnalysisAgent(BaseGalaxyAgent):
             log.warning(f"Error getting job details for {job_id}: {e}")
             return {"error": f"Failed to retrieve job details: {str(e)}"}
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)

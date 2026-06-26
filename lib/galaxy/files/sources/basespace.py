@@ -3,10 +3,6 @@ try:
 except ImportError:
     BASESPACEFS = None
 
-from typing import (
-    Optional,
-    Union,
-)
 
 from galaxy.files.models import (
     BaseFileSourceConfiguration,
@@ -18,19 +14,19 @@ from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 class BaseSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    dir_path: Union[str, TemplateExpansion, None] = "/"
-    client_id: Union[str, TemplateExpansion, None] = None
-    client_secret: Union[str, TemplateExpansion, None] = None
-    access_token: Union[str, TemplateExpansion, None] = None
-    basespace_server: Union[str, TemplateExpansion, None] = None
+    dir_path: str | TemplateExpansion | None = "/"
+    client_id: str | TemplateExpansion | None = None
+    client_secret: str | TemplateExpansion | None = None
+    access_token: str | TemplateExpansion | None = None
+    basespace_server: str | TemplateExpansion | None = None
 
 
 class BaseSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
-    dir_path: Optional[str] = "/"
-    client_id: Optional[str] = None
-    client_secret: Optional[str] = None
-    access_token: Optional[str] = None
-    basespace_server: Optional[str] = None
+    dir_path: str | None = "/"
+    client_id: str | None = None
+    client_secret: str | None = None
+    access_token: str | None = None
+    basespace_server: str | None = None
 
 
 class BaseSpaceFilesSource(

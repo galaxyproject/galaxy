@@ -11,7 +11,6 @@ instead of only an API integration.
 """
 
 import os
-from typing import List
 
 import pytest
 import yaml
@@ -32,10 +31,10 @@ _LEGACY_FIXTURES = {
 _dynamic_tool_source_adapter: TypeAdapter = TypeAdapter(DynamicToolSources)
 
 
-def _collect_yaml_tool_fixtures() -> List[str]:
+def _collect_yaml_tool_fixtures() -> list[str]:
     root = functional_test_tool_directory()
     directories = [root, os.path.join(root, "parameters")]
-    paths: List[str] = []
+    paths: list[str] = []
     for directory in directories:
         if not os.path.isdir(directory):
             continue

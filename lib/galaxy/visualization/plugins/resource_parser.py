@@ -7,10 +7,6 @@ import json
 import logging
 import weakref
 from collections.abc import Callable
-from typing import (
-    Optional,
-    Union,
-)
 
 import galaxy.exceptions
 import galaxy.util
@@ -28,10 +24,8 @@ from galaxy.util import bunch
 log = logging.getLogger(__name__)
 
 
-ParameterPrimitiveType = Union[int, float, str]
-ParameterType = Union[
-    ParameterPrimitiveType, HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, Visualization
-]
+ParameterPrimitiveType = int | float | str
+ParameterType = ParameterPrimitiveType | HistoryDatasetAssociation | LibraryDatasetDatasetAssociation | Visualization
 
 
 class ResourceParser:
@@ -156,20 +150,20 @@ class ResourceParser:
     # TODO: I would LOVE to rip modifiers out completely
     def parse_parameter_modifiers(
         self, trans, param_modifiers, query_params
-    ) -> dict[str, dict[str, Optional[ParameterType]]]:
+    ) -> dict[str, dict[str, ParameterType | None]]:
         """
         Parse and return parameters that are meant to modify other parameters,
         be grouped with them, or are needed to successfully parse other parameters.
         """
         # only one level of modification - down that road lies madness
         # parse the modifiers out of query_params first since they modify the other params coming next
-        parsed_modifiers: dict[str, dict[str, Optional[ParameterType]]] = {}
+        parsed_modifiers: dict[str, dict[str, ParameterType | None]] = {}
         if not param_modifiers:
             return parsed_modifiers
         # precondition: expects a two level dictionary
         # { target_param_name -> { param_modifier_name -> { param_modifier_data }}}
         for target_param_name, modifier_dict in param_modifiers.items():
-            target_modifiers: dict[str, Optional[ParameterType]] = {}
+            target_modifiers: dict[str, ParameterType | None] = {}
             parsed_modifiers[target_param_name] = target_modifiers
 
             for modifier_name, modifier_config in modifier_dict.items():
@@ -183,7 +177,7 @@ class ResourceParser:
 
         return parsed_modifiers
 
-    def parse_parameter_default(self, trans, param_config) -> Optional[ParameterType]:
+    def parse_parameter_default(self, trans, param_config) -> ParameterType | None:
         """
         Parse any default values for the given param, defaulting the default
         to `None`.
@@ -204,7 +198,7 @@ class ResourceParser:
         a resource usable directly by a template.
         """
         param_type = expected_param_data.get("type")
-        parsed_param: Optional[ParameterType] = None
+        parsed_param: ParameterType | None = None
 
         if param_type in self.primitive_parsers:
             # TODO: what about param modifiers on primitives?

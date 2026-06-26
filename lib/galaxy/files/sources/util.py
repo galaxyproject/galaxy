@@ -66,10 +66,10 @@ def _not_implemented(drs_uri: str, desc: str) -> NotImplementedError:
 
 class RetryOptions:
     retry_times: int = 5
-    override_retry_after: Optional[float] = None
+    override_retry_after: float | None = None
 
 
-def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[dict] = None) -> requests.Response:
+def retry_and_get(get_url: str, retry_options: RetryOptions, headers: dict | None = None) -> requests.Response:
     response = requests.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
     response.raise_for_status()
     if response.status_code == 202:
@@ -85,7 +85,7 @@ def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[d
         return response
 
 
-def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] = None) -> tuple[str, dict]:
+def _get_access_info(obj_url: str, access_method: dict, headers: dict | None = None) -> tuple[str, dict]:
     # Prefer access_id resolution to get signed/authenticated URLs
     if access_method.get("access_id"):
         access_id = access_method["access_id"]
@@ -109,7 +109,7 @@ def _get_access_info(obj_url: str, access_method: dict, headers: Optional[dict] 
     return url, headers_as_dict
 
 
-def _download_s3_file(s3_url: str, target_path: StrPath, headers: Optional[dict] = None) -> None:
+def _download_s3_file(s3_url: str, target_path: StrPath, headers: dict | None = None) -> None:
     """Download file from S3 URL directly using s3fs or requests (for signed URLs)."""
     try:
         # If the URL has query parameters (signed URL), use requests directly
@@ -199,7 +199,7 @@ class CompactIdentifierResolver:
     def _cache_result(self, prefix: str, url_pattern: str):
         self._cache[prefix] = {"url_pattern": url_pattern, "timestamp": time.time()}
 
-    def _query_identifiers_org(self, prefix: str) -> Optional[str]:
+    def _query_identifiers_org(self, prefix: str) -> str | None:
         try:
             namespace_url = (
                 f"https://registry.api.identifiers.org/restApi/namespaces/search/findByPrefix?prefix={prefix}"
@@ -242,7 +242,7 @@ class CompactIdentifierResolver:
 
         return None
 
-    def resolve_prefix(self, prefix: str) -> Optional[str]:
+    def resolve_prefix(self, prefix: str) -> str | None:
         if self._is_cached(prefix):
             return self._cache[prefix]["url_pattern"]
 
@@ -281,7 +281,7 @@ def parse_compact_identifier(drs_uri: str) -> tuple[str, str]:
     return prefix, accession
 
 
-def resolve_compact_identifier_to_url(drs_uri: str, resolver: Optional[CompactIdentifierResolver] = None) -> str:
+def resolve_compact_identifier_to_url(drs_uri: str, resolver: CompactIdentifierResolver | None = None) -> str:
     prefix, accession = parse_compact_identifier(drs_uri)
 
     if resolver is None:
@@ -319,11 +319,11 @@ def resolve_compact_identifier_to_url(drs_uri: str, resolver: Optional[CompactId
 def fetch_drs_to_file(
     drs_uri: str,
     target_path: StrPath,
-    user_context: Optional[FileSourcesUserContext],
+    user_context: FileSourcesUserContext | None,
     force_http=False,
-    retry_options: Optional[RetryOptions] = None,
-    headers: Optional[dict] = None,
-    fetch_url_allowlist: Optional[list[IpAllowedListEntryT]] = None,
+    retry_options: RetryOptions | None = None,
+    headers: dict | None = None,
+    fetch_url_allowlist: list[IpAllowedListEntryT] | None = None,
 ):
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):

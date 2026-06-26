@@ -13,7 +13,6 @@ import json
 import os
 import random
 import re
-import shlex
 import shutil
 import smtplib
 import stat
@@ -26,6 +25,11 @@ import time
 import unicodedata
 import uuid
 import xml.dom.minidom
+from collections.abc import (
+    Iterable,
+    Iterator,
+    Mapping,
+)
 from datetime import (
     datetime,
     timezone,
@@ -38,14 +42,8 @@ from pathlib import Path
 from typing import (
     Any,
     cast,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
+    Literal,
     overload,
-    Tuple,
     TYPE_CHECKING,
     TypeVar,
     Union,
@@ -63,7 +61,6 @@ from boltons.iterutils import (
     remap,
 )
 from typing_extensions import (
-    Literal,
     Self,
 )
 
@@ -96,20 +93,19 @@ try:
         def __iter__(self) -> Iterator[Self]:  # type: ignore[override]
             return cast(Iterator[Self], super().__iter__())
 
-        def find(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Union[Self, None]:
-            ret = super().find(path, namespaces)
-            if ret is not None:
+        def find(self, path: str, namespaces: Mapping[str, str] | None = None) -> Self | None:
+            if (ret := super().find(path, namespaces)) is not None:
                 return cast(Self, ret)
             else:
                 return None
 
-        def findall(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> List[Self]:  # type: ignore[override]
-            return cast(List[Self], super().findall(path, namespaces))
+        def findall(self, path: str, namespaces: Mapping[str, str] | None = None) -> list[Self]:  # type: ignore[override]
+            return cast(list[Self], super().findall(path, namespaces))
 
-        def iterfind(self, path: str, namespaces: Optional[Mapping[str, str]] = None) -> Iterator[Self]:
+        def iterfind(self, path: str, namespaces: Mapping[str, str] | None = None) -> Iterator[Self]:
             return cast(Iterator[Self], super().iterfind(path, namespaces))
 
-    def SubElement(parent: Element, tag: str, attrib: Optional[Dict[str, str]] = None, **extra) -> Element:
+    def SubElement(parent: Element, tag: str, attrib: dict[str, str] | None = None, **extra) -> Element:
         return cast(Element, etree.SubElement(parent, tag, attrib, **extra))
 
     # lxml.etree.ElementTree is a function that returns a new instance of the
@@ -123,7 +119,7 @@ try:
         def getroot(self) -> Element:
             return cast(Element, super().getroot())
 
-    def XML(text: Union[str, bytes]) -> Element:
+    def XML(text: str | bytes) -> Element:
         return cast(Element, etree.XML(text))
 
     class LocalOnlyResolver(etree.Resolver):
@@ -165,14 +161,6 @@ from .path import (  # noqa: F401
 )
 from .rst_to_html import rst_to_html  # noqa: F401
 
-try:
-    shlex_join = shlex.join  # type: ignore[attr-defined, unused-ignore]
-except AttributeError:
-    # Python < 3.8
-    def shlex_join(split_command):
-        return " ".join(map(shlex.quote, split_command))
-
-
 if TYPE_CHECKING:
     from galaxy.util.resources import Traversable
 
@@ -207,18 +195,6 @@ defaultdict = collections.defaultdict
 UNKNOWN = "unknown"
 
 DOI_MAX_LENGTH = 200  # This is a reasonable limit. The DOI spec does not set a limit.
-
-
-def str_removeprefix(s: str, prefix: str):
-    """
-    str.removeprefix() equivalent for Python < 3.9
-    """
-    if sys.version_info >= (3, 9):
-        return s.removeprefix(prefix)
-    elif s.startswith(prefix):
-        return s[len(prefix) :]
-    else:
-        return s
 
 
 @overload
@@ -364,7 +340,7 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
 ItemType = TypeVar("ItemType")
 
 
-def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[Tuple[ItemType, ...]]:
+def chunk_iterable(it: Iterable[ItemType], size: int = 1000) -> Iterator[tuple[ItemType, ...]]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -395,7 +371,7 @@ def parse_xml(
     fname: Union[StrPath, "Traversable"],
     strip_whitespace: bool = True,
     remove_comments: bool = True,
-    schemafname: Union[StrPath, None] = None,
+    schemafname: StrPath | None = None,
 ) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
@@ -453,7 +429,7 @@ def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) ->
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem: Optional[Element], pretty: bool = False) -> str:
+def xml_to_string(elem: Element | None, pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -896,7 +872,7 @@ def ready_name_for_url(raw_name: str) -> str:
     return slug_base
 
 
-def which(file: str) -> Optional[str]:
+def which(file: str) -> str | None:
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
@@ -1128,24 +1104,24 @@ def string_as_bool_or_none(string):
 
 
 @overload
-def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List: ...
+def listify(item: None | Literal[False], do_strip: bool = False) -> list: ...
 
 
 @overload
-def listify(item: str, do_strip: bool = False) -> List[str]: ...
+def listify(item: str, do_strip: bool = False) -> list[str]: ...
 
 
 @overload
-def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]: ...
+def listify(item: list[ItemType] | tuple[ItemType, ...], do_strip: bool = False) -> list[ItemType]: ...
 
 
 # Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
 # because then that would also match Union types.
 @overload
-def listify(item: Any, do_strip: bool = False) -> List: ...
+def listify(item: Any, do_strip: bool = False) -> list: ...
 
 
-def listify(item: Any, do_strip: bool = False) -> List:
+def listify(item: Any, do_strip: bool = False) -> list:
     """
     Make a single item a single item list.
 
@@ -1212,7 +1188,7 @@ def unicodify(
     error: str = "replace",
     strip_null: bool = False,
     log_exception: bool = True,
-) -> Optional[str]:
+) -> str | None:
     """
     Returns a Unicode string or None.
 
@@ -1516,7 +1492,7 @@ def docstring_trim(docstring):
     return "\n".join(trimmed)
 
 
-def metric_prefix(number: Union[int, float], base: int) -> Tuple[float, str]:
+def metric_prefix(number: int | float, base: int) -> tuple[float, str]:
     """
     >>> metric_prefix(100, 1000)
     (100.0, '')
@@ -1575,7 +1551,7 @@ def shorten_with_metric_prefix(amount: int) -> str:
         return str(amount)
 
 
-def nice_size(size: Union[float, int, str, Decimal], binary: bool = False) -> str:
+def nice_size(size: float | int | str | Decimal, binary: bool = False) -> str:
     """
     Returns a readably formatted string with the size
 

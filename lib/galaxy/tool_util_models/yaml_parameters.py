@@ -14,9 +14,9 @@ is not load-bearing for execution today.
 """
 
 from typing import (
-    List,
-    Optional,
-    Union,
+    Annotated,
+    Literal,
+    TypeAlias,
 )
 
 from pydantic import (
@@ -25,10 +25,6 @@ from pydantic import (
     Field,
     field_validator,
     RootModel,
-)
-from typing_extensions import (
-    Annotated,
-    Literal,
 )
 
 from .parameter_validators import (
@@ -69,21 +65,19 @@ class YamlLabelValue(BaseModel):
 
 
 # Narrow validator unions — drops XML-only validators like Expression.
-YamlTextValidators = Union[
-    LengthParameterValidatorModel,
-    RegexParameterValidatorModel,
-    EmptyFieldParameterValidatorModel,
-]
-YamlNumberValidators = Union[InRangeParameterValidatorModel,]
-YamlSelectValidators = Union[NoOptionsParameterValidatorModel,]
+YamlTextValidators: TypeAlias = (
+    LengthParameterValidatorModel | RegexParameterValidatorModel | EmptyFieldParameterValidatorModel
+)
+YamlNumberValidators: TypeAlias = InRangeParameterValidatorModel
+YamlSelectValidators: TypeAlias = NoOptionsParameterValidatorModel
 
 
 class _YamlParamBase(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
     name: str
-    label: Optional[str] = None
-    help: Optional[str] = None
+    label: str | None = None
+    help: str | None = None
     optional: bool = False
 
 
@@ -98,7 +92,7 @@ def _common_internal_kwargs(yaml_param: "_YamlParamBase") -> dict:
 
 class YamlBooleanParameter(_YamlParamBase):
     type: Literal["boolean"]
-    value: Optional[bool] = False
+    value: bool | None = False
 
     def to_internal(self) -> BooleanParameterModel:
         return BooleanParameterModel(type="boolean", value=self.value, **_common_internal_kwargs(self))
@@ -106,10 +100,10 @@ class YamlBooleanParameter(_YamlParamBase):
 
 class YamlIntegerParameter(_YamlParamBase):
     type: Literal["integer"]
-    value: Optional[int] = None
-    min: Optional[int] = None
-    max: Optional[int] = None
-    validators: List[YamlNumberValidators] = []
+    value: int | None = None
+    min: int | None = None
+    max: int | None = None
+    validators: list[YamlNumberValidators] = []
 
     def to_internal(self) -> IntegerParameterModel:
         return IntegerParameterModel(
@@ -124,10 +118,10 @@ class YamlIntegerParameter(_YamlParamBase):
 
 class YamlFloatParameter(_YamlParamBase):
     type: Literal["float"]
-    value: Optional[float] = None
-    min: Optional[float] = None
-    max: Optional[float] = None
-    validators: List[YamlNumberValidators] = []
+    value: float | None = None
+    min: float | None = None
+    max: float | None = None
+    validators: list[YamlNumberValidators] = []
 
     def to_internal(self) -> FloatParameterModel:
         return FloatParameterModel(
@@ -142,9 +136,9 @@ class YamlFloatParameter(_YamlParamBase):
 
 class YamlTextParameter(_YamlParamBase):
     type: Literal["text"]
-    value: Optional[str] = Field(default=None, alias="value")
+    value: str | None = Field(default=None, alias="value")
     area: bool = False
-    validators: List[YamlTextValidators] = []
+    validators: list[YamlTextValidators] = []
 
     def to_internal(self) -> TextParameterModel:
         return TextParameterModel(
@@ -158,9 +152,9 @@ class YamlTextParameter(_YamlParamBase):
 
 class YamlSelectParameter(_YamlParamBase):
     type: Literal["select"]
-    options: Annotated[List[YamlLabelValue], Field(min_length=1)]
+    options: Annotated[list[YamlLabelValue], Field(min_length=1)]
     multiple: bool = False
-    validators: List[YamlSelectValidators] = []
+    validators: list[YamlSelectValidators] = []
 
     def to_internal(self) -> SelectParameterModel:
         return SelectParameterModel(
@@ -174,7 +168,7 @@ class YamlSelectParameter(_YamlParamBase):
 
 class YamlColorParameter(_YamlParamBase):
     type: Literal["color"]
-    value: Optional[str] = None
+    value: str | None = None
 
     def to_internal(self) -> ColorParameterModel:
         return ColorParameterModel(type="color", value=self.value, **_common_internal_kwargs(self))
@@ -190,7 +184,7 @@ def _split_format(v):
 
 class YamlDataParameter(_YamlParamBase):
     type: Literal["data"]
-    format: List[str] = ["data"]
+    format: list[str] = ["data"]
     multiple: Annotated[
         bool,
         Field(description="Set true to accept several datasets (a list) for this input instead of one."),
@@ -219,8 +213,8 @@ class YamlDataParameter(_YamlParamBase):
 
 class YamlDataCollectionParameter(_YamlParamBase):
     type: Literal["data_collection"]
-    collection_type: Optional[str] = None
-    format: List[str] = ["data"]
+    collection_type: str | None = None
+    format: list[str] = ["data"]
 
     @field_validator("format", mode="before")
     @classmethod
@@ -237,25 +231,25 @@ class YamlDataCollectionParameter(_YamlParamBase):
         )
 
 
-YamlConditionalTestParameter = Annotated[Union[YamlBooleanParameter, YamlSelectParameter], Field(discriminator="type")]
+YamlConditionalTestParameter = Annotated[YamlBooleanParameter | YamlSelectParameter, Field(discriminator="type")]
 
 
 class YamlConditionalWhen(BaseModel):
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    discriminator: Union[bool, str]
-    parameters: List["YamlGalaxyToolParameter"] = []
+    discriminator: bool | str
+    parameters: list["YamlGalaxyToolParameter"] = []
 
 
 class YamlConditionalParameter(_YamlParamBase):
     type: Literal["conditional"]
     test_parameter: YamlConditionalTestParameter
-    whens: Annotated[List[YamlConditionalWhen], Field(min_length=1)]
+    whens: Annotated[list[YamlConditionalWhen], Field(min_length=1)]
 
     def to_internal(self) -> ConditionalParameterModel:
         internal_test = self.test_parameter.to_internal()
         default_value = cond_test_parameter_default_value(internal_test)
-        internal_whens: List[ConditionalWhen] = []
+        internal_whens: list[ConditionalWhen] = []
         for when in self.whens:
             internal_params = [p.root.to_internal() for p in when.parameters]
             internal_whens.append(
@@ -275,9 +269,9 @@ class YamlConditionalParameter(_YamlParamBase):
 
 class YamlRepeatParameter(_YamlParamBase):
     type: Literal["repeat"]
-    parameters: List["YamlGalaxyToolParameter"] = []
-    min: Optional[int] = None
-    max: Optional[int] = None
+    parameters: list["YamlGalaxyToolParameter"] = []
+    min: int | None = None
+    max: int | None = None
 
     def to_internal(self) -> RepeatParameterModel:
         return RepeatParameterModel(
@@ -291,7 +285,7 @@ class YamlRepeatParameter(_YamlParamBase):
 
 class YamlSectionParameter(_YamlParamBase):
     type: Literal["section"]
-    parameters: List["YamlGalaxyToolParameter"] = []
+    parameters: list["YamlGalaxyToolParameter"] = []
 
     def to_internal(self) -> SectionParameterModel:
         return SectionParameterModel(
@@ -301,19 +295,19 @@ class YamlSectionParameter(_YamlParamBase):
         )
 
 
-YamlGalaxyParameterT = Union[
-    YamlBooleanParameter,
-    YamlIntegerParameter,
-    YamlFloatParameter,
-    YamlTextParameter,
-    YamlSelectParameter,
-    YamlColorParameter,
-    YamlDataParameter,
-    YamlDataCollectionParameter,
-    YamlConditionalParameter,
-    YamlRepeatParameter,
-    YamlSectionParameter,
-]
+YamlGalaxyParameterT = (
+    YamlBooleanParameter
+    | YamlIntegerParameter
+    | YamlFloatParameter
+    | YamlTextParameter
+    | YamlSelectParameter
+    | YamlColorParameter
+    | YamlDataParameter
+    | YamlDataCollectionParameter
+    | YamlConditionalParameter
+    | YamlRepeatParameter
+    | YamlSectionParameter
+)
 
 
 class YamlGalaxyToolParameter(RootModel):

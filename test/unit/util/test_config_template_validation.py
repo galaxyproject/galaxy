@@ -1,8 +1,5 @@
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from galaxy.exceptions import (
@@ -34,9 +31,9 @@ class TestTemplate(StrictModel):
     id: str
     type: str = "test"
     version: int
-    variables: Optional[List[TemplateVariable]]
-    secrets: Optional[List[TemplateSecret]]
-    environment: Optional[List[TemplateEnvironmentEntry]]
+    variables: list[TemplateVariable] | None
+    secrets: list[TemplateSecret] | None
+    environment: list[TemplateEnvironmentEntry] | None
 
 
 def _template_with_variable(variable: TemplateVariable) -> TestTemplate:
@@ -63,11 +60,11 @@ def _template_with_secret(name: str) -> TestTemplate:
 class TestInstanceDefinition(StrictModel):
     template_id: str
     template_version: int
-    variables: Dict[str, Any]
-    secrets: Dict[str, str]
+    variables: dict[str, Any]
+    secrets: dict[str, str]
 
 
-def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefinition:
+def _test_instance_with_variables(variables: dict[str, Any]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,
@@ -76,7 +73,7 @@ def _test_instance_with_variables(variables: Dict[str, Any]) -> TestInstanceDefi
     )
 
 
-def _test_instance_with_secrets(secrets: Dict[str, str]) -> TestInstanceDefinition:
+def _test_instance_with_secrets(secrets: dict[str, str]) -> TestInstanceDefinition:
     return TestInstanceDefinition(
         template_id=TEST_TEMPLATE_ID,
         template_version=TEST_TEMPLATE_VERSION,

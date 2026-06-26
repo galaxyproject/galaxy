@@ -3,13 +3,12 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from typing import Optional
 
 
 class ContainerVolume(metaclass=ABCMeta):
     valid_modes = frozenset({"ro", "rw", "z", "Z"})
 
-    def __init__(self, path: str, host_path: Optional[str] = None, mode: Optional[str] = None):
+    def __init__(self, path: str, host_path: str | None = None, mode: str | None = None):
         self.path = path
         self.host_path = host_path
         self.mode = mode

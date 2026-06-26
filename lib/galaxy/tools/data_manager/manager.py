@@ -3,7 +3,6 @@ import logging
 import os
 from typing import (
     Optional,
-    Union,
 )
 
 from typing_extensions import Protocol
@@ -29,11 +28,11 @@ class DataManagers(DataManagersInterface):
     managed_data_tables: dict[str, "DataManager"]
     __reload_count: int
 
-    def __init__(self, app: StructuredApp, xml_filename=None, reload_count: Optional[int] = None):
+    def __init__(self, app: StructuredApp, xml_filename=None, reload_count: int | None = None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
-        self.tool_path: Optional[str] = None
+        self.tool_path: str | None = None
         self.__reload_count = reload_count or 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify(self.filename):
@@ -108,7 +107,7 @@ class DataManagers(DataManagersInterface):
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids: Union[str, list[str]]) -> None:
+    def remove_manager(self, manager_ids: str | list[str]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -139,22 +138,22 @@ class DataManager:
     GUID_TYPE = "data_manager"
     DEFAULT_VERSION = "0.0.1"
 
-    tool: Optional[Tool]
+    tool: Tool | None
 
-    def __init__(self, data_managers: DataManagers, elem: Optional[Element] = None, tool_path: Optional[str] = None):
+    def __init__(self, data_managers: DataManagers, elem: Element | None = None, tool_path: str | None = None):
         self.data_managers = data_managers
-        self.declared_id: Optional[str] = None
-        self.name: Optional[str] = None
-        self.description: Optional[str] = None
+        self.declared_id: str | None = None
+        self.name: str | None = None
+        self.description: str | None = None
         self.version = self.DEFAULT_VERSION
-        self.guid: Optional[str] = None
+        self.guid: str | None = None
         self.tool = None
-        self.tool_shed_repository_info: Optional[RepoInfo] = None
+        self.tool_shed_repository_info: RepoInfo | None = None
         self.undeclared_tables = False
         if elem is not None:
             self._load_from_element(elem, tool_path or self.data_managers.tool_path)
 
-    def _load_from_element(self, elem: Element, tool_path: Optional[str]) -> None:
+    def _load_from_element(self, elem: Element, tool_path: str | None) -> None:
         assert (
             elem.tag == "data_manager"
         ), f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'
@@ -261,11 +260,11 @@ class DataManager:
         )
 
     @property
-    def repo_info(self) -> Optional[RepoInfo]:
+    def repo_info(self) -> RepoInfo | None:
         return self.tool_shed_repository_info
 
     # legacy stuff because tool shed code calls this...
     # data manager manual integration test provides coverage
-    def get_tool_shed_repository_info_dict(self) -> Optional[dict]:
+    def get_tool_shed_repository_info_dict(self) -> dict | None:
         repo_info = self.repo_info
         return repo_info.model_dump(mode="json") if repo_info else None

@@ -296,8 +296,7 @@ def _get_tool_id_for_hda(app, hda_id):
 
     job_query = select(Job.tool_id).join(JTODA).where(JTODA.dataset_id == hda_id)
 
-    tool_id = session.execute(job_query).scalars().first()
-    if tool_id is not None:
+    if (tool_id := session.execute(job_query).scalars().first()) is not None:
         return tool_id
 
     hda = session.get(HistoryDatasetAssociation, hda_id)

@@ -8,8 +8,6 @@ import os
 from typing import (
     Any,
     cast,
-    Optional,
-    Union,
 )
 
 from galaxy import (
@@ -106,8 +104,8 @@ class InRangeValidator(ExpressionValidator):
     def __init__(
         self,
         message: str,
-        min: Optional[float] = None,
-        max: Optional[float] = None,
+        min: float | None = None,
+        max: float | None = None,
         exclude_min: bool = False,
         exclude_max: bool = False,
         negate: bool = False,
@@ -135,7 +133,7 @@ class InRangeValidator(ExpressionValidator):
         super().__init__(message, expression, negate)
 
     @staticmethod
-    def simple_range_validator(min: Optional[float], max: Optional[float]):
+    def simple_range_validator(min: float | None, max: float | None):
         return cast(
             InRangeParameterValidatorModel,
             _to_validator(None, InRangeParameterValidatorModel(min=min, max=max, implicit=True)),
@@ -205,8 +203,8 @@ class MetadataValidator(Validator):
     def __init__(
         self,
         message: str,
-        check: Optional[list[str]] = None,
-        skip: Optional[list[str]] = None,
+        check: list[str] | None = None,
+        skip: list[str] | None = None,
         negate: bool = False,
     ):
         super().__init__(message, negate)
@@ -306,7 +304,7 @@ class MetadataInFileColumnValidator(Validator):
         metadata_name: str,
         metadata_column: int,
         message: str,
-        line_startswith: Optional[str] = None,
+        line_startswith: str | None = None,
         split: str = "\t",
         negate: bool = False,
     ):
@@ -341,7 +339,7 @@ class ValueInDataTableColumnValidator(Validator):
     def __init__(
         self,
         tool_data_table,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
@@ -382,7 +380,7 @@ class ValueNotInDataTableColumnValidator(ValueInDataTableColumnValidator):
     """
 
     def __init__(
-        self, tool_data_table, metadata_column: Union[str, int], message="Value already present.", negate: bool = False
+        self, tool_data_table, metadata_column: str | int, message="Value already present.", negate: bool = False
     ):
         super().__init__(tool_data_table, metadata_column, message, negate)
 
@@ -408,7 +406,7 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
         self,
         tool_data_table,
         metadata_name: str,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
@@ -435,7 +433,7 @@ class MetadataNotInDataTableColumnValidator(MetadataInDataTableColumnValidator):
         self,
         tool_data_table,
         metadata_name: str,
-        metadata_column: Union[str, int],
+        metadata_column: str | int,
         message: str,
         negate: bool = False,
     ):
@@ -463,8 +461,8 @@ class MetadataInRangeValidator(InRangeValidator):
         self,
         metadata_name: str,
         message: str,
-        min: Optional[float] = None,
-        max: Optional[float] = None,
+        min: float | None = None,
+        max: float | None = None,
         exclude_min: bool = False,
         exclude_max: bool = False,
         negate: bool = False,

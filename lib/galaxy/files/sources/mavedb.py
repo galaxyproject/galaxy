@@ -1,8 +1,3 @@
-from typing import (
-    Optional,
-    Union,
-)
-
 from galaxy.exceptions import (
     AuthenticationRequired,
     MessageException,
@@ -29,14 +24,14 @@ except ImportError:
 
 
 class MaveDBFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfiguration):
-    base_url: Union[str, TemplateExpansion] = DEFAULT_BASE_URL
-    api_key: Union[str, TemplateExpansion, None] = None
-    timeout: Union[float, TemplateExpansion] = 30.0
+    base_url: str | TemplateExpansion = DEFAULT_BASE_URL
+    api_key: str | TemplateExpansion | None = None
+    timeout: float | TemplateExpansion = 30.0
 
 
 class MaveDBFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     base_url: str = DEFAULT_BASE_URL
-    api_key: Optional[str] = None
+    api_key: str | None = None
     timeout: float = 30.0
 
 
@@ -71,10 +66,10 @@ class MaveDBFilesSource(FsspecFilesSource[MaveDBFileSourceTemplateConfiguration,
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         collection = path.strip("/")
         if recursive or collection not in {"score-sets", "my-score-sets"}:
@@ -105,8 +100,7 @@ class MaveDBFilesSource(FsspecFilesSource[MaveDBFileSourceTemplateConfiguration,
 
     def _info_to_entry(self, info: dict, config: MaveDBFileSourceConfiguration) -> AnyRemoteEntry:
         entry = super()._info_to_entry(info, config)
-        display_name = info.get("display_name")
-        if display_name:
+        if display_name := info.get("display_name"):
             entry.name = display_name
         return entry
 

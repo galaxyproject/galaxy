@@ -1,5 +1,4 @@
 import os
-from typing import Union
 
 import alembic
 import pytest
@@ -1031,7 +1030,7 @@ def _setup_db_state4(db_url, metadata, last_version, model=None):
             load_metadata(metadata, engine)
             load_sqlalchemymigrate_version(db_url, last_version)
 
-            revisions: Union[str, list]
+            revisions: str | list
             if model == GXY:
                 revisions = GXY_REVISION_0
             elif model == TSI:
@@ -1065,7 +1064,7 @@ def _setup_db_state5(db_url, metadata, model=None):
         with disposing_engine(db_url) as engine:
             load_metadata(metadata, engine)
 
-            revisions: Union[str, list]
+            revisions: str | list
             if model == GXY:
                 revisions = GXY_REVISION_1
             elif model == TSI:
@@ -1099,7 +1098,7 @@ def _setup_db_state6(db_url, metadata, model=None):
         with disposing_engine(db_url) as engine:
             load_metadata(metadata, engine)
 
-            revisions: Union[str, list]
+            revisions: str | list
             if model == GXY:
                 revisions = GXY_REVISION_2
             elif model == TSI:

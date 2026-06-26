@@ -5,7 +5,6 @@ from typing import (
     Any,
     cast,
     get_args,
-    Optional,
 )
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -187,10 +186,10 @@ class DataverseRDMFilesSource(RDMFilesSource):
         path="/",
         recursive=False,
         write_intent: bool = False,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[AnyRemoteEntry], int]:
         """This method lists the datasets or files from dataverse."""
         is_root_path = path == "/"
@@ -298,7 +297,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
     def public_dataset_url(self, dataset_id: str) -> str:
         return f"{self.repository_url}/dataset.xhtml?persistentId={dataset_id}"
 
-    def to_plugin_uri(self, dataset_id: str, file_identifier: Optional[str] = None) -> str:
+    def to_plugin_uri(self, dataset_id: str, file_identifier: str | None = None) -> str:
         """Build a plugin URI for a dataset or file.
 
         For datasets: dataverse://source/doi:10.70122/FK2/DIG2DG
@@ -330,10 +329,10 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         write_intent: bool,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None,
-        query: Optional[str] = None,
-        sort_by: Optional[str] = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        query: str | None = None,
+        sort_by: str | None = None,
     ) -> tuple[list[RemoteDirectory], int]:
         """Lists the Dataverse datasets in the repository."""
         request_url = self.search_url
@@ -355,7 +354,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         container_id: str,
         writeable: bool,
-        query: Optional[str] = None,
+        query: str | None = None,
     ) -> list[RemoteFile]:
         """This method lists the files in a dataverse dataset."""
         request_url = self.files_of_dataset_url(dataset_id=container_id)
@@ -364,7 +363,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         files = self._filter_files_by_name(files, query)
         return files
 
-    def _filter_files_by_name(self, files: list[RemoteFile], query: Optional[str] = None) -> list[RemoteFile]:
+    def _filter_files_by_name(self, files: list[RemoteFile], query: str | None = None) -> list[RemoteFile]:
         if not query:
             return files
         return [file for file in files if query in file.name]
@@ -518,7 +517,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
             )
         return rval
 
-    def _get_file_hashes(self, dataFile: dict) -> Optional[list[RemoteFileHash]]:
+    def _get_file_hashes(self, dataFile: dict) -> list[RemoteFileHash] | None:
         hashes: list[RemoteFileHash] = []
 
         # Preferred: extract from "checksum" field
@@ -554,7 +553,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
         self,
         context: FilesSourceRuntimeContext[RDMFileSourceConfiguration],
         request_url: str,
-        params: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         auth_required: bool = False,
     ) -> dict:
         headers = self._get_request_headers(context, auth_required)
@@ -580,7 +579,7 @@ class DataverseRepositoryInteractor(RDMRepositoryInteractor):
                 f"Request to {response.url} failed with status code {response.status_code}: {error_message}"
             )
 
-    def _raise_auth_required(self, message: Optional[str] = None):
+    def _raise_auth_required(self, message: str | None = None):
         raise AuthenticationRequired(
             message or f"Please provide a personal access token in your user's preferences for '{self.plugin.label}'"
         )

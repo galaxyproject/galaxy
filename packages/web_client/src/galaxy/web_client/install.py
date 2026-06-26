@@ -32,13 +32,15 @@ try:
     import galaxy.webapps.base
 
     STATIC = os.path.join(os.path.dirname(galaxy.webapps.base.__file__), "static")
-    TARGETS.update({
-        "style": os.path.join(STATIC, "style"),
-        "favicon.ico": os.path.join(STATIC, "favicon.ico"),
-        "favicon.svg": os.path.join(STATIC, "favicon.svg"),
-        "robots.txt": os.path.join(STATIC, "robots.txt"),
-        "welcome.sample.html": os.path.join(STATIC, "welcome.sample.html"),
-    })
+    TARGETS.update(
+        {
+            "style": os.path.join(STATIC, "style"),
+            "favicon.ico": os.path.join(STATIC, "favicon.ico"),
+            "favicon.svg": os.path.join(STATIC, "favicon.svg"),
+            "robots.txt": os.path.join(STATIC, "robots.txt"),
+            "welcome.sample.html": os.path.join(STATIC, "welcome.sample.html"),
+        }
+    )
 except ImportError:
     # Consider this a soft fail, this package depends on nothing but is probably installed with galaxy-web-apps
     pass

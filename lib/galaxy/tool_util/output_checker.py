@@ -2,15 +2,11 @@ import re
 from enum import Enum
 from logging import getLogger
 from typing import (
-    List,
-    Optional,
-    Tuple,
+    Literal,
     TYPE_CHECKING,
-    Union,
 )
 
 from typing_extensions import (
-    Literal,
     NotRequired,
     TypedDict,
 )
@@ -39,15 +35,15 @@ JobMessageTypeLiteral = Literal["regex", "exit_code", "max_discovered_files"]
 
 
 class JobMessage(TypedDict):
-    desc: Optional[str]
-    code_desc: NotRequired[Optional[str]]
+    desc: str | None
+    code_desc: NotRequired[str | None]
     error_level: float  # Literal[0, 1, 1.1, 2, 3, 4] - mypy doesn't like literal floats.
 
 
 class RegexJobMessage(JobMessage):
     type: Literal["regex"]
-    stream: Optional[str]
-    match: Optional[str]
+    stream: str | None
+    match: str | None
 
 
 class ExitCodeJobMessage(JobMessage):
@@ -59,11 +55,11 @@ class MaxDiscoveredFilesJobMessage(JobMessage):
     type: Literal["max_discovered_files"]
 
 
-AnyJobMessage = Union[ExitCodeJobMessage, RegexJobMessage, MaxDiscoveredFilesJobMessage]
+AnyJobMessage = ExitCodeJobMessage | RegexJobMessage | MaxDiscoveredFilesJobMessage
 
 
 def check_output_regex(
-    regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[AnyJobMessage], max_error_level: int
+    regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: list[AnyJobMessage], max_error_level: int
 ) -> int:
     """
     check a single regex against a stream
@@ -83,12 +79,12 @@ def check_output_regex(
 
 
 def check_output(
-    stdio_regexes: List["ToolStdioRegex"],
-    stdio_exit_codes: List["ToolStdioExitCode"],
+    stdio_regexes: list["ToolStdioRegex"],
+    stdio_exit_codes: list["ToolStdioExitCode"],
     stdout: str,
     stderr: str,
     tool_exit_code: int,
-) -> Tuple[str, str, str, List[AnyJobMessage]]:
+) -> tuple[str, str, str, list[AnyJobMessage]]:
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
     exit code, return DETECTED_JOB_STATE.OK if the tool exited successfully or
@@ -110,7 +106,7 @@ def check_output(
     # messages are added it the order of detection
 
     # If job is failed, track why.
-    job_messages: List[AnyJobMessage] = []
+    job_messages: list[AnyJobMessage] = []
 
     try:
         # Check exit codes and match regular expressions against stdout and
@@ -212,7 +208,7 @@ def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex") -> Re
     mstart = match.start()
     mend = match.end()
     if mend - mstart > 256:
-        match_str = f"{match.string[mstart:mstart + 256]}..."
+        match_str = f"{match.string[mstart : mstart + 256]}..."
     else:
         match_str = match.string[mstart:mend]
 

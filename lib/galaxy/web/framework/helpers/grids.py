@@ -1,7 +1,4 @@
 import logging
-from typing import (
-    Optional,
-)
 
 from markupsafe import escape
 
@@ -64,7 +61,7 @@ class GridData:
     Specifies the content a grid (data table).
     """
 
-    model_class: Optional[type] = None
+    model_class: type | None = None
     columns: list[GridColumn] = []
     default_limit: int = 1000
 

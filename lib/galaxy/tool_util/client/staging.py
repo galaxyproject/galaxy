@@ -8,20 +8,15 @@ import abc
 import json
 import logging
 import os
+from collections.abc import Callable
 from typing import (
     Any,
     BinaryIO,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Tuple,
+    Literal,
     TYPE_CHECKING,
-    Union,
 )
 
 import yaml
-from typing_extensions import Literal
 
 from galaxy.tool_util.cwl.util import (
     DirectoryUploadTarget,
@@ -55,41 +50,41 @@ class StagingInterface(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _post(self, api_path: str, payload: dict[str, Any]) -> dict[str, Any]:
         """Make a post to the Galaxy API along supplied path."""
 
     def _attach_file(self, path: str) -> BinaryIO:
         return open(path, "rb")
 
-    def _tools_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _tools_post(self, payload: dict[str, Any]) -> dict[str, Any]:
         tool_response = self._post("tools", payload)
         for job in tool_response.get("jobs", []):
             self._handle_job(job)
         return tool_response
 
-    def _fetch_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _fetch_post(self, payload: dict[str, Any]) -> dict[str, Any]:
         tool_response = self._post("tools/fetch", payload)
         for job in tool_response.get("jobs", []):
             self._handle_job(job)
         return tool_response
 
     @abc.abstractmethod
-    def _handle_job(self, job_response: Dict[str, Any]):
+    def _handle_job(self, job_response: dict[str, Any]):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(
         self,
         tool_or_workflow: Literal["tool", "workflow"],
         history_id: str,
-        job: Optional[Dict[str, Any]] = None,
-        job_path: Optional[str] = None,
+        job: dict[str, Any] | None = None,
+        job_path: str | None = None,
         use_path_paste: bool = LOAD_TOOLS_FROM_PATH,
         to_posix_lines: bool = True,
         job_dir: str = ".",
-        resolve_data: Optional[Callable[[str], Optional[str]]] = None,
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
-        def upload_func_fetch(upload_target: UploadTarget) -> Dict[str, Any]:
-            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> Dict[str, Union[str, bool]]:
+        resolve_data: Callable[[str], str | None] | None = None,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        def upload_func_fetch(upload_target: UploadTarget) -> dict[str, Any]:
+            def _attach_file(upload_payload: dict[str, Any], uri: str, index: int = 0) -> dict[str, str | bool]:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
@@ -181,8 +176,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
             return self._fetch_post(fetch_payload)
 
         # Save legacy upload_func to target older Galaxy servers
-        def upload_func(upload_target: UploadTarget) -> Dict[str, Any]:
-            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> None:
+        def upload_func(upload_target: UploadTarget) -> dict[str, Any]:
+            def _attach_file(upload_payload: dict[str, Any], uri: str, index: int = 0) -> None:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
@@ -252,11 +247,11 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
 
         def create_collection_func(
-            element_identifiers: List[Dict[str, Any]],
+            element_identifiers: list[dict[str, Any]],
             collection_type: str,
-            rows: Optional[Dict[str, Any]] = None,
-            name: Optional[str] = None,
-        ) -> Dict[str, Any]:
+            rows: dict[str, Any] | None = None,
+            name: str | None = None,
+        ) -> dict[str, Any]:
             payload = {
                 "name": name or "dataset collection",
                 "instance_type": "history",
@@ -305,12 +300,12 @@ class InteractorStaging(StagingInterface):
         self.galaxy_interactor = galaxy_interactor
         self._use_fetch_api = use_fetch_api
 
-    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _post(self, api_path: str, payload: dict[str, Any]) -> dict[str, Any]:
         response = self.galaxy_interactor._post(api_path, payload, json=True)
         assert response.status_code == 200, response.text
         return response.json()
 
-    def _handle_job(self, job_response: Dict[str, Any]):
+    def _handle_job(self, job_response: dict[str, Any]):
         self.galaxy_interactor.wait_for_job(job_response["id"])
 
     @property
@@ -318,7 +313,7 @@ class InteractorStaging(StagingInterface):
         return self._use_fetch_api
 
 
-def _file_path_to_name(file_path: Optional[str]) -> str:
+def _file_path_to_name(file_path: str | None) -> str:
     if file_path is not None:
         name = os.path.basename(file_path)
     else:
@@ -328,12 +323,12 @@ def _file_path_to_name(file_path: Optional[str]) -> str:
 
 def _upload_payload(
     history_id: str, file_type: str = DEFAULT_FILE_TYPE, dbkey: str = DEFAULT_DBKEY, **kwd
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Adapted from BioBlend tools client."""
-    payload: Dict[str, Any] = {}
+    payload: dict[str, Any] = {}
     payload["history_id"] = history_id
     payload["tool_id"] = UPLOAD_TOOL_ID
-    tool_input: Dict[str, Any] = {}
+    tool_input: dict[str, Any] = {}
     tool_input["file_type"] = file_type
     tool_input["dbkey"] = dbkey
     if not kwd.get("to_posix_lines", True):

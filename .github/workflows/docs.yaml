@@ -29,11 +29,11 @@ jobs:
         run: echo "TARGET_BRANCH=$GITHUB_BASE_REF" >> $GITHUB_ENV
       - name: Show target branch name
         run: echo $TARGET_BRANCH
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install uv

@@ -16,7 +16,6 @@ from typing import (
     cast,
     get_args,
     Literal,
-    Optional,
 )
 
 from galaxy.model import (
@@ -186,7 +185,7 @@ class DataMetaFilter(Filter):
     def get_dependency_name(self):
         return self.ref_name
 
-    def filter_options(self, options: Sequence[ParameterOption], trans: Optional[WorkRequestContext], other_values):
+    def filter_options(self, options: Sequence[ParameterOption], trans: WorkRequestContext | None, other_values):
         options = list(options)
         if trans and trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
             # We're in the run form, can't possibly apply a data_meta filter.
@@ -1021,19 +1020,19 @@ REQUEST_METHODS = Literal["GET", "POST"]
 class FromUrlOptions:
     from_url: str
     request_method: REQUEST_METHODS
-    request_body: Optional[str]
-    request_headers: Optional[str]
-    postprocess_expression: Optional[str]
+    request_body: str | None
+    request_headers: str | None
+    postprocess_expression: str | None
 
 
-def strip_or_none(maybe_string: Optional[Element]) -> Optional[str]:
+def strip_or_none(maybe_string: Element | None) -> str | None:
     if maybe_string is not None:
         if maybe_string.text:
             return maybe_string.text.strip()
     return None
 
 
-def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
+def parse_from_url_options(elem: Element) -> FromUrlOptions | None:
     if from_url := elem.get("from_url"):
         request_method = cast(Literal["GET", "POST"], elem.get("request_method", "GET"))
         assert request_method in get_args(REQUEST_METHODS)
@@ -1050,7 +1049,7 @@ def parse_from_url_options(elem: Element) -> Optional[FromUrlOptions]:
     return None
 
 
-def template_or_none(template: Optional[str], context: dict[str, Any]) -> Optional[str]:
+def template_or_none(template: str | None, context: dict[str, Any]) -> str | None:
     if template:
         return fill_template(template, context=context)
     return None

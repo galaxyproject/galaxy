@@ -14,8 +14,6 @@ import tempfile
 from json import dumps
 from typing import (
     cast,
-    Optional,
-    Union,
 )
 
 import pysam
@@ -143,7 +141,7 @@ class TabularData(Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
@@ -153,7 +151,7 @@ class TabularData(Text):
             }
         )
 
-    def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
+    def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: int | None = None):
         with compression_utils.get_fileobj(dataset.get_file_name()) as f:
             f.seek(offset)
             try:
@@ -177,10 +175,10 @@ class TabularData(Text):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         headers = kwd.pop("headers", {})
@@ -229,10 +227,10 @@ class TabularData(Text):
     def make_html_peek_header(
         self,
         dataset: DatasetProtocol,
-        skipchars: Optional[list] = None,
-        column_names: Optional[list] = None,
+        skipchars: list | None = None,
+        column_names: list | None = None,
         column_number_format: str = "%s",
-        column_parameter_alias: Optional[dict] = None,
+        column_parameter_alias: dict | None = None,
         **kwargs,
     ) -> str:
         if skipchars is None:
@@ -282,7 +280,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[list] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: list | None = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -387,7 +385,7 @@ class Tabular(TabularData):
 
     file_ext = "tabular"
 
-    def get_column_names(self, first_line: str) -> Optional[list[str]]:
+    def get_column_names(self, first_line: str) -> list[str] | None:
         return None
 
     def set_meta(
@@ -395,9 +393,9 @@ class Tabular(TabularData):
         dataset: DatasetProtocol,
         *,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = MAX_DATA_LINES,
-        max_guess_type_data_lines: Optional[int] = None,
+        skip: int | None = None,
+        max_data_lines: int | None = MAX_DATA_LINES,
+        max_guess_type_data_lines: int | None = None,
         **kwd,
     ) -> None:
         """
@@ -561,10 +559,10 @@ class Tabular(TabularData):
         if column_names is not None:
             dataset.metadata.column_names = column_names
 
-    def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
+    def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> FileObjType | str:
         return open(dataset.get_file_name(), "rb")
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> FileObjType | str:
         return open(dataset.get_file_name(), "rb")
 
 
@@ -578,7 +576,7 @@ class SraManifest(Tabular):
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
-    def get_column_names(self, first_line: str) -> Optional[list[str]]:
+    def get_column_names(self, first_line: str) -> list[str] | None:
         return first_line.strip().split("\t")
 
 
@@ -766,8 +764,8 @@ class Sam(Tabular, _BamOrSam):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = 5,
+        skip: int | None = None,
+        max_data_lines: int | None = 5,
         **kwd,
     ) -> None:
         """
@@ -919,7 +917,7 @@ class Pileup(Tabular):
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter)
 
-    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: HasMetadata | None = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def display_peek(self, dataset: DatasetProtocol) -> str:
@@ -1017,7 +1015,7 @@ class BaseVcf(Tabular):
         name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[]
     )
 
-    def _sniff(self, fname_or_file_prefix: Union[str, FilePrefix]) -> bool:
+    def _sniff(self, fname_or_file_prefix: str | FilePrefix) -> bool:
         # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
         # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
         # relies on get_headers() raising this exception.
@@ -1109,7 +1107,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     def set_meta(
-        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: str | None = None, **kwd
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
@@ -1213,7 +1211,7 @@ class Eland(Tabular):
         ]
 
     def make_html_table(
-        self, dataset: DatasetProtocol, skipchars: Optional[list] = None, peek: Optional[list] = None, **kwargs
+        self, dataset: DatasetProtocol, skipchars: list | None = None, peek: list | None = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
@@ -1276,8 +1274,8 @@ class Eland(Tabular):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = 5,
+        skip: int | None = None,
+        max_data_lines: int | None = 5,
         **kwd,
     ) -> None:
         if dataset.has_data():
@@ -1625,7 +1623,7 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: int | None = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
@@ -1695,8 +1693,8 @@ class MatrixMarket(TabularData):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = 5,
+        skip: int | None = None,
+        max_data_lines: int | None = 5,
         **kwd,
     ) -> None:
         if dataset.has_data():
@@ -1823,8 +1821,8 @@ class CMAP(TabularData):
         self,
         dataset: DatasetProtocol,
         overwrite: bool = True,
-        skip: Optional[int] = None,
-        max_data_lines: Optional[int] = 7,
+        skip: int | None = None,
+        max_data_lines: int | None = 7,
         **kwd,
     ) -> None:
         if dataset.has_data():

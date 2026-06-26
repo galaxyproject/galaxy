@@ -8,7 +8,6 @@ import datetime
 import logging
 import socket
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -79,7 +78,7 @@ def control_queues_from_config(config):
     return exchange_queue, non_exchange_queue
 
 
-def connection_from_config(config) -> Optional[Connection]:
+def connection_from_config(config) -> Connection | None:
     if config.amqp_internal_connection:
         return Connection(config.amqp_internal_connection)
     else:

@@ -12,7 +12,6 @@ import re
 import shutil
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -204,10 +203,10 @@ class _Isa(Data):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         """Downloads the ISA dataset if `preview` is `False`;

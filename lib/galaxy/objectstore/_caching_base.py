@@ -5,8 +5,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 from galaxy.exceptions import (
@@ -30,12 +28,12 @@ log = logging.getLogger(__name__)
 
 class CachingConcreteObjectStore(ConcreteObjectStore):
     staging_path: str
-    extra_dirs: Dict[str, str]
+    extra_dirs: dict[str, str]
     config: Any
     cache_updated_data: bool
     enable_cache_monitor: bool
     cache_size: int
-    cache_monitor: Optional[InProcessCacheMonitor] = None
+    cache_monitor: InProcessCacheMonitor | None = None
     cache_monitor_interval: int
 
     def _ensure_staging_path_writable(self):
@@ -198,7 +196,7 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
                 self._push_to_storage(rel_path, from_string="")
         return self
 
-    def _caching_allowed(self, rel_path: str, remote_size: Optional[int] = None) -> bool:
+    def _caching_allowed(self, rel_path: str, remote_size: int | None = None) -> bool:
         if remote_size is None:
             remote_size = self._get_remote_size(rel_path)
         if not self.cache_target.fits_in_cache(remote_size):

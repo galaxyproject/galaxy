@@ -160,8 +160,7 @@ def test_strip_properties_nested():
 
 def test_strip_properties_complex():
     complex_expression = (
-        'Tuple[FeatureData[Taxonomy % Properties("SILVA")] % Axis("ASV")'
-        ', DistanceMatrix % Axes("ASV", "ASV")] % Unique'
+        'Tuple[FeatureData[Taxonomy % Properties("SILVA")] % Axis("ASV"), DistanceMatrix % Axes("ASV", "ASV")] % Unique'
     )
     stripped_expression = "Tuple[FeatureData[Taxonomy], DistanceMatrix]"
 

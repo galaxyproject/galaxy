@@ -12,7 +12,6 @@ from .test_tools import TestsTools
 
 
 class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
-
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

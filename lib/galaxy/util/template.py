@@ -2,10 +2,6 @@
 
 import sys
 import traceback
-from typing import (
-    Optional,
-    Union,
-)
 
 from Cheetah.Compiler import Compiler
 from Cheetah.NameMapper import NotFound
@@ -112,7 +108,7 @@ def fill_template(
     compiler_class=Compiler,
     first_exception=None,
     futurized=False,
-    python_template_version: Optional[Union[str, Version]] = "3",
+    python_template_version: str | Version | None = "3",
     **kwargs,
 ):
     """Fill a cheetah template out for specified context.

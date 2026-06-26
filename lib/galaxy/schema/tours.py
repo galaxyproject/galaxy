@@ -1,8 +1,4 @@
 from enum import Enum
-from typing import (
-    Optional,
-    Union,
-)
 
 from pydantic import (
     BaseModel,
@@ -37,26 +33,26 @@ class TourList(RootModel):
 
 
 class TourStep(BaseModel):
-    title: Optional[str] = Field(None, title="Title", description="Title displayed in the header of the step container")
-    content: Optional[str] = Field(None, title="Content", description="Text shown to the user")
-    element: Optional[str] = Field(
+    title: str | None = Field(None, title="Title", description="Title displayed in the header of the step container")
+    content: str | None = Field(None, title="Content", description="Text shown to the user")
+    element: str | None = Field(
         None, title="Element", description="CSS selector for the element to be described/clicked"
     )
-    placement: Optional[str] = Field(
+    placement: str | None = Field(
         None, title="Placement", description="Placement of the text box relative to the selected element"
     )
-    preclick: Optional[Union[bool, list[str]]] = Field(
+    preclick: bool | list[str] | None = Field(
         None, title="Pre-click", description="Elements that receive a click() event before the step is shown"
     )
-    postclick: Optional[Union[bool, list[str]]] = Field(
+    postclick: bool | list[str] | None = Field(
         None, title="Post-click", description="Elements that receive a click() event after the step is shown"
     )
-    textinsert: Optional[str] = Field(
+    textinsert: str | None = Field(
         None, title="Text-insert", description="Text to insert if element is a text box (e.g. tool search or upload)"
     )
-    orphan: Optional[bool] = Field(None, title="Orphan", description="If true, the step is an orphan step")
+    orphan: bool | None = Field(None, title="Orphan", description="If true, the step is an orphan step")
 
 
 class TourDetails(TourCore):
-    title_default: Optional[str] = Field(None, title="Default title", description="Default title for each step")
+    title_default: str | None = Field(None, title="Default title", description="Default title for each step")
     steps: list[TourStep] = Field(title="Steps", description="Tour steps")

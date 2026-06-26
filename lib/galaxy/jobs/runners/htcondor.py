@@ -364,8 +364,7 @@ class _HTCondorSubprocessClient(_HTCondorClient):
 
     def _helper_failure_message_locked(self, message: str) -> str:
         # Stderr is consumed by the drain thread and buffered in _stderr_lines.
-        recent = "\n".join(list(self._stderr_lines)[-10:]).strip()
-        if recent:
+        if recent := "\n".join(list(self._stderr_lines)[-10:]).strip():
             return f"{message}: {recent}"
         return message
 
@@ -724,8 +723,7 @@ class HTCondorJobRunner(AsynchronousJobRunner[HTCondorJobState]):
                     # generic held_count escalation logic.
                     if hold_reason_code in _HOLD_CODE_MEMORY:
                         log.info(
-                            f"({galaxy_id_tag}/{job_id}) job held for memory limit "
-                            f"(HoldReasonCode={hold_reason_code})"
+                            f"({galaxy_id_tag}/{job_id}) job held for memory limit (HoldReasonCode={hold_reason_code})"
                         )
                         cjs.fail_message = _MEMORY_LIMIT_HOLD_MSG
                         cjs.runner_state = runner_states.MEMORY_LIMIT_REACHED

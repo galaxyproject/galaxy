@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from pydantic_ai import Agent
@@ -132,8 +131,8 @@ class HistoryAgent(BaseGalaxyAgent):
         async def get_history_graph(
             ctx: RunContext[GalaxyAgentDependencies],
             history_id: str,
-            seed_src: Optional[Literal["hda", "hdca", "tool_request"]] = None,
-            seed_id: Optional[str] = None,
+            seed_src: Literal["hda", "hdca", "tool_request"] | None = None,
+            seed_id: str | None = None,
             direction: Literal["backward", "forward", "both"] = "both",
             depth: int = 5,
             limit: int = 200,

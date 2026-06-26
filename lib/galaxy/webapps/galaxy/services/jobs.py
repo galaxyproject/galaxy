@@ -2,9 +2,7 @@ import logging
 from enum import Enum
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from pydantic import (
@@ -75,25 +73,25 @@ log = logging.getLogger(__name__)
 
 
 class JobRequest(BaseModel):
-    tool_id: Optional[str] = Field(default=None, title="tool_id", description="TODO")
-    tool_uuid: Optional[str] = Field(default=None, title="tool_uuid", description="TODO")
-    tool_version: Optional[str] = Field(default=None, title="tool_version", description="TODO")
-    history_id: Optional[DecodedDatabaseIdField] = Field(default=None, title="history_id", description="TODO")
-    inputs: Optional[dict[str, Any]] = Field(default_factory=lambda: {}, title="Inputs", description="TODO")
+    tool_id: str | None = Field(default=None, title="tool_id", description="TODO")
+    tool_uuid: str | None = Field(default=None, title="tool_uuid", description="TODO")
+    tool_version: str | None = Field(default=None, title="tool_version", description="TODO")
+    history_id: DecodedDatabaseIdField | None = Field(default=None, title="history_id", description="TODO")
+    inputs: dict[str, Any] | None = Field(default_factory=lambda: {}, title="Inputs", description="TODO")
     strict: bool = Field(
         default=True,
         title="Strict",
         description="Turn on strict validation of the inputs that drops support for some inconsistent legacy behavior.",
     )
-    use_cached_jobs: Optional[bool] = Field(default=None, title="use_cached_jobs")
-    rerun_remap_job_id: Optional[DecodedDatabaseIdField] = Field(
+    use_cached_jobs: bool | None = Field(default=None, title="use_cached_jobs")
+    rerun_remap_job_id: DecodedDatabaseIdField | None = Field(
         default=None, title="rerun_remap_job_id", description="TODO"
     )
     send_email_notification: bool = Field(default=False, title="Send Email Notification", description="TODO")
-    preferred_object_store_id: Optional[str] = Field(default=None, title="Preferred Object Store ID")
-    tags: Optional[list[str]] = Field(default=None, title="Tags")
-    data_manager_mode: Optional[str] = Field(default=None, title="Data Manager Mode")
-    credentials_context: Optional[list[dict[str, Any]]] = Field(default=None, title="Credentials Context")
+    preferred_object_store_id: str | None = Field(default=None, title="Preferred Object Store ID")
+    tags: list[str] | None = Field(default=None, title="Tags")
+    data_manager_mode: str | None = Field(default=None, title="Data Manager Mode")
+    credentials_context: list[dict[str, Any]] | None = Field(default=None, title="Credentials Context")
 
 
 class JobCreateResponse(BaseModel):
@@ -181,8 +179,8 @@ class JobsService(ServiceBase):
         self,
         view: JobIndexViewEnum,
         user_details: bool,
-        decoded_user_id: Optional[DecodedDatabaseIdField],
-        trans_user_id: Optional[int],
+        decoded_user_id: DecodedDatabaseIdField | None,
+        trans_user_id: int | None,
     ):
         """Verify admin-only resources are not being accessed."""
         if view == JobIndexViewEnum.admin_job_list:
@@ -195,8 +193,8 @@ class JobsService(ServiceBase):
     def get_job(
         self,
         trans: ProvidesUserContext,
-        job_id: Optional[int] = None,
-        dataset_id: Optional[int] = None,
+        job_id: int | None = None,
+        dataset_id: int | None = None,
         hda_ldda: str = "hda",
     ) -> Job:
         if job_id is not None:
@@ -204,7 +202,7 @@ class JobsService(ServiceBase):
         elif dataset_id is not None:
             # Following checks dataset accessible
             if hda_ldda == "hda":
-                dataset_instance: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation] = (
+                dataset_instance: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation = (
                     self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
                 )
             else:

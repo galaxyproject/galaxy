@@ -1,6 +1,5 @@
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy_test.base.decorators import requires_new_library
@@ -336,7 +335,7 @@ class TestFolderContentsApi(ApiTestCase):
             assert item["name"] == expected_order_by_name[index]
 
     def _assert_index_count_is_correct(
-        self, raw_response, expected_contents_count: int, expected_total_count: Optional[int] = None
+        self, raw_response, expected_contents_count: int, expected_total_count: int | None = None
     ) -> dict:
         self._assert_status_code_is(raw_response, 200)
         if expected_total_count is None:
@@ -352,9 +351,7 @@ class TestFolderContentsApi(ApiTestCase):
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 
-    def _create_subfolder_in(
-        self, folder_id: str, name: Optional[str] = None, description: Optional[str] = None
-    ) -> str:
+    def _create_subfolder_in(self, folder_id: str, name: str | None = None, description: str | None = None) -> str:
         data = {
             "name": name or "Test Folder",
             "description": description or f"The description of {name}",
@@ -368,9 +365,9 @@ class TestFolderContentsApi(ApiTestCase):
         self,
         history_id: str,
         folder_id: str,
-        name: Optional[str] = None,
-        content: Optional[str] = None,
-        ldda_message: Optional[str] = None,
+        name: str | None = None,
+        content: str | None = None,
+        ldda_message: str | None = None,
         **kwds,
     ) -> tuple[str, str]:
         """Returns a tuple with the LDDA ID and the underlying HDA ID"""
@@ -387,7 +384,7 @@ class TestFolderContentsApi(ApiTestCase):
         self._assert_status_code_is(create_response, 200)
         return create_response.json()
 
-    def _create_hda(self, history_id: str, name: Optional[str] = None, content: Optional[str] = None, **kwds) -> str:
+    def _create_hda(self, history_id: str, name: str | None = None, content: str | None = None, **kwds) -> str:
         hda = self.dataset_populator.new_dataset(history_id, name=name, content=content, **kwds)
         hda_id = hda["id"]
         return hda_id

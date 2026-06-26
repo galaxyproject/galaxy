@@ -1,11 +1,7 @@
 import io
 from typing import (
     Any,
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from ._types import (
@@ -320,7 +316,7 @@ CenterOfMassEps = Annotated[
     ),
 ]
 Labels = Annotated[
-    Optional[Union[str, List[Union[float, int]]]],
+    str | list[float | int] | None,
     AssertionParameter(
         "List of labels, separated by a comma. Labels *not* on this list will be excluded from consideration. Cannot be used in combination with ``exclude_labels``.",
         xml_type="xs:string",
@@ -328,7 +324,7 @@ Labels = Annotated[
     ),
 ]
 ExcludeLabels = Annotated[
-    Optional[Union[str, List[Union[float, int]]]],
+    str | list[float | int] | None,
     AssertionParameter(
         "List of labels to be excluded from consideration, separated by a comma. The primary usage of this attribute is to exclude the background of a label image. Cannot be used in combination with ``labels``.",
         xml_type="xs:string",
@@ -376,10 +372,10 @@ MeanObjectSizeMax = Annotated[
 def _assert_float(
     actual: float,
     label: str,
-    tolerance: Union[float, str],
-    expected: Optional[Union[float, str]] = None,
-    range_min: Optional[Union[float, str]] = None,
-    range_max: Optional[Union[float, str]] = None,
+    tolerance: float | str,
+    expected: float | str | None = None,
+    range_min: float | str | None = None,
+    range_max: float | str | None = None,
 ) -> None:
 
     # Perform `tolerance` based check.
@@ -533,7 +529,7 @@ def assert_has_image_frames(
     )
 
 
-def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> Tuple[float, float]:
+def _compute_center_of_mass(im_arr: "numpy.typing.NDArray") -> tuple[float, float]:
     im_arr_yx = im_arr.sum(axis=(0, 1, 4))  # Image axes are normalized like "TZYXC"
     im_arr_yx = numpy.abs(im_arr_yx)
     if im_arr_yx.sum() == 0:
@@ -560,9 +556,9 @@ def _swap_char(s: str, pos1: int, pos2: int) -> str:
 
 def _get_image(
     output_bytes: bytes,
-    channel: Optional[Union[int, str]] = None,
-    slice: Optional[Union[int, str]] = None,
-    frame: Optional[Union[int, str]] = None,
+    channel: int | str | None = None,
+    slice: int | str | None = None,
+    frame: int | str | None = None,
 ) -> "numpy.typing.NDArray":
     """
     Returns the output image with the axes ``TZYXC``, optionally restricted to a specific `channel`, `slice`,
@@ -731,19 +727,19 @@ def assert_has_image_center_of_mass(
 
 def _get_image_labels(
     output_bytes: bytes,
-    channel: Optional[Union[int, str]] = None,
-    slice: Optional[Union[int, str]] = None,
-    frame: Optional[Union[int, str]] = None,
+    channel: int | str | None = None,
+    slice: int | str | None = None,
+    frame: int | str | None = None,
     labels: Labels = None,
     exclude_labels: ExcludeLabels = None,
-) -> Tuple["numpy.typing.NDArray", List[Any]]:
+) -> tuple["numpy.typing.NDArray", list[Any]]:
     """
     Determines the unique labels in the output image or a specific channel.
     """
     assert labels is None or exclude_labels is None
     im_arr = _get_image(output_bytes, channel, slice, frame)
 
-    def cast_label(label: str) -> Union[float, int]:
+    def cast_label(label: str) -> float | int:
         label = label.strip()
         if numpy.issubdtype(im_arr.dtype, numpy.integer):
             return int(label)
@@ -758,7 +754,7 @@ def _get_image_labels(
         raise AssertionError(f'Unsupported image label type: "{im_arr.dtype}"')
 
     # Determine labels present in the image.
-    present_labels: List[Any] = numpy.unique(im_arr).tolist()
+    present_labels: list[Any] = numpy.unique(im_arr).tolist()
 
     # Apply filtering due to `labels` (keep only those).
     if labels is None:

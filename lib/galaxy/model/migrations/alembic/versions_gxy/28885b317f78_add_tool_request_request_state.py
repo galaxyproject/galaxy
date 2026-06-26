@@ -127,9 +127,8 @@ def _backfill_identity_hash() -> None:
 
 
 def _identity_hash_for_row(row) -> str:
-    dynamic_tool_id = row["dynamic_tool_id"]
     identity: tuple[str, ...]
-    if dynamic_tool_id is not None:
+    if (dynamic_tool_id := row["dynamic_tool_id"]) is not None:
         identity = ("dynamic", str(dynamic_tool_id))
     else:
         identity = ("static", row["tool_id"] or "", row["tool_version"] or "")

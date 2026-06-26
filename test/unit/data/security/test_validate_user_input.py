@@ -59,7 +59,6 @@ def test_validate_email_str():
 
 
 class TestIsEmailBanned:
-
     mock_ban_list = ["ab@foo.com", "ab@gmail.com", "Not.Canonical+email+gmail+address@gmail.com"]
 
     def test_default_canonical_rules(self, monkeypatch, appconfig):

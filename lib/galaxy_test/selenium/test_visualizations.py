@@ -15,7 +15,6 @@ HG38_TITLE = "Human (GRCh38/hg38)"
 
 
 class TestVisualizationsAnonymous(SeleniumTestCase):
-
     @skip_without_datatype("png")
     @skip_without_visualization_plugin("annotate_image")
     @selenium_test

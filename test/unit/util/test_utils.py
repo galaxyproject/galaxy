@@ -4,7 +4,6 @@ import tempfile
 from enum import Enum
 from io import StringIO
 from pathlib import Path
-from typing import Dict
 
 import pytest
 
@@ -92,7 +91,7 @@ def test_iter_start_of_lines():
 
 
 def test_safe_loads():
-    d: Dict[str, str] = {}
+    d: dict[str, str] = {}
     rval = safe_loads(d)
     assert rval == d
     assert rval is not d

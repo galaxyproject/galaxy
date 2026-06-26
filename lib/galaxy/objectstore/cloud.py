@@ -173,10 +173,7 @@ class Cloud(CachingConcreteObjectStore, UsesAxel):
                 raise Exception(msg)
 
             if len(missing_config) > 0:
-                msg = (
-                    f"The following configuration required for {provider} cloud backend "
-                    f"are missing: {missing_config}"
-                )
+                msg = f"The following configuration required for {provider} cloud backend are missing: {missing_config}"
                 log.error(msg)
                 raise Exception(msg)
             else:

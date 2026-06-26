@@ -30,10 +30,6 @@ SPACE := $() $()
 NEVER_PYUPGRADE_PATHS := .venv/ .tox/ lib/galaxy/schema/bco/ \
 	lib/galaxy/schema/drs/ lib/tool_shed_client/schema/trs \
 	scripts/check_python.py tools/ test/functional/tools/cwl_tools/
-PY38_PYUPGRADE_PATHS := lib/galaxy/exceptions/ lib/galaxy/job_metrics/ \
-	lib/galaxy/objectstore/ lib/galaxy/tool_util/ lib/galaxy/tool_util_models/ \
-	lib/galaxy/util/ test/unit/job_metrics/ test/unit/objectstore/ \
-	test/unit/tool_util/ test/unit/tool_util_models/ test/unit/util/
 
 all: help
 	@echo "This makefile is used for building Galaxy's JS client, documentation, and drive the release process. A sensible all target is not implemented."
@@ -62,10 +58,9 @@ format:  ## Format Python code base
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
-pyupgrade:  ## Convert older code patterns to Python 3.8/3.10 idiomatic ones
-	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
-	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS) $(PY38_PYUPGRADE_PATHS))' | xargs auto-walrus
-	ack --type=python -f $(PY38_PYUPGRADE_PATHS) | xargs pyupgrade --py38-plus
+pyupgrade:  ## Convert older code patterns to Python 3.10+ idiomatic ones
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs pyupgrade --py310-plus
+	ack --type=python -f | grep -v '^$(subst $(SPACE),\|^,$(NEVER_PYUPGRADE_PATHS))' | xargs auto-walrus
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar

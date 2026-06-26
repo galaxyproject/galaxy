@@ -3,9 +3,6 @@ Agent registry for managing available AI agents.
 """
 
 import logging
-from typing import (
-    Optional,
-)
 
 from .base import (
     BaseGalaxyAgent,
@@ -26,7 +23,7 @@ class AgentRegistry:
         self,
         agent_type: str,
         agent_class: type[BaseGalaxyAgent],
-        metadata: Optional[dict] = None,
+        metadata: dict | None = None,
     ):
         if not issubclass(agent_class, BaseGalaxyAgent):
             raise ValueError(f"Agent class must inherit from BaseGalaxyAgent: {agent_class}")
@@ -65,7 +62,7 @@ class AgentRegistry:
     def get_agent_metadata(self, agent_type: str) -> dict:
         return self._agent_metadata.get(agent_type, {})
 
-    def get_capability_blurb(self, agent_type: str) -> Optional[str]:
+    def get_capability_blurb(self, agent_type: str) -> str | None:
         """Return the agent's user-facing capability blurb, or None.
 
         Returns None when the agent type is not registered (e.g. disabled in this

@@ -7,7 +7,6 @@ from io import BytesIO
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 from uuid import uuid4
 
@@ -553,7 +552,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_id: str,
         history_id: str,
         *,
-        options_pagination: Optional[dict[str, Any]] = None,
+        options_pagination: dict[str, Any] | None = None,
         param_name: str = "f1",
     ) -> dict[str, Any]:
         """POST ``tools/{tool_id}/build`` and return the named input dict."""
@@ -4032,7 +4031,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         # assert "User does not have permission to use a dataset" in err_message, err_message
 
     @contextlib.contextmanager
-    def _different_user_and_history(self, user_email: Optional[str] = None):
+    def _different_user_and_history(self, user_email: str | None = None):
         with self._different_user(email=user_email):
             with self.dataset_populator.test_history() as other_history_id:
                 yield other_history_id

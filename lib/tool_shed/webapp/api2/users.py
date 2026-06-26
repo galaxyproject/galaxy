@@ -1,8 +1,5 @@
 import logging
 import os
-from typing import (
-    Optional,
-)
 
 from fastapi import (
     Body,
@@ -56,7 +53,7 @@ router = Router(tags=["users"])
 
 log = logging.getLogger(__name__)
 
-TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: Optional[str] = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
+TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT: str | None = os.environ.get("TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT", None)
 SENSITIVE_API_REQUEST_LIMIT = TOOL_SHED_SENSITIVE_API_REQUEST_LIMIT or "10/minute"
 
 
@@ -92,7 +89,7 @@ class UiRegisterResponse(BaseModel):
     email: str
     activation_sent: bool = False
     activation_error: bool = False
-    contact_email: Optional[str] = None
+    contact_email: str | None = None
 
 
 class UiChangePasswordRequest(BaseModel):

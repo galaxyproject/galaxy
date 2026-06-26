@@ -10,8 +10,6 @@ from tempfile import mkdtemp
 from typing import (
     Any,
     cast,
-    Optional,
-    Union,
 )
 from uuid import uuid4
 
@@ -205,23 +203,23 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
 
     def _setup_workflow_run(
         self,
-        workflow: Optional[dict[str, Any]] = None,
+        workflow: dict[str, Any] | None = None,
         inputs_by: str = "step_id",
-        history_id: Optional[str] = None,
-        workflow_id: Optional[str] = None,
+        history_id: str | None = None,
+        workflow_id: str | None = None,
     ) -> tuple[dict[str, Any], str, str]:
         return self.workflow_populator.setup_workflow_run(workflow, inputs_by, history_id, workflow_id)
 
     def _ds_entry(self, history_content):
         return self.dataset_populator.ds_entry(history_content)
 
-    def _invocation_details(self, workflow_id: Optional[str], invocation_id: str, **kwds):
+    def _invocation_details(self, workflow_id: str | None, invocation_id: str, **kwds):
         invocation_details_response = self._get(f"invocations/{invocation_id}", data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[dict[str, Any], RunJobsSummary]:
+    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> dict[str, Any] | RunJobsSummary:
         return self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
 
     def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:
@@ -260,7 +258,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         self._assert_status_code_is(show_response, 200)
         return show_response.json()
 
-    def _latest_instance_id(self, workflow_id: str, history_id: Optional[str] = None) -> str:
+    def _latest_instance_id(self, workflow_id: str, history_id: str | None = None) -> str:
         # Get latest version, to get latest instance id and confirm the name has changed
         latest_download = self._download_workflow(workflow_id, style="run", history_id=history_id)
         latest_instance_id = latest_download["workflow_id"]
@@ -2606,7 +2604,7 @@ steps:
                 in reverse_content
             )
 
-    def __run_cat_workflow(self, inputs_by, history_id: Optional[str] = None):
+    def __run_cat_workflow(self, inputs_by, history_id: str | None = None):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         workflow["steps"]["0"]["uuid"] = str(uuid4())
         workflow["steps"]["1"]["uuid"] = str(uuid4())

@@ -89,9 +89,8 @@ class GalaxyTaskBeforeStartUserRateLimit(GalaxyTaskBeforeStart):
 
         # Check if this task already has a reserved timeslot from a previous attempt
         headers = task.request.headers or {}
-        reserved_time_str = headers.get(HEADER_SCHEDULED_TIME)
 
-        if reserved_time_str:
+        if reserved_time_str := headers.get(HEADER_SCHEDULED_TIME):
             # Retry path: verify we've reached our reserved timeslot
             reserved_time = datetime.datetime.fromisoformat(reserved_time_str)
             if now >= reserved_time:

@@ -31,7 +31,6 @@ import re
 import shutil
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 from whoosh import (
@@ -72,8 +71,8 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-CanConvertToFloat = Union[str, int, float]
-CanConvertToInt = Union[str, int, float]
+CanConvertToFloat = str | int | float
+CanConvertToInt = str | int | float
 
 
 def get_or_create_index(index_dir: "StrPath", schema: Schema) -> index.FileIndex:
@@ -289,7 +288,7 @@ class ToolPanelViewSearch:
         self,
         tool: "Tool",
         index_help: bool = True,
-    ) -> dict[str, Union[str, list[str]]]:
+    ) -> dict[str, str | list[str]]:
         def clean(s: str) -> str:
             """Remove hyphens as they are Whoosh wildcards."""
             if "-" in s:
@@ -300,7 +299,7 @@ class ToolPanelViewSearch:
         if tool.tool_type == "manage_data":
             #  Do not add data managers to the public index
             return {}
-        add_doc_kwds: dict[str, Union[str, list[str]]] = {
+        add_doc_kwds: dict[str, str | list[str]] = {
             "id": unicodify(tool.id),
             "id_exact": unicodify(tool.id),
             "name": clean(tool.name),

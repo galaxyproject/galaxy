@@ -19,7 +19,6 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -446,7 +445,7 @@ class TextToolParameter(SimpleTextToolParameter):
             return super().validate(value, trans)
 
     @property
-    def wrapper_default(self) -> Optional[str]:
+    def wrapper_default(self) -> str | None:
         """Handle change in default handling pre and post 23.0 profiles."""
         profile = self.profile
         legacy_behavior = profile is None or Version(str(profile)) < Version("23.0")
@@ -1008,7 +1007,7 @@ class SelectToolParameter(ToolParameter):
             call_other_values.update(other_values.dict)
         return call_other_values
 
-    def get_options(self, trans, other_values) -> Sequence[Union[ParameterOption, DrillDownOptionsDict]]:
+    def get_options(self, trans, other_values) -> Sequence[ParameterOption | DrillDownOptionsDict]:
         if self.options:
             return self.options.get_options(trans, other_values)
         elif self.dynamic_options:
@@ -1176,7 +1175,7 @@ class SelectToolParameter(ToolParameter):
             if not self.optional and not self.multiple and options:
                 # Nothing selected, but not optional and not a multiple select, with some values,
                 # so we have to default to something (the HTML form will anyway)
-                value2: Optional[Union[str, list[str]]] = options[0].value
+                value2: str | list[str] | None = options[0].value
             else:
                 value2 = None
         elif len(value) == 1 or not self.multiple:
@@ -1886,9 +1885,9 @@ def _paginated_visible_datasets(
     trans: "ProvidesHistoryContext",
     history: "History",
     *,
-    extensions: Optional[set[str]],
-    valid_states: Optional[tuple[str, ...]],
-    search: Optional[str] = None,
+    extensions: set[str] | None,
+    valid_states: tuple[str, ...] | None,
+    search: str | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> tuple[list[HistoryDatasetAssociation], int]:
@@ -1925,7 +1924,7 @@ def _paginated_dataset_collections(
     history: "History",
     *,
     visible_only: bool,
-    search: Optional[str] = None,
+    search: str | None = None,
     offset: int = 0,
     limit: int = 50,
 ) -> tuple[list[HistoryDatasetCollectionAssociation], int]:
@@ -2008,7 +2007,7 @@ class BaseDataToolParameter(ToolParameter):
             self.options_filter_attribute = options_elem.get("options_filter_attribute", None)
         self.is_dynamic = self.options is not None
 
-    def _acceptable_extensions(self) -> Optional[set[str]]:
+    def _acceptable_extensions(self) -> set[str] | None:
         """Return a set of HDA extensions that match this parameter's formats
         directly or via implicit conversion. ``None`` means no extension filter
         (the parameter accepts all formats)."""
@@ -2017,11 +2016,10 @@ class BaseDataToolParameter(ToolParameter):
             return cached
         formats = getattr(self, "formats", None)
         if not formats:
-            self._acceptable_extensions_cache: Optional[set[str]] = None
+            self._acceptable_extensions_cache: set[str] | None = None
             return None
         accepted: set[str] = set(getattr(self, "extensions", []))
-        registry = self.datatypes_registry
-        if registry is not None:
+        if (registry := self.datatypes_registry) is not None:
             try:
                 all_exts = list(registry.datatypes_by_extension.keys())
             except AttributeError:
@@ -2194,18 +2192,14 @@ class BaseDataToolParameter(ToolParameter):
                 raise ParameterValueError(f"at most {self.max} datasets are required", self.name)
 
 
-ItemFromSrcAny = Union[
-    DatasetCollectionElement,
-    HistoryDatasetAssociation,
-    HistoryDatasetCollectionAssociation,
-    LibraryDatasetDatasetAssociation,
-    CollectionAdapter,
-]
-ItemFromSrcCollection = Union[
-    DatasetCollectionElement,
-    HistoryDatasetCollectionAssociation,
-    CollectionAdapter,
-]
+ItemFromSrcAny = (
+    DatasetCollectionElement
+    | HistoryDatasetAssociation
+    | HistoryDatasetCollectionAssociation
+    | LibraryDatasetDatasetAssociation
+    | CollectionAdapter
+)
+ItemFromSrcCollection = DatasetCollectionElement | HistoryDatasetCollectionAssociation | CollectionAdapter
 
 
 def _decode_dataset_id(value, security: "IdEncodingHelper", parameter_name: str) -> int:
@@ -2358,13 +2352,11 @@ class DataToolParameter(BaseDataToolParameter):
         if isinstance(value, str) and value.find(",") > 0:
             value = [int(value_part) for value_part in value.split(",")]
         rval: list[
-            Union[
-                DatasetCollectionElement,
-                HistoryDatasetAssociation,
-                HistoryDatasetCollectionAssociation,
-                LibraryDatasetDatasetAssociation,
-                CollectionAdapter,
-            ]
+            DatasetCollectionElement
+            | HistoryDatasetAssociation
+            | HistoryDatasetCollectionAssociation
+            | LibraryDatasetDatasetAssociation
+            | CollectionAdapter
         ] = []
         if isinstance(value, list):
             found_srcs = set()
@@ -2417,13 +2409,13 @@ class DataToolParameter(BaseDataToolParameter):
         dataset_matcher_factory = get_dataset_matcher_factory(trans)
         dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
         for v in rval:
-            value_to_check: Union[
-                DatasetInstance,
-                DatasetCollection,
-                DatasetCollectionElement,
-                HistoryDatasetCollectionAssociation,
-                CollectionAdapter,
-            ] = v
+            value_to_check: (
+                DatasetInstance
+                | DatasetCollection
+                | DatasetCollectionElement
+                | HistoryDatasetCollectionAssociation
+                | CollectionAdapter
+            ) = v
             if isinstance(v, DatasetCollectionElement):
                 if hda := v.hda:
                     value_to_check = hda
@@ -2567,7 +2559,7 @@ class DataToolParameter(BaseDataToolParameter):
             ref = ref()
         return str(ref)
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(self, trans, other_values=None, pagination: ParameterPaginationT | None = None):
         other_values = other_values or {}
         d = super().to_dict(trans)
         self._fill_to_dict_static(d)
@@ -2820,7 +2812,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             )
 
     @property
-    def collection_types(self) -> Optional[list[str]]:
+    def collection_types(self) -> list[str] | None:
         return self._collection_types
 
     def _history_query(self, trans):
@@ -2856,7 +2848,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         session = trans.sa_session
 
         other_values = other_values or {}
-        rval: Optional[ItemFromSrcCollection] = None
+        rval: ItemFromSrcCollection | None = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
         if not value and not self.optional and not self.default_object:
@@ -2926,7 +2918,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             display_text = "No dataset collection."
         return display_text
 
-    def to_dict(self, trans, other_values=None, pagination: Optional[ParameterPaginationT] = None):
+    def to_dict(self, trans, other_values=None, pagination: ParameterPaginationT | None = None):
         other_values = other_values or {}
         d = super().to_dict(trans)
         d["collection_types"] = self.collection_types
@@ -3283,7 +3275,7 @@ def history_item_to_json(value, app, use_security):
     src = None
 
     # unwrap adapter
-    collection_adapter: Optional[CollectionAdapter] = None
+    collection_adapter: CollectionAdapter | None = None
     if isinstance(value, CollectionAdapter):
         collection_adapter = value
         return collection_adapter.to_adapter_model().model_dump()

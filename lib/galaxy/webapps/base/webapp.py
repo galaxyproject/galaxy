@@ -12,7 +12,6 @@ from contextlib import ExitStack
 from http.cookies import CookieError
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -111,9 +110,7 @@ class WebApplication(base.WebApplication):
 
     injection_aware: bool = False
 
-    def __init__(
-        self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: Optional[str] = None
-    ) -> None:
+    def __init__(self, galaxy_app: MinimalApp, session_cookie: str = "galaxysession", name: str | None = None) -> None:
         super().__init__()
         self.name = name
         galaxy_app.is_webapp = True
@@ -319,7 +316,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
     """
 
     def __init__(
-        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: Optional[str] = None
+        self, environ: dict[str, Any], app: BasicSharedApp, webapp: WebApplication, session_cookie: str | None = None
     ) -> None:
         self._app = app
         self.webapp = webapp
@@ -548,7 +545,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if self.app.config.cookie_domain is not None:
             self.response.cookies[name]["domain"] = self.app.config.cookie_domain
 
-    def _authenticate_api(self, session_cookie: str) -> Optional[str]:
+    def _authenticate_api(self, session_cookie: str) -> str | None:
         """
         Authenticate for the API via key or session (if available).
         """

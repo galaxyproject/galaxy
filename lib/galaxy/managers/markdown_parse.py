@@ -7,9 +7,6 @@ projects (e.g. gxformat2).
 """
 
 import re
-from typing import (
-    Union,
-)
 
 BLOCK_FENCE_START = re.compile(r"```.*")
 BLOCK_FENCE_END = re.compile(r"```[\s]*")
@@ -23,7 +20,7 @@ class DynamicArguments:
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
 SHARED_ARGUMENTS: list[str] = ["collapse"]
-VALID_ARGUMENTS: dict[str, Union[list[str], DynamicArguments]] = {
+VALID_ARGUMENTS: dict[str, list[str] | DynamicArguments] = {
     "generate_galaxy_version": [],
     "generate_time": [],
     "history_dataset_as_image": ["hid", "history_dataset_id", "input", "invocation_id", "output", "path"],

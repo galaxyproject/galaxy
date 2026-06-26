@@ -2,9 +2,6 @@ import os
 import re
 from typing import (
     Any,
-    List,
-    Optional,
-    Tuple,
 )
 
 import pytest
@@ -96,7 +93,7 @@ def test_legacy_features_fail_validation_with_24_2(tmp_path):
     _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, "multi_select.xml", index=1)
 
 
-def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: str, index: Optional[int] = 0):
+def _assert_tool_test_parsing_only_fails_with_newer_profile(tmp_path, filename: str, index: int | None = 0):
     test_tool_directory = functional_test_tool_directory()
     original_path = os.path.join(test_tool_directory, filename)
     new_path = tmp_path / filename
@@ -144,9 +141,9 @@ def test_validate_framework_test_tools():
 
 def test_test_case_state_conversion():
     tool_source = tool_source_for("collection_nested_test")
-    test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     state = case_state_for(tool_source, test_cases[0])
-    expectations: List[Tuple[List[Any], Optional[Any]]]
+    expectations: list[tuple[list[Any], Any | None]]
     expectations = [
         (["f1", "collection_type"], "list:paired"),
         (["f1", "class"], "Collection"),
@@ -704,7 +701,7 @@ def test_convert_to_requests():
         parameters = input_models_for_tool_source(tool_source)
         parsed_tool = parse_tool(tool_source)
         profile = tool_source.parse_profile()
-        test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+        test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
 
         def mock_adapt_datasets(input: JsonTestDatasetDefDict) -> DataRequestHda:
             return DataRequestHda(src="hda", id=MOCK_ID)
@@ -732,7 +729,7 @@ def _validate_path(tool_path: str):
     model_name = f"{tool_id} (test case model)"
     parsed_tool = parse_tool(tool_source)
     profile = tool_source.parse_profile()
-    test_cases: List[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
+    test_cases: list[ToolSourceTest] = tool_source.parse_tests_to_dict()["tests"]
     for test_case in test_cases:
         if test_case.get("expect_failure"):
             continue
@@ -741,7 +738,7 @@ def _validate_path(tool_path: str):
         assert tool_state.state_representation == "test_case_xml"
 
 
-def validate_test_cases_for(tool_name: str, **kwd) -> List[TestCaseStateValidationResult]:
+def validate_test_cases_for(tool_name: str, **kwd) -> list[TestCaseStateValidationResult]:
     return validate_test_cases_for_tool_source(tool_source_for(tool_name), **kwd)
 
 

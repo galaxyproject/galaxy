@@ -5,9 +5,7 @@ Manager and Serializer for Library Folders.
 import logging
 from dataclasses import dataclass
 from typing import (
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from sqlalchemy import (
@@ -206,7 +204,7 @@ class FolderManager:
         folder_dict["update_time"] = folder.update_time
         return folder_dict
 
-    def create(self, trans, parent_folder_id: int, new_folder_name: str, new_folder_description: Optional[str] = None):
+    def create(self, trans, parent_folder_id: int, new_folder_name: str, new_folder_description: str | None = None):
         """
         Create a new folder under the given folder.
 
@@ -400,7 +398,7 @@ class FolderManager:
         trans,
         folder: LibraryFolder,
         payload: LibraryFolderContentsIndexQueryPayload,
-    ) -> tuple[list[Union[LibraryFolder, LibraryDataset]], int]:
+    ) -> tuple[list[LibraryFolder | LibraryDataset], int]:
         """Retrieves the contents of the given folder that match the provided filters and pagination parameters.
         Returns a tuple with the list of paginated contents and the total number of items contained in the folder."""
         limit = payload.limit
@@ -412,7 +410,7 @@ class FolderManager:
             is_admin=trans.user_is_admin,
         )
 
-        content_items: list[Union[LibraryFolder, LibraryDataset]] = []
+        content_items: list[LibraryFolder | LibraryDataset] = []
         sub_folders_stmt = self._get_sub_folders_statement(sa_session, folder, security_params, payload)
         total_sub_folders = get_count(sa_session, sub_folders_stmt)
         if payload.order_by in FOLDER_SORT_COLUMN_MAP:
@@ -523,7 +521,7 @@ class FolderManager:
         return stmt
 
     def _filter_by_include_deleted(
-        self, stmt, item_model, item_permissions_model, include_deleted: Optional[bool], security: SecurityParams
+        self, stmt, item_model, item_permissions_model, include_deleted: bool | None, security: SecurityParams
     ):
         if include_deleted:  # Admins or users with MODIFY permissions can see deleted contents
             if not security.is_admin:
@@ -545,7 +543,7 @@ class FolderManager:
 
     def build_folder_path(
         self, sa_session: galaxy_scoped_session, folder: model.LibraryFolder
-    ) -> list[tuple[int, Optional[str]]]:
+    ) -> list[tuple[int, str | None]]:
         """
         Returns the folder path from root to the given folder.
 

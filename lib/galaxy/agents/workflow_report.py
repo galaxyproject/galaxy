@@ -87,8 +87,7 @@ class WorkflowReportAgent(SimpleGalaxyAgent):
 
         # Workflow outputs — include the originating step label and tool_id so the LLM
         # can infer the likely output type (image, tabular, HTML) for directive selection
-        outputs = list(workflow.workflow_outputs)
-        if outputs:
+        if outputs := list(workflow.workflow_outputs):
             lines.append("\nWorkflow outputs (usable in output= directives):")
             for out in outputs:
                 out_label = out.label or out.output_name

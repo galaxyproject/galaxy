@@ -1,8 +1,6 @@
 import logging
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy import (
@@ -60,7 +58,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         self.library_manager = library_manager
         self.role_manager = role_manager
 
-    def index(self, trans: ProvidesAppContext, deleted: Optional[bool] = False) -> LibrarySummaryList:
+    def index(self, trans: ProvidesAppContext, deleted: bool | None = False) -> LibrarySummaryList:
         """Returns a list of summary data for all libraries.
 
         :param  deleted: if True, show only ``deleted`` libraries, if False show only ``non-deleted``
@@ -114,7 +112,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         updated_library = self.library_manager.update(trans, library, name, payload.description, payload.synopsis)
         return self._to_summary(trans, updated_library)
 
-    def delete(self, trans, id: DecodedDatabaseIdField, undelete: Optional[bool] = False) -> LibrarySummary:
+    def delete(self, trans, id: DecodedDatabaseIdField, undelete: bool | None = False) -> LibrarySummary:
         """Marks the library with the given ``id`` as `deleted` (or removes the `deleted` mark if the `undelete` param is true)
 
         .. note:: Currently, only admin users can un/delete libraries.
@@ -132,12 +130,12 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         self,
         trans,
         id: DecodedDatabaseIdField,
-        scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
-        is_library_access: Optional[bool] = False,
+        scope: LibraryPermissionScope | None = LibraryPermissionScope.current,
+        is_library_access: bool | None = False,
         page: int = 1,
         page_limit: int = 10,
-        query: Optional[str] = None,
-    ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
+        query: str | None = None,
+    ) -> LibraryCurrentPermissions | LibraryAvailablePermissions:
         """Load all permissions for the given library id and return it.
 
         :param  id:     the encoded id of the library
@@ -188,7 +186,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
     def set_permissions(
         self, trans, id: DecodedDatabaseIdField, payload: dict[str, Any]
-    ) -> Union[LibraryLegacySummary, LibraryCurrentPermissions]:  # Old legacy response
+    ) -> LibraryLegacySummary | LibraryCurrentPermissions:  # Old legacy response
         """Set permissions of the given library to the given role ids.
 
         :param  id:      the encoded id of the library to set the permissions of

@@ -14,7 +14,6 @@ from collections.abc import (
 from math import inf
 from typing import (
     Any,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -264,10 +263,10 @@ class Dataset(Bunch):
     datatype: data.Data
     warnings: list[str]
     metadata: dict[str, str]
-    composite_files: dict[str, Optional[str]]
-    uuid: Optional[str]
-    tag_using_filenames: Optional[str]
-    tags: Optional[str]
+    composite_files: dict[str, str | None]
+    uuid: str | None
+    tag_using_filenames: str | None
+    tags: str | None
     name: str
     primary_file: str
     to_posix_lines: bool
@@ -753,9 +752,9 @@ class Conditional(Group):
 
     def __init__(self, name: str):
         Group.__init__(self, name)
-        self.test_param: Optional[ToolParameter] = None
+        self.test_param: ToolParameter | None = None
         self.cases = []
-        self.value_ref: Optional[str] = None
+        self.value_ref: str | None = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False
 
     @property

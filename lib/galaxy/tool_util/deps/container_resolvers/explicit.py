@@ -3,9 +3,8 @@
 import copy
 import logging
 import os
+from collections.abc import Container
 from typing import (
-    Container,
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -39,7 +38,7 @@ class ExplicitContainerResolver(ContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -59,7 +58,7 @@ class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -99,7 +98,7 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", install: bool = False, **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
@@ -211,7 +210,7 @@ class FallbackContainerResolver(BaseAdminConfiguredContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         container_description = self._container_description(self.identifier, self.container_type)
         if self._match(enabled_container_types, tool_info, container_description):
             return container_description
@@ -272,7 +271,7 @@ class MappingContainerResolver(BaseAdminConfiguredContainerResolver):
 
     def resolve(
         self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
-    ) -> Optional[ContainerDescription]:
+    ) -> ContainerDescription | None:
         tool_id = tool_info.tool_id
         # If resolving against dependencies and not a specific tool, skip over this resolver
         if not tool_id:

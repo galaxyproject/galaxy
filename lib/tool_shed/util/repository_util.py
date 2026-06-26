@@ -4,7 +4,6 @@ import os
 import re
 import tempfile
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -195,7 +194,7 @@ def create_repository(
     description,
     long_description,
     user,
-    category_ids: Optional[list[str]] = None,
+    category_ids: list[str] | None = None,
     remote_repository_url=None,
     homepage_url=None,
 ) -> tuple[model.Repository, str]:
@@ -246,7 +245,7 @@ def create_repository(
 
 
 def generate_sharable_link_for_repository_in_tool_shed(
-    repository: model.Repository, changeset_revision: Optional[str] = None, base_url: Optional[str] = None
+    repository: model.Repository, changeset_revision: str | None = None, base_url: str | None = None
 ) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
     if base_url is None:
@@ -339,7 +338,7 @@ def get_repositories_by_category(
     installable: bool = False,
     sort_order="asc",
     sort_key="name",
-    page: Optional[int] = None,
+    page: int | None = None,
     per_page: int = 25,
 ):
     repositories = []
@@ -432,9 +431,7 @@ def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
         config.write(fh)
 
 
-def update_repository(
-    trans: "ProvidesUserContext", id: str, **kwds
-) -> tuple[Optional[model.Repository], Optional[str]]:
+def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> tuple[model.Repository | None, str | None]:
     """Update an existing ToolShed repository"""
     app = trans.app
     sa_session = app.model.session
@@ -451,7 +448,7 @@ def update_repository(
 
 def update_validated_repository(
     trans: "ProvidesUserContext", repository: model.Repository, **kwds
-) -> tuple[Optional[model.Repository], Optional[str]]:
+) -> tuple[model.Repository | None, str | None]:
     """Update an existing ToolShed repository metadata once permissions have been checked."""
     app = trans.app
     sa_session = app.model.session
@@ -466,7 +463,6 @@ def update_validated_repository(
             flush_needed = True
 
     if "category_ids" in kwds and isinstance(kwds["category_ids"], list):
-
         # Remove existing category associations
         _delete_repository_category_associations(sa_session, model.RepositoryCategoryAssociation, repository.id)
 
@@ -546,7 +542,7 @@ def get_repositories(
     installable: bool,
     sort_order,
     sort_key,
-    page: Optional[int],
+    page: int | None,
     per_page: int,
 ):
     stmt = (

@@ -7,10 +7,6 @@ import os
 import sys
 import tempfile
 import time
-from typing import (
-    Dict,
-    List,
-)
 
 from galaxy.tool_util.deps.conda_util import CondaContext
 from galaxy.util import (
@@ -163,7 +159,7 @@ class CondaSearch:
     def __init__(self, channel):
         self.channel = channel
 
-    def get_json(self, search_string) -> List[Dict[str, str]]:
+    def get_json(self, search_string) -> list[dict[str, str]]:
         """
         Function takes search_string variable and returns results from the bioconda channel in JSON format
 
@@ -177,7 +173,7 @@ class CondaSearch:
             logging.info(f"Search failed with: {e}")
             return []
         header_found = False
-        lines_fields: List[List[str]] = []
+        lines_fields: list[list[str]] = []
         for line in raw_out.splitlines():
             if line.startswith("#"):
                 header_found = True

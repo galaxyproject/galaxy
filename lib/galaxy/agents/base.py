@@ -24,7 +24,6 @@ from typing import (
     Literal,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 import yaml
@@ -103,7 +102,7 @@ _DEFAULT_MODEL_CAPABILITIES: dict[str, Any] = {
 _model_capabilities_cache: dict[str, dict[str, Any]] = {}
 
 
-def _load_model_capabilities(path: Optional[str], force_reload: bool = False) -> dict[str, Any]:
+def _load_model_capabilities(path: str | None, force_reload: bool = False) -> dict[str, Any]:
     """Return the parsed model-capabilities table for ``path``, falling back to defaults on any failure."""
     if not isinstance(path, str) or not path:
         return _DEFAULT_MODEL_CAPABILITIES
@@ -133,7 +132,7 @@ def _load_model_capabilities(path: Optional[str], force_reload: bool = False) ->
     return parsed
 
 
-def _capability_for_model(model_name: str, capability: str, table: dict[str, Any]) -> Optional[bool]:
+def _capability_for_model(model_name: str, capability: str, table: dict[str, Any]) -> bool | None:
     """Look up `capability` for `model_name` against the parsed table.
 
     Strips any `provider:` prefix before matching. Returns None when neither
@@ -259,7 +258,7 @@ def extract_usage_info(result: Any) -> dict[str, int]:
         return {}
 
 
-def extract_structured_output(result: Any, expected_type: type, logger: Optional[logging.Logger] = None) -> Any:
+def extract_structured_output(result: Any, expected_type: type, logger: logging.Logger | None = None) -> Any:
     """Extract structured output from a pydantic-ai result, or None if extraction fails."""
     _log = logger or log
 
@@ -315,11 +314,11 @@ class AgentResponse:
     def __init__(
         self,
         content: str,
-        confidence: Union[str, ConfidenceLevel],
+        confidence: str | ConfidenceLevel,
         agent_type: str,
-        suggestions: Optional[list[ActionSuggestion]] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        reasoning: Optional[str] = None,
+        suggestions: list[ActionSuggestion] | None = None,
+        metadata: dict[str, Any] | None = None,
+        reasoning: str | None = None,
     ):
         self.content = content
         if isinstance(confidence, ConfidenceLevel):
@@ -361,13 +360,13 @@ class GalaxyAgentDependencies:
     get_agent: Callable[[str, "GalaxyAgentDependencies"], "BaseGalaxyAgent"]
     # Callable returning an agent's user-facing capability blurb, or None when that agent
     # is not enabled in this deployment. Lets the router advertise only real capabilities.
-    get_capability_blurb: Optional[Callable[[str], Optional[str]]] = None
+    get_capability_blurb: Callable[[str], str | None] | None = None
     job_manager: Optional["JobManager"] = None
     dataset_manager: Optional["DatasetManager"] = None
     workflow_manager: Optional["WorkflowsManager"] = None
     tool_cache: Optional["ToolCache"] = None
     toolbox: Optional["ToolBox"] = None
-    model_factory: Optional[Callable[[], Any]] = None
+    model_factory: Callable[[], Any] | None = None
 
 
 class BaseGalaxyAgent(ABC):
@@ -378,7 +377,7 @@ class BaseGalaxyAgent(ABC):
     # composes its "what can you do" answer from the blurbs of the agents enabled in this
     # deployment. None means the agent is not advertised there (e.g. the router itself, or
     # surfaces like the notebook page assistant that users reach a different way).
-    capability_blurb: Optional[str] = None
+    capability_blurb: str | None = None
     agent: Agent[GalaxyAgentDependencies, Any]
     _INTERNAL_CONTEXT_KEYS = frozenset({"run_state", "responding_to_clarification"})
 
@@ -407,7 +406,7 @@ class BaseGalaxyAgent(ABC):
     def get_system_prompt(self) -> str:
         pass
 
-    def _validate_query(self, query: str) -> Optional[str]:
+    def _validate_query(self, query: str) -> str | None:
         """Validate query input. Returns None if valid, error message if not."""
         if not query or not isinstance(query, str):
             return "Query must be a non-empty string"
@@ -444,7 +443,7 @@ class BaseGalaxyAgent(ABC):
             metadata={"validation_error": True},
         )
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
@@ -462,9 +461,9 @@ class BaseGalaxyAgent(ABC):
 
     @staticmethod
     def _extract_message_history(
-        context: Optional[dict[str, Any]],
+        context: dict[str, Any] | None,
         limit: int = MAX_HISTORY_MESSAGES,
-    ) -> Optional[list[ModelMessage]]:
+    ) -> list[ModelMessage] | None:
         """Pull ``conversation_history`` out of context, normalize it, and truncate it.
 
         Returns None when history is missing/empty so callers can pass it
@@ -498,7 +497,7 @@ class BaseGalaxyAgent(ABC):
         prompt: str,
         max_retries: int = 3,
         base_delay: float = 1.0,
-        message_history: Optional[list[ModelMessage]] = None,
+        message_history: list[ModelMessage] | None = None,
     ):
         """Run the agent with exponential backoff for retryable errors."""
         last_exception = None
@@ -708,10 +707,10 @@ class BaseGalaxyAgent(ABC):
         self,
         method: str,
         result: Any = None,
-        query: Optional[str] = None,
-        agent_data: Optional[dict[str, Any]] = None,
+        query: str | None = None,
+        agent_data: dict[str, Any] | None = None,
         fallback: bool = False,
-        error: Optional[str] = None,
+        error: str | None = None,
     ) -> dict[str, Any]:
         """Build consistent metadata for agent responses.
 
@@ -747,12 +746,12 @@ class BaseGalaxyAgent(ABC):
         confidence: ConfidenceLevel,
         method: str,
         result: Any = None,
-        query: Optional[str] = None,
-        suggestions: Optional[list[ActionSuggestion]] = None,
-        agent_data: Optional[dict[str, Any]] = None,
+        query: str | None = None,
+        suggestions: list[ActionSuggestion] | None = None,
+        agent_data: dict[str, Any] | None = None,
         fallback: bool = False,
-        error: Optional[str] = None,
-        reasoning: Optional[str] = None,
+        error: str | None = None,
+        reasoning: str | None = None,
     ) -> AgentResponse:
         return AgentResponse(
             content=content,
@@ -789,7 +788,7 @@ class BaseGalaxyAgent(ABC):
         """Override in agents that require structured output to function."""
         return False
 
-    def _validate_model_capabilities(self) -> Optional[str]:
+    def _validate_model_capabilities(self) -> str | None:
         """Check that the model meets this agent's requirements. Returns error message or None."""
         if self._requires_structured_output() and not self._supports_structured_output():
             model = self._get_agent_config("model", "unknown")
@@ -883,7 +882,7 @@ class BaseGalaxyAgent(ABC):
     def _get_max_tokens(self) -> int:
         return self._get_agent_config("max_tokens", self.DEFAULT_MAX_TOKENS)
 
-    def _get_retries(self, default: Optional[int] = None) -> int:
+    def _get_retries(self, default: int | None = None) -> int:
         """Retry budget for the agent's pydantic-ai ``Agent(retries=...)``.
 
         With no ``default``, the budget resolves per-agent > ``default`` block >
@@ -913,7 +912,7 @@ class BaseGalaxyAgent(ABC):
         query: str,
         ctx,
         usage=None,
-        context: Optional[dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> str:
         """Call another agent from within a @agent.tool function."""
         try:

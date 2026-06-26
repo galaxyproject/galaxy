@@ -992,7 +992,6 @@ class TestLinkDataUploadExtendedMetadata(BaseUploadContentConfigurationTestCase)
 # but perfectly valid configurations for running metadata are not being tested by API
 # tests anymore.
 class TestUploadWithDirectoryMetadata(BaseUploadContentConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
@@ -1003,7 +1002,6 @@ class TestUploadWithDirectoryMetadata(BaseUploadContentConfigurationTestCase):
 
 
 class TestUploadWithExtendedMetadata(BaseUploadContentConfigurationTestCase):
-
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)

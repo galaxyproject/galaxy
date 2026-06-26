@@ -6,10 +6,6 @@ incompatible changes coming.
 import logging
 import os
 import re
-from typing import (
-    List,
-    Optional,
-)
 
 import galaxy.tool_util.deps.installable
 from galaxy.tool_util.deps.requirements import (
@@ -185,7 +181,7 @@ class CondaDependencyResolver(
                 final_return_code = return_code
         return final_return_code
 
-    def install_all(self, conda_targets: List[CondaTarget], env: str) -> bool:
+    def install_all(self, conda_targets: list[CondaTarget], env: str) -> bool:
         if self.read_only:
             return False
 
@@ -202,7 +198,7 @@ class CondaDependencyResolver(
 
         return is_installed
 
-    def resolve_all(self, requirements: ToolRequirements, **kwds) -> List[Dependency]:
+    def resolve_all(self, requirements: ToolRequirements, **kwds) -> list[Dependency]:
         """
         Some combinations of tool requirements need to be resolved all at once, so that Conda can select a compatible
         combination of dependencies. This method returns a list of MergedCondaDependency instances (one for each requirement)
@@ -252,7 +248,7 @@ class CondaDependencyResolver(
         if install:
             is_installed = self.install_all(conda_targets, env)
 
-        dependencies: List[Dependency] = []
+        dependencies: list[Dependency] = []
         if is_installed:
             for requirement in requirements:
                 dependency = MergedCondaDependency(
@@ -268,7 +264,7 @@ class CondaDependencyResolver(
 
         return dependencies
 
-    def merged_environment_name(self, conda_targets: List[CondaTarget], capitalized_package_names: bool = False) -> str:
+    def merged_environment_name(self, conda_targets: list[CondaTarget], capitalized_package_names: bool = False) -> str:
         if len(conda_targets) > 1:
             # For continuity with mulled containers this is kind of nice.
             return f"mulled-v1-{hash_conda_packages(conda_targets, capitalized_package_names)}"
@@ -412,9 +408,9 @@ class MergedCondaDependency(Dependency):
         environment_path: str,
         exact: bool,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
         preserve_python_environment: bool = False,
-        dependency_resolver: Optional[DependencyResolver] = None,
+        dependency_resolver: DependencyResolver | None = None,
     ) -> None:
         self.activate = conda_context.activate
         self.conda_context = conda_context
@@ -464,9 +460,9 @@ class CondaDependency(Dependency):
         environment_path: str,
         exact: bool,
         name: str,
-        version: Optional[str] = None,
+        version: str | None = None,
         preserve_python_environment: bool = False,
-        dependency_resolver: Optional[DependencyResolver] = None,
+        dependency_resolver: DependencyResolver | None = None,
     ) -> None:
         self.activate = conda_context.activate
         self.conda_context = conda_context

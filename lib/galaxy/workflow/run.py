@@ -5,7 +5,6 @@ from typing import (
     Any,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from boltons.iterutils import get_path
@@ -76,7 +75,7 @@ def __invoke(
     trans: "WorkRequestContext",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
-    workflow_invocation: Optional[WorkflowInvocation] = None,
+    workflow_invocation: WorkflowInvocation | None = None,
     populate_state: bool = False,
 ) -> tuple[WorkflowOutputsType, WorkflowInvocation]:
     """Run the supplied workflow in the supplied target_history."""
@@ -129,7 +128,7 @@ def queue_invoke(
     trans: "GalaxyWebTransaction",
     workflow: "Workflow",
     workflow_run_config: WorkflowRunConfig,
-    request_params: Optional[dict[str, Any]] = None,
+    request_params: dict[str, Any] | None = None,
     populate_state: bool = True,
     flush: bool = True,
 ) -> WorkflowInvocation:
@@ -159,7 +158,7 @@ class WorkflowInvoker:
         trans: "WorkRequestContext",
         workflow: "Workflow",
         workflow_run_config: WorkflowRunConfig,
-        workflow_invocation: Optional[WorkflowInvocation] = None,
+        workflow_invocation: WorkflowInvocation | None = None,
         progress: Optional["WorkflowProgress"] = None,
     ) -> None:
         self.trans = trans
@@ -361,7 +360,7 @@ class WorkflowInvoker:
                     )
                 )
 
-    def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
+    def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> bool | None:
         assert invocation_step.workflow_step.module
         incomplete_or_none = invocation_step.workflow_step.module.execute(
             self.trans,
@@ -398,7 +397,7 @@ class WorkflowProgress:
         jobs_per_scheduling_iteration: int = -1,
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
-        replacement_dict: Optional[dict[str, str]] = None,
+        replacement_dict: dict[str, str] | None = None,
         subworkflow_collection_info=None,
         when_values=None,
     ) -> None:
@@ -418,7 +417,7 @@ class WorkflowProgress:
         self.when_values = when_values
 
     @property
-    def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
+    def maximum_jobs_to_schedule_or_none(self) -> int | None:
         if self.jobs_per_scheduling_iteration > 0:
             return self.jobs_per_scheduling_iteration - self.jobs_scheduled_this_iteration
         else:
@@ -429,7 +428,7 @@ class WorkflowProgress:
 
     def remaining_steps(
         self,
-    ) -> list[tuple["WorkflowStep", Optional[WorkflowInvocationStep]]]:
+    ) -> list[tuple["WorkflowStep", WorkflowInvocationStep | None]]:
         # Previously computed and persisted step states.
         step_states = self.workflow_invocation.step_states_by_step_id()
         steps = self.workflow_invocation.workflow.steps
@@ -460,12 +459,9 @@ class WorkflowProgress:
         return remaining_steps
 
     def replacement_for_input(self, trans, step: "WorkflowStep", input_dict: dict[str, Any]):
-        replacement: Union[
-            NoReplacement,
-            model.DatasetCollectionInstance,
-            list[model.DatasetCollectionInstance],
-            HistoryItem,
-        ] = NO_REPLACEMENT
+        replacement: (
+            NoReplacement | model.DatasetCollectionInstance | list[model.DatasetCollectionInstance] | HistoryItem
+        ) = NO_REPLACEMENT
         prefixed_name = input_dict["name"]
         multiple = input_dict["multiple"]
         is_data = input_dict["input_type"] in ["dataset", "dataset_collection"]
@@ -603,7 +599,7 @@ class WorkflowProgress:
     def set_outputs_for_input(
         self,
         invocation_step: WorkflowInvocationStep,
-        outputs: Optional[dict[str, Any]] = None,
+        outputs: dict[str, Any] | None = None,
         already_persisted: bool = False,
     ) -> None:
         step = invocation_step.workflow_step
@@ -690,7 +686,7 @@ class WorkflowProgress:
             output = {"__class__": "NoReplacement"}
         self.workflow_invocation.add_output(workflow_output, step, output)
 
-    def mark_step_outputs_delayed(self, step: "WorkflowStep", why: Optional[str] = None) -> None:
+    def mark_step_outputs_delayed(self, step: "WorkflowStep", why: str | None = None) -> None:
         if why:
             message = f"Marking step {step.id} outputs of invocation {self.workflow_invocation.id} delayed ({why})"
             log.debug(message)

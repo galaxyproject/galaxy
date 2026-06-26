@@ -8,8 +8,6 @@ from typing import (
     Any,
     cast,
     Literal,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -82,8 +80,8 @@ TOP_P = 0.9
 
 class ChatMessage(BaseModel):
     role: Literal["assistant", "system", "tool", "user"]
-    content: Optional[str] = None
-    tool_calls: Optional[list[dict[str, Any]]] = None
+    content: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
     model_config = dict(extra="allow")
 
 
@@ -100,9 +98,9 @@ class ChatTool(BaseModel):
 
 class ChatCompletionRequest(BaseModel):
     messages: list[ChatMessage]
-    tools: Optional[list[ChatTool]] = None
-    stream: Optional[bool] = False
-    max_tokens: Optional[int] = None
+    tools: list[ChatTool] | None = None
+    stream: bool | None = False
+    max_tokens: int | None = None
     model_config = dict(extra="allow")
 
 
@@ -155,7 +153,7 @@ class FastAPIPlugins:
         else:
             return self._create_error("Visualization registry is not available.")
 
-    def _get_plugin_config(self, plugin_name: str, key: str) -> Optional[str]:
+    def _get_plugin_config(self, plugin_name: str, key: str) -> str | None:
         """Get config for a plugin with fallback through inference_services.
 
         Precedence:
@@ -321,12 +319,12 @@ class FastAPIPlugins:
     def index(
         self,
         trans: SessionRequestContext = DependsOnTrans,
-        dataset_id: Optional[DecodedDatabaseIdField] = Query(
+        dataset_id: DecodedDatabaseIdField | None = Query(
             default=None,
             title="Dataset ID",
             description="Filter to visualizations compatible with this dataset.",
         ),
-        embeddable: Optional[bool] = Query(
+        embeddable: bool | None = Query(
             default=None,
             title="Embeddable",
             description="Filter to embeddable visualizations only.",
@@ -348,12 +346,12 @@ class FastAPIPlugins:
             title="Plugin ID",
             description="The visualization plugin identifier.",
         ),
-        history_id: Optional[DecodedDatabaseIdField] = Query(
+        history_id: DecodedDatabaseIdField | None = Query(
             default=None,
             title="History ID",
             description="Filter datasets compatible with this plugin from the specified history.",
         ),
-    ) -> Union[PluginDatasetsResponse, VisualizationPluginResponse]:
+    ) -> PluginDatasetsResponse | VisualizationPluginResponse:
         """Get details of a specific visualization plugin."""
         registry = self._get_registry()
         if history_id is not None:

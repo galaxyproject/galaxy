@@ -21,10 +21,7 @@ from abc import (
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
     NamedTuple,
-    Optional,
     TYPE_CHECKING,
     Union,
 )
@@ -58,7 +55,7 @@ class DictifiableMetric(NamedTuple):
     plugin: str
     safety: Safety = Safety.POTENTIALLY_SENSITVE
 
-    def dict(self) -> Dict[str, str]:
+    def dict(self) -> dict[str, str]:
         return dict(
             title=self.title,
             value=self.value,
@@ -79,7 +76,7 @@ class JobMetrics:
 
     def __init__(self, conf_file=None, conf_dict=None, **kwargs):
         """Load :class:`JobInstrumenter` objects from specified configuration file."""
-        self.plugin_classes = cast(Dict[str, "InstrumentPlugin"], self.__plugins_dict())
+        self.plugin_classes = cast(dict[str, "InstrumentPlugin"], self.__plugins_dict())
         if conf_file and os.path.exists(conf_file):
             self.default_job_instrumenter = JobInstrumenter.from_file(self.plugin_classes, conf_file, **kwargs)
         elif conf_dict or conf_dict is None:
@@ -101,7 +98,7 @@ class JobMetrics:
         assert formatter
         return formatter.format(key, value)
 
-    def dictifiable_metrics(self, raw_metrics: List[RawMetric], allowed_safety: Safety) -> List[DictifiableMetric]:
+    def dictifiable_metrics(self, raw_metrics: list[RawMetric], allowed_safety: Safety) -> list[DictifiableMetric]:
         def raw_to_dictifiable(raw_metric: RawMetric) -> DictifiableMetric:
             metric_name, metric_value, metric_plugin = raw_metric
             title, value = self.format(metric_plugin, metric_name, metric_value)
@@ -134,7 +131,7 @@ class JobMetrics:
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
 
-    def set_destination_conf_dicts(self, destination_id: str, conf_dicts: List[Dict[str, Any]]) -> None:
+    def set_destination_conf_dicts(self, destination_id: str, conf_dicts: list[dict[str, Any]]) -> None:
         plugin_source = plugin_config.PluginConfigSource("dict", conf_dicts)
         instrumenter = JobInstrumenter(self.plugin_classes, plugin_source)
         self.set_destination_instrumenter(destination_id, instrumenter)
@@ -157,15 +154,15 @@ class JobMetrics:
 
 class JobInstrumenterI(metaclass=ABCMeta):
     @abstractmethod
-    def pre_execute_commands(self, job_directory: str) -> Optional[str]:
+    def pre_execute_commands(self, job_directory: str) -> str | None:
         return None
 
     @abstractmethod
-    def post_execute_commands(self, job_directory: str) -> Optional[str]:
+    def post_execute_commands(self, job_directory: str) -> str | None:
         return None
 
     @abstractmethod
-    def collect_properties(self, job_id, job_directory: str) -> Dict[str, Any]:
+    def collect_properties(self, job_id, job_directory: str) -> dict[str, Any]:
         return {}
 
     @abstractmethod

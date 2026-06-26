@@ -16,9 +16,7 @@ from typing import (
     Any,
     cast,
     get_args,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from typing_extensions import TypedDict
@@ -182,7 +180,7 @@ class ConditionalStepWhen(BooleanToolParameter):
 
 
 def to_cwl(
-    value, hda_references, step: Optional[WorkflowStep] = None, compute_environment: Optional[ComputeEnvironment] = None
+    value, hda_references, step: WorkflowStep | None = None, compute_environment: ComputeEnvironment | None = None
 ):
     element_identifier = None
     if isinstance(value, NoReplacement):
@@ -486,7 +484,7 @@ class WorkflowModule:
     def get_runtime_state(self) -> DefaultToolState:
         raise TypeError("Abstract method")
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         """Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
         """
@@ -561,7 +559,7 @@ class WorkflowModule:
 
     def execute(
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Execute the given workflow invocation step.
 
         Use the supplied workflow progress object to track outputs, find
@@ -729,12 +727,12 @@ class SubWorkflowModule(WorkflowModule):
     # - Second pass actually turn RuntimeInputs into inputs if possible.
     type = "subworkflow"
     name = "Subworkflow"
-    _modules: Optional[list[Any]] = None
+    _modules: list[Any] | None = None
     subworkflow: Workflow
 
     def __init__(self, trans, content_id=None, **kwds):
         super().__init__(trans, content_id, **kwds)
-        self.post_job_actions: Optional[dict[str, Any]] = None
+        self.post_job_actions: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(Class, trans, d, **kwds):
@@ -874,7 +872,7 @@ class SubWorkflowModule(WorkflowModule):
 
     def execute(
         self, trans, progress: "WorkflowProgress", invocation_step: WorkflowInvocationStep, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    ) -> bool | None:
         """Execute the given workflow step in the given workflow invocation.
         Use the supplied workflow progress object to track outputs, find
         inputs, etc...
@@ -892,7 +890,7 @@ class SubWorkflowModule(WorkflowModule):
                 assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
             iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
-        when_values: list[Union[bool, None]] = []
+        when_values: list[bool | None] = []
         for iteration_elements, when_value in iteration_elements_iter:
             if when_value is False or not step.when_expression:
                 # We're skipping this step (when==False) or we keep
@@ -953,7 +951,7 @@ class SubWorkflowModule(WorkflowModule):
         state.inputs = {}
         return state
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         inputs = {}
         for step in self.subworkflow.steps:
             if step.type == "tool":
@@ -1059,7 +1057,7 @@ class InputModule(WorkflowModule):
 
     def execute(
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    ) -> bool | None:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         input_value = step.state.inputs["input"]
@@ -1106,7 +1104,7 @@ class InputModule(WorkflowModule):
             optional = self.default_optional
         rval["optional"] = optional
         if "format" in inputs:
-            formats: Optional[list[str]] = listify(inputs["format"])
+            formats: list[str] | None = listify(inputs["format"])
         else:
             formats = None
         if formats:
@@ -1158,7 +1156,7 @@ class InputDataModule(InputModule):
             filter_set = {"data"}
         return ", ".join(sorted(filter_set))
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
         tag = parameter_def["tag"]
@@ -1220,7 +1218,7 @@ class InputDataCollectionModule(InputModule):
             validate_column_definitions(column_definitions)
         return None
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
@@ -1395,7 +1393,6 @@ class InputParameterModule(WorkflowModule):
                 return add_validators_repeat
 
             if param_type == "text":
-
                 specify_multiple_source = dict(
                     name="multiple",
                     label="Allow multiple selection",
@@ -1412,7 +1409,7 @@ class InputParameterModule(WorkflowModule):
                     **when_this_type.inputs,
                 }
 
-                restrict_how_source: dict[str, Union[str, list[dict[str, Union[str, bool]]]]] = dict(
+                restrict_how_source: dict[str, str | list[dict[str, str | bool]]] = dict(
                     name="how", label="Restrict Text Values?", type="select"
                 )
                 restrict_how_source["options"] = [
@@ -1573,7 +1570,7 @@ class InputParameterModule(WorkflowModule):
                                 ]
                             )
 
-            options: Optional[list[OptionDict]] = None
+            options: list[OptionDict] | None = None
             if static_options and len(static_options) == 1:
                 # If we are connected to a single option, just use it as is so order is preserved cleanly and such.
                 options = [
@@ -1601,7 +1598,7 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
@@ -1611,7 +1608,7 @@ class InputParameterModule(WorkflowModule):
             raise ValueError("Invalid parameter type for workflow parameters encountered.")
 
         # Optional parameters for tool input source definition.
-        parameter_kwds: dict[str, Union[str, list[dict[str, Any]]]] = {}
+        parameter_kwds: dict[str, str | list[dict[str, Any]]] = {}
         if "multiple" in parameter_def:
             parameter_kwds["multiple"] = parameter_def["multiple"]
 
@@ -1705,7 +1702,7 @@ class InputParameterModule(WorkflowModule):
         progress: "WorkflowProgress",
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         input_value = self.get_input_value(progress, invocation_step)
         input_param = self.get_runtime_inputs(self)["input"]
         # TODO: raise DelayedWorkflowEvaluation if replacement not ready ? Need test
@@ -1937,7 +1934,7 @@ class PauseModule(WorkflowModule):
 
     def execute(
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    ) -> bool | None:
         step = invocation_step.workflow_step
         progress.mark_step_outputs_delayed(step, why="executing pause step")
         return None
@@ -2127,7 +2124,7 @@ class PickValueModule(WorkflowModule):
 
     def execute(
         self, trans, progress: "WorkflowProgress", invocation_step, use_cached_job: bool = False
-    ) -> Optional[bool]:
+    ) -> bool | None:
         step = invocation_step.workflow_step
         mode = step.tool_inputs.get("mode", "first_non_null") if step.tool_inputs else "first_non_null"
         all_inputs = self.get_all_inputs()
@@ -2343,9 +2340,9 @@ def _capture_workflow_tool_request_state(
     resolve_execution_state: Callable[[Any], Any],
     param_combinations: list[dict[str, Any]],
 ) -> tuple[
-    Optional[RequestInternalDereferencedToolState],
-    Optional[list[JobInternalToolState]],
-    Optional[ToolRequest],
+    RequestInternalDereferencedToolState | None,
+    list[JobInternalToolState] | None,
+    ToolRequest | None,
 ]:
     """Synthesize + validate request_internal for a workflow tool step and
     persist it as a :class:`ToolRequest` row.
@@ -2368,9 +2365,9 @@ def _capture_workflow_tool_request_state(
     parameters = getattr(tool, "parameters", None)
     if parameters is None:
         return None, None, None
-    request_internal: Optional[RequestInternalToolState] = None
-    validated_template: Optional[RequestInternalDereferencedToolState] = None
-    validated_combinations: Optional[list[JobInternalToolState]] = None
+    request_internal: RequestInternalToolState | None = None
+    validated_template: RequestInternalDereferencedToolState | None = None
+    validated_combinations: list[JobInternalToolState] | None = None
     request_state = WorkflowToolRequestState.NOT_VALIDATED
     try:
         parameter_bundle = ToolParameterBundleModel(parameters=parameters)
@@ -2491,7 +2488,7 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool: Optional[Tool] = None
+        self.tool: Tool | None = None
         if getattr(trans.app, "toolbox", None):
             if trans.user and tool_uuid:
                 self.tool = trans.app.toolbox.get_unprivileged_tool_or_none(trans.user, tool_uuid=tool_uuid)
@@ -2748,7 +2745,7 @@ class ToolModule(WorkflowModule):
                                 collection_type = rule_set.collection_type
                     extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
-                    formats: list[Optional[str]] = ["input"]  # TODO: fix
+                    formats: list[str | None] = ["input"]  # TODO: fix
                 elif (
                     isinstance(tool_output, (ToolOutput, ToolExpressionOutput, ToolOutputCollection))
                     and tool_output.format_source is not None
@@ -2903,7 +2900,7 @@ class ToolModule(WorkflowModule):
         state.inputs = self.state.inputs
         return state
 
-    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
+    def get_runtime_inputs(self, step, connections: Iterable[WorkflowStepConnection] | None = None):
         return self.get_inputs()
 
     def compute_runtime_state(self, trans, step=None, step_updates=None, replace_default_values=False):
@@ -2945,7 +2942,7 @@ class ToolModule(WorkflowModule):
         progress: "WorkflowProgress",
         invocation_step: "WorkflowInvocationStep",
         use_cached_job: bool = False,
-    ) -> Optional[bool]:
+    ) -> bool | None:
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(
@@ -3006,7 +3003,7 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement, PromoteCollectionElementToCollectionAdapter] = (
+                replacement: model.Dataset | NoReplacement | PromoteCollectionElementToCollectionAdapter = (
                     NO_REPLACEMENT
                 )
                 if iteration_elements and prefixed_name in iteration_elements:
@@ -3031,7 +3028,7 @@ class ToolModule(WorkflowModule):
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset_instance: Optional[model.DatasetInstance] = None
+                        dataset_instance: model.DatasetInstance | None = None
                         if isinstance(replacement, model.DatasetCollectionElement):
                             dataset_instance = replacement.hda
                         elif isinstance(replacement, model.DatasetInstance):
@@ -3124,7 +3121,7 @@ class ToolModule(WorkflowModule):
         )
 
         complete = False
-        completed_jobs: dict[int, Optional[Job]] = tool.completed_jobs(
+        completed_jobs: dict[int, Job | None] = tool.completed_jobs(
             trans,
             use_cached_job,
             param_combinations,
@@ -3173,7 +3170,7 @@ class ToolModule(WorkflowModule):
             raise DelayedWorkflowEvaluation(why=delayed_why)
 
         progress.record_executed_job_count(len(execution_tracker.successful_jobs))
-        step_outputs: dict[str, Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation]] = {}
+        step_outputs: dict[str, model.HistoryDatasetCollectionAssociation | model.HistoryDatasetAssociation] = {}
         if collection_info:
             step_outputs.update(execution_tracker.implicit_collections)
         else:
@@ -3256,7 +3253,7 @@ class ToolModule(WorkflowModule):
                     self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict
                 )
 
-    def _resolve_credentials_context(self, tool: "Tool") -> Optional[CredentialsContext]:
+    def _resolve_credentials_context(self, tool: "Tool") -> CredentialsContext | None:
         """Auto-resolve the user's current credentials for a tool in workflow execution."""
         if not tool.credentials:
             return None

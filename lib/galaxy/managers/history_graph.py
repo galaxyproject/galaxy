@@ -9,8 +9,6 @@ import json
 import logging
 from typing import (
     Literal,
-    Optional,
-    Union,
 )
 
 from sqlalchemy import (
@@ -71,7 +69,7 @@ MAX_LIMIT = 1000
 SYNTHETIC_TOOL_IDS: tuple[str, ...] = ("__DATA_FETCH__",)
 
 
-def _summary_dict(summary) -> Optional[dict[str, int]]:
+def _summary_dict(summary) -> dict[str, int] | None:
     """Lift JobStateSummary (a NamedTuple) to a dict, or None."""
     if summary is None or summary.all_jobs == 0:
         return None
@@ -88,10 +86,10 @@ class HistoryGraphManager:
         history_id: int,
         limit: int = 500,
         include_deleted: bool = False,
-        seed: Optional[NodeRef] = None,
+        seed: NodeRef | None = None,
         direction: Literal["backward", "forward", "both"] = "both",
         depth: int = 5,
-        seed_scope_hid: Optional[int] = None,
+        seed_scope_hid: int | None = None,
     ) -> HistoryGraphResponse:
         return HistoryGraphBuilder(
             sa_session=sa_session,
@@ -133,12 +131,12 @@ class HistoryGraphBuilder:
         security: IdEncodingHelper,
         history_id: int,
         limit: int = 500,
-        toolbox: Optional[AbstractToolBox] = None,
+        toolbox: AbstractToolBox | None = None,
         include_deleted: bool = False,
-        seed: Optional[NodeRef] = None,
+        seed: NodeRef | None = None,
         direction: Literal["backward", "forward", "both"] = "both",
         depth: int = 5,
-        seed_scope_hid: Optional[int] = None,
+        seed_scope_hid: int | None = None,
     ):
         self.sa_session = sa_session
         self.security = security
@@ -150,8 +148,8 @@ class HistoryGraphBuilder:
         self.direction = direction
         self.depth = depth
         self.seed_scope_hid = seed_scope_hid
-        self._older_than_hid: Optional[int] = None
-        self._newer_than_hid: Optional[int] = None
+        self._older_than_hid: int | None = None
+        self._newer_than_hid: int | None = None
         self._sort_keys: dict[NodeRef, tuple[int, int]] = {}
 
     def build(self) -> HistoryGraphResponse:
@@ -171,7 +169,7 @@ class HistoryGraphBuilder:
 
         # 3. Producer lookup + payload input resolution.
         edges: list[GraphEdge] = []
-        tr_nodes: dict[int, Optional[str]] = {}  # tr_id -> tool_id
+        tr_nodes: dict[int, str | None] = {}  # tr_id -> tool_id
         closure_dataset_ids: set[int] = set()
         closure_collection_ids: set[int] = set()
 
@@ -318,7 +316,7 @@ class HistoryGraphBuilder:
 
     def _filter_deleted_ids(
         self,
-        model_cls: Union[type[HistoryDatasetAssociation], type[HistoryDatasetCollectionAssociation]],
+        model_cls: type[HistoryDatasetAssociation] | type[HistoryDatasetCollectionAssociation],
         ids: set[int],
     ) -> set[int]:
         """Return the subset of ``ids`` whose rows are not marked deleted.
@@ -602,7 +600,7 @@ class HistoryGraphBuilder:
             for row in self.sa_session.execute(stmt)
         ]
 
-    def _tr_nodes(self, tr_map: dict[int, Optional[str]]) -> list[GraphNode]:
+    def _tr_nodes(self, tr_map: dict[int, str | None]) -> list[GraphNode]:
         return [self._node("tool_request", tr_id, tool_id=tool_id) for tr_id, tool_id in tr_map.items()]
 
     def _resolve_tool_names(self, nodes: list[GraphNode]) -> None:

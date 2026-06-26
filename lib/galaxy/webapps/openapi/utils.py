@@ -6,8 +6,6 @@ from collections.abc import Sequence
 from inspect import signature
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from fastapi import routing
@@ -33,18 +31,18 @@ def get_openapi(
     title: str,
     version: str,
     openapi_version: str = "3.1.0",
-    summary: Optional[str] = None,
-    description: Optional[str] = None,
+    summary: str | None = None,
+    description: str | None = None,
     routes: Sequence[BaseRoute],
-    webhooks: Optional[Sequence[BaseRoute]] = None,
-    tags: Optional[list[dict[str, Any]]] = None,
-    servers: Optional[list[dict[str, Union[str, Any]]]] = None,
-    terms_of_service: Optional[str] = None,
-    contact: Optional[dict[str, Union[str, Any]]] = None,
-    license_info: Optional[dict[str, Union[str, Any]]] = None,
+    webhooks: Sequence[BaseRoute] | None = None,
+    tags: list[dict[str, Any]] | None = None,
+    servers: list[dict[str, str | Any]] | None = None,
+    terms_of_service: str | None = None,
+    contact: dict[str, str | Any] | None = None,
+    license_info: dict[str, str | Any] | None = None,
     separate_input_output_schemas: bool = True,
-    external_docs: Optional[dict[str, Any]] = None,
-    schema_generator: Optional[GenerateJsonSchema] = None,
+    external_docs: dict[str, Any] | None = None,
+    schema_generator: GenerateJsonSchema | None = None,
 ) -> dict[str, Any]:
     info: dict[str, Any] = {"title": title, "version": version}
     if summary:

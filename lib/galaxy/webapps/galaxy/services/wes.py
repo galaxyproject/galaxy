@@ -5,7 +5,6 @@ import logging
 from dataclasses import dataclass
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import (
     parse_qs,
@@ -154,8 +153,8 @@ def _parse_gxworkflow_uri(workflow_url: str) -> tuple[str, bool]:
 
 def _load_workflow_content(
     trans: ProvidesUserContext,
-    workflow_attachment: Optional[UploadFile],
-    workflow_url: Optional[str],
+    workflow_attachment: UploadFile | None,
+    workflow_url: str | None,
 ) -> dict[str, Any]:
     """Load workflow content from attachment or URL.
 
@@ -440,15 +439,15 @@ class WesService(ServiceBase):
     def submit_run(
         self,
         trans: ProvidesUserContext,
-        workflow_params: Optional[str] = None,
-        workflow_type: Optional[str] = None,
-        workflow_type_version: Optional[str] = None,
-        workflow_url: Optional[str] = None,
-        workflow_engine_parameters: Optional[str] = None,
-        workflow_engine: Optional[str] = None,
-        workflow_engine_version: Optional[str] = None,
-        tags: Optional[str] = None,
-        workflow_attachment: Optional[UploadFile] = None,
+        workflow_params: str | None = None,
+        workflow_type: str | None = None,
+        workflow_type_version: str | None = None,
+        workflow_url: str | None = None,
+        workflow_engine_parameters: str | None = None,
+        workflow_engine: str | None = None,
+        workflow_engine_version: str | None = None,
+        tags: str | None = None,
+        workflow_attachment: UploadFile | None = None,
     ) -> RunId:
         """Submit a new workflow run.
 
@@ -576,7 +575,7 @@ class WesService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         page_size: int = 10,
-        page_token: Optional[str] = None,
+        page_token: str | None = None,
     ) -> RunListResponse:
         """List workflow runs for the user with keyset pagination.
 
@@ -746,7 +745,7 @@ class WesService(ServiceBase):
         self,
         trans: ProvidesUserContext,
         invocation_id: int,
-        last_token: Optional[TaskKeysetToken],
+        last_token: TaskKeysetToken | None,
         limit: int,
     ) -> list[dict]:
         """Fetch paginated task rows using composite keyset pagination.
@@ -874,7 +873,7 @@ class WesService(ServiceBase):
         trans: ProvidesUserContext,
         run_id: int,
         page_size: int = 10,
-        page_token: Optional[str] = None,
+        page_token: str | None = None,
     ) -> TaskListResponse:
         """Get paginated list of tasks for a workflow run.
 
@@ -1109,7 +1108,7 @@ class WesService(ServiceBase):
         self,
         trans: SessionRequestContext,
         invocation: WorkflowInvocation,
-        original_request: Optional[RunRequest] = None,
+        original_request: RunRequest | None = None,
     ) -> RunLog:
         """Convert a Galaxy WorkflowInvocation to a WES RunLog.
 

@@ -14,11 +14,6 @@ knows to tolerate those *_invalid entries passing validation.
 import sys
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Set,
-    Tuple,
 )
 
 import jsonschema
@@ -58,7 +53,7 @@ REPRESENTATION_KEYS = [
     "workflow_step_linked",
 ]
 
-STATE_REPRESENTATION_FOR_KEY: Dict[str, StateRepresentationT] = {k: k for k in REPRESENTATION_KEYS}  # type: ignore[misc]
+STATE_REPRESENTATION_FOR_KEY: dict[str, StateRepresentationT] = {k: k for k in REPRESENTATION_KEYS}  # type: ignore[misc]
 
 
 def specification_object():
@@ -69,7 +64,7 @@ def specification_object():
     return yaml.safe_load(yaml_str)
 
 
-def _json_schema_for(bundle: ToolParameterBundleModel, state_representation: StateRepresentationT) -> Dict[str, Any]:
+def _json_schema_for(bundle: ToolParameterBundleModel, state_representation: StateRepresentationT) -> dict[str, Any]:
     model = create_field_model(bundle.parameters, name="TestModel", state_representation=state_representation)
     return to_json_schema(model)
 
@@ -87,7 +82,7 @@ def _check_color_format(value: object) -> bool:
     return True
 
 
-def _json_schema_validates(schema: Dict[str, Any], state_dict: RawStateDict) -> bool:
+def _json_schema_validates(schema: dict[str, Any], state_dict: RawStateDict) -> bool:
     validator = jsonschema.Draft202012Validator(schema, format_checker=_FORMAT_CHECKER)
     errors = list(validator.iter_errors(state_dict))
     return len(errors) == 0
@@ -96,7 +91,7 @@ def _json_schema_validates(schema: Dict[str, Any], state_dict: RawStateDict) -> 
 def _test_file_json_schema(
     file: str,
     specification=None,
-    parameter_bundle: Optional[ToolParameterBundleModel] = None,
+    parameter_bundle: ToolParameterBundleModel | None = None,
 ):
     spec = specification or specification_object()
     combos = spec[file]
@@ -104,12 +99,12 @@ def _test_file_json_schema(
         parameter_bundle = parameter_bundle_for_file(file)
     assert parameter_bundle
 
-    json_schema_skip: Dict[str, str] = combos.get("_json_schema_skip", {}) or {}
-    json_schema_valid_skip: Dict[str, str] = combos.get("_json_schema_valid_skip", {}) or {}
-    skipped_invalid_keys: Set[str] = set(json_schema_skip.keys())
-    skipped_valid_keys: Set[str] = set(json_schema_valid_skip.keys())
+    json_schema_skip: dict[str, str] = combos.get("_json_schema_skip", {}) or {}
+    json_schema_valid_skip: dict[str, str] = combos.get("_json_schema_valid_skip", {}) or {}
+    skipped_invalid_keys: set[str] = set(json_schema_skip.keys())
+    skipped_valid_keys: set[str] = set(json_schema_valid_skip.keys())
 
-    failures: List[str] = []
+    failures: list[str] = []
 
     for combo_key, test_cases in combos.items():
         if combo_key in ("_json_schema_skip", "_json_schema_valid_skip"):
@@ -156,7 +151,7 @@ def test_specification_json_schema():
 
 def _conditional_type_def(
     file: str, state_representation: StateRepresentationT = "request"
-) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     bundle = parameter_bundle_for_file(file)
     schema = _json_schema_for(bundle, state_representation)
     defs = schema.get("$defs", {})

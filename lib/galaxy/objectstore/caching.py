@@ -5,11 +5,6 @@ import os
 import threading
 import time
 from math import inf
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
 
 from typing_extensions import NamedTuple
 
@@ -25,7 +20,7 @@ log = logging.getLogger(__name__)
 ONE_GIGA_BYTE = 1024 * 1024 * 1024
 
 
-FileListT = List[Tuple[time.struct_time, str, int]]
+FileListT = list[tuple[time.struct_time, str, int]]
 
 
 class CacheTarget(NamedTuple):
@@ -48,7 +43,7 @@ class CacheTarget(NamedTuple):
         return f"{self.limit} percent of {self.size} gigabytes"
 
 
-def check_caches(targets: List[CacheTarget]):
+def check_caches(targets: list[CacheTarget]):
     for target in targets:
         check_cache(target)
 
@@ -61,8 +56,7 @@ def check_cache(cache_target: CacheTarget):
     # Initiate cleaning once we reach cache_monitor_cache_limit percentage of the defined cache size?
     # Convert GBs to bytes for comparison
     cache_size_in_gb = cache_target.size * ONE_GIGA_BYTE
-    cache_limit = cache_size_in_gb * cache_target.limit
-    if total_size > cache_limit:
+    if total_size > (cache_limit := cache_size_in_gb * cache_target.limit):
         log.debug(
             "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
             nice_size(total_size),
@@ -105,7 +99,7 @@ def _clean_cache(file_list: FileListT, delete_this_much: float) -> None:
             return
 
 
-def _get_cache_size_files(cache_path) -> Tuple[int, FileListT]:
+def _get_cache_size_files(cache_path) -> tuple[int, FileListT]:
     """Returns cache size and cache files.
 
     For each file, we get last access time, file path, and file size.
@@ -155,7 +149,7 @@ def configured_cache_size(config, config_dict) -> int:
     return cache_size
 
 
-def enable_cache_monitor(config, config_dict) -> Tuple[bool, int]:
+def enable_cache_monitor(config, config_dict) -> tuple[bool, int]:
     cache_config_dict = config_dict.get("cache") or {}
     default_interval = getattr(config, "object_store_cache_monitor_interval", 600)
     interval = cache_config_dict.get("monitor_interval") or default_interval
@@ -176,7 +170,7 @@ def enable_cache_monitor(config, config_dict) -> Tuple[bool, int]:
 
 
 class InProcessCacheMonitor:
-    def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: Optional[int] = 2):
+    def __init__(self, cache_target: CacheTarget, interval: int = 30, initial_sleep: int | None = 2):
         # This Event object is initialized to False
         # It is set to True in shutdown(), causing
         # the cache monitor thread to return/terminate

@@ -8,7 +8,6 @@ import logging
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from sqlalchemy import select
@@ -65,17 +64,17 @@ class AgentOperationsManager:
     def __init__(self, app: MinimalManagerApp, trans: ProvidesUserContext):
         self.app = app
         self.trans = trans
-        self._tools_service: Optional[Any] = None
-        self._histories_service: Optional[Any] = None
-        self._jobs_service: Optional[Any] = None
-        self._datasets_service: Optional[Any] = None
-        self._workflows_service: Optional[Any] = None
-        self._invocations_service: Optional[Any] = None
-        self._hda_manager: Optional[HDAManager] = None
-        self._dataset_collections_service: Optional[Any] = None
-        self._dynamic_tools_manager: Optional[Any] = None
-        self._file_source_instances_manager: Optional[Any] = None
-        self._pages_service: Optional[Any] = None
+        self._tools_service: Any | None = None
+        self._histories_service: Any | None = None
+        self._jobs_service: Any | None = None
+        self._datasets_service: Any | None = None
+        self._workflows_service: Any | None = None
+        self._invocations_service: Any | None = None
+        self._hda_manager: HDAManager | None = None
+        self._dataset_collections_service: Any | None = None
+        self._dynamic_tools_manager: Any | None = None
+        self._file_source_instances_manager: Any | None = None
+        self._pages_service: Any | None = None
 
     def _encode_id(self, value: int) -> str:
         return self.trans.security.encode_id(value)
@@ -395,14 +394,14 @@ class AgentOperationsManager:
     def get_history_graph(
         self,
         history_id: str,
-        seed_src: Optional[str] = None,
-        seed_id: Optional[str] = None,
+        seed_src: str | None = None,
+        seed_id: str | None = None,
         direction: Literal["backward", "forward", "both"] = "both",
         depth: int = 5,
         limit: int = 200,
         include_deleted: bool = False,
-        seed_scope_src: Optional[str] = None,
-        seed_scope_id: Optional[str] = None,
+        seed_scope_src: str | None = None,
+        seed_scope_id: str | None = None,
     ) -> dict[str, Any]:
         decoded_history_id = self.trans.security.decode_id(history_id)
         response = self.histories_service.graph(
@@ -966,8 +965,7 @@ class AgentOperationsManager:
         )
 
         missing_tools: list[str] = []
-        latest = stored_workflow.latest_workflow
-        if latest is not None:
+        if (latest := stored_workflow.latest_workflow) is not None:
             toolbox = self.app.toolbox
             seen: set[str] = set()
             for tool in contents_manager.get_all_tools(latest):
@@ -1116,8 +1114,8 @@ class AgentOperationsManager:
 
     def list_pages(
         self,
-        history_id: Optional[str] = None,
-        search: Optional[str] = None,
+        history_id: str | None = None,
+        search: str | None = None,
         limit: int = 100,
         offset: int = 0,
         show_published: bool = False,
@@ -1160,11 +1158,11 @@ class AgentOperationsManager:
 
     def create_page(
         self,
-        history_id: Optional[str] = None,
-        title: Optional[str] = None,
-        content: Optional[str] = None,
-        annotation: Optional[str] = None,
-        slug: Optional[str] = None,
+        history_id: str | None = None,
+        title: str | None = None,
+        content: str | None = None,
+        annotation: str | None = None,
+        slug: str | None = None,
     ) -> dict[str, Any]:
         """Create a markdown page. Attach it to a history (notebook) by passing history_id.
 
@@ -1184,8 +1182,8 @@ class AgentOperationsManager:
     def update_page(
         self,
         page_id: str,
-        content: Optional[str] = None,
-        title: Optional[str] = None,
+        content: str | None = None,
+        title: str | None = None,
     ) -> dict[str, Any]:
         """Update a page. Supplying content creates a new revision tagged edit_source=agent."""
         decoded_page_id = self.trans.security.decode_id(page_id)

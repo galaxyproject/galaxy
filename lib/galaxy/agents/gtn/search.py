@@ -22,7 +22,6 @@ from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 GTN_DATABASE_URL = "https://depot.galaxyproject.org/chatgxy/gtn_search.db"
@@ -41,7 +40,7 @@ _ONE_SECOND = timedelta(seconds=1)
 log = logging.getLogger(__name__)
 
 
-def _parse_last_modified(header: Optional[str]) -> Optional[datetime]:
+def _parse_last_modified(header: str | None) -> datetime | None:
     """Parse an HTTP Last-Modified header into an aware UTC datetime, or None."""
     if not header:
         return None
@@ -59,7 +58,7 @@ def _escape_like(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
-def _or_form(fts_query: str) -> Optional[str]:
+def _or_form(fts_query: str) -> str | None:
     """OR-joined fallback for a multi-token FTS5 query, or None.
 
     Returns None for quoted phrases (preserve as-is) and single-token
@@ -178,7 +177,7 @@ class FAQResult:
 class GTNSearchDB:
     """Interface to the GTN search database."""
 
-    def __init__(self, db_path: Optional[str] = None, download_url: Optional[str] = None):
+    def __init__(self, db_path: str | None = None, download_url: str | None = None):
         if db_path is None:
             current_dir = Path(__file__).parent
             self.db_path = current_dir / "data" / "gtn_search.db"
@@ -201,7 +200,7 @@ class GTNSearchDB:
             raise RuntimeError(f"Failed to initialize GTN database: {e}") from e
 
     @staticmethod
-    def _read_meta(cursor: sqlite3.Cursor, key: str) -> Optional[str]:
+    def _read_meta(cursor: sqlite3.Cursor, key: str) -> str | None:
         try:
             cursor.execute("SELECT value FROM metadata WHERE key = ?", (key,))
         except sqlite3.Error:
@@ -222,14 +221,12 @@ class GTNSearchDB:
         self._download_database()
 
     @classmethod
-    def refresh_database(cls, db_path: str | Path, download_url: Optional[str] = None) -> dict[str, Any]:
+    def refresh_database(cls, db_path: str | Path, download_url: str | None = None) -> dict[str, Any]:
         """Download, validate, and atomically replace a GTN database without opening the old copy."""
         return cls._download_database_to_path(Path(db_path), download_url or GTN_DATABASE_URL)
 
     @classmethod
-    def refresh_database_if_stale(
-        cls, db_path: str | Path, download_url: Optional[str] = None
-    ) -> Optional[dict[str, Any]]:
+    def refresh_database_if_stale(cls, db_path: str | Path, download_url: str | None = None) -> dict[str, Any] | None:
         """HEAD the URL and re-download only if its Last-Modified is newer than the local file's mtime.
 
         Returns the new metadata dict when a refresh happened, ``None`` when the
@@ -252,7 +249,7 @@ class GTNSearchDB:
         return cls._download_database_to_path(target, url)
 
     @staticmethod
-    def _remote_last_modified(url: str) -> Optional[datetime]:
+    def _remote_last_modified(url: str) -> datetime | None:
         """HEAD ``url`` and return its parsed Last-Modified, or None on failure."""
         try:
             req = urllib.request.Request(url, method="HEAD")
@@ -325,8 +322,8 @@ class GTNSearchDB:
         self,
         query: str,
         limit: int = 5,
-        topic: Optional[str] = None,
-        difficulty: Optional[str] = None,
+        topic: str | None = None,
+        difficulty: str | None = None,
         hands_on_only: bool = False,
     ) -> list[SearchResult]:
         """Search tutorials using FTS5 full-text search with optional filters."""
@@ -414,8 +411,8 @@ class GTNSearchDB:
         self,
         query: str,
         limit: int = 5,
-        category: Optional[str] = None,
-        area: Optional[str] = None,
+        category: str | None = None,
+        area: str | None = None,
     ) -> list[FAQResult]:
         """Search FAQs using FTS5 full-text search with optional filters."""
         if not query:
@@ -486,7 +483,7 @@ class GTNSearchDB:
             log.warning(f"FAQ search failed for query '{query}': {e}")
             return []
 
-    def get_tutorial_content(self, topic: str, tutorial: str, max_length: Optional[int] = None) -> Optional[str]:
+    def get_tutorial_content(self, topic: str, tutorial: str, max_length: int | None = None) -> str | None:
         """Retrieve tutorial content, optionally truncated to max_length."""
         try:
             with self._get_connection() as conn:

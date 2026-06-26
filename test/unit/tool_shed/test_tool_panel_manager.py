@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from galaxy.app_unittest_utils.toolbox_support import (
     BaseToolBoxTestCase,
@@ -77,7 +76,7 @@ class TestToolPanelManager(BaseToolBoxTestCase):
 
     def test_add_twice(self):
         self._init_dynamic_tool_conf()
-        previous_guid: Optional[str] = None
+        previous_guid: str | None = None
         for v in "1", "2", "3":
             self.__toolbox = self.get_new_toolbox()
             changeset = f"0123456789abcde{v}"

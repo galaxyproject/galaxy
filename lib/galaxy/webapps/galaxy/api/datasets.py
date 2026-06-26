@@ -11,7 +11,6 @@ from io import (
 from typing import (
     Annotated,
     cast,
-    Optional,
 )
 
 from fastapi import (
@@ -149,7 +148,7 @@ class FastAPIDatasets:
         self,
         response: Response,
         trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Query(
+        history_id: DecodedDatabaseIdField | None = Query(
             default=None,
             description="Optional identifier of a History. Use it to restrict the search within a particular History.",
         ),
@@ -192,7 +191,7 @@ class FastAPIDatasets:
     def get_content_as_text(
         self,
         dataset_id: HistoryDatasetIDPathParam,
-        filename: Optional[str] = FilenameQueryParam,
+        filename: str | None = FilenameQueryParam,
         trans=DependsOnTrans,
     ) -> DatasetTextContentDetails:
         return self.service.get_content_as_text(trans, dataset_id, filename=filename)
@@ -312,14 +311,14 @@ class FastAPIDatasets:
         self,
         request: Request,
         history_content_id: HistoryDatasetIDPathParam,
-        history_id: Optional[HistoryIDPathParam] = None,
+        history_id: HistoryIDPathParam | None = None,
         trans=DependsOnTrans,
         preview: bool = PreviewQueryParam,
-        filename: Optional[str] = FilenameQueryParam,
-        to_ext: Optional[str] = ToExtQueryParam,
+        filename: str | None = FilenameQueryParam,
+        to_ext: str | None = ToExtQueryParam,
         raw: bool = RawQueryParam,
-        offset: Optional[int] = DisplayOffsetQueryParam,
-        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
+        offset: int | None = DisplayOffsetQueryParam,
+        ck_size: int | None = DisplayChunkSizeQueryParam,
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
         return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
@@ -339,11 +338,11 @@ class FastAPIDatasets:
         history_content_id: HistoryDatasetIDPathParam,
         trans=DependsOnTrans,
         preview: bool = PreviewQueryParam,
-        filename: Optional[str] = FilenameQueryParam,
-        to_ext: Optional[str] = ToExtQueryParam,
+        filename: str | None = FilenameQueryParam,
+        to_ext: str | None = ToExtQueryParam,
         raw: bool = RawQueryParam,
-        offset: Optional[int] = DisplayOffsetQueryParam,
-        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
+        offset: int | None = DisplayOffsetQueryParam,
+        ck_size: int | None = DisplayChunkSizeQueryParam,
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
         return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
@@ -354,11 +353,11 @@ class FastAPIDatasets:
         trans,
         history_content_id: DecodedDatabaseIdField,
         preview: bool,
-        filename: Optional[str],
-        to_ext: Optional[str],
+        filename: str | None,
+        to_ext: str | None,
         raw: bool,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
     ):
         extra_params = get_query_parameters_from_request_excluding(
             request, {"preview", "filename", "to_ext", "raw", "dataset", "ck_size", "offset"}
@@ -449,7 +448,7 @@ class FastAPIDatasets:
             default=DatasetSourceType.hda,
             description=("The type of information about the dataset to be requested."),
         ),
-        data_type: Optional[RequestDataType] = Query(
+        data_type: RequestDataType | None = Query(
             default=None,
             description=(
                 "The type of information about the dataset to be requested. "
@@ -458,7 +457,7 @@ class FastAPIDatasets:
             ),
         ),
         limit: Annotated[
-            Optional[int],
+            int | None,
             Query(
                 ge=1,
                 le=MAX_LIMIT,
@@ -466,7 +465,7 @@ class FastAPIDatasets:
             ),
         ] = MAX_LIMIT,
         offset: Annotated[
-            Optional[int],
+            int | None,
             Query(
                 ge=0,
                 description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item. Currently only applies to `data_type=raw_data` requests",

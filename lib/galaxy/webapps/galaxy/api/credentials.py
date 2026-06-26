@@ -3,10 +3,6 @@ API operations on credentials (credentials and variables).
 """
 
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 
 from fastapi import (
     Query,
@@ -50,15 +46,15 @@ class FastAPICredentials:
         self,
         user_id: FlexibleUserIdType,
         trans: ProvidesUserContext = DependsOnTrans,
-        source_type: Optional[SOURCE_TYPE] = Query(
+        source_type: SOURCE_TYPE | None = Query(
             None,
             description="The type of source to filter by.",
         ),
-        source_id: Optional[str] = Query(
+        source_id: str | None = Query(
             None,
             description="The ID of the source to filter by.",
         ),
-        source_version: Optional[str] = Query(
+        source_version: str | None = Query(
             None,
             description="The version of the source to filter by. By default it is the latest version.",
         ),
@@ -66,7 +62,7 @@ class FastAPICredentials:
             False,
             description="Whether to include extended credential definition information.",
         ),
-    ) -> Union[UserServiceCredentialsListResponse, ExtendedUserCredentialsListResponse]:
+    ) -> UserServiceCredentialsListResponse | ExtendedUserCredentialsListResponse:
         return self.service.list_user_credentials(
             trans, user_id, source_type, source_id, source_version, include_definition
         )

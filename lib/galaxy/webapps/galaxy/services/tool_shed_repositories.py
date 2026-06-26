@@ -1,7 +1,3 @@
-from typing import (
-    Optional,
-)
-
 from pydantic import BaseModel
 from sqlalchemy import (
     cast,
@@ -25,11 +21,11 @@ from galaxy.web import url_for
 
 
 class InstalledToolShedRepositoryIndexRequest(BaseModel):
-    name: Optional[str] = None
-    owner: Optional[str] = None
-    changeset: Optional[str] = None
-    deleted: Optional[bool] = None
-    uninstalled: Optional[bool] = None
+    name: str | None = None
+    owner: str | None = None
+    changeset: str | None = None
+    deleted: bool | None = None
+    uninstalled: bool | None = None
 
 
 class ToolShedRepositoriesService:
@@ -59,7 +55,7 @@ class ToolShedRepositoriesService:
         assert tool_shed_repository
         return self._show(tool_shed_repository)
 
-    def check_for_updates(self, repository_id: Optional[int]) -> CheckForUpdatesResponse:
+    def check_for_updates(self, repository_id: int | None) -> CheckForUpdatesResponse:
         message, status = check_for_updates(self._tool_shed_registry, self._install_model_context, repository_id)
         return CheckForUpdatesResponse(message=message, status=status)
 

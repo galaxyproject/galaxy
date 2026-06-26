@@ -117,8 +117,7 @@ class PithosObjectStore(CachingConcreteObjectStore):
     def _authenticate(self):
         auth = self.config_dict["auth"]
         url, token = auth["url"], auth["token"]
-        ca_certs = auth.get("ca_certs")
-        if ca_certs:
+        if ca_certs := auth.get("ca_certs"):
             utils.https.patch_with_certs(ca_certs)
         elif auth.get("ignore_ssl").lower() in ("true", "yes", "on"):
             utils.https.patch_ignore_ssl()

@@ -19,9 +19,6 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import (
-    Optional,
-)
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -178,8 +175,8 @@ def get_object_store(tool_job_working_directory, object_store=None):
 
 def set_metadata_portable(
     tool_job_working_directory=None,
-    object_store: Optional[ObjectStore] = None,
-    extended_metadata_collection: Optional[bool] = None,
+    object_store: ObjectStore | None = None,
+    extended_metadata_collection: bool | None = None,
 ):
     is_celery_task = tool_job_working_directory is not None
     tool_job_working_directory = Path(tool_job_working_directory or os.path.abspath(os.getcwd()))
@@ -308,7 +305,7 @@ def set_metadata_portable(
     assert isinstance(import_model_store.sa_session, SessionlessContext)
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
-    job: Optional[Job] = None
+    job: Job | None = None
     if export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
 

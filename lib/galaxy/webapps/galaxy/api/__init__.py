@@ -14,7 +14,6 @@ from typing import (
     cast,
     Literal,
     NamedTuple,
-    Optional,
     TypeVar,
 )
 from urllib.parse import (
@@ -151,7 +150,7 @@ def get_session(
     session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
     security: IdEncodingHelper = depends(IdEncodingHelper),
     galaxysession: str = Security(api_key_cookie),
-) -> Optional[model.GalaxySession]:
+) -> model.GalaxySession | None:
     if galaxysession:
         session_key = security.decode_guid(galaxysession)
         if session_key:
@@ -165,7 +164,7 @@ def get_api_user(
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
     bearer_token: HTTPAuthorizationCredentials = Security(api_bearer_token),
-    run_as: Optional[DecodedDatabaseIdField] = Header(
+    run_as: DecodedDatabaseIdField | None = Header(
         default=None,
         title="Run as User",
         description=(
@@ -173,7 +172,7 @@ def get_api_user(
             "Only admins and designated users can make API calls on behalf of other users."
         ),
     ),
-) -> Optional[User]:
+) -> User | None:
     if api_key := key or x_api_key:
         user = user_manager.by_api_key(api_key=api_key)
     elif bearer_token:
@@ -189,17 +188,17 @@ def get_api_user(
 
 
 def get_user(
-    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
-    api_user=cast(Optional[User], Depends(get_api_user)),
-) -> Optional[User]:
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
+    api_user=cast(User | None, Depends(get_api_user)),
+) -> User | None:
     if galaxy_session:
         return galaxy_session.user
     return api_user
 
 
 def get_required_user(
-    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
-    api_user=cast(Optional[User], Depends(get_api_user)),
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
+    api_user=cast(User | None, Depends(get_api_user)),
 ) -> User:
     if galaxy_session and (user := galaxy_session.user):
         return user
@@ -267,7 +266,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     def __init__(self, request: Request):
         self.__request = request
-        self.__environ: Optional[Environ] = None
+        self.__environ: Environ | None = None
 
     @property
     def base(self) -> str:
@@ -310,7 +309,7 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
         return self.host
 
     @property
-    def remote_addr(self) -> Optional[str]:
+    def remote_addr(self) -> str | None:
         # was available in wsgi and is used create_new_session
         # not sure what to do here...
         return None
@@ -340,13 +339,13 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         self,
         key: str,
         value: str = "",
-        max_age: Optional[int] = None,
-        expires: Optional[int] = None,
+        max_age: int | None = None,
+        expires: int | None = None,
         path: str = "/",
-        domain: Optional[str] = None,
+        domain: str | None = None,
         secure: bool = False,
         httponly: bool = False,
-        samesite: Optional[Literal["lax", "strict", "none"]] = "lax",
+        samesite: Literal["lax", "strict", "none"] | None = "lax",
     ) -> None:
         """Set a cookie."""
         self.__response.set_cookie(
@@ -365,7 +364,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
 DependsOnUser = cast(User, Depends(get_required_user))
 
 
-def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
+def get_current_history_from_session(galaxy_session: model.GalaxySession | None) -> model.History | None:
     if galaxy_session:
         return galaxy_session.current_history
     return None
@@ -384,8 +383,8 @@ def get_trans(
     request: Request,
     response: Response,
     app: StructuredApp = DependsOnApp,
-    user=cast(Optional[User], Depends(get_user)),
-    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    user=cast(User | None, Depends(get_user)),
+    galaxy_session=cast(model.GalaxySession | None, Depends(get_session)),
 ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
@@ -449,7 +448,7 @@ class FrameworkRouter(APIRouter):
 
     admin_user_dependency: Any
 
-    def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
+    def wrap_with_alias(self, verb: RestVerb, *args, alias: str | None = None, **kwd):
         """
         Wraps FastAPI methods with additional alias keyword, require_admin and CORS handling.
 
@@ -478,7 +477,6 @@ class FrameworkRouter(APIRouter):
                 )
 
                 if allow_cors:
-
                     dependencies = kwd.pop("dependencies", [])
                     dependencies.append(CORSPreflightRequired)
 
@@ -510,7 +508,7 @@ class FrameworkRouter(APIRouter):
         return dec
 
     @staticmethod
-    def construct_aliases(path: str, alias: Optional[str]):
+    def construct_aliases(path: str, alias: str | None):
         yield path
         if path != "/" and not path.endswith("/"):
             yield f"{path}/"
@@ -679,7 +677,7 @@ def json_schema_response_for_tool_state_model(
     return Response(content=json_str, media_type="application/json")
 
 
-async def try_get_request_body_as_json(request: Request) -> Optional[Any]:
+async def try_get_request_body_as_json(request: Request) -> Any | None:
     """Returns the request body as a JSON object if the content type is JSON."""
     if "application/json" in request.headers.get("content-type", ""):
         body = await request.json()
@@ -718,7 +716,7 @@ ${model_name}s: ${freetext}.
 class IndexQueryTag(NamedTuple):
     tag: str
     description: str
-    alias: Optional[str] = None
+    alias: str | None = None
     admin_only: bool = False
 
     def as_markdown(self):
@@ -730,7 +728,7 @@ class IndexQueryTag(NamedTuple):
         return f"`{self.tag}`\n: {desc}"
 
 
-def search_query_param(model_name: str, tags: list, free_text_fields: list) -> Optional[str]:
+def search_query_param(model_name: str, tags: list, free_text_fields: list) -> str | None:
     tags_markdown_str = "\n\n".join([t.as_markdown() for t in tags])
     description = search_description_template.safe_substitute(
         model_name=model_name, tags=tags_markdown_str, freetext=", ".join([f"`{t}`" for t in free_text_fields])

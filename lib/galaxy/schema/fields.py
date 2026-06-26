@@ -1,5 +1,6 @@
 import re
 from collections.abc import Callable
+from types import UnionType
 from typing import (
     Annotated,
     get_args,
@@ -145,7 +146,7 @@ def literal_to_value(arg):
 
 def is_optional(field):
     args = get_args(field)
-    return get_origin(field) is Union and len(args) == 2 and type(None) in args
+    return get_origin(field) in (Union, UnionType) and len(args) == 2 and type(None) in args
 
 
 def ModelClassField(default_value):

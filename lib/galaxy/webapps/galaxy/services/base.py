@@ -5,7 +5,6 @@ from typing import (
     Any,
     cast,
     NamedTuple,
-    Optional,
 )
 
 from galaxy.exceptions import (
@@ -73,7 +72,7 @@ class ServiceBase:
        the required parameters and outputs of each operation.
     """
 
-    def __init__(self, security: Optional[IdEncodingHelper] = None):
+    def __init__(self, security: IdEncodingHelper | None = None):
         self._security = security
 
     @property
@@ -84,11 +83,11 @@ class ServiceBase:
             )
         return self._security
 
-    def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
+    def decode_id(self, id: EncodedDatabaseIdField, kind: str | None = None) -> int:
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id, kind=kind)
 
-    def encode_id(self, id: int, kind: Optional[str] = None) -> EncodedDatabaseIdField:
+    def encode_id(self, id: int, kind: str | None = None) -> EncodedDatabaseIdField:
         """Encodes a raw database ID."""
         return encode_with_security(self.security, id, kind=kind)
 
@@ -106,7 +105,7 @@ class ServiceBase:
         """
         return self.security.encode_all_ids(rval, recursive=recursive)
 
-    def build_order_by(self, manager: SortableManager, order_by_query: Optional[str] = None):
+    def build_order_by(self, manager: SortableManager, order_by_query: str | None = None):
         """Returns an ORM compatible order_by clause using the order attribute and the given manager.
 
         The manager has to implement the `parse_order_by` function to support all the sortable model attributes."""

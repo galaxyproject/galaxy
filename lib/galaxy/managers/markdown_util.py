@@ -22,7 +22,6 @@ from datetime import datetime
 from re import Match
 from typing import (
     Any,
-    Optional,
 )
 
 import markdown
@@ -122,7 +121,7 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
         return (line, False)
 
     def _remap_embed_container(match):
-        object_id: Optional[str] = None
+        object_id: str | None = None
 
         whole_match = match.group()
         if id_match := re.search(ENCODED_ID_PATTERN, whole_match):
@@ -314,8 +313,8 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
         def _remap_embed_container(match):
             container = match.group("container")
-            object_id: Optional[int] = None
-            encoded_id: Optional[str] = None
+            object_id: int | None = None
+            encoded_id: str | None = None
 
             if id_match := re.search(UNENCODED_ID_PATTERN, match.group()):
                 object_id = int(id_match.group(2))
@@ -380,7 +379,7 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         export_markdown_raw_embed = _remap_galaxy_markdown_calls(_remap_container, internal_galaxy_markdown)
 
         def _remap_embed_container_ids(match):
-            object_id: Optional[str] = None
+            object_id: str | None = None
 
             whole_match = match.group()
             if id_match := re.search(UNENCODED_ID_PATTERN, whole_match):
@@ -446,11 +445,11 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     @abc.abstractmethod
@@ -563,10 +562,10 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_info(self, line, hda):
         pass
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         pass
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         pass
 
     def handle_workflow_license(self, line, stored_workflow):
@@ -761,7 +760,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             content = "*No Dataset Info Available*"
         return (content, True)
 
-    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: int | None):
         # simple markdown
         markdown = "---\n"
         markdown += f"**Workflow:** {stored_workflow.name}\n\n"
@@ -781,7 +780,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown = _workflow_license_as_simple_markdown(stored_workflow)
         return (f"\n\n{markdown}\n\n", True)
 
-    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: int | None):
         workflow_manager = self.trans.app.workflow_manager
         workflow = stored_workflow.get_internal_version(workflow_version)
         image_data = workflow_manager.get_workflow_svg(self.trans, workflow, for_embed=True)
@@ -946,7 +945,7 @@ def to_html(basic_markdown: str) -> str:
     return html
 
 
-def to_pdf_raw(basic_markdown: str, css_paths: Optional[list[str]] = None) -> bytes:
+def to_pdf_raw(basic_markdown: str, css_paths: list[str] | None = None) -> bytes:
     """Convert RAW markdown with specified CSS paths into bytes of a PDF."""
     css_paths = css_paths or []
     as_html = to_html(basic_markdown)
@@ -1186,8 +1185,8 @@ def resolve_invocation_markdown(trans, workflow_markdown):
                 if group:
                     return group
 
-        target_match: Optional[Match]
-        ref_object: Optional[Any]
+        target_match: Match | None
+        ref_object: Any | None
         if output_match:
             target_match = output_match
             name = find_non_empty_group(target_match)
@@ -1229,9 +1228,6 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         if invocation is None:
             return whole_match
 
-        output_match = re.search(OUTPUT_LABEL_PATTERN, whole_match)
-        input_match = re.search(INPUT_LABEL_PATTERN, whole_match)
-
         def find_non_empty_group(match):
             for group in match.groups():
                 if group:
@@ -1241,11 +1237,11 @@ def resolve_invocation_markdown(trans, workflow_markdown):
         target_match = None
         ref_object_type = None
 
-        if output_match:
+        if output_match := re.search(OUTPUT_LABEL_PATTERN, whole_match):
             target_match = output_match
             name = find_non_empty_group(target_match)
             ref_object = invocation.get_output_object(name)
-        elif input_match:
+        elif input_match := re.search(INPUT_LABEL_PATTERN, whole_match):
             target_match = input_match
             name = find_non_empty_group(target_match)
             ref_object = invocation.get_input_object(name)
@@ -1296,8 +1292,8 @@ def resolve_job_markdown(trans, job, job_markdown):
                 if group:
                     return group
 
-        target_match: Optional[Match]
-        ref_object: Optional[Any]
+        target_match: Match | None
+        ref_object: Any | None
         if output_match := re.search(OUTPUT_LABEL_PATTERN, line):
             target_match = output_match
             name = find_non_empty_group(target_match)
@@ -1340,7 +1336,7 @@ def _workflow_license_as_simple_markdown(stored_workflow):
     return markdown
 
 
-def _check_object(object_id: Optional[int], line: str) -> None:
+def _check_object(object_id: int | None, line: str) -> None:
     if object_id is None:
         raise MalformedContents(f"Missing object identifier [{line}].")
 
@@ -1349,7 +1345,7 @@ def _database_time_to_str(database_time: datetime) -> str:
     return database_time.strftime("%Y-%m-%d, %H:%M:%S")
 
 
-def _link_to_markdown(url: Optional[str], title: Optional[str] = None):
+def _link_to_markdown(url: str | None, title: str | None = None):
     if not url:
         content = "*Link not configured, please contact Galaxy admin*"
         return content
@@ -1406,7 +1402,7 @@ def _remap_galaxy_markdown_embedded_containers(func, markdown):
     return new_markdown
 
 
-def _parse_directive_argument_value(arg_name: str, line: str) -> Optional[str]:
+def _parse_directive_argument_value(arg_name: str, line: str) -> str | None:
     arg_pattern = re.compile(rf"{arg_name}=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
     match = re.search(arg_pattern, line)
     if not match:

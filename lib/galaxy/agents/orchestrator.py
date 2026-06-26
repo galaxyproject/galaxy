@@ -8,7 +8,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import BaseModel
@@ -102,7 +101,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
 
         return normalized
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)
@@ -192,7 +191,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return self._get_agent_config("agent_timeout", 120.0)
 
     async def _execute_sequential(
-        self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
+        self, agents: list[str], query: str, context: dict[str, Any] | None = None
     ) -> dict[str, AgentResponse]:
         """Execute agents sequentially with timeout protection."""
         responses: dict[str, AgentResponse] = {}
@@ -226,7 +225,7 @@ class WorkflowOrchestratorAgent(BaseGalaxyAgent):
         return responses
 
     async def _execute_parallel(
-        self, agents: list[str], query: str, context: Optional[dict[str, Any]] = None
+        self, agents: list[str], query: str, context: dict[str, Any] | None = None
     ) -> dict[str, AgentResponse]:
         """Execute agents in parallel with timeout protection."""
         log.info(f"Orchestrator: Running agents in PARALLEL mode: {agents}")

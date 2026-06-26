@@ -6,12 +6,10 @@ code where actual tool objects aren't created.
 """
 
 from typing import (
+    Annotated,
     Any,
-    Dict,
     Generic,
-    List,
-    Optional,
-    Union,
+    Literal,
 )
 
 from pydantic import (
@@ -20,15 +18,11 @@ from pydantic import (
     model_validator,
 )
 from typing_extensions import (
-    Annotated,
-    Literal,
     TypeVar,
 )
 
 from ._base import ToolSourceBaseModel
 
-AnyT = TypeVar("AnyT")
-NotRequired = Optional[AnyT]
 IncomingNotRequiredBoolT = TypeVar("IncomingNotRequiredBoolT")
 IncomingNotRequiredStringT = TypeVar("IncomingNotRequiredStringT")
 
@@ -39,7 +33,7 @@ class GenericToolOutputBaseModel(ToolSourceBaseModel, Generic[IncomingNotRequire
     name: Annotated[
         IncomingNotRequiredStringT, Field(description="Parameter name. Used when referencing parameter in workflows.")
     ]
-    label: Annotated[Optional[str], Field(description="Output label. Will be used as dataset name in history.")] = None
+    label: Annotated[str | None, Field(description="Output label. Will be used as dataset name in history.")] = None
     hidden: Annotated[
         IncomingNotRequiredBoolT, Field(description="If true, the output will not be shown in the history.")
     ]
@@ -60,10 +54,10 @@ class DatasetCollectionDescription(ToolSourceBaseModel):
     model_config = ConfigDict(extra="forbid")
 
     discover_via: DiscoverViaT
-    format: Optional[str] = None
+    format: str | None = None
     visible: bool = False
     assign_primary_output: bool = False
-    directory: Optional[str] = None
+    directory: str | None = None
     recurse: bool = False
     match_relative_path: bool = False
 
@@ -85,7 +79,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     pattern: str
 
 
-DatasetCollectionDescriptionT = Union[FilePatternDatasetCollectionDescription, ToolProvidedMetadataDatasetCollection]
+DatasetCollectionDescriptionT = FilePatternDatasetCollectionDescription | ToolProvidedMetadataDatasetCollection
 
 
 class GenericToolOutputDataset(
@@ -95,45 +89,40 @@ class GenericToolOutputDataset(
     type: Literal["data"]
     format: Annotated[IncomingNotRequiredStringT, Field(description="The short name for the output datatype.")]
     format_source: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="This sets the data type of the output dataset(s) to be the same format as that of the specified tool input."
         ),
     ] = None
     metadata_source: Annotated[
-        Optional[str],
+        str | None,
         Field(
             description="This copies the metadata information from the tool’s input dataset to serve as default for information that cannot be detected from the output. One prominent use case is interval data with a non-standard column order that cannot be deduced from a header line, but which is known to be identical in the input and output datasets."
         ),
     ] = None
-    discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
+    discover_datasets: list[DatasetCollectionDescriptionT] | None = None
     from_work_dir: Annotated[
-        Optional[str],
+        str | None,
         Field(
             title="from_work_dir",
             description="Relative path to a file produced by the tool in its working directory. Output’s contents are set to this file’s contents.",
         ),
     ] = None
-    precreate_directory: Optional[bool] = False
+    precreate_directory: bool | None = False
 
 
 class ToolOutputDataset(GenericToolOutputDataset[bool, str]): ...
 
 
-class IncomingToolOutputDataset(
-    GenericToolOutputDataset[
-        NotRequired[bool],
-        NotRequired[str],
-    ]
-):
-    name: Annotated[
-        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
-    ] = None
-    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
-    format: Annotated[Optional[str], Field(description="The short name for the output datatype.")] = None
+class IncomingToolOutputDataset(GenericToolOutputDataset[bool | None, str | None]):
+    name: Annotated[str | None, Field(description="Parameter name. Used when referencing parameter in workflows.")] = (
+        None
+    )
+    hidden: Annotated[bool | None, Field(description="If true, the output will not be shown in the history.")] = None
+    format: Annotated[str | None, Field(description="The short name for the output datatype.")] = None
 
 
-def lift_legacy_collection_structure(output_dict: Dict[str, Any]) -> Dict[str, Any]:
+def lift_legacy_collection_structure(output_dict: dict[str, Any]) -> dict[str, Any]:
     # Older DynamicTool.value rows nest collection fields under ``structure:``;
     # the current model expects them flat on the output. Inline them so the
     # parser and pydantic model both see the same flat form. Top-level keys
@@ -155,11 +144,11 @@ class GenericToolOutputCollection(
     Generic[IncomingNotRequiredBoolT, IncomingNotRequiredStringT],
 ):
     type: Literal["collection"]
-    collection_type: Optional[str] = None
-    collection_type_source: Optional[str] = None
-    collection_type_from_rules: Optional[str] = None
-    structured_like: Optional[str] = None
-    discover_datasets: Optional[List[DatasetCollectionDescriptionT]] = None
+    collection_type: str | None = None
+    collection_type_source: str | None = None
+    collection_type_from_rules: str | None = None
+    structured_like: str | None = None
+    discover_datasets: list[DatasetCollectionDescriptionT] | None = None
 
     @model_validator(mode="before")
     @classmethod
@@ -172,11 +161,11 @@ class GenericToolOutputCollection(
 class ToolOutputCollection(GenericToolOutputCollection[bool, str]): ...
 
 
-class IncomingToolOutputCollection(GenericToolOutputCollection[NotRequired[bool], NotRequired[str]]):
-    name: Annotated[
-        Optional[str], Field(description="Parameter name. Used when referencing parameter in workflows.")
-    ] = None
-    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
+class IncomingToolOutputCollection(GenericToolOutputCollection[bool | None, str | None]):
+    name: Annotated[str | None, Field(description="Parameter name. Used when referencing parameter in workflows.")] = (
+        None
+    )
+    hidden: Annotated[bool | None, Field(description="If true, the output will not be shown in the history.")] = None
 
 
 class GenericToolOutputSimple(
@@ -212,8 +201,8 @@ class ToolOutputBoolean(GenericToolOutputSimple[bool, str]):
 # be referenced. Previously these reused the strict types above, whose unbound type
 # vars also forced ``hidden`` to be required -- a bug that made the published schema
 # demand a ``hidden`` flag on every simple output.
-class IncomingToolOutputSimple(GenericToolOutputSimple[NotRequired[bool], str]):
-    hidden: Annotated[Optional[bool], Field(description="If true, the output will not be shown in the history.")] = None
+class IncomingToolOutputSimple(GenericToolOutputSimple[bool | None, str]):
+    hidden: Annotated[bool | None, Field(description="If true, the output will not be shown in the history.")] = None
 
 
 class IncomingToolOutputText(IncomingToolOutputSimple):
@@ -232,16 +221,16 @@ class IncomingToolOutputBoolean(IncomingToolOutputSimple):
     type: Literal["boolean"]
 
 
-IncomingToolOutputT = Union[
-    IncomingToolOutputDataset,
-    IncomingToolOutputCollection,
-    IncomingToolOutputText,
-    IncomingToolOutputInteger,
-    IncomingToolOutputFloat,
-    IncomingToolOutputBoolean,
-]
+IncomingToolOutputT = (
+    IncomingToolOutputDataset
+    | IncomingToolOutputCollection
+    | IncomingToolOutputText
+    | IncomingToolOutputInteger
+    | IncomingToolOutputFloat
+    | IncomingToolOutputBoolean
+)
 IncomingToolOutput = Annotated[IncomingToolOutputT, Field(discriminator="type")]
-ToolOutputT = Union[
-    ToolOutputDataset, ToolOutputCollection, ToolOutputText, ToolOutputInteger, ToolOutputFloat, ToolOutputBoolean
-]
+ToolOutputT = (
+    ToolOutputDataset | ToolOutputCollection | ToolOutputText | ToolOutputInteger | ToolOutputFloat | ToolOutputBoolean
+)
 ToolOutput = Annotated[ToolOutputT, Field(discriminator="type")]

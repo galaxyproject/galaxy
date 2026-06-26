@@ -1,7 +1,6 @@
 import string
 from typing import (
     cast,
-    Optional,
 )
 
 from galaxy import model
@@ -285,9 +284,7 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
-def quick_output(
-    format: str, format_source: Optional[str] = None, change_format_xml: Optional[str] = None
-) -> ToolOutput:
+def quick_output(format: str, format_source: str | None = None, change_format_xml: str | None = None) -> ToolOutput:
     test_output = ToolOutput("test_output")
     test_output.format = format
     test_output.format_source = format_source

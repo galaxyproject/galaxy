@@ -7,11 +7,7 @@ from abc import (
 from logging import getLogger
 from typing import (
     Any,
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Type,
     TYPE_CHECKING,
 )
 from uuid import uuid4
@@ -125,10 +121,10 @@ class Container(metaclass=ABCMeta):
         container_id: str,
         app_info: "AppInfo",
         tool_info: "ToolInfo",
-        destination_info: Dict[str, Any],
+        destination_info: dict[str, Any],
         job_info: Optional["JobInfo"],
         container_description: Optional["ContainerDescription"],
-        container_name: Optional[str] = None,
+        container_name: str | None = None,
     ) -> None:
         self.container_id = container_id
         self.app_info = app_info
@@ -137,7 +133,7 @@ class Container(metaclass=ABCMeta):
         self.job_info = job_info
         self.container_description = container_description
         self.container_name = container_name or uuid4().hex
-        self.container_info: Dict[str, Any] = {}
+        self.container_info: dict[str, Any] = {}
 
     def prop(self, name: str, default: Any) -> Any:
         destination_name = f"{self.container_type}_{name}"
@@ -180,7 +176,7 @@ class Volume:
         self.container_type = container_type
 
     @staticmethod
-    def parse_volume_str(rawstr: str) -> Tuple[str, str, str]:
+    def parse_volume_str(rawstr: str) -> tuple[str, str, str]:
         """
         >>> Volume.parse_volume_str('A:B:rw')
         ('A', 'B', 'rw')
@@ -267,7 +263,7 @@ class Volume:
             return f"{path}:{self.mode}"
 
 
-def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
+def preprocess_volumes(volumes_raw_str: str, container_type: str) -> list[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
 
     Galaxy allows the mount try "default_ro" which translates to ro for Docker and
@@ -402,8 +398,7 @@ class HasDockerLikeVolumes:
 
         # Not all tools have a tool_directory - strip this out if supplied by
         # job_conf.
-        tool_directory_index = volumes_str.find("$tool_directory")
-        if tool_directory_index > 0:
+        if (tool_directory_index := volumes_str.find("$tool_directory")) > 0:
             end_index = volumes_str.find(",", tool_directory_index)
             if end_index < 0:
                 end_index = len(volumes_str)
@@ -412,7 +407,7 @@ class HasDockerLikeVolumes:
         return volumes_str
 
 
-def _parse_volumes(volumes_raw: str, container_type: str) -> List[DockerVolume]:
+def _parse_volumes(volumes_raw: str, container_type: str) -> list[DockerVolume]:
     """
     >>> volumes_raw = "$galaxy_root:ro,$tool_directory:ro,$job_directory:ro,$working_directory:z,$default_file_path:z"
     >>> volumes = _parse_volumes(volumes_raw, "docker")
@@ -428,7 +423,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     container_type = DOCKER_CONTAINER_TYPE
 
     @property
-    def docker_host_props(self) -> Dict[str, Any]:
+    def docker_host_props(self) -> dict[str, Any]:
         docker_host_props = dict(
             docker_cmd=self.prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
             sudo=asbool(self.prop("sudo", docker_util.DEFAULT_SUDO)),
@@ -438,10 +433,10 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         return docker_host_props
 
     @property
-    def connection_configuration(self) -> Dict[str, Any]:
+    def connection_configuration(self) -> dict[str, Any]:
         return self.docker_host_props
 
-    def build_pull_command(self) -> List[str]:
+    def build_pull_command(self) -> list[str]:
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
     def containerize_command(self, command: str) -> str:
@@ -507,7 +502,7 @@ _on_exit() {{
 {cache_command}
 {run_command}"""
 
-    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
+    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: dict[str, Any]) -> str:
         images_cmd = docker_util.build_docker_images_command(truncate=False, format="json", **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
@@ -515,7 +510,7 @@ _on_exit() {{
             cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd
         )
 
-    def __get_cached_image_file(self) -> Optional[str]:
+    def __get_cached_image_file(self) -> str | None:
         container_id = self.container_id
         cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
         cache_path = docker_cache_path(cache_directory, container_id)
@@ -538,7 +533,7 @@ def docker_cache_path(cache_directory: str, container_id: str) -> str:
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
 
-    def get_singularity_target_kwds(self) -> Dict[str, Any]:
+    def get_singularity_target_kwds(self) -> dict[str, Any]:
         return dict(
             singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
@@ -546,12 +541,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         )
 
     @property
-    def connection_configuration(self) -> Dict[str, Any]:
+    def connection_configuration(self) -> dict[str, Any]:
         return self.get_singularity_target_kwds()
 
     def build_mulled_singularity_pull_command(
         self, cache_directory: str, namespace: str = "biocontainers"
-    ) -> List[str]:
+    ) -> list[str]:
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
@@ -559,7 +554,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             **self.get_singularity_target_kwds(),
         )
 
-    def build_singularity_pull_command(self, cache_path: str) -> List[str]:
+    def build_singularity_pull_command(self, cache_path: str) -> list[str]:
         return singularity_util.pull_singularity_command(
             image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
         )
@@ -604,7 +599,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         return run_command
 
 
-CONTAINER_CLASSES: Dict[str, Type[Container]] = dict(
+CONTAINER_CLASSES: dict[str, type[Container]] = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )

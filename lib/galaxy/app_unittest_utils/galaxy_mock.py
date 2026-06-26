@@ -12,7 +12,6 @@ from collections.abc import (
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 import mako
@@ -112,7 +111,7 @@ def buildMockEnviron(**kwargs):
 class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
     amqp_type: str
-    job_search: Optional[JobSearch] = None
+    job_search: JobSearch | None = None
     _toolbox: ToolBox
     tool_cache: ToolCache
     install_model: ModelMapping
@@ -122,7 +121,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     workflow_manager: WorkflowsManager
     history_manager: HistoryManager
     job_metrics: JobMetrics
-    vault: Optional[Vault] = None
+    vault: Vault | None = None
     execution_timer_factory: Any
     stop: bool
     is_webapp: bool = True
@@ -429,7 +428,6 @@ class MockTrans:
 
 
 class MockVisualizationsRegistry:
-
     def get_visualizations(self, trans, target):
         return []
 

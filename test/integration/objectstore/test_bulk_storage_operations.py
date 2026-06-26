@@ -31,7 +31,6 @@ from types import SimpleNamespace
 from typing import (
     Any,
     cast,
-    Optional,
 )
 from unittest.mock import patch
 from uuid import uuid4
@@ -338,7 +337,7 @@ class TestBulkStorageOperationsIntegration(BaseObjectStoreIntegrationTestCase):
         succeeded: int,
         failed: int,
         skipped: int,
-        total_bytes_processed: Optional[int] = None,
+        total_bytes_processed: int | None = None,
         state: str = "completed",
         mode: str = "move",
     ) -> None:
@@ -874,8 +873,7 @@ class TestBulkStorageOperationsIntegration(BaseObjectStoreIntegrationTestCase):
             original_flush = executor._flush_pending_dataset_updates
 
             def recording_flush():
-                pending_count = len(executor._pending_dataset_update_ids)
-                if pending_count:
+                if pending_count := len(executor._pending_dataset_update_ids):
                     batch_sizes.append(pending_count)
                 return original_flush()
 

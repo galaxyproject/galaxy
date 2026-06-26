@@ -3,7 +3,6 @@
 import logging
 from typing import (
     Annotated,
-    Optional,
 )
 
 from fastapi import (
@@ -71,15 +70,15 @@ class WesApi:
     def submit_run(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_params: Optional[str] = Form(None),
+        workflow_params: str | None = Form(None),
         workflow_type: str = Form(...),
         workflow_type_version: str = Form(...),
-        workflow_url: Optional[str] = Form(None),
-        workflow_engine_parameters: Optional[str] = Form(None),
-        workflow_engine: Optional[str] = Form(None),
-        workflow_engine_version: Optional[str] = Form(None),
-        tags: Optional[str] = Form(None),
-        workflow_attachment: Optional[UploadFile] = File(None),
+        workflow_url: str | None = Form(None),
+        workflow_engine_parameters: str | None = Form(None),
+        workflow_engine: str | None = Form(None),
+        workflow_engine_version: str | None = Form(None),
+        tags: str | None = Form(None),
+        workflow_attachment: UploadFile | None = File(None),
     ) -> RunId:
         """Submit a new workflow run.
 

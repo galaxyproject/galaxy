@@ -2,7 +2,6 @@ import logging
 from typing import (
     Any,
     cast,
-    Optional,
 )
 
 
@@ -18,6 +17,6 @@ logging.addLevelName(LOGLV_TRACE, "TRACE")
 logging.setLoggerClass(GalaxyLogger)
 
 
-def get_logger(name: Optional[str] = None) -> GalaxyLogger:
+def get_logger(name: str | None = None) -> GalaxyLogger:
     logger = logging.getLogger(name)
     return cast(GalaxyLogger, logger)

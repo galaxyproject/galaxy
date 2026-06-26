@@ -13,7 +13,6 @@ import re
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic import (
@@ -45,7 +44,7 @@ def _iwc_search(query: str, limit: int) -> list[dict[str, Any]]:
     return iwc.search_workflows(workflows, query, limit=limit)
 
 
-def _iwc_details(trs_id: str) -> Optional[dict[str, Any]]:
+def _iwc_details(trs_id: str) -> dict[str, Any] | None:
     workflows = iwc.all_workflows(iwc.fetch_manifest())
     for wf in workflows:
         if wf.get("trsID") == trs_id:
@@ -59,7 +58,7 @@ class SimplifiedToolRecommendationResult(BaseModel):
     primary_tools: list[dict[str, Any]] = []
     alternative_tools: list[dict[str, Any]] = []
     recommended_workflows: list[dict[str, Any]] = []
-    workflow_suggestion: Optional[str] = None
+    workflow_suggestion: str | None = None
     parameter_guidance: dict[str, Any] = {}
     confidence: ConfidenceLiteral
     reasoning: str
@@ -95,7 +94,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
         super().__init__(deps)
         self._tool_calls = 0
 
-    def _charge_tool_budget(self) -> Optional[str]:
+    def _charge_tool_budget(self) -> str | None:
         """Count a data-gathering tool call; once over budget return a stop
         message instead of more data so the model recommends from what it has."""
         self._tool_calls += 1
@@ -323,7 +322,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"IWC search failed for query={query!r}: {e}")
             return []
 
-    async def get_iwc_workflow_details(self, trs_id: str) -> Optional[dict[str, Any]]:
+    async def get_iwc_workflow_details(self, trs_id: str) -> dict[str, Any] | None:
         """Fetch one workflow from the IWC manifest, fully enriched."""
         try:
             return await asyncio.to_thread(_iwc_details, trs_id)
@@ -348,7 +347,7 @@ class ToolRecommendationAgent(BaseGalaxyAgent):
             log.warning(f"Error getting tool categories: {e}")
             return []
 
-    async def process(self, query: str, context: Optional[dict[str, Any]] = None) -> AgentResponse:
+    async def process(self, query: str, context: dict[str, Any] | None = None) -> AgentResponse:
         validation_error = self._validate_query(query)
         if validation_error:
             return self._validation_error_response(validation_error)

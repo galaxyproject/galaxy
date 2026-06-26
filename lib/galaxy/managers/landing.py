@@ -1,8 +1,4 @@
 import logging
-from typing import (
-    Optional,
-    Union,
-)
 from uuid import uuid4
 
 from pydantic import (
@@ -70,7 +66,7 @@ from .tools import (
     ToolRunReference,
 )
 
-LandingRequestModel = Union[ToolLandingRequestModel, WorkflowLandingRequestModel]
+LandingRequestModel = ToolLandingRequestModel | WorkflowLandingRequestModel
 
 FETCH_TOOL_ID = "__DATA_FETCH__"
 
@@ -78,7 +74,6 @@ log = logging.getLogger(__name__)
 
 
 class LandingRequestManager:
-
     def __init__(
         self,
         sa_session: galaxy_scoped_session,
@@ -86,7 +81,7 @@ class LandingRequestManager:
         workflow_contents_manager: WorkflowContentsManager,
         app: MinimalManagerApp,
         config: GalaxyAppConfiguration,
-        vault: Optional[Vault] = None,
+        vault: Vault | None = None,
     ):
         self.sa_session = sa_session
         self.security = security
@@ -120,7 +115,6 @@ class LandingRequestManager:
 
         # Validate sample sheet metadata in request_state for __DATA_FETCH__ tool
         if tool.id == "__DATA_FETCH__" and request_state:
-
             # Check each item in request_state for sample sheet metadata
             for item in landing_request_state.input_state.get("request_state", []):
                 # Try to parse as DataRequestCollectionUri to access sample sheet fields
@@ -193,7 +187,7 @@ class LandingRequestManager:
         self._save(model)
         return self._workflow_response(model)
 
-    def validate_workflow_request_state(self, request_state: Optional[dict]) -> Optional[dict]:
+    def validate_workflow_request_state(self, request_state: dict | None) -> dict | None:
         # This would ideally be run in the context of a workflow input definition
         if isinstance(request_state, dict):
             for key, value in request_state.items():
@@ -234,7 +228,7 @@ class LandingRequestManager:
         return request_state
 
     def claim_tool_landing_request(
-        self, trans: ProvidesUserContext, uuid: UUID4, claim: Optional[ClaimLandingPayload]
+        self, trans: ProvidesUserContext, uuid: UUID4, claim: ClaimLandingPayload | None
     ) -> ToolLandingRequest:
         request = self._get_tool_landing_request(uuid)
         self._check_can_claim(trans, request, claim)
@@ -243,7 +237,7 @@ class LandingRequestManager:
         return self._tool_response(request)
 
     def claim_workflow_landing_request(
-        self, trans: ProvidesUserContext, uuid: UUID4, claim: Optional[ClaimLandingPayload]
+        self, trans: ProvidesUserContext, uuid: UUID4, claim: ClaimLandingPayload | None
     ) -> WorkflowLandingRequest:
         request = self._get_workflow_landing_request(uuid)
         self._check_can_claim(trans, request, claim)
@@ -278,7 +272,7 @@ class LandingRequestManager:
         return self._workflow_response(request)
 
     def _check_can_claim(
-        self, trans: ProvidesUserContext, request: LandingRequestModel, claim: Optional[ClaimLandingPayload]
+        self, trans: ProvidesUserContext, request: LandingRequestModel, claim: ClaimLandingPayload | None
     ):
         if request.client_secret is not None:
             if claim is None or not claim.client_secret:
@@ -331,7 +325,7 @@ class LandingRequestManager:
 
     def _workflow_response(self, model: WorkflowLandingRequestModel) -> WorkflowLandingRequest:
 
-        workflow_id: Optional[Union[int, str]] = None
+        workflow_id: int | str | None = None
         if model.stored_workflow_id is not None:
             workflow_id = model.stored_workflow_id
             target_type = "stored_workflow"
@@ -369,7 +363,7 @@ class LandingRequestManager:
         sa_session.add(model)
         sa_session.commit()
 
-    def _encrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str) -> Optional[dict]:
+    def _encrypt_headers_in_request_state(self, request_state: dict | None, landing_uuid: str) -> dict | None:
         if request_state is not None:
             if has_sensitive_headers(request_state, self.url_headers_config):
                 if not self.vault:
@@ -386,7 +380,7 @@ class LandingRequestManager:
                 )
         return request_state
 
-    def _decrypt_headers_in_request_state(self, request_state: Optional[dict], landing_uuid: str):
+    def _decrypt_headers_in_request_state(self, request_state: dict | None, landing_uuid: str):
         if request_state is not None and self.vault:
             return decrypt_headers_in_data(
                 request_state,

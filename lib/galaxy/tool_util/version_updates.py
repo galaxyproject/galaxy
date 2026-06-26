@@ -6,9 +6,7 @@ tool definition for validation and state inspection.
 """
 
 from typing import (
-    Dict,
     NamedTuple,
-    Optional,
 )
 
 from .version import parse_version
@@ -20,7 +18,7 @@ class safe_update(NamedTuple):
     current_version: AnyVersionT
 
 
-WORKFLOW_SAFE_TOOL_VERSION_UPDATES: Dict[str, safe_update] = {
+WORKFLOW_SAFE_TOOL_VERSION_UPDATES: dict[str, safe_update] = {
     "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
     "__BUILD_LIST__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "__APPLY_RULES__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
@@ -41,7 +39,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES: Dict[str, safe_update] = {
 }
 
 
-def is_workflow_safe_version(tool_id: str, requested_version: str) -> Optional[str]:
+def is_workflow_safe_version(tool_id: str, requested_version: str) -> str | None:
     """Check if requested_version falls within a safe update range for tool_id.
 
     Returns the current_version string if safe, None otherwise.

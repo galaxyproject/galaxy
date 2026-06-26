@@ -10,7 +10,6 @@ from typing import (
     cast,
     Optional,
     TYPE_CHECKING,
-    Union,
 )
 from uuid import UUID
 
@@ -90,7 +89,7 @@ TERMINAL_RUN_STATES = {
     StorageOperationRunState.failed.value,
 }
 
-StorageOperationContent = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
+StorageOperationContent = HistoryDatasetAssociation | HistoryDatasetCollectionAssociation
 
 
 @dataclass(frozen=True)
@@ -124,7 +123,7 @@ class StorageOperationPreviewComputation:
     target_quota_delta: int
     quota_delta_transfers: list[StorageOperationQuotaDeltaTransfer]
     privacy_downgrade_count: int
-    target_quota_projection: Optional[TargetQuotaProjection] = None
+    target_quota_projection: TargetQuotaProjection | None = None
 
 
 class DatasetStorageOperationManager:
@@ -133,7 +132,7 @@ class DatasetStorageOperationManager:
     def __init__(
         self,
         object_store: BaseObjectStore,
-        config: Optional[GalaxyAppConfiguration] = None,
+        config: GalaxyAppConfiguration | None = None,
         hdca_manager: Optional["HDCAManager"] = None,
     ):
         self.object_store = object_store
@@ -158,7 +157,7 @@ class DatasetStorageOperationManager:
         user: User,
         dataset: Dataset,
         target_object_store_id: str,
-    ) -> Optional[DatasetStorageOperationFailureReasonCode]:
+    ) -> DatasetStorageOperationFailureReasonCode | None:
         target_device_id = self._device_id_for_store(target_object_store_id)
         if target_device_id is None:
             return DatasetStorageOperationFailureReasonCode.invalid_target_object_store
@@ -189,8 +188,8 @@ class DatasetStorageOperationManager:
     def target_quota_delta(
         self,
         dataset_size: int,
-        source_quota_label: Optional[str],
-        target_quota_label: Optional[str],
+        source_quota_label: str | None,
+        target_quota_label: str | None,
     ) -> int:
         if source_quota_label == target_quota_label:
             return 0
@@ -204,7 +203,7 @@ class DatasetStorageOperationManager:
         target_quota_delta: int,
         *,
         additional_target_usage: int = 0,
-    ) -> Optional[TargetQuotaProjection]:
+    ) -> TargetQuotaProjection | None:
         if target_quota_delta <= 0:
             return None
 
@@ -286,25 +285,25 @@ class DatasetStorageOperationManager:
             return True
         return source_device_id != target_device_id
 
-    def _device_id_for_store(self, object_store_id: Optional[str]) -> Optional[str]:
+    def _device_id_for_store(self, object_store_id: str | None) -> str | None:
         if object_store_id is None:
             return None
         return self.object_store.get_device_source_map().get_device_id(object_store_id)
 
-    def _is_private_for_dataset(self, dataset: Dataset) -> Optional[bool]:
+    def _is_private_for_dataset(self, dataset: Dataset) -> bool | None:
         try:
             return self.object_store.is_private(dataset)
         except Exception:
             return None
 
-    def _is_private_for_object_store_id(self, object_store_id: str) -> Optional[bool]:
+    def _is_private_for_object_store_id(self, object_store_id: str) -> bool | None:
         try:
             proxy = SimpleNamespace(object_store_id=object_store_id)
             return self.object_store.is_private(proxy)
         except Exception:
             return None
 
-    def _target_remaining_lifetime(self, dataset: Dataset, target_object_store_id: str) -> Optional[timedelta]:
+    def _target_remaining_lifetime(self, dataset: Dataset, target_object_store_id: str) -> timedelta | None:
         expiration_days = self._target_store_expiration_days(target_object_store_id)
         if expiration_days is None or dataset.create_time is None:
             return None
@@ -312,7 +311,7 @@ class DatasetStorageOperationManager:
         expiration_time = dataset.create_time + timedelta(days=expiration_days)
         return expiration_time - now()
 
-    def _target_store_expiration_days(self, target_object_store_id: str) -> Optional[int]:
+    def _target_store_expiration_days(self, target_object_store_id: str) -> int | None:
         concrete_store = self.object_store.get_concrete_store_by_object_store_id(target_object_store_id)
         if concrete_store is None:
             return None
@@ -490,7 +489,7 @@ class DatasetStorageOperationManager:
         decode_id: Callable[[str], int],
         offset: int = 0,
         limit: int = 50,
-        search: Optional[str] = None,
+        search: str | None = None,
     ) -> tuple[list[StorageOperationRunItemStatus], int]:
         return self._run_manager.get_run_items(
             sa_session=sa_session,
@@ -509,7 +508,7 @@ class DatasetStorageOperationManager:
         app: "MinimalManagerApp",
         run: DatasetStorageOperationRun,
         user: User,
-        current_task_id: Optional[str] = None,
+        current_task_id: str | None = None,
     ) -> "StorageOperationRunExecutor":
         return StorageOperationRunExecutor(
             sa_session=sa_session,
@@ -857,7 +856,7 @@ class DatasetStorageOperationRunManager:
         decode_id: Callable[[str], int],
         offset: int = 0,
         limit: int = 50,
-        search: Optional[str] = None,
+        search: str | None = None,
     ) -> tuple[list[StorageOperationRunItemStatus], int]:
         run_items_query = sa_session.query(DatasetStorageOperationRunItem).filter(
             DatasetStorageOperationRunItem.run_id == run.id
@@ -973,7 +972,7 @@ class StorageOperationRunExecutor:
         app: "MinimalManagerApp",
         run: DatasetStorageOperationRun,
         user: User,
-        current_task_id: Optional[str],
+        current_task_id: str | None,
         storage_operation_manager: DatasetStorageOperationManager,
     ):
         self.sa_session = sa_session
@@ -1003,9 +1002,9 @@ class StorageOperationRunExecutor:
         self.run_items_by_dataset_id_cache: dict[int, DatasetStorageOperationRunItem] = {}
         self._pending_dataset_update_ids: set[int] = set()
         # Cleanups queued during transfer; executed after batch DB commit to ensure durability.
-        self._pending_cleanups: list[tuple[DatasetObjectStoreProxy, Optional[str]]] = []
+        self._pending_cleanups: list[tuple[DatasetObjectStoreProxy, str | None]] = []
 
-    def execute_run(self, snapshot: Optional[DatasetStorageOperationSnapshot]) -> StorageOperationExecutionResult:
+    def execute_run(self, snapshot: DatasetStorageOperationSnapshot | None) -> StorageOperationExecutionResult:
         """Validate snapshot, drive state transitions, execute all datasets, and return execution outcome."""
         if snapshot is None:
             return self._fail_run("Bulk storage run failed because its preview snapshot could not be found.")
@@ -1077,7 +1076,7 @@ class StorageOperationRunExecutor:
             message=message,
         )
 
-    def _execute(self, resolved_dataset_ids: list[int]) -> Optional[tuple[int, int, int, int]]:
+    def _execute(self, resolved_dataset_ids: list[int]) -> tuple[int, int, int, int] | None:
         for dataset_id in resolved_dataset_ids:
             if not self._owns_run():
                 return None
@@ -1240,8 +1239,7 @@ class StorageOperationRunExecutor:
             self.target_quota_source_label,
         )
 
-        reason_code = self._validate_dataset(dataset, quota_delta)
-        if reason_code is not None:
+        if (reason_code := self._validate_dataset(dataset, quota_delta)) is not None:
             self._record_ineligible(dataset_id, reason_code)
             return
 
@@ -1251,7 +1249,7 @@ class StorageOperationRunExecutor:
         self,
         dataset: Dataset,
         quota_delta: int,
-    ) -> Optional[DatasetStorageOperationFailureReasonCode]:
+    ) -> DatasetStorageOperationFailureReasonCode | None:
         reason = self.storage_operation_manager.validate_dataset_for_move(
             self.app.security_agent,
             self.user,
@@ -1304,7 +1302,7 @@ class StorageOperationRunExecutor:
             return
 
         for attempt in range(1, TRANSFER_RETRY_ATTEMPTS + 1):
-            target_proxy_for_cleanup: Optional[DatasetObjectStoreProxy] = None
+            target_proxy_for_cleanup: DatasetObjectStoreProxy | None = None
             try:
                 bytes_processed = 0
                 if requires_data_transfer:
@@ -1400,7 +1398,7 @@ class StorageOperationRunExecutor:
         self,
         dataset_id: int,
         reason_code: DatasetStorageOperationFailureReasonCode,
-        run_item: Optional[DatasetStorageOperationRunItem] = None,
+        run_item: DatasetStorageOperationRunItem | None = None,
     ) -> None:
         self.failed_count += 1
         self._add_run_item(
@@ -1437,7 +1435,7 @@ class StorageOperationRunExecutor:
         *,
         dataset_id: int,
         state: str,
-        reason_code: Optional[DatasetStorageOperationFailureReasonCode] = None,
+        reason_code: DatasetStorageOperationFailureReasonCode | None = None,
         bytes_processed: int = 0,
     ) -> DatasetStorageOperationRunItem:
         run_item = self.run_items_by_dataset_id_cache.get(dataset_id)
@@ -1487,8 +1485,7 @@ class StorageOperationRunExecutor:
             preserve_symlinks=False,
         )
 
-        extra_files_path_name = dataset.extra_files_path_name
-        if extra_files_path_name:
+        if extra_files_path_name := dataset.extra_files_path_name:
             self._copy_extra_files(source_proxy, target_proxy, extra_files_path_name)
 
         return int(dataset.get_total_size() or 0)
@@ -1591,7 +1588,7 @@ class StorageOperationRunExecutor:
     def _cleanup_source_dataset_data(
         self,
         source_proxy: DatasetObjectStoreProxy,
-        extra_files_path_name: Optional[str],
+        extra_files_path_name: str | None,
     ) -> None:
         try:
             self.app.object_store.delete(source_proxy)
@@ -1625,7 +1622,7 @@ class StorageOperationRunExecutor:
     def _cleanup_target_dataset_data(
         self,
         target_proxy: DatasetObjectStoreProxy,
-        extra_files_path_name: Optional[str],
+        extra_files_path_name: str | None,
     ) -> None:
         try:
             self.app.object_store.delete(target_proxy)
@@ -1658,8 +1655,7 @@ class StorageOperationRunExecutor:
 
     def _finalize_cross_device_move(self, dataset: Dataset, target_object_store_id: str):
         old_object_store_id = dataset.object_store_id
-        quota_source_map = self.app.object_store.get_quota_source_map()
-        if quota_source_map:
+        if quota_source_map := self.app.object_store.get_quota_source_map():
             old_label = quota_source_map.get_quota_source_label(old_object_store_id)
             new_label = quota_source_map.get_quota_source_label(target_object_store_id)
             if old_label != new_label:

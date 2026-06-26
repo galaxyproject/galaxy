@@ -12,7 +12,6 @@ from galaxy.model import User
 
 
 class UsernameDeduplicator:
-
     def __init__(self, connection):
         self.connection = connection
 
@@ -51,7 +50,6 @@ class UsernameDeduplicator:
 
 
 class EmailDeduplicator:
-
     def __init__(self, connection):
         self.connection = connection
 

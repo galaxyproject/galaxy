@@ -3,9 +3,6 @@ API operations on Galaxy's object store.
 """
 
 import logging
-from typing import (
-    Union,
-)
 
 from fastapi import (
     Body,
@@ -77,7 +74,7 @@ class FastAPIObjectStore:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         selectable: bool = SelectableQueryParam,
-    ) -> list[Union[ConcreteObjectStoreModel, UserConcreteObjectStoreModel]]:
+    ) -> list[ConcreteObjectStoreModel | UserConcreteObjectStoreModel]:
         if not selectable:
             raise RequestParameterInvalidException(
                 "The object store index query currently needs to be called with selectable=true"

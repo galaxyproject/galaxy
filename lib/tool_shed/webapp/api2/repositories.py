@@ -5,8 +5,6 @@ import tempfile
 from typing import (
     cast,
     IO,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -115,7 +113,7 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["repositories"])
 
-IndexResponse = Union[RepositorySearchResults, list[Repository], PaginatedRepositoryIndexResults]
+IndexResponse = RepositorySearchResults | list[Repository] | PaginatedRepositoryIndexResults
 
 
 @as_form
@@ -134,16 +132,16 @@ class FastAPIRepositories:
     )
     def index(
         self,
-        q: Optional[str] = RepositoryIndexQueryParam,
-        filter: Optional[str] = RepositoryIndexFilterParam,
-        page: Optional[int] = RepositorySearchPageQueryParam,
-        page_size: Optional[int] = RepositorySearchPageSizeQueryParam,
-        deleted: Optional[bool] = RepositoryIndexDeletedQueryParam,
-        owner: Optional[str] = RepositoryIndexOwnerQueryParam,
-        name: Optional[str] = RepositoryIndexNameQueryParam,
-        category_id: Optional[str] = RepositoryIndexCategoryQueryParam,
-        sort_desc: Optional[bool] = RepositoryIndexSortDescParam,
-        sort_by: Optional[IndexSortByType] = RepositoryIndexSortByParam,
+        q: str | None = RepositoryIndexQueryParam,
+        filter: str | None = RepositoryIndexFilterParam,
+        page: int | None = RepositorySearchPageQueryParam,
+        page_size: int | None = RepositorySearchPageSizeQueryParam,
+        deleted: bool | None = RepositoryIndexDeletedQueryParam,
+        owner: str | None = RepositoryIndexOwnerQueryParam,
+        name: str | None = RepositoryIndexNameQueryParam,
+        category_id: str | None = RepositoryIndexCategoryQueryParam,
+        sort_desc: bool | None = RepositoryIndexSortDescParam,
+        sort_by: IndexSortByType | None = RepositoryIndexSortByParam,
         trans: SessionRequestContext = DependsOnTrans,
     ) -> IndexResponse:
 
@@ -274,9 +272,9 @@ class FastAPIRepositories:
     )
     def get_ordered_installable_revisions(
         self,
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
-        tsr_id: Optional[str] = OptionalRepositoryIdParam,
+        owner: str | None = OptionalRepositoryOwnerParam,
+        name: str | None = OptionalRepositoryNameParam,
+        tsr_id: str | None = OptionalRepositoryIdParam,
     ) -> list[str]:
         return get_ordered_installable_revisions(self.app, name, owner, tsr_id)
 
@@ -333,10 +331,10 @@ class FastAPIRepositories:
     )
     def updates(
         self,
-        owner: Optional[str] = OptionalRepositoryOwnerParam,
-        name: Optional[str] = OptionalRepositoryNameParam,
+        owner: str | None = OptionalRepositoryOwnerParam,
+        name: str | None = OptionalRepositoryNameParam,
         changeset_revision: str = RequiredRepositoryChangesetRevisionParam,
-        hexlify: Optional[bool] = OptionalHexlifyParam,
+        hexlify: bool | None = OptionalHexlifyParam,
     ):
         request = UpdatesRequest(
             name=name,
@@ -579,9 +577,9 @@ class FastAPIRepositories:
         self,
         request: Request,
         encoded_repository_id: str = RepositoryIdPathParam,
-        commit_message: Optional[str] = CommitMessageQueryParam,
+        commit_message: str | None = CommitMessageQueryParam,
         trans: SessionRequestContext = DependsOnTrans,
-        files: Optional[list[UploadFile]] = None,
+        files: list[UploadFile] | None = None,
         revision_request: RepositoryUpdateRequest = Depends(RepositoryUpdateRequestFormData.as_form),  # type: ignore[attr-defined]
     ) -> RepositoryUpdate:
         try:

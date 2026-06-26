@@ -1,10 +1,6 @@
 import json
+from collections.abc import Callable
 from functools import partial
-from typing import (
-    Callable,
-    List,
-    Optional,
-)
 
 import yaml
 
@@ -93,7 +89,7 @@ def test_single():
     _test_file("gx_conditional_boolean_checked")
 
 
-def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolParameterBundleModel] = None):
+def _test_file(file: str, specification=None, parameter_bundle: ToolParameterBundleModel | None = None):
     spec = specification or specification_object()
     combos = spec[file]
     if parameter_bundle is None:
@@ -140,7 +136,7 @@ def _test_file(file: str, specification=None, parameter_bundle: Optional[ToolPar
         _assert_internal_requests_invalid(parameter_bundle, combos["request_invalid"])
 
 
-def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: List[RawStateDict]) -> None:
+def _for_each(test: Callable, parameters: ToolParameterBundleModel, requests: list[RawStateDict]) -> None:
     for request in requests:
         test(parameters, request)
 

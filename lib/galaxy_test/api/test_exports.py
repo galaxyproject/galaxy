@@ -5,8 +5,6 @@ These tests verify:
 - Export records are properly created when exporting
 """
 
-from typing import Optional
-
 from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetPopulator,
@@ -27,7 +25,7 @@ class TestExportsEndpoint(ApiTestCase, UsesCeleryTasks):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
 
-    def _find_export_by_object_id(self, exports: list, object_id: str) -> Optional[dict]:
+    def _find_export_by_object_id(self, exports: list, object_id: str) -> dict | None:
         """Find an export record by its object_id in the metadata."""
         for export in exports:
             metadata = export.get("export_metadata", {})

@@ -12,7 +12,6 @@ import tempfile
 import time
 from typing import (
     Literal,
-    Optional,
     overload,
 )
 
@@ -325,9 +324,9 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         def get_kubectl_logs(allow_wait: Literal[False]) -> str: ...
 
         @overload
-        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]: ...
+        def get_kubectl_logs(allow_wait: bool = True) -> str | None: ...
 
-        def get_kubectl_logs(allow_wait: bool = True) -> Optional[str]:
+        def get_kubectl_logs(allow_wait: bool = True) -> str | None:
             log_cmd = ["kubectl", "logs", "-l", f"job-name={external_id}"]
             p = subprocess.run(log_cmd, capture_output=True, text=True)
             if p.returncode:

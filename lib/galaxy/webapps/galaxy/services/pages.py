@@ -1,7 +1,4 @@
 import logging
-from typing import (
-    Union,
-)
 
 from galaxy import exceptions
 from galaxy.celery.helpers import async_task_summary
@@ -69,7 +66,7 @@ class PagesService(ServiceBase):
 
     def index(
         self, trans, payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> tuple[PageSummaryList, Union[int, None]]:
+    ) -> tuple[PageSummaryList, int | None]:
         """Return a list of Pages viewable by the user
 
         :rtype:     list

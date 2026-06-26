@@ -7,7 +7,7 @@ dynamic = ["readme"]
 name = "galaxy-tool-util-models"
 version = "26.1.dev0"
 description = "Pydantic models for Galaxy tools"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = {"text" = "MIT"}
 authors = [
     {name = "Galaxy Project and Community", email = "galaxy-committers@lists.galaxyproject.org"},
@@ -24,8 +24,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

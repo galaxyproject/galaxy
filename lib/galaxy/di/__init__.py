@@ -1,7 +1,6 @@
 """Dependency injection framework for Galaxy-type apps."""
 
 from typing import (
-    Optional,
     TypeVar,
 )
 
@@ -20,7 +19,7 @@ class Container(LagomContainer):
     config variables for instance).
     """
 
-    def _register_singleton(self, dep_type: type[T], instance: Optional[T] = None) -> T:
+    def _register_singleton(self, dep_type: type[T], instance: T | None = None) -> T:
         if instance is None:
             # create an instance from the context and register it as a singleton
             instance = self[dep_type]
@@ -28,12 +27,12 @@ class Container(LagomContainer):
         return self[dep_type]
 
     def _register_abstract_singleton(
-        self, abstract_type: type[T], concrete_type: type[T], instance: Optional[T] = None
+        self, abstract_type: type[T], concrete_type: type[T], instance: T | None = None
     ) -> T:
         self[abstract_type] = instance if instance is not None else concrete_type
         return self[abstract_type]
 
-    def resolve_or_none(self, dep_type: type[T]) -> Optional[T]:
+    def resolve_or_none(self, dep_type: type[T]) -> T | None:
         """Resolve the dependent type or just return None.
 
         If resolution is impossible assume caller has a backup plan for

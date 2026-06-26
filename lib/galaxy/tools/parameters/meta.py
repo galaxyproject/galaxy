@@ -4,8 +4,6 @@ import logging
 from collections import namedtuple
 from typing import (
     Any,
-    Optional,
-    Union,
 )
 
 from galaxy import (
@@ -182,7 +180,7 @@ def expand_workflow_inputs(param_inputs, inputs=None):
     return WorkflowParameterExpansion(param_combinations, params_keys, input_combinations)
 
 
-ExpandedT = tuple[list[ToolStateJobInstanceT], Optional[matching.MatchingCollections]]
+ExpandedT = tuple[list[ToolStateJobInstanceT], matching.MatchingCollections | None]
 
 
 def expand_flat_parameters_to_nested(incoming_copy: ToolRequestT) -> dict[str, Any]:
@@ -359,7 +357,7 @@ def split_inputs_nested(inputs, nested_dict, classifier):
 
 
 ExpandedAsyncT = tuple[
-    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], Optional[matching.MatchingCollections]
+    list[ToolStateJobInstanceT], list[ToolStateDumpedToJsonInternalT], matching.MatchingCollections | None
 ]
 
 
@@ -436,9 +434,9 @@ def to_decoded_json(has_objects):
         return has_objects
 
 
-CollectionExpansionListT = Union[
-    list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]], list[DatasetInstance]
-]
+CollectionExpansionListT = (
+    list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] | list[DatasetInstance]
+)
 
 
 def __expand_collection_parameter(
@@ -475,7 +473,7 @@ def __expand_collection_parameter(
         raise exceptions.ToolInputsNotReadyException("An input collection is not populated.")
     collections_to_match.add(input_key, item, subcollection_type=subcollection_type, linked=linked)
     if subcollection_type is not None:
-        subcollection_elements: list[Union[DatasetCollectionElement, PromoteCollectionElementToCollectionAdapter]] = (
+        subcollection_elements: list[DatasetCollectionElement | PromoteCollectionElementToCollectionAdapter] = (
             subcollections._split_dataset_collection(collection, subcollection_type)
         )
         return subcollection_elements

@@ -2,7 +2,6 @@ import datetime
 import tempfile
 import time
 from functools import lru_cache
-from typing import Optional
 
 from celery.result import AsyncResult
 from sqlalchemy import (
@@ -25,7 +24,7 @@ from galaxy_test.driver.integration_util import (
 def mock_sleep_task(
     session: galaxy_scoped_session,
     sleep_seconds: float = 2.0,
-    task_user_id: Optional[int] = None,
+    task_user_id: int | None = None,
 ):
     """Task that sleeps for a configurable duration, used to test concurrency limits."""
     time.sleep(sleep_seconds)
@@ -117,10 +116,9 @@ class TestCeleryUserConcurrencyLimitIntegration(IntegrationTestCase):
         expected_min = sleep_seconds * (num_tasks / self._concurrency_limit) - 1
         # Allow generous upper bound for scheduling overhead
         expected_max = sleep_seconds * (num_tasks / self._concurrency_limit) + 15
-        assert elapsed >= expected_min, (
-            f"Tasks completed too fast ({elapsed:.1f}s < {expected_min:.1f}s), "
-            f"concurrency limit may not be enforced"
-        )
+        assert (
+            elapsed >= expected_min
+        ), f"Tasks completed too fast ({elapsed:.1f}s < {expected_min:.1f}s), concurrency limit may not be enforced"
         assert elapsed <= expected_max, f"Tasks took too long ({elapsed:.1f}s > {expected_max:.1f}s)"
 
     def _test_different_users_independent(self):

@@ -1,9 +1,7 @@
+from collections.abc import Callable
 from math import inf
 from typing import (
-    Callable,
-    Optional,
     TypeVar,
-    Union,
 )
 
 from galaxy.util import asbool
@@ -12,11 +10,11 @@ from galaxy.util.bytesize import parse_bytesize
 
 def _assert_number(
     count: int,
-    n: Optional[Union[int, str]],
-    delta: Union[int, str],
-    min: Optional[Union[int, str]],
-    max: Optional[Union[int, str]],
-    negate: Union[bool, str],
+    n: int | str | None,
+    delta: int | str,
+    min: int | str | None,
+    max: int | str | None,
+    negate: bool | str,
     n_text: str,
     min_max_text: str,
 ) -> None:
@@ -63,11 +61,11 @@ TextType = TypeVar("TextType")
 def _assert_presence_number(
     output: OutputType,
     text: TextType,
-    n: Optional[Union[int, str]],
-    delta: Union[int, str],
-    min: Optional[Union[int, str]],
-    max: Optional[Union[int, str]],
-    negate: Union[bool, str],
+    n: int | str | None,
+    delta: int | str,
+    min: int | str | None,
+    max: int | str | None,
+    negate: bool | str,
     check_presence_foo: Callable[[OutputType, TextType], bool],
     count_foo: Callable[[OutputType, TextType], int],
     presence_text: str,

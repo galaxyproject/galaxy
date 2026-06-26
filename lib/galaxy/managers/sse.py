@@ -16,9 +16,6 @@ from collections.abc import (
 )
 from dataclasses import dataclass
 from datetime import datetime
-from typing import (
-    Optional,
-)
 
 from galaxy.util import now
 from galaxy.web.statsd_client import VanillaGalaxyStatsdClient
@@ -36,7 +33,7 @@ def make_event_id() -> str:
     return now().isoformat()
 
 
-def parse_event_id(event_id: str) -> Optional[datetime]:
+def parse_event_id(event_id: str) -> datetime | None:
     """Inverse of :func:`make_event_id`. Returns ``None`` if unparseable."""
     try:
         return datetime.fromisoformat(event_id)
@@ -55,7 +52,7 @@ class SSEEvent:
 
     event: str  # e.g. "notification_update", "broadcast_update", "notification_status"
     data: str  # JSON payload
-    id: Optional[str] = None  # ISO timestamp, used by EventSource as Last-Event-ID on reconnect
+    id: str | None = None  # ISO timestamp, used by EventSource as Last-Event-ID on reconnect
 
     def to_wire(self) -> str:
         """Serialize this event to the SSE wire format (``event:…\\ndata:…\\n[id:…\\n]\\n``)."""
@@ -80,11 +77,11 @@ class SSEConnectionManager:
       (typically the Kombu daemon thread via control task handlers).
     """
 
-    def __init__(self, statsd_client: Optional[VanillaGalaxyStatsdClient] = None) -> None:
+    def __init__(self, statsd_client: VanillaGalaxyStatsdClient | None = None) -> None:
         self._connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._session_connections: dict[int, set[asyncio.Queue]] = defaultdict(set)
         self._broadcast_connections: set[asyncio.Queue] = set()
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
+        self._loop: asyncio.AbstractEventLoop | None = None
         self._statsd_client = statsd_client
         # Viewer subscriptions for non-owned histories. Each worker keeps its
         # own copy; the producer fans out subscribe/unsubscribe via Kombu so
@@ -100,7 +97,7 @@ class SSEConnectionManager:
 
     # -- Called from ASYNC context (uvicorn event loop thread) --
 
-    def connect(self, user_id: Optional[int], galaxy_session_id: Optional[int] = None) -> asyncio.Queue:
+    def connect(self, user_id: int | None, galaxy_session_id: int | None = None) -> asyncio.Queue:
         """Register a new SSE connection. Returns a queue to await events from.
 
         Called from the SSE endpoint handler (async context). A ``ready`` event is
@@ -129,9 +126,9 @@ class SSEConnectionManager:
 
     def disconnect(
         self,
-        user_id: Optional[int],
+        user_id: int | None,
         queue: asyncio.Queue,
-        galaxy_session_id: Optional[int] = None,
+        galaxy_session_id: int | None = None,
     ) -> None:
         """Unregister an SSE connection.
 
@@ -303,10 +300,10 @@ class SSEConnectionManager:
     async def stream(
         self,
         is_disconnected: IsDisconnected,
-        user_id: Optional[int],
-        catch_up: Optional[SSEEvent] = None,
+        user_id: int | None,
+        catch_up: SSEEvent | None = None,
         keepalive: float = 30.0,
-        galaxy_session_id: Optional[int] = None,
+        galaxy_session_id: int | None = None,
     ) -> AsyncIterator[str]:
         """Yield SSE-framed strings for one connected client.
 

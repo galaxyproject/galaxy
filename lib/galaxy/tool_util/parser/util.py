@@ -1,10 +1,6 @@
 from collections import OrderedDict
 from typing import (
-    List,
-    Optional,
-    Tuple,
     TYPE_CHECKING,
-    Union,
 )
 
 from packaging.version import Version
@@ -49,9 +45,7 @@ def parse_profile_version(tool_source: "ToolSource") -> float:
     return float(tool_source.parse_profile())
 
 
-def parse_tool_version_with_defaults(
-    id: Optional[str], tool_source: "ToolSource", profile: Optional[Version] = None
-) -> str:
+def parse_tool_version_with_defaults(id: str | None, tool_source: "ToolSource", profile: Version | None = None) -> str:
     if profile is None:
         profile = Version(tool_source.parse_profile())
 
@@ -70,7 +64,7 @@ def boolean_is_checked(input_source: "InputSource"):
     return input_source.get_bool("checked", None if nullable else False)
 
 
-def boolean_true_and_false_values(input_source, profile: Optional[Union[float, str]] = None) -> Tuple[str, str]:
+def boolean_true_and_false_values(input_source, profile: float | str | None = None) -> tuple[str, str]:
     truevalue = input_source.get("truevalue", "true")
     falsevalue = input_source.get("falsevalue", "false")
     if profile and Version(str(profile)) >= Version("23.1"):
@@ -87,9 +81,9 @@ def boolean_true_and_false_values(input_source, profile: Optional[Union[float, s
     return (truevalue, falsevalue)
 
 
-def text_input_is_optional(input_source: "InputSource") -> Tuple[bool, bool]:
+def text_input_is_optional(input_source: "InputSource") -> tuple[bool, bool]:
     # Optionality not explicitly defined, default to False
-    optional: Optional[bool] = False
+    optional: bool | None = False
     optionality_inferred: bool = False
 
     optional = input_source.get("optional", None)
@@ -116,7 +110,7 @@ class ParameterParseException(Exception):
         self.message = message
 
 
-def multiple_select_value_split(values: Union[str, List[str]]) -> List[str]:
+def multiple_select_value_split(values: str | list[str]) -> list[str]:
     # used to split simple strings into lists from both tool XML and from the API for consistency
     value_list = []
     if not isinstance(values, list):

@@ -8,7 +8,6 @@ from .base import BaseTestCase
 
 
 class TestCredentialsManager(BaseTestCase):
-
     def set_up_managers(self):
         super().set_up_managers()
         self.credentials_manager = CredentialsManager(self.trans.sa_session)

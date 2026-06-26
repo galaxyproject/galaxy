@@ -7,9 +7,6 @@ user inputs - so these methods do not need to be escaped.
 
 import logging
 import re
-from typing import (
-    Optional,
-)
 
 import dns.resolver
 from dns.exception import DNSException
@@ -174,13 +171,11 @@ def validate_password(trans, password, confirm):
     return validate_password_str(password)
 
 
-def validate_preferred_object_store_id(
-    trans, object_store: ObjectStore, preferred_object_store_id: Optional[str]
-) -> str:
+def validate_preferred_object_store_id(trans, object_store: ObjectStore, preferred_object_store_id: str | None) -> str:
     return object_store.validate_selected_object_store_id(trans.user, preferred_object_store_id) or ""
 
 
-def is_email_banned(email: str, filepath: Optional[str], canonical_email_rules: Optional[dict]) -> bool:
+def is_email_banned(email: str, filepath: str | None, canonical_email_rules: dict | None) -> bool:
     if not filepath:
         return False
     normalizer = EmailAddressNormalizer(canonical_email_rules)
@@ -205,7 +200,7 @@ class EmailAddressNormalizer:
     SUB_ADDRESSING_DELIM_DEFAULT = "+"
     ALL = "all"
 
-    def __init__(self, canonical_email_rules: Optional[dict]) -> None:
+    def __init__(self, canonical_email_rules: dict | None) -> None:
         self.config = canonical_email_rules
 
     def normalize(self, email: str) -> str:

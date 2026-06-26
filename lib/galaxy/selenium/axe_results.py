@@ -1,7 +1,6 @@
 from typing import (
     Any,
     Literal,
-    Optional,
 )
 
 from typing_extensions import (
@@ -46,7 +45,7 @@ class AxeResult:
         return self._json["description"]
 
     @property
-    def impact(self) -> Optional[Impact]:
+    def impact(self) -> Impact | None:
         return self._json["impact"]
 
     @property
@@ -88,9 +87,7 @@ class AxeResults(Protocol):
     def violations_with_impact_of_at_least(self, impact: Impact) -> list[Violation]:
         """"""
 
-    def assert_no_violations_with_impact_of_at_least(
-        self, impact: Impact, excludes: Optional[list[str]] = None
-    ) -> None:
+    def assert_no_violations_with_impact_of_at_least(self, impact: Impact, excludes: list[str] | None = None) -> None:
         """"""
 
 
@@ -116,9 +113,7 @@ class RealAxeResults(AxeResults):
     def violations_with_impact_of_at_least(self, impact: Impact) -> list[Violation]:
         return [v for v in self.violations() if v.is_impact_at_least(impact)]
 
-    def assert_no_violations_with_impact_of_at_least(
-        self, impact: Impact, excludes: Optional[list[str]] = None
-    ) -> None:
+    def assert_no_violations_with_impact_of_at_least(self, impact: Impact, excludes: list[str] | None = None) -> None:
         excludes = excludes or []
         violations = self.violations_with_impact_of_at_least(impact)
         filtered_violations = [v for v in violations if v.id not in excludes]
@@ -142,9 +137,7 @@ class NullAxeResults(AxeResults):
     def violations_with_impact_of_at_least(self, impact: Impact) -> list[Violation]:
         return []
 
-    def assert_no_violations_with_impact_of_at_least(
-        self, impact: Impact, excludes: Optional[list[str]] = None
-    ) -> None:
+    def assert_no_violations_with_impact_of_at_least(self, impact: Impact, excludes: list[str] | None = None) -> None:
         pass
 
 
@@ -157,7 +150,7 @@ def assert_baseline_accessible(axe_results: AxeResults) -> None:
             raise AssertionError(violation.message)
 
 
-def _check_list_for_id(result_list: list[dict[str, Any]], id) -> Optional[dict[str, Any]]:
+def _check_list_for_id(result_list: list[dict[str, Any]], id) -> dict[str, Any] | None:
     for result in result_list:
         if result.get("id") == id:
             return result

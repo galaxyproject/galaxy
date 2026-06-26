@@ -37,8 +37,6 @@ from typing import (
     BinaryIO,
     cast,
     IO,
-    Optional,
-    Union,
 )
 
 from galaxy.files.models import (
@@ -73,7 +71,7 @@ class FakedNameIO:
     having to alter the `rspace-client-python` library itself.
     """
 
-    def __init__(self, handle: IO, name: Optional[str] = None):
+    def __init__(self, handle: IO, name: str | None = None):
         """Initialize the wrapper from an existing file-like object."""
         self._handle = handle
         self._name = name
@@ -115,7 +113,7 @@ if RSpaceGalleryFilesystem is not None:
 
             self.eln_client.upload_file = MethodType(upload_file, self.eln_client)
 
-        def upload(self, path: str, file: BinaryIO, chunk_size: Optional[int] = None, **options: Any) -> None:
+        def upload(self, path: str, file: BinaryIO, chunk_size: int | None = None, **options: Any) -> None:
             """
             Patch the `upload()` method to retrieve the global id from the saved upload response.
             """
@@ -124,8 +122,8 @@ if RSpaceGalleryFilesystem is not None:
 
 
 class RSpaceFileSourceTemplateConfiguration(BaseFileSourceTemplateConfiguration):
-    endpoint: Union[str, TemplateExpansion]
-    api_key: Union[str, TemplateExpansion]
+    endpoint: str | TemplateExpansion
+    api_key: str | TemplateExpansion
 
 
 class RSpaceFileSourceConfiguration(BaseFileSourceConfiguration):
@@ -156,7 +154,7 @@ class RSpaceFilesSource(PyFilesystem2FilesSource[RSpaceFileSourceTemplateConfigu
         gallery_fs = PatchedRSpaceGalleryFilesystem(context.config.endpoint, context.config.api_key)
         gallery_fs_upload_method = gallery_fs.upload
 
-        def upload(self_, path: str, file: BinaryIO, chunk_size: Optional[int] = None, **options: Any) -> None:
+        def upload(self_, path: str, file: BinaryIO, chunk_size: int | None = None, **options: Any) -> None:
             gallery_fs_upload_method(
                 os.path.dirname(path),
                 cast(BinaryIO, FakedNameIO(file, name=os.path.basename(path))),

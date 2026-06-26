@@ -1,12 +1,7 @@
 import os
-from typing import (
+from collections.abc import (
     Callable,
-    Dict,
     Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
 )
 
 from pydantic import (
@@ -21,7 +16,7 @@ from galaxy.util import (
 )
 
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
-VALUE_TRANSLATION_FUNCTIONS: Dict[str, Callable] = dict(abspath=os.path.abspath)
+VALUE_TRANSLATION_FUNCTIONS: dict[str, Callable] = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 
 
@@ -33,10 +28,10 @@ class DataTableBundleProcessorDataTableOutputColumnTranslation(BaseModel):
 
 class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
     type: str
-    source_base: Optional[str] = None
+    source_base: str | None = None
     source_value: str = ""
-    target_base: Optional[str] = None
-    target_value: Optional[str] = None
+    target_base: str | None = None
+    target_value: str | None = None
     relativize_symlinks: bool
     model_config = ConfigDict(extra="forbid")
 
@@ -44,9 +39,9 @@ class DataTableBundleProcessorDataTableOutputColumnMove(BaseModel):
 class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
     name: str
     data_table_name: str
-    output_ref: Optional[str] = None
-    value_translations: List[DataTableBundleProcessorDataTableOutputColumnTranslation] = []
-    moves: List[DataTableBundleProcessorDataTableOutputColumnMove] = []
+    output_ref: str | None = None
+    value_translations: list[DataTableBundleProcessorDataTableOutputColumnTranslation] = []
+    moves: list[DataTableBundleProcessorDataTableOutputColumnMove] = []
     model_config = ConfigDict(extra="forbid")
 
     @model_validator(mode="before")
@@ -59,30 +54,30 @@ class DataTableBundleProcessorDataTableOutputColumn(BaseModel):
 
 
 class DataTableBundleProcessorDataTableOutput(BaseModel):
-    columns: List[DataTableBundleProcessorDataTableOutputColumn]
+    columns: list[DataTableBundleProcessorDataTableOutputColumn]
     model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDataTable(BaseModel):
     name: str
-    output: Optional[DataTableBundleProcessorDataTableOutput] = None
+    output: DataTableBundleProcessorDataTableOutput | None = None
     model_config = ConfigDict(extra="forbid")
 
 
 class DataTableBundleProcessorDescription(BaseModel):
     undeclared_tables: bool = False
-    data_tables: List[DataTableBundleProcessorDataTable]
+    data_tables: list[DataTableBundleProcessorDataTable]
     model_config = ConfigDict(extra="forbid")
 
     @property
-    def data_table_names(self) -> List[str]:
+    def data_table_names(self) -> list[str]:
         names = []
         for data_table in self.data_tables:
             data_table_name = data_table.name
             names.append(data_table_name)
         return names
 
-    def _walk_columns(self) -> Iterator[Tuple[str, DataTableBundleProcessorDataTableOutputColumn]]:
+    def _walk_columns(self) -> Iterator[tuple[str, DataTableBundleProcessorDataTableOutputColumn]]:
         for data_table in self.data_tables:
             data_table_name = data_table.name
             output = data_table.output
@@ -91,8 +86,8 @@ class DataTableBundleProcessorDescription(BaseModel):
                     yield (data_table_name, column)
 
     @property
-    def output_ref_by_data_table(self) -> Dict[str, Dict[str, str]]:
-        output_refs: Dict[str, Dict[str, str]] = {}
+    def output_ref_by_data_table(self) -> dict[str, dict[str, str]]:
+        output_refs: dict[str, dict[str, str]] = {}
         for data_table_name, column in self._walk_columns():
             data_table_column_name = column.data_table_name
             output_ref = column.output_ref
@@ -103,8 +98,8 @@ class DataTableBundleProcessorDescription(BaseModel):
         return output_refs
 
     @property
-    def move_by_data_table_column(self) -> Dict[str, Dict[str, DataTableBundleProcessorDataTableOutputColumnMove]]:
-        by_column: Dict[str, Dict[str, DataTableBundleProcessorDataTableOutputColumnMove]] = {}
+    def move_by_data_table_column(self) -> dict[str, dict[str, DataTableBundleProcessorDataTableOutputColumnMove]]:
+        by_column: dict[str, dict[str, DataTableBundleProcessorDataTableOutputColumnMove]] = {}
         for data_table_name, column in self._walk_columns():
             data_table_column_name = column.data_table_name
             for move in column.moves:
@@ -115,8 +110,8 @@ class DataTableBundleProcessorDescription(BaseModel):
         return by_column
 
     @property
-    def value_translation_by_data_table_column(self) -> Dict[str, Dict[str, List[Union[str, Callable]]]]:
-        by_column: Dict[str, Dict[str, List[Union[str, Callable]]]] = {}
+    def value_translation_by_data_table_column(self) -> dict[str, dict[str, list[str | Callable]]]:
+        by_column: dict[str, dict[str, list[str | Callable]]] = {}
         for data_table_name, column in self._walk_columns():
             data_table_column_name = column.data_table_name
             for value_translation_model in column.value_translations:
@@ -126,7 +121,7 @@ class DataTableBundleProcessorDescription(BaseModel):
                     by_column[data_table_name] = {}
                 if data_table_column_name not in by_column[data_table_name]:
                     by_column[data_table_name][data_table_column_name] = []
-                value_translation: Union[str, Callable]
+                value_translation: str | Callable
                 if value_translation_type == "function":
                     if value_translation_str in VALUE_TRANSLATION_FUNCTIONS:
                         value_translation = VALUE_TRANSLATION_FUNCTIONS[value_translation_str]
@@ -152,8 +147,8 @@ class RepoInfo(BaseModel):
 class DataTableBundle(BaseModel):
     processor_description: DataTableBundleProcessorDescription
     data_tables: dict
-    output_name: Optional[str] = None
-    repo_info: Optional[RepoInfo] = None
+    output_name: str | None = None
+    repo_info: RepoInfo | None = None
 
 
 def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundleProcessorDataTableOutputColumnMove:
@@ -171,7 +166,7 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
     target_elem = move_elem.find("target")
     if target_elem is None:
         target_base = None
-        target_value: Optional[str] = ""
+        target_value: str | None = ""
     else:
         target_base = target_elem.get("base", None)
         target_value = target_elem.text
@@ -187,9 +182,8 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
 
 def _xml_to_data_table_output_column_translation(
     value_translation_elem: Element,
-) -> Optional[DataTableBundleProcessorDataTableOutputColumnTranslation]:
-    value_translation = value_translation_elem.text
-    if value_translation is not None:
+) -> DataTableBundleProcessorDataTableOutputColumnTranslation | None:
+    if (value_translation := value_translation_elem.text) is not None:
         value_translation_type = value_translation_elem.get("type", DEFAULT_VALUE_TRANSLATION_TYPE)
         return DataTableBundleProcessorDataTableOutputColumnTranslation(
             value=value_translation, type=value_translation_type
@@ -225,7 +219,7 @@ def _xml_to_data_table_output_column(column_elem: Element) -> DataTableBundlePro
     )
 
 
-def _xml_to_data_table_output(output_elem: Optional[Element]) -> Optional[DataTableBundleProcessorDataTableOutput]:
+def _xml_to_data_table_output(output_elem: Element | None) -> DataTableBundleProcessorDataTableOutput | None:
     if output_elem is not None:
         columns = []
         for column_elem in output_elem.findall("column"):

@@ -273,11 +273,11 @@ class ConfigurationTemplateEnvironmentVariable(TypedDict):
     variable: str
 
 
-CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY = Union[
-    ConfigurationTemplateEnvironmentSecret, ConfigurationTemplateEnvironmentVariable
-]
+CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY = (
+    ConfigurationTemplateEnvironmentSecret | ConfigurationTemplateEnvironmentVariable
+)
 CONFIGURATION_TEMPLATE_ENVIRONMENT = list[CONFIGURATION_TEMPLATE_ENVIRONMENT_ENTRY]
-CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = Union[str, bool, int]
+CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE = str | bool | int
 CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE = dict[str, CONFIGURATION_TEMPLATE_CONFIGURATION_VALUE_TYPE]
 CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE = list[str]
 CONFIGURATION_TEMPLATE_DEFINITION_TYPE = dict[str, Any]
@@ -301,13 +301,13 @@ REQUESTED_TRANSFORM_ACTIONS = list[RequestedTransformAction]
 
 mapper_registry = registry(
     type_annotation_map={
-        Optional[STR_TO_STR_DICT]: JSONType,
-        Optional[TRANSFORM_ACTIONS]: MutableJSONType,
-        Optional[REQUESTED_TRANSFORM_ACTIONS]: MutableJSONType,
-        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]: JSONType,
-        Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]: JSONType,
-        Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]: JSONType,
-        Optional[CONFIGURATION_TEMPLATE_ENVIRONMENT]: JSONType,
+        STR_TO_STR_DICT | None: JSONType,
+        TRANSFORM_ACTIONS | None: MutableJSONType,
+        REQUESTED_TRANSFORM_ACTIONS | None: MutableJSONType,
+        CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE | None: JSONType,
+        CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE | None: JSONType,
+        CONFIGURATION_TEMPLATE_DEFINITION_TYPE | None: JSONType,
+        CONFIGURATION_TEMPLATE_ENVIRONMENT | None: JSONType,
     },
 )
 
@@ -341,7 +341,7 @@ else:
     _HasTable = object
 
 
-def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
+def get_uuid(uuid: UUID | str | None = None) -> UUID:
     if isinstance(uuid, UUID):
         return uuid
     if not uuid:
@@ -352,7 +352,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
 def to_json(sa_session, column, keys: list[str]):
     assert sa_session.bind
     if sa_session.bind.dialect.name == "postgresql":
-        cast: Union[ColumnElement[Any], Cast[Any]] = func.cast(func.convert_from(column, "UTF8"), JSONB)
+        cast: ColumnElement[Any] | Cast[Any] = func.cast(func.convert_from(column, "UTF8"), JSONB)
         for key in keys:
             cast = cast.__getitem__(key)
         return cast.astext
@@ -458,10 +458,10 @@ class SerializationOptions:
     def __init__(
         self,
         for_edit: bool,
-        serialize_dataset_objects: Optional[bool] = None,
-        serialize_files_handler: Optional[SerializeFilesHandler] = None,
-        strip_metadata_files: Optional[bool] = None,
-        ignore_errors: Optional[bool] = False,
+        serialize_dataset_objects: bool | None = None,
+        serialize_files_handler: SerializeFilesHandler | None = None,
+        strip_metadata_files: bool | None = None,
+        ignore_errors: bool | None = False,
     ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
@@ -540,7 +540,7 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
-    update_time: Mapped[Optional[datetime]]
+    update_time: Mapped[datetime | None]
 
     @property
     def seconds_since_updated(self):
@@ -561,11 +561,11 @@ class WorkerProcess(Base, UsesCreateAndUpdateTime):
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_name: Mapped[Optional[str]] = mapped_column(String(255), index=True)
-    hostname: Mapped[Optional[str]] = mapped_column(String(255))
-    pid: Mapped[Optional[int]]
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    app_type: Mapped[Optional[str]]
+    server_name: Mapped[str | None] = mapped_column(String(255), index=True)
+    hostname: Mapped[str | None] = mapped_column(String(255))
+    pid: Mapped[int | None]
+    update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
+    app_type: Mapped[str | None]
 
 
 def cached_id(galaxy_model_object):
@@ -595,8 +595,8 @@ def cached_id(galaxy_model_object):
 
 
 class JobLike:
-    job_messages: Mapped[Optional[list[AnyJobMessage]]]
-    tool_id: Union[str, None]
+    job_messages: Mapped[list[AnyJobMessage] | None]
+    tool_id: str | None
     MAX_NUMERIC = 10 ** (JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
@@ -637,7 +637,7 @@ class JobLike:
         tool_stderr,
         job_stdout=None,
         job_stderr=None,
-        job_messages: Optional[list[AnyJobMessage]] = None,
+        job_messages: list[AnyJobMessage] | None = None,
     ):
         def shrink_and_unicodify(what, stream):
             if stream and len(stream) > galaxy.util.DATABASE_MAX_STRING_SIZE:
@@ -663,7 +663,7 @@ class JobLike:
             self.job_stderr = None
 
         if job_messages is not None:
-            self.job_messages = cast(Optional[list[AnyJobMessage]], job_messages)
+            self.job_messages = cast(list[AnyJobMessage] | None, job_messages)
 
     def log_str(self) -> str:
         extra = ""
@@ -825,14 +825,14 @@ def calculate_disk_usage_per_objectstore(sa_session, user_id: int):
 # move these to galaxy.schema.schema once galaxy-data depends on
 # galaxy-schema.
 class UserQuotaBasicUsage(BaseModel):
-    quota_source_label: Optional[str] = None
+    quota_source_label: str | None = None
     total_disk_usage: float
 
 
 class UserQuotaUsage(UserQuotaBasicUsage):
-    quota_percent: Optional[float] = None
-    quota_bytes: Optional[int] = None
-    quota: Optional[str] = None
+    quota_percent: float | None = None
+    quota_bytes: int | None = None
+    quota: str | None = None
 
 
 class UserObjectstoreUsage(BaseModel):
@@ -861,18 +861,18 @@ class User(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     email: Mapped[str] = mapped_column(TrimmedString(255), index=True, unique=True)
-    username: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
+    username: Mapped[str | None] = mapped_column(TrimmedString(255), index=True, unique=True)
     password: Mapped[str] = mapped_column(TrimmedString(255))
-    last_password_change: Mapped[Optional[datetime]] = mapped_column(default=now)
-    external: Mapped[Optional[bool]] = mapped_column(default=False)
-    form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
+    last_password_change: Mapped[datetime | None] = mapped_column(default=now)
+    external: Mapped[bool | None] = mapped_column(default=False)
+    form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
     preferred_object_store_id: Mapped[str] = mapped_column(String(255), nullable=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
+    disk_usage: Mapped[Decimal | None] = mapped_column(Numeric(15, 0), index=True)
     # Column("person_metadata", JSONType),  # TODO: add persistent, configurable metadata rep for workflow creator
     active: Mapped[bool] = mapped_column(index=True, default=True)
-    activation_token: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
+    activation_token: Mapped[str | None] = mapped_column(TrimmedString(64), index=True)
 
     addresses: Mapped[list["UserAddress"]] = relationship(
         back_populates="user", order_by=lambda: desc(UserAddress.update_time)
@@ -881,7 +881,8 @@ class User(Base, Dictifiable, RepresentById):
     default_permissions: Mapped[list["DefaultUserPermissions"]] = relationship(back_populates="user")
     groups: Mapped[list["UserGroupAssociation"]] = relationship(back_populates="user")
     histories: Mapped[list["History"]] = relationship(
-        back_populates="user", order_by=lambda: desc(History.update_time)  # type: ignore[has-type]
+        back_populates="user",
+        order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
     )
     active_histories: Mapped[list["History"]] = relationship(
         primaryjoin=(lambda: (History.user_id == User.id) & (not_(History.deleted)) & (not_(History.archived))),
@@ -898,9 +899,11 @@ class User(Base, Dictifiable, RepresentById):
     social_auth: Mapped[list["UserAuthnzToken"]] = relationship(back_populates="user")
     stored_workflow_menu_entries: Mapped[list["StoredWorkflowMenuEntry"]] = relationship(
         primaryjoin=(
-            lambda: (StoredWorkflowMenuEntry.user_id == User.id)
-            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
-            & not_(StoredWorkflow.deleted)
+            lambda: (
+                (StoredWorkflowMenuEntry.user_id == User.id)
+                & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
+                & not_(StoredWorkflow.deleted)
+            )
         ),
         back_populates="user",
         cascade="all, delete-orphan",
@@ -1317,7 +1320,7 @@ ON CONFLICT
 
     def dictify_usage(self, object_store=None) -> list[UserQuotaBasicUsage]:
         """Include object_store to include empty/unused usage info."""
-        used_labels: set[Union[str, None]] = set()
+        used_labels: set[str | None] = set()
         rval: list[UserQuotaBasicUsage] = [
             UserQuotaBasicUsage(
                 quota_source_label=None,
@@ -1347,7 +1350,7 @@ ON CONFLICT
 
         return rval
 
-    def dictify_usage_for(self, quota_source_label: Optional[str]) -> UserQuotaBasicUsage:
+    def dictify_usage_for(self, quota_source_label: str | None) -> UserQuotaBasicUsage:
         rval: UserQuotaBasicUsage
         if quota_source_label is None:
             rval = UserQuotaBasicUsage(
@@ -1369,7 +1372,7 @@ ON CONFLICT
 
         return rval
 
-    def quota_source_usage_for(self, quota_source_label: Optional[str]) -> Optional["UserQuotaSourceUsage"]:
+    def quota_source_usage_for(self, quota_source_label: str | None) -> Optional["UserQuotaSourceUsage"]:
         for quota_source_usage in self.quota_source_usages:
             if quota_source_usage.quota_source_label == quota_source_label:
                 return quota_source_usage
@@ -1386,8 +1389,8 @@ class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token: Mapped[str] = mapped_column(String(32), primary_key=True, unique=True, index=True)
-    expiration_time: Mapped[Optional[datetime]]
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    expiration_time: Mapped[datetime | None]
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     user: Mapped[Optional["User"]] = relationship()
 
     def __init__(self, user, token=None):
@@ -1404,12 +1407,12 @@ class ToolSource(Base, Dictifiable, RepresentById):
     __table_args__ = (UniqueConstraint("hash", "source_class", "identity_hash"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    hash: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    hash: Mapped[str | None] = mapped_column(Unicode(255))
     source: Mapped[dict] = mapped_column(JSONType)
     source_class: Mapped[str] = mapped_column(TrimmedString(255))
-    tool_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
-    tool_version: Mapped[Optional[str]] = mapped_column(String(255))
-    dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    tool_version: Mapped[str | None] = mapped_column(String(255))
+    dynamic_tool_id: Mapped[int | None] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
     identity_hash: Mapped[str] = mapped_column(String(255))
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
@@ -1437,11 +1440,11 @@ class ToolRequest(Base, Dictifiable, RepresentById):
     tool_source_id: Mapped[int] = mapped_column(ForeignKey("tool_source.id"), index=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=False)
     request: Mapped[dict] = mapped_column(JSONType)
-    state: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True)
-    state_message: Mapped[Optional[str]] = mapped_column(JSONType, index=True)
+    state: Mapped[str | None] = mapped_column(TrimmedString(32), index=True)
+    state_message: Mapped[str | None] = mapped_column(JSONType, index=True)
     # Validity of ``request`` (``not_validated`` / ``validated`` /
     # ``validation_failed``). Set whenever the payload is captured.
-    request_state: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
+    request_state: Mapped[str | None] = mapped_column(TrimmedString(32))
 
     tool_source: Mapped["ToolSource"] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="tool_requests")
@@ -1476,25 +1479,25 @@ class UserDynamicToolAssociation(Base, Dictifiable, RepresentById):
     dynamic_tool_id: Mapped[int] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    hidden: Mapped[Optional[bool]] = mapped_column(default=False)
-    active: Mapped[Optional[bool]] = mapped_column(default=True)
+    hidden: Mapped[bool | None] = mapped_column(default=False)
+    active: Mapped[bool | None] = mapped_column(default=True)
 
 
 class DynamicTool(Base, Dictifiable, RepresentById):
     __tablename__ = "dynamic_tool"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType())
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType())
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    tool_id: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    tool_version: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    tool_format: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    tool_path: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    tool_directory: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    hidden: Mapped[Optional[bool]] = mapped_column(default=True)
-    active: Mapped[Optional[bool]] = mapped_column(default=True)
-    value: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)
+    tool_id: Mapped[str | None] = mapped_column(Unicode(255))
+    tool_version: Mapped[str | None] = mapped_column(Unicode(255))
+    tool_format: Mapped[str | None] = mapped_column(Unicode(255))
+    tool_path: Mapped[str | None] = mapped_column(Unicode(255))
+    tool_directory: Mapped[str | None] = mapped_column(Unicode(255))
+    hidden: Mapped[bool | None] = mapped_column(default=True)
+    active: Mapped[bool | None] = mapped_column(default=True)
+    value: Mapped[dict[str, Any] | None] = mapped_column(MutableJSONType)
     public: Mapped[bool] = mapped_column(default=False, server_default=false())
 
     dict_collection_visible_keys = (
@@ -1546,10 +1549,10 @@ class JobMetricText(BaseJobMetric, RepresentById):
     __tablename__ = "job_metric_text"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_value: Mapped[Optional[str]] = mapped_column(Unicode(JOB_METRIC_MAX_LENGTH))
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    plugin: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_name: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_value: Mapped[str | None] = mapped_column(Unicode(JOB_METRIC_MAX_LENGTH))
 
     def copy_to_job(self, job: "Job"):
         job.text_metrics.append(
@@ -1565,10 +1568,10 @@ class JobMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = "job_metric_numeric"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    plugin: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_name: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_value: Mapped[Decimal | None] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
 
     def copy_to_job(self, job: "Job"):
         job.numeric_metrics.append(
@@ -1584,20 +1587,20 @@ class TaskMetricText(BaseJobMetric, RepresentById):
     __tablename__ = "task_metric_text"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("task.id"), index=True)
-    plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_value: Mapped[Optional[str]] = mapped_column(Unicode(JOB_METRIC_MAX_LENGTH))
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("task.id"), index=True)
+    plugin: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_name: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_value: Mapped[str | None] = mapped_column(Unicode(JOB_METRIC_MAX_LENGTH))
 
 
 class TaskMetricNumeric(BaseJobMetric, RepresentById):
     __tablename__ = "task_metric_numeric"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    task_id: Mapped[Optional[int]] = mapped_column(ForeignKey("task.id"), index=True)
-    plugin: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    metric_value: Mapped[Optional[Decimal]] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
+    task_id: Mapped[int | None] = mapped_column(ForeignKey("task.id"), index=True)
+    plugin: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_name: Mapped[str | None] = mapped_column(Unicode(255))
+    metric_value: Mapped[Decimal | None] = mapped_column(Numeric(JOB_METRIC_PRECISION, JOB_METRIC_SCALE))
 
 
 InpDataDictT = dict[str, Optional["DatasetInstance"]]
@@ -1629,39 +1632,39 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
-    tool_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
-    tool_version: Mapped[Optional[str]] = mapped_column(TEXT, default="1.0.0")
-    galaxy_version: Mapped[Optional[str]] = mapped_column(String(64), default=None)
-    dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    library_folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    tool_version: Mapped[str | None] = mapped_column(TEXT, default="1.0.0")
+    galaxy_version: Mapped[str | None] = mapped_column(String(64), default=None)
+    dynamic_tool_id: Mapped[int | None] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
     state: Mapped[str] = mapped_column(String(64), index=True, nullable=True)
-    info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    copied_from_job_id: Mapped[Optional[int]]
-    command_line: Mapped[Optional[str]] = mapped_column(TEXT)
-    dependencies: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    job_messages: Mapped[Optional[list[AnyJobMessage]]] = mapped_column(MutableJSONType)
-    param_filename: Mapped[Optional[str]] = mapped_column(String(1024))
-    runner_name: Mapped[Optional[str]] = mapped_column(String(255))
-    job_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
-    job_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
-    exit_code: Mapped[Optional[int]]
-    traceback: Mapped[Optional[str]] = mapped_column(TEXT)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    job_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
-    job_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
-    destination_id: Mapped[Optional[str]] = mapped_column(String(255))
-    destination_params: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)
-    object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    imported: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
-    handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
-    object_store_id_overrides: Mapped[Optional[dict[str, Optional[str]]]] = mapped_column(JSONType)
-    tool_request_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tool_request.id"), index=True)
-    tool_state: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON().with_variant(JSONB, "postgresql"))
+    info: Mapped[str | None] = mapped_column(TrimmedString(255))
+    copied_from_job_id: Mapped[int | None]
+    command_line: Mapped[str | None] = mapped_column(TEXT)
+    dependencies: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    job_messages: Mapped[list[AnyJobMessage] | None] = mapped_column(MutableJSONType)
+    param_filename: Mapped[str | None] = mapped_column(String(1024))
+    runner_name: Mapped[str | None] = mapped_column(String(255))
+    job_stdout: Mapped[str | None] = mapped_column(TEXT)
+    job_stderr: Mapped[str | None] = mapped_column(TEXT)
+    tool_stdout: Mapped[str | None] = mapped_column(TEXT)
+    tool_stderr: Mapped[str | None] = mapped_column(TEXT)
+    exit_code: Mapped[int | None]
+    traceback: Mapped[str | None] = mapped_column(TEXT)
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    job_runner_name: Mapped[str | None] = mapped_column(String(255))
+    job_runner_external_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    destination_id: Mapped[str | None] = mapped_column(String(255))
+    destination_params: Mapped[dict[str, Any] | None] = mapped_column(MutableJSONType)
+    object_store_id: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    imported: Mapped[bool | None] = mapped_column(default=False, index=True)
+    handler: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    preferred_object_store_id: Mapped[str | None] = mapped_column(String(255))
+    object_store_id_overrides: Mapped[dict[str, str | None] | None] = mapped_column(JSONType)
+    tool_request_id: Mapped[int | None] = mapped_column(ForeignKey("tool_request.id"), index=True)
+    tool_state: Mapped[dict[str, Any] | None] = mapped_column(JSON().with_variant(JSONB, "postgresql"))
 
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
     tool_request: Mapped[Optional["ToolRequest"]] = relationship(back_populates="jobs")
@@ -1887,12 +1890,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 job.history.add_pending_items()
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
-        inp_data: dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
+        inp_data: dict[str, DatasetInstance | None] = {da.name: da.dataset for da in self.input_datasets}
         out_data: dict[str, DatasetInstance] = {da.name: da.dataset for da in self.output_datasets}
         inp_data.update([(da.name, da.dataset) for da in self.input_library_datasets])
         out_data.update([(da.name, da.dataset) for da in self.output_library_datasets])
 
-        out_collections: dict[str, Union[DatasetCollectionInstance, DatasetCollection]]
+        out_collections: dict[str, DatasetCollectionInstance | DatasetCollection]
         if not exclude_implicit_outputs:
             out_collections = {
                 obj.name: obj.dataset_collection_instance for obj in self.output_dataset_collection_instances
@@ -2531,27 +2534,27 @@ class Task(Base, JobLike, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    execution_time: Mapped[Optional[datetime]]
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    state: Mapped[Optional[str]] = mapped_column(String(64), index=True)
-    command_line: Mapped[Optional[str]] = mapped_column(TEXT)
-    param_filename: Mapped[Optional[str]] = mapped_column(String(1024))
-    runner_name: Mapped[Optional[str]] = mapped_column(String(255))
-    job_stdout: Mapped[Optional[str]] = mapped_column(
+    execution_time: Mapped[datetime | None]
+    update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
+    state: Mapped[str | None] = mapped_column(String(64), index=True)
+    command_line: Mapped[str | None] = mapped_column(TEXT)
+    param_filename: Mapped[str | None] = mapped_column(String(1024))
+    runner_name: Mapped[str | None] = mapped_column(String(255))
+    job_stdout: Mapped[str | None] = mapped_column(
         TEXT
     )  # job_stdout makes sense here because it is short for job script standard out
-    job_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_stdout: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_stderr: Mapped[Optional[str]] = mapped_column(TEXT)
-    exit_code: Mapped[Optional[int]]
-    job_messages: Mapped[Optional[list[AnyJobMessage]]] = mapped_column(MutableJSONType)
-    info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    traceback: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_stderr: Mapped[str | None] = mapped_column(TEXT)
+    tool_stdout: Mapped[str | None] = mapped_column(TEXT)
+    tool_stderr: Mapped[str | None] = mapped_column(TEXT)
+    exit_code: Mapped[int | None]
+    job_messages: Mapped[list[AnyJobMessage] | None] = mapped_column(MutableJSONType)
+    info: Mapped[str | None] = mapped_column(TrimmedString(255))
+    traceback: Mapped[str | None] = mapped_column(TEXT)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
-    working_directory: Mapped[Optional[str]] = mapped_column(String(1024))
-    task_runner_name: Mapped[Optional[str]] = mapped_column(String(255))
-    task_runner_external_id: Mapped[Optional[str]] = mapped_column(String(255))
-    prepare_input_files_cmd: Mapped[Optional[str]] = mapped_column(TEXT)
+    working_directory: Mapped[str | None] = mapped_column(String(1024))
+    task_runner_name: Mapped[str | None] = mapped_column(String(255))
+    task_runner_external_id: Mapped[str | None] = mapped_column(String(255))
+    prepare_input_files_cmd: Mapped[str | None] = mapped_column(TEXT)
     job: Mapped["Job"] = relationship(back_populates="tasks")
     text_metrics: Mapped[list["TaskMetricText"]] = relationship()
     numeric_metrics: Mapped[list["TaskMetricNumeric"]] = relationship()
@@ -2698,9 +2701,9 @@ class JobParameter(Base, RepresentById):
     __tablename__ = "job_parameter"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    value: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    name: Mapped[str | None] = mapped_column(String(255))
+    value: Mapped[str | None] = mapped_column(TEXT)
 
     def __init__(self, name, value):
         self.name = name
@@ -2715,12 +2718,12 @@ class JobToInputDatasetAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(
+    dataset_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    dataset_version: Mapped[Optional[int]]
+    dataset_version: Mapped[int | None]
     name: Mapped[str] = mapped_column(String(255), nullable=True)
-    adapter: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    adapter: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         lazy="joined", back_populates="dependent_jobs"
     )
@@ -2765,7 +2768,7 @@ class JobToInputDatasetCollectionAssociation(Base, RepresentById):
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=True)
-    adapter: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    adapter: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collections")
 
@@ -2784,7 +2787,7 @@ class JobToInputDatasetCollectionElementAssociation(Base, RepresentById):
         ForeignKey("dataset_collection_element.id"), index=True, nullable=True
     )
     name: Mapped[str] = mapped_column(Unicode(255), nullable=True)
-    adapter: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType, nullable=True)
+    adapter: Mapped[dict[str, Any] | None] = mapped_column(JSONType, nullable=True)
     dataset_collection_element: Mapped["DatasetCollectionElement"] = relationship(lazy="joined")
     job: Mapped["Job"] = relationship(back_populates="input_dataset_collection_elements")
 
@@ -2878,9 +2881,9 @@ class JobStateHistory(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    state: Mapped[Optional[str]] = mapped_column(String(64), index=True)
-    info: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    state: Mapped[str | None] = mapped_column(String(64), index=True)
+    info: Mapped[str | None] = mapped_column(TrimmedString(255))
 
     def __init__(self, job):
         self.job_id = job.id
@@ -2893,12 +2896,12 @@ class JobCredentialsContextAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True)
-    user_credentials_id: Mapped[Optional[int]] = mapped_column(
+    user_credentials_id: Mapped[int | None] = mapped_column(
         ForeignKey("user_credentials.id", ondelete="SET NULL"), index=True, nullable=True
     )
     service_name: Mapped[str] = mapped_column(String(255))
     service_version: Mapped[str] = mapped_column(String(255))
-    selected_group_id: Mapped[Optional[int]] = mapped_column(
+    selected_group_id: Mapped[int | None] = mapped_column(
         ForeignKey("credentials_group.id", ondelete="SET NULL"), index=True, nullable=True
     )
     selected_group_name: Mapped[str] = mapped_column(String(255))
@@ -2910,10 +2913,10 @@ class JobCredentialsContextAssociation(Base, RepresentById):
     def __init__(
         self,
         job: "Job",
-        user_credentials_id: Optional[int],
+        user_credentials_id: int | None,
         service_name: str,
         service_version: str,
-        selected_group_id: Optional[int],
+        selected_group_id: int | None,
         selected_group_name: str,
     ):
         self.job = job
@@ -2928,18 +2931,20 @@ class ImplicitlyCreatedDatasetCollectionInput(Base, RepresentById):
     __tablename__ = "implicitly_created_dataset_collection_inputs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_collection_id: Mapped[Optional[int]] = mapped_column(
+    dataset_collection_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True
     )
-    input_dataset_collection_id: Mapped[Optional[int]] = mapped_column(
+    input_dataset_collection_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True
     )
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    name: Mapped[str | None] = mapped_column(Unicode(255))
 
     input_dataset_collection: Mapped[Optional["HistoryDatasetCollectionAssociation"]] = relationship(
         primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id
-            == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id
+            lambda: (
+                HistoryDatasetCollectionAssociation.id
+                == ImplicitlyCreatedDatasetCollectionInput.input_dataset_collection_id
+            )
         ),
     )
 
@@ -3045,10 +3050,10 @@ class PostJobAction(Base, RepresentById):
     __tablename__ = "post_job_action"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"), index=True)
     action_type: Mapped[str] = mapped_column(String(255))
-    output_name: Mapped[Optional[str]] = mapped_column(String(255))
-    _action_arguments: Mapped[Optional[dict[str, Any]]] = mapped_column("action_arguments", MutableJSONType)
+    output_name: Mapped[str | None] = mapped_column(String(255))
+    _action_arguments: Mapped[dict[str, Any] | None] = mapped_column("action_arguments", MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         back_populates="post_job_actions",
         primaryjoin=(lambda: WorkflowStep.id == PostJobAction.workflow_step_id),
@@ -3098,20 +3103,20 @@ class JobExternalOutputMetadata(Base, RepresentById):
     __tablename__ = "job_external_output_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    history_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    library_dataset_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True
     )
-    is_valid: Mapped[Optional[bool]] = mapped_column(default=True)
-    filename_in: Mapped[Optional[str]] = mapped_column(String(255))
-    filename_out: Mapped[Optional[str]] = mapped_column(String(255))
-    filename_results_code: Mapped[Optional[str]] = mapped_column(String(255))
-    filename_kwds: Mapped[Optional[str]] = mapped_column(String(255))
-    filename_override_metadata: Mapped[Optional[str]] = mapped_column(String(255))
-    job_runner_external_pid: Mapped[Optional[str]] = mapped_column(String(255))
+    is_valid: Mapped[bool | None] = mapped_column(default=True)
+    filename_in: Mapped[str | None] = mapped_column(String(255))
+    filename_out: Mapped[str | None] = mapped_column(String(255))
+    filename_results_code: Mapped[str | None] = mapped_column(String(255))
+    filename_kwds: Mapped[str | None] = mapped_column(String(255))
+    filename_override_metadata: Mapped[str | None] = mapped_column(String(255))
+    job_runner_external_pid: Mapped[str | None] = mapped_column(String(255))
     history_dataset_association: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(lazy="joined")
     library_dataset_dataset_association: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
         lazy="joined"
@@ -3159,11 +3164,11 @@ class JobExportHistoryArchive(Base, RepresentById):
     __tablename__ = "job_export_history_archive"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
-    compressed: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    history_attrs_filename: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
+    compressed: Mapped[bool | None] = mapped_column(index=True, default=False)
+    history_attrs_filename: Mapped[str | None] = mapped_column(TEXT)
     job: Mapped[Optional["Job"]] = relationship()
     dataset: Mapped[Optional["Dataset"]] = relationship()
     history: Mapped[Optional["History"]] = relationship(back_populates="exports")
@@ -3246,9 +3251,9 @@ class JobImportHistoryArchive(Base, RepresentById):
     __tablename__ = "job_import_history_archive"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    archive_dir: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    archive_dir: Mapped[str | None] = mapped_column(TEXT)
     job: Mapped[Optional["Job"]] = relationship()
     history: Mapped[Optional["History"]] = relationship()
 
@@ -3258,11 +3263,11 @@ class StoreExportAssociation(Base, RepresentById):
     __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    task_uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), index=True, unique=True)
+    task_uuid: Mapped[UUID | str | None] = mapped_column(UUIDType(), index=True, unique=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    object_type: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
-    object_id: Mapped[Optional[int]]
-    export_metadata: Mapped[Optional[dict]] = mapped_column(JSONType)
+    object_type: Mapped[str | None] = mapped_column(TrimmedString(32))
+    object_id: Mapped[int | None]
+    export_metadata: Mapped[dict | None] = mapped_column(JSONType)
 
 
 class JobContainerAssociation(Base, RepresentById):
@@ -3270,11 +3275,11 @@ class JobContainerAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     job_id: Mapped[int] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
-    container_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    container_name: Mapped[Optional[str]] = mapped_column(TEXT)
-    container_info: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    modified_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    container_type: Mapped[str | None] = mapped_column(TEXT)
+    container_name: Mapped[str | None] = mapped_column(TEXT)
+    container_info: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    created_time: Mapped[datetime | None] = mapped_column(default=now)
+    modified_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
     job: Mapped["Job"] = relationship(back_populates="container")
 
     def __init__(self, **kwd):
@@ -3288,23 +3293,23 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     __tablename__ = "interactivetool_entry_point"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TEXT)
     token: Mapped[str] = mapped_column(TEXT)
-    tool_port: Mapped[Optional[int]]
-    host: Mapped[Optional[str]] = mapped_column(TEXT)
-    port: Mapped[Optional[int]]
-    protocol: Mapped[Optional[str]] = mapped_column(TEXT)
-    entry_url: Mapped[Optional[str]] = mapped_column(TEXT)
-    requires_domain: Mapped[Optional[bool]] = mapped_column(default=True)
-    requires_path_in_url: Mapped[Optional[bool]] = mapped_column(default=False)
-    requires_path_in_header_named: Mapped[Optional[str]] = mapped_column(TEXT)
-    info: Mapped[Optional[dict]] = mapped_column(MutableJSONType)
-    configured: Mapped[Optional[bool]] = mapped_column(default=False)
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False)
-    created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    modified_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    label: Mapped[Optional[str]] = mapped_column(TEXT)
+    tool_port: Mapped[int | None]
+    host: Mapped[str | None] = mapped_column(TEXT)
+    port: Mapped[int | None]
+    protocol: Mapped[str | None] = mapped_column(TEXT)
+    entry_url: Mapped[str | None] = mapped_column(TEXT)
+    requires_domain: Mapped[bool | None] = mapped_column(default=True)
+    requires_path_in_url: Mapped[bool | None] = mapped_column(default=False)
+    requires_path_in_header_named: Mapped[str | None] = mapped_column(TEXT)
+    info: Mapped[dict | None] = mapped_column(MutableJSONType)
+    configured: Mapped[bool | None] = mapped_column(default=False)
+    deleted: Mapped[bool | None] = mapped_column(default=False)
+    created_time: Mapped[datetime | None] = mapped_column(default=now)
+    modified_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
+    label: Mapped[str | None] = mapped_column(TEXT)
     job: Mapped[Optional["Job"]] = relationship(back_populates="interactivetool_entry_points", uselist=False)
 
     dict_collection_visible_keys = [
@@ -3334,7 +3339,7 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         requires_path_in_url=False,
         configured=False,
         deleted=False,
-        token: Union[str, None] = None,
+        token: str | None = None,
         **kwd,
     ):
         super().__init__(**kwd)
@@ -3364,26 +3369,25 @@ class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
     __tablename__ = "genome_index_tool_data"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
-    fasta_path: Mapped[Optional[str]] = mapped_column(String(255))
-    created_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    modified_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
-    indexer: Mapped[Optional[str]] = mapped_column(String(64))
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
+    fasta_path: Mapped[str | None] = mapped_column(String(255))
+    created_time: Mapped[datetime | None] = mapped_column(default=now)
+    modified_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
+    indexer: Mapped[str | None] = mapped_column(String(64))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     job: Mapped[Optional["Job"]] = relationship()
     dataset: Mapped[Optional["Dataset"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
 
 class ChatExchange(Base, RepresentById):
-
     __tablename__ = "chat_exchange"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=False)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
-    page_id: Mapped[Optional[int]] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True, nullable=True)
+    page_id: Mapped[int | None] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="chat_exchanges")
     messages: Mapped[list["ChatExchangeMessage"]] = relationship(back_populates="chat_exchange")
@@ -3408,7 +3412,7 @@ class ChatExchangeMessage(Base, RepresentById):
     chat_exchange_id: Mapped[int] = mapped_column(ForeignKey("chat_exchange.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
     message: Mapped[str] = mapped_column(Text)
-    feedback: Mapped[Optional[int]] = mapped_column(Integer)
+    feedback: Mapped[int | None] = mapped_column(Integer)
     chat_exchange: Mapped["ChatExchange"] = relationship("ChatExchange", back_populates="messages")
 
     def __init__(self, message, feedback=None):
@@ -3422,8 +3426,8 @@ class Group(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    name: Mapped[str | None] = mapped_column(String(255), index=True, unique=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
     quotas: Mapped[list["GroupQuotaAssociation"]] = relationship(back_populates="group")
     roles: Mapped[list["GroupRoleAssociation"]] = relationship(back_populates="group")
     users: Mapped[list["UserGroupAssociation"]] = relationship("UserGroupAssociation", back_populates="group")
@@ -3460,10 +3464,10 @@ class Notification(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    publication_time: Mapped[Optional[datetime]] = mapped_column(
+    publication_time: Mapped[datetime | None] = mapped_column(
         default=now
     )  # The date of publication, can be a future date to allow scheduling
-    expiration_time: Mapped[Optional[datetime]] = mapped_column(
+    expiration_time: Mapped[datetime | None] = mapped_column(
         default=now() + timedelta(days=30 * 6)
     )  # The expiration date, expired notifications will be permanently removed from DB regularly
     source: Mapped[str] = mapped_column(
@@ -3478,12 +3482,12 @@ class Notification(Base, Dictifiable, RepresentById):
     dispatched: Mapped[bool] = mapped_column(
         Boolean, index=True, default=False
     )  # Whether the notification has been dispatched to users via other channels
-    galaxy_url: Mapped[Optional[str]] = mapped_column(
+    galaxy_url: Mapped[str | None] = mapped_column(
         String(255)
     )  # The URL to the Galaxy instance, used for generating links in the notification
     # A bug in early 23.1 led to values being stored as json string, so we use this special type to process the result value twice.
     # content should always be a dict
-    content: Mapped[Optional[bytes]] = mapped_column(DoubleEncodedJsonType)
+    content: Mapped[bytes | None] = mapped_column(DoubleEncodedJsonType)
 
     user_notification_associations: Mapped[list["UserNotificationAssociation"]] = relationship(
         back_populates="notification"
@@ -3502,9 +3506,9 @@ class UserNotificationAssociation(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True, nullable=True)
     notification_id: Mapped[int] = mapped_column(ForeignKey("notification.id"), index=True, nullable=True)
-    seen_time: Mapped[Optional[datetime]]
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    seen_time: Mapped[datetime | None]
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
 
     user: Mapped["User"] = relationship(back_populates="all_notifications")
     notification: Mapped["Notification"] = relationship(back_populates="user_notification_associations")
@@ -3571,19 +3575,19 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     _update_time: Mapped[datetime] = mapped_column(
         "update_time", DateTime, index=True, default=now, onupdate=now, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    hid_counter: Mapped[Optional[int]] = mapped_column(default=1)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    importing: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    genome_build: Mapped[Optional[str]] = mapped_column(TrimmedString(40))
-    importable: Mapped[Optional[bool]] = mapped_column(default=False)
-    slug: Mapped[Optional[str]] = mapped_column(TEXT)
-    published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    preferred_object_store_id: Mapped[Optional[str]] = mapped_column(String(255))
-    archived: Mapped[Optional[bool]] = mapped_column(index=True, default=False, server_default=false())
-    archive_export_id: Mapped[Optional[int]] = mapped_column(ForeignKey("store_export_association.id"), default=None)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TrimmedString(255))
+    hid_counter: Mapped[int | None] = mapped_column(default=1)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
+    importing: Mapped[bool | None] = mapped_column(index=True, default=False)
+    genome_build: Mapped[str | None] = mapped_column(TrimmedString(40))
+    importable: Mapped[bool | None] = mapped_column(default=False)
+    slug: Mapped[str | None] = mapped_column(TEXT)
+    published: Mapped[bool | None] = mapped_column(index=True, default=False)
+    preferred_object_store_id: Mapped[str | None] = mapped_column(String(255))
+    archived: Mapped[bool | None] = mapped_column(index=True, default=False, server_default=false())
+    archive_export_id: Mapped[int | None] = mapped_column(ForeignKey("store_export_association.id"), default=None)
 
     datasets: Mapped[list["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(lambda: HistoryDatasetAssociation.history_id == History.id),
@@ -3608,11 +3612,9 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     dataset_collections: Mapped[list["HistoryDatasetCollectionAssociation"]] = relationship(back_populates="history")
     active_dataset_collections: Mapped[list["HistoryDatasetCollectionAssociation"]] = relationship(
         primaryjoin=(
-            lambda: (
-                and_(
-                    HistoryDatasetCollectionAssociation.history_id == History.id,
-                    not_(HistoryDatasetCollectionAssociation.deleted),
-                )
+            lambda: and_(
+                HistoryDatasetCollectionAssociation.history_id == History.id,
+                not_(HistoryDatasetCollectionAssociation.deleted),
             )
         ),
         order_by=lambda: asc(HistoryDatasetCollectionAssociation.hid),
@@ -4107,9 +4109,9 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
     def paginated_active_visible_datasets(
         self,
         *,
-        extensions: Optional[set[str]] = None,
-        valid_states: Optional[tuple[str, ...]] = None,
-        search: Optional[str] = None,
+        extensions: set[str] | None = None,
+        valid_states: tuple[str, ...] | None = None,
+        search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetAssociation"], int]:
@@ -4214,7 +4216,7 @@ class History(Base, HasTags, UsesAnnotations, HasName, Serializable, UsesCreateA
         self,
         *,
         visible_only: bool = True,
-        search: Optional[str] = None,
+        search: str | None = None,
         offset: int = 0,
         limit: int = 50,
     ) -> tuple[list["HistoryDatasetCollectionAssociation"], int]:
@@ -4382,9 +4384,9 @@ class Role(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     name: Mapped[str] = mapped_column(String(255), index=True)
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    type: Mapped[Optional[str]] = mapped_column(String(40), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    type: Mapped[str | None] = mapped_column(String(40), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
     dataset_actions: Mapped[list["DatasetPermissions"]] = relationship(back_populates="role")
     groups: Mapped[list["GroupRoleAssociation"]] = relationship(back_populates="role")
     users: Mapped[list["UserRoleAssociation"]] = relationship(back_populates="role")
@@ -4420,8 +4422,8 @@ class UserQuotaSourceUsage(Base, Dictifiable, RepresentById):
     dict_element_visible_keys = ["disk_usage", "quota_source_label"]
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    quota_source_label: Mapped[str | None] = mapped_column(String(32), index=True)
     # user had an index on disk_usage - does that make any sense? -John
     disk_usage: Mapped[Decimal] = mapped_column(Numeric(15, 0), default=0)
     user: Mapped[Optional["User"]] = relationship(back_populates="quota_source_usages")
@@ -4472,12 +4474,12 @@ class Quota(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255), index=True, unique=True)
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    bytes: Mapped[Optional[int]] = mapped_column(BigInteger)
-    operation: Mapped[Optional[str]] = mapped_column(String(8))
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    quota_source_label: Mapped[Optional[str]] = mapped_column(String(32), default=None)
+    name: Mapped[str | None] = mapped_column(String(255), index=True, unique=True)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    bytes: Mapped[int | None] = mapped_column(BigInteger)
+    operation: Mapped[str | None] = mapped_column(String(8))
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    quota_source_label: Mapped[str | None] = mapped_column(String(32), default=None)
     default: Mapped[list["DefaultQuotaAssociation"]] = relationship("DefaultQuotaAssociation", back_populates="quota")
     groups: Mapped[list["GroupQuotaAssociation"]] = relationship(back_populates="quota")
     users: Mapped[list["UserQuotaAssociation"]] = relationship(back_populates="quota")
@@ -4534,7 +4536,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    type: Mapped[Optional[str]] = mapped_column(String(32))
+    type: Mapped[str | None] = mapped_column(String(32))
     quota_id: Mapped[int] = mapped_column(ForeignKey("quota.id"), index=True, nullable=True)
     quota: Mapped["Quota"] = relationship(back_populates="default")
 
@@ -4557,9 +4559,9 @@ class DatasetPermissions(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="actions")
     role: Mapped[Optional["Role"]] = relationship(back_populates="dataset_actions")
 
@@ -4579,9 +4581,9 @@ class LibraryPermissions(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    library_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library.id"), index=True)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    library_id: Mapped[int | None] = mapped_column(ForeignKey("library.id"), index=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     library: Mapped[Optional["Library"]] = relationship(back_populates="actions")
     role: Mapped[Optional["Role"]] = relationship()
 
@@ -4601,9 +4603,9 @@ class LibraryFolderPermissions(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    library_folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     folder: Mapped[Optional["LibraryFolder"]] = relationship(back_populates="actions")
     role: Mapped[Optional["Role"]] = relationship()
 
@@ -4623,9 +4625,9 @@ class LibraryDatasetPermissions(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    library_dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset.id"), index=True)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    library_dataset_id: Mapped[int | None] = mapped_column(ForeignKey("library_dataset.id"), index=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     library_dataset: Mapped[Optional["LibraryDataset"]] = relationship(back_populates="actions")
     role: Mapped[Optional["Role"]] = relationship()
 
@@ -4645,11 +4647,11 @@ class LibraryDatasetDatasetAssociationPermissions(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
+    action: Mapped[str | None] = mapped_column(TEXT)
     library_dataset_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     library_dataset_dataset_association: Mapped["LibraryDatasetDatasetAssociation"] = relationship(
         back_populates="actions"
     )
@@ -4669,9 +4671,9 @@ class DefaultUserPermissions(Base, RepresentById):
     __tablename__ = "default_user_permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     user: Mapped[Optional["User"]] = relationship(back_populates="default_permissions")
     role: Mapped[Optional["Role"]] = relationship()
 
@@ -4686,9 +4688,9 @@ class DefaultHistoryPermissions(Base, RepresentById):
     __tablename__ = "default_history_permissions"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    action: Mapped[Optional[str]] = mapped_column(TEXT)
-    role_id: Mapped[Optional[int]] = mapped_column(ForeignKey("role.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    action: Mapped[str | None] = mapped_column(TEXT)
+    role_id: Mapped[int | None] = mapped_column(ForeignKey("role.id"), index=True)
     history: Mapped[Optional["History"]] = relationship(back_populates="default_permissions")
     role: Mapped[Optional["Role"]] = relationship()
 
@@ -4714,20 +4716,20 @@ class Dataset(Base, StorableObject, Serializable):
     __table_args__ = (UniqueConstraint("uuid", name="uq_uuid_column"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purgable: Mapped[Optional[bool]] = mapped_column(default=True)
-    object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    external_filename: Mapped[Optional[str]] = mapped_column(TEXT)
-    _extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    created_from_basename: Mapped[Optional[str]] = mapped_column(TEXT)
-    file_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
-    total_size: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0))
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), unique=True)
+    state: Mapped[str | None] = mapped_column(TrimmedString(64), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purgable: Mapped[bool | None] = mapped_column(default=True)
+    object_store_id: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    external_filename: Mapped[str | None] = mapped_column(TEXT)
+    _extra_files_path: Mapped[str | None] = mapped_column(TEXT)
+    created_from_basename: Mapped[str | None] = mapped_column(TEXT)
+    file_size: Mapped[Decimal | None] = mapped_column(Numeric(15, 0))
+    total_size: Mapped[Decimal | None] = mapped_column(Numeric(15, 0))
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType(), unique=True)
 
     actions: Mapped[list["DatasetPermissions"]] = relationship(back_populates="dataset")
     job: Mapped[Optional["Job"]] = relationship(primaryjoin=(lambda: Dataset.job_id == Job.id))
@@ -4956,7 +4958,7 @@ class Dataset(Base, StorableObject, Serializable):
     @overload
     def get_size(self, nice_size: Literal[False] = False, calculate_size: bool = True) -> int: ...
 
-    def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> Union[int, str]:
+    def get_size(self, nice_size: bool = False, calculate_size: bool = True) -> int | str:
         """Returns the size of the data on disk"""
         if self.file_size:
             if nice_size:
@@ -5067,7 +5069,7 @@ class Dataset(Base, StorableObject, Serializable):
         # serialize Dataset objects only for jobs that can actually modify these models.
         assert serialization_options.serialize_dataset_objects
 
-        def to_int(n) -> Optional[int]:
+        def to_int(n) -> int | None:
             return int(n) if n is not None else None
 
         rval = dict_for(
@@ -5273,13 +5275,13 @@ class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
-    source_uri: Mapped[Optional[str]] = mapped_column(TEXT)
-    extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
+    source_uri: Mapped[str | None] = mapped_column(TEXT)
+    extra_files_path: Mapped[str | None] = mapped_column(TEXT)
     # actions actually applied to this source when creating the dataset.
-    transform: Mapped[Optional[TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
+    transform: Mapped[TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
     # actions that may be applied to this source when creating the dataset
-    requested_transform: Mapped[Optional[REQUESTED_TRANSFORM_ACTIONS]] = mapped_column(MutableJSONType)
+    requested_transform: Mapped[REQUESTED_TRANSFORM_ACTIONS | None] = mapped_column(MutableJSONType)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="sources")
     hashes: Mapped[list["DatasetSourceHash"]] = relationship(back_populates="source")
     dict_collection_visible_keys = ["id", "source_uri", "extra_files_path", "transform"]
@@ -5313,7 +5315,7 @@ class DatasetSource(Base, Dictifiable, Serializable):
 
 
 class HasHashFunctionName:
-    hash_function: Mapped[Optional[str]]
+    hash_function: Mapped[str | None]
 
     @property
     def hash_func_name(self) -> HashFunctionNameEnum:
@@ -5326,9 +5328,9 @@ class DatasetSourceHash(Base, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_source_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_source_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_source.id"), index=True)
-    hash_function: Mapped[Optional[str]] = mapped_column(TEXT)
-    hash_value: Mapped[Optional[str]] = mapped_column(TEXT)
+    dataset_source_id: Mapped[int | None] = mapped_column(ForeignKey("dataset_source.id"), index=True)
+    hash_function: Mapped[str | None] = mapped_column(TEXT)
+    hash_value: Mapped[str | None] = mapped_column(TEXT)
     source: Mapped[Optional["DatasetSource"]] = relationship(back_populates="hashes")
 
     def _serialize(self, id_encoder, serialization_options):
@@ -5351,10 +5353,10 @@ class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
     __tablename__ = "dataset_hash"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset.id"), index=True)
-    hash_function: Mapped[Optional[str]] = mapped_column(TEXT)
-    hash_value: Mapped[Optional[str]] = mapped_column(TEXT)
-    extra_files_path: Mapped[Optional[str]] = mapped_column(TEXT)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("dataset.id"), index=True)
+    hash_function: Mapped[str | None] = mapped_column(TEXT)
+    hash_value: Mapped[str | None] = mapped_column(TEXT)
+    extra_files_path: Mapped[str | None] = mapped_column(TEXT)
     dataset: Mapped[Optional["Dataset"]] = relationship(back_populates="hashes")
     dict_collection_visible_keys = ["id", "hash_function", "hash_value", "extra_files_path"]
     dict_element_visible_keys = ["id", "hash_function", "hash_value", "extra_files_path"]
@@ -5383,7 +5385,7 @@ class DatasetHash(Base, Dictifiable, Serializable, HasHashFunctionName):
         return HashFunctionNameEnum(self.hash_function)
 
 
-DescribesHash = Union[DatasetSourceHash, DatasetHash]
+DescribesHash = DatasetSourceHash | DatasetHash
 
 
 def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
@@ -5401,18 +5403,18 @@ def datatype_for_extension(extension, datatypes_registry=None) -> "Data":
 class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     """A base class for all 'dataset instances', HDAs, LDDAs, etc"""
 
-    copied_from_history_dataset_association_id: Mapped[Optional[int]]
-    name: Mapped[Optional[str]]
-    purged: Mapped[Optional[bool]]
+    copied_from_history_dataset_association_id: Mapped[int | None]
+    name: Mapped[str | None]
+    purged: Mapped[bool | None]
     visible: Mapped[bool]
     deleted: Mapped[bool]
-    dataset_id: Mapped[Optional[int]]
-    _state: Mapped[Optional[str]]
+    dataset_id: Mapped[int | None]
+    _state: Mapped[str | None]
     states = Dataset.states
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
-    creating_job_associations: list[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
-    dataset: Mapped[Optional[Dataset]]
+    creating_job_associations: list[JobToOutputDatasetCollectionAssociation | JobToOutputDatasetAssociation]
+    dataset: Mapped[Dataset | None]
     copied_from_history_dataset_association: Optional["HistoryDatasetAssociation"]
     copied_from_library_dataset_dataset_association: Optional["LibraryDatasetDatasetAssociation"]
     dependent_jobs: list[JobToInputLibraryDatasetAssociation]
@@ -5893,7 +5895,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def find_conversion_destination(
         self, accepted_formats: list[str], **kwd
-    ) -> tuple[bool, Optional[str], Optional["DatasetInstance"]]:
+    ) -> tuple[bool, str | None, Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
         return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)
 
@@ -5974,7 +5976,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         return _source_dataset_chain(self, [])
 
     @property
-    def creating_job(self) -> Optional[Job]:
+    def creating_job(self) -> Job | None:
         # TODO this should work with `return self.dataset.job` (revise failing unit tests)
         creating_job_associations = None
         if self.creating_job_associations:
@@ -6099,12 +6101,12 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, UsesAnnotations, HasNa
     Resource class that creates a relation between a dataset and a user history.
     """
 
-    history_id: Mapped[Optional[int]]
-    dataset_id: Mapped[Optional[int]]
+    history_id: Mapped[int | None]
+    dataset_id: Mapped[int | None]
     extension: Mapped[str]
-    _metadata: Mapped[Optional[dict[str, Any]]]
-    version: Mapped[Optional[int]]
-    hid: Mapped[Optional[int]]
+    _metadata: Mapped[dict[str, Any] | None]
+    version: Mapped[int | None]
+    hid: Mapped[int | None]
     hidden_beneath_collection_instance: Mapped[Optional["HistoryDatasetCollectionAssociation"]]
     tags: Mapped[list["HistoryDatasetAssociationTagAssociation"]]
     copied_to_history_dataset_associations: Mapped[list["HistoryDatasetAssociation"]]
@@ -6476,15 +6478,15 @@ class HistoryDatasetAssociationHistory(Base):
     __tablename__ = "history_dataset_association_history"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    history_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    version: Mapped[Optional[int]]
-    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    extension: Mapped[Optional[str]] = mapped_column(TrimmedString(64))
+    update_time: Mapped[datetime | None] = mapped_column(default=now)
+    version: Mapped[int | None]
+    name: Mapped[str | None] = mapped_column(TrimmedString(255))
+    extension: Mapped[str | None] = mapped_column(TrimmedString(64))
     _metadata = Column("metadata", MetadataType)
-    extended_metadata_id: Mapped[Optional[int]] = mapped_column(ForeignKey("extended_metadata.id"), index=True)
+    extended_metadata_id: Mapped[int | None] = mapped_column(ForeignKey("extended_metadata.id"), index=True)
 
     def __init__(
         self,
@@ -6514,11 +6516,11 @@ class HistoryDatasetAssociationDisplayAtAuthorization(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    history_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    site: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    site: Mapped[str | None] = mapped_column(TrimmedString(255))
     history_dataset_association: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
@@ -6532,13 +6534,13 @@ class HistoryDatasetAssociationSubset(Base, RepresentById):
     __tablename__ = "history_dataset_association_subset"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    history_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    history_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    history_dataset_association_subset_id: Mapped[Optional[int]] = mapped_column(
+    history_dataset_association_subset_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True
     )
-    location: Mapped[Optional[str]] = mapped_column(Unicode(255), index=True)
+    location: Mapped[str | None] = mapped_column(Unicode(255), index=True)
 
     hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
@@ -6547,8 +6549,9 @@ class HistoryDatasetAssociationSubset(Base, RepresentById):
     )
     subset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(
-            lambda: HistoryDatasetAssociationSubset.history_dataset_association_subset_id
-            == HistoryDatasetAssociation.id
+            lambda: (
+                HistoryDatasetAssociationSubset.history_dataset_association_subset_id == HistoryDatasetAssociation.id
+            )
         ),
     )
 
@@ -6562,14 +6565,14 @@ class Library(Base, Dictifiable, HasName, Serializable):
     __tablename__ = "library"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    root_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    root_folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    synopsis: Mapped[Optional[str]] = mapped_column(TEXT)
+    name: Mapped[str | None] = mapped_column(String(255), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    synopsis: Mapped[str | None] = mapped_column(TEXT)
     root_folder = relationship("LibraryFolder", back_populates="library_root")
     actions: Mapped[list["LibraryPermissions"]] = relationship(back_populates="library")
 
@@ -6640,16 +6643,16 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     __table_args__ = (Index("ix_library_folder_name", "name", mysql_length=200),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
-    description: Mapped[Optional[str]] = mapped_column(TEXT)
-    order_id: Mapped[Optional[int]]  # not currently being used, but for possible future use
+    name: Mapped[str | None] = mapped_column(TEXT)
+    description: Mapped[str | None] = mapped_column(TEXT)
+    order_id: Mapped[int | None]  # not currently being used, but for possible future use
     item_count: Mapped[int] = mapped_column(nullable=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    genome_build: Mapped[Optional[str]] = mapped_column(TrimmedString(40))
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
+    genome_build: Mapped[str | None] = mapped_column(TrimmedString(40))
 
     folders: Mapped[list["LibraryFolder"]] = relationship(
         primaryjoin=(lambda: LibraryFolder.id == LibraryFolder.parent_id),
@@ -6670,8 +6673,10 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
 
     datasets: Mapped[list["LibraryDataset"]] = relationship(
         primaryjoin=(
-            lambda: LibraryDataset.folder_id == LibraryFolder.id
-            and LibraryDataset.library_dataset_dataset_association_id.isnot(None)
+            lambda: (
+                LibraryDataset.folder_id == LibraryFolder.id
+                and LibraryDataset.library_dataset_dataset_association_id.isnot(None)
+            )
         ),
         order_by=(lambda: asc(LibraryDataset._name)),
         viewonly=True,
@@ -6778,23 +6783,23 @@ class LibraryDataset(Base, Serializable):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     # current version of dataset, if null, there is not a current version selected
-    library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    library_dataset_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey(
             "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk"
         ),
         index=True,
     )
-    folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
     # not currently being used, but for possible future use
-    order_id: Mapped[Optional[int]]
+    order_id: Mapped[int | None]
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     # when not None/null this will supercede display in library (but not when imported into user's history?)
-    _name: Mapped[Optional[str]] = mapped_column("name", TrimmedString(255), index=True)
+    _name: Mapped[str | None] = mapped_column("name", TrimmedString(255), index=True)
     # when not None/null this will supercede display in library (but not when imported into user's history?)
-    _info: Mapped[Optional[str]] = mapped_column("info", TrimmedString(255))
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    _info: Mapped[str | None] = mapped_column("info", TrimmedString(255))
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
     folder: Mapped[Optional["LibraryFolder"]] = relationship()
     library_dataset_dataset_association = relationship(
         "LibraryDatasetDatasetAssociation", foreign_keys=library_dataset_dataset_association_id, post_update=True
@@ -6898,7 +6903,7 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
-    message: Mapped[Optional[str]]
+    message: Mapped[str | None]
     tags: Mapped[list["LibraryDatasetDatasetAssociationTagAssociation"]]
 
     def __init__(
@@ -7082,7 +7087,7 @@ class ExtendedMetadata(Base, RepresentById):
     __tablename__ = "extended_metadata"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    data: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    data: Mapped[bytes | None] = mapped_column(MutableJSONType)
     children: Mapped[list["ExtendedMetadataIndex"]] = relationship(back_populates="extended_metadata")
 
     def __init__(self, data):
@@ -7093,11 +7098,11 @@ class ExtendedMetadataIndex(Base, RepresentById):
     __tablename__ = "extended_metadata_index"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    extended_metadata_id: Mapped[Optional[int]] = mapped_column(
+    extended_metadata_id: Mapped[int | None] = mapped_column(
         ForeignKey("extended_metadata.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
-    path: Mapped[Optional[str]] = mapped_column(String(255))
-    value: Mapped[Optional[str]] = mapped_column(TEXT)
+    path: Mapped[str | None] = mapped_column(String(255))
+    value: Mapped[str | None] = mapped_column(TEXT)
     extended_metadata: Mapped[Optional["ExtendedMetadata"]] = relationship(back_populates="children")
 
     def __init__(self, extended_metadata, path, value):
@@ -7110,11 +7115,11 @@ class LibraryInfoAssociation(Base, RepresentById):
     __tablename__ = "library_info_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library.id"), index=True)
-    form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
-    form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
-    inheritable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    library_id: Mapped[int | None] = mapped_column(ForeignKey("library.id"), index=True)
+    form_definition_id: Mapped[int | None] = mapped_column(ForeignKey("form_definition.id"), index=True)
+    form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
+    inheritable: Mapped[bool | None] = mapped_column(index=True, default=False)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
 
     library: Mapped[Optional["Library"]] = relationship(
         primaryjoin=(
@@ -7142,16 +7147,18 @@ class LibraryFolderInfoAssociation(Base, RepresentById):
     __tablename__ = "library_folder_info_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
-    form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
-    form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
-    inheritable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    library_folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    form_definition_id: Mapped[int | None] = mapped_column(ForeignKey("form_definition.id"), index=True)
+    form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
+    inheritable: Mapped[bool | None] = mapped_column(index=True, default=False)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
 
     folder: Mapped[Optional["LibraryFolder"]] = relationship(
         primaryjoin=(
-            lambda: (LibraryFolderInfoAssociation.library_folder_id == LibraryFolder.id)
-            & (not_(LibraryFolderInfoAssociation.deleted))
+            lambda: (
+                (LibraryFolderInfoAssociation.library_folder_id == LibraryFolder.id)
+                & (not_(LibraryFolderInfoAssociation.deleted))
+            )
         ),
     )
     template: Mapped[Optional["FormDefinition"]] = relationship(
@@ -7172,20 +7179,22 @@ class LibraryDatasetDatasetInfoAssociation(Base, RepresentById):
     __tablename__ = "library_dataset_dataset_info_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    library_dataset_dataset_association_id: Mapped[Optional[int]] = mapped_column(
+    library_dataset_dataset_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("library_dataset_dataset_association.id"), index=True
     )
-    form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
-    form_values_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_values.id"), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    form_definition_id: Mapped[int | None] = mapped_column(ForeignKey("form_definition.id"), index=True)
+    form_values_id: Mapped[int | None] = mapped_column(ForeignKey("form_values.id"), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
 
     library_dataset_dataset_association: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship(
         primaryjoin=(
             lambda: (
-                LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
-                == LibraryDatasetDatasetAssociation.id
+                (
+                    LibraryDatasetDatasetInfoAssociation.library_dataset_dataset_association_id
+                    == LibraryDatasetDatasetAssociation.id
+                )
+                & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
             )
-            & (not_(LibraryDatasetDatasetInfoAssociation.deleted))
         ),
     )
     template: Mapped[Optional["FormDefinition"]] = relationship(
@@ -7212,15 +7221,13 @@ class ImplicitlyConvertedDatasetAssociation(Base, Serializable):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    ldda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
-    hda_parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    ldda_parent_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("library_dataset_dataset_association.id"), index=True
-    )
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    metadata_safe: Mapped[Optional[bool]] = mapped_column(index=True, default=True)
-    type: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    hda_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    ldda_id: Mapped[int | None] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
+    hda_parent_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    ldda_parent_id: Mapped[int | None] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    metadata_safe: Mapped[bool | None] = mapped_column(index=True, default=True)
+    type: Mapped[str | None] = mapped_column(TrimmedString(255))
 
     parent_hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         primaryjoin=(lambda: ImplicitlyConvertedDatasetAssociation.hda_parent_id == HistoryDatasetAssociation.id),
@@ -7306,7 +7313,7 @@ DEFAULT_COLLECTION_NAME = "Unnamed Collection"
 
 
 class CollectionStateSummary(NamedTuple):
-    dbkeys: list[Union[str, None]]
+    dbkeys: list[str | None]
     extensions: list[str]
     states: dict[str, int]
     deleted: int
@@ -7318,14 +7325,14 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     id: Mapped[int] = mapped_column(primary_key=True)
     collection_type: Mapped[str] = mapped_column(Unicode(255))
     populated_state: Mapped[str] = mapped_column(TrimmedString(64), default="ok")
-    populated_state_message: Mapped[Optional[str]] = mapped_column(TEXT)
-    element_count: Mapped[Optional[int]]
+    populated_state_message: Mapped[str | None] = mapped_column(TEXT)
+    element_count: Mapped[int | None]
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     # if collection_type is 'record' (heterogenous collection)
-    fields: Mapped[Optional[DATA_COLLECTION_FIELDS]] = mapped_column(JSONType)
+    fields: Mapped[DATA_COLLECTION_FIELDS | None] = mapped_column(JSONType)
     # if collection_type is 'sample_sheet' (collection of rows that datasets with extra column metadata)
-    column_definitions: Mapped[Optional[SampleSheetColumnDefinitions]] = mapped_column(JSONType)
+    column_definitions: Mapped[SampleSheetColumnDefinitions | None] = mapped_column(JSONType)
 
     elements: Mapped[list["DatasetCollectionElement"]] = relationship(
         primaryjoin=(lambda: DatasetCollection.id == DatasetCollectionElement.dataset_collection_id),
@@ -7363,22 +7370,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
 
     def _build_nested_collection_attributes_stmt(
         self,
-        collection_attributes: Optional[Iterable[str]] = None,
-        element_attributes: Optional[Iterable[str]] = None,
-        hda_attributes: Optional[Iterable[str]] = None,
-        dataset_attributes: Optional[Iterable[str]] = None,
-        dataset_permission_attributes: Optional[Iterable[str]] = None,
-        return_entities: Optional[
+        collection_attributes: Iterable[str] | None = None,
+        element_attributes: Iterable[str] | None = None,
+        hda_attributes: Iterable[str] | None = None,
+        dataset_attributes: Iterable[str] | None = None,
+        dataset_permission_attributes: Iterable[str] | None = None,
+        return_entities: (
             Iterable[
-                Union[
-                    type[HistoryDatasetAssociation],
-                    type[Dataset],
-                    type[DatasetPermissions],
-                    type["DatasetCollection"],
-                    type["DatasetCollectionElement"],
-                ]
+                type[HistoryDatasetAssociation]
+                | type[Dataset]
+                | type[DatasetPermissions]
+                | type["DatasetCollection"]
+                | type["DatasetCollectionElement"]
             ]
-        ] = None,
+            | None
+        ) = None,
     ):
         collection_attributes = collection_attributes or ()
         element_attributes = element_attributes or ()
@@ -7610,7 +7616,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         Returns (dbkeys, extensions, states, deleted) similar to HDCA method.
         """
         if not hasattr(self, "_dataset_states_and_extensions_summary"):
-
             stmt = self._build_nested_collection_attributes_stmt(
                 hda_attributes=("_metadata", "extension", "deleted"), dataset_attributes=("state",)
             )
@@ -7894,7 +7899,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         self,
         destination: Optional["HistoryDatasetCollectionAssociation"] = None,
         element_destination: Optional["History"] = None,
-        dataset_instance_attributes: Optional[dict[str, Any]] = None,
+        dataset_instance_attributes: dict[str, Any] | None = None,
         flush=True,
         minimize_copies=False,
         copy_hid=True,
@@ -8057,18 +8062,18 @@ class HistoryDatasetCollectionAssociation(
     __tablename__ = "history_dataset_collection_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    hid: Mapped[Optional[int]]
-    visible: Mapped[Optional[bool]]
+    collection_id: Mapped[int | None] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TrimmedString(255))
+    hid: Mapped[int | None]
+    visible: Mapped[bool | None]
     deleted: Mapped[bool] = mapped_column(default=False, nullable=True)
-    copied_from_history_dataset_collection_association_id: Mapped[Optional[int]] = mapped_column(
+    copied_from_history_dataset_collection_association_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id")
     )
-    implicit_output_name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    implicit_collection_jobs_id: Mapped[Optional[int]] = mapped_column(
+    implicit_output_name: Mapped[str | None] = mapped_column(Unicode(255))
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
         ForeignKey("implicit_collection_jobs.id"), index=True
     )
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
@@ -8085,8 +8090,9 @@ class HistoryDatasetCollectionAssociation(
     )
     implicit_input_collections: Mapped[list["ImplicitlyCreatedDatasetCollectionInput"]] = relationship(
         primaryjoin=(
-            lambda: HistoryDatasetCollectionAssociation.id
-            == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id
+            lambda: (
+                HistoryDatasetCollectionAssociation.id == ImplicitlyCreatedDatasetCollectionInput.dataset_collection_id
+            )
         ),
     )
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", uselist=False)
@@ -8269,14 +8275,14 @@ class HistoryDatasetCollectionAssociation(
                 flag_modified(self.collection, "collection_type")
 
     @overload
-    def to_hda_representative(self, multiple: Literal[False] = False) -> Optional[HistoryDatasetAssociation]: ...
+    def to_hda_representative(self, multiple: Literal[False] = False) -> HistoryDatasetAssociation | None: ...
 
     @overload
     def to_hda_representative(self, multiple: Literal[True]) -> list[HistoryDatasetAssociation]: ...
 
     def to_hda_representative(
         self, multiple: bool = False
-    ) -> Union[list[HistoryDatasetAssociation], Optional[HistoryDatasetAssociation]]:
+    ) -> list[HistoryDatasetAssociation] | HistoryDatasetAssociation | None:
         rval = []
         for dataset in self.collection.dataset_elements:
             rval.append(dataset.dataset_instance)
@@ -8366,12 +8372,12 @@ class HistoryDatasetCollectionAssociation(
 
     def copy(
         self,
-        element_destination: Optional[History] = None,
-        dataset_instance_attributes: Optional[dict[str, Any]] = None,
+        element_destination: History | None = None,
+        dataset_instance_attributes: dict[str, Any] | None = None,
         flush: bool = True,
         set_hid: bool = True,
         minimize_copies: bool = False,
-        target_user: Optional[User] = None,
+        target_user: User | None = None,
     ):
         """
         Create a copy of this history dataset collection association. Copy
@@ -8454,7 +8460,7 @@ class HistoryDatasetCollectionAssociation(
         return len(results) > 0
 
 
-HistoryItem: TypeAlias = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
+HistoryItem: TypeAlias = HistoryDatasetAssociation | HistoryDatasetCollectionAssociation
 
 
 class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, RepresentById):
@@ -8463,10 +8469,10 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
     __tablename__ = "library_dataset_collection_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
-    folder_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_folder.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False)
+    collection_id: Mapped[int | None] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
+    folder_id: Mapped[int | None] = mapped_column(ForeignKey("library_folder.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TrimmedString(255))
+    deleted: Mapped[bool | None] = mapped_column(default=False)
 
     collection = relationship("DatasetCollection")
     folder = relationship("LibraryFolder")
@@ -8507,13 +8513,13 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     # Parent collection id describing what collection this element belongs to.
     dataset_collection_id: Mapped[int] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     # Child defined by this association - HDA, LDDA, or another dataset association...
-    hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    ldda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
-    child_collection_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
+    hda_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    ldda_id: Mapped[int | None] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
+    child_collection_id: Mapped[int | None] = mapped_column(ForeignKey("dataset_collection.id"), index=True)
     # Element index and identifier to define this parent-child relationship.
-    element_index: Mapped[Optional[int]]
-    element_identifier: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    columns: Mapped[Optional[SampleSheetRow]] = mapped_column(JSONType)
+    element_index: Mapped[int | None]
+    element_identifier: Mapped[str | None] = mapped_column(Unicode(255))
+    columns: Mapped[SampleSheetRow | None] = mapped_column(JSONType)
 
     hda: Mapped[Optional["HistoryDatasetAssociation"]] = relationship(
         "HistoryDatasetAssociation",
@@ -8545,7 +8551,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         element=None,
         element_index=None,
         element_identifier=None,
-        columns: Optional[SampleSheetRow] = None,
+        columns: SampleSheetRow | None = None,
     ):
         if isinstance(element, HistoryDatasetAssociation):
             self.hda = element
@@ -8589,7 +8595,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     @property
     def element_object(
         self,
-    ) -> Optional[Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]]:
+    ) -> HistoryDatasetAssociation | LibraryDatasetDatasetAssociation | DatasetCollection | None:
         if self.hda:
             return self.hda
         elif self.ldda:
@@ -8600,9 +8606,7 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
             return None
 
     @element_object.setter
-    def element_object(
-        self, value: Union[HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, DatasetCollection]
-    ):
+    def element_object(self, value: HistoryDatasetAssociation | LibraryDatasetDatasetAssociation | DatasetCollection):
         if isinstance(value, HistoryDatasetAssociation):
             self.hda = value
         elif isinstance(value, LibraryDatasetDatasetAssociation):
@@ -8651,9 +8655,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
     def copy_to_collection(
         self,
         collection: DatasetCollection,
-        destination: Optional[HistoryDatasetCollectionAssociation] = None,
-        element_destination: Optional[History] = None,
-        dataset_instance_attributes: Optional[dict[str, Any]] = None,
+        destination: HistoryDatasetCollectionAssociation | None = None,
+        element_destination: History | None = None,
+        dataset_instance_attributes: dict[str, Any] | None = None,
         flush=True,
         minimize_copies=False,
         copy_hid=True,
@@ -8726,11 +8730,11 @@ class Event(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    message: Mapped[Optional[str]] = mapped_column(TrimmedString(1024))
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
-    tool_id: Mapped[Optional[str]] = mapped_column(String(255))
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    message: Mapped[str | None] = mapped_column(TrimmedString(1024))
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
+    tool_id: Mapped[str | None] = mapped_column(String(255))
 
     history: Mapped[Optional["History"]] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -8743,18 +8747,18 @@ class GalaxySession(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    remote_host: Mapped[Optional[str]] = mapped_column(String(255))
-    remote_addr: Mapped[Optional[str]] = mapped_column(String(255))
-    referer: Mapped[Optional[str]] = mapped_column(TEXT)
-    current_history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    remote_host: Mapped[str | None] = mapped_column(String(255))
+    remote_addr: Mapped[str | None] = mapped_column(String(255))
+    referer: Mapped[str | None] = mapped_column(TEXT)
+    current_history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"))
     # unique 128 bit random number coerced to a string
-    session_key: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True, unique=True)
-    is_valid: Mapped[Optional[bool]] = mapped_column(default=False)
+    session_key: Mapped[str | None] = mapped_column(TrimmedString(255), index=True, unique=True)
+    is_valid: Mapped[bool | None] = mapped_column(default=False)
     # saves a reference to the previous session so we have a way to chain them together
-    prev_session_id: Mapped[Optional[int]]
-    disk_usage: Mapped[Optional[Decimal]] = mapped_column(Numeric(15, 0), index=True)
-    last_action: Mapped[Optional[datetime]]
+    prev_session_id: Mapped[int | None]
+    disk_usage: Mapped[Decimal | None] = mapped_column(Numeric(15, 0), index=True)
+    last_action: Mapped[datetime | None]
     current_history: Mapped[Optional["History"]] = relationship()
     histories: Mapped[list["GalaxySessionToHistoryAssociation"]] = relationship(
         back_populates="galaxy_session",
@@ -8788,8 +8792,8 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="CASCADE"), index=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_session.id", ondelete="CASCADE"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
     galaxy_session: Mapped[Optional["GalaxySession"]] = relationship(back_populates="histories")
     history: Mapped[Optional["History"]] = relationship(back_populates="galaxy_sessions")
 
@@ -8816,16 +8820,16 @@ class StoredWorkflow(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    latest_workflow_id: Mapped[Optional[int]] = mapped_column(
+    latest_workflow_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow.id", use_alter=True, name="stored_workflow_latest_workflow_id_fk"), index=True
     )
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False)
-    hidden: Mapped[Optional[bool]] = mapped_column(default=False)
-    importable: Mapped[Optional[bool]] = mapped_column(default=False)
-    slug: Mapped[Optional[str]] = mapped_column(TEXT)
-    from_path: Mapped[Optional[str]] = mapped_column(TEXT)
-    published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    name: Mapped[str | None] = mapped_column(TEXT)
+    deleted: Mapped[bool | None] = mapped_column(default=False)
+    hidden: Mapped[bool | None] = mapped_column(default=False)
+    importable: Mapped[bool | None] = mapped_column(default=False)
+    slug: Mapped[str | None] = mapped_column(TEXT)
+    from_path: Mapped[str | None] = mapped_column(TEXT)
+    published: Mapped[bool | None] = mapped_column(index=True, default=False)
 
     user: Mapped["User"] = relationship(
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),
@@ -8921,7 +8925,7 @@ class StoredWorkflow(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
         self.workflows = listify(workflow)
         self.hidden = hidden
 
-    def get_internal_version(self, version: Optional[int] = None) -> "Workflow":
+    def get_internal_version(self, version: int | None = None) -> "Workflow":
         if version is None:
             return self.latest_workflow
         if len(self.workflows) <= version:
@@ -8997,20 +9001,20 @@ class Workflow(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     # workflows will belong to either a stored workflow or a parent/nesting workflow.
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
-    parent_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
-    has_cycles: Mapped[Optional[bool]]
-    has_errors: Mapped[Optional[bool]]
-    reports_config: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    creator_metadata: Mapped[Optional[list[dict[str, Any]]]] = mapped_column(JSONType)
-    license: Mapped[Optional[str]] = mapped_column(TEXT)
-    source_metadata: Mapped[Optional[dict[str, str]]] = mapped_column(JSONType)
-    readme: Mapped[Optional[str]] = mapped_column(Text)
-    logo_url: Mapped[Optional[str]] = mapped_column(Text)
-    help: Mapped[Optional[str]] = mapped_column(Text)
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
-    doi: Mapped[Optional[list[str]]] = mapped_column(JSON)
+    stored_workflow_id: Mapped[int | None] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
+    parent_workflow_id: Mapped[int | None] = mapped_column(ForeignKey("workflow.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TEXT)
+    has_cycles: Mapped[bool | None]
+    has_errors: Mapped[bool | None]
+    reports_config: Mapped[bytes | None] = mapped_column(JSONType)
+    creator_metadata: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONType)
+    license: Mapped[str | None] = mapped_column(TEXT)
+    source_metadata: Mapped[dict[str, str] | None] = mapped_column(JSONType)
+    readme: Mapped[str | None] = mapped_column(Text)
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    help: Mapped[str | None] = mapped_column(Text)
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
+    doi: Mapped[list[str] | None] = mapped_column(JSON)
 
     steps: Mapped[list["WorkflowStep"]] = relationship(
         "WorkflowStep",
@@ -9203,7 +9207,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         return f"Workflow[id={self.id}{extra}]"
 
 
-InputConnDictType = dict[str, Union[dict[str, Any], list[dict[str, Any]]]]
+InputConnDictType = dict[str, dict[str, Any] | list[dict[str, Any]]]
 
 
 class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
@@ -9219,21 +9223,21 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
-    subworkflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), index=True)
-    dynamic_tool_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
-    type: Mapped[Optional[str]] = mapped_column(String(64))
-    tool_id: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_version: Mapped[Optional[str]] = mapped_column(TEXT)
-    tool_inputs: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONType)
-    tool_errors: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    config: Mapped[Optional[bytes]] = mapped_column(JSONType)
+    subworkflow_id: Mapped[int | None] = mapped_column(ForeignKey("workflow.id"), index=True)
+    dynamic_tool_id: Mapped[int | None] = mapped_column(ForeignKey("dynamic_tool.id"), index=True)
+    type: Mapped[str | None] = mapped_column(String(64))
+    tool_id: Mapped[str | None] = mapped_column(TEXT)
+    tool_version: Mapped[str | None] = mapped_column(TEXT)
+    tool_inputs: Mapped[dict[str, Any] | None] = mapped_column(JSONType)
+    tool_errors: Mapped[bytes | None] = mapped_column(JSONType)
+    position: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    config: Mapped[bytes | None] = mapped_column(JSONType)
     order_index: Mapped[int]
-    when_expression: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
-    label: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    when_expression: Mapped[bytes | None] = mapped_column(JSONType)
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
+    label: Mapped[str | None] = mapped_column(Unicode(255))
     temp_input_connections = None
-    parent_comment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_comment.id"), index=True)
+    parent_comment_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_comment.id"), index=True)
 
     parent_comment: Mapped[Optional["WorkflowComment"]] = relationship(
         primaryjoin=(lambda: WorkflowComment.id == WorkflowStep.parent_comment_id),
@@ -9277,9 +9281,9 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         self._inputs_by_name = None
         # Injected attributes
         # TODO: code using these should be refactored to not depend on these non-persistent fields
-        self.module: Optional[WorkflowModule]
-        self.state: Optional[DefaultToolState]
-        self.upgrade_messages: Optional[dict]
+        self.module: WorkflowModule | None
+        self.state: DefaultToolState | None
+        self.upgrade_messages: dict | None
 
     @reconstructor
     def init_on_load(self):
@@ -9515,13 +9519,13 @@ class WorkflowStep(Base, RepresentById, UsesCreateAndUpdateTime):
         )
 
     @property
-    def effective_label(self) -> Optional[str]:
+    def effective_label(self) -> str | None:
         if (label := self.label) is not None:
             return label
         elif self.is_input_type:
             tool_inputs = self.tool_inputs
             if tool_inputs is not None:
-                return cast(Optional[str], tool_inputs.get("name"))
+                return cast(str | None, tool_inputs.get("name"))
         return None
 
     def clear_module_extras(self):
@@ -9547,15 +9551,15 @@ class WorkflowStepInput(Base, RepresentById):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
-    merge_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    scatter_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    value_from: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    value_from_type: Mapped[Optional[str]] = mapped_column(TEXT)
-    default_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    default_value_set: Mapped[Optional[bool]] = mapped_column(default=False)
-    runtime_value: Mapped[Optional[bool]] = mapped_column(default=False)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TEXT)
+    merge_type: Mapped[str | None] = mapped_column(TEXT)
+    scatter_type: Mapped[str | None] = mapped_column(TEXT)
+    value_from: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    value_from_type: Mapped[str | None] = mapped_column(TEXT)
+    default_value: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    default_value_set: Mapped[bool | None] = mapped_column(default=False)
+    runtime_value: Mapped[bool | None] = mapped_column(default=False)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(
         back_populates="inputs",
@@ -9588,10 +9592,10 @@ class WorkflowStepConnection(Base, RepresentById):
     __tablename__ = "workflow_step_connection"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    output_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    input_step_input_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step_input.id"), index=True)
-    output_name: Mapped[Optional[str]] = mapped_column(TEXT)
-    input_subworkflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    output_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    input_step_input_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step_input.id"), index=True)
+    output_name: Mapped[str | None] = mapped_column(TEXT)
+    input_subworkflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"), index=True)
 
     input_step_input: Mapped["WorkflowStepInput"] = relationship(
         "WorkflowStepInput",
@@ -9625,7 +9629,7 @@ class WorkflowStepConnection(Base, RepresentById):
         return self.input_step_input.name
 
     @property
-    def input_step(self) -> Optional[WorkflowStep]:
+    def input_step(self) -> WorkflowStep | None:
         return self.input_step_input.workflow_step
 
     @property
@@ -9645,9 +9649,9 @@ class WorkflowOutput(Base, Serializable):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    output_name: Mapped[Optional[str]] = mapped_column(String(255))
-    label: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType)
+    output_name: Mapped[str | None] = mapped_column(String(255))
+    label: Mapped[str | None] = mapped_column(Unicode(255))
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType)
     workflow_step: Mapped["WorkflowStep"] = relationship(
         back_populates="workflow_outputs",
         primaryjoin=(lambda: WorkflowStep.id == WorkflowOutput.workflow_step_id),
@@ -9684,14 +9688,14 @@ class WorkflowComment(Base, RepresentById):
     __tablename__ = "workflow_comment"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    order_index: Mapped[Optional[int]]
+    order_index: Mapped[int | None]
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
-    position: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    size: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    type: Mapped[Optional[str]] = mapped_column(String(16))
-    color: Mapped[Optional[str]] = mapped_column(String(16))
-    data: Mapped[Optional[bytes]] = mapped_column(JSONType)
-    parent_comment_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_comment.id"), index=True)
+    position: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    size: Mapped[bytes | None] = mapped_column(JSONType)
+    type: Mapped[str | None] = mapped_column(String(16))
+    color: Mapped[str | None] = mapped_column(String(16))
+    data: Mapped[bytes | None] = mapped_column(JSONType)
+    parent_comment_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_comment.id"), index=True)
 
     workflow: Mapped["Workflow"] = relationship(
         primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),
@@ -9773,17 +9777,19 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     __tablename__ = "stored_workflow_menu_entry"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    order_index: Mapped[Optional[int]]
+    stored_workflow_id: Mapped[int | None] = mapped_column(ForeignKey("stored_workflow.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    order_index: Mapped[int | None]
 
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
     user: Mapped[Optional["User"]] = relationship(
         back_populates="stored_workflow_menu_entries",
         primaryjoin=(
-            lambda: (StoredWorkflowMenuEntry.user_id == User.id)
-            & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
-            & not_(StoredWorkflow.deleted)
+            lambda: (
+                (StoredWorkflowMenuEntry.user_id == User.id)
+                & (StoredWorkflowMenuEntry.stored_workflow_id == StoredWorkflow.id)
+                & not_(StoredWorkflow.deleted)
+            )
         ),
     )
 
@@ -9809,12 +9815,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True, nullable=True)
     workflow_id: Mapped[int] = mapped_column(ForeignKey("workflow.id"), index=True)
-    state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
-    scheduler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    handler: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    uuid: Mapped[Optional[Union[UUID]]] = mapped_column(UUIDType())
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    on_complete: Mapped[Optional[list]] = mapped_column(JSON)
+    state: Mapped[str | None] = mapped_column(TrimmedString(64), index=True)
+    scheduler: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    handler: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    uuid: Mapped[UUID | None] = mapped_column(UUIDType())
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    on_complete: Mapped[list | None] = mapped_column(JSON)
 
     history = relationship("History", back_populates="workflow_invocations")
     input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
@@ -9885,7 +9891,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         if self.state is None:
             raise Exception("Workflow invocation without state, this should not happen")
 
-    def get_last_workflow_invocation_step_update_time(self) -> Optional[datetime]:
+    def get_last_workflow_invocation_step_update_time(self) -> datetime | None:
         session = required_object_session(self)
         stmt = select(func.max(WorkflowInvocationStep.update_time)).where(
             WorkflowInvocationStep.workflow_invocation_id == self.id
@@ -10388,7 +10394,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             else:
                 request_to_content.workflow_step = step
 
-        request: Optional[dict[str, Any]] = None
+        request: dict[str, Any] | None = None
         if isinstance(content, InputWithRequest):
             request = content.request
             content = content.input
@@ -10510,19 +10516,20 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     __tablename__ = "workflow_invocation_to_subworkflow_invocation_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id", name="fk_wfi_swi_wfi"), index=True
     )
-    subworkflow_invocation_id: Mapped[Optional[int]] = mapped_column(
+    subworkflow_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id", name="fk_wfi_swi_swi"), index=True
     )
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id", name="fk_wfi_swi_ws"))
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id", name="fk_wfi_swi_ws"))
 
     subworkflow_invocation = relationship(
         "WorkflowInvocation",
         primaryjoin=(
-            lambda: WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id
-            == WorkflowInvocation.id
+            lambda: (
+                WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id == WorkflowInvocation.id
+            )
         ),
         uselist=False,
     )
@@ -10543,15 +10550,15 @@ class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_message"
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    reason: Mapped[Optional[str]] = mapped_column(String(32))
-    details: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    output_name: Mapped[Optional[str]] = mapped_column(String(255))
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    dependent_workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"))
-    hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"))
-    hdca_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_collection_association.id"))
-    workflow_step_index_path: Mapped[Optional[list[int]]] = mapped_column(JSON)
+    reason: Mapped[str | None] = mapped_column(String(32))
+    details: Mapped[str | None] = mapped_column(TrimmedString(255))
+    output_name: Mapped[str | None] = mapped_column(String(255))
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    dependent_workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"))
+    hda_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"))
+    hdca_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_collection_association.id"))
+    workflow_step_index_path: Mapped[list[int] | None] = mapped_column(JSON)
 
     workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="messages", lazy=True)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship(foreign_keys=workflow_step_id, lazy=True)
@@ -10581,9 +10588,9 @@ class WorkflowInvocationCompletion(Base, RepresentById):
     workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True, unique=True)
     completion_time: Mapped[datetime] = mapped_column(default=now)
     # Summary of final job states: {"ok": 5, "error": 1, "skipped": 2}
-    job_state_summary: Mapped[Optional[dict[str, Any]]] = mapped_column(JSON)
+    job_state_summary: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     # Hooks that have been executed (for idempotency)
-    hooks_executed: Mapped[Optional[list[str]]] = mapped_column(JSON)
+    hooks_executed: Mapped[list[str] | None] = mapped_column(JSON)
 
     workflow_invocation: Mapped["WorkflowInvocation"] = relationship(back_populates="completion")
 
@@ -10605,10 +10612,10 @@ class EffectiveOutput(TypedDict):
 
 
 class WorkflowInvocationStepObjectStores(NamedTuple):
-    preferred_object_store_id: Optional[str]
-    preferred_outputs_object_store_id: Optional[str]
-    preferred_intermediate_object_store_id: Optional[str]
-    step_effective_outputs: Optional[list["EffectiveOutput"]]
+    preferred_object_store_id: str | None
+    preferred_outputs_object_store_id: str | None
+    preferred_intermediate_object_store_id: str | None
+    step_effective_outputs: list["EffectiveOutput"] | None
 
     def is_output_name_an_effective_output(self, output_name: str) -> bool:
         if self.step_effective_outputs is None:
@@ -10638,12 +10645,12 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     workflow_invocation_id: Mapped[int] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    state: Mapped[Optional[str]] = mapped_column(TrimmedString(64), index=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    implicit_collection_jobs_id: Mapped[Optional[int]] = mapped_column(
+    state: Mapped[str | None] = mapped_column(TrimmedString(64), index=True)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    implicit_collection_jobs_id: Mapped[int | None] = mapped_column(
         ForeignKey("implicit_collection_jobs.id"), index=True
     )
-    action: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    action: Mapped[bytes | None] = mapped_column(MutableJSONType)
 
     workflow_step: Mapped[WorkflowStep] = relationship("WorkflowStep")
     job: Mapped[Optional["Job"]] = relationship(back_populates="workflow_invocation_step", uselist=False)
@@ -10672,7 +10679,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     order_index: Mapped[int] = column_property(
         select(WorkflowStep.order_index).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
-    subworkflow_invocation_id: Mapped[Optional[int]] = column_property(
+    subworkflow_invocation_id: Mapped[int | None] = column_property(
         select(WorkflowInvocationToSubworkflowInvocationAssociation.subworkflow_invocation_id)
         .where(
             and_(
@@ -10786,7 +10793,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         preferred_object_store_id = None
         preferred_outputs_object_store_id = None
         preferred_intermediate_object_store_id = None
-        step_effective_outputs: Optional[list[EffectiveOutput]] = None
+        step_effective_outputs: list[EffectiveOutput] | None = None
 
         workflow_invocation = self.workflow_invocation
         for input_parameter in workflow_invocation.input_parameters:
@@ -10902,12 +10909,12 @@ class WorkflowRequestInputParameter(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_request_input_parameters"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    value: Mapped[Optional[str]] = mapped_column(TEXT)
-    type: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    name: Mapped[str | None] = mapped_column(Unicode(255))
+    value: Mapped[str | None] = mapped_column(TEXT)
+    type: Mapped[str | None] = mapped_column(Unicode(255))
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="input_parameters")
 
     dict_collection_visible_keys = ["id", "name", "value", "type"]
@@ -10932,11 +10939,11 @@ class WorkflowRequestStepState(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_request_step_states"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id", onupdate="CASCADE", ondelete="CASCADE"), index=True
     )
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    value: Mapped[Optional[dict[str, Any]]] = mapped_column(MutableJSONType)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    value: Mapped[dict[str, Any] | None] = mapped_column(MutableJSONType)
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="step_states")
 
@@ -10955,11 +10962,11 @@ class WorkflowRequestToInputDatasetAssociation(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_request_to_input_dataset"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    request: Mapped[Optional[dict]] = mapped_column(JSONType)
+    name: Mapped[str | None] = mapped_column(String(255))
+    workflow_invocation_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    request: Mapped[dict | None] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -10984,10 +10991,10 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
     __tablename__ = "workflow_request_to_input_collection_dataset"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    dataset_collection_id: Mapped[Optional[int]] = mapped_column(
+    name: Mapped[str | None] = mapped_column(String(255))
+    workflow_invocation_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    dataset_collection_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True
     )
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
@@ -10995,7 +11002,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Base, Dictifiable, Seri
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(
         back_populates="input_dataset_collections"
     )
-    request: Mapped[Optional[dict]] = mapped_column(JSONType)
+    request: Mapped[dict | None] = mapped_column(JSONType)
 
     history_content_type = "dataset_collection"
     dict_collection_visible_keys = ["id", "workflow_invocation_id", "workflow_step_id", "dataset_collection_id", "name"]
@@ -11016,10 +11023,10 @@ class WorkflowRequestInputStepParameter(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_request_input_step_parameter"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    parameter_value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    request: Mapped[Optional[dict]] = mapped_column(JSONType)
+    workflow_invocation_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    parameter_value: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    request: Mapped[dict | None] = mapped_column(JSONType)
 
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="input_step_parameters")
@@ -11039,10 +11046,10 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
     __tablename__ = "workflow_invocation_output_dataset_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"), index=True)
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
+    workflow_invocation_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"), index=True)
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    workflow_output_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_output.id"), index=True)
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="output_datasets")
     workflow_step: Mapped[Optional["WorkflowStep"]] = relationship()
     dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
@@ -11065,16 +11072,16 @@ class WorkflowInvocationOutputDatasetCollectionAssociation(Base, Dictifiable, Se
     __tablename__ = "workflow_invocation_output_dataset_collection_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id", name="fk_wiodca_wii"), index=True
     )
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(
+    workflow_step_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_step.id", name="fk_wiodca_wsi"), index=True
     )
-    dataset_collection_id: Mapped[Optional[int]] = mapped_column(
+    dataset_collection_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id", name="fk_wiodca_dci"), index=True
     )
-    workflow_output_id: Mapped[Optional[int]] = mapped_column(
+    workflow_output_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_output.id", name="fk_wiodca_woi"), index=True
     )
 
@@ -11104,10 +11111,10 @@ class WorkflowInvocationOutputValue(Base, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation_output_value"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_step.id"))
-    workflow_output_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow_output.id"), index=True)
-    value: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    workflow_invocation_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_invocation.id"), index=True)
+    workflow_step_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_step.id"))
+    workflow_output_id: Mapped[int | None] = mapped_column(ForeignKey("workflow_output.id"), index=True)
+    value: Mapped[bytes | None] = mapped_column(MutableJSONType)
 
     workflow_invocation: Mapped[Optional["WorkflowInvocation"]] = relationship(back_populates="output_values")
 
@@ -11142,11 +11149,11 @@ class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, Represen
     __tablename__ = "workflow_invocation_step_output_dataset_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_step_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_step_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation_step.id"), index=True
     )
-    dataset_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    output_name: Mapped[Optional[str]] = mapped_column(String(255))
+    dataset_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    output_name: Mapped[str | None] = mapped_column(String(255))
     workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
         back_populates="output_datasets"
     )
@@ -11161,16 +11168,16 @@ class WorkflowInvocationStepOutputDatasetCollectionAssociation(Base, Dictifiable
     __tablename__ = "workflow_invocation_step_output_dataset_collection_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    workflow_invocation_step_id: Mapped[Optional[int]] = mapped_column(
+    workflow_invocation_step_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation_step.id", name="fk_wisodca_wisi"), index=True
     )
-    workflow_step_id: Mapped[Optional[int]] = mapped_column(
+    workflow_step_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_step.id", name="fk_wisodca_wsi"), index=True
     )
-    dataset_collection_id: Mapped[Optional[int]] = mapped_column(
+    dataset_collection_id: Mapped[int | None] = mapped_column(
         ForeignKey("history_dataset_collection_association.id", name="fk_wisodca_dci"), index=True
     )
-    output_name: Mapped[Optional[str]] = mapped_column(String(255))
+    output_name: Mapped[str | None] = mapped_column(String(255))
 
     workflow_invocation_step: Mapped[Optional["WorkflowInvocationStep"]] = relationship(
         back_populates="output_dataset_collections"
@@ -11184,15 +11191,15 @@ class MetadataFile(Base, StorableObject, Serializable):
     __tablename__ = "metadata_file"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[Optional[str]] = mapped_column(TEXT)
-    hda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
-    lda_id: Mapped[Optional[int]] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
+    name: Mapped[str | None] = mapped_column(TEXT)
+    hda_id: Mapped[int | None] = mapped_column(ForeignKey("history_dataset_association.id"), index=True)
+    lda_id: Mapped[int | None] = mapped_column(ForeignKey("library_dataset_dataset_association.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    object_store_id: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    uuid: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    object_store_id: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    uuid: Mapped[UUID | str | None] = mapped_column(UUIDType(), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
 
     history_dataset: Mapped[Optional["HistoryDatasetAssociation"]] = relationship()
     library_dataset: Mapped[Optional["LibraryDatasetDatasetAssociation"]] = relationship()
@@ -11270,16 +11277,16 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     __tablename__ = "form_definition"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    create_time: Mapped[Optional[datetime]] = mapped_column(default=now)
-    update_time: Mapped[Optional[datetime]] = mapped_column(default=now, onupdate=now)
+    create_time: Mapped[datetime | None] = mapped_column(default=now)
+    update_time: Mapped[datetime | None] = mapped_column(default=now, onupdate=now)
     name: Mapped[str] = mapped_column(TrimmedString(255))
-    desc: Mapped[Optional[str]] = mapped_column(TEXT)
+    desc: Mapped[str | None] = mapped_column(TEXT)
     form_definition_current_id: Mapped[int] = mapped_column(
         ForeignKey("form_definition_current.id", use_alter=True), index=True
     )
-    fields: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
-    type: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    layout: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    fields: Mapped[bytes | None] = mapped_column(MutableJSONType)
+    type: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    layout: Mapped[bytes | None] = mapped_column(MutableJSONType)
     form_definition_current: Mapped["FormDefinitionCurrent"] = relationship(
         back_populates="forms",
         primaryjoin=(lambda: FormDefinitionCurrent.id == FormDefinition.form_definition_current_id),
@@ -11343,8 +11350,8 @@ class FormDefinitionCurrent(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    latest_form_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    latest_form_id: Mapped[int | None] = mapped_column(ForeignKey("form_definition.id"), index=True)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
     forms: Mapped[list["FormDefinition"]] = relationship(
         back_populates="form_definition_current",
         cascade="all, delete-orphan",
@@ -11365,8 +11372,8 @@ class FormValues(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    form_definition_id: Mapped[Optional[int]] = mapped_column(ForeignKey("form_definition.id"), index=True)
-    content: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    form_definition_id: Mapped[int | None] = mapped_column(ForeignKey("form_definition.id"), index=True)
+    content: Mapped[bytes | None] = mapped_column(MutableJSONType)
     form_definition: Mapped[Optional["FormDefinition"]] = relationship(
         primaryjoin=(lambda: FormValues.form_definition_id == FormDefinition.id)
     )
@@ -11382,18 +11389,18 @@ class UserAddress(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    desc: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    desc: Mapped[str | None] = mapped_column(TrimmedString(255))
     name: Mapped[str] = mapped_column(TrimmedString(255))
-    institution: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    institution: Mapped[str | None] = mapped_column(TrimmedString(255))
     address: Mapped[str] = mapped_column(TrimmedString(255))
     city: Mapped[str] = mapped_column(TrimmedString(255))
     state: Mapped[str] = mapped_column(TrimmedString(255))
     postal_code: Mapped[str] = mapped_column(TrimmedString(255))
     country: Mapped[str] = mapped_column(TrimmedString(255))
-    phone: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    purged: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
+    phone: Mapped[str | None] = mapped_column(TrimmedString(255))
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    purged: Mapped[bool | None] = mapped_column(index=True, default=False)
     # `desc` needs to be fully qualified because it is shadowed by `desc` Column defined above
     # TODO: db migration to rename column, then use `desc`
     user: Mapped[Optional["User"]] = relationship(back_populates="addresses", order_by=sqlalchemy.desc("update_time"))
@@ -11417,12 +11424,12 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     __tablename__ = "psa_association"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]  # needed for social-auth-core Mixin class attributes
-    handle: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
-    secret: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
-    issued: Mapped[Optional[int]]  # type: ignore[assignment]
-    lifetime: Mapped[Optional[int]]  # type: ignore[assignment]
-    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))  # type: ignore[assignment]
+    server_url: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]  # needed for social-auth-core Mixin class attributes
+    handle: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    secret: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    issued: Mapped[int | None]  # type: ignore[assignment]
+    lifetime: Mapped[int | None]  # type: ignore[assignment]
+    assoc_type: Mapped[str | None] = mapped_column(VARCHAR(64))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -11479,8 +11486,8 @@ class PSACode(Base, CodeMixin, RepresentById):
     __table_args__ = (UniqueConstraint("code", "email"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    email: Mapped[Optional[str]] = mapped_column(VARCHAR(200))  # type: ignore[assignment]
-    code: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    email: Mapped[str | None] = mapped_column(VARCHAR(200))  # type: ignore[assignment]
+    code: Mapped[str | None] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -11506,9 +11513,9 @@ class PSANonce(Base, NonceMixin, RepresentById):
     __tablename__ = "psa_nonce"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    server_url: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
-    timestamp: Mapped[Optional[int]]  # type: ignore[assignment]
-    salt: Mapped[Optional[str]] = mapped_column(VARCHAR(40))  # type: ignore[assignment]
+    server_url: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    timestamp: Mapped[int | None]  # type: ignore[assignment]
+    salt: Mapped[str | None] = mapped_column(VARCHAR(40))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -11542,10 +11549,10 @@ class PSAPartial(Base, PartialMixin, RepresentById):
     __tablename__ = "psa_partial"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    token: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
-    data: Mapped[Optional[str]] = mapped_column(TEXT)  # type: ignore[assignment]
-    next_step: Mapped[Optional[int]]  # type: ignore[assignment]
-    backend: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    token: Mapped[str | None] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    data: Mapped[str | None] = mapped_column(TEXT)  # type: ignore[assignment]
+    next_step: Mapped[int | None]  # type: ignore[assignment]
+    backend: Mapped[str | None] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
     sa_session = None
@@ -11584,20 +11591,20 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     __table_args__ = (UniqueConstraint("provider", "uid"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    uid: Mapped[Optional[str]] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
-    provider: Mapped[Optional[str]] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
-    extra_data: Mapped[Optional[dict[str, Any]]] = mapped_column(  # type: ignore[assignment, unused-ignore]
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    uid: Mapped[str | None] = mapped_column(VARCHAR(255))  # type: ignore[assignment]
+    provider: Mapped[str | None] = mapped_column(VARCHAR(32))  # type: ignore[assignment]
+    extra_data: Mapped[dict[str, Any] | None] = mapped_column(  # type: ignore[assignment, unused-ignore]
         MutableJSONType
     )
-    lifetime: Mapped[Optional[int]]
-    assoc_type: Mapped[Optional[str]] = mapped_column(VARCHAR(64))
+    lifetime: Mapped[int | None]
+    assoc_type: Mapped[str | None] = mapped_column(VARCHAR(64))
     user: Mapped[Optional["User"]] = relationship(  # type: ignore[assignment, unused-ignore]
         back_populates="social_auth"
     )
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
-    sa_session: ClassVar[Optional[Session]] = None
+    sa_session: ClassVar[Session | None] = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -11746,18 +11753,18 @@ class Page(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    latest_revision_id: Mapped[Optional[int]] = mapped_column(
+    latest_revision_id: Mapped[int | None] = mapped_column(
         ForeignKey("page_revision.id", use_alter=True, name="page_latest_revision_id_fk"), index=True
     )
-    title: Mapped[Optional[str]] = mapped_column(TEXT)
-    deleted: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    importable: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    slug: Mapped[Optional[str]] = mapped_column(TEXT)
-    published: Mapped[Optional[bool]] = mapped_column(index=True, default=False)
-    source_invocation_id: Mapped[Optional[int]] = mapped_column(
+    title: Mapped[str | None] = mapped_column(TEXT)
+    deleted: Mapped[bool | None] = mapped_column(index=True, default=False)
+    importable: Mapped[bool | None] = mapped_column(index=True, default=False)
+    slug: Mapped[str | None] = mapped_column(TEXT)
+    published: Mapped[bool | None] = mapped_column(index=True, default=False)
+    source_invocation_id: Mapped[int | None] = mapped_column(
         ForeignKey("workflow_invocation.id"), index=True, nullable=True
     )
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     user: Mapped["User"] = relationship()
     revisions: Mapped[list["PageRevision"]] = relationship(
         cascade="all, delete-orphan",
@@ -11846,10 +11853,10 @@ class PageRevision(Base, Dictifiable, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True)
-    title: Mapped[Optional[str]] = mapped_column(TEXT)
-    content: Mapped[Optional[str]] = mapped_column(TEXT)
-    content_format: Mapped[Optional[str]] = mapped_column(TrimmedString(32))
-    edit_source: Mapped[Optional[str]] = mapped_column(TrimmedString(16), default=None)
+    title: Mapped[str | None] = mapped_column(TEXT)
+    content: Mapped[str | None] = mapped_column(TEXT)
+    content_format: Mapped[str | None] = mapped_column(TrimmedString(32))
+    edit_source: Mapped[str | None] = mapped_column(TrimmedString(16), default=None)
     page: Mapped["Page"] = relationship(primaryjoin=(lambda: Page.id == PageRevision.page_id))
     DEFAULT_CONTENT_FORMAT = "html"
     dict_element_visible_keys = ["id", "page_id", "title", "content", "content_format", "edit_source"]
@@ -11885,17 +11892,17 @@ class Visualization(Base, HasTags, RepresentById, UsesCreateAndUpdateTime):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    latest_revision_id: Mapped[Optional[int]] = mapped_column(
+    latest_revision_id: Mapped[int | None] = mapped_column(
         ForeignKey("visualization_revision.id", use_alter=True, name="visualization_latest_revision_id_fk"),
         index=True,
     )
-    title: Mapped[Optional[str]] = mapped_column(TEXT)
-    type: Mapped[Optional[str]] = mapped_column(TEXT)
-    dbkey: Mapped[Optional[str]] = mapped_column(TEXT)
-    deleted: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
-    importable: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
-    slug: Mapped[Optional[str]] = mapped_column(TEXT)
-    published: Mapped[Optional[bool]] = mapped_column(default=False, index=True)
+    title: Mapped[str | None] = mapped_column(TEXT)
+    type: Mapped[str | None] = mapped_column(TEXT)
+    dbkey: Mapped[str | None] = mapped_column(TEXT)
+    deleted: Mapped[bool | None] = mapped_column(default=False, index=True)
+    importable: Mapped[bool | None] = mapped_column(default=False, index=True)
+    slug: Mapped[str | None] = mapped_column(TEXT)
+    published: Mapped[bool | None] = mapped_column(default=False, index=True)
 
     user: Mapped["User"] = relationship()
     revisions: Mapped[list["VisualizationRevision"]] = relationship(
@@ -11993,9 +12000,9 @@ class VisualizationRevision(Base, RepresentById):
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True)
-    title: Mapped[Optional[str]] = mapped_column(TEXT)
-    dbkey: Mapped[Optional[str]] = mapped_column(TEXT)
-    config: Mapped[Optional[bytes]] = mapped_column(MutableJSONType)
+    title: Mapped[str | None] = mapped_column(TEXT)
+    dbkey: Mapped[str | None] = mapped_column(TEXT)
+    config: Mapped[bytes | None] = mapped_column(MutableJSONType)
     visualization: Mapped["Visualization"] = relationship(
         back_populates="revisions",
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id),
@@ -12028,9 +12035,9 @@ class Tag(Base, RepresentById):
     __table_args__ = (UniqueConstraint("name"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    type: Mapped[Optional[int]]
-    parent_id: Mapped[Optional[int]] = mapped_column(ForeignKey("tag.id"))
-    name: Mapped[Optional[str]] = mapped_column(TrimmedString(255))
+    type: Mapped[int | None]
+    parent_id: Mapped[int | None] = mapped_column(ForeignKey("tag.id"))
+    name: Mapped[str | None] = mapped_column(TrimmedString(255))
     children: Mapped[list["Tag"]] = relationship(back_populates="parent")
     parent: Mapped[Optional["Tag"]] = relationship(back_populates="children", remote_side=[id])
 
@@ -12041,8 +12048,8 @@ class Tag(Base, RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ["id", "user_tname", "user_value"]
     dict_element_visible_keys = dict_collection_visible_keys
-    user_tname: Mapped[Optional[str]]
-    user_value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_tname: Mapped[str | None]
+    user_value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -12065,9 +12072,9 @@ class HistoryTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     history: Mapped["History"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12081,9 +12088,9 @@ class HistoryDatasetAssociationTagAssociation(Base, ItemTagAssociation, Represen
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     history_dataset_association: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12097,9 +12104,9 @@ class LibraryDatasetDatasetAssociationTagAssociation(Base, ItemTagAssociation, R
         ForeignKey("library_dataset_dataset_association.id"), index=True, nullable=True
     )
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     library_dataset_dataset_association: Mapped["LibraryDatasetDatasetAssociation"] = relationship(
         back_populates="tags"
     )
@@ -12113,9 +12120,9 @@ class PageTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     page: Mapped["Page"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12127,9 +12134,9 @@ class WorkflowStepTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     workflow_step: Mapped["WorkflowStep"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12141,9 +12148,9 @@ class StoredWorkflowTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12155,9 +12162,9 @@ class VisualizationTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     visualization: Mapped["Visualization"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12171,9 +12178,9 @@ class HistoryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12187,9 +12194,9 @@ class LibraryDatasetCollectionTagAssociation(Base, ItemTagAssociation, Represent
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="tags")
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
@@ -12201,9 +12208,9 @@ class ToolTagAssociation(Base, ItemTagAssociation, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     tool_id: Mapped[str] = mapped_column(TrimmedString(255), index=True, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tag.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    user_tname: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(TrimmedString(255), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_tname: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
+    value: Mapped[str | None] = mapped_column(TrimmedString(255), index=True)
     tag: Mapped["Tag"] = relationship()
     user: Mapped[Optional["User"]] = relationship()
 
@@ -12215,7 +12222,7 @@ class HistoryAnnotationAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     history: Mapped["History"] = relationship(back_populates="annotations")
     user: Mapped["User"] = relationship()
@@ -12229,7 +12236,7 @@ class HistoryDatasetAssociationAnnotationAssociation(Base, RepresentById):
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     hda: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12241,7 +12248,7 @@ class StoredWorkflowAnnotationAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12253,7 +12260,7 @@ class WorkflowStepAnnotationAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     workflow_step_id: Mapped[int] = mapped_column(ForeignKey("workflow_step.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     workflow_step: Mapped["WorkflowStep"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12265,7 +12272,7 @@ class PageAnnotationAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     page: Mapped["Page"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12277,7 +12284,7 @@ class VisualizationAnnotationAssociation(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     visualization: Mapped["Visualization"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12290,7 +12297,7 @@ class HistoryDatasetCollectionAssociationAnnotationAssociation(Base, RepresentBy
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     history_dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(
         back_populates="annotations"
@@ -12305,7 +12312,7 @@ class LibraryDatasetCollectionAnnotationAssociation(Base, RepresentById):
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     annotation: Mapped[str] = mapped_column(TEXT, nullable=True)
     dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="annotations")
     user: Mapped[Optional["User"]] = relationship()
@@ -12315,10 +12322,10 @@ class Vault(Base):
     __tablename__ = "vault"
 
     key: Mapped[str] = mapped_column(Text, primary_key=True)
-    parent_key: Mapped[Optional[str]] = mapped_column(Text, ForeignKey(key), index=True)
+    parent_key: Mapped[str | None] = mapped_column(Text, ForeignKey(key), index=True)
     children: Mapped[list["Vault"]] = relationship(back_populates="parent")
     parent: Mapped[Optional["Vault"]] = relationship(back_populates="children", remote_side=[key])
-    value: Mapped[Optional[str]] = mapped_column(Text)
+    value: Mapped[str | None] = mapped_column(Text)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
 
@@ -12342,7 +12349,7 @@ class HistoryRatingAssociation(ItemRatingAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     history_id: Mapped[int] = mapped_column(ForeignKey("history.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     history: Mapped["History"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12359,7 +12366,7 @@ class HistoryDatasetAssociationRatingAssociation(ItemRatingAssociation, Represen
     history_dataset_association_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     history_dataset_association: Mapped["HistoryDatasetAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12374,7 +12381,7 @@ class StoredWorkflowRatingAssociation(ItemRatingAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     stored_workflow_id: Mapped[int] = mapped_column(ForeignKey("stored_workflow.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     stored_workflow: Mapped["StoredWorkflow"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12389,7 +12396,7 @@ class PageRatingAssociation(ItemRatingAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     page_id: Mapped[int] = mapped_column(ForeignKey("page.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     page: Mapped["Page"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12404,7 +12411,7 @@ class VisualizationRatingAssociation(ItemRatingAssociation, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     visualization_id: Mapped[int] = mapped_column(ForeignKey("visualization.id"), index=True, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     visualization: Mapped["Visualization"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12421,7 +12428,7 @@ class HistoryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     history_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("history_dataset_collection_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     dataset_collection: Mapped["HistoryDatasetCollectionAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12438,7 +12445,7 @@ class LibraryDatasetCollectionRatingAssociation(ItemRatingAssociation, Represent
     library_dataset_collection_id: Mapped[int] = mapped_column(
         ForeignKey("library_dataset_collection_association.id"), index=True, nullable=True
     )
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     rating: Mapped[int] = mapped_column(index=True, nullable=True)
     dataset_collection: Mapped["LibraryDatasetCollectionAssociation"] = relationship(back_populates="ratings")
     user: Mapped[Optional["User"]] = relationship()
@@ -12455,8 +12462,8 @@ class DataManagerHistoryAssociation(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    history_id: Mapped[Optional[int]] = mapped_column(ForeignKey("history.id"), index=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    history_id: Mapped[int | None] = mapped_column(ForeignKey("history.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     history: Mapped[Optional["History"]] = relationship()
     user: Mapped[Optional["User"]] = relationship(back_populates="data_manager_histories")
 
@@ -12468,8 +12475,8 @@ class DataManagerJobAssociation(Base, RepresentById):
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("job.id"), index=True)
-    data_manager_id: Mapped[Optional[str]] = mapped_column(TEXT)
+    job_id: Mapped[int | None] = mapped_column(ForeignKey("job.id"), index=True)
+    data_manager_id: Mapped[str | None] = mapped_column(TEXT)
     job: Mapped[Optional["Job"]] = relationship(back_populates="data_manager_association", uselist=False)
 
 
@@ -12477,9 +12484,9 @@ class UserPreference(Base, RepresentById):
     __tablename__ = "user_preference"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    name: Mapped[Optional[str]] = mapped_column(Unicode(255), index=True)
-    value: Mapped[Optional[str]] = mapped_column(Text)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    name: Mapped[str | None] = mapped_column(Unicode(255), index=True)
+    value: Mapped[str | None] = mapped_column(Text)
 
     def __init__(self, name=None, value=None):
         # Do not remove this constructor: it is set as the creator for the User.preferences
@@ -12495,12 +12502,12 @@ class UsesTemplatesAppConfig(Protocol):
 
 class HasConfigSecrets(RepresentById):
     secret_config_type: str
-    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]]
-    uuid: Mapped[Union[UUID, str]]
+    template_secrets: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE | None]
+    uuid: Mapped[UUID | str]
     user: Mapped["User"]
 
     @classmethod
-    def vault_key_from_uuid(clazz, uuid: Union[str, UUID], secret: str, app_config: UsesTemplatesAppConfig) -> str:
+    def vault_key_from_uuid(clazz, uuid: str | UUID, secret: str, app_config: UsesTemplatesAppConfig) -> str:
         return f"{clazz.secret_config_type}/{str(get_uuid(uuid))}/{secret}"
 
     def vault_id_prefix(self, app_config: UsesTemplatesAppConfig) -> str:
@@ -12515,7 +12522,7 @@ class HasConfigSecrets(RepresentById):
 
 
 class HasConfigEnvironment(RepresentById):
-    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]]
+    template_definition: Mapped[CONFIGURATION_TEMPLATE_DEFINITION_TYPE | None]
 
     @property
     def template_environment(self) -> TemplateEnvironment:
@@ -12534,10 +12541,10 @@ T = TypeVar("T", bound=ConfigTemplate, covariant=True)
 
 class HasConfigTemplate(HasConfigSecrets, HasConfigEnvironment, RepresentById, Generic[T]):
     name: Mapped[str]
-    description: Mapped[Optional[str]]
+    description: Mapped[str | None]
     template_id: Mapped[str]
     template_version: Mapped[int]
-    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]]
+    template_variables: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE | None]
     hidden: Mapped[bool]
     active: Mapped[bool]
     purged: Mapped[bool]
@@ -12552,14 +12559,14 @@ class UserObjectStore(Base, HasConfigTemplate):
     secret_config_type = "object_store_config"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
-    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    user_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[UUID | str] = mapped_column(UUIDType(), index=True)
     create_time: Mapped[datetime] = mapped_column(DateTime, default=now)
     update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, index=True)
     # user specified name of the instance they've created
     name: Mapped[str] = mapped_column(String(255), index=True)
     # user specified description of the instance they've created
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     # active but doesn't appear in user selection
     hidden: Mapped[bool] = mapped_column(default=False)
     # set to False to deactive the source
@@ -12575,12 +12582,12 @@ class UserObjectStore(Base, HasConfigTemplate):
     # the id/version and not record the definition... as the templates change
     # over time this choice has some big consequences despite being easy to swap
     # implementations.
-    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    template_definition: Mapped[CONFIGURATION_TEMPLATE_DEFINITION_TYPE | None] = mapped_column(JSONType)
     # Big JSON blob of the variable name -> value mapping defined for the store's
     # variables by the user.
-    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    template_variables: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE | None] = mapped_column(JSONType)
     # Track a list of secrets that were defined for this object store at creation
-    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+    template_secrets: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE | None] = mapped_column(JSONType)
 
     user: Mapped["User"] = relationship("User", back_populates="object_stores")
 
@@ -12589,7 +12596,7 @@ class UserObjectStore(Base, HasConfigTemplate):
         return ObjectStoreTemplate(**self.template_definition or {})
 
     def object_store_configuration(
-        self, secrets: SecretsDict, environment: EnvironmentDict, templates: Optional[list[ObjectStoreTemplate]] = None
+        self, secrets: SecretsDict, environment: EnvironmentDict, templates: list[ObjectStoreTemplate] | None = None
     ) -> ObjectStoreConfiguration:
         if templates is None:
             templates = [self.template]
@@ -12620,14 +12627,14 @@ class UserFileSource(Base, HasConfigTemplate):
     secret_config_type = "file_source_config"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    uuid: Mapped[UUID | str] = mapped_column(UUIDType(), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, index=True)
     # user specified name of the instance they've created
     name: Mapped[str] = mapped_column(String(255), index=True)
     # user specified description of the instance they've created
-    description: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
     # active but doesn't appear in user selection
     hidden: Mapped[bool] = mapped_column(default=False)
     # set to False to deactive the source
@@ -12643,12 +12650,12 @@ class UserFileSource(Base, HasConfigTemplate):
     # the id/version and not record the definition... as the templates change
     # over time this choice has some big consequences despite being easy to swap
     # implementations.
-    template_definition: Mapped[Optional[CONFIGURATION_TEMPLATE_DEFINITION_TYPE]] = mapped_column(JSONType)
+    template_definition: Mapped[CONFIGURATION_TEMPLATE_DEFINITION_TYPE | None] = mapped_column(JSONType)
     # Big JSON blob of the variable name -> value mapping defined for the store's
     # variables by the user.
-    template_variables: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE]] = mapped_column(JSONType)
+    template_variables: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_VARIABLES_TYPE | None] = mapped_column(JSONType)
     # Track a list of secrets that were defined for this object store at creation
-    template_secrets: Mapped[Optional[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE]] = mapped_column(JSONType)
+    template_secrets: Mapped[CONFIGURATION_TEMPLATE_CONFIGURATION_SECRET_NAMES_TYPE | None] = mapped_column(JSONType)
 
     user: Mapped["User"] = relationship("User", back_populates="file_sources")
 
@@ -12661,7 +12668,7 @@ class UserFileSource(Base, HasConfigTemplate):
         secrets: SecretsDict,
         environment: EnvironmentDict,
         implicit: ImplicitConfigurationParameters,
-        templates: Optional[list[FileSourceTemplate]] = None,
+        templates: list[FileSourceTemplate] | None = None,
     ) -> FileSourceConfiguration:
         if templates is None:
             templates = [self.template]
@@ -12693,16 +12700,16 @@ class ToolLandingRequest(Base):
     __tablename__ = "tool_landing_request"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
+    update_time: Mapped[datetime | None] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[UUID | str] = mapped_column(UUIDType(), index=True)
     tool_id: Mapped[str] = mapped_column(String(255))
-    tool_version: Mapped[Optional[str]] = mapped_column(String(255), default=None)
-    request_state: Mapped[Optional[dict]] = mapped_column(JSONType)
-    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    tool_version: Mapped[str | None] = mapped_column(String(255), default=None)
+    request_state: Mapped[dict | None] = mapped_column(JSONType)
+    client_secret: Mapped[str | None] = mapped_column(String(255), default=None)
     public: Mapped[bool] = mapped_column(Boolean)
-    origin: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    origin: Mapped[str | None] = mapped_column(String(255), default=None)
 
     user: Mapped[Optional["User"]] = relationship()
 
@@ -12712,23 +12719,23 @@ class WorkflowLandingRequest(Base):
     __tablename__ = "workflow_landing_request"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
-    stored_workflow_id: Mapped[Optional[int]] = mapped_column(ForeignKey("workflow.id"), nullable=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    workflow_id: Mapped[int | None] = mapped_column(ForeignKey("stored_workflow.id"), nullable=True)
+    stored_workflow_id: Mapped[int | None] = mapped_column(ForeignKey("workflow.id"), nullable=True)
 
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    update_time: Mapped[Optional[datetime]] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
-    uuid: Mapped[Union[UUID, str]] = mapped_column(UUIDType(), index=True)
-    request_state: Mapped[Optional[dict]] = mapped_column(JSONType)
-    client_secret: Mapped[Optional[str]] = mapped_column(String(255), default=None)
-    workflow_source: Mapped[Optional[str]] = mapped_column(String(255), default=None)
-    workflow_source_type: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    update_time: Mapped[datetime | None] = mapped_column(index=True, default=now, onupdate=now, nullable=True)
+    uuid: Mapped[UUID | str] = mapped_column(UUIDType(), index=True)
+    request_state: Mapped[dict | None] = mapped_column(JSONType)
+    client_secret: Mapped[str | None] = mapped_column(String(255), default=None)
+    workflow_source: Mapped[str | None] = mapped_column(String(255), default=None)
+    workflow_source_type: Mapped[str | None] = mapped_column(String(255), default=None)
     public: Mapped[bool] = mapped_column(Boolean)
 
     user: Mapped[Optional["User"]] = relationship()
     stored_workflow: Mapped[Optional["StoredWorkflow"]] = relationship()
     workflow: Mapped[Optional["Workflow"]] = relationship()
-    origin: Mapped[Optional[str]] = mapped_column(String(255), default=None)
+    origin: Mapped[str | None] = mapped_column(String(255), default=None)
 
 
 class LandingRequestToWorkflowInvocationAssociation(Base, RepresentById):
@@ -12758,11 +12765,11 @@ class UserAction(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    session_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
-    action: Mapped[Optional[str]] = mapped_column(Unicode(255))
-    context: Mapped[Optional[str]] = mapped_column(Unicode(512))
-    params: Mapped[Optional[str]] = mapped_column(Unicode(1024))
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    session_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_session.id", ondelete="SET NULL"), index=True)
+    action: Mapped[str | None] = mapped_column(Unicode(255))
+    context: Mapped[str | None] = mapped_column(Unicode(512))
+    params: Mapped[str | None] = mapped_column(Unicode(1024))
     user: Mapped[Optional["User"]] = relationship()
 
 
@@ -12771,8 +12778,8 @@ class APIKeys(Base, RepresentById):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
-    key: Mapped[Optional[str]] = mapped_column(TrimmedString(32), index=True, unique=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("galaxy_user.id"), index=True)
+    key: Mapped[str | None] = mapped_column(TrimmedString(32), index=True, unique=True)
     user: Mapped[Optional["User"]] = relationship(back_populates="api_keys")
     deleted: Mapped[bool] = mapped_column(index=True, server_default=false())
 
@@ -12809,7 +12816,7 @@ class CleanupEvent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
-    message: Mapped[Optional[str]] = mapped_column(TrimmedString(1024))
+    message: Mapped[str | None] = mapped_column(TrimmedString(1024))
 
 
 class CleanupEventDatasetAssociation(Base):
@@ -12971,7 +12978,7 @@ class DatasetStorageOperationRun(Base):
     state: Mapped[str] = mapped_column(String(32), index=True)
     skip_ineligible: Mapped[bool] = mapped_column(Boolean, default=True)
     notify_on_completion: Mapped[bool] = mapped_column(Boolean, default=True)
-    task_id: Mapped[Optional[Union[UUID, str]]] = mapped_column(UUIDType(), index=True)
+    task_id: Mapped[UUID | str | None] = mapped_column(UUIDType(), index=True)
     total_count: Mapped[int] = mapped_column(default=0)
     succeeded_count: Mapped[int] = mapped_column(default=0)
     failed_count: Mapped[int] = mapped_column(default=0)
@@ -12991,7 +12998,7 @@ class DatasetStorageOperationRunItem(Base):
     run_id: Mapped[int] = mapped_column(ForeignKey("dataset_storage_operation_run.id", ondelete="CASCADE"), index=True)
     dataset_id: Mapped[int] = mapped_column(ForeignKey("dataset.id", ondelete="CASCADE"), index=True)
     state: Mapped[str] = mapped_column(String(32), index=True)
-    reason_code: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    reason_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     bytes_processed: Mapped[int] = mapped_column(default=0)
     create_time: Mapped[datetime] = mapped_column(default=now, nullable=True)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now, nullable=True)
@@ -13012,7 +13019,7 @@ class UserCredentials(Base):
     source_version: Mapped[str] = mapped_column()
     name: Mapped[str] = mapped_column()
     version: Mapped[str] = mapped_column()
-    current_group_id: Mapped[Optional[int]] = mapped_column(
+    current_group_id: Mapped[int | None] = mapped_column(
         ForeignKey("credentials_group.id", ondelete="CASCADE"), index=True, nullable=True
     )
     create_time: Mapped[datetime] = mapped_column(default=now)
@@ -13045,7 +13052,7 @@ class Credential(Base):
     name: Mapped[str] = mapped_column()
     is_secret: Mapped[bool] = mapped_column(Boolean)
     is_set: Mapped[bool] = mapped_column(Boolean)
-    value: Mapped[Optional[str]] = mapped_column(nullable=True)
+    value: Mapped[str | None] = mapped_column(nullable=True)
     create_time: Mapped[datetime] = mapped_column(default=now)
     update_time: Mapped[datetime] = mapped_column(default=now, onupdate=now)
 
@@ -13398,7 +13405,9 @@ def receive_init(target, args, kwargs):
             return  # Once is enough.
 
 
-JobStateSummary = NamedTuple("JobStateSummary", [(value, int) for value in enum_values(Job.states)] + [("all_jobs", int)])  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167
+JobStateSummary = NamedTuple(  # type: ignore[misc]  # Ref https://github.com/python/mypy/issues/848#issuecomment-255237167
+    "JobStateSummary", [(value, int) for value in enum_values(Job.states)] + [("all_jobs", int)]
+)
 
 _ZERO_JOB_STATE_SUMMARY = JobStateSummary._make([0] * (len(Job.states) + 1))
 

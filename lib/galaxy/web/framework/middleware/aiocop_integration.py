@@ -21,7 +21,6 @@ import threading
 from contextvars import ContextVar
 from typing import (
     Any,
-    Optional,
 )
 
 from starlette.types import (
@@ -40,7 +39,7 @@ ENV_VAR = "GALAXY_TEST_AIOCOP"
 # Anything at or above is considered a test-failing violation.
 HIGH_SEVERITY_SCORE = 50
 
-_request_violations: ContextVar[Optional[list[dict[str, Any]]]] = ContextVar("aiocop_request_violations", default=None)
+_request_violations: ContextVar[list[dict[str, Any]] | None] = ContextVar("aiocop_request_violations", default=None)
 
 _process_initialized = False
 
@@ -52,8 +51,7 @@ def aiocop_enabled() -> bool:
 def _on_slow_task(event: Any) -> None:
     if not event.blocking_events:
         return
-    violations = _request_violations.get()
-    if violations is not None:
+    if (violations := _request_violations.get()) is not None:
         violations.extend(event.blocking_events)
     log.error(
         "aiocop detected blocking I/O on event loop (severity=%s, elapsed=%.1fms): %s",
@@ -162,8 +160,7 @@ class AiocopMiddleware:
                     max_severity = max(int(v.get("severity") or 0) for v in violations)
                     first = violations[0]
                     summary = (
-                        f"count={len(violations)};severity={max_severity};"
-                        f"first={first['event']}@{first['entry_point']}"
+                        f"count={len(violations)};severity={max_severity};first={first['event']}@{first['entry_point']}"
                     )
                     headers = list(message.get("headers", []))
                     headers.append((b"x-aiocop-violations", summary.encode("latin-1")))

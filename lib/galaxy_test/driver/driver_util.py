@@ -17,7 +17,6 @@ import time
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 from urllib.parse import urlparse
 
@@ -151,7 +150,7 @@ def setup_galaxy_config(
     new_file_path = tempfile.mkdtemp(prefix="new_files_path_", dir=tmpdir)
     job_working_directory = tempfile.mkdtemp(prefix="job_working_directory_", dir=tmpdir)
 
-    user_library_import_dir: Optional[str]
+    user_library_import_dir: str | None
     if use_test_file_dir:
         first_test_file_dir = ensure_test_file_dir_set()
         if not os.path.isabs(first_test_file_dir):
@@ -416,7 +415,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
 
 
 def install_database_conf(db_path, default_merged=False):
-    install_galaxy_database_connection: Optional[str]
+    install_galaxy_database_connection: str | None
     if "GALAXY_TEST_INSTALL_DBURI" in os.environ:
         install_galaxy_database_connection = os.environ["GALAXY_TEST_INSTALL_DBURI"]
     elif asbool(os.environ.get("GALAXY_TEST_INSTALL_DB_MERGED", default_merged)):
@@ -502,7 +501,7 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
         raise Exception(message)
 
 
-def attempt_port(port: int) -> Optional[int]:
+def attempt_port(port: int) -> int | None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind(("", port))
@@ -643,7 +642,7 @@ class ServerWrapper:
         self.port = port
         self.prefix = prefix
 
-    def get_logs(self) -> Optional[str]:
+    def get_logs(self) -> str | None:
         # Subclasses can implement a way to return relevant logs
         pass
 
@@ -771,7 +770,7 @@ def _test_fast_app_slot() -> dict:
     return {}
 
 
-def _find_root_wsgi_mount(app: FastAPI) -> Optional[Mount]:
+def _find_root_wsgi_mount(app: FastAPI) -> Mount | None:
     """Locate the ``Mount("/", wsgi_handler)`` that ``initialize_fast_app``
     installs as the final route on the FastAPI app.
     """
@@ -1023,8 +1022,8 @@ class GalaxyTestDriver(TestDriver):
 
         self.testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
 
-        default_tool_conf: Optional[str]
-        datatypes_conf_override: Optional[str]
+        default_tool_conf: str | None
+        datatypes_conf_override: str | None
         framework_tools_and_types = getattr(config_object, "framework_tool_and_types", False)
         if framework_tools_and_types:
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
@@ -1048,7 +1047,7 @@ class GalaxyTestDriver(TestDriver):
         self._configure(config_object)
         self._register_and_run_servers(config_object)
 
-    def get_logs(self) -> Optional[str]:
+    def get_logs(self) -> str | None:
         if not self.server_wrappers:
             return None
         server_wrapper = self.server_wrappers[0]
@@ -1060,7 +1059,7 @@ class GalaxyTestDriver(TestDriver):
 
     def _register_and_run_servers(self, config_object=None, handle_config=None) -> None:
         config_object = self._ensure_config_object(config_object)
-        self.app: Optional[GalaxyUniverseApplication] = None
+        self.app: GalaxyUniverseApplication | None = None
 
         if self.external_galaxy is None:
             if self._saved_galaxy_config is not None:
@@ -1129,7 +1128,7 @@ class GalaxyTestDriver(TestDriver):
         return config_object
 
     def run_tool_test(
-        self, tool_id: str, index: int = 0, resource_parameters: Optional[dict[str, Any]] = None, **kwd
+        self, tool_id: str, index: int = 0, resource_parameters: dict[str, Any] | None = None, **kwd
     ) -> None:
         if resource_parameters is None:
             resource_parameters = {}

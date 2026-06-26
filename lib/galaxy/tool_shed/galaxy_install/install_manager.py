@@ -3,7 +3,6 @@ import logging
 import os
 from typing import (
     Any,
-    Optional,
 )
 
 from sqlalchemy import or_
@@ -78,7 +77,7 @@ class InstallRepositoryManager:
     app: InstallationTarget
     tpm: tool_panel_manager.ToolPanelManager
 
-    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
+    def __init__(self, app: InstallationTarget, tpm: tool_panel_manager.ToolPanelManager | None = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)

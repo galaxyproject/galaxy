@@ -20,7 +20,6 @@ import json
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_evals import (
@@ -36,7 +35,7 @@ def _load_scenarios() -> list[dict[str, Any]]:
 
 
 def routing_followup_dataset(
-    only: Optional[list[str]] = None,
+    only: list[str] | None = None,
 ) -> Dataset[dict[str, Any], str, dict[str, Any]]:
     """Build the followup Dataset.
 

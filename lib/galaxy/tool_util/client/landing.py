@@ -7,7 +7,6 @@ import random
 import string
 import sys
 from dataclasses import dataclass
-from typing import Optional
 
 import requests
 import yaml
@@ -36,7 +35,7 @@ class Request:
     template_id: str
     catalog: str
     public: bool
-    client_secret: Optional[str]
+    client_secret: str | None
     galaxy_url: str
 
 

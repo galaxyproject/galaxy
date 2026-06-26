@@ -111,10 +111,9 @@ class TestHistorySSEIntegration(IntegrationTestCase):
             seen_b_after_unsub = any(
                 user_b_history_id in json.loads(e["data"]).get("history_ids", []) for e in after_events
             )
-            assert not seen_b_after_unsub, (
-                "User A still received history_update events for User B's history "
-                f"after unsubscribing: {after_events}"
-            )
+            assert (
+                not seen_b_after_unsub
+            ), f"User A still received history_update events for User B's history after unsubscribing: {after_events}"
         finally:
             listener.stop()
 

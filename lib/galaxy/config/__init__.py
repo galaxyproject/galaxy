@@ -26,7 +26,6 @@ from typing import (
     SupportsInt,
     TYPE_CHECKING,
     TypeVar,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -256,7 +255,7 @@ OptStr = TypeVar("OptStr", None, str)
 class BaseAppConfiguration(HasDynamicProperties):
     # Override in subclasses (optional): {KEY: config option, VALUE: deprecated directory name}
     # If VALUE == first directory in a user-supplied path that resolves to KEY, it will be stripped from that path
-    renamed_options: Optional[dict[str, str]] = None
+    renamed_options: dict[str, str] | None = None
     deprecated_dirs: dict[str, str] = {}
     paths_to_check_against_root: set[str] = (
         set()
@@ -462,7 +461,7 @@ class BaseAppConfiguration(HasDynamicProperties):
                     return path
 
     def _update_raw_config_from_kwargs(self, kwargs):
-        type_converters: dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
+        type_converters: dict[str, Callable[[Any], bool | int | float | str]] = {
             "bool": string_as_bool,
             "int": int,
             "float": float,
@@ -626,7 +625,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 class CommonConfigurationMixin:
     """Shared configuration settings code for Galaxy and ToolShed."""
 
-    sentry_dsn: Optional[str]
+    sentry_dsn: str | None
     config_dict: dict[str, str]
 
     @property
@@ -743,7 +742,7 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
     container_resolvers_config_file: str
     database_connection: str
     drmaa_external_runjob_script: str
-    email_from: Optional[str]
+    email_from: str | None
     enable_tool_shed_check: bool
     file_source_temp_dir: str
     galaxy_data_manager_data_path: str
@@ -1520,7 +1519,7 @@ def get_database_engine_options(kwargs, model_prefix=""):
     Allow options for the SQLAlchemy database engine to be passed by using
     the prefix "database_engine_option".
     """
-    conversions: dict[str, Callable[[Any], Union[bool, int]]] = {
+    conversions: dict[str, Callable[[Any], bool | int]] = {
         "convert_unicode": string_as_bool,
         "pool_timeout": int,
         "echo": string_as_bool,

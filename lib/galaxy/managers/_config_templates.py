@@ -3,9 +3,7 @@ import os
 from typing import (
     Any,
     cast,
-    Optional,
     TypeVar,
-    Union,
 )
 
 from pydantic import (
@@ -64,20 +62,20 @@ SuppliedSecrets = dict[str, str]
 
 class CreateInstancePayload(BaseModel):
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     template_id: str
     template_version: int
     variables: SuppliedVariables
     secrets: SuppliedSecrets
-    uuid: Optional[UUID4] = None
+    uuid: UUID4 | None = None
 
 
 class UpdateInstancePayload(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    variables: Optional[SuppliedVariables] = None
-    hidden: Optional[bool] = None
-    active: Optional[bool] = None
+    name: str | None = None
+    description: str | None = None
+    variables: SuppliedVariables | None = None
+    hidden: bool | None = None
+    active: bool | None = None
 
 
 class UpdateInstanceSecretPayload(BaseModel):
@@ -92,7 +90,7 @@ class UpgradeInstancePayload(BaseModel):
 
 
 class TestUpdateInstancePayload(BaseModel):
-    variables: Optional[SuppliedVariables] = None
+    variables: SuppliedVariables | None = None
 
 
 class TestUpgradeInstancePayload(BaseModel):
@@ -128,13 +126,13 @@ class CreateTestTarget:
         self.instance_class = instance_class
 
 
-ModifyInstancePayload = Union[UpdateInstanceSecretPayload, UpgradeInstancePayload, UpdateInstancePayload]
-TestModifyInstancePayload = Union[TestUpgradeInstancePayload, TestUpdateInstancePayload]
-CanTestPluginStatus = Union[HasConfigTemplate, CreateTestTarget, UpgradeTestTarget, UpdateTestTarget]
+ModifyInstancePayload = UpdateInstanceSecretPayload | UpgradeInstancePayload | UpdateInstancePayload
+TestModifyInstancePayload = TestUpgradeInstancePayload | TestUpdateInstancePayload
+CanTestPluginStatus = HasConfigTemplate | CreateTestTarget | UpgradeTestTarget | UpdateTestTarget
 
 
 def recover_secrets(
-    user_object_store: HasConfigSecrets, vault: Union[UserVaultWrapper, Vault], app_config: UsesTemplatesAppConfig
+    user_object_store: HasConfigSecrets, vault: UserVaultWrapper | Vault, app_config: UsesTemplatesAppConfig
 ) -> SecretsDict:
     if isinstance(vault, UserVaultWrapper):
         user_vault = vault
@@ -160,7 +158,7 @@ class TemplateParameters(TypedDict):
     variables: SuppliedVariables
     environment: EnvironmentDict
     user_details: dict[str, Any]
-    implicit: Optional[ImplicitConfigurationParameters]
+    implicit: ImplicitConfigurationParameters | None
 
 
 class TemplateServerConfiguration:
@@ -171,14 +169,14 @@ class TemplateServerConfiguration:
     information (provider URLs and provider specific configuration for the oauth2 flow).
     """
 
-    oauth2_client_pair: Optional[OAuth2ClientPair]
-    oauth2_configuration: Optional[OAuth2Configuration]
+    oauth2_client_pair: OAuth2ClientPair | None
+    oauth2_configuration: OAuth2Configuration | None
 
     def __init__(
         self,
-        oauth2_client_pair: Optional[OAuth2ClientPair] = None,
-        oauth2_configuration: Optional[OAuth2Configuration] = None,
-        oauth2_scope: Optional[str] = None,
+        oauth2_client_pair: OAuth2ClientPair | None = None,
+        oauth2_configuration: OAuth2Configuration | None = None,
+        oauth2_scope: str | None = None,
     ):
         self.oauth2_client_pair = oauth2_client_pair
         self.oauth2_configuration = oauth2_configuration
@@ -267,7 +265,7 @@ def prepare_environment(
 
 
 def prepare_environment_from_root(
-    root: Optional[list[TemplateEnvironmentEntry]], vault: Vault, app_config: UsesTemplatesAppConfig
+    root: list[TemplateEnvironmentEntry] | None, vault: Vault, app_config: UsesTemplatesAppConfig
 ) -> EnvironmentDict:
     environment: EnvironmentDict = {}
     for environment_entry in root or []:
@@ -429,7 +427,7 @@ T = TypeVar("T", bound=Template, covariant=True)
 
 
 def sort_templates(config, catalog: list[T], instance: HasConfigTemplate) -> list[T]:
-    configured_template: Optional[T] = None
+    configured_template: T | None = None
     try:
         configured_template = find_template_by(
             catalog, instance.template_id, instance.template_version, "config template"
@@ -452,7 +450,7 @@ def implicit_parameters_for_testing(
     template_server_configuration: TemplateServerConfiguration,
     target: CanTestPluginStatus,
     app_config: UsesTemplatesAppConfig,
-) -> Optional[ImplicitConfigurationParameters]:
+) -> ImplicitConfigurationParameters | None:
     implicit: ImplicitConfigurationParameters = {}
     if template_server_configuration.oauth2_configuration:
         refresh_token_key = None
@@ -516,8 +514,8 @@ def _inject_oauth2_access_token(
 
 
 def oauth2_refresh_token_status(
-    template_server_configuration: TemplateServerConfiguration, exception: Optional[Exception]
-) -> Optional[PluginAspectStatus]:
+    template_server_configuration: TemplateServerConfiguration, exception: Exception | None
+) -> PluginAspectStatus | None:
     if not template_server_configuration.uses_oauth2:
         # no oauth enabled, don't report a status associated with
         return None

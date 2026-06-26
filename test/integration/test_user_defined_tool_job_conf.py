@@ -81,7 +81,6 @@ class TestUserDefinedToolRecommendedJobSetup(integration_util.IntegrationTestCas
 
 
 class TestUserDefinedToolRecommendedJobSetupTPV(TestUserDefinedToolRecommendedJobSetup):
-
     job_config_file = EMBEDDED_PULSAR_TPV_JOB_CONFIG_FILE
 
     def test_user_defined_applies_resource_requirements(self):

@@ -1,11 +1,7 @@
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
     TYPE_CHECKING,
-    Union,
 )
 
 from typing_extensions import TypedDict
@@ -86,11 +82,9 @@ class _CommonParamKwargs(TypedDict, total=False):
 def _common_param_kwargs(input_source: InputSource) -> _CommonParamKwargs:
     """Extract common metadata (label, help) from InputSource for parameter models."""
     kwargs = _CommonParamKwargs()
-    label = input_source.parse_label()
-    if label:
+    if label := input_source.parse_label():
         kwargs["label"] = label
-    help_text = input_source.parse_help()
-    if help_text:
+    if help_text := input_source.parse_help():
         kwargs["help"] = help_text
     return kwargs
 
@@ -102,7 +96,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         if param_type == "integer":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            int_value: Optional[int]
+            int_value: int | None
             if value:
                 int_value = int(value)
             elif optional:
@@ -113,7 +107,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             else:
                 raise ParameterDefinitionError()
             static_validator_models = static_validators(input_source.parse_validators())
-            int_validators: List[NumberCompatiableValidators] = []
+            int_validators: list[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
                     int_validators.append(static_validator)
@@ -149,7 +143,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             optional, optionality_inferred = text_input_is_optional(input_source)
             implicit_default = None if optional else ""
             default_value = input_source.get("value", implicit_default)
-            text_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            text_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return TextParameterModel(
                 type="text",
                 name=input_source.parse_name(),
@@ -161,7 +155,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "float":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            float_value: Optional[float]
+            float_value: float | None
             if value:
                 float_value = float(value)
             elif optional:
@@ -172,7 +166,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             else:
                 raise ParameterDefinitionError()
             static_validator_models = static_validators(input_source.parse_validators())
-            float_validators: List[NumberCompatiableValidators] = []
+            float_validators: list[NumberCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "in_range":
                     float_validators.append(static_validator)
@@ -193,7 +187,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
         elif param_type == "hidden":
             optional = input_source.parse_optional()
             value = input_source.get("value")
-            hidden_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            hidden_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return HiddenParameterModel(
                 type="hidden",
                 name=input_source.parse_name(),
@@ -251,13 +245,13 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
             dynamic_options_config = input_source.parse_dynamic_options()
             is_static = dynamic_options_config is None
             multiple = input_source.get_bool("multiple", False)
-            options: Optional[List[LabelValue]] = None
+            options: list[LabelValue] | None = None
             if is_static:
                 options = []
                 for option_label, option_value, selected in input_source.parse_static_options():
                     options.append(LabelValue(label=option_label, value=option_value, selected=selected))
             static_validator_models = static_validators(input_source.parse_validators())
-            select_validators: List[SelectCompatiableValidators] = []
+            select_validators: list[SelectCompatiableValidators] = []
             for static_validator in static_validator_models:
                 if static_validator.type == "no_options":
                     # test case test_tool_execute::test_select_optional_null_by_default verifies
@@ -339,7 +333,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
                 **_common_param_kwargs(input_source),
             )
         elif param_type == "directory_uri":
-            directory_uri_validators: List[TextCompatiableValidators] = _text_validators(input_source)
+            directory_uri_validators: list[TextCompatiableValidators] = _text_validators(input_source)
             return DirectoryUriParameterModel(
                 type="directory",
                 name=input_source.parse_name(),
@@ -351,7 +345,7 @@ def _from_input_source_galaxy(input_source: InputSource, profile: float) -> Tool
     elif input_type == "conditional":
         test_param_input_source = input_source.parse_test_input_source()
         test_parameter = cast(
-            Union[BooleanParameterModel, SelectParameterModel],
+            BooleanParameterModel | SelectParameterModel,
             _from_input_source_galaxy(test_param_input_source, profile),
         )
         whens = []
@@ -452,9 +446,9 @@ def _simple_cwl_type_to_model(simple_type: str, input_source: "CwlInputSource"):
     )
 
 
-def _text_validators(input_source: InputSource) -> List[TextCompatiableValidators]:
+def _text_validators(input_source: InputSource) -> list[TextCompatiableValidators]:
     static_validator_models = static_validators(input_source.parse_validators())
-    text_validators: List[TextCompatiableValidators] = []
+    text_validators: list[TextCompatiableValidators] = []
     for static_validator in static_validator_models:
         if static_validator.type == "length":
             text_validators.append(static_validator)
@@ -485,11 +479,11 @@ def _from_input_source_cwl(input_source: "CwlInputSource") -> ToolParameterT:
         raise NotImplementedError("Cannot generate tool parameter model for this CWL artifact yet.")
 
 
-def input_models_from_json(json: List[Dict[str, Any]]) -> ToolParameterBundle:
+def input_models_from_json(json: list[dict[str, Any]]) -> ToolParameterBundle:
     return ToolParameterBundleModel(parameters=json)
 
 
-def tool_parameter_bundle_from_json(json: Dict[str, Any]) -> ToolParameterBundleModel:
+def tool_parameter_bundle_from_json(json: dict[str, Any]) -> ToolParameterBundleModel:
     return ToolParameterBundleModel(**json)
 
 
@@ -499,7 +493,7 @@ def input_models_for_tool_source(tool_source: ToolSource) -> ToolParameterBundle
     return ToolParameterBundleModel(parameters=input_models_for_pages(pages, profile))
 
 
-def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParameterT]:
+def input_models_for_pages(pages: PagesSource, profile: float) -> list[ToolParameterT]:
     input_models = []
     if pages.inputs_style != "none":
         for page_source in pages.page_sources:
@@ -508,7 +502,7 @@ def input_models_for_pages(pages: PagesSource, profile: float) -> List[ToolParam
     return input_models
 
 
-def input_models_for_page(page_source: PageSource, profile: float) -> List[ToolParameterT]:
+def input_models_for_page(page_source: PageSource, profile: float) -> list[ToolParameterT]:
     input_models = []
     for input_source in page_source.parse_input_sources():
         input_type = input_source.parse_input_type()

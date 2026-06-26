@@ -2,7 +2,6 @@ import logging
 from typing import (
     Any,
     Literal,
-    Optional,
     overload,
     TYPE_CHECKING,
     Union,
@@ -196,7 +195,7 @@ class DatasetCollectionManager:
         flush=True,
         completed_job=None,
         output_name=None,
-        fields: Optional[Union[str, list["FieldDict"]]] = None,
+        fields: str | list["FieldDict"] | None = None,
         column_definitions=None,
         rows=None,
     ) -> "DatasetCollectionInstance":
@@ -261,10 +260,9 @@ class DatasetCollectionManager:
         flush: bool = True,
     ) -> "DatasetCollectionInstance":
         if isinstance(parent, model.History):
-            dataset_collection_instance: Union[
-                model.HistoryDatasetCollectionAssociation,
-                model.LibraryDatasetCollectionAssociation,
-            ] = model.HistoryDatasetCollectionAssociation(
+            dataset_collection_instance: (
+                model.HistoryDatasetCollectionAssociation | model.LibraryDatasetCollectionAssociation
+            ) = model.HistoryDatasetCollectionAssociation(
                 collection=dataset_collection,
                 name=name,
             )
@@ -316,7 +314,7 @@ class DatasetCollectionManager:
         hide_source_items: bool = False,
         copy_elements: bool = False,
         history=None,
-        fields: Optional[Union[str, list["FieldDict"]]] = None,
+        fields: str | list["FieldDict"] | None = None,
         column_definitions=None,
         rows=None,
     ) -> DatasetCollection:
@@ -497,7 +495,7 @@ class DatasetCollectionManager:
         source: Literal[HistoryContentSource.hdca],
         encoded_source_id,
         copy_elements: bool = False,
-        dataset_instance_attributes: Optional[dict[str, Any]] = None,
+        dataset_instance_attributes: dict[str, Any] | None = None,
     ):
         """
         PRECONDITION: security checks on ability to add to parent occurred

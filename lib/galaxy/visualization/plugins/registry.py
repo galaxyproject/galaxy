@@ -10,7 +10,6 @@ import os
 import weakref
 from typing import (
     TYPE_CHECKING,
-    Union,
 )
 
 import galaxy.model
@@ -46,7 +45,7 @@ class VisualizationsRegistry:
         return self.__class__.__name__
 
     def __init__(
-        self, app: "StructuredApp", directories_setting: Union[str, None] = None, skip_bad_plugins: bool = True
+        self, app: "StructuredApp", directories_setting: str | None = None, skip_bad_plugins: bool = True
     ) -> None:
         """
         Set up the manager and load all visualization plugins.

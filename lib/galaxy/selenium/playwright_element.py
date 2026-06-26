@@ -6,7 +6,6 @@ written for Selenium's WebElement.
 """
 
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -54,13 +53,12 @@ class PlaywrightShadowRoot:
         self._shadow_root = shadow_root_handle
         self._driver = driver
 
-    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
+    def find_element(self, by: str = "id", value: str | None = None) -> "WebElementProtocol":
         if value is None:
             raise ValueError("value parameter is required")
         selector = self._driver._selenium_locator_to_playwright_selector(by, value)
         result_handle = self._shadow_root.evaluate_handle(f"root => root.querySelector('{selector}')")
-        element_handle = result_handle.as_element()
-        if element_handle:
+        if element_handle := result_handle.as_element():
             return PlaywrightElement(element_handle, self._driver)
         raise Exception(f"No element found in shadow root with {by}='{value}'")
 
@@ -142,7 +140,7 @@ class PlaywrightElement:
         """
         self._element.fill("")
 
-    def get_attribute(self, name: str) -> Optional[str]:
+    def get_attribute(self, name: str) -> str | None:
         """
         Get the value of an element attribute.
 
@@ -205,17 +203,16 @@ class PlaywrightElement:
         handle = self._element.evaluate_handle("el => el.shadowRoot")
         return PlaywrightShadowRoot(handle, self._driver)
 
-    def find_element(self, by: str = "id", value: Optional[str] = None) -> "WebElementProtocol":
+    def find_element(self, by: str = "id", value: str | None = None) -> "WebElementProtocol":
         """Find a child element within this element."""
         if value is None:
             raise ValueError("value parameter is required")
         selector = self._driver._selenium_locator_to_playwright_selector(by, value)
-        found_element = self._element.query_selector(selector)
-        if found_element:
+        if found_element := self._element.query_selector(selector):
             return PlaywrightElement(found_element, self._driver)
         raise Exception(f"No element found with {by}='{value}'")
 
-    def find_elements(self, by: str = "id", value: Optional[str] = None) -> list["WebElementProtocol"]:
+    def find_elements(self, by: str = "id", value: str | None = None) -> list["WebElementProtocol"]:
         """Find all child elements matching the locator within this element."""
         if value is None:
             raise ValueError("value parameter is required")

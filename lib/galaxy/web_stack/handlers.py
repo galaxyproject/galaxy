@@ -72,7 +72,7 @@ class ConfiguresHandlers:
         self.app = app
         self.handler_assignment_methods: list[HANDLER_ASSIGNMENT_METHODS] = []
         self.handler_assignment_methods_configured = False
-        self.handler_max_grab: Union[int, None] = None
+        self.handler_max_grab: int | None = None
         self.handlers: dict[str, list[str]] = {}
 
     def add_handler(self, handler_id: str, tags: list[str]) -> None:
@@ -124,7 +124,7 @@ class ConfiguresHandlers:
 
         return handling_config_dict
 
-    def _init_handlers(self, handling_config_dict: Union[dict, None]) -> None:
+    def _init_handlers(self, handling_config_dict: dict | None) -> None:
         handling_config_dict = handling_config_dict or {}
         for handler_id, process in handling_config_dict.get("processes", {}).items():
             process = process or {}
@@ -139,15 +139,15 @@ class ConfiguresHandlers:
             handling_config_dict.get("default"), list(self.handlers.keys()), required=False
         )
 
-    def _init_handler_assignment_methods(self, handling_config_dict: Union[dict, None] = None) -> None:
+    def _init_handler_assignment_methods(self, handling_config_dict: dict | None = None) -> None:
         handling_config_dict = handling_config_dict or {}
 
-        self.__is_handler: Union[bool, None] = None
+        self.__is_handler: bool | None = None
         # This is set by the stack job handler init code
         self.pool_for_tag: dict[str, str] = {}
         self._handler_assignment_method_methods: dict[
             HANDLER_ASSIGNMENT_METHODS,
-            Callable[Concatenate[ModelWithHandler, HANDLER_ASSIGNMENT_METHODS, Union[str, None], bool, ...], str],
+            Callable[Concatenate[ModelWithHandler, HANDLER_ASSIGNMENT_METHODS, str | None, bool, ...], str],
         ] = {
             HANDLER_ASSIGNMENT_METHODS.MEM_SELF: self._assign_mem_self_handler,
             HANDLER_ASSIGNMENT_METHODS.DB_SELF: self._assign_db_self_handler,
@@ -207,7 +207,7 @@ class ConfiguresHandlers:
 
     def _get_default(
         self, config, parent: "Element", names: list[str], auto: bool = False, required: bool = True
-    ) -> Union[str, None]:
+    ) -> str | None:
         """
         Returns the default attribute set in a parent tag like <handlers> or
         <destinations>, or return the ID of the child, if there is no explicit
@@ -228,8 +228,8 @@ class ConfiguresHandlers:
         return self._ensure_default_set(rval, names, auto=auto, required=required)
 
     def _ensure_default_set(
-        self, rval: Union[str, None], names: list[str], auto: bool = False, required: bool = True
-    ) -> Union[str, None]:
+        self, rval: str | None, names: list[str], auto: bool = False, required: bool = True
+    ) -> str | None:
         if rval is not None:
             # If the parent element has a 'default' attribute, use the id or tag in that attribute
             if required and rval not in names:
@@ -243,9 +243,7 @@ class ConfiguresHandlers:
         return rval
 
     @staticmethod
-    def _findall_with_required(
-        parent: "Element", match: str, attribs: Union[Iterable[str], None] = None
-    ) -> list["Element"]:
+    def _findall_with_required(parent: "Element", match: str, attribs: Iterable[str] | None = None) -> list["Element"]:
         """Like ``lxml.etree.Element.findall()``, except only returns children that have the specified attribs.
 
         :param parent: Parent element in which to find.
@@ -306,7 +304,7 @@ class ConfiguresHandlers:
 
     is_handler = property(_get_is_handler, _set_is_handler)
 
-    def _get_single_item(self, collection: Sequence[T], index: Union[int, None] = None) -> T:
+    def _get_single_item(self, collection: Sequence[T], index: int | None = None) -> T:
         """Given a collection of handlers or destinations, return one item from the collection at random."""
         # Done like this to avoid random under the assumption it's faster to avoid it
         if len(collection) == 1:
@@ -331,8 +329,8 @@ class ConfiguresHandlers:
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
     def _assign_handler_direct(
-        self, obj: ModelWithHandler, configured: Union[str, None], flush: bool = True
-    ) -> Union[str, Literal[False]]:
+        self, obj: ModelWithHandler, configured: str | None, flush: bool = True
+    ) -> str | Literal[False]:
         """Directly assign a handler if the object has been preconfigured to a known single static handler.
 
         :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
@@ -356,7 +354,7 @@ class ConfiguresHandlers:
         self,
         obj: ModelWithHandler,
         method: HANDLER_ASSIGNMENT_METHODS,
-        configured: Union[str, None],
+        configured: str | None,
         flush: bool,
         queue_callback=None,
         **kwargs,
@@ -394,7 +392,7 @@ class ConfiguresHandlers:
         self,
         obj: ModelWithHandler,
         method: HANDLER_ASSIGNMENT_METHODS,
-        configured: Union[str, None],
+        configured: str | None,
         flush: bool,
         **kwargs,
     ) -> str:
@@ -422,9 +420,9 @@ class ConfiguresHandlers:
         self,
         obj: ModelWithHandler,
         method: HANDLER_ASSIGNMENT_METHODS,
-        configured: Union[str, None],
+        configured: str | None,
         flush: bool,
-        index: Union[int, None] = None,
+        index: int | None = None,
         **kwargs,
     ) -> str:
         """Assign object to a handler by setting its ``handler`` column in the database to a handler selected at random
@@ -464,7 +462,7 @@ class ConfiguresHandlers:
         self,
         obj: ModelWithHandler,
         method: HANDLER_ASSIGNMENT_METHODS,
-        configured: Union[str, None],
+        configured: str | None,
         flush: bool,
         **kwargs,
     ) -> str:
@@ -485,7 +483,7 @@ class ConfiguresHandlers:
             _timed_flush_obj(obj)
         return handler
 
-    def assign_handler(self, obj: ModelWithHandler, configured: Union[str, None] = None, flush: bool = True, **kwargs):
+    def assign_handler(self, obj: ModelWithHandler, configured: str | None = None, flush: bool = True, **kwargs):
         """Set a job handler, flush obj
 
         Called assignment methods should raise py:class:`HandlerAssignmentSkip` to indicate that the next method

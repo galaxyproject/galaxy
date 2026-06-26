@@ -1,7 +1,6 @@
 import logging
 import time
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 from unittest.mock import MagicMock
@@ -261,7 +260,7 @@ class TestToolBox(BaseToolBoxTestCase):
         return user
 
     def _persist_dynamic_tool(
-        self, public: bool, active: bool = True, owner: Optional[model.User] = None
+        self, public: bool, active: bool = True, owner: model.User | None = None
     ) -> model.DynamicTool:
         session = self.app.model.context
         dyn = model.DynamicTool(

@@ -15,12 +15,10 @@ from abc import (
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
+    Literal,
     Optional,
     overload,
     TYPE_CHECKING,
-    Union,
 )
 from uuid import (
     UUID,
@@ -28,7 +26,6 @@ from uuid import (
 )
 
 from typing_extensions import (
-    Literal,
     TypedDict,
 )
 
@@ -101,7 +98,7 @@ SUPPORTED_TOOL_REQUIREMENTS = [
 
 SUPPORTED_WORKFLOW_REQUIREMENTS = SUPPORTED_TOOL_REQUIREMENTS + []
 
-ToolStateType = Dict[str, Union[None, str, bool, Dict[str, str]]]
+ToolStateType = dict[str, None | str | bool | dict[str, str]]
 
 
 class InputInstanceDict(TypedDict, total=False):
@@ -120,7 +117,7 @@ class InputInstanceArrayDict(TypedDict):
     type: str
     name: str
     title: str
-    blocks: List[InputInstanceDict]
+    blocks: list[InputInstanceDict]
 
 
 class ToolProxy(metaclass=ABCMeta):
@@ -129,9 +126,9 @@ class ToolProxy(metaclass=ABCMeta):
     def __init__(
         self,
         tool: "Process",
-        uuid: Union[UUID, str],
+        uuid: UUID | str,
         raw_process_reference: Optional["RawProcessReference"] = None,
-        tool_path: Optional[str] = None,
+        tool_path: str | None = None,
     ):
         self._tool = tool
         self.uuid = uuid
@@ -144,7 +141,7 @@ class ToolProxy(metaclass=ABCMeta):
             if "format" in input_field:
                 del input_field["format"]
 
-    def job_proxy(self, input_dict: Dict[str, Any], output_dict, job_directory: str = "."):
+    def job_proxy(self, input_dict: dict[str, Any], output_dict, job_directory: str = "."):
         """Build a cwltool.job.Job describing computation using a input_json
         Galaxy will generate mapping the Galaxy description of the inputs into
         a cwltool compatible variant.
@@ -157,10 +154,9 @@ class ToolProxy(metaclass=ABCMeta):
         return raw_id
 
     def galaxy_id(self) -> str:
-        raw_id = self.id
         tool_id = None
         # don't reduce "search.cwl#index" to search
-        if raw_id:
+        if raw_id := self.id:
             tool_id = os.path.basename(raw_id)
             # tool_id = os.path.splitext(os.path.basename(raw_id))[0]
         if not tool_id:
@@ -178,7 +174,7 @@ class ToolProxy(metaclass=ABCMeta):
         """Return InputInstance objects describing mapping to Galaxy inputs."""
 
     @abstractmethod
-    def output_instances(self) -> List["OutputInstance"]:
+    def output_instances(self) -> list["OutputInstance"]:
         """Return OutputInstance objects describing mapping to Galaxy inputs."""
 
     @abstractmethod
@@ -210,7 +206,7 @@ class ToolProxy(metaclass=ABCMeta):
 
     @staticmethod
     def from_persistent_representation(
-        as_object: Dict[str, Any], strict_cwl_validation: bool = True, tool_directory: Optional[str] = None
+        as_object: dict[str, Any], strict_cwl_validation: bool = True, tool_directory: str | None = None
     ) -> "ToolProxy":
         """Recover an object serialized with to_persistent_representation."""
         if "class" not in as_object:
@@ -224,14 +220,14 @@ class ToolProxy(metaclass=ABCMeta):
         return loaded_object
 
     @property
-    def requirements(self) -> List:
+    def requirements(self) -> list:
         return getattr(self._tool, "requirements", [])
 
-    def hints_or_requirements_of_class(self, class_name: str) -> List:
+    def hints_or_requirements_of_class(self, class_name: str) -> list:
         reqs_and_hints = self.requirements + getattr(self._tool, "hints", [])
         return [hint for hint in reqs_and_hints if hint["class"] == class_name]
 
-    def software_requirements(self) -> List:
+    def software_requirements(self) -> list:
         # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
         # multiple versions, etc...
         requirements = []
@@ -243,10 +239,10 @@ class ToolProxy(metaclass=ABCMeta):
                 requirements.append((package["package"], first_version))
         return requirements
 
-    def resource_requirements(self) -> List:
+    def resource_requirements(self) -> list:
         return self.hints_or_requirements_of_class("ResourceRequirement")
 
-    def credentials_requirements(self) -> List:
+    def credentials_requirements(self) -> list:
         return self.hints_or_requirements_of_class("CredentialsRequirement")
 
 
@@ -263,9 +259,8 @@ class CommandLineToolProxy(ToolProxy):
         return doc
 
     def label(self):
-        label = self._tool.tool.get("label")
 
-        if label is not None:
+        if (label := self._tool.tool.get("label")) is not None:
             return label.partition(":")[0]  # return substring before ':'
         else:
             return ""
@@ -324,16 +319,16 @@ class ExpressionToolProxy(CommandLineToolProxy):
 class JobProxy:
     _is_command_line_job: bool
 
-    def __init__(self, tool_proxy: ToolProxy, input_dict: Dict[str, Any], output_dict, job_directory: str):
+    def __init__(self, tool_proxy: ToolProxy, input_dict: dict[str, Any], output_dict, job_directory: str):
         assert RuntimeContext is not None, "cwltool is not installed, cannot run CWL jobs"
         self._tool_proxy = tool_proxy
         self._input_dict = input_dict
         self._output_dict = output_dict
         self._job_directory = job_directory
 
-        self._final_output: Optional[CWLObjectType] = None
+        self._final_output: CWLObjectType | None = None
         self._ok = True
-        self._cwl_job: Optional[JobsType] = None
+        self._cwl_job: JobsType | None = None
 
         self._normalize_job()
 
@@ -557,10 +552,10 @@ class JobProxy:
 
 
 class WorkflowProxy:
-    def __init__(self, workflow: "workflow.Workflow", workflow_path: Optional[str] = None):
+    def __init__(self, workflow: "workflow.Workflow", workflow_path: str | None = None):
         self._workflow = workflow
         self._workflow_path = workflow_path
-        self._step_proxies: Optional[List[Union[SubworkflowStepProxy, ToolStepProxy]]] = None
+        self._step_proxies: list[SubworkflowStepProxy | ToolStepProxy] | None = None
 
     @property
     def cwl_id(self):
@@ -591,7 +586,7 @@ class WorkflowProxy:
 
     def tool_reference_proxies(self):
         """Fetch tool source definitions for all referenced tools."""
-        references: List[ToolProxy] = []
+        references: list[ToolProxy] = []
         for step in self.step_proxies():
             references.extend(step.tool_reference_proxies())
         return references
@@ -634,7 +629,7 @@ class WorkflowProxy:
         cwl_ids_to_index = self.cwl_ids_to_index(step_proxies)
         input_connections_by_step = []
         for step_proxy in step_proxies:
-            input_connections_step: Dict[str, List[Dict[str, str]]] = {}
+            input_connections_step: dict[str, list[dict[str, str]]] = {}
             for input_proxy in step_proxy.input_proxies:
                 cwl_source_id = input_proxy.cwl_source_id
                 input_name = input_proxy.input_name
@@ -747,11 +742,11 @@ class WorkflowProxy:
 
 
 def tool_proxy(
-    tool_path: Optional[str] = None,
+    tool_path: str | None = None,
     tool_object=None,
     strict_cwl_validation: bool = True,
-    tool_directory: Optional[str] = None,
-    uuid: Optional[Union[UUID, str]] = None,
+    tool_directory: str | None = None,
+    uuid: UUID | str | None = None,
 ) -> ToolProxy:
     """Provide a proxy object to cwltool data structures to just
     grab relevant data.
@@ -767,7 +762,7 @@ def tool_proxy(
 
 
 def tool_proxy_from_persistent_representation(
-    persisted_tool: Dict[str, Any], strict_cwl_validation: bool = True, tool_directory: Optional[str] = None
+    persisted_tool: dict[str, Any], strict_cwl_validation: bool = True, tool_directory: str | None = None
 ) -> ToolProxy:
     """Load a ToolProxy from a previously persisted representation."""
     ensure_cwltool_available()
@@ -795,11 +790,11 @@ def load_job_proxy(job_directory: str, strict_cwl_validation: bool = True) -> Jo
 
 
 def _to_cwl_tool_object(
-    tool_path: Optional[str] = None,
+    tool_path: str | None = None,
     tool_object=None,
     strict_cwl_validation: bool = False,
-    tool_directory: Optional[str] = None,
-    uuid: Optional[Union[UUID, str]] = None,
+    tool_directory: str | None = None,
+    uuid: UUID | str | None = None,
 ) -> ToolProxy:
     if uuid is None:
         uuid = str(uuid4())
@@ -840,9 +835,9 @@ def _to_cwl_tool_object(
 
 def _cwl_tool_object_to_proxy(
     cwl_tool: "Process",
-    uuid: Union[UUID, str],
+    uuid: UUID | str,
     raw_process_reference: Optional["RawProcessReference"] = None,
-    tool_path: Optional[str] = None,
+    tool_path: str | None = None,
 ) -> ToolProxy:
     raw_tool = cwl_tool.tool
     if "class" not in raw_tool:
@@ -874,7 +869,7 @@ def _schema_loader(strict_cwl_validation: bool):
 
 
 def _hack_cwl_requirements(cwl_tool):
-    move_to_hints: List[int] = []
+    move_to_hints: list[int] = []
     for i, requirement in enumerate(cwl_tool.requirements):
         if requirement["class"] == DOCKER_REQUIREMENT:
             move_to_hints.insert(0, i)
@@ -1267,9 +1262,9 @@ class InputInstance:
     def to_dict(self, itemwise: Literal[False]) -> InputInstanceDict: ...
 
     @overload
-    def to_dict(self, itemwise: Literal[True]) -> Union[InputInstanceDict, InputInstanceArrayDict]: ...
+    def to_dict(self, itemwise: Literal[True]) -> InputInstanceDict | InputInstanceArrayDict: ...
 
-    def to_dict(self, itemwise: bool = True) -> Union[InputInstanceDict, InputInstanceArrayDict]:
+    def to_dict(self, itemwise: bool = True) -> InputInstanceDict | InputInstanceArrayDict:
         if itemwise and self.array:
             return InputInstanceArrayDict(
                 type="repeat", name=f"{self.name}_repeat", title=f"{self.name}", blocks=[self.to_dict(itemwise=False)]

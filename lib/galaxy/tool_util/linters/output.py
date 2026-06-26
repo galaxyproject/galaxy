@@ -41,8 +41,7 @@ class OutputsOutput(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        output = tool_xml.find("./outputs/output")
-        if output is not None:
+        if (output := tool_xml.find("./outputs/output")) is not None:
             lint_ctx.warn(
                 "Avoid the use of 'output' and replace by 'data' or 'collection'", linter=cls.name(), node=output
             )
@@ -57,7 +56,7 @@ class OutputsNameInvalidCheetah(Linter):
         for output in tool_xml.findall("./outputs/data[@name]") + tool_xml.findall("./outputs/collection[@name]"):
             if not is_valid_cheetah_placeholder(output.attrib["name"]):
                 lint_ctx.warn(
-                    f'Tool output name [{output.attrib["name"]}] is not a valid Cheetah placeholder.',
+                    f"Tool output name [{output.attrib['name']}] is not a valid Cheetah placeholder.",
                     linter=cls.name(),
                     node=output,
                 )
@@ -328,8 +327,7 @@ def _check_unqualified_reference(
         )
     else:
         lint_ctx.error(
-            f"Output '{output_name}' references {attr_name}='{ref_value}' "
-            f"which does not match any input parameter.",
+            f"Output '{output_name}' references {attr_name}='{ref_value}' which does not match any input parameter.",
             linter=linter_name,
             node=node,
         )
@@ -376,12 +374,10 @@ def _get_qualified_name(param_elem: "Element", parent_map: dict) -> str:
 
 
 def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:
-    outputs = tool_xml.find("./outputs")
-    if outputs is not None:
+    if (outputs := tool_xml.find("./outputs")) is not None:
         if "provided_metadata_file" in outputs.attrib or "provided_metadata_style" in outputs.attrib:
             return True
-    command = tool_xml.find("./command")
-    if command is not None:
+    if (command := tool_xml.find("./command")) is not None:
         if "galaxy.json" in command.text:
             return True
     config = tool_xml.find("./configfiles/configfile[@filename='galaxy.json']")

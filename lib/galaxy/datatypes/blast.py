@@ -35,9 +35,6 @@ import logging
 import os
 from collections.abc import Callable
 from time import sleep
-from typing import (
-    Optional,
-)
 
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
@@ -211,10 +208,10 @@ class _BlastDb(Data):
         trans,
         dataset: DatasetHasHidProtocol,
         preview: bool = False,
-        filename: Optional[str] = None,
-        to_ext: Optional[str] = None,
-        offset: Optional[int] = None,
-        ck_size: Optional[int] = None,
+        filename: str | None = None,
+        to_ext: str | None = None,
+        offset: int | None = None,
+        ck_size: int | None = None,
         **kwd,
     ):
         """
@@ -260,7 +257,7 @@ class _BlastDb(Data):
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
     @classmethod
-    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: Optional[dict]) -> None:
+    def split(cls, input_datasets: list, subdir_generator_function: Callable, split_params: dict | None) -> None:
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:
             return None

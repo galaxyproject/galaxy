@@ -1,9 +1,3 @@
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
-
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -32,11 +26,11 @@ class ToolDataEntry(Model):
 
 
 class ToolDataEntryList(RootModel):
-    root: List[ToolDataEntry] = Field(
+    root: list[ToolDataEntry] = Field(
         title="A list with details on individual data tables.",
     )
 
-    def find_entry(self, name: str) -> Optional[ToolDataEntry]:
+    def find_entry(self, name: str) -> ToolDataEntry | None:
         for entry in self.root:
             if entry.name == name:
                 return entry
@@ -44,7 +38,7 @@ class ToolDataEntryList(RootModel):
 
 
 class ToolDataDetails(ToolDataEntry):
-    columns: List[str] = Field(
+    columns: list[str] = Field(
         ...,  # Mark this field as required
         title="Columns",
         description="A list of column names",
@@ -52,7 +46,7 @@ class ToolDataDetails(ToolDataEntry):
     )
     # We must use an alias since the name 'fields'
     # shadows a Model attribute
-    fields_value: List[List[str]] = Field(
+    fields_value: list[list[str]] = Field(
         alias="fields",
         default=[],
         title="Fields",
@@ -74,18 +68,18 @@ class ToolDataField(Model):
     )
     # We must use an alias since the name 'fields'
     # shadows a Model attribute
-    fields_value: Dict[str, str] = Field(
+    fields_value: dict[str, str] = Field(
         ...,  # Mark this field as required
         alias="fields",
         title="Fields",
         description="",  # TODO add documentation
     )
-    base_dir: List[str] = Field(
+    base_dir: list[str] = Field(
         ...,  # Mark this field as required
         title="Base directories",
         description="A list of directories where the data files are stored",
     )
-    files: Dict[str, int] = Field(
+    files: dict[str, int] = Field(
         ...,  # Mark this field as required
         title="Files",
         description="A dictionary of file names and their size in bytes",

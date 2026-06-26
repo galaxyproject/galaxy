@@ -5,8 +5,6 @@ API operations allowing clients to determine datatype supported by Galaxy.
 import logging
 from typing import (
     cast,
-    Optional,
-    Union,
 )
 
 from fastapi import (
@@ -44,19 +42,19 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["datatypes"])
 
-ExtensionOnlyQueryParam: Optional[bool] = Query(
+ExtensionOnlyQueryParam: bool | None = Query(
     default=True,
     title="Extension only",
     description="Whether to return only the datatype's extension rather than the datatype's details",
 )
 
-UploadOnlyQueryParam: Optional[bool] = Query(
+UploadOnlyQueryParam: bool | None = Query(
     default=True,
     title="Upload only",
     description="Whether to return only datatypes which can be uploaded",
 )
 
-IdentifierOnly: Optional[bool] = Query(
+IdentifierOnly: bool | None = Query(
     default=True,
     title="prefixIRI only",
     description="Whether to return only the EDAM prefixIRI rather than the EDAM details",
@@ -76,9 +74,9 @@ class FastAPIDatatypes:
     )
     async def index(
         self,
-        extension_only: Optional[bool] = ExtensionOnlyQueryParam,
-        upload_only: Optional[bool] = UploadOnlyQueryParam,
-    ) -> Union[list[DatatypeDetails], list[str]]:
+        extension_only: bool | None = ExtensionOnlyQueryParam,
+        upload_only: bool | None = UploadOnlyQueryParam,
+    ) -> list[DatatypeDetails] | list[str]:
         """Gets the list of all available data types."""
         return view_index(self.datatypes_registry, extension_only, upload_only)
 
@@ -100,8 +98,8 @@ class FastAPIDatatypes:
     )
     async def types_and_mapping(
         self,
-        extension_only: Optional[bool] = ExtensionOnlyQueryParam,
-        upload_only: Optional[bool] = UploadOnlyQueryParam,
+        extension_only: bool | None = ExtensionOnlyQueryParam,
+        upload_only: bool | None = UploadOnlyQueryParam,
     ) -> DatatypesCombinedMap:
         """Combines the datatype information from (/api/datatypes) and the
         mapping information from (/api/datatypes/mapping) into a single

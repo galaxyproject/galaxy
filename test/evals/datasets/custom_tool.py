@@ -23,7 +23,6 @@ check belongs in the live integration eval.
 
 from typing import (
     Any,
-    Optional,
 )
 
 from pydantic_ai.models import Model
@@ -135,8 +134,8 @@ Return a number; no commentary.
 
 
 def custom_tool_dataset(
-    judge_model: Optional[Model] = None,
-    only: Optional[list[str]] = None,
+    judge_model: Model | None = None,
+    only: list[str] | None = None,
 ) -> Dataset[str, dict, dict[str, Any]]:
     """Build the custom_tool Dataset.
 
