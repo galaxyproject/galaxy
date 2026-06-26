@@ -29,6 +29,7 @@ from galaxy.agents.custom_tool import CustomToolAgent
 from galaxy.agents.error_analysis import ErrorAnalysisAgent
 from galaxy.agents.registry import build_default_registry
 from galaxy.agents.router import QueryRouterAgent
+from galaxy.agents.teaching_assistant import TeachingAssistantAgent
 from galaxy.agents.tools import ToolRecommendationAgent
 from .datasets import build_history
 
@@ -363,6 +364,28 @@ def make_tool_recommendation_task(
         return response.content
 
     return tool_recommendation_task
+
+
+def make_tutor_socratic_task(
+    deps: GalaxyAgentDependencies,
+    context: Optional[dict] = None,
+    usage_buffer: UsageBuffer = None,
+) -> Callable[[str], Awaitable[str]]:
+    """Build an async callable: learner query -> teaching-assistant response content.
+
+    Like the other no-live-Galaxy tasks, deps here are MagicMocks, so the tutor's
+    GTN search and operations tools degrade to unavailable. That means we're scoring
+    the model's pedagogical framing (Socratic questioning, knowing when to just tell),
+    not its grounded tool use.
+    """
+
+    async def tutor_socratic_task(query: str) -> str:
+        agent = TeachingAssistantAgent(deps)
+        response = await agent.process(query, context=context)
+        _record_response_usage(usage_buffer, response)
+        return response.content
+
+    return tutor_socratic_task
 
 
 def make_custom_tool_task(

@@ -32,6 +32,7 @@ from .datasets import (
     routing_followup_dataset,
     staining_quantification_dataset,
     tool_recommendation_dataset,
+    tutor_socratic_dataset,
 )
 from .evaluators import (
     ContainerVerified,
@@ -55,6 +56,7 @@ from .tasks import (
     make_router_multiturn_task,
     make_router_task,
     make_tool_recommendation_task,
+    make_tutor_socratic_task,
 )
 
 # A case input is either a plain query string or, for the multi-turn datasets
@@ -258,6 +260,23 @@ def build_tool_recommendation(
     )
 
 
+def build_tutor_socratic(
+    deps: GalaxyAgentDependencies,
+    judge_model: Optional[Model] = None,
+    only: Optional[list[str]] = None,
+    include_galaxy_required: bool = False,
+    usage_buffer: Optional[list[dict[str, int]]] = None,
+) -> BuiltDataset:
+    """Pedagogical quality of the teaching assistant: guide vs. just answer."""
+    dataset = tutor_socratic_dataset(judge_model=judge_model, only=only)
+    dataset.add_evaluator(MustMention())
+    return BuiltDataset(
+        dataset=dataset,
+        task=make_tutor_socratic_task(deps, usage_buffer=usage_buffer),
+        primary_score="LLMJudge",
+    )
+
+
 def build_custom_tool(
     deps: GalaxyAgentDependencies,
     judge_model: Model | None = None,
@@ -373,6 +392,7 @@ SPECS: dict[str, Callable[..., BuiltDataset]] = {
     "routing_followup_nofix": build_routing_followup_nofix,
     "error_analysis": build_error_analysis,
     "tool_recommendation": build_tool_recommendation,
+    "tutor_socratic": build_tutor_socratic,
     "custom_tool": build_custom_tool,
     "router_tool_use": build_router_tool_use,
     "bioinformatics_workflows": build_bioinformatics_workflows,
