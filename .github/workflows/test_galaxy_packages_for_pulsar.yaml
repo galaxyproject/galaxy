@@ -32,9 +32,11 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Install Apptainer's singularity
-        uses: eWaterCycle/setup-apptainer@v2
+        uses: './galaxy root/.github/actions/install_apptainer'
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install ffmpeg
       - name: Install tox
         run: uv tool install tox --with tox-uv
       - name: Run tests
