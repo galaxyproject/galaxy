@@ -57,7 +57,7 @@ class TestTeachingAssistantAgent:
         self.mock_user = mock.Mock()
         self.mock_user.id = 1
         self.mock_user.username = "test_learner"
-        self.mock_user.preferences = []
+        self.mock_user.preferences = {}
 
         self.mock_trans = mock.Mock()
         self.mock_trans.app.config = self.mock_config
@@ -133,7 +133,7 @@ class TestLearningStateManager:
         # Mock user with preferences list
         self.mock_user = mock.Mock()
         self.mock_user.id = 1
-        self.mock_user.preferences = []
+        self.mock_user.preferences = {}
 
         self.mock_trans = mock.Mock()
         self.mock_trans.user = self.mock_user
@@ -161,10 +161,7 @@ class TestLearningStateManager:
             "completed_tutorials": ["intro/galaxy-intro-short"],
             "tutor_mode_enabled": True,
         }
-        pref = mock.Mock()
-        pref.name = "learning_state"
-        pref.value = json.dumps(saved_state)
-        self.mock_user.preferences = [pref]
+        self.mock_user.preferences = {"learning_state": json.dumps(saved_state)}
 
         state = self.manager.get_learning_state(self.mock_trans)
         assert state["expertise_level"] == "intermediate"
@@ -176,10 +173,7 @@ class TestLearningStateManager:
 
     def test_corrupted_json_returns_defaults(self):
         """Should handle corrupted JSON gracefully."""
-        pref = mock.Mock()
-        pref.name = "learning_state"
-        pref.value = "not valid json{{"
-        self.mock_user.preferences = [pref]
+        self.mock_user.preferences = {"learning_state": "not valid json{{"}
 
         state = self.manager.get_learning_state(self.mock_trans)
         assert state == DEFAULT_LEARNING_STATE
@@ -199,10 +193,7 @@ class TestLearningStateManager:
         # Set to max
         saved = dict(DEFAULT_LEARNING_STATE)
         saved["scaffolding_level"] = 5
-        pref = mock.Mock()
-        pref.name = "learning_state"
-        pref.value = json.dumps(saved)
-        self.mock_user.preferences = [pref]
+        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
 
         state = self.manager.adjust_scaffolding(self.mock_trans, "up")
         assert state["scaffolding_level"] == 5  # stays at 5
@@ -227,10 +218,7 @@ class TestLearningStateManager:
         """Should not duplicate completed tutorials."""
         saved = dict(DEFAULT_LEARNING_STATE)
         saved["completed_tutorials"] = ["intro/galaxy-intro-short"]
-        pref = mock.Mock()
-        pref.name = "learning_state"
-        pref.value = json.dumps(saved)
-        self.mock_user.preferences = [pref]
+        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
 
         state = self.manager.record_tutorial_completion(self.mock_trans, "intro/galaxy-intro-short")
         assert state["completed_tutorials"].count("intro/galaxy-intro-short") == 1
@@ -245,10 +233,7 @@ class TestLearningStateManager:
         saved = dict(DEFAULT_LEARNING_STATE)
         saved["completed_tutorials"] = [f"tutorial_{i}" for i in range(4)]
         saved["interaction_count"] = 35
-        pref = mock.Mock()
-        pref.name = "learning_state"
-        pref.value = json.dumps(saved)
-        self.mock_user.preferences = [pref]
+        self.mock_user.preferences = {"learning_state": json.dumps(saved)}
 
         # After recording another completion, should trigger intermediate
         state = self.manager.record_tutorial_completion(self.mock_trans, "new_tutorial")
@@ -314,7 +299,7 @@ class TestTeachingAssistantWiring:
 
         self.mock_user = mock.Mock()
         self.mock_user.id = 1
-        self.mock_user.preferences = []
+        self.mock_user.preferences = {}
 
         self.mock_trans = mock.Mock()
         self.mock_trans.app.config = self.mock_config

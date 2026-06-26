@@ -42,7 +42,7 @@ describe("useTutorMode", () => {
         });
         const { tutorModeEnabled, scaffoldingLevel, setTutorMode } = useTutorMode();
         await setTutorMode(true);
-        expect(mockPOST).toHaveBeenCalledWith("/api/chat/tutor/mode", { body: true });
+        expect(mockPOST).toHaveBeenCalledWith("/api/chat/tutor/mode", { body: { enabled: true } });
         expect(tutorModeEnabled.value).toBe(true);
         expect(scaffoldingLevel.value).toBe(3);
     });
@@ -54,7 +54,7 @@ describe("useTutorMode", () => {
         });
         const { toggleTutorMode, tutorModeEnabled } = useTutorMode();
         await toggleTutorMode();
-        expect(mockPOST).toHaveBeenCalledWith("/api/chat/tutor/mode", { body: true });
+        expect(mockPOST).toHaveBeenCalledWith("/api/chat/tutor/mode", { body: { enabled: true } });
         expect(tutorModeEnabled.value).toBe(true);
     });
 

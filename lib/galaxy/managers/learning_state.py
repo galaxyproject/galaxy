@@ -144,30 +144,20 @@ class LearningStateManager:
             state["expertise_level"] = "beginner"
 
     def _get_preference(self, trans: ProvidesUserContext, key: str) -> Optional[str]:
-        """Get a user preference value."""
+        """Get a user preference value.
+
+        ``user.preferences`` is an association proxy that behaves like a dict
+        mapping preference name -> value.
+        """
         user = trans.user
         if user is None:
             return None
-        for pref in user.preferences:
-            if pref.name == key:
-                return pref.value
-        return None
+        return user.preferences[key] if key in user.preferences else None
 
     def _set_preference(self, trans: ProvidesUserContext, key: str, value: str) -> None:
-        """Set a user preference value."""
+        """Set a user preference value and persist it."""
         user = trans.user
         if user is None:
             return
-        for pref in user.preferences:
-            if pref.name == key:
-                pref.value = value
-                trans.sa_session.add(pref)
-                trans.sa_session.flush()
-                return
-        # Create new preference
-        from galaxy.model import UserPreference
-
-        new_pref = UserPreference(name=key, value=value)
-        new_pref.user_id = user.id
-        trans.sa_session.add(new_pref)
-        trans.sa_session.flush()
+        user.preferences[key] = value
+        trans.sa_session.commit()

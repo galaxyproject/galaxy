@@ -37,6 +37,7 @@ from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.agents import (
     AgentResponse,
+    TutorModeToggle,
     WorkflowReportResponse,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -526,13 +527,13 @@ class ChatAPI:
     @router.post("/api/chat/tutor/mode", unstable=True)
     def toggle_tutor_mode(
         self,
-        enabled: bool = Body(..., description="Whether to enable or disable tutor mode"),
+        payload: TutorModeToggle = Body(..., description="Whether to enable or disable tutor mode"),
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> dict[str, Any]:
         """Toggle tutor mode on or off."""
         manager = LearningStateManager()
-        if enabled:
+        if payload.enabled:
             state = manager.enable_tutor_mode(trans)
         else:
             state = manager.disable_tutor_mode(trans)

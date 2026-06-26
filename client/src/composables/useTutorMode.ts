@@ -42,7 +42,7 @@ export function useTutorMode() {
     async function setTutorMode(enabled: boolean) {
         loading.value = true;
         try {
-            const { data, error } = await GalaxyApi().POST("/api/chat/tutor/mode", { body: enabled });
+            const { data, error } = await GalaxyApi().POST("/api/chat/tutor/mode", { body: { enabled } });
             if (error) {
                 rethrowSimple(error);
             }
