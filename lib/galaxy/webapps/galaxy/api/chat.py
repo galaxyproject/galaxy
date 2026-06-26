@@ -33,6 +33,7 @@ from galaxy.managers.context import (
 from galaxy.managers.jobs import JobManager
 from galaxy.managers.learning_state import LearningStateManager
 from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
+from galaxy.managers.tutor_analytics import TutorAnalyticsManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
 from galaxy.schema.agents import (
@@ -538,6 +539,15 @@ class ChatAPI:
         else:
             state = manager.disable_tutor_mode(trans)
         return {"enabled": state.get("tutor_mode_enabled", False), "state": state}
+
+    @router.get("/api/chat/tutor/analytics", require_admin=True, unstable=True)
+    def get_tutor_analytics(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> dict[str, Any]:
+        """Aggregate tutor usage analytics across all users (admin only)."""
+        manager = TutorAnalyticsManager()
+        return manager.get_analytics(trans)
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

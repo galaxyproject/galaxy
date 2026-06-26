@@ -7,6 +7,7 @@ against any Galaxy with a logged-in user.
     ./run_tests.sh -api lib/galaxy_test/api/test_chat_tutor.py
 """
 
+from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 EXPECTED_STATE_KEYS = {
@@ -63,3 +64,25 @@ class TestChatTutorApi(ApiTestCase):
 
         # Restore the default so test ordering can't leak this value elsewhere.
         self._put("chat/tutor/state", data={"scaffolding_level": 3}, json=True)
+
+    def test_analytics_requires_admin(self):
+        """The tutor analytics endpoint is admin-only."""
+        response = self._get("chat/tutor/analytics", admin=False)
+        self._assert_status_code_is(response, 403)
+
+    @requires_admin
+    def test_analytics_returns_aggregate_shape(self):
+        """An admin can read aggregated tutor analytics (real queries run)."""
+        response = self._get("chat/tutor/analytics", admin=True)
+        self._assert_status_code_is_ok(response)
+        data = response.json()
+        for key in (
+            "total_messages",
+            "tutor_messages",
+            "tutor_message_share",
+            "tutor_feedback",
+            "avg_conversation_length",
+            "scaffolding_distribution",
+            "expertise_distribution",
+        ):
+            assert key in data
