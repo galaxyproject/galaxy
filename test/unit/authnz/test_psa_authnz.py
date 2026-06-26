@@ -678,6 +678,12 @@ def make_google_secondary_auth_psa_authnz(extra_scopes=None):
     }
     if extra_scopes is not None:
         oidc_backend_config["extra_scopes"] = extra_scopes
+    mock_app = MagicMock()
+    mock_app.config = SimpleNamespace(
+        oidc_auth_pipeline=None,
+        oidc_auth_pipeline_extra=None,
+        fixed_delegated_auth=False,
+    )
     return PSAAuthnz(
         provider="google",
         oidc_config={
@@ -685,11 +691,7 @@ def make_google_secondary_auth_psa_authnz(extra_scopes=None):
             "SECONDARY_AUTH_ENDPOINT": "https://secondary.example.com/auth",
         },
         oidc_backend_config=oidc_backend_config,
-        app_config=SimpleNamespace(
-            oidc_auth_pipeline=None,
-            oidc_auth_pipeline_extra=None,
-            fixed_delegated_auth=False,
-        ),
+        app_config=mock_app.config,
     )
 
 
