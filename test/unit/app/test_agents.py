@@ -338,7 +338,8 @@ class TestAgentUnitMocked:
         assert registry.is_registered("history")
         assert registry.is_registered("gtn_training")
         assert registry.is_registered("page_assistant")
-        assert len(registry.list_agents()) == 8
+        assert registry.is_registered("teaching_assistant")
+        assert len(registry.list_agents()) == 9
 
     def test_disabled_agent_not_registered(self):
         """Disabled agent should not be in registry."""
@@ -363,7 +364,7 @@ class TestAgentUnitMocked:
     def test_build_registry_no_config_registers_all(self):
         """Without config, all agents registered (backwards compat)."""
         registry = build_default_registry()
-        assert len(registry.list_agents()) == 8
+        assert len(registry.list_agents()) == 9
 
     def test_disabled_agent_registry_get_agent_raises(self):
         """Registry.get_agent for a disabled agent gives 'Unknown agent type' error."""

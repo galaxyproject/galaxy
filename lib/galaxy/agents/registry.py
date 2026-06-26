@@ -110,6 +110,7 @@ def build_default_registry(config=None) -> AgentRegistry:
     from .orchestrator import WorkflowOrchestratorAgent
     from .page_assistant import PageAssistantAgent
     from .router import QueryRouterAgent
+    from .teaching_assistant import TeachingAssistantAgent
     from .tools import ToolRecommendationAgent
 
     inference_config: dict = {}
@@ -142,4 +143,5 @@ def build_default_registry(config=None) -> AgentRegistry:
     _register_if_enabled(registry, AgentType.HISTORY, HistoryAgent)
     _register_if_enabled(registry, AgentType.GTN_TRAINING, GTNTrainingAgent)
     _register_if_enabled(registry, AgentType.PAGE_ASSISTANT, PageAssistantAgent)
+    _register_if_enabled(registry, AgentType.TEACHING_ASSISTANT, TeachingAssistantAgent)
     return registry

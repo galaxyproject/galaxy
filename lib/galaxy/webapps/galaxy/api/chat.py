@@ -31,6 +31,7 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import JobManager
+from galaxy.managers.learning_state import LearningStateManager
 from galaxy.managers.markdown_util import ready_galaxy_markdown_for_export
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import User
@@ -500,6 +501,42 @@ class ChatAPI:
             except (json.JSONDecodeError, AttributeError):
                 log.debug("Skipping malformed chat exchange %s", exchange.id)
         return history
+
+    @router.get("/api/chat/tutor/state", unstable=True)
+    def get_tutor_state(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, Any]:
+        """Get the user's current learning state for the cognitive tutor."""
+        manager = LearningStateManager()
+        return manager.get_learning_state(trans)
+
+    @router.put("/api/chat/tutor/state", unstable=True)
+    def update_tutor_state(
+        self,
+        payload: dict[str, Any] = Body(..., description="Partial learning state update"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, Any]:
+        """Update the user's learning state (partial update)."""
+        manager = LearningStateManager()
+        return manager.update_learning_state(trans, payload)
+
+    @router.post("/api/chat/tutor/mode", unstable=True)
+    def toggle_tutor_mode(
+        self,
+        enabled: bool = Body(..., description="Whether to enable or disable tutor mode"),
+        trans: ProvidesUserContext = DependsOnTrans,
+        user: User = DependsOnUser,
+    ) -> dict[str, Any]:
+        """Toggle tutor mode on or off."""
+        manager = LearningStateManager()
+        if enabled:
+            state = manager.enable_tutor_mode(trans)
+        else:
+            state = manager.disable_tutor_mode(trans)
+        return {"enabled": state.get("tutor_mode_enabled", False), "state": state}
 
     def _ensure_ai_configured(self):
         """Ensure AI is configured"""

@@ -31,6 +31,8 @@ class ActionType(str, Enum):
     VIEW_EXTERNAL = "view_external"
     DOCUMENTATION = "documentation"
     WORKFLOW_IMPORT = "workflow_import"
+    START_TUTORIAL = "start_tutorial"
+    NEXT_PATHWAY_STEP = "next_pathway_step"
 
 
 class ActionSuggestion(BaseModel):
@@ -244,3 +246,23 @@ class WorkflowReportResponse(BaseModel):
     report: str = Field(description="Generated markdown report for the workflow")
     total_tokens: int | None = Field(default=None, description="Total tokens consumed by the generation")
     model: str | None = Field(default=None, description="LLM model used to generate the report")
+
+
+class LearningState(BaseModel):
+    """User's learning state for the cognitive tutor."""
+
+    expertise_level: str = Field(default="beginner", description="User expertise: beginner, intermediate, advanced")
+    scaffolding_level: int = Field(default=3, description="Scaffolding level 1-5 (1=max support, 5=minimal)")
+    completed_tutorials: list[str] = Field(default_factory=list, description="IDs of completed tutorials")
+    current_pathway: str | None = Field(default=None, description="Current learning pathway topic")
+    pathway_progress: dict[str, int] = Field(default_factory=dict, description="Step index per pathway topic")
+    topics_explored: list[str] = Field(default_factory=list, description="Topics the user has explored")
+    interaction_count: int = Field(default=0, description="Total tutor interactions")
+    tutor_mode_enabled: bool = Field(default=False, description="Whether tutor mode is active")
+    last_interaction: str | None = Field(default=None, description="ISO timestamp of last interaction")
+
+
+class TutorModeToggle(BaseModel):
+    """Request to toggle tutor mode."""
+
+    enabled: bool = Field(description="Whether to enable or disable tutor mode")
