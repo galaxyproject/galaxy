@@ -291,7 +291,7 @@ class ConditionalDependencies:
     def check_rspace_client(self):
         return "rspace" in self.file_sources
 
-    def check_fs_irods(self):
+    def check_mangofs(self):
         return "irods" in self.file_sources
 
     def check_watchdog(self):
