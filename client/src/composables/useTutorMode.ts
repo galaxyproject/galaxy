@@ -54,10 +54,6 @@ export function useTutorMode() {
         }
     }
 
-    function toggleTutorMode() {
-        return setTutorMode(!tutorModeEnabled.value);
-    }
-
     return {
         tutorModeEnabled,
         scaffoldingLevel,
@@ -65,6 +61,5 @@ export function useTutorMode() {
         loading,
         fetchTutorState,
         setTutorMode,
-        toggleTutorMode,
     };
 }

@@ -17,11 +17,7 @@ from typing import (
 from pydantic_ai import Agent
 
 from galaxy.managers.learning_state import LearningStateManager
-from galaxy.schema.agents import (
-    ActionSuggestion,
-    ActionType,
-    ConfidenceLevel,
-)
+from galaxy.schema.agents import ConfidenceLevel
 from .base import (
     AgentResponse,
     AgentType,
@@ -236,12 +232,15 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
 
         @agent.tool
         async def save_learning_note(ctx, content: str) -> str:
-            """Save a learning note to the user's history notebook if available."""
-            # Notebook integration -- gracefully no-op if not available
-            log.info(f"Learning note requested (notebook integration pending): {content[:100]}")
+            """Prompt the learner to record a takeaway.
+
+            Saving notes to a history notebook isn't wired up yet, so this does not
+            persist anything -- it just encourages the learner to write it down. Be
+            honest with them that it isn't saved automatically.
+            """
             return (
-                "Learning note recorded. (History Notebook integration will save these "
-                "directly to your analysis history once available.)"
+                "Saving notes to your history isn't available yet, but this is a good moment "
+                "to jot down what you just learned in your own words."
             )
 
         return agent
@@ -305,9 +304,6 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
         """Format response with tutor-specific metadata and suggestions."""
         content = extract_result_content(result)
 
-        # Build suggestions based on content
-        suggestions = self._build_tutor_suggestions(content, query)
-
         # Include learning state in metadata
         try:
             learning_state = self.learning_state_manager.get_learning_state(self.deps.trans)
@@ -320,43 +316,11 @@ class TeachingAssistantAgent(BaseGalaxyAgent):
             method="teaching_assistant",
             result=result,
             query=query,
-            suggestions=suggestions,
             agent_data={
                 "learning_state": learning_state,
                 "tutor_mode": True,
             },
         )
-
-    def _build_tutor_suggestions(self, content: str, query: str) -> list[ActionSuggestion]:
-        """Build action suggestions appropriate for learning context."""
-        suggestions: list[ActionSuggestion] = []
-        content_lower = content.lower()
-
-        # Suggest tutorials if training content was referenced
-        if "training.galaxyproject.org" in content or "tutorial" in content_lower:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.START_TUTORIAL,
-                    description="Open the recommended tutorial",
-                    parameters={"source": "gtn"},
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=1,
-                )
-            )
-
-        # Suggest next pathway step if on a learning path
-        if "pathway" in content_lower or "next step" in content_lower:
-            suggestions.append(
-                ActionSuggestion(
-                    action_type=ActionType.NEXT_PATHWAY_STEP,
-                    description="Continue to the next step in your learning pathway",
-                    parameters={},
-                    confidence=ConfidenceLevel.MEDIUM,
-                    priority=2,
-                )
-            )
-
-        return suggestions
 
     def _get_fallback_content(self) -> str:
         """Tutor-specific fallback message."""

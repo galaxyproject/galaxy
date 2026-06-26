@@ -521,9 +521,23 @@ class ChatAPI:
         trans: ProvidesUserContext = DependsOnTrans,
         user: User = DependsOnUser,
     ) -> dict[str, Any]:
-        """Update the user's learning state (partial update)."""
+        """Update the user's learning state (partial update).
+
+        Only a small allowlist of fields is user-settable. The free-text fields that get
+        injected into the tutor's system prompt (expertise_level, topics_explored,
+        current_pathway, ...) are intentionally rejected here so a user cannot inject
+        prompt content into their own tutor session.
+        """
+        updates: dict[str, Any] = {}
+        if "tutor_mode_enabled" in payload:
+            updates["tutor_mode_enabled"] = bool(payload["tutor_mode_enabled"])
+        if "scaffolding_level" in payload:
+            try:
+                updates["scaffolding_level"] = max(1, min(5, int(payload["scaffolding_level"])))
+            except (TypeError, ValueError):
+                pass
         manager = LearningStateManager()
-        return manager.update_learning_state(trans, payload)
+        return manager.update_learning_state(trans, updates)
 
     @router.post("/api/chat/tutor/mode", unstable=True)
     def toggle_tutor_mode(

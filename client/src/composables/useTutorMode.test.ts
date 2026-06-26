@@ -47,17 +47,6 @@ describe("useTutorMode", () => {
         expect(scaffoldingLevel.value).toBe(3);
     });
 
-    it("toggleTutorMode flips the current state", async () => {
-        mockPOST.mockResolvedValue({
-            data: { enabled: true, state: { tutor_mode_enabled: true } },
-            error: undefined,
-        });
-        const { toggleTutorMode, tutorModeEnabled } = useTutorMode();
-        await toggleTutorMode();
-        expect(mockPOST).toHaveBeenCalledWith("/api/chat/tutor/mode", { body: { enabled: true } });
-        expect(tutorModeEnabled.value).toBe(true);
-    });
-
     it("rethrows API errors", async () => {
         mockGET.mockResolvedValue({ data: undefined, error: { err_msg: "boom" } });
         const { fetchTutorState } = useTutorMode();

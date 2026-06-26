@@ -27,12 +27,25 @@ log = logging.getLogger(__name__)
 
 TUTOR_AGENT_TYPE = "teaching_assistant"
 
+# Tutor vs. task classification lives inside each message's JSON, so it can't be
+# done in SQL -- we scan rows in Python. Bound the scan to the most recent N
+# messages so this admin endpoint can't load an entire busy instance into memory.
+MESSAGE_SCAN_LIMIT = 50000
+
 
 class TutorAnalyticsManager:
-    """Aggregate tutor usage metrics from existing chat and preference tables."""
+    """Aggregate tutor usage metrics from existing chat and preference tables.
+
+    Metrics cover the most recent ``MESSAGE_SCAN_LIMIT`` chat messages rather than
+    all-time history, to keep the query bounded.
+    """
+
+    def _recent_messages(self, trans: ProvidesUserContext) -> list[ChatExchangeMessage]:
+        stmt = select(ChatExchangeMessage).order_by(ChatExchangeMessage.id.desc()).limit(MESSAGE_SCAN_LIMIT)
+        return list(trans.sa_session.execute(stmt).scalars().all())
 
     def get_analytics(self, trans: ProvidesUserContext) -> dict[str, Any]:
-        messages = trans.sa_session.execute(select(ChatExchangeMessage)).scalars().all()
+        messages = self._recent_messages(trans)
         states = self._learning_states(trans)
         return self._aggregate(messages, states)
 
@@ -106,8 +119,7 @@ class TutorAnalyticsManager:
         ``tutor_socratic_dataset(extra_queries=...)`` to keep known-bad cases
         from regressing.
         """
-        messages = trans.sa_session.execute(select(ChatExchangeMessage)).scalars().all()
-        return self._downvoted_tutor_queries(messages)
+        return self._downvoted_tutor_queries(self._recent_messages(trans))
 
     def _downvoted_tutor_queries(self, messages: Iterable[Any]) -> list[str]:
         queries: list[str] = []
