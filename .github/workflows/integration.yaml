@@ -64,7 +64,7 @@ jobs:
       - name: Install Python
         run: uv python install
       - name: Install Apptainer's singularity
-        uses: eWaterCycle/setup-apptainer@v2
+        uses: './galaxy root/.github/actions/install_apptainer'
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh
