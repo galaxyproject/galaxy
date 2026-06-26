@@ -667,3 +667,72 @@ def test_authenticate_with_real_backend_does_not_accumulate_extra_scopes(psa_aut
         assert list(backend_class.DEFAULT_SCOPE or []) == expected_default_scope
     finally:
         backend_class.DEFAULT_SCOPE = original_default_scope
+
+
+def make_google_secondary_auth_psa_authnz(extra_scopes=None):
+    """Build a PSAAuthnz configured for the Google provider with secondary AuthZ."""
+    oidc_backend_config = {
+        "client_id": "gxyclient",
+        "client_secret": "dummyclientsecret",
+        "redirect_uri": "https://galaxy.example.com/authnz/callback",
+    }
+    if extra_scopes is not None:
+        oidc_backend_config["extra_scopes"] = extra_scopes
+    return PSAAuthnz(
+        provider="google",
+        oidc_config={
+            "SECONDARY_AUTH_PROVIDER": "secondary-provider",
+            "SECONDARY_AUTH_ENDPOINT": "https://secondary.example.com/auth",
+        },
+        oidc_backend_config=oidc_backend_config,
+        app_config=SimpleNamespace(
+            oidc_auth_pipeline=None,
+            oidc_auth_pipeline_extra=None,
+            fixed_delegated_auth=False,
+        ),
+    )
+
+
+def test_google_secondary_auth_requests_cloud_platform_scope_without_mutating_default():
+    """
+    When Google secondary AuthZ is configured, the cloud-platform scope is
+    requested via the SCOPE setting (combined with DEFAULT_SCOPE by social-core),
+    so it is sent exactly once per login and the shared class-level DEFAULT_SCOPE
+    is never mutated.
+    """
+    cloud_platform_scope = "https://www.googleapis.com/auth/cloud-platform"
+    backend_class = module_member(BACKENDS["google"])
+    original_default_scope = backend_class.DEFAULT_SCOPE
+    expected_default_scope = list(original_default_scope or [])
+    observed_scopes = []
+
+    psa_authnz = make_google_secondary_auth_psa_authnz(extra_scopes=["offline_access"])
+
+    def fake_load_backend(strategy, redirect_uri):
+        # Real _load_backend builds a fresh backend instance on every call.
+        return backend_class(strategy, redirect_uri)
+
+    def fake_do_auth(backend):
+        observed_scopes.append(backend.get_scope())
+        return MagicMock()
+
+    try:
+        with (
+            patch("galaxy.authnz.psa_authnz.on_the_fly_config"),
+            patch.object(psa_authnz, "_load_backend", side_effect=fake_load_backend),
+            patch("galaxy.authnz.psa_authnz.do_auth", side_effect=fake_do_auth),
+        ):
+            psa_authnz.authenticate(make_mock_trans())
+            psa_authnz.authenticate(make_mock_trans())
+
+        for scope in observed_scopes:
+            # cloud-platform requested exactly once, alongside the configured extra scope
+            assert scope.count(cloud_platform_scope) == 1
+            assert "offline_access" in scope
+        # identical across logins (no accumulation)...
+        assert observed_scopes[0] == observed_scopes[1]
+        # ...and the shared class-level default scope is left untouched.
+        assert backend_class.DEFAULT_SCOPE is original_default_scope
+        assert list(backend_class.DEFAULT_SCOPE or []) == expected_default_scope
+    finally:
+        backend_class.DEFAULT_SCOPE = original_default_scope
