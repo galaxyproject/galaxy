@@ -24,7 +24,7 @@ import ClarificationCard from "./ClarificationCard.vue";
 const MENTION_RE = new RegExp(MENTION_PATTERN_SOURCE, "g");
 
 type Segment = { kind: "text"; value: string } | { kind: "mention"; entityType: EntityType; identifier: string };
-type ResponseLink = { label: string; url: string };
+type ReferenceLink = { label: string; url: string };
 
 const MARKDOWN_LINK_RE = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
 const BARE_URL_RE = /https?:\/\/[^\s<>"')]+/g;
@@ -72,7 +72,7 @@ function isHttpUrl(value: string) {
     return /^https?:\/\//i.test(value);
 }
 
-function addLink(links: ResponseLink[], seen: Set<string>, label: string | undefined, url: string | undefined) {
+function addLink(links: ReferenceLink[], seen: Set<string>, label: string | undefined, url: string | undefined) {
     if (!url || !isHttpUrl(url)) {
         return;
     }
@@ -84,7 +84,7 @@ function addLink(links: ResponseLink[], seen: Set<string>, label: string | undef
     links.push({ label: label?.trim() || normalizedUrl, url: normalizedUrl });
 }
 
-function collectMetadataLinks(value: unknown, links: ResponseLink[], seen: Set<string>, keyHint?: string) {
+function collectMetadataLinks(value: unknown, links: ReferenceLink[], seen: Set<string>, keyHint?: string) {
     if (!value) {
         return;
     }
@@ -119,8 +119,8 @@ function collectMetadataLinks(value: unknown, links: ResponseLink[], seen: Set<s
     }
 }
 
-const responseLinks = computed<ResponseLink[]>(() => {
-    const links: ResponseLink[] = [];
+const referenceLinks = computed<ReferenceLink[]>(() => {
+    const links: ReferenceLink[] = [];
     const seen = new Set<string>();
     const content = props.message.content;
 
@@ -225,25 +225,25 @@ const responseLinks = computed<ResponseLink[]>(() => {
                             <span v-if="props.message.feedback" class="feedback-ack">Thanks!</span>
                         </div>
                         <div class="meta-right">
-                            <div v-if="responseLinks.length" class="response-links">
+                            <div v-if="referenceLinks.length" class="reference-links">
                                 <button
                                     class="links-toggle"
                                     :aria-expanded="linksExpanded ? 'true' : 'false'"
-                                    title="Show response links"
+                                    title="References"
                                     @click="linksExpanded = !linksExpanded">
                                     <FontAwesomeIcon :icon="faLink" fixed-width />
-                                    <span class="links-count">{{ responseLinks.length }}</span>
+                                    <span class="links-count">{{ referenceLinks.length }}</span>
                                     <FontAwesomeIcon :icon="linksExpanded ? faChevronDown : faChevronUp" fixed-width />
                                 </button>
                                 <div v-if="linksExpanded" class="links-popover">
                                     <a
-                                        v-for="link in responseLinks"
+                                        v-for="link in referenceLinks"
                                         :key="link.url"
-                                        class="response-link"
+                                        class="reference-link"
                                         :href="link.url"
                                         target="_blank"
                                         rel="noopener noreferrer">
-                                        <span class="response-link-label">{{ link.label }}</span>
+                                        <span class="reference-link-label">{{ link.label }}</span>
                                         <FontAwesomeIcon :icon="faExternalLinkAlt" fixed-width />
                                     </a>
                                 </div>
@@ -491,7 +491,7 @@ const responseLinks = computed<ResponseLink[]>(() => {
     margin-left: 0.25rem;
 }
 
-.response-links {
+.reference-links {
     position: relative;
 }
 
@@ -538,7 +538,7 @@ const responseLinks = computed<ResponseLink[]>(() => {
     box-shadow: 0 0.25rem 0.75rem rgba($brand-dark, 0.12);
 }
 
-.response-link {
+.reference-link {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -557,7 +557,7 @@ const responseLinks = computed<ResponseLink[]>(() => {
     }
 }
 
-.response-link-label {
+.reference-link-label {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

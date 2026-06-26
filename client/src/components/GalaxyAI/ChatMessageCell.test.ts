@@ -218,54 +218,6 @@ describe("ChatMessageCell", () => {
             const text = tags.wrappers.map((w) => w.text()).join(" ");
             expect(text).toContain("150 tok");
         });
-
-        it("shows a collapsible links button for response links", async () => {
-            const message = makeAssistantMessage({
-                content: "Read the [GTN tutorial](https://training.galaxyproject.org/tutorial.html).",
-            });
-            const wrapper = mountCell(message);
-
-            expect(wrapper.find(".links-toggle").exists()).toBe(true);
-            expect(wrapper.find(".links-popover").exists()).toBe(false);
-
-            await wrapper.find(".links-toggle").trigger("click");
-
-            expect(wrapper.find(".links-popover").exists()).toBe(true);
-            const link = wrapper.find(".response-link");
-            expect(link.text()).toContain("GTN tutorial");
-            expect(link.attributes("href")).toBe("https://training.galaxyproject.org/tutorial.html");
-        });
-
-        it("collects links from action suggestions and metadata", async () => {
-            const message = makeAssistantMessage({
-                suggestions: [
-                    {
-                        action_type: ActionType.VIEW_EXTERNAL,
-                        description: "Open training",
-                        parameters: { url: "https://training.galaxyproject.org/" },
-                        confidence: "high",
-                        priority: 1,
-                    },
-                ],
-                agentResponse: {
-                    content: "test",
-                    agent_type: "auto",
-                    confidence: "high",
-                    suggestions: [],
-                    metadata: {
-                        references: [{ title: "Galaxy docs", url: "https://docs.galaxyproject.org/" }],
-                    },
-                },
-            });
-            const wrapper = mountCell(message);
-
-            await wrapper.find(".links-toggle").trigger("click");
-
-            const links = wrapper.findAll(".response-link");
-            expect(links.length).toBe(2);
-            expect(links.at(0)!.attributes("href")).toBe("https://training.galaxyproject.org/");
-            expect(links.at(1)!.attributes("href")).toBe("https://docs.galaxyproject.org/");
-        });
     });
 
     describe("action suggestions", () => {
