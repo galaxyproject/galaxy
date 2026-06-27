@@ -19,6 +19,7 @@ class TestWebhooksApi(ApiTestCase):
             "trans_object",
             "xkcd",
             "gtn",
+            "iframe",
         ]:
             assert expected_id in ids
 
@@ -26,6 +27,13 @@ class TestWebhooksApi(ApiTestCase):
         response = self._get("webhooks/trans_object/data")
         self._assert_status_code_is(response, 200)
         self._assert_has_keys(response.json(), "username")
+
+    def test_iframe_data_unconfigured(self):
+        # When center_panel_url is not set the endpoint must return an empty
+        # dict so the client-side script can silently skip rendering.
+        response = self._get("webhooks/iframe/data")
+        self._assert_status_code_is(response, 200)
+        assert response.json() == {}
 
     def _assert_are_webhooks(self, response):
         response_list = response.json()

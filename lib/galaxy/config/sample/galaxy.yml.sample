@@ -901,6 +901,22 @@ galaxy:
   # webhooks used to test the webhook framework.
   #webhooks_dir: config/plugins/webhooks
 
+  # URL to display in an iframe panel shown to the user after a tool or
+  # workflow job is submitted. When set, the iframe webhook plugin included
+  # with Galaxy will embed this URL below the standard job-submission
+  # confirmation message. Leave unset to disable the panel. Requires the
+  # iframe webhook to be active (enabled by default when webhooks_dir
+  # includes config/plugins/webhooks).
+  #center_panel_url: null
+
+  # Title displayed in the header bar of the center panel iframe. Only
+  # used when center_panel_url is set. Leave unset to omit the header bar.
+  #center_panel_title: null
+
+  # Height in pixels of the center panel iframe. Only used when
+  # center_panel_url is set.
+  #center_panel_height: 1000
+
   # Each job is given a unique empty directory as its current working
   # directory. This option defines in what parent directory those
   # directories will be created.

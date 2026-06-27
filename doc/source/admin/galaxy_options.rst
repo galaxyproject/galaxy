@@ -1141,6 +1141,44 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~
+``center_panel_url``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL to display in an iframe panel shown to the user after a tool or
+    workflow job is submitted. When set, the iframe webhook plugin
+    included with Galaxy will embed this URL below the standard
+    job-submission confirmation message. Leave unset to disable the
+    panel. Requires the iframe webhook to be active (enabled by default
+    when webhooks_dir includes config/plugins/webhooks).
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``center_panel_title``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Title displayed in the header bar of the center panel iframe. Only
+    used when center_panel_url is set. Leave unset to omit the header
+    bar entirely.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``center_panel_height``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Height in pixels of the center panel iframe. Only used when
+    center_panel_url is set.
+:Default: ``1000``
+:Type: int
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 ``job_working_directory``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
