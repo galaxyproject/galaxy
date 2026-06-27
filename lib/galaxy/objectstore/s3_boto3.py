@@ -309,9 +309,20 @@ class S3ObjectStore(CachingConcreteObjectStore):
                 self._client.head_object(Bucket=self.bucket, Key=rel_path)
                 return True
         except ClientError as e:
-            if e.response["Error"]["Code"] == "404":
+            error_code = e.response.get("Error", {}).get("Code", "Unknown")
+            if error_code == "404":
                 return False
-            raise
+            # Log other errors (403 Forbidden, 401 Unauthorized, 5xx, etc.) as warnings
+            # but treat as "not found" to allow graceful degradation. The actual
+            # download/upload operation will fail with proper diagnostics if there's
+            # a real permission issue. This prevents crashes from transient errors.
+            log.warning(
+                "Error checking existence of object '%s' in S3 (error code: %s). "
+                "Treating as non-existent and will attempt operation.",
+                rel_path,
+                error_code,
+            )
+            return False
 
     def _download(self, rel_path: str) -> bool:
         local_destination = self._get_cache_path(rel_path)

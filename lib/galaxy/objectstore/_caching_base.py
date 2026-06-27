@@ -303,6 +303,20 @@ class CachingConcreteObjectStore(ConcreteObjectStore):
             else:
                 if self._pull_into_cache(rel_path, **kwargs):
                     return cache_path
+                # Download failed - this typically indicates permission or connectivity issues
+                log.error(
+                    "Failed to pull object into cache. rel_path=%s, cache_path=%s, obj=%s",
+                    rel_path,
+                    cache_path,
+                    obj,
+                )
+        else:
+            # Object doesn't exist in cache or remote storage
+            log.debug(
+                "Object not found in cache or remote storage. rel_path=%s, obj=%s",
+                rel_path,
+                obj,
+            )
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 
     def _download_directory_into_cache(self, rel_path, cache_path):
