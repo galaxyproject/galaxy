@@ -36,6 +36,7 @@ from galaxy.webapps.base.webapp import (
     _is_embed_request,
     config_allows_origin,
 )
+from galaxy.webapps.galaxy.api.mcp import get_mcp_app
 from galaxy.webapps.openapi._compat.v2 import GenerateJsonSchema
 from galaxy.webapps.openapi.utils import get_openapi
 
@@ -267,13 +268,8 @@ def get_mcp_lifespan(gx_app):
         return None, None
 
     try:
-        from galaxy.webapps.galaxy.api.mcp import get_mcp_app
-
         mcp_app = get_mcp_app(gx_app)
         return mcp_app, mcp_app.lifespan
-    except ImportError:
-        log.info("MCP server dependencies not installed (fastmcp), skipping")
-        return None, None
     except Exception:
         log.exception("Failed to initialize MCP server")
         return None, None
