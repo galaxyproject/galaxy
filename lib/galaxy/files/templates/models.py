@@ -148,6 +148,7 @@ class S3FSFileSourceTemplateConfiguration(StrictModel):
     template_start: Optional[str] = None
     template_end: Optional[str] = None
     request_checksum_calculation: Optional[Union[str, TemplateExpansion, None]] = None
+    response_checksum_validation: Optional[Union[str, TemplateExpansion, None]] = None
 
 
 class S3FSFileSourceConfiguration(StrictModel):
@@ -159,6 +160,7 @@ class S3FSFileSourceConfiguration(StrictModel):
     bucket: Optional[str] = None
     writable: bool = False
     request_checksum_calculation: Optional[str] = None
+    response_checksum_validation: Optional[str] = None
 
 
 class FtpFileSourceTemplateConfiguration(StrictModel):

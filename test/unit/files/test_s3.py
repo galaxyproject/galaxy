@@ -13,8 +13,32 @@ from ._util import (
 
 pytest.importorskip("s3fs")
 
+from galaxy.files.sources.s3fs import (  # noqa: E402  (after importorskip)
+    S3FSFileSourceConfiguration,
+    S3FsFilesSource,
+)
+
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "s3_file_sources_conf.yml")
+
+
+def _s3fs_config(**kwargs) -> S3FSFileSourceConfiguration:
+    return S3FSFileSourceConfiguration(type="s3fs", id="test", file_sources_config={}, **kwargs)
+
+
+def test_config_kwargs_defaults_when_required_for_non_aws_endpoint():
+    config = _s3fs_config(endpoint_url="https://storage.googleapis.com/")
+    assert S3FsFilesSource._config_kwargs(config) == {"request_checksum_calculation": "when_required"}
+
+
+def test_config_kwargs_none_for_aws_endpoint():
+    # No endpoint -> AWS -> no botocore override (None means "don't pass config_kwargs").
+    assert S3FsFilesSource._config_kwargs(_s3fs_config()) is None
+
+
+def test_config_kwargs_explicit_value_wins():
+    config = _s3fs_config(endpoint_url="https://storage.googleapis.com/", request_checksum_calculation="when_supported")
+    assert S3FsFilesSource._config_kwargs(config) == {"request_checksum_calculation": "when_supported"}
 
 
 def test_file_source():

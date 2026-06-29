@@ -178,7 +178,14 @@
       optional: true
       default: None
       help: |
-        By default, users are opted-in to calculating a request checksum when sending a request. However some non AWS S3-compatible endpoint do not support this option. If you get errors like `An error occurred (MissingContentLength) when calling the PutObject operation: You must provide the Content-Length HTTP header.` when you try uploading data. Set this to `when_required`.
+        Controls whether boto3 adds a checksum to upload requests. Leave this unset to let Galaxy choose a sensible default: for non-AWS endpoints it uses `when_required`, which avoids errors like `An error occurred (SignatureDoesNotMatch) when calling the PutObject operation` or `(MissingContentLength) ... You must provide the Content-Length HTTP header.` raised by some S3-compatible providers. Set explicitly to `when_supported` or `when_required` to override.
+    response_checksum_validation:
+      label: Response Checksum Validation
+      type: string
+      optional: true
+      default: None
+      help: |
+        Controls whether boto3 validates checksums on responses (`when_supported` or `when_required`). Leave unset unless a non-AWS S3-compatible endpoint rejects checksum validation.
   secrets:
     secret_key:
       label: Secret Access Key
@@ -197,3 +204,4 @@
     bucket: '{{ variables.bucket }}'
     writable: '{{ variables.writable }}'
     request_checksum_calculation: '{{ variables.request_checksum_calculation }}'
+    response_checksum_validation: '{{ variables.response_checksum_validation }}'

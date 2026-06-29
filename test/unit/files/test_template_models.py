@@ -61,6 +61,54 @@ def test_aws_s3_config():
     assert configuration["bucket"] == "sec3"
 
 
+LIBRARY_S3FS_CHECKSUM = """
+- id: s3fs_checksum
+  name: S3 Bucket With Checksum Options
+  description: An S3 Bucket exposing checksum options
+  variables:
+    bucket_name:
+      type: string
+      help: Name of bucket to use.
+    request_checksum_calculation:
+      type: string
+      help: Request checksum calculation mode.
+    response_checksum_validation:
+      type: string
+      help: Response checksum validation mode.
+  secrets:
+    access_key:
+      help: AWS access key.
+    secret_key:
+      help: AWS secret key.
+  configuration:
+    type: s3fs
+    key: '{{ secrets.access_key}}'
+    secret: '{{ secrets.secret_key}}'
+    bucket: '{{ variables.bucket_name}}'
+    request_checksum_calculation: '{{ variables.request_checksum_calculation }}'
+    response_checksum_validation: '{{ variables.response_checksum_validation }}'
+"""
+
+
+def test_s3fs_checksum_options():
+    template_library = _parse_template_library(LIBRARY_S3FS_CHECKSUM)
+    s3_template = _assert_has_one_template(template_library)
+    configuration_obj = template_to_configuration(
+        s3_template,
+        {
+            "bucket_name": "sec3",
+            "request_checksum_calculation": "when_required",
+            "response_checksum_validation": "when_supported",
+        },
+        {"access_key": "sec1", "secret_key": "sec2"},
+        user_details={},
+        environment={},
+    )
+    assert isinstance(configuration_obj, S3FSFileSourceConfiguration)
+    assert configuration_obj.request_checksum_calculation == "when_required"
+    assert configuration_obj.response_checksum_validation == "when_supported"
+
+
 LIBRARY_HOME_DIRECTORY = """
 - id: home_directory
   name: Home Directory
