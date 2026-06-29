@@ -79,8 +79,6 @@ def parse_config_xml(config_xml):
         if endpoint_url is None and cn_xml.get("host") is not None:
             endpoint_url = host_to_endpoint(cn_xml)
         region = cn_xml.get("region")
-        request_checksum_calculation = cn_xml.get("request_checksum_calculation")
-        response_checksum_validation = cn_xml.get("response_checksum_validation")
         cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
         transfer_xml = config_xml.findall("transfer")
@@ -124,8 +122,6 @@ def parse_config_xml(config_xml):
             "connection": {
                 "endpoint_url": endpoint_url,
                 "region": region,
-                "request_checksum_calculation": request_checksum_calculation,
-                "response_checksum_validation": response_checksum_validation,
             },
             "transfer": transfer_dict,
             "cache": cache_dict,
@@ -204,8 +200,6 @@ class S3ObjectStore(CachingConcreteObjectStore):
             self.endpoint_url = host_to_endpoint(connection_dict)
 
         self.region = connection_dict.get("region")
-        self.request_checksum_calculation = connection_dict.get("request_checksum_calculation")
-        self.response_checksum_validation = connection_dict.get("response_checksum_validation")
 
         self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -255,11 +249,7 @@ class S3ObjectStore(CachingConcreteObjectStore):
         if self.access_key:
             kwds["aws_access_key_id"] = self.access_key
             kwds["aws_secret_access_key"] = self.secret_key
-        config_kwargs = s3_checksum_config_kwargs(
-            self.request_checksum_calculation,
-            self.response_checksum_validation,
-            self.endpoint_url,
-        )
+        config_kwargs = s3_checksum_config_kwargs(self.endpoint_url)
         if config_kwargs:
             kwds["config"] = Config(**config_kwargs)
         return kwds

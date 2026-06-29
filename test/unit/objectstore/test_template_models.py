@@ -7,7 +7,6 @@ from galaxy.objectstore.templates.manager import raw_config_to_catalog
 from galaxy.objectstore.templates.models import (
     AwsS3ObjectStoreConfiguration,
     AzureObjectStoreConfiguration,
-    Boto3ObjectStoreConfiguration,
     DiskObjectStoreConfiguration,
     GenericS3ObjectStoreConfiguration,
     ObjectStoreTemplateCatalog,
@@ -136,62 +135,6 @@ def test_parsing_generic_s3():
     assert configuration["connection"]["conn_path"] == ""
     assert configuration["connection"]["is_secure"] is True
     assert len(configuration["badges"]) == 3
-
-
-LIBRARY_BOTO3_CHECKSUM = """
-- id: gcs_bucket
-  name: GCS Bucket
-  description: A Google Cloud Storage bucket connected via the boto3 object store.
-  variables:
-    endpoint_url:
-      type: string
-      help: S3-compatible endpoint URL.
-    request_checksum_calculation:
-      type: string
-      help: Request checksum calculation mode.
-    response_checksum_validation:
-      type: string
-      help: Response checksum validation mode.
-  secrets:
-    access_key:
-      help: Access key.
-    secret_key:
-      help: Secret key.
-    bucket_name:
-      help: Name of bucket to use.
-  configuration:
-    type: boto3
-    auth:
-        access_key: '{{ secrets.access_key}}'
-        secret_key: '{{ secrets.secret_key}}'
-    bucket:
-        name: '{{ secrets.bucket_name}}'
-    connection:
-        endpoint_url: '{{ variables.endpoint_url }}'
-        request_checksum_calculation: '{{ variables.request_checksum_calculation }}'
-        response_checksum_validation: '{{ variables.response_checksum_validation }}'
-"""
-
-
-def test_parsing_boto3_checksum_options():
-    template_library = _parse_template_library(LIBRARY_BOTO3_CHECKSUM)
-    assert len(template_library.root) == 1
-    boto3_template = template_library.root[0]
-    configuration_obj = template_to_configuration(
-        boto3_template,
-        {
-            "endpoint_url": "https://storage.googleapis.com/",
-            "request_checksum_calculation": "when_required",
-            "response_checksum_validation": "when_supported",
-        },
-        {"access_key": "sec1", "secret_key": "sec2", "bucket_name": "sec3"},
-        user_details={},
-        environment={},
-    )
-    assert isinstance(configuration_obj, Boto3ObjectStoreConfiguration)
-    assert configuration_obj.connection is not None
-    assert configuration_obj.connection.request_checksum_calculation == "when_required"
-    assert configuration_obj.connection.response_checksum_validation == "when_supported"
 
 
 LIBRARY_2 = """

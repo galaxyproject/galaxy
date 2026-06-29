@@ -35,25 +35,6 @@
         The [MinIO](https://min.io/docs/minio/linux/integrations/aws-cli-with-minio.html)
         documentation describes the endpoint URL for its Play service as ``https://play.min.io:9000``,
         this whole value would be entered here.
-    request_checksum_calculation:
-      label: Request Checksum Calculation
-      type: string
-      optional: true
-      default: None
-      help: |
-        Controls whether boto3 adds a checksum to upload requests. Leave this unset to let Galaxy
-        choose a sensible default: for non-AWS endpoints it uses ``when_required``, which avoids
-        ``SignatureDoesNotMatch`` errors raised by some S3-compatible providers (e.g. Google Cloud
-        Storage). Set explicitly to ``when_supported`` or ``when_required`` to override.
-    response_checksum_validation:
-      label: Response Checksum Validation
-      type: string
-      optional: true
-      default: None
-      help: |
-        Controls whether boto3 validates checksums on responses (``when_supported`` or
-        ``when_required``). Leave unset unless a non-AWS S3-compatible endpoint rejects checksum
-        validation.
   secrets:
     secret_key:
       label: Secret Access Key
@@ -73,5 +54,3 @@
       name: '{{ variables.bucket }}'
     connection:
       endpoint_url: '{{ variables.endpoint_url }}'
-      request_checksum_calculation: '{{ variables.request_checksum_calculation }}'
-      response_checksum_validation: '{{ variables.response_checksum_validation }}'

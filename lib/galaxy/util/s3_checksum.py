@@ -13,12 +13,20 @@ not clearly AWS, while leaving real AWS on botocore's stronger default.
 """
 
 from typing import (
-    Dict,
+    Literal,
     Optional,
+    TypedDict,
 )
 from urllib.parse import urlparse
 
-WHEN_REQUIRED = "when_required"
+ChecksumSetting = Literal["when_supported", "when_required"]
+WHEN_REQUIRED: ChecksumSetting = "when_required"
+
+
+class S3ChecksumConfigKwargs(TypedDict, total=False):
+    """botocore ``Config`` kwargs subset for S3 flexible-checksum behavior."""
+
+    request_checksum_calculation: ChecksumSetting
 
 
 def is_aws_s3_endpoint(endpoint_url: Optional[str]) -> bool:
@@ -34,24 +42,14 @@ def is_aws_s3_endpoint(endpoint_url: Optional[str]) -> bool:
     return host == "amazonaws.com" or host.endswith(".amazonaws.com")
 
 
-def s3_checksum_config_kwargs(
-    request_checksum_calculation: Optional[str],
-    response_checksum_validation: Optional[str],
-    endpoint_url: Optional[str],
-) -> Dict[str, str]:
+def s3_checksum_config_kwargs(endpoint_url: Optional[str]) -> S3ChecksumConfigKwargs:
     """botocore ``Config`` kwargs for S3 flexible-checksum behavior.
 
     Defaults ``request_checksum_calculation`` to ``"when_required"`` for non-AWS
-    endpoints so S3-compatible providers accept uploads. Explicit values always
-    win. ``response_checksum_validation`` is passed through only when explicitly
-    set (no forced default).
+    endpoints so S3-compatible providers accept uploads, while leaving real AWS
+    on botocore's stronger default.
     """
-    kwargs: Dict[str, str] = {}
-    request = request_checksum_calculation
-    if not request and not is_aws_s3_endpoint(endpoint_url):
-        request = WHEN_REQUIRED
-    if request:
-        kwargs["request_checksum_calculation"] = request
-    if response_checksum_validation:
-        kwargs["response_checksum_validation"] = response_checksum_validation
+    kwargs: S3ChecksumConfigKwargs = {}
+    if not is_aws_s3_endpoint(endpoint_url):
+        kwargs["request_checksum_calculation"] = WHEN_REQUIRED
     return kwargs

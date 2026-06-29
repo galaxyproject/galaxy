@@ -13,7 +13,10 @@ from galaxy.files.sources._fsspec import (
     FsspecFilesSource,
 )
 from galaxy.util.config_templates import TemplateExpansion
-from galaxy.util.s3_checksum import s3_checksum_config_kwargs
+from galaxy.util.s3_checksum import (
+    s3_checksum_config_kwargs,
+    S3ChecksumConfigKwargs,
+)
 
 try:
     from s3fs import S3FileSystem
@@ -34,8 +37,6 @@ class S3FSFileSourceTemplateConfiguration(FsspecBaseFileSourceTemplateConfigurat
     bucket: Union[str, TemplateExpansion, None] = None
     secret: Union[str, TemplateExpansion, None] = None
     key: Union[str, TemplateExpansion, None] = None
-    request_checksum_calculation: Union[str, TemplateExpansion, None] = None
-    response_checksum_validation: Union[str, TemplateExpansion, None] = None
 
 
 class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
@@ -44,8 +45,6 @@ class S3FSFileSourceConfiguration(FsspecBaseFileSourceConfiguration):
     bucket: Optional[str] = None
     secret: Optional[str] = None
     key: Optional[str] = None
-    request_checksum_calculation: Optional[str] = None
-    response_checksum_validation: Optional[str] = None
 
 
 class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3FSFileSourceConfiguration]):
@@ -78,16 +77,9 @@ class S3FsFilesSource(FsspecFilesSource[S3FSFileSourceTemplateConfiguration, S3F
         return fs
 
     @staticmethod
-    def _config_kwargs(config: S3FSFileSourceConfiguration) -> Optional[dict]:
+    def _config_kwargs(config: S3FSFileSourceConfiguration) -> Optional[S3ChecksumConfigKwargs]:
         """botocore Config kwargs (forwarded to S3FileSystem) for checksum behavior."""
-        return (
-            s3_checksum_config_kwargs(
-                config.request_checksum_calculation,
-                config.response_checksum_validation,
-                config.endpoint_url,
-            )
-            or None
-        )
+        return s3_checksum_config_kwargs(config.endpoint_url) or None
 
     def _to_filesystem_path(self, path: str, config: S3FSFileSourceConfiguration) -> str:
         """Convert an entry path to the S3 filesystem path format."""

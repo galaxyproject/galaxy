@@ -36,11 +36,6 @@ def test_config_kwargs_none_for_aws_endpoint():
     assert S3FsFilesSource._config_kwargs(_s3fs_config()) is None
 
 
-def test_config_kwargs_explicit_value_wins():
-    config = _s3fs_config(endpoint_url="https://storage.googleapis.com/", request_checksum_calculation="when_supported")
-    assert S3FsFilesSource._config_kwargs(config) == {"request_checksum_calculation": "when_supported"}
-
-
 def test_file_source():
     assert_simple_file_realize(
         FILE_SOURCES_CONF,

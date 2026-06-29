@@ -144,8 +144,6 @@ class Boto3BucketTemplate(StrictModel):
 class Boto3ConnectionTemplate(StrictModel):
     endpoint_url: Union[str, TemplateExpansion]
     region: Optional[Union[str, TemplateExpansion]] = None
-    request_checksum_calculation: Optional[Union[str, TemplateExpansion]] = None
-    response_checksum_validation: Optional[Union[str, TemplateExpansion]] = None
 
 
 class Boto3TransferTemplate(StrictModel):
@@ -193,8 +191,6 @@ class Boto3Bucket(StrictModel):
 class Boto3Connection(StrictModel):
     endpoint_url: str
     region: Optional[str] = None
-    request_checksum_calculation: Optional[str] = None
-    response_checksum_validation: Optional[str] = None
 
 
 class Boto3Transfer(StrictModel):
