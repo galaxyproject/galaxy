@@ -25,4 +25,4 @@
         .catch(function (e) {
             console.error("Galaxy iframe webhook error:", e);
         });
-})();
+})(); 
