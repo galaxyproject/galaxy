@@ -348,6 +348,16 @@ class WorkflowsAPIController(
         :param  clean_strip:              comma-separated stale key categories to strip when
                                           clean=true. By default all categories are stripped.
         :type   clean_strip:              str
+
+        :param  clean_validate:           if true, validate each step's cleaned native tool_state
+                                          against its tool definition and revert steps that fail.
+                                          Only meaningful with clean=true. Default: false.
+        :type   clean_validate:           boolean
+
+        :param  tool_state_as_dict:       if true, emit native ('ga' style) tool_state as a JSON
+                                          object instead of a double-encoded JSON string. Default:
+                                          false.
+        :type   tool_state_as_dict:       boolean
         """
         instance = util.string_as_bool(kwd.get("instance", "false"))
         workflow_id = self.decode_id(workflow_id)
@@ -374,6 +384,8 @@ class WorkflowsAPIController(
         clean = util.string_as_bool(kwd.get("clean", "false"))
         clean_preserve = [c.strip() for c in kwd.get("clean_preserve", "").split(",") if c.strip()]
         clean_strip = [c.strip() for c in kwd.get("clean_strip", "").split(",") if c.strip()]
+        clean_validate = util.string_as_bool(kwd.get("clean_validate", "false"))
+        tool_state_as_dict = util.string_as_bool(kwd.get("tool_state_as_dict", "false"))
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
             trans,
             stored_workflow,
@@ -385,6 +397,8 @@ class WorkflowsAPIController(
             clean=clean,
             clean_preserve=clean_preserve,
             clean_strip=clean_strip,
+            clean_validate=clean_validate,
+            tool_state_as_dict=tool_state_as_dict,
         )
         if download_format == "json-download":
             sname = stored_workflow.name

@@ -975,6 +975,8 @@ class WorkflowContentsManager(UsesAnnotations):
         clean: bool = False,
         clean_preserve: list[str] | None = None,
         clean_strip: list[str] | None = None,
+        clean_validate: bool = False,
+        tool_state_as_dict: bool = False,
     ) -> dict[str, Any]:
         """Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
@@ -990,6 +992,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
         If clean is True, stale keys are stripped from tool_state using tool definitions.
         clean_preserve/clean_strip control which stale key categories are preserved/stripped.
+        If clean_validate is True, each step's cleaned native tool_state is validated against
+        its tool definition and reverted if it fails (per step).
+
+        If tool_state_as_dict is True, native ('ga' style) tool_state is emitted as a JSON
+        object instead of the default double-encoded JSON string ("the extra JSON encoding").
         """
 
         def to_format_2(wf_dict, json_wrapper: bool):
@@ -1022,11 +1029,15 @@ class WorkflowContentsManager(UsesAnnotations):
                 preserve_external_subworkflow_links=preserve_external_subworkflow_links,
             )
             if clean:
-                self._clean_native_dict(trans, wf_dict, clean_preserve or [], clean_strip or [])
+                self._clean_native_dict(
+                    trans, wf_dict, clean_preserve or [], clean_strip or [], validate=clean_validate
+                )
             if style == "format2":
                 wf_dict = self._export_as_format2(trans, wf_dict, to_format_2)
             elif style == "format2_wrapped_yaml":
                 wf_dict = to_format_2(wf_dict, json_wrapper=True)
+            else:  # native "ga" style
+                self._normalize_native_tool_state(wf_dict, as_dict=tool_state_as_dict)
         else:
             raise exceptions.RequestParameterInvalidException(f"Unknown workflow style {style}")
         if version is not None:
@@ -1056,8 +1067,12 @@ class WorkflowContentsManager(UsesAnnotations):
         result = export_workflow_to_format2(workflow, get_tool_info)
         return result.format2_dict
 
-    def _clean_native_dict(self, trans, wf_dict, preserve, strip):
-        """Strip stale keys from a native workflow dict in place."""
+    def _clean_native_dict(self, trans, wf_dict, preserve, strip, validate=False):
+        """Strip stale keys from a native workflow dict in place.
+
+        Leaves each step's tool_state as a decoded JSON object; the caller
+        decides whether to re-encode via ``_normalize_native_tool_state``.
+        """
         from gxformat2.normalized import ensure_native
 
         from galaxy.tool_util.workflow_state.clean import clean_stale_state
@@ -1076,7 +1091,29 @@ class WorkflowContentsManager(UsesAnnotations):
             raise exceptions.RequestParameterInvalidException(str(e))
         get_tool_info = ToolboxGetToolInfo(toolbox)
         normalized = ensure_native(wf_dict)
-        clean_stale_state(normalized, wf_dict, get_tool_info, policy=policy)
+        clean_stale_state(normalized, wf_dict, get_tool_info, policy=policy, validate=validate)
+
+    def _normalize_native_tool_state(self, wf_dict, as_dict):
+        """Normalize the encoding of native tool_state across all steps in place.
+
+        When ``as_dict`` is True, tool_state is left as a decoded JSON object
+        (dropping "the extra JSON encoding"); when False, it is (re-)serialized
+        to a double-encoded JSON string, the historical .ga export form. Recurses
+        into embedded subworkflows.
+        """
+        for step_dict in wf_dict.get("steps", {}).values():
+            if not isinstance(step_dict, dict):
+                continue
+            if step_dict.get("type") == "subworkflow" and isinstance(step_dict.get("subworkflow"), dict):
+                self._normalize_native_tool_state(step_dict["subworkflow"], as_dict=as_dict)
+            tool_state = step_dict.get("tool_state")
+            if tool_state is None:
+                continue
+            if as_dict:
+                if isinstance(tool_state, str):
+                    step_dict["tool_state"] = safe_loads(tool_state)
+            elif not isinstance(tool_state, str):
+                step_dict["tool_state"] = json.dumps(tool_state)
 
     def _sync_stored_workflow(self, trans, stored_workflow: StoredWorkflow) -> None:
         if trans.user_is_admin:

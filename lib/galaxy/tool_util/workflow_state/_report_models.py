@@ -9,8 +9,6 @@ consume these models directly via field names.
 import os
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
     Optional,
 )
@@ -30,7 +28,7 @@ SKIP_STATUSES: frozenset = frozenset({"skip_tool_not_found", "skip_replacement_p
 ConnectionStatus = Literal["ok", "invalid", "skip"]
 
 
-def _tally_inline_source(step_results: list) -> Dict[str, int]:
+def _tally_inline_source(step_results: list) -> dict[str, int]:
     """Cross-cut tally over a list of ``ValidationStepResult`` for inline-source diagnostics."""
     n_invalid = n_lint_error = n_lint_warning = n_unsupported = 0
     for sr in step_results:
@@ -60,21 +58,23 @@ class StepResultBase(BaseModel):
     """Fields common to every per-step result."""
 
     step: str
-    tool_id: Optional[str] = None
-    version: Optional[str] = None
+    tool_id: str | None = None
+    version: str | None = None
 
 
 class ValidationStepResult(StepResultBase):
     status: StepStatus
-    errors: List[str] = []
-    inline_source: Optional[InlineToolSourceResult] = None
+    errors: list[str] = []
+    inline_source: InlineToolSourceResult | None = None
 
 
 class CleanStepResult(StepResultBase):
-    removed_state_keys: List[str] = []
-    removed_step_keys: List[str] = []
+    removed_state_keys: list[str] = []
+    removed_step_keys: list[str] = []
     skipped: bool = False
     skip_reason: str = ""
+    reverted: bool = False
+    revert_reason: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -94,8 +94,8 @@ class WorkflowResultBase(BaseModel):
     path: str = Field(exclude=True)
     relative_path: str = Field(serialization_alias="path")
     category: str
-    error: Optional[str] = None
-    skipped_reason: Optional[SkipWorkflowReason] = None
+    error: str | None = None
+    skipped_reason: SkipWorkflowReason | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -105,12 +105,12 @@ class WorkflowResultBase(BaseModel):
 
 
 class WorkflowValidationResult(WorkflowResultBase):
-    step_results: List[ValidationStepResult] = Field(default=[], serialization_alias="results")
+    step_results: list[ValidationStepResult] = Field(default=[], serialization_alias="results")
     connection_report: Optional["ConnectionValidationReport"] = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Optional[Dict[str, int]]:
+    def summary(self) -> dict[str, int] | None:
         if self.error or self.skipped_reason:
             return None
         return {
@@ -121,7 +121,7 @@ class WorkflowValidationResult(WorkflowResultBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def failures(self) -> Optional[List[Dict[str, Optional[str]]]]:
+    def failures(self) -> list[dict[str, str | None]] | None:
         """Flat failure list for templates (one entry per error message).
 
         Returns ``None`` when the workflow was skipped or errored — same
@@ -129,7 +129,7 @@ class WorkflowValidationResult(WorkflowResultBase):
         """
         if self.error or self.skipped_reason:
             return None
-        out: List[Dict[str, Optional[str]]] = []
+        out: list[dict[str, str | None]] = []
         for sr in self.step_results:
             if sr.status != "fail":
                 continue
@@ -139,14 +139,14 @@ class WorkflowValidationResult(WorkflowResultBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Optional[Dict[str, int]]:
+    def inline_source_summary(self) -> dict[str, int] | None:
         if self.error or self.skipped_reason:
             return None
         return _tally_inline_source(self.step_results)
 
 
 class WorkflowCleanResult(WorkflowResultBase):
-    step_results: List[CleanStepResult] = Field(default=[], serialization_alias="results")
+    step_results: list[CleanStepResult] = Field(default=[], serialization_alias="results")
     total_removed: int = 0
 
     @computed_field  # type: ignore[prop-decorator]
@@ -171,33 +171,33 @@ class ConnectionResult(BaseModel):
     target_step: str
     target_input: str
     status: ConnectionStatus
-    mapping: Optional[str] = None
-    errors: List[str] = []
+    mapping: str | None = None
+    errors: list[str] = []
 
 
 class ResolvedOutputType(BaseModel):
     """Resolved collection type for a step output."""
 
     name: str
-    collection_type: Optional[str] = None  # None = plain dataset
+    collection_type: str | None = None  # None = plain dataset
 
 
 class ConnectionStepResult(StepResultBase):
     """Connection validation result for one step."""
 
     step_type: str = "tool"
-    map_over: Optional[str] = None
-    connections: List[ConnectionResult] = []
-    resolved_outputs: List[ResolvedOutputType] = []
-    errors: List[str] = []
+    map_over: str | None = None
+    connections: list[ConnectionResult] = []
+    resolved_outputs: list[ResolvedOutputType] = []
+    errors: list[str] = []
 
 
 class ConnectionValidationReport(BaseModel):
     """Connection validation results for one workflow."""
 
     valid: bool
-    step_results: List[ConnectionStepResult] = []
-    summary: Dict[str, int] = {}
+    step_results: list[ConnectionStepResult] = []
+    summary: dict[str, int] = {}
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -218,8 +218,8 @@ class TreeReportBase(BaseModel):
 
     root: str
 
-    def by_category(self) -> Dict[str, list]:
-        groups: Dict[str, list] = {}
+    def by_category(self) -> dict[str, list]:
+        groups: dict[str, list] = {}
         for r in self._workflow_results():
             cat = r.category or "(root)"
             groups.setdefault(cat, []).append(r)
@@ -227,7 +227,7 @@ class TreeReportBase(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def categories(self) -> List[Dict[str, Any]]:
+    def categories(self) -> list[dict[str, Any]]:
         """Templates-facing grouping: ``[{name, results}]`` sorted by name.
 
         Lives in JSON so Jinja/Nunjucks templates can iterate without a method call.
@@ -239,16 +239,16 @@ class TreeReportBase(BaseModel):
 
 
 class TreeValidationReport(TreeReportBase):
-    results: List[WorkflowValidationResult] = Field(default=[], serialization_alias="workflows")
+    results: list[WorkflowValidationResult] = Field(default=[], serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def all_failures(self) -> List[Dict[str, Optional[str]]]:
+    def all_failures(self) -> list[dict[str, str | None]]:
         """Cross-workflow failure list so templates can render a grouped appendix."""
-        out: List[Dict[str, Optional[str]]] = []
+        out: list[dict[str, str | None]] = []
         for r in self.results:
             for f in r.failures or ():
                 out.append({"workflow": r.relative_path, **f})
@@ -256,7 +256,7 @@ class TreeValidationReport(TreeReportBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         ok = fail = skip = error = skipped = 0
         for r in self.results:
             if r.skipped_reason:
@@ -282,7 +282,7 @@ class TreeValidationReport(TreeReportBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Dict[str, int]:
+    def inline_source_summary(self) -> dict[str, int]:
         totals = {"invalid": 0, "lint_errors": 0, "lint_warnings": 0, "unsupported": 0}
         for r in self.results:
             if r.error or r.skipped_reason:
@@ -293,14 +293,14 @@ class TreeValidationReport(TreeReportBase):
 
 
 class TreeCleanReport(TreeReportBase):
-    results: List[WorkflowCleanResult] = Field(default=[], serialization_alias="workflows")
+    results: list[WorkflowCleanResult] = Field(default=[], serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         total_keys = sum(r.total_removed for r in self.results if not r.skipped_reason)
         skipped = sum(1 for r in self.results if r.skipped_reason)
         affected = sum(1 for r in self.results if r.total_removed > 0 and not r.skipped_reason)
@@ -316,9 +316,9 @@ class SingleCleanReport(BaseModel):
     """JSON shape for single-file cleaning."""
 
     workflow: str
-    results: List[CleanStepResult]
-    before_content: Optional[str] = None
-    after_content: Optional[str] = None
+    results: list[CleanStepResult]
+    before_content: str | None = None
+    after_content: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -335,16 +335,16 @@ class SingleValidationReport(BaseModel):
     """JSON shape for single-file validation."""
 
     workflow: str
-    results: List[ValidationStepResult]
+    results: list[ValidationStepResult]
     connection_report: Optional["ConnectionValidationReport"] = None
-    skipped_reason: Optional[str] = None
-    structure_errors: List[str] = Field(default_factory=list)
-    encoding_errors: List[str] = Field(default_factory=list)
-    clean_report: Optional[SingleCleanReport] = None
+    skipped_reason: str | None = None
+    structure_errors: list[str] = Field(default_factory=list)
+    encoding_errors: list[str] = Field(default_factory=list)
+    clean_report: SingleCleanReport | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         return {
             "ok": sum(1 for r in self.results if r.status == "ok"),
             "fail": sum(1 for r in self.results if r.status == "fail"),
@@ -353,7 +353,7 @@ class SingleValidationReport(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Dict[str, int]:
+    def inline_source_summary(self) -> dict[str, int]:
         return _tally_inline_source(self.results)
 
 
@@ -362,7 +362,7 @@ class SingleValidationReport(BaseModel):
 
 def wrap_single_validation(
     workflow_path: str,
-    results: List[ValidationStepResult],
+    results: list[ValidationStepResult],
     connection_report: Optional["ConnectionValidationReport"] = None,
 ) -> TreeValidationReport:
     """Wrap single-file results into a TreeValidationReport for Markdown rendering."""
@@ -388,11 +388,11 @@ class LintWorkflowResult(WorkflowResultBase):
 
     lint_errors: int = 0
     lint_warnings: int = 0
-    step_results: List[ValidationStepResult] = Field(default_factory=list, serialization_alias="results")
+    step_results: list[ValidationStepResult] = Field(default_factory=list, serialization_alias="results")
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def step_counts(self) -> Optional[Dict[str, int]]:
+    def step_counts(self) -> dict[str, int] | None:
         """State-step tallies, mirroring ``WorkflowValidationResult.summary``."""
         if self.error or self.skipped_reason:
             return None
@@ -404,7 +404,7 @@ class LintWorkflowResult(WorkflowResultBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Optional[Dict[str, int]]:
+    def inline_source_summary(self) -> dict[str, int] | None:
         if self.error or self.skipped_reason:
             return None
         return _tally_inline_source(self.step_results)
@@ -416,15 +416,15 @@ class SingleLintReport(BaseModel):
     workflow: str
     lint_errors: int = 0
     lint_warnings: int = 0
-    lint_error_messages: List[str] = Field(default_factory=list)
-    lint_warning_messages: List[str] = Field(default_factory=list)
-    results: List[ValidationStepResult] = []
-    structure_errors: List[str] = Field(default_factory=list)
-    encoding_errors: List[str] = Field(default_factory=list)
+    lint_error_messages: list[str] = Field(default_factory=list)
+    lint_warning_messages: list[str] = Field(default_factory=list)
+    results: list[ValidationStepResult] = []
+    structure_errors: list[str] = Field(default_factory=list)
+    encoding_errors: list[str] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         return {
             "lint_errors": self.lint_errors,
             "lint_warnings": self.lint_warnings,
@@ -435,21 +435,21 @@ class SingleLintReport(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Dict[str, int]:
+    def inline_source_summary(self) -> dict[str, int]:
         return _tally_inline_source(self.results)
 
 
 class LintTreeReport(TreeReportBase):
     """Tree-level lint report combining structural + stateful results."""
 
-    results: List[LintWorkflowResult] = Field(default_factory=list, serialization_alias="workflows")
+    results: list[LintWorkflowResult] = Field(default_factory=list, serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         lint_errors = sum(r.lint_errors for r in self.results)
         lint_warnings = sum(r.lint_warnings for r in self.results)
         state_ok = sum(
@@ -481,7 +481,7 @@ class LintTreeReport(TreeReportBase):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def inline_source_summary(self) -> Dict[str, int]:
+    def inline_source_summary(self) -> dict[str, int]:
         totals = {"invalid": 0, "lint_errors": 0, "lint_warnings": 0, "unsupported": 0}
         for r in self.results:
             if r.error or r.skipped_reason:
@@ -495,7 +495,7 @@ def wrap_single_lint(
     workflow_path: str,
     lint_errors: int,
     lint_warnings: int,
-    step_results: List[ValidationStepResult],
+    step_results: list[ValidationStepResult],
 ) -> LintTreeReport:
     """Wrap single-file lint results into a LintTreeReport for Markdown rendering."""
     return LintTreeReport(
@@ -520,7 +520,7 @@ class TestsDiagnostic(BaseModel):
     path: str
     message: str
     severity: Literal["error", "warning", "info"] = "error"
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class SingleTestsValidationReport(BaseModel):
@@ -528,8 +528,8 @@ class SingleTestsValidationReport(BaseModel):
 
     tests_file: str
     valid: bool
-    diagnostics: List[TestsDiagnostic] = []
-    load_error: Optional[str] = None
+    diagnostics: list[TestsDiagnostic] = []
+    load_error: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -542,8 +542,8 @@ class WorkflowTestsResult(BaseModel):
     relative_path: str = Field(serialization_alias="path")
     category: str = ""
     valid: bool = True
-    diagnostics: List[TestsDiagnostic] = []
-    load_error: Optional[str] = None
+    diagnostics: list[TestsDiagnostic] = []
+    load_error: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -557,14 +557,14 @@ class WorkflowTestsResult(BaseModel):
 
 
 class TestsTreeReport(TreeReportBase):
-    results: List[WorkflowTestsResult] = Field(default=[], serialization_alias="tests_files")
+    results: list[WorkflowTestsResult] = Field(default=[], serialization_alias="tests_files")
 
     def _workflow_results(self) -> list:
         return self.results
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         total = len(self.results)
         invalid = sum(1 for r in self.results if not r.valid)
         load_errors = sum(1 for r in self.results if r.load_error)
@@ -581,8 +581,8 @@ class TestsTreeReport(TreeReportBase):
 def wrap_single_tests_validation(
     tests_path: str,
     valid: bool,
-    diagnostics: List[TestsDiagnostic],
-    load_error: Optional[str] = None,
+    diagnostics: list[TestsDiagnostic],
+    load_error: str | None = None,
 ) -> TestsTreeReport:
     """Wrap single-file tests validation into a TestsTreeReport for Markdown rendering."""
     return TestsTreeReport(
@@ -600,7 +600,7 @@ def wrap_single_tests_validation(
     )
 
 
-def wrap_single_clean(workflow_path: str, step_results: List[CleanStepResult]) -> TreeCleanReport:
+def wrap_single_clean(workflow_path: str, step_results: list[CleanStepResult]) -> TreeCleanReport:
     """Wrap single-file results into a TreeCleanReport for Markdown rendering."""
     total = sum(len(r.removed_state_keys) + len(r.removed_step_keys) for r in step_results)
     return TreeCleanReport(
