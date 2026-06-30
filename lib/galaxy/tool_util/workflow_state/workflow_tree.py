@@ -12,10 +12,7 @@ from dataclasses import (
     field,
 )
 from typing import (
-    Dict,
-    List,
     Literal,
-    Optional,
 )
 
 from gxformat2.yaml import ordered_load as ordered_yaml_load
@@ -46,16 +43,16 @@ class WorkflowInfo:
 @dataclass
 class ReportSection:
     title: str
-    rows: List[List[str]] = field(default_factory=list)
-    columns: List[str] = field(default_factory=list)
+    rows: list[list[str]] = field(default_factory=list)
+    columns: list[str] = field(default_factory=list)
 
 
 @dataclass
 class WorkflowReport:
     title: str
     summary: str
-    sections: List[ReportSection] = field(default_factory=list)
-    details: List[str] = field(default_factory=list)
+    sections: list[ReportSection] = field(default_factory=list)
+    details: list[str] = field(default_factory=list)
 
 
 def _is_workflow_content(path: str, fmt: WorkflowFormat) -> bool:
@@ -73,7 +70,7 @@ def _is_workflow_content(path: str, fmt: WorkflowFormat) -> bool:
         return False
 
 
-def discover_workflows(root: str, include_format2: bool = True) -> List[WorkflowInfo]:
+def discover_workflows(root: str, include_format2: bool = True) -> list[WorkflowInfo]:
     """Discover workflow files under root directory.
 
     Recognizes workflows by extension and content:
@@ -82,13 +79,13 @@ def discover_workflows(root: str, include_format2: bool = True) -> List[Workflow
     - .yml, .yaml → format2 if class == "GalaxyWorkflow" (checked before .gxwf)
     """
     root = os.path.abspath(root)
-    workflows: List[WorkflowInfo] = []
+    workflows: list[WorkflowInfo] = []
 
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in EXCLUDE_WALK_DIRS]
 
         for filename in filenames:
-            fmt: Optional[WorkflowFormat] = None
+            fmt: WorkflowFormat | None = None
 
             if filename.endswith(NATIVE_EXTENSIONS):
                 fmt = "native"
@@ -119,7 +116,7 @@ def discover_workflows(root: str, include_format2: bool = True) -> List[Workflow
     return workflows
 
 
-def load_workflow_safe(info: WorkflowInfo) -> Optional[dict]:
+def load_workflow_safe(info: WorkflowInfo) -> dict | None:
     """Load a workflow dict, returning None on parse failure."""
     try:
         with open(info.path) as f:
@@ -158,9 +155,9 @@ def render_markdown(report: WorkflowReport) -> str:
     return "\n".join(lines)
 
 
-def group_by_category(workflows: List[WorkflowInfo]) -> Dict[str, List[WorkflowInfo]]:
+def group_by_category(workflows: list[WorkflowInfo]) -> dict[str, list[WorkflowInfo]]:
     """Group workflows by category (first parent directory)."""
-    groups: Dict[str, List[WorkflowInfo]] = {}
+    groups: dict[str, list[WorkflowInfo]] = {}
     for wf in workflows:
         cat = wf.category or "(root)"
         groups.setdefault(cat, []).append(wf)

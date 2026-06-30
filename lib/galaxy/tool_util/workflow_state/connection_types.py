@@ -9,12 +9,6 @@ do the real work — this module handles sentinel dispatch and the dataset
 (non-collection) case.
 """
 
-from typing import (
-    List,
-    Optional,
-    Union,
-)
-
 from galaxy.tool_util.collections import (
     COLLECTION_TYPE_DESCRIPTION_FACTORY,
     CollectionTypeDescription,
@@ -46,7 +40,7 @@ class _AnyCollectionType:
 NULL_COLLECTION_TYPE = _NullCollectionType()
 ANY_COLLECTION_TYPE = _AnyCollectionType()
 
-CollectionTypeOrSentinel = Union[CollectionTypeDescription, _NullCollectionType, _AnyCollectionType]
+CollectionTypeOrSentinel = CollectionTypeDescription | _NullCollectionType | _AnyCollectionType
 
 
 def collection_type_rank(ctd: CollectionTypeDescription) -> int:
@@ -54,7 +48,7 @@ def collection_type_rank(ctd: CollectionTypeDescription) -> int:
     return ctd.collection_type.count(":") + 1
 
 
-def _split_collection_type(ctd: CollectionTypeDescription) -> List[CollectionTypeDescription]:
+def _split_collection_type(ctd: CollectionTypeDescription) -> list[CollectionTypeDescription]:
     """Split a comma-separated collection_type into individual types.
 
     Galaxy tool inputs can declare collection_type="list,list:paired" meaning
@@ -153,7 +147,7 @@ def is_list_like(ctd: CollectionTypeDescription) -> bool:
 def effective_map_over(
     output: CollectionTypeOrSentinel,
     input_type: CollectionTypeOrSentinel,
-) -> Optional[CollectionTypeDescription]:
+) -> CollectionTypeDescription | None:
     """Compute remainder collection type after mapping output over input.
 
     Returns the CollectionTypeDescription representing the implicit collection

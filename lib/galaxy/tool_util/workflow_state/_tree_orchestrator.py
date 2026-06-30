@@ -10,12 +10,10 @@ from dataclasses import (
     field,
 )
 from typing import (
-    Callable,
     Generic,
-    List,
-    Optional,
     TypeVar,
 )
+from collections.abc import Callable
 
 from pydantic import BaseModel
 
@@ -59,10 +57,10 @@ class WorkflowOutcome(Generic[T]):
     """Result of processing one workflow in the tree."""
 
     info: WorkflowInfo
-    result: Optional[T] = None
-    error: Optional[str] = None
+    result: T | None = None
+    error: str | None = None
     skipped: bool = False
-    skip_reason: Optional[str] = None
+    skip_reason: str | None = None
 
 
 @dataclass
@@ -70,7 +68,7 @@ class TreeResult(Generic[T]):
     """Collection of all per-workflow outcomes from a tree run."""
 
     root: str
-    outcomes: List[WorkflowOutcome[T]] = field(default_factory=list)
+    outcomes: list[WorkflowOutcome[T]] = field(default_factory=list)
 
 
 def collect_tree(

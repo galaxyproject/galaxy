@@ -8,20 +8,19 @@ import json
 import sys
 from typing import (
     Any,
-    Callable,
-    Optional,
     Protocol,
 )
+from collections.abc import Callable
 
 from pydantic import BaseModel
 
 
 class HasReportDests(Protocol):
-    report_json: Optional[str]
-    report_markdown: Optional[str]
+    report_json: str | None
+    report_markdown: str | None
 
 
-def write_output(content: str, dest: Optional[str]) -> None:
+def write_output(content: str, dest: str | None) -> None:
     """Write content to stdout (if dest is None or '-') or to a file."""
     if dest is None or dest == "-":
         print(content)

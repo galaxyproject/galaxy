@@ -8,10 +8,6 @@ Parallel to ``validate.py`` but schema-only (no tool cache). Validates
 import logging
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from pydantic import BaseModel
 
@@ -45,8 +41,8 @@ TESTS_FILE_SUFFIXES = (
 class ValidateTestsOptions(BaseModel):
     workflow_path: str
     summary: bool = False
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
+    report_json: str | None = None
+    report_markdown: str | None = None
     strict: bool = False
 
     @classmethod
@@ -59,10 +55,10 @@ class ValidateTestsTreeOptions(ValidateTestsOptions):
     pass
 
 
-def discover_test_files(root: str) -> List[str]:
+def discover_test_files(root: str) -> list[str]:
     """Walk ``root``; return sorted absolute paths of recognized test files."""
     root = os.path.abspath(root)
-    matches: List[str] = []
+    matches: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for filename in filenames:
@@ -107,7 +103,7 @@ def validate_tests_single(path: str) -> SingleTestsValidationReport:
 def validate_tests_tree(root: str) -> TestsTreeReport:
     """Library-level tree validation entry point."""
     root = os.path.abspath(root)
-    results: List[WorkflowTestsResult] = []
+    results: list[WorkflowTestsResult] = []
     for path in discover_test_files(root):
         single = _validate_single(path)
         rel = os.path.relpath(path, root)

@@ -12,10 +12,6 @@ internally.
 
 import json
 from enum import Enum
-from typing import (
-    List,
-    Union,
-)
 
 from gxformat2.normalized import NormalizedNativeWorkflow
 from pydantic import BaseModel
@@ -44,13 +40,13 @@ class SkipWorkflowReason(str, Enum):
 
 class WorkflowPrecheck(BaseModel):
     can_process: bool
-    skip_reasons: List[SkipWorkflowReason] = []
-    legacy_encoding_hits: List[LegacyEncodingHit] = []
+    skip_reasons: list[SkipWorkflowReason] = []
+    legacy_encoding_hits: list[LegacyEncodingHit] = []
     detail: str = ""
 
 
 def precheck_native_workflow(
-    workflow: Union[NativeWorkflowDict, NormalizedNativeWorkflow],
+    workflow: NativeWorkflowDict | NormalizedNativeWorkflow,
     get_tool_info: GetToolInfo,
 ) -> WorkflowPrecheck:
     """Check if a native workflow can be processed by state operations.
@@ -60,7 +56,7 @@ def precheck_native_workflow(
 
     Accepts either a raw workflow dict or a NormalizedNativeWorkflow.
     """
-    hits: List[LegacyEncodingHit] = []
+    hits: list[LegacyEncodingHit] = []
     if isinstance(workflow, NormalizedNativeWorkflow):
         _scan_normalized_steps(workflow, get_tool_info, hits)
     else:
@@ -79,7 +75,7 @@ def precheck_native_workflow(
 def _scan_normalized_steps(
     workflow: NormalizedNativeWorkflow,
     get_tool_info: GetToolInfo,
-    hits: List[LegacyEncodingHit],
+    hits: list[LegacyEncodingHit],
 ) -> None:
     """Scan NormalizedNativeWorkflow steps for legacy encoding."""
     for step in workflow.steps.values():
@@ -106,7 +102,7 @@ def _scan_normalized_steps(
 def _scan_dict_steps(
     workflow_dict: NativeWorkflowDict,
     get_tool_info: GetToolInfo,
-    hits: List[LegacyEncodingHit],
+    hits: list[LegacyEncodingHit],
 ) -> None:
     """Scan raw workflow dict steps for legacy encoding."""
     steps = workflow_dict.get("steps", {})

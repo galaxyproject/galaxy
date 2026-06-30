@@ -7,11 +7,7 @@ Tool Shed versions return that when paging past the last page of hits).
 """
 
 import sys
-from typing import (
-    Iterator,
-    List,
-    Optional,
-)
+from collections.abc import Iterator
 from urllib.parse import (
     quote,
     urlencode,
@@ -34,13 +30,13 @@ REQUEST_TIMEOUT_S = 30
 class ToolFetchError(Exception):
     """Raised on Tool Shed transport failures, non-2xx responses, or malformed payloads."""
 
-    def __init__(self, message: str, url: str, status: Optional[int] = None):
+    def __init__(self, message: str, url: str, status: int | None = None):
         super().__init__(message)
         self.url = url
         self.status = status
 
 
-def _get_json(url: str, session: Optional[requests.Session], *, allow_404: bool = False) -> Optional[object]:
+def _get_json(url: str, session: requests.Session | None, *, allow_404: bool = False) -> object | None:
     sess = session or requests
     try:
         response = sess.get(url, headers={"Accept": "application/json"}, timeout=REQUEST_TIMEOUT_S)
@@ -67,9 +63,9 @@ def search_tools(
     toolshed_url: str,
     query: str,
     *,
-    page: Optional[int] = None,
-    page_size: Optional[int] = None,
-    session: Optional[requests.Session] = None,
+    page: int | None = None,
+    page_size: int | None = None,
+    session: requests.Session | None = None,
 ) -> SearchResults[ToolSearchHit]:
     """Fetch one page of tool search results.
 
@@ -127,9 +123,9 @@ def iterate_tool_search_pages(
     toolshed_url: str,
     query: str,
     *,
-    page: Optional[int] = None,
-    page_size: Optional[int] = None,
-    session: Optional[requests.Session] = None,
+    page: int | None = None,
+    page_size: int | None = None,
+    session: requests.Session | None = None,
 ) -> Iterator[SearchResults[ToolSearchHit]]:
     """Yield tool search pages until the server returns fewer hits than ``page_size``."""
     effective_size = page_size if page_size is not None else 10
@@ -142,8 +138,8 @@ def iterate_tool_search_pages(
         current += 1
 
 
-def build_repo_query(query: str, *, owner: Optional[str] = None, category: Optional[str] = None) -> str:
-    parts: List[str] = []
+def build_repo_query(query: str, *, owner: str | None = None, category: str | None = None) -> str:
+    parts: list[str] = []
     trimmed = query.strip()
     if trimmed:
         parts.append(trimmed)
@@ -158,11 +154,11 @@ def search_repositories(
     toolshed_url: str,
     query: str,
     *,
-    page: Optional[int] = None,
-    page_size: Optional[int] = None,
-    owner: Optional[str] = None,
-    category: Optional[str] = None,
-    session: Optional[requests.Session] = None,
+    page: int | None = None,
+    page_size: int | None = None,
+    owner: str | None = None,
+    category: str | None = None,
+    session: requests.Session | None = None,
 ) -> SearchResults[RepositorySearchHit]:
     q = build_repo_query(query, owner=owner, category=category)
     params = {"q": q}
@@ -217,11 +213,11 @@ def iterate_repo_search_pages(
     toolshed_url: str,
     query: str,
     *,
-    page: Optional[int] = None,
-    page_size: Optional[int] = None,
-    owner: Optional[str] = None,
-    category: Optional[str] = None,
-    session: Optional[requests.Session] = None,
+    page: int | None = None,
+    page_size: int | None = None,
+    owner: str | None = None,
+    category: str | None = None,
+    session: requests.Session | None = None,
 ) -> Iterator[SearchResults[RepositorySearchHit]]:
     effective_size = page_size if page_size is not None else 10
     current = page if page is not None else 1
@@ -247,9 +243,9 @@ def get_tool_revisions(
     owner: str,
     repo: str,
     tool_id: str,
-    version: Optional[str] = None,
-    session: Optional[requests.Session] = None,
-) -> List[ToolRevisionMatch]:
+    version: str | None = None,
+    session: requests.Session | None = None,
+) -> list[ToolRevisionMatch]:
     """Resolve ``(owner, repo, tool_id[, version])`` to changeset revisions, oldest→newest.
 
     Returns ``[]`` when the repo is absent, no revisions contain the tool, or
@@ -280,7 +276,7 @@ def get_tool_revisions(
             if isinstance(h, str):
                 order_index[h] = i
 
-    matches: List[ToolRevisionMatch] = []
+    matches: list[ToolRevisionMatch] = []
     for key, meta in metadata.items():
         if not isinstance(meta, dict):
             continue
@@ -307,8 +303,8 @@ def get_tool_revisions(
 def get_trs_tool_versions(
     toolshed_url: str,
     trs_tool_id: str,
-    session: Optional[requests.Session] = None,
-) -> List[TRSToolVersion]:
+    session: requests.Session | None = None,
+) -> list[TRSToolVersion]:
     """Fetch the list of TRS tool versions for ``trs_tool_id`` (``owner~repo~tool_id``).
 
     Returns the raw server order — Tool Shed returns oldest first.
@@ -326,7 +322,7 @@ def get_trs_tool_versions(
 def get_latest_trs_tool_version(
     toolshed_url: str,
     trs_tool_id: str,
-    session: Optional[requests.Session] = None,
-) -> Optional[str]:
+    session: requests.Session | None = None,
+) -> str | None:
     versions = get_trs_tool_versions(toolshed_url, trs_tool_id, session=session)
     return versions[-1].id if versions else None

@@ -3,10 +3,6 @@
 import argparse
 import json
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from .._toolshed_search_client import (
     get_trs_tool_versions,
@@ -81,7 +77,7 @@ def build_parser():
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     return run(build_parser().parse_args(argv))
 
 
