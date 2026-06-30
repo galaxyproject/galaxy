@@ -4,8 +4,6 @@ import json
 from typing import (
     cast,
     Literal,
-    Optional,
-    Union,
 )
 
 from gxformat2.normalized import (
@@ -15,13 +13,13 @@ from gxformat2.normalized import (
 
 from ._types import NativeStepDict
 
-StepLike = Union[NormalizedNativeStep, NativeStepDict, NormalizedWorkflowStep]
+StepLike = NormalizedNativeStep | NativeStepDict | NormalizedWorkflowStep
 
 InlineToolClass = Literal["GalaxyUserTool", "GalaxyTool"]
 _INLINE_CLASSES = ("GalaxyUserTool", "GalaxyTool")
 
 
-def inline_class_from_run(run: object) -> Optional[InlineToolClass]:
+def inline_class_from_run(run: object) -> InlineToolClass | None:
     """If ``run`` is a raw dict with an inline tool ``class``, return it.
 
     Helper for raw-dict probing paths (workflow inventory walkers, the
@@ -36,13 +34,13 @@ def inline_class_from_run(run: object) -> Optional[InlineToolClass]:
     return None
 
 
-def step_tool_id(step: StepLike) -> Optional[str]:
+def step_tool_id(step: StepLike) -> str | None:
     if isinstance(step, (NormalizedNativeStep, NormalizedWorkflowStep)):
         return step.tool_id
-    return cast(Optional[str], step.get("tool_id"))
+    return cast(str | None, step.get("tool_id"))
 
 
-def step_tool_representation(step: StepLike) -> Optional[dict]:
+def step_tool_representation(step: StepLike) -> dict | None:
     """Return the inline tool dict for a step, if any.
 
     Native steps carry it under ``tool_representation`` (set by Galaxy's
@@ -64,7 +62,7 @@ def step_tool_representation(step: StepLike) -> Optional[dict]:
     return None
 
 
-def step_inline_tool_class(step: StepLike) -> Optional[InlineToolClass]:
+def step_inline_tool_class(step: StepLike) -> InlineToolClass | None:
     """Return the ``class`` of an inline tool representation, or ``None``.
 
     Only ``GalaxyUserTool`` and ``GalaxyTool`` are recognized — anything else
@@ -89,10 +87,10 @@ def step_is_inline_tool(step: StepLike) -> bool:
     return step_inline_tool_class(step) is not None
 
 
-def step_tool_version(step: StepLike) -> Optional[str]:
+def step_tool_version(step: StepLike) -> str | None:
     if isinstance(step, (NormalizedNativeStep, NormalizedWorkflowStep)):
         return step.tool_version
-    return cast(Optional[str], step.get("tool_version"))
+    return cast(str | None, step.get("tool_version"))
 
 
 def step_tool_state(step: StepLike) -> dict:

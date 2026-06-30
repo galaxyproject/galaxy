@@ -1,10 +1,4 @@
 import copy
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Union,
-)
 
 from gxformat2.normalized import NormalizedNativeWorkflow
 
@@ -35,9 +29,9 @@ class ReplacementParamsSkip(Exception):
 
 
 def validate_native_state(
-    tool_inputs: List,
+    tool_inputs: list,
     tool_state: dict,
-    connections: Dict[str, object],
+    connections: dict[str, object],
 ) -> None:
     """Validate native-encoded tool_state against tool definitions.
 
@@ -66,7 +60,7 @@ def validate_native_state(
 def validate_native_step_against(step: StepLike, parsed_tool: ToolInputs):
     tool_state = step_tool_state(step)
     input_connections = step_input_connections(step)
-    connections: Dict[str, object] = {
+    connections: dict[str, object] = {
         key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
     }
     validate_native_state(list(parsed_tool.inputs), tool_state, connections)
@@ -81,12 +75,12 @@ def validate_step_native(step: StepLike, get_tool_info: GetToolInfo):
         validate_native_step_against(step, parsed_tool)
 
 
-def get_parsed_tool_for_native_step(step: StepLike, get_tool_info: GetToolInfo) -> Optional[ParsedTool]:
+def get_parsed_tool_for_native_step(step: StepLike, get_tool_info: GetToolInfo) -> ParsedTool | None:
     return resolve_for_step(get_tool_info, step)
 
 
 def validate_workflow_native(
-    workflow: "Union[NormalizedNativeWorkflow, NativeWorkflowDict]",
+    workflow: "NormalizedNativeWorkflow | NativeWorkflowDict",
     get_tool_info: GetToolInfo,
 ):
     if isinstance(workflow, NormalizedNativeWorkflow):

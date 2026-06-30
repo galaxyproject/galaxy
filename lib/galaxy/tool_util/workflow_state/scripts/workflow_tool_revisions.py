@@ -8,11 +8,6 @@ can appear in multiple changesets.
 import argparse
 import json
 import sys
-from typing import (
-    Dict,
-    List,
-    Optional,
-)
 
 from .._toolshed_search_client import (
     get_tool_revisions,
@@ -61,7 +56,7 @@ def run(args) -> int:
     revisions = [{"changesetRevision": m.changeset_revision, "toolVersion": m.tool_version} for m in selected]
 
     if args.json:
-        envelope: Dict[str, object] = {"trsToolId": trs_tool_id}
+        envelope: dict[str, object] = {"trsToolId": trs_tool_id}
         if args.tool_version is not None:
             envelope["version"] = args.tool_version
         envelope["revisions"] = revisions
@@ -91,7 +86,7 @@ def build_parser():
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     return run(build_parser().parse_args(argv))
 
 

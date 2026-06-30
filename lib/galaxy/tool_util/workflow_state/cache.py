@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import sys
-from typing import Optional
 
 from gxformat2.normalized import ensure_native
 from pydantic import BaseModel
@@ -36,11 +35,11 @@ log = logging.getLogger(__name__)
 
 
 class PopulateOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     workflow_path: str
     tool_source: str = "shed"
-    galaxy_url: Optional[str] = None
+    galaxy_url: str | None = None
     offline: bool = False
 
     @classmethod
@@ -50,12 +49,12 @@ class PopulateOptions(BaseModel):
 
 
 class AddOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     tool_id: str
-    version: Optional[str] = None
+    version: str | None = None
     tool_source: str = "shed"
-    galaxy_url: Optional[str] = None
+    galaxy_url: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "AddOptions":
@@ -64,11 +63,11 @@ class AddOptions(BaseModel):
 
 
 class AddLocalOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     xml_path: str
-    tool_id: Optional[str] = None
-    version: Optional[str] = None
+    tool_id: str | None = None
+    version: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "AddLocalOptions":
@@ -77,7 +76,7 @@ class AddLocalOptions(BaseModel):
 
 
 class ListOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     json_output: bool = False
 
@@ -92,10 +91,10 @@ class ListOptions(BaseModel):
 
 
 class InfoOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     trs_tool_id: str
-    version: Optional[str] = None
+    version: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "InfoOptions":
@@ -104,9 +103,9 @@ class InfoOptions(BaseModel):
 
 
 class ClearOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
-    tool_id_prefix: Optional[str] = None
+    tool_id_prefix: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "ClearOptions":
@@ -115,12 +114,12 @@ class ClearOptions(BaseModel):
 
 
 class SchemaOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     trs_tool_id: str
-    version: Optional[str] = None
+    version: str | None = None
     representation: str = "workflow_step"
-    output: Optional[str] = None
+    output: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "SchemaOptions":
@@ -129,10 +128,10 @@ class SchemaOptions(BaseModel):
 
 
 class StructuralSchemaOptions(BaseModel):
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     strict: bool = False
-    output: Optional[str] = None
+    output: str | None = None
 
     @classmethod
     def from_namespace(cls, args: argparse.Namespace) -> "StructuralSchemaOptions":
@@ -170,12 +169,12 @@ class EmbeddedSchemaOptions(BaseModel):
 # -- Core cache operations --
 
 
-def build_tool_info(cache_dir: Optional[str] = None, galaxy_url: Optional[str] = None) -> ToolShedGetToolInfo:
+def build_tool_info(cache_dir: str | None = None, galaxy_url: str | None = None) -> ToolShedGetToolInfo:
     """Build ToolShedGetToolInfo from a cache directory path."""
     return ToolShedGetToolInfo(cache_dir=cache_dir, galaxy_url=galaxy_url)
 
 
-def add_tool(tool_info: ToolShedGetToolInfo, tool_id: str, tool_version: Optional[str], source: str = "shed") -> bool:
+def add_tool(tool_info: ToolShedGetToolInfo, tool_id: str, tool_version: str | None, source: str = "shed") -> bool:
     """Add a single tool to the cache. Returns True on success."""
     parsed = parse_toolshed_tool_id(tool_id)
     if parsed is not None:

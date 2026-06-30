@@ -7,10 +7,6 @@ via reserved ``owner:`` / ``category:`` keywords (see ``build_repo_query``).
 import argparse
 import json
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from pydantic import (
     BaseModel,
@@ -41,10 +37,10 @@ class NormalizedRepoHit(BaseModel):
     repo_id: str
     repo_name: str
     repo_owner_username: str
-    description: Optional[str] = None
-    homepage_url: Optional[str] = None
-    remote_repository_url: Optional[str] = None
-    categories: List[str]
+    description: str | None = None
+    homepage_url: str | None = None
+    remote_repository_url: str | None = None
+    categories: list[str]
     approved: bool
     times_downloaded: int
     score: float
@@ -53,7 +49,7 @@ class NormalizedRepoHit(BaseModel):
 def _normalize(hit: RepositorySearchHit, toolshed_url: str) -> NormalizedRepoHit:
     r = hit.repository
     if r.categories is None:
-        cats: List[str] = []
+        cats: list[str] = []
     else:
         cats = [c.strip() for c in r.categories.split(",") if c.strip()]
     return NormalizedRepoHit(
@@ -71,7 +67,7 @@ def _normalize(hit: RepositorySearchHit, toolshed_url: str) -> NormalizedRepoHit
     )
 
 
-def _format(hits: List[NormalizedRepoHit]) -> str:
+def _format(hits: list[NormalizedRepoHit]) -> str:
     rows = [
         [
             f"{h.score:.2f}",
@@ -101,7 +97,7 @@ def _add_args(parser):
 
 
 def run(args) -> int:
-    hits: List[NormalizedRepoHit] = []
+    hits: list[NormalizedRepoHit] = []
     try:
         for page in iterate_repo_search_pages(
             args.toolshed_url,
@@ -155,7 +151,7 @@ def build_parser():
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     return run(build_parser().parse_args(argv))
 
 

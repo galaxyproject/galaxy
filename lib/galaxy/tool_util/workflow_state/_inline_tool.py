@@ -13,11 +13,6 @@ described in ``USER_DEFINED_TOOL_STEP_VALIDATION.md``. Only
 underscore-prefixed until Phase B settles the resolver call site.
 """
 
-from typing import (
-    List,
-    Optional,
-)
-
 from pydantic import (
     BaseModel,
     computed_field,
@@ -55,7 +50,7 @@ class InlineToolSourceResult(BaseModel):
     """
 
     ok: bool = Field(description="True iff pydantic validation succeeded and no lint errors were emitted.")
-    inline_class: Optional[str] = Field(
+    inline_class: str | None = Field(
         default=None,
         description="The ``class`` value found on the representation (e.g. ``GalaxyUserTool``).",
     )
@@ -63,12 +58,12 @@ class InlineToolSourceResult(BaseModel):
         default=True,
         description="False for inline classes outside this plan's scope (e.g. ``GalaxyTool``).",
     )
-    validation_errors: List[str] = Field(
+    validation_errors: list[str] = Field(
         default_factory=list,
         description="Pydantic errors against ``UserToolSource``, formatted as ``<dotted.loc>: <msg>``.",
     )
-    lint_errors: List[str] = Field(default_factory=list)
-    lint_warnings: List[str] = Field(default_factory=list)
+    lint_errors: list[str] = Field(default_factory=list)
+    lint_warnings: list[str] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -87,7 +82,7 @@ def _parse_inline_tool(tool_representation: dict) -> ParsedTool:
     return parse_tool(YamlToolSource(tool_representation))
 
 
-def validate_inline_tool_source_for_step(step: StepLike, *, offline: bool = False) -> Optional[InlineToolSourceResult]:
+def validate_inline_tool_source_for_step(step: StepLike, *, offline: bool = False) -> InlineToolSourceResult | None:
     """Return inline-source diagnostics for *step*, or ``None`` if not inline.
 
     Single entry point for the diagnostics surface: callers walk steps and
@@ -143,7 +138,7 @@ def resolve_for_step(
     step: StepLike,
     *,
     offline: bool = False,
-) -> Optional[ParsedTool]:
+) -> ParsedTool | None:
     """Resolve a step's :class:`ParsedTool`, preferring an inline representation.
 
     Order:
@@ -178,16 +173,16 @@ class InlineToolInventoryEntry(BaseModel):
     """
 
     step_path: str
-    workflow_path: Optional[str] = None
+    workflow_path: str | None = None
     inline_class: str
-    tool_id: Optional[str] = Field(
+    tool_id: str | None = Field(
         default=None,
         description="The tool id declared inside the inline representation (``id`` field).",
     )
-    tool_version: Optional[str] = None
+    tool_version: str | None = None
 
 
-def walk_inline_tools(workflow_dict: dict, *, workflow_path: Optional[str] = None) -> List[InlineToolInventoryEntry]:
+def walk_inline_tools(workflow_dict: dict, *, workflow_path: str | None = None) -> list[InlineToolInventoryEntry]:
     """Walk a native or format2 workflow dict and return inline-tool entries.
 
     Subworkflow steps are recursed into; ``step_path`` is dotted (e.g. ``"3.0"``).
@@ -200,7 +195,7 @@ def walk_inline_tools(workflow_dict: dict, *, workflow_path: Optional[str] = Non
 
 
 def _entry_from_representation(
-    representation: dict, step_path: str, workflow_path: Optional[str]
+    representation: dict, step_path: str, workflow_path: str | None
 ) -> InlineToolInventoryEntry:
     return InlineToolInventoryEntry(
         step_path=step_path,
@@ -212,9 +207,9 @@ def _entry_from_representation(
 
 
 def _walk_inline_tools_native(
-    workflow_dict: dict, *, prefix: str, workflow_path: Optional[str]
-) -> List[InlineToolInventoryEntry]:
-    entries: List[InlineToolInventoryEntry] = []
+    workflow_dict: dict, *, prefix: str, workflow_path: str | None
+) -> list[InlineToolInventoryEntry]:
+    entries: list[InlineToolInventoryEntry] = []
     steps = workflow_dict.get("steps", {})
     for step_index, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
         step_label = f"{prefix}{step_index}" if prefix else str(step_index)
@@ -230,9 +225,9 @@ def _walk_inline_tools_native(
 
 
 def _walk_inline_tools_format2(
-    workflow_dict: dict, *, prefix: str, workflow_path: Optional[str]
-) -> List[InlineToolInventoryEntry]:
-    entries: List[InlineToolInventoryEntry] = []
+    workflow_dict: dict, *, prefix: str, workflow_path: str | None
+) -> list[InlineToolInventoryEntry]:
+    entries: list[InlineToolInventoryEntry] = []
     steps = workflow_dict.get("steps", {})
     if isinstance(steps, dict):
         step_items = list(steps.items())
@@ -292,13 +287,13 @@ class InlineResolver:
         keyed differently)."""
         return self._get_tool_info
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         """Delegate to the wrapped :class:`GetToolInfo` (no caching here —
         the wrapped resolver is expected to cache by ``(tool_id, version)``
         already; this method exists only to satisfy the Protocol)."""
         return self._get_tool_info.get_tool_info(tool_id, tool_version)
 
-    def resolve(self, step: StepLike) -> Optional[ParsedTool]:
+    def resolve(self, step: StepLike) -> ParsedTool | None:
         key = id(step)
         if key in self._step_cache:
             return self._step_cache[key]
@@ -309,7 +304,7 @@ class InlineResolver:
 
 def _resolve_for_step_uncached(
     get_tool_info: GetToolInfo, step: StepLike, *, offline: bool = False
-) -> Optional[ParsedTool]:
+) -> ParsedTool | None:
     """Internal: the un-memoized core of :func:`resolve_for_step`.
 
     Split out so :meth:`InlineResolver.resolve` can avoid the

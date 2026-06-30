@@ -3,9 +3,6 @@ import logging
 from typing import (
     Any,
     cast,
-    Dict,
-    List,
-    Optional,
 )
 
 from pydantic import (
@@ -50,7 +47,7 @@ from .validation_native import (
 
 log = logging.getLogger(__name__)
 
-Format2InputsDictT = Dict[str, str]
+Format2InputsDictT = dict[str, str]
 
 
 class Format2State(BaseModel):
@@ -67,7 +64,7 @@ def convert_state_to_format2(native_step: StepLike, get_tool_info: GetToolInfo) 
     return convert_state_to_format2_using(native_step, parsed_tool)
 
 
-def convert_state_to_format2_using(native_step: StepLike, parsed_tool: Optional[ToolInputs]) -> Format2State:
+def convert_state_to_format2_using(native_step: StepLike, parsed_tool: ToolInputs | None) -> Format2State:
     """Create a "clean" gxformat2 workflow tool state from a native workflow step.
 
     gxformat2 does not know about tool specifications so it cannot reason about the native
@@ -135,7 +132,7 @@ def _validate_converted_result(result: "Format2State", parsed_tool: ToolInputs, 
     inputs = list(parsed_tool.inputs)
     probe: dict = {}
     unmatched = inject_connections_into_state(inputs, probe, dict.fromkeys(input_connections, "placeholder"))
-    connections: Dict[str, object] = {k: "placeholder" for k in input_connections if k not in unmatched}
+    connections: dict[str, object] = {k: "placeholder" for k in input_connections if k not in unmatched}
     connections.update(result.inputs)
     validate_format2_state(inputs, result.state, connections)
 
@@ -240,7 +237,7 @@ def _coerce_bool(value) -> bool:
 # -- Schema-aware encoding: format2 → native --
 
 
-def encode_state_to_native(parsed_tool: ToolInputs, state: dict) -> Dict[str, Any]:
+def encode_state_to_native(parsed_tool: ToolInputs, state: dict) -> dict[str, Any]:
     """Encode a format2 state dict to native tool_state encoding.
 
     Walks the format2 state with tool definitions to reverse format2
@@ -251,7 +248,7 @@ def encode_state_to_native(parsed_tool: ToolInputs, state: dict) -> Dict[str, An
     return _reverse_format2_values(parsed_tool.inputs, state)
 
 
-def _reverse_format2_values(tool_inputs: List[ToolParameterT], state: dict) -> dict:
+def _reverse_format2_values(tool_inputs: list[ToolParameterT], state: dict) -> dict:
     """Walk format2 state with tool definitions, reversing format2-specific conversions."""
     return walk_format2_state(tool_inputs, state, _reverse_leaf)
 
@@ -289,7 +286,7 @@ def make_convert_tool_state(get_tool_info: GetToolInfo):
     Returns format2 state dict, or None to fall back to default passthrough.
     """
 
-    def _convert(native_step: dict) -> Optional[Dict[str, Any]]:
+    def _convert(native_step: dict) -> dict[str, Any] | None:
         try:
             f2_state = convert_state_to_format2(native_step, get_tool_info)
             return f2_state.state
@@ -307,7 +304,7 @@ def make_encode_tool_state(get_tool_info: GetToolInfo):
     to gxformat2's default passthrough (which is also a clean dict).
     """
 
-    def _encode(step: dict, state: dict) -> Optional[Dict[str, Any]]:
+    def _encode(step: dict, state: dict) -> dict[str, Any] | None:
         tool_id = step.get("tool_id")
         try:
             tool_info = resolve_for_step(get_tool_info, step)

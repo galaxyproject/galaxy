@@ -17,13 +17,10 @@ from dataclasses import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
 )
 
 from jsonschema import Draft202012Validator
-from typing_extensions import Literal
+from typing import Literal
 
 from ._inline_tool import resolve_for_step
 from ._state_merge import inject_connections_into_state
@@ -36,8 +33,8 @@ from ._util import (
 
 log = logging.getLogger(__name__)
 
-_structural_schema_cache: Dict[bool, Draft202012Validator] = {}
-_native_structural_schema_cache: Dict[bool, Draft202012Validator] = {}
+_structural_schema_cache: dict[bool, Draft202012Validator] = {}
+_native_structural_schema_cache: dict[bool, Draft202012Validator] = {}
 
 
 @dataclass
@@ -50,16 +47,16 @@ class JsonSchemaValidationError:
 @dataclass
 class JsonSchemaStepResult:
     step: str
-    tool_id: Optional[str]
-    errors: List[JsonSchemaValidationError]
+    tool_id: str | None
+    errors: list[JsonSchemaValidationError]
     status: Literal["ok", "fail", "skip"]
-    skip_reason: Optional[str] = None
+    skip_reason: str | None = None
 
 
 @dataclass
 class JsonSchemaValidationResult:
-    structural_errors: List[JsonSchemaValidationError] = field(default_factory=list)
-    step_results: List[JsonSchemaStepResult] = field(default_factory=list)
+    structural_errors: list[JsonSchemaValidationError] = field(default_factory=list)
+    step_results: list[JsonSchemaStepResult] = field(default_factory=list)
 
     @property
     def valid(self) -> bool:
@@ -84,7 +81,7 @@ def _get_native_structural_validator(strict: bool = False) -> Draft202012Validat
     return _native_structural_schema_cache[strict]
 
 
-def _convert_errors(errors) -> List[JsonSchemaValidationError]:
+def _convert_errors(errors) -> list[JsonSchemaValidationError]:
     result = []
     for error in errors:
         path = "/".join(str(p) for p in error.absolute_path) if error.absolute_path else ""
@@ -100,10 +97,10 @@ def _convert_errors(errors) -> List[JsonSchemaValidationError]:
 
 
 def validate_structural_json_schema(
-    workflow_dict: Dict[str, Any],
+    workflow_dict: dict[str, Any],
     *,
     strict: bool = False,
-) -> List[JsonSchemaValidationError]:
+) -> list[JsonSchemaValidationError]:
     """Validate a format2 workflow dict against GalaxyWorkflow JSON Schema.
 
     Returns list of validation errors (empty = valid).
@@ -115,10 +112,10 @@ def validate_structural_json_schema(
 
 def _build_tool_state_validator(
     tool_id: str,
-    tool_version: Optional[str],
+    tool_version: str | None,
     get_tool_info: GetToolInfo,
     representation: str = "workflow_step",
-) -> Optional[Draft202012Validator]:
+) -> Draft202012Validator | None:
     """Build a JSON Schema validator for a tool's state."""
     parsed_tool = get_tool_info.get_tool_info(tool_id, tool_version)
     if parsed_tool is None:
@@ -154,11 +151,11 @@ def _build_tool_state_validator_from_parsed_tool(
 
 def _load_tool_state_validator_from_dir(
     tool_id: str,
-    tool_version: Optional[str],
+    tool_version: str | None,
     schema_dir: str,
     *,
-    step_path: Optional[str] = None,
-) -> Optional[Draft202012Validator]:
+    step_path: str | None = None,
+) -> Draft202012Validator | None:
     """Load a pre-exported tool state JSON Schema from a directory.
 
     Two naming schemes coexist on disk:
@@ -199,9 +196,9 @@ def _load_tool_state_validator_from_dir(
 
 
 def validate_workflow_json_schema(
-    workflow_dict: Dict[str, Any],
-    get_tool_info: Optional[GetToolInfo] = None,
-    tool_schema_dir: Optional[str] = None,
+    workflow_dict: dict[str, Any],
+    get_tool_info: GetToolInfo | None = None,
+    tool_schema_dir: str | None = None,
     *,
     strict: bool = False,
     representation: str = "workflow_step",
@@ -232,7 +229,7 @@ def validate_workflow_json_schema(
     else:
         return result
 
-    _validator_cache: Dict[str, Draft202012Validator] = {}
+    _validator_cache: dict[str, Draft202012Validator] = {}
 
     for step_key, step in step_items:
         if not isinstance(step, dict):
@@ -322,10 +319,10 @@ def validate_workflow_json_schema(
 
 
 def validate_native_structural_json_schema(
-    workflow_dict: Dict[str, Any],
+    workflow_dict: dict[str, Any],
     *,
     strict: bool = False,
-) -> List[JsonSchemaValidationError]:
+) -> list[JsonSchemaValidationError]:
     """Validate a native .ga workflow dict against NativeGalaxyWorkflow JSON Schema.
 
     Returns list of validation errors (empty = valid).
@@ -336,9 +333,9 @@ def validate_native_structural_json_schema(
 
 
 def validate_native_workflow_json_schema(
-    workflow_dict: Dict[str, Any],
+    workflow_dict: dict[str, Any],
     get_tool_info: GetToolInfo,
-    tool_schema_dir: Optional[str] = None,
+    tool_schema_dir: str | None = None,
 ) -> JsonSchemaValidationResult:
     """Two-level JSON Schema validation of a native .ga workflow.
 
@@ -362,8 +359,8 @@ def validate_native_workflow_json_schema(
     if not isinstance(steps, dict):
         return result
 
-    _validator_cache: Dict[str, Optional[Draft202012Validator]] = {}
-    _parsed_tool_cache: Dict[str, Any] = {}
+    _validator_cache: dict[str, Draft202012Validator | None] = {}
+    _parsed_tool_cache: dict[str, Any] = {}
 
     for step_key, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
         if not isinstance(step_def, dict):
@@ -420,7 +417,7 @@ def validate_native_workflow_json_schema(
 
         state = copy.deepcopy(tool_state)
 
-        connections: Dict[str, object] = {
+        connections: dict[str, object] = {
             key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
         }
         inject_connections_into_state(list(parsed_tool.inputs), state, connections)

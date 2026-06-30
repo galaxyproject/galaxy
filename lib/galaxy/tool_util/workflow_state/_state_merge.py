@@ -8,9 +8,6 @@ validation) and validation_format2.py (standalone format2 validation).
 
 from typing import (
     cast,
-    Dict,
-    List,
-    Optional,
 )
 
 from galaxy.tool_util.parameters import (
@@ -26,10 +23,10 @@ from ._walker import select_which_when_format2
 
 
 def inject_connections_into_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     state: dict,
-    connections: Dict[str, object],
-) -> Dict[str, object]:
+    connections: dict[str, object],
+) -> dict[str, object]:
     """Inject ConnectedValue markers into a format2 state dict for all connections.
 
     Walks the parameter tree to match connection paths to tool parameters,
@@ -45,11 +42,11 @@ def inject_connections_into_state(
 
 
 def _merge_param(
-    connections: Dict[str, object],
+    connections: dict[str, object],
     tool_input: ToolParameterT,
     state: dict,
-    prefix: Optional[str] = None,
-    branch_connections: Optional[Dict[str, object]] = None,
+    prefix: str | None = None,
+    branch_connections: dict[str, object] | None = None,
 ):
     if branch_connections is None:
         branch_connections = connections

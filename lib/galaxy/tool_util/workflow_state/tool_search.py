@@ -9,9 +9,7 @@ optionally enriches each hit with a full :class:`ParsedTool` via
 
 import logging
 from typing import (
-    List,
     Literal,
-    Optional,
 )
 
 import requests
@@ -59,15 +57,15 @@ class NormalizedToolHit(BaseModel):
     source: ToolSource
     tool_id: str
     tool_name: str
-    tool_description: Optional[str] = None
+    tool_description: str | None = None
     repo_name: str
     repo_owner_username: str
     score: float
-    version: Optional[str] = None
-    changeset_revision: Optional[str] = None
+    version: str | None = None
+    changeset_revision: str | None = None
     trs_tool_id: str
     full_tool_id: str
-    parsed_tool: Optional[ParsedTool] = None
+    parsed_tool: ParsedTool | None = None
 
 
 def to_trs_tool_id(value: str) -> str:
@@ -114,9 +112,9 @@ class ToolSearchService:
 
     def __init__(
         self,
-        sources: List[ToolSource],
+        sources: list[ToolSource],
         info: ToolShedGetToolInfo,
-        session: Optional[requests.Session] = None,
+        session: requests.Session | None = None,
     ):
         self.sources = [s for s in sources if s.type == "toolshed"]
         self.info = info
@@ -129,8 +127,8 @@ class ToolSearchService:
         page_size: int = 20,
         max_results: int = 50,
         enrich: bool = False,
-    ) -> List[NormalizedToolHit]:
-        per_source: List[List[NormalizedToolHit]] = []
+    ) -> list[NormalizedToolHit]:
+        per_source: list[list[NormalizedToolHit]] = []
         for source in self.sources:
             try:
                 per_source.append(self._collect_from_source(source, query, page_size, max_results))
@@ -152,16 +150,16 @@ class ToolSearchService:
                 self._enrich(hit)
         return truncated
 
-    def get_tool_versions(self, toolshed_url: str, trs_tool_id: str) -> List[str]:
+    def get_tool_versions(self, toolshed_url: str, trs_tool_id: str) -> list[str]:
         return [v.id for v in get_trs_tool_versions(toolshed_url, trs_tool_id, session=self.session)]
 
-    def get_latest_version_for_tool_id(self, toolshed_url: str, trs_tool_id: str) -> Optional[str]:
+    def get_latest_version_for_tool_id(self, toolshed_url: str, trs_tool_id: str) -> str | None:
         return get_latest_trs_tool_version(toolshed_url, trs_tool_id, session=self.session)
 
     def _collect_from_source(
         self, source: ToolSource, query: str, page_size: int, max_results: int
-    ) -> List[NormalizedToolHit]:
-        out: List[NormalizedToolHit] = []
+    ) -> list[NormalizedToolHit]:
+        out: list[NormalizedToolHit] = []
         for page in iterate_tool_search_pages(source.url, query, page_size=page_size, session=self.session):
             for hit in page.hits:
                 out.append(normalize_hit(hit, source))

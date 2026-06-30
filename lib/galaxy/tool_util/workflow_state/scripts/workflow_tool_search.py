@@ -4,10 +4,6 @@ import argparse
 import json
 import re
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from .._toolshed_search_client import (
     iterate_tool_search_pages,
@@ -32,11 +28,11 @@ SUBCOMMAND = "tool-search"
 _TOKEN_RE = re.compile(r"[^a-z0-9+]+")
 
 
-def _tokenize(s: str) -> List[str]:
+def _tokenize(s: str) -> list[str]:
     return [t for t in _TOKEN_RE.split(s.lower()) if t]
 
 
-def _name_matches(name: str, query_tokens: List[str]) -> bool:
+def _name_matches(name: str, query_tokens: list[str]) -> bool:
     if not query_tokens:
         return True
     name_tokens = set(_tokenize(name))
@@ -71,7 +67,7 @@ def _add_args(parser):
     )
 
 
-def _format(hits: List[NormalizedToolHit]) -> str:
+def _format(hits: list[NormalizedToolHit]) -> str:
     rows = [
         [
             f"{h.score:.2f}",
@@ -90,7 +86,7 @@ def run(args) -> int:
     query_tokens = _tokenize(args.query)
     source = ToolSource(type="toolshed", url=args.toolshed_url)
 
-    hits: List[NormalizedToolHit] = []
+    hits: list[NormalizedToolHit] = []
     try:
         for page in iterate_tool_search_pages(source.url, args.query, page=args.page, page_size=args.page_size):
             for raw in page.hits:
@@ -146,7 +142,7 @@ def build_parser():
     return parser
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     return run(build_parser().parse_args(argv))
 
 

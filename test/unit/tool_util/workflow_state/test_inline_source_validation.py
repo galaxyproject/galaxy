@@ -8,7 +8,6 @@ through ``resolve_for_step``; Phase C adds per-step source diagnostics
 """
 
 from copy import deepcopy
-from typing import Optional
 
 from galaxy.tool_util.workflow_state._cli_common import (
     StrictOptions,
@@ -34,7 +33,7 @@ from .inline_udt_fixtures import (
 
 
 class _EmptyGetToolInfo:
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         return None
 
 

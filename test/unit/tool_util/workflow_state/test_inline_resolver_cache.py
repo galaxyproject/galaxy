@@ -7,11 +7,6 @@ two ``resolve_for_step`` calls in ``_validate_format2``) all touch the
 same step instance.
 """
 
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
 from unittest.mock import patch
 
 from galaxy.tool_util.workflow_state import (
@@ -34,9 +29,9 @@ class _CountingGetToolInfo:
     """Records every (tool_id, version) lookup for cache assertions."""
 
     def __init__(self) -> None:
-        self.calls: List[Tuple[str, Optional[str]]] = []
+        self.calls: list[tuple[str, str | None]] = []
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         self.calls.append((tool_id, tool_version))
         return None
 

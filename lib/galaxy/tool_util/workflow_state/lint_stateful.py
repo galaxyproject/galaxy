@@ -8,10 +8,6 @@ output labels, etc.) with galaxy-tool-util's tool state validation
 import logging
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from gxformat2.lint import (
     _try_build_nf2,
@@ -68,11 +64,11 @@ class _LintStatefulCommonOptions(ToolCacheOptions, StrictOptions):
     summary: bool = False
     connections: bool = False
     skip_best_practices: bool = False
-    training_topic: Optional[str] = None
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
-    allow: List[str] = []
-    deny: List[str] = []
+    training_topic: str | None = None
+    report_json: str | None = None
+    report_markdown: str | None = None
+    allow: list[str] = []
+    deny: list[str] = []
 
 
 class LintStatefulOptions(_LintStatefulCommonOptions):
@@ -89,7 +85,7 @@ class LintStatefulTreeOptions(_LintStatefulCommonOptions):
 def run_structural_lint(
     workflow_dict: dict,
     skip_best_practices: bool = False,
-    training_topic: Optional[str] = None,
+    training_topic: str | None = None,
 ) -> LintContext:
     """Run gxformat2's structural lint checks, return populated LintContext.
 
@@ -147,7 +143,7 @@ def format_lint_header(lint_context: LintContext) -> str:
 
 def format_combined_text(
     lint_context: LintContext,
-    step_results: List[ValidationStepResult],
+    step_results: list[ValidationStepResult],
     summary_only: bool = False,
 ) -> str:
     """Format combined structural + stateful results."""
@@ -165,10 +161,10 @@ def format_combined_text(
 def lint_single(
     workflow_path: str,
     tool_info: GetToolInfo,
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     skip_best_practices: bool = False,
-    training_topic: Optional[str] = None,
+    training_topic: str | None = None,
     strict_structure: bool = False,
     strict_encoding: bool = False,
     offline: bool = False,
@@ -322,7 +318,7 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     return exit_code
 
 
-def _inline_source_exit_code(results: List[ValidationStepResult], strict_inline_source: bool) -> int:
+def _inline_source_exit_code(results: list[ValidationStepResult], strict_inline_source: bool) -> int:
     """Compute incremental exit code from inline-source diagnostics.
 
     Plan §7.3 ("Errors fail per existing strict-* axes"): both pydantic
@@ -350,7 +346,7 @@ def _lint_context_exit_code(lint_context: LintContext) -> int:
 
 def _combined_exit_code(
     lint_context: LintContext,
-    results: List[ValidationStepResult],
+    results: list[ValidationStepResult],
     strict_state: bool,
 ) -> int:
     """Derive exit code from both structural lint and stateful validation."""

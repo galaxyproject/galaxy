@@ -7,11 +7,6 @@ Supports both native .ga and format2 .gxwf.yml workflows.
 import logging
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-    Tuple,
-)
 
 from ._cli_common import (
     setup_tool_info,
@@ -85,11 +80,11 @@ class _ValidateCommonOptions(ToolCacheOptions, StrictOptions):
     connections: bool = False
     mode: str = "pydantic"
     clean: bool = False
-    tool_schema_dir: Optional[str] = None
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
-    allow: List[str] = []
-    deny: List[str] = []
+    tool_schema_dir: str | None = None
+    report_json: str | None = None
+    report_markdown: str | None = None
+    allow: list[str] = []
+    deny: list[str] = []
 
 
 class ValidateOptions(_ValidateCommonOptions):
@@ -106,11 +101,11 @@ class ValidateTreeOptions(_ValidateCommonOptions):
 def validate_workflow_cli(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
     offline: bool = False,
-) -> Tuple[List[ValidationStepResult], Optional[WorkflowPrecheck], Optional[ConnectionValidationReport]]:
+) -> tuple[list[ValidationStepResult], WorkflowPrecheck | None, ConnectionValidationReport | None]:
     """Validate all steps in a workflow, collecting per-step results.
 
     Returns (step_results, precheck, connection_report).
@@ -158,12 +153,12 @@ def validate_workflow_cli(
 def validate_single(
     workflow_path: str,
     tool_info: GetToolInfo,
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
     mode: str = "pydantic",
     strict: bool = False,
-    tool_schema_dir: Optional[str] = None,
+    tool_schema_dir: str | None = None,
     strict_structure: bool = False,
     strict_encoding: bool = False,
     offline: bool = False,
@@ -230,13 +225,13 @@ def _validate_native(
     workflow_dict: dict,
     get_tool_info: GetToolInfo,
     prefix: str = "",
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     offline: bool = False,
-) -> List[ValidationStepResult]:
+) -> list[ValidationStepResult]:
     if policy is None:
         policy = StaleKeyPolicy.for_validate([], [])
 
-    results: List[ValidationStepResult] = []
+    results: list[ValidationStepResult] = []
     steps = workflow_dict.get("steps", {})
     for step_index, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
         step_label = f"{prefix}{step_index}" if prefix else str(step_index)
@@ -388,13 +383,13 @@ def _validate_native(
 
 def _validate_format2(
     workflow_dict: dict, get_tool_info: GetToolInfo, prefix: str = "", offline: bool = False
-) -> List[ValidationStepResult]:
+) -> list[ValidationStepResult]:
     from gxformat2.normalized import (
         ensure_format2,
         NormalizedFormat2,
     )
 
-    results: List[ValidationStepResult] = []
+    results: list[ValidationStepResult] = []
     nf2 = ensure_format2(workflow_dict, expand=True)
     for i, step in enumerate(nf2.steps):
         step_label = f"{prefix}{i}" if prefix else str(i)
@@ -501,7 +496,7 @@ def _validate_format2(
 
 
 def _make_validate_process_one(
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
     strict_state: bool = False,
@@ -581,7 +576,7 @@ def _aggregate_validation(
 def validate_tree(
     root: str,
     get_tool_info: GetToolInfo,
-    policy: Optional[StaleKeyPolicy] = None,
+    policy: StaleKeyPolicy | None = None,
     connections: bool = False,
     clean: bool = False,
 ) -> TreeValidationReport:
@@ -597,7 +592,7 @@ def validate_tree(
 # -- Formatters --
 
 
-def format_text(results: List[ValidationStepResult], summary_only: bool = False) -> str:
+def format_text(results: list[ValidationStepResult], summary_only: bool = False) -> str:
     lines = []
     ok = sum(1 for r in results if r.status == "ok")
     fail = sum(1 for r in results if r.status == "fail")
@@ -633,9 +628,9 @@ def format_text(results: List[ValidationStepResult], summary_only: bool = False)
     return "\n".join(lines)
 
 
-def _format_inline_source_text(results: List[ValidationStepResult]) -> List[str]:
+def _format_inline_source_text(results: list[ValidationStepResult]) -> list[str]:
     """Per-step inline-source diagnostics as text bullets."""
-    lines: List[str] = []
+    lines: list[str] = []
     for r in results:
         inline = r.inline_source
         if inline is None or not inline.has_issues:
@@ -660,7 +655,7 @@ def _format_inline_source_text(results: List[ValidationStepResult]) -> List[str]
     return lines
 
 
-def _summary_inline_source_text(results: List[ValidationStepResult]) -> Optional[str]:
+def _summary_inline_source_text(results: list[ValidationStepResult]) -> str | None:
     n_invalid = n_lint_err = n_lint_warn = n_unsupported = 0
     for r in results:
         inline = r.inline_source
@@ -734,7 +729,7 @@ _format_tree_markdown = make_markdown_renderer("validate_tree.md.j2")
 # -- JSON formatters (delegate to Pydantic model_dump) --
 
 
-def format_json_single(results: List[ValidationStepResult], workflow_path: str) -> dict:
+def format_json_single(results: list[ValidationStepResult], workflow_path: str) -> dict:
     report = SingleValidationReport(workflow=workflow_path, results=results)
     return report.model_dump(by_alias=True)
 
@@ -821,11 +816,11 @@ def format_connection_markdown(report: ConnectionValidationReport) -> str:
 
 def _json_schema_validate_single(
     workflow_dict: dict,
-    tool_info: Optional[GetToolInfo],
-    tool_schema_dir: Optional[str],
+    tool_info: GetToolInfo | None,
+    tool_schema_dir: str | None,
     strict: bool = False,
     clean: bool = False,
-) -> List[ValidationStepResult]:
+) -> list[ValidationStepResult]:
     """Validate a single workflow via JSON Schema and map to ValidationStepResult."""
     import copy as _copy
 
@@ -855,7 +850,7 @@ def _json_schema_validate_single(
             strict=strict,
         )
 
-    results: List[ValidationStepResult] = []
+    results: list[ValidationStepResult] = []
 
     if js_result.structural_errors:
         error_msgs = [
@@ -905,7 +900,7 @@ def _run_json_schema_validate_single(options: ValidateOptions, tool_info: GetToo
 
 def _make_json_schema_process_one(
     tool_info: GetToolInfo,
-    tool_schema_dir: Optional[str],
+    tool_schema_dir: str | None,
     strict: bool,
     clean: bool = False,
 ):
@@ -1032,8 +1027,8 @@ def run_validate_tree(options: ValidateTreeOptions) -> int:
 
 def _emit_single_results(
     options: ValidateOptions,
-    results: List[ValidationStepResult],
-    conn_report: Optional[ConnectionValidationReport] = None,
+    results: list[ValidationStepResult],
+    conn_report: ConnectionValidationReport | None = None,
 ) -> int:
     json_data = SingleValidationReport(
         workflow=options.workflow_path,

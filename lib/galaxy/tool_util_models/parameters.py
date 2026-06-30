@@ -1886,26 +1886,24 @@ class SplitColumnsRule(BaseModel):
 
 
 RuleDefinition = Annotated[
-    Union[
-        AddColumnMetadataRule,
-        AddColumnGroupTagValueRule,
-        AddColumnConcatenateRule,
-        AddColumnBasenameRule,
-        AddColumnRegexRule,
-        AddColumnRownumRule,
-        AddColumnValueRule,
-        AddColumnSubstrRule,
-        AddColumnFromSampleSheetIndexRule,
-        RemoveColumnsRule,
-        AddFilterRegexRule,
-        AddFilterCountRule,
-        AddFilterEmptyRule,
-        AddFilterMatchesRule,
-        AddFilterCompareRule,
-        SortRule,
-        SwapColumnsRule,
-        SplitColumnsRule,
-    ],
+    AddColumnMetadataRule
+    | AddColumnGroupTagValueRule
+    | AddColumnConcatenateRule
+    | AddColumnBasenameRule
+    | AddColumnRegexRule
+    | AddColumnRownumRule
+    | AddColumnValueRule
+    | AddColumnSubstrRule
+    | AddColumnFromSampleSheetIndexRule
+    | RemoveColumnsRule
+    | AddFilterRegexRule
+    | AddFilterCountRule
+    | AddFilterEmptyRule
+    | AddFilterMatchesRule
+    | AddFilterCompareRule
+    | SortRule
+    | SwapColumnsRule
+    | SplitColumnsRule,
     Discriminator("type"),
 ]
 

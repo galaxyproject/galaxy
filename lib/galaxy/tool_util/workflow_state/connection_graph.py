@@ -10,11 +10,7 @@ from dataclasses import (
     field,
 )
 from typing import (
-    Dict,
-    List,
     Optional,
-    Tuple,
-    Union,
 )
 
 from gxformat2.normalized import (
@@ -53,7 +49,7 @@ class ConnectionRef:
 
     source_step: str
     output_name: str
-    input_subworkflow_step_id: Optional[str] = None
+    input_subworkflow_step_id: str | None = None
 
 
 @dataclass
@@ -63,10 +59,10 @@ class ResolvedInput:
     name: str
     state_path: str
     type: str  # "data", "collection", "text", "integer", "float", "boolean", "color"
-    collection_type: Optional[str] = None
+    collection_type: str | None = None
     multiple: bool = False
     optional: bool = False
-    extensions: List[str] = field(default_factory=lambda: ["data"])
+    extensions: list[str] = field(default_factory=lambda: ["data"])
 
 
 @dataclass
@@ -75,12 +71,12 @@ class ResolvedOutput:
 
     name: str
     type: str  # "data", "collection", "text", "integer", "float", "boolean"
-    collection_type: Optional[str] = None
-    collection_type_source: Optional[str] = None
-    collection_type_from_rules: Optional[str] = None
-    structured_like: Optional[str] = None
-    format: Optional[str] = None
-    format_source: Optional[str] = None
+    collection_type: str | None = None
+    collection_type_source: str | None = None
+    collection_type_from_rules: str | None = None
+    structured_like: str | None = None
+    format: str | None = None
+    format_source: str | None = None
 
 
 @dataclass
@@ -88,33 +84,33 @@ class ResolvedStep:
     """A workflow step with resolved input/output type information."""
 
     step_id: str
-    tool_id: Optional[str]
+    tool_id: str | None
     step_type: str
-    inputs: Dict[str, ResolvedInput] = field(default_factory=dict)
-    outputs: Dict[str, ResolvedOutput] = field(default_factory=dict)
-    connections: Dict[str, List[ConnectionRef]] = field(default_factory=dict)
-    declared_collection_type: Optional[str] = None
+    inputs: dict[str, ResolvedInput] = field(default_factory=dict)
+    outputs: dict[str, ResolvedOutput] = field(default_factory=dict)
+    connections: dict[str, list[ConnectionRef]] = field(default_factory=dict)
+    declared_collection_type: str | None = None
     inner_graph: Optional["WorkflowGraph"] = None
-    subworkflow_output_map: Dict[str, Tuple[str, str]] = field(default_factory=dict)
+    subworkflow_output_map: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 @dataclass
 class WorkflowGraph:
     """Typed workflow graph with steps in topological order."""
 
-    steps: Dict[str, ResolvedStep] = field(default_factory=dict)
-    sorted_step_ids: List[str] = field(default_factory=list)
+    steps: dict[str, ResolvedStep] = field(default_factory=dict)
+    sorted_step_ids: list[str] = field(default_factory=list)
 
 
 def build_workflow_graph(
-    workflow: Union[NormalizedNativeWorkflow, dict],
+    workflow: NormalizedNativeWorkflow | dict,
     get_tool_info: GetToolInfo,
 ) -> WorkflowGraph:
     """Build a typed workflow graph from a native workflow dict or model."""
     if isinstance(workflow, dict):
         workflow = normalized_native(workflow)
 
-    steps: Dict[str, ResolvedStep] = {}
+    steps: dict[str, ResolvedStep] = {}
     for step_id_str, step in workflow.steps.items():
         if step.type_ in (
             NativeStepType.data_input,
@@ -185,8 +181,8 @@ def _resolve_tool_step(
     """Resolve a tool step using its ParsedTool definition."""
     connections = _parse_connections(step)
 
-    inputs: Dict[str, ResolvedInput] = {}
-    outputs: Dict[str, ResolvedOutput] = {}
+    inputs: dict[str, ResolvedInput] = {}
+    outputs: dict[str, ResolvedOutput] = {}
     parsed_tool = None
 
     try:
@@ -223,8 +219,8 @@ def _resolve_subworkflow_step(step_id: str, step: NormalizedNativeStep, get_tool
     connections = _parse_connections(step)
 
     inner_graph = None
-    output_map: Dict[str, Tuple[str, str]] = {}
-    inputs: Dict[str, ResolvedInput] = {}
+    output_map: dict[str, tuple[str, str]] = {}
+    inputs: dict[str, ResolvedInput] = {}
 
     if step.subworkflow is not None:
         try:
@@ -249,11 +245,11 @@ def _resolve_subworkflow_step(step_id: str, step: NormalizedNativeStep, get_tool
 
 
 def _synthesize_subworkflow_inputs(
-    connections: Dict[str, List[ConnectionRef]],
+    connections: dict[str, list[ConnectionRef]],
     inner_graph: WorkflowGraph,
-) -> Dict[str, ResolvedInput]:
+) -> dict[str, ResolvedInput]:
     """Create ResolvedInputs for a subworkflow step from inner graph input steps."""
-    inputs: Dict[str, ResolvedInput] = {}
+    inputs: dict[str, ResolvedInput] = {}
     for input_path, conn_refs in connections.items():
         for ref in conn_refs:
             inner_id = ref.input_subworkflow_step_id
@@ -282,13 +278,13 @@ def _input_from_inner_step(inner_step: ResolvedStep, input_path: str) -> Resolve
         return ResolvedInput(name=input_path, state_path=input_path, type="data")
 
 
-def _build_subworkflow_output_map(subworkflow: NormalizedNativeWorkflow) -> Dict[str, Tuple[str, str]]:
+def _build_subworkflow_output_map(subworkflow: NormalizedNativeWorkflow) -> dict[str, tuple[str, str]]:
     """Build mapping from external output name to (inner_step_id, inner_output_name).
 
     Scans inner workflow steps for workflow_outputs declarations.
     The label (or fallback "{step_id}:{output_name}") becomes the externally visible name.
     """
-    output_map: Dict[str, Tuple[str, str]] = {}
+    output_map: dict[str, tuple[str, str]] = {}
     for step_id, step in subworkflow.steps.items():
         for wo in step.workflow_outputs:
             if not wo.output_name:
@@ -298,9 +294,9 @@ def _build_subworkflow_output_map(subworkflow: NormalizedNativeWorkflow) -> Dict
     return output_map
 
 
-def _parse_connections(step: NormalizedNativeStep) -> Dict[str, List[ConnectionRef]]:
+def _parse_connections(step: NormalizedNativeStep) -> dict[str, list[ConnectionRef]]:
     """Parse input_connections from a normalized step."""
-    result: Dict[str, List[ConnectionRef]] = {}
+    result: dict[str, list[ConnectionRef]] = {}
     for state_path, conns in step.input_connections.items():
         refs = []
         for conn in conns:
@@ -321,12 +317,12 @@ _PARAMETER_INPUT_TYPES = frozenset({"gx_text", "gx_integer", "gx_float", "gx_boo
 
 
 def _collect_inputs(
-    params: List[ToolParameterT],
-    tool_state: Optional[dict] = None,
-    prefix: Optional[str] = None,
-) -> Dict[str, ResolvedInput]:
+    params: list[ToolParameterT],
+    tool_state: dict | None = None,
+    prefix: str | None = None,
+) -> dict[str, ResolvedInput]:
     """Walk parameter tree and collect typed inputs with state paths."""
-    result: Dict[str, ResolvedInput] = {}
+    result: dict[str, ResolvedInput] = {}
 
     for param in params:
         state_path = param.name if prefix is None else f"{prefix}|{param.name}"
@@ -398,9 +394,9 @@ def _collect_inputs(
     return result
 
 
-def _collect_outputs(outputs: list) -> Dict[str, ResolvedOutput]:
+def _collect_outputs(outputs: list) -> dict[str, ResolvedOutput]:
     """Extract data and collection outputs from ParsedTool.outputs."""
-    result: Dict[str, ResolvedOutput] = {}
+    result: dict[str, ResolvedOutput] = {}
 
     for output in outputs:
         if isinstance(output, ToolOutputDataset):
@@ -429,8 +425,8 @@ def _collect_outputs(outputs: list) -> Dict[str, ResolvedOutput]:
 
 
 def _resolve_rules_collection_types(
-    outputs: Dict[str, ResolvedOutput],
-    tool_state: Optional[dict],
+    outputs: dict[str, ResolvedOutput],
+    tool_state: dict | None,
 ) -> None:
     """Resolve collection_type_from_rules outputs using rules mapping in tool_state.
 
@@ -457,7 +453,7 @@ def _resolve_rules_collection_types(
             log.debug("Failed to resolve collection type from rules for output %s", output.name)
 
 
-def _topological_sort(steps: Dict[str, ResolvedStep]) -> List[str]:
+def _topological_sort(steps: dict[str, ResolvedStep]) -> list[str]:
     """Topological sort of step IDs based on connections."""
     pairs = []
     all_ids = set(steps.keys())

@@ -1,10 +1,7 @@
 """Shared table formatting helpers for the Tool Shed gxwf subcommands."""
 
 import re
-from typing import (
-    List,
-    Sequence,
-)
+from collections.abc import Sequence
 
 _WS_RE = re.compile(r"\s+")
 
@@ -20,6 +17,6 @@ def format_table(header: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
     def fmt(cells: Sequence[str]) -> str:
         return "  ".join(c.ljust(widths[i]) for i, c in enumerate(cells)).rstrip()
 
-    lines: List[str] = [fmt(header), fmt(["-" * w for w in widths])]
+    lines: list[str] = [fmt(header), fmt(["-" * w for w in widths])]
     lines.extend(fmt(r) for r in rows)
     return "\n".join(lines)

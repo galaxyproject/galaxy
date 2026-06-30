@@ -1,9 +1,4 @@
 import copy
-from typing import (
-    Dict,
-    List,
-    Union,
-)
 
 from gxformat2.normalized import (
     ensure_format2,
@@ -27,9 +22,9 @@ from .validation_native import validate_native_state
 
 
 def validate_format2_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     state: dict,
-    connections: Dict[str, object],
+    connections: dict[str, object],
 ):
     """Validate format2 state + connections against tool definitions.
 
@@ -54,7 +49,7 @@ def validate_format2_state(
     linked_model.model_validate(linked_state)
 
 
-def validate_workflow_format2(workflow: Union[Format2WorkflowDict, NormalizedFormat2], get_tool_info: GetToolInfo):
+def validate_workflow_format2(workflow: Format2WorkflowDict | NormalizedFormat2, get_tool_info: GetToolInfo):
     nf2 = ensure_format2(workflow, expand=True) if not isinstance(workflow, NormalizedFormat2) else workflow
     for step in nf2.steps:
         if step.is_subworkflow_step:

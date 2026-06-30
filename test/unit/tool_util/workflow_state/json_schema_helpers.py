@@ -1,7 +1,5 @@
 """Shared test helpers for JSON Schema validation tests."""
 
-from typing import Optional
-
 from galaxy.tool_util_models import ParsedTool
 from galaxy.tool_util_models.parameters import (
     BooleanParameterModel,
@@ -80,7 +78,7 @@ class FakeGetToolInfo:
     def __init__(self, parsed_tool=None):
         self._tool = parsed_tool or make_parsed_tool_rich()
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         if tool_id == "test_tool":
             return self._tool
         return None

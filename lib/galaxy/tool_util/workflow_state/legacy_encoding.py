@@ -35,7 +35,6 @@ Detection signals (checked in order):
 from enum import Enum
 from typing import (
     cast,
-    List,
 )
 
 from pydantic import BaseModel
@@ -65,7 +64,7 @@ class LegacyEncodingHit(BaseModel):
 
 class LegacyEncodingScanResult(BaseModel):
     classification: LegacyEncodingClassification
-    hits: List[LegacyEncodingHit] = []
+    hits: list[LegacyEncodingHit] = []
     signals_checked: int = 0
 
 
@@ -73,7 +72,7 @@ _CONTAINER_TYPES = frozenset({"gx_conditional", "gx_section", "gx_repeat"})
 
 
 def scan_tool_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     tool_state: dict,
 ) -> LegacyEncodingScanResult:
     """Scan decoded native tool_state for legacy parameter encoding.
@@ -81,7 +80,7 @@ def scan_tool_state(
     Checks root-level container params and select params with static
     options.  See module docstring for detection signals.
     """
-    hits: List[LegacyEncodingHit] = []
+    hits: list[LegacyEncodingHit] = []
     signals_checked = 0
 
     for tool_input in tool_inputs:
@@ -131,7 +130,7 @@ def _strip_quotes(value: str) -> str:
 
 
 def _aggregate(
-    hits: List[LegacyEncodingHit],
+    hits: list[LegacyEncodingHit],
     signals_checked: int,
 ) -> LegacyEncodingClassification:
     if hits:

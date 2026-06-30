@@ -5,8 +5,6 @@ import json
 import logging
 import sys
 from typing import (
-    Optional,
-    Type,
     TYPE_CHECKING,
 )
 
@@ -203,7 +201,7 @@ class ToolCacheOptions(BaseModel):
     """Base options shared by all workflow_state CLI tools."""
 
     workflow_path: str
-    tool_source_cache_dir: Optional[str] = None
+    tool_source_cache_dir: str | None = None
     verbose: bool = False
     populate_cache: bool = False
     tool_source: str = "auto"
@@ -218,7 +216,7 @@ class ToolCacheOptions(BaseModel):
 def build_base_parser(
     prog: str,
     description: str,
-    stale_key_mode: Optional[str] = None,
+    stale_key_mode: str | None = None,
     workflow_path_help: str = "Path to a single .ga or .gxwf.yml workflow file",
 ) -> argparse.ArgumentParser:
     """Build an argparse parser with the common workflow_state CLI args."""
@@ -234,7 +232,7 @@ def build_base_parser(
 
 def build_base_subparser_args(
     parser: argparse.ArgumentParser,
-    stale_key_mode: Optional[str] = None,
+    stale_key_mode: str | None = None,
     workflow_path_help: str = "Path to a .ga or .gxwf.yml workflow file",
 ) -> None:
     """Add shared positional + common args to a subparser (no prog/description)."""
@@ -251,7 +249,7 @@ def cli_main(
     options_cls,
     run_fn,
     argv=None,
-    report_schema_model: Optional[Type[BaseModel]] = None,
+    report_schema_model: type[BaseModel] | None = None,
 ):
     """Parse args, build options, run, exit — the shared CLI main pattern."""
     raw = argv if argv is not None else sys.argv[1:]
@@ -271,7 +269,7 @@ def cli_main_from_args(
     options_cls,
     run_fn,
     args: argparse.Namespace,
-    report_schema_model: Optional[Type[BaseModel]] = None,
+    report_schema_model: type[BaseModel] | None = None,
 ) -> int:
     """Build options from pre-parsed namespace and run — for use in subcommand handlers."""
     if report_schema_model is not None and getattr(args, "output_schema", False):

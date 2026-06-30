@@ -13,7 +13,6 @@ override to the loader rather than forking the fixture file.
 """
 
 from copy import deepcopy
-from typing import Optional
 
 import pytest
 from gxformat2.normalized import normalized_native
@@ -40,7 +39,7 @@ class _EmptyGetToolInfo:
     None and be silently skipped — the original behavior.
     """
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         return None
 
 

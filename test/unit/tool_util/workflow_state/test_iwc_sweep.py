@@ -7,10 +7,6 @@ missing tools from the ToolShed on first run.
 
 import os
 from pathlib import Path
-from typing import (
-    List,
-    Optional,
-)
 
 import pytest
 from gxformat2.normalized import ensure_native
@@ -44,7 +40,7 @@ from galaxy.util.unittest_utils import skip_unless_environ
 IWC_ENV = "GALAXY_TEST_IWC_DIRECTORY"
 
 
-def _discover_native_workflows() -> List[str]:
+def _discover_native_workflows() -> list[str]:
     iwc_dir = os.environ.get(IWC_ENV, "")
     if not iwc_dir:
         return []
@@ -54,12 +50,12 @@ def _discover_native_workflows() -> List[str]:
 _IWC_TESTS_SUFFIXES = ("-tests.yml", "-tests.yaml", "-test.yml", "-test.yaml")
 
 
-def _discover_tests_files() -> List[str]:
+def _discover_tests_files() -> list[str]:
     iwc_dir = os.environ.get(IWC_ENV, "")
     if not iwc_dir:
         return []
     workflows_root = Path(iwc_dir) / "workflows"
-    results: List[str] = []
+    results: list[str] = []
     for suffix in _IWC_TESTS_SUFFIXES:
         results.extend(str(p) for p in workflows_root.rglob(f"*{suffix}") if p.is_file())
     return sorted(set(results))
@@ -81,7 +77,7 @@ class _LenientToolInfo:
     def __init__(self, delegate):
         self._delegate = delegate
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         try:
             return self._delegate.get_tool_info(tool_id, tool_version)
         except Exception:

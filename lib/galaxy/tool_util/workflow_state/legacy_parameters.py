@@ -8,7 +8,6 @@ and NO when no patterns are found.
 """
 
 from enum import Enum
-from typing import List
 
 from pydantic import BaseModel
 
@@ -43,7 +42,7 @@ class ReplacementHit(BaseModel):
 
 class ReplacementScanResult(BaseModel):
     classification: ReplacementClassification
-    hits: List[ReplacementHit] = []
+    hits: list[ReplacementHit] = []
 
 
 def _is_replacement_param(value) -> bool:
@@ -67,7 +66,7 @@ def _classify_hit(parameter_type: str) -> ReplacementClassification:
     return ReplacementClassification.YES
 
 
-def _aggregate(hits: List[ReplacementHit]) -> ReplacementClassification:
+def _aggregate(hits: list[ReplacementHit]) -> ReplacementClassification:
     if not hits:
         return ReplacementClassification.NO
     if any(h.classification == ReplacementClassification.YES for h in hits):
@@ -75,7 +74,7 @@ def _aggregate(hits: List[ReplacementHit]) -> ReplacementClassification:
     return ReplacementClassification.MAYBE_ASSUMED_NO
 
 
-def _make_check_leaf(hits: List[ReplacementHit]):
+def _make_check_leaf(hits: list[ReplacementHit]):
     def check_leaf(tool_input: ToolParameterT, value, state_path: str):
         parameter_type = tool_input.parameter_type
         if parameter_type in _SKIP_TYPES:
@@ -97,21 +96,21 @@ def _make_check_leaf(hits: List[ReplacementHit]):
 
 
 def scan_native_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     tool_state: dict,
     input_connections: dict,
 ) -> ReplacementScanResult:
     """Scan decoded native tool_state for replacement parameters."""
-    hits: List[ReplacementHit] = []
+    hits: list[ReplacementHit] = []
     walk_native_state(input_connections, tool_inputs, tool_state, _make_check_leaf(hits))
     return ReplacementScanResult(classification=_aggregate(hits), hits=hits)
 
 
 def scan_format2_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     state: dict,
 ) -> ReplacementScanResult:
     """Scan format2 state dict for replacement parameters."""
-    hits: List[ReplacementHit] = []
+    hits: list[ReplacementHit] = []
     walk_format2_state(tool_inputs, state, _make_check_leaf(hits))
     return ReplacementScanResult(classification=_aggregate(hits), hits=hits)

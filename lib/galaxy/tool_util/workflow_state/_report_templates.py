@@ -13,10 +13,8 @@ from datetime import (
 )
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Optional,
 )
+from collections.abc import Callable
 
 REPORT_VERSION = "26.1"
 
@@ -27,7 +25,7 @@ from jinja2 import (
 )
 from pydantic import BaseModel
 
-_ENV: Optional[Environment] = None
+_ENV: Environment | None = None
 
 
 def _get_env() -> Environment:
@@ -48,7 +46,7 @@ def _get_env() -> Environment:
     return _ENV
 
 
-def _default_meta() -> Dict[str, Any]:
+def _default_meta() -> dict[str, Any]:
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "report_version": REPORT_VERSION,
@@ -58,7 +56,7 @@ def _default_meta() -> Dict[str, Any]:
 def render_report(
     template_name: str,
     report: BaseModel,
-    meta: Optional[Dict[str, Any]] = None,
+    meta: dict[str, Any] | None = None,
 ) -> str:
     """Render ``report`` through ``template_name``.
 

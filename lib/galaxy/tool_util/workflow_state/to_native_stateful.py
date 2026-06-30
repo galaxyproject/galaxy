@@ -12,10 +12,7 @@ import logging
 import os
 import sys
 from typing import (
-    Dict,
-    List,
     Literal,
-    Optional,
 )
 
 from gxformat2.normalized import to_native
@@ -51,15 +48,15 @@ log = logging.getLogger(__name__)
 
 class StepEncodeStatus(BaseModel):
     step_id: str
-    step_label: Optional[str] = None
-    tool_id: Optional[str] = None
+    step_label: str | None = None
+    tool_id: str | None = None
     encoded: bool = False
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class ToNativeResult(BaseModel):
     native_dict: dict
-    steps: List[StepEncodeStatus] = Field(default_factory=list)
+    steps: list[StepEncodeStatus] = Field(default_factory=list)
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -74,7 +71,7 @@ class ToNativeResult(BaseModel):
         return f"{ok} schema-encoded, {fail} fell back to default"
 
     @property
-    def failed_steps(self) -> List[StepEncodeStatus]:
+    def failed_steps(self) -> list[StepEncodeStatus]:
         return [s for s in self.steps if not s.encoded]
 
 
@@ -103,7 +100,7 @@ def convert_to_native_stateful(
             "or gxwf-roundtrip-validate for native→format2→native validation."
         )
 
-    step_statuses: List[StepEncodeStatus] = []
+    step_statuses: list[StepEncodeStatus] = []
     callback = _make_encode_callback(get_tool_info, step_statuses, strict=strict)
 
     options = ConversionOptions(
@@ -118,7 +115,7 @@ def convert_to_native_stateful(
 
 def _make_encode_callback(
     get_tool_info: GetToolInfo,
-    step_statuses: List[StepEncodeStatus],
+    step_statuses: list[StepEncodeStatus],
     strict: bool = False,
 ):
     """Build a state_encode_to_native callback with status tracking."""
@@ -162,22 +159,22 @@ class EncodeError(Exception):
 
 
 class ToNativeOptions(ToolCacheOptions, StrictOptions):
-    output: Optional[str] = None
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
+    output: str | None = None
+    report_json: str | None = None
+    report_markdown: str | None = None
 
 
 class ToNativeTreeOptions(ToolCacheOptions, StrictOptions):
     output_dir: str = ""
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
+    report_json: str | None = None
+    report_markdown: str | None = None
 
 
 class WorkflowToNativeResult(WorkflowResultBase):
     """Per-workflow format2→native conversion result."""
 
     # free-form skip reasons beyond SkipWorkflowReason; base field is the enum type
-    skipped_reason: Optional[str] = None  # type: ignore[assignment]
+    skipped_reason: str | None = None  # type: ignore[assignment]
     ok: bool = False
     steps_encoded: int = 0
     steps_fallback: int = 0
@@ -207,7 +204,7 @@ class SingleToNativeReport(BaseModel):
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         return {"encoded": self.steps_encoded, "fallback": self.steps_fallback}
 
 
@@ -215,14 +212,14 @@ class ToNativeTreeReport(TreeReportBase):
     """Tree-level report for batch format2→native conversion."""
 
     output_dir: str
-    results: List[WorkflowToNativeResult] = Field(default_factory=list, serialization_alias="workflows")
+    results: list[WorkflowToNativeResult] = Field(default_factory=list, serialization_alias="workflows")
 
     def _workflow_results(self) -> list:
         return self.results
 
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def summary(self) -> Dict[str, int]:
+    def summary(self) -> dict[str, int]:
         ok = sum(1 for r in self.results if r.ok)
         fail = sum(1 for r in self.results if r.error)
         skipped = sum(1 for r in self.results if r.skipped_reason)
@@ -364,7 +361,7 @@ def _convert_dict_to_native(
     if isinstance(wf_dict, dict) and wf_dict.get("a_galaxy_workflow") == "true":
         raise EncodeError("Already native format")
 
-    step_statuses: List[StepEncodeStatus] = []
+    step_statuses: list[StepEncodeStatus] = []
     callback = _make_encode_callback(get_tool_info, step_statuses, strict=strict)
 
     options = ConversionOptions(
