@@ -305,6 +305,32 @@ describe("ToolBox search", () => {
         ).toBe(false);
     });
 
+    it("does not include tagged tool versions that are outside the default panel", async () => {
+        const oldVersion = {
+            ...toolsList.find((tool) => tool.id === "__FILTER_EMPTY_DATASETS__")!,
+            id: "__FILTER_EMPTY_DATASETS_OLD__",
+            name: "Old Filter empty",
+            version: "0.9.0",
+        };
+        const { wrapper } = mountToolBox({
+            currentUser: SIGNED_IN_USER,
+            tools: [...toolsList, oldVersion],
+            favorites: { tags: ["data_cleanup"] },
+        });
+        await flushPromises();
+
+        const dataCleanupSection = wrapper
+            .findAll(".toolSectionTitle")
+            .wrappers.find((item) => item.text().includes("data_cleanup"));
+        expect(dataCleanupSection).toBeTruthy();
+        await dataCleanupSection?.find(".title-link").trigger("click");
+        await flushPromises();
+
+        expect(wrapper.find('[data-tool-id="__FILTER_EMPTY_DATASETS__"]').exists()).toBe(true);
+        expect(wrapper.find('[data-tool-id="__FILTER_EMPTY_DATASETS_OLD__"]').exists()).toBe(false);
+        expect(wrapper.text()).not.toContain("Old Filter empty");
+    });
+
     it("renders top-level favorites in the stored mixed-type order", async () => {
         const { wrapper } = mountToolBox({
             currentUser: SIGNED_IN_USER,
