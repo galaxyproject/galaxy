@@ -32,4 +32,6 @@ def test_convert_to_simple():
 
     as_dict = convert_to_format2(ga_format, True)
     assert "yaml_content" in as_dict
+
+    as_dict = convert_to_format2(ga_format, False)
     assert "yaml_content" not in as_dict
