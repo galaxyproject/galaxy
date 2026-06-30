@@ -31,6 +31,14 @@ def _add_args(parser):
         dest="skip_uuid",
         help="Skip stripping uuid fields from steps (errors are always stripped)",
     )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        default=False,
+        dest="validate_state",
+        help="Validate each step's cleaned native tool_state against its tool "
+        "definition; revert steps that fail (native .ga only)",
+    )
     add_report_args(parser)
 
 
