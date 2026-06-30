@@ -1,10 +1,6 @@
 """FunctionalGetToolInfo: bridges functional test tools to GetToolInfo protocol."""
 
 import os
-from typing import (
-    Dict,
-    Optional,
-)
 
 from galaxy.tool_util.model_factory import parse_tool
 from galaxy.tool_util.parser.factory import get_tool_source
@@ -35,9 +31,9 @@ class FunctionalGetToolInfo:
     """GetToolInfo backed by functional test tool XMLs."""
 
     def __init__(self):
-        self._cache: Dict[str, Optional[ParsedTool]] = {}
+        self._cache: dict[str, ParsedTool | None] = {}
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str] = None) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None = None) -> ParsedTool | None:
         if tool_id not in self._cache:
             try:
                 ts = _find_tool_source(tool_id)

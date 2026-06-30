@@ -17,10 +17,7 @@ from dataclasses import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
     Literal,
-    Optional,
 )
 
 from jsonschema import Draft202012Validator
@@ -53,7 +50,7 @@ class JsonSchemaStepResult:
     tool_id: str | None
     errors: list[JsonSchemaValidationError]
     status: Literal["ok", "fail", "skip"]
-    skip_reason: Optional[str] = None
+    skip_reason: str | None = None
 
 
 @dataclass
@@ -322,10 +319,10 @@ def validate_workflow_json_schema(
 
 
 def validate_native_structural_json_schema(
-    workflow_dict: Dict[str, Any],
+    workflow_dict: dict[str, Any],
     *,
     strict: bool = False,
-) -> List[JsonSchemaValidationError]:
+) -> list[JsonSchemaValidationError]:
     """Validate a native .ga workflow dict against NativeGalaxyWorkflow JSON Schema.
 
     Returns list of validation errors (empty = valid).
@@ -336,9 +333,9 @@ def validate_native_structural_json_schema(
 
 
 def validate_native_workflow_json_schema(
-    workflow_dict: Dict[str, Any],
+    workflow_dict: dict[str, Any],
     get_tool_info: GetToolInfo,
-    tool_schema_dir: Optional[str] = None,
+    tool_schema_dir: str | None = None,
 ) -> JsonSchemaValidationResult:
     """Two-level JSON Schema validation of a native .ga workflow.
 
@@ -362,8 +359,8 @@ def validate_native_workflow_json_schema(
     if not isinstance(steps, dict):
         return result
 
-    _validator_cache: Dict[str, Optional[Draft202012Validator]] = {}
-    _parsed_tool_cache: Dict[str, Any] = {}
+    _validator_cache: dict[str, Draft202012Validator | None] = {}
+    _parsed_tool_cache: dict[str, Any] = {}
 
     for step_key, step_def in sorted(steps.items(), key=lambda x: int(x[0])):
         if not isinstance(step_def, dict):
@@ -420,7 +417,7 @@ def validate_native_workflow_json_schema(
 
         state = copy.deepcopy(tool_state)
 
-        connections: Dict[str, object] = {
+        connections: dict[str, object] = {
             key: (val if isinstance(val, list) else [val]) for key, val in input_connections.items()
         }
         inject_connections_into_state(list(parsed_tool.inputs), state, connections)

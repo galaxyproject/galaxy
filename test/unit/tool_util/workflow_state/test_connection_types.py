@@ -7,7 +7,6 @@ aren't naturally table-shaped stay here.
 """
 
 import os
-from typing import Union
 
 import pytest
 import yaml
@@ -30,7 +29,7 @@ def c_t(collection_type: str):
     return factory.for_collection_type(collection_type)
 
 
-def _resolve(token: Union[str, None]):
+def _resolve(token: str | None):
     """Resolve a YAML token to a collection type object.
 
     YAML ``NULL`` / ``null`` / ``~`` all parse to Python ``None``; we treat

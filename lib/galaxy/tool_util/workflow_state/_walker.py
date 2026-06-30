@@ -13,12 +13,9 @@ Two walkers for the two serialization formats:
 
 from typing import (
     Any,
-    Callable,
     cast,
-    List,
-    Optional,
-    Union,
 )
+from collections.abc import Callable
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
@@ -32,7 +29,7 @@ from galaxy.tool_util.parameters import (
 from galaxy.tool_util_models.parameters import SectionParameterModel
 
 
-def _collect_all_parameter_names(tool_inputs: List[ToolParameterT]) -> frozenset:
+def _collect_all_parameter_names(tool_inputs: list[ToolParameterT]) -> frozenset:
     """Collect all parameter names from the full tool input tree, across all conditional branches.
 
     Used to identify unknown root keys that are duplicates leaked by the Galaxy
@@ -64,7 +61,7 @@ class _SkipValue:
 
 SKIP_VALUE = _SkipValue()
 
-LeafCallback = Callable[[ToolParameterT, Any, str], Union[Any, _SkipValue]]
+LeafCallback = Callable[[ToolParameterT, Any, str], Any | _SkipValue]
 
 _NATIVE_BOOKKEEPING_KEYS = frozenset(
     {
@@ -81,13 +78,13 @@ _NATIVE_BOOKKEEPING_KEYS = frozenset(
 
 def walk_native_state(
     input_connections: dict,
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     state: dict,
     leaf_callback: LeafCallback,
-    prefix: Optional[str] = None,
+    prefix: str | None = None,
     check_unknown_keys: bool = False,
     allow_root_level_duplicates: bool = False,
-    _all_parameter_names: Optional[frozenset] = None,
+    _all_parameter_names: frozenset | None = None,
 ) -> dict:
     """Walk native tool state tree, calling leaf_callback for each leaf parameter.
 
@@ -134,7 +131,7 @@ def walk_native_state(
             conditional_state = value
             target_when = _select_which_when_native(conditional, conditional_state)
             if target_when is None:
-                all_params: List[ToolParameterT] = [conditional.test_parameter]
+                all_params: list[ToolParameterT] = [conditional.test_parameter]
             else:
                 all_params = [conditional.test_parameter] + list(target_when.parameters)
             nested = walk_native_state(
@@ -219,7 +216,7 @@ def _test_value_matches_discriminator(test_value, discriminator) -> bool:
 
 def _select_which_when_native(
     conditional: ConditionalParameterModel, conditional_state: dict
-) -> Optional[ConditionalWhen]:
+) -> ConditionalWhen | None:
     """Select which conditional branch matches the test parameter value.
 
     Returns None when no branch matches (e.g., boolean conditional set to
@@ -248,10 +245,10 @@ def _select_which_when_native(
 
 
 def walk_format2_state(
-    tool_inputs: List[ToolParameterT],
+    tool_inputs: list[ToolParameterT],
     state: dict,
     leaf_callback: LeafCallback,
-    prefix: Optional[str] = None,
+    prefix: str | None = None,
 ) -> dict:
     """Walk a format2 structured state dict, calling leaf_callback for each leaf parameter.
 
@@ -290,7 +287,7 @@ def _walk_format2_value(tool_input: ToolParameterT, value: Any, state_path: str,
         conditional = cast(ConditionalParameterModel, tool_input)
         target_when = select_which_when_format2(conditional, value)
         if target_when is None:
-            all_params: List[ToolParameterT] = [conditional.test_parameter]
+            all_params: list[ToolParameterT] = [conditional.test_parameter]
         else:
             all_params = [conditional.test_parameter] + list(target_when.parameters)
         nested = walk_format2_state(all_params, value, leaf_callback, prefix=state_path)
@@ -320,7 +317,7 @@ def _walk_format2_value(tool_input: ToolParameterT, value: Any, state_path: str,
         return leaf_callback(tool_input, value, state_path)
 
 
-def select_which_when_format2(conditional: ConditionalParameterModel, state: dict) -> Optional[ConditionalWhen]:
+def select_which_when_format2(conditional: ConditionalParameterModel, state: dict) -> ConditionalWhen | None:
     """Select the matching ConditionalWhen for a format2 conditional state dict.
 
     Delegates to _select_which_when_native (same matching logic + default-when

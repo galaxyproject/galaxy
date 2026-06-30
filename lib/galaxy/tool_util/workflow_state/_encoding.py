@@ -18,8 +18,6 @@ step level before any normalization.
 
 from typing import (
     Any,
-    Dict,
-    List,
 )
 
 __all__ = (
@@ -30,16 +28,16 @@ __all__ = (
 )
 
 
-def _is_native(workflow_dict: Dict[str, Any]) -> bool:
+def _is_native(workflow_dict: dict[str, Any]) -> bool:
     return workflow_dict.get("a_galaxy_workflow") == "true"
 
 
-def validate_encoding_native(workflow_dict: Dict[str, Any]) -> List[str]:
+def validate_encoding_native(workflow_dict: dict[str, Any]) -> list[str]:
     """Check that a native workflow's tool_state values are proper dicts.
 
     Returns a list of error messages. Empty list means clean encoding.
     """
-    errors: List[str] = []
+    errors: list[str] = []
     steps = workflow_dict.get("steps") or {}
     if not isinstance(steps, dict):
         return errors
@@ -59,9 +57,9 @@ def validate_encoding_native(workflow_dict: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def validate_encoding_format2(workflow_dict: Dict[str, Any]) -> List[str]:
+def validate_encoding_format2(workflow_dict: dict[str, Any]) -> list[str]:
     """Check that a format2 workflow uses `state` (not `tool_state`)."""
-    errors: List[str] = []
+    errors: list[str] = []
     steps = workflow_dict.get("steps")
     if isinstance(steps, list):
         items = list(enumerate(steps))
@@ -79,14 +77,14 @@ def validate_encoding_format2(workflow_dict: Dict[str, Any]) -> List[str]:
     return errors
 
 
-def check_strict_encoding(workflow_dict: Dict[str, Any]) -> List[str]:
+def check_strict_encoding(workflow_dict: dict[str, Any]) -> list[str]:
     """Run the encoding validator appropriate for a workflow's format."""
     if _is_native(workflow_dict):
         return validate_encoding_native(workflow_dict)
     return validate_encoding_format2(workflow_dict)
 
 
-def check_strict_structure(workflow_dict: Dict[str, Any]) -> List[str]:
+def check_strict_structure(workflow_dict: dict[str, Any]) -> list[str]:
     """Validate a raw workflow dict against gxformat2 strict schema.
 
     Returns list of error messages (empty = valid). Uses

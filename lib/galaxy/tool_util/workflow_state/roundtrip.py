@@ -1311,8 +1311,8 @@ class SingleRoundTripReport(BaseModel):
 
     workflow: str
     result: RoundTripValidationResult
-    before_content: Optional[str] = None
-    after_content: Optional[str] = None
+    before_content: str | None = None
+    after_content: str | None = None
 
 
 # -- Options model --
@@ -1388,8 +1388,8 @@ def roundtrip_single(
         strict_state=strict_state,
     )
 
-    before_content: Optional[str] = None
-    after_content: Optional[str] = None
+    before_content: str | None = None
+    after_content: str | None = None
     if include_content:
         if result.original_dict is not None:
             before_content = json.dumps(result.original_dict, indent=2)

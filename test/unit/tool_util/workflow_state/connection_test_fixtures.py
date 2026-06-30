@@ -1,7 +1,5 @@
 """Shared test fixtures for workflow connection validation tests."""
 
-from typing import Optional
-
 from galaxy.tool_util.parameters import (
     DataCollectionParameterModel,
     DataParameterModel,
@@ -87,7 +85,7 @@ class MockGetToolInfo:
     def register(self, tool_id, parsed_tool):
         self._tools[tool_id] = parsed_tool
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         return self._tools.get(tool_id)
 
 

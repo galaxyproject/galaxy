@@ -7,8 +7,6 @@ Covers:
 - Per-CLI tree templates — structural assertions (Step 4).
 """
 
-from typing import Optional
-
 from jinja2 import Environment
 
 from galaxy.tool_util.workflow_state._report_models import (
@@ -386,7 +384,7 @@ def test_clean_tree_structure() -> None:
 
 
 def _validate_tree_fixture() -> TreeValidationReport:
-    def step(i: int, tool: str, status: str, errors: Optional[list] = None) -> ValidationStepResult:
+    def step(i: int, tool: str, status: str, errors: list | None = None) -> ValidationStepResult:
         return ValidationStepResult(step=str(i), tool_id=tool, status=status, errors=errors or [])
 
     return TreeValidationReport(

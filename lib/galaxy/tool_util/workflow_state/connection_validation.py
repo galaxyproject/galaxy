@@ -8,12 +8,6 @@ from dataclasses import (
     dataclass,
     field,
 )
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-)
 
 from galaxy.tool_util.collections import (
     COLLECTION_TYPE_DESCRIPTION_FACTORY,
@@ -46,7 +40,7 @@ from .connection_types import (
 )
 
 # step_id -> output_name -> resolved collection type
-StepOutputTypeMap = Dict[str, Dict[str, CollectionTypeOrSentinel]]
+StepOutputTypeMap = dict[str, dict[str, CollectionTypeOrSentinel]]
 
 
 @dataclass
@@ -58,8 +52,8 @@ class ConnectionValidationResult:
     target_step: str
     target_input: str
     status: ConnectionStatus
-    mapping: Optional[str] = None  # collection type being mapped over, None = direct
-    errors: List[str] = field(default_factory=list)
+    mapping: str | None = None  # collection type being mapped over, None = direct
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -67,18 +61,18 @@ class StepConnectionResult:
     """Aggregated connection validation for one step."""
 
     step_id: str
-    tool_id: Optional[str] = None
+    tool_id: str | None = None
     step_type: str = "tool"
-    map_over: Optional[str] = None
-    connections: List[ConnectionValidationResult] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    map_over: str | None = None
+    connections: list[ConnectionValidationResult] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
 
 
 @dataclass
 class WorkflowConnectionResult:
     """Whole-workflow connection validation result."""
 
-    step_results: List[StepConnectionResult] = field(default_factory=list)
+    step_results: list[StepConnectionResult] = field(default_factory=list)
 
     @property
     def valid(self) -> bool:
@@ -91,8 +85,8 @@ class WorkflowConnectionResult:
         return True
 
     @property
-    def summary(self) -> Dict[str, int]:
-        counts: Dict[str, int] = {"ok": 0, "invalid": 0, "skip": 0}
+    def summary(self) -> dict[str, int]:
+        counts: dict[str, int] = {"ok": 0, "invalid": 0, "skip": 0}
         for sr in self.step_results:
             for cr in sr.connections:
                 counts[cr.status] = counts.get(cr.status, 0) + 1
@@ -121,8 +115,8 @@ def validate_connections_report(
 
 def validate_connection_graph(
     graph: WorkflowGraph,
-    seed_output_types: Optional[StepOutputTypeMap] = None,
-) -> Tuple[WorkflowConnectionResult, StepOutputTypeMap]:
+    seed_output_types: StepOutputTypeMap | None = None,
+) -> tuple[WorkflowConnectionResult, StepOutputTypeMap]:
     """Validate connections on a pre-built workflow graph.
 
     Processes steps in topological order so upstream output types are
@@ -161,7 +155,7 @@ def validate_connection_graph(
             continue
 
         # Validate each connection into this step
-        map_over_contributions: List[Optional[CollectionTypeDescription]] = []
+        map_over_contributions: list[CollectionTypeDescription | None] = []
 
         for input_path, conn_refs in step.connections.items():
             for ref in conn_refs:
@@ -202,7 +196,7 @@ def _validate_single_connection(
     source_output: str,
     target_step: str,
     target_input: str,
-    target_resolved_input: Optional[ResolvedInput],
+    target_resolved_input: ResolvedInput | None,
     resolved_output_types: StepOutputTypeMap,
 ) -> ConnectionValidationResult:
     """Validate a single output->input connection."""
@@ -233,7 +227,7 @@ def _validate_single_connection(
 
     target_type = _input_to_type(target_resolved_input)
 
-    def _ok(mapping: Optional[str] = None):
+    def _ok(mapping: str | None = None):
         return ConnectionValidationResult(
             source_step=source_step,
             source_output=source_output,
@@ -299,9 +293,9 @@ def _validate_single_connection(
 
 
 def _resolve_step_map_over(
-    contributions: List[Optional[CollectionTypeDescription]],
+    contributions: list[CollectionTypeDescription | None],
     step_result: StepConnectionResult,
-) -> Optional[CollectionTypeDescription]:
+) -> CollectionTypeDescription | None:
     """Resolve effective map-over from all connection contributions.
 
     Pairs of non-None contributions are checked with the symmetric
@@ -327,7 +321,7 @@ def _resolve_step_map_over(
 
 def _resolve_output_types(
     step: ResolvedStep,
-    map_over: Optional[CollectionTypeDescription],
+    map_over: CollectionTypeDescription | None,
     resolved_output_types: StepOutputTypeMap,
 ):
     """Resolve a step's output types accounting for map-over.
@@ -391,8 +385,8 @@ def _resolve_collection_output_type(
     step: ResolvedStep,
     output: ResolvedOutput,
     resolved_output_types: StepOutputTypeMap,
-    map_over: Optional[CollectionTypeDescription] = None,
-) -> Optional[str]:
+    map_over: CollectionTypeDescription | None = None,
+) -> str | None:
     """Resolve a collection output's base type (before map-over prefix)."""
     if output.collection_type:
         return output.collection_type
@@ -409,8 +403,8 @@ def _resolve_collection_type_source(
     step: ResolvedStep,
     source_param: str,
     resolved_output_types: StepOutputTypeMap,
-    map_over: Optional[CollectionTypeDescription] = None,
-) -> Optional[str]:
+    map_over: CollectionTypeDescription | None = None,
+) -> str | None:
     """Resolve a collection_type_source/structured_like reference.
 
     When the step is mapped over, the upstream output type includes the
@@ -467,7 +461,7 @@ def _type_description(t: CollectionTypeOrSentinel) -> str:
     return f"collection<{t.collection_type}>"
 
 
-def _sentinel_to_collection_type(t: CollectionTypeOrSentinel) -> Optional[str]:
+def _sentinel_to_collection_type(t: CollectionTypeOrSentinel) -> str | None:
     """Convert a CollectionTypeOrSentinel to an optional collection_type string."""
     if t is NULL_COLLECTION_TYPE or t is ANY_COLLECTION_TYPE:
         return None

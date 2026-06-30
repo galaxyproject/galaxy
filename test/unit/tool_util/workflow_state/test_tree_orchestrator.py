@@ -5,10 +5,6 @@ using mock workflows and processing functions.
 """
 
 import json
-from typing import (
-    List,
-    Optional,
-)
 
 from pydantic import BaseModel
 
@@ -53,8 +49,8 @@ class MockReport(BaseModel):
 
 
 class _MockReportDests:
-    report_json: Optional[str] = None
-    report_markdown: Optional[str] = None
+    report_json: str | None = None
+    report_markdown: str | None = None
 
 
 class _NullToolInfo:
@@ -152,7 +148,7 @@ class TestRunTree:
         def process_one(info, wf_dict, tool_info):
             raise ValueError("something broke")
 
-        errors_seen: List[WorkflowOutcome] = []
+        errors_seen: list[WorkflowOutcome] = []
 
         def aggregate(tree_result):
             errors_seen.extend(o for o in tree_result.outcomes if o.error)

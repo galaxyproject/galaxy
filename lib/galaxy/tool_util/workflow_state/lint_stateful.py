@@ -8,7 +8,6 @@ output labels, etc.) with galaxy-tool-util's tool state validation
 import logging
 import os
 import sys
-from typing import List
 
 from gxformat2.lint import (
     _try_build_nf2,
@@ -323,7 +322,7 @@ def run_lint_stateful(options: LintStatefulOptions) -> int:
     return exit_code
 
 
-def _inline_source_exit_code(results: List[ValidationStepResult], strict_inline_source: bool) -> int:
+def _inline_source_exit_code(results: list[ValidationStepResult], strict_inline_source: bool) -> int:
     """Compute incremental exit code from inline-source diagnostics.
 
     Plan §7.3 ("Errors fail per existing strict-* axes"): both pydantic

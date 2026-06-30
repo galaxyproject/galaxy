@@ -15,8 +15,6 @@ import os
 from copy import deepcopy
 from typing import (
     Any,
-    Dict,
-    Optional,
 )
 
 import yaml
@@ -28,8 +26,8 @@ FORMAT2_FIXTURE_PATH = os.path.join(INLINE_UDT_FIXTURE_DIR, "cat_udt_format2.gxw
 
 
 def load_native_inline_udt(
-    state: Optional[Dict[str, Any]] = None,
-    representation: Optional[Dict[str, Any]] = None,
+    state: dict[str, Any] | None = None,
+    representation: dict[str, Any] | None = None,
 ) -> dict:
     """Load the native cat-UDT workflow; optionally swap step 1's
     ``tool_state`` or ``tool_representation`` for variant tests."""
@@ -43,8 +41,8 @@ def load_native_inline_udt(
 
 
 def load_format2_inline_udt(
-    state: Optional[Dict[str, Any]] = None,
-    representation: Optional[Dict[str, Any]] = None,
+    state: dict[str, Any] | None = None,
+    representation: dict[str, Any] | None = None,
 ) -> dict:
     """Load the format2 cat-UDT workflow; optionally swap ``the_udt.state``
     or ``the_udt.run`` for variant tests."""

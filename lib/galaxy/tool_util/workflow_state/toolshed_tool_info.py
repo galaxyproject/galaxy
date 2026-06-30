@@ -20,10 +20,6 @@ from datetime import (
 )
 from typing import (
     Any,
-    Dict,
-    List,
-    Optional,
-    Tuple,
 )
 from urllib.parse import quote
 
@@ -37,7 +33,7 @@ DEFAULT_TOOLSHED_URL = "https://toolshed.g2.bx.psu.edu"
 TOOLSHED_URL_ENV_VAR = "GALAXY_TOOLSHED_URL"
 
 
-def get_cache_dir(override: Optional[str] = None) -> str:
+def get_cache_dir(override: str | None = None) -> str:
     """Return cache directory from override, env var, or default."""
     return override or os.environ.get(CACHE_DIR_ENV_VAR) or DEFAULT_CACHE_DIR
 
@@ -46,7 +42,7 @@ GALAXY_URL_ENV_VAR = "GALAXY_URL"
 DEFAULT_GALAXY_URL = "https://usegalaxy.org"
 
 
-def parse_toolshed_tool_id(tool_id: str) -> Optional[Tuple[str, str, Optional[str]]]:
+def parse_toolshed_tool_id(tool_id: str) -> tuple[str, str, str | None] | None:
     """Parse a toolshed tool_id into (toolshed_url, trs_tool_id, tool_version).
 
     Input format: toolshed.g2.bx.psu.edu/repos/owner/repo/tool_id/version
@@ -103,15 +99,15 @@ class CacheIndex:
     def __init__(self, cache_dir: str):
         self.cache_dir = cache_dir
         self._index_path = os.path.join(cache_dir, "index.json")
-        self._entries: Optional[Dict] = None
+        self._entries: dict | None = None
 
     @property
-    def entries(self) -> Dict:
+    def entries(self) -> dict:
         if self._entries is None:
             self._entries = self._load()
         return self._entries
 
-    def _load(self) -> Dict:
+    def _load(self) -> dict:
         if not os.path.exists(self._index_path):
             return {}
         try:
@@ -145,7 +141,7 @@ class CacheIndex:
     def has(self, cache_key: str) -> bool:
         return cache_key in self.entries
 
-    def list_all(self) -> List[Dict]:
+    def list_all(self) -> list[dict]:
         """Return all index entries with their cache keys."""
         result = []
         for key, entry in self.entries.items():
@@ -162,25 +158,25 @@ class ToolShedGetToolInfo:
 
     def __init__(
         self,
-        cache_dir: Optional[str] = None,
-        default_toolshed_url: Optional[str] = None,
-        galaxy_url: Optional[str] = None,
+        cache_dir: str | None = None,
+        default_toolshed_url: str | None = None,
+        galaxy_url: str | None = None,
     ):
         self.cache_dir = get_cache_dir(cache_dir)
         self.default_toolshed_url = default_toolshed_url or os.environ.get(TOOLSHED_URL_ENV_VAR) or DEFAULT_TOOLSHED_URL
         self.galaxy_url = galaxy_url or os.environ.get(GALAXY_URL_ENV_VAR) or DEFAULT_GALAXY_URL
-        self._memory_cache: Dict[str, ParsedTool] = {}
+        self._memory_cache: dict[str, ParsedTool] = {}
         self._index = CacheIndex(self.cache_dir)
 
     @property
     def index(self) -> CacheIndex:
         return self._index
 
-    def resolve_tool_coordinates(self, tool_id: str, tool_version: Optional[str]):
+    def resolve_tool_coordinates(self, tool_id: str, tool_version: str | None):
         """Public accessor for resolved (toolshed_url, trs_tool_id, version, readable_id)."""
         return self._resolve_tool_coordinates(tool_id, tool_version)
 
-    def _resolve_tool_coordinates(self, tool_id: str, tool_version: Optional[str]):
+    def _resolve_tool_coordinates(self, tool_id: str, tool_version: str | None):
         """Resolve tool_id to (toolshed_url, trs_tool_id, version, readable_id).
 
         Handles both toolshed tools (/repos/ in ID) and stock tools (simple ID).
@@ -198,7 +194,7 @@ class ToolShedGetToolInfo:
             readable_id = tool_id
         return toolshed_url, trs_tool_id, version, readable_id
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         toolshed_url, trs_tool_id, version, readable_id = self._resolve_tool_coordinates(tool_id, tool_version)
         if version is None:
             raise KeyError(f"No version available for tool: {tool_id}")
@@ -247,7 +243,7 @@ class ToolShedGetToolInfo:
         self._memory_cache[cache_key] = parsed_tool
         return cache_key
 
-    def has_cached(self, tool_id: str, tool_version: Optional[str] = None) -> bool:
+    def has_cached(self, tool_id: str, tool_version: str | None = None) -> bool:
         """Check if a tool is in the cache (filesystem or memory)."""
         toolshed_url, trs_tool_id, version, _readable_id = self._resolve_tool_coordinates(tool_id, tool_version)
         if version is None:
@@ -255,11 +251,11 @@ class ToolShedGetToolInfo:
         cache_key = _cache_key(toolshed_url, trs_tool_id, version)
         return cache_key in self._memory_cache or os.path.exists(self._cache_path(cache_key))
 
-    def list_cached(self) -> List[Dict]:
+    def list_cached(self) -> list[dict]:
         """Return provenance info for all cached tools."""
         return self._index.list_all()
 
-    def clear_cache(self, tool_id: Optional[str] = None) -> int:
+    def clear_cache(self, tool_id: str | None = None) -> int:
         """Clear cache. If tool_id given, clear matching entries; otherwise clear all.
 
         Returns the number of index entries removed.
@@ -287,7 +283,7 @@ class ToolShedGetToolInfo:
             self._memory_cache.pop(key, None)
         return len(to_remove)
 
-    def stat_cached(self, cache_key: str) -> Optional[Dict[str, Any]]:
+    def stat_cached(self, cache_key: str) -> dict[str, Any] | None:
         """Return filesystem stats for a cached entry, or None if no file exists."""
         path = self._cache_path(cache_key)
         if not os.path.exists(path):
@@ -298,7 +294,7 @@ class ToolShedGetToolInfo:
             "mtime": datetime.fromtimestamp(st.st_mtime, tz=timezone.utc).isoformat(),
         }
 
-    def load_cached_raw(self, cache_key: str) -> Optional[Any]:
+    def load_cached_raw(self, cache_key: str) -> Any | None:
         """Load raw JSON contents (not ParsedTool-validated) for a cache entry."""
         path = self._cache_path(cache_key)
         if not os.path.exists(path):
@@ -322,9 +318,9 @@ class ToolShedGetToolInfo:
     def refetch(
         self,
         tool_id: str,
-        tool_version: Optional[str] = None,
+        tool_version: str | None = None,
         force: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Idempotent populate (force=False) or forced re-fetch (force=True).
 
         Returns {"cache_key": str, "fetched": bool, "already_cached": bool}.
@@ -351,7 +347,7 @@ class ToolShedGetToolInfo:
         """Fetch ParsedTool from ToolShed API (no caching)."""
         return self._fetch_from_api(toolshed_url, trs_tool_id, tool_version)
 
-    def fetch_from_galaxy(self, galaxy_url: str, tool_id: str, tool_version: Optional[str] = None) -> ParsedTool:
+    def fetch_from_galaxy(self, galaxy_url: str, tool_id: str, tool_version: str | None = None) -> ParsedTool:
         """Fetch ParsedTool from a Galaxy instance's /api/tools/{id}/parsed endpoint."""
         import requests
 
@@ -366,7 +362,7 @@ class ToolShedGetToolInfo:
             raise KeyError(f"Failed to fetch tool from Galaxy {url}: {response.status_code} {response.text[:200]}")
         return ParsedTool.model_validate(response.json())
 
-    def load_cached(self, cache_key: str) -> Optional[ParsedTool]:
+    def load_cached(self, cache_key: str) -> ParsedTool | None:
         """Load a ParsedTool from the filesystem cache by key."""
         return self._load_from_cache(cache_key)
 
@@ -383,7 +379,7 @@ class ToolShedGetToolInfo:
     def _cache_path(self, cache_key: str) -> str:
         return os.path.join(self.cache_dir, f"{cache_key}.json")
 
-    def _load_from_cache(self, cache_key: str) -> Optional[ParsedTool]:
+    def _load_from_cache(self, cache_key: str) -> ParsedTool | None:
         path = self._cache_path(cache_key)
         if not os.path.exists(path):
             return None
@@ -422,11 +418,11 @@ class ToolShedGetToolInfo:
 class CombinedGetToolInfo:
     """GetToolInfo that tries stock tools first, then falls back to ToolShed API."""
 
-    def __init__(self, stock_get_tool_info, toolshed_get_tool_info: Optional[ToolShedGetToolInfo] = None):
+    def __init__(self, stock_get_tool_info, toolshed_get_tool_info: ToolShedGetToolInfo | None = None):
         self.stock = stock_get_tool_info
         self.toolshed = toolshed_get_tool_info or ToolShedGetToolInfo()
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         # If it looks like a toolshed tool, try toolshed first
         if "/repos/" in tool_id:
             try:

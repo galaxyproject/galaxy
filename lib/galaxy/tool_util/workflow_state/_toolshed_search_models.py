@@ -11,10 +11,7 @@ coerces both shapes.
 
 from typing import (
     Annotated,
-    Dict,
     Generic,
-    List,
-    Optional,
     TypeVar,
 )
 
@@ -49,18 +46,18 @@ class ToolSearchHitTool(BaseModel):
 
     id: str
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     repo_name: str
     repo_owner_username: str
-    version: Optional[str] = None
-    changeset_revision: Optional[str] = None
+    version: str | None = None
+    changeset_revision: str | None = None
 
 
 class ToolSearchHit(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     tool: ToolSearchHitTool
-    matched_terms: Dict[str, str] = Field(default_factory=dict)
+    matched_terms: dict[str, str] = Field(default_factory=dict)
     score: float
 
 
@@ -72,13 +69,13 @@ class RepositorySearchHitRepo(BaseModel):
     id: str
     name: str
     repo_owner_username: str
-    description: Optional[str] = None
-    long_description: Optional[str] = None
-    remote_repository_url: Optional[str] = None
-    homepage_url: Optional[str] = None
-    last_update: Optional[str] = None
-    full_last_updated: Optional[str] = None
-    categories: Optional[str] = None
+    description: str | None = None
+    long_description: str | None = None
+    remote_repository_url: str | None = None
+    homepage_url: str | None = None
+    last_update: str | None = None
+    full_last_updated: str | None = None
+    categories: str | None = None
     approved: bool
     times_downloaded: CoercedCount
 
@@ -100,7 +97,7 @@ class SearchResults(BaseModel, Generic[HitT]):
     page: CoercedCount
     page_size: CoercedCount
     hostname: str
-    hits: List[HitT]
+    hits: list[HitT]
 
 
 class TRSToolVersion(BaseModel):
@@ -109,10 +106,10 @@ class TRSToolVersion(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     id: str
-    name: Optional[str] = None
+    name: str | None = None
     url: str
-    descriptor_type: List[str]
-    author: List[str]
+    descriptor_type: list[str]
+    author: list[str]
 
 
 class ToolRevisionMatch(BaseModel):

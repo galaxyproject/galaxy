@@ -7,10 +7,6 @@ Supports both native .ga and format2 .gxwf.yml workflows.
 import logging
 import os
 import sys
-from typing import (
-    List,
-    Optional,
-)
 
 from ._cli_common import (
     setup_tool_info,
@@ -632,9 +628,9 @@ def format_text(results: list[ValidationStepResult], summary_only: bool = False)
     return "\n".join(lines)
 
 
-def _format_inline_source_text(results: List[ValidationStepResult]) -> List[str]:
+def _format_inline_source_text(results: list[ValidationStepResult]) -> list[str]:
     """Per-step inline-source diagnostics as text bullets."""
-    lines: List[str] = []
+    lines: list[str] = []
     for r in results:
         inline = r.inline_source
         if inline is None or not inline.has_issues:
@@ -659,7 +655,7 @@ def _format_inline_source_text(results: List[ValidationStepResult]) -> List[str]
     return lines
 
 
-def _summary_inline_source_text(results: List[ValidationStepResult]) -> Optional[str]:
+def _summary_inline_source_text(results: list[ValidationStepResult]) -> str | None:
     n_invalid = n_lint_err = n_lint_warn = n_unsupported = 0
     for r in results:
         inline = r.inline_source

@@ -7,9 +7,7 @@ the ``Diagnostic`` shape emitted by ``gxwf validate``.
 
 from typing import (
     Any,
-    List,
     Literal,
-    Optional,
 )
 
 from pydantic import (
@@ -27,12 +25,12 @@ class TestDiagnostic(BaseModel):
     path: str
     message: str
     severity: Severity = "error"
-    category: Optional[str] = None
+    category: str | None = None
 
 
 class TestsValidationResult(BaseModel):
     valid: bool
-    diagnostics: List[TestDiagnostic] = []
+    diagnostics: list[TestDiagnostic] = []
 
 
 def load_tests_file(path: str) -> Any:

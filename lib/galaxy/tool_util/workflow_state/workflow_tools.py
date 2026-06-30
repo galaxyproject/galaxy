@@ -2,12 +2,11 @@
 
 import json
 import logging
-from typing import Dict
 
 log = logging.getLogger(__name__)
 
 
-def load_workflow(path: str) -> Dict:
+def load_workflow(path: str) -> dict:
     """Load a workflow from a .ga or .gxwf.yml file."""
     with open(path) as f:
         if path.endswith((".yml", ".yaml")):

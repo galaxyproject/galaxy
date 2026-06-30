@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from gxformat2.yaml import ordered_load
 
@@ -54,7 +53,7 @@ def test_invalidate_with_missing_link():
 
 def _assert_validation_failure(workflow_name: str) -> Exception:
     as_dict = unit_test_workflow_as_dict(workflow_name)
-    exc: Optional[Exception] = None
+    exc: Exception | None = None
     try:
         validate_workflow(as_dict)
     except Exception as e:

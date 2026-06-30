@@ -6,7 +6,6 @@ but for internal tooling - Galaxy should have its own tool available.
 
 import logging
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -56,7 +55,7 @@ class GalaxyGetToolInfo(GetToolInfo):
         self.stock_tools = stock_tools
         self.stock_tools_latest_version = stock_tools_latest_version
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> ParsedTool:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool:
         tool_versions = self.stock_tools.get(tool_id, {})
         if not tool_versions:
             raise KeyError(tool_id)
@@ -87,11 +86,11 @@ class ToolboxGetToolInfo:
     toolbox.
     """
 
-    def __init__(self, toolbox: "AbstractToolBox", stock_get_tool_info: Optional[GetToolInfo] = None):
+    def __init__(self, toolbox: "AbstractToolBox", stock_get_tool_info: GetToolInfo | None = None):
         self.toolbox = toolbox
         self.stock = stock_get_tool_info or GET_TOOL_INFO
 
-    def get_tool_info(self, tool_id: str, tool_version: Optional[str]) -> Optional[ParsedTool]:
+    def get_tool_info(self, tool_id: str, tool_version: str | None) -> ParsedTool | None:
         tool = self.toolbox.get_tool(tool_id, tool_version=tool_version)
         if tool is not None and tool.parameters is not None:
             return _ToolInputsFromTool(tool)  # type: ignore[return-value]  # satisfies ToolInputs
