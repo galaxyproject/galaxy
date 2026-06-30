@@ -92,7 +92,8 @@ const recentToolsInPanel = computed(() =>
 /**
  * Flatten the parent's panel sections into a single ordered list of tool ids.
  * Used to keep tools inside favorite-tag / favorite-EDAM sections in the same
- * order they appear in the default panel view.
+ * order they appear in the default panel view, while excluding older installed
+ * versions that are present in the all-tools cache but not the panel.
  */
 const orderedToolIds = computed(() => {
     const ordered: string[] = [];
@@ -123,7 +124,6 @@ const orderedToolIds = computed(() => {
         }
     }
 
-    Object.keys(props.localToolsById).forEach(appendToolId);
     return ordered;
 });
 
