@@ -19,6 +19,7 @@ from gxformat2.normalized import (
     ensure_native,
     NormalizedNativeWorkflow,
 )
+from pydantic import ValidationError
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,
@@ -26,6 +27,7 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
+
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
@@ -47,7 +49,10 @@ from ._types import (
     NativeWorkflowDict,
     ToolInputs,
 )
-from ._util import inline_class_from_run
+from ._util import (
+    inline_class_from_run,
+    step_tool_state,
+)
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,
     _select_which_when_native,
@@ -60,7 +65,11 @@ from .stale_keys import (
     StaleKeyCategory,
     StaleKeyPolicy,
 )
-from .validation_native import get_parsed_tool_for_native_step
+from .validation_native import (
+    get_parsed_tool_for_native_step,
+    ReplacementParamsSkip,
+    validate_native_step_against,
+)
 from .workflow_tools import load_workflow
 
 log = logging.getLogger(__name__)
@@ -135,6 +144,7 @@ class CleanOptions(ToolCacheOptions):
     preserve: list[str] = []
     strip: list[str] = []
     skip_uuid: bool = False
+    validate_state: bool = False
 
 
 class CleanTreeOptions(ToolCacheOptions):
@@ -144,6 +154,7 @@ class CleanTreeOptions(ToolCacheOptions):
     preserve: list[str] = []
     strip: list[str] = []
     skip_uuid: bool = False
+    validate_state: bool = False
 
 
 # -- Intermediate result (for single-workflow cleaning before wrapping) --
@@ -162,6 +173,10 @@ class CleanResult:
     @property
     def steps_with_removals(self) -> int:
         return sum(1 for r in self.step_results if r.removed_state_keys or r.removed_step_keys)
+
+    @property
+    def reverted_steps(self) -> int:
+        return sum(1 for r in self.step_results if r.reverted)
 
     def merge(self, other: "CleanResult"):
         self.step_results.extend(other.step_results)
@@ -291,6 +306,22 @@ def _strip_recursive(
             state[name] = section_state
 
 
+def _raw_step_def(raw_steps: dict, step_id) -> dict:
+    """Look up a raw step dict by id, tolerating str- or int-keyed step maps.
+
+    Disk-loaded .ga files use string step keys; Galaxy's in-memory export dict
+    (``_workflow_to_dict_export``) keys steps by integer ``order_index``. Return
+    the stored dict (so in-place mutation persists) or ``{}`` if not found.
+    """
+    if str(step_id) in raw_steps:
+        return raw_steps[str(step_id)]
+    try:
+        int_id = int(step_id)
+    except (TypeError, ValueError):
+        return {}
+    return raw_steps.get(int_id, {})
+
+
 def _policy_to_strip_bookkeeping(policy: StaleKeyPolicy | None) -> bool:
     """Extract strip_bookkeeping boolean from policy for _strip_recursive."""
     if policy is None:
@@ -345,6 +376,55 @@ def strip_stale_keys(
     )
 
 
+def _revert_if_invalid(
+    step_def: NativeStepDict,
+    step,
+    parsed_tool: ToolInputs,
+    original_state: Any,
+    step_result: CleanStepResult,
+) -> None:
+    """Validate a step's cleaned tool_state; revert to *original_state* if invalid.
+
+    The stale-key strip is the "scarier" transform — if the tool definition used
+    for cleaning doesn't match the state's origin, stripping can drop a real
+    parameter and leave the step invalid.  Validating the cleaned native state
+    against the same tool definition catches that and reverts the tool_state
+    (not the structural step strips, which are always safe).
+
+    Replacement-parameter steps can't be type-validated; their strip is
+    conservative (only keys absent from the tool definition are removed) so the
+    clean is kept.
+
+    As an opt-in safety net, an *unexpected* error while validating also reverts
+    (and is logged) rather than aborting the whole clean — a failed download is a
+    worse outcome than skipping the strip for one step.
+    """
+    if not step_result.removed_state_keys:
+        return
+    try:
+        validate_native_step_against(step_def, parsed_tool)
+        return
+    except ReplacementParamsSkip:
+        return
+    except ValidationError as e:
+        reason = f"{e.error_count()} validation error(s) after clean"
+    except Exception as e:
+        log.warning("Unexpected error validating cleaned step %s; reverting clean", step_result.step, exc_info=True)
+        reason = f"validation error after clean: {e}"
+    _revert_step(step_def, step, original_state, step_result, reason)
+
+
+def _revert_step(step_def, step, original_state: Any, step_result: CleanStepResult, reason: str) -> None:
+    """Restore a step's pre-clean tool_state and mark the result reverted."""
+    step_def["tool_state"] = original_state
+    # Keep the normalized model in sync with the reverted raw dict regardless of
+    # whether original_state is a dict (CLI shape) or a JSON string (export shape).
+    step.tool_state = step_tool_state(step_def)
+    step_result.reverted = True
+    step_result.revert_reason = reason
+    step_result.removed_state_keys = []
+
+
 def clean_stale_state(
     workflow: NormalizedNativeWorkflow,
     workflow_dict: NativeWorkflowDict,
@@ -352,6 +432,7 @@ def clean_stale_state(
     prefix: str = "",
     policy: StaleKeyPolicy | None = None,
     skip_uuid: bool = False,
+    validate: bool = False,
 ) -> CleanResult:
     """Clean stale keys from all steps in a native workflow dict (mutates in place).
 
@@ -362,6 +443,10 @@ def clean_stale_state(
 
     When *policy* is None, defaults to ``StaleKeyPolicy.for_clean([], [])``
     which strips all stale categories including bookkeeping.
+
+    When *validate* is True, each step's cleaned native tool_state is validated
+    against its tool definition; steps that fail validation have their tool_state
+    reverted to the pre-clean value (see :func:`_revert_if_invalid`).
     """
     if policy is None:
         policy = StaleKeyPolicy.for_clean([], [])
@@ -373,7 +458,7 @@ def clean_stale_state(
         step_label = f"{prefix}{step_id}" if prefix else str(step_id)
 
         if step.is_subworkflow_step and step.subworkflow:
-            step_def = raw_steps.get(str(step_id), raw_steps.get(step_id, {}))
+            step_def = _raw_step_def(raw_steps, step_id)
             sub_dict = step_def.get("subworkflow", {}) if isinstance(step_def, dict) else {}
             sub_result = clean_stale_state(
                 step.subworkflow,
@@ -382,6 +467,7 @@ def clean_stale_state(
                 prefix=f"{step_label}.",
                 policy=policy,
                 skip_uuid=skip_uuid,
+                validate=validate,
             )
             result.merge(sub_result)
             continue
@@ -418,7 +504,8 @@ def clean_stale_state(
             )
             continue
 
-        step_def = raw_steps.get(str(step_id), raw_steps.get(step_id, {}))
+        step_def = _raw_step_def(raw_steps, step_id)
+        original_state = copy.deepcopy(step_def.get("tool_state")) if validate else None
         removed_step_keys = strip_structural_step(step_def, skip_uuid=skip_uuid)
         step_result = strip_stale_keys(step_def, parsed_tool, policy=policy)
         # Keep normalized model in sync with the mutated raw dict
@@ -427,6 +514,8 @@ def clean_stale_state(
             step.tool_state = cleaned_state
         step_result.step = step_label
         step_result.removed_step_keys = removed_step_keys
+        if validate:
+            _revert_if_invalid(step_def, step, parsed_tool, original_state, step_result)
         result.step_results.append(step_result)
 
     return result
@@ -591,6 +680,7 @@ def clean_single(
     tool_info: GetToolInfo,
     policy: StaleKeyPolicy | None = None,
     include_content: bool = False,
+    validate: bool = False,
 ) -> SingleCleanReport:
     """Clean stale keys from a single workflow, return structured report.
 
@@ -617,7 +707,7 @@ def clean_single(
         )
 
     normalized = ensure_native(workflow)
-    result = clean_stale_state(normalized, workflow, tool_info, policy=policy)
+    result = clean_stale_state(normalized, workflow, tool_info, policy=policy, validate=validate)
 
     after_content: str | None = None
     if include_content:
@@ -653,6 +743,7 @@ def _make_clean_process_one(
     policy: StaleKeyPolicy | None = None,
     output_template: str | None = None,
     skip_uuid: bool = False,
+    validate: bool = False,
 ):
     """Build a process_one callback for clean tree runs."""
     from .workflow_tree import WorkflowInfo
@@ -670,7 +761,9 @@ def _make_clean_process_one(
             if not precheck.can_process:
                 skip_workflow(precheck.skip_reasons[0].value)
             normalized = ensure_native(work_copy)
-            result = clean_stale_state(normalized, work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid)
+            result = clean_stale_state(
+                normalized, work_copy, get_tool_info, policy=policy, skip_uuid=skip_uuid, validate=validate
+            )
 
         if result.total_removed > 0 and output_template is not None:
             output_json = json.dumps(work_copy, indent=4) + "\n"
@@ -729,6 +822,7 @@ def clean_tree(
     output_template: str | None = None,
     policy: StaleKeyPolicy | None = None,
     skip_uuid: bool = False,
+    validate: bool = False,
 ) -> TreeCleanReport:
     """Clean stale state from all native .ga workflows under a directory tree.
 
@@ -740,7 +834,9 @@ def clean_tree(
     )
 
     ctx = TreeContext(root=root, tool_info=get_tool_info, include_format2=True)
-    process_one = _make_clean_process_one(policy=policy, output_template=output_template, skip_uuid=skip_uuid)
+    process_one = _make_clean_process_one(
+        policy=policy, output_template=output_template, skip_uuid=skip_uuid, validate=validate
+    )
     tree_result = collect_tree(ctx, process_one)
     return _aggregate_clean(tree_result)
 
@@ -754,6 +850,13 @@ def format_dry_run(result: CleanResult) -> str:
         if sr.skipped:
             lines.append(f"Step {sr.step} ({sr.tool_id}): SKIP ({sr.skip_reason})")
             continue
+        if sr.reverted:
+            lines.append(f"Step {sr.step} ({sr.tool_id}): REVERTED ({sr.revert_reason})")
+            # tool_state is reverted but structural strips (errors/uuid) are kept,
+            # and still counted in total_removed — report them so the tally agrees.
+            if sr.removed_step_keys:
+                lines.append(f"  Removed (structural): {', '.join(sr.removed_step_keys)}")
+            continue
         all_removed = sr.removed_step_keys + sr.removed_state_keys
         if all_removed:
             tool_label = sr.tool_id or "unknown"
@@ -761,6 +864,9 @@ def format_dry_run(result: CleanResult) -> str:
                 tool_label += f" {sr.version}"
             lines.append(f"Step {sr.step} ({tool_label}):")
             lines.append(f"  Removed: {', '.join(all_removed)}")
+
+    if result.reverted_steps:
+        lines.append(f"{result.reverted_steps} step(s) reverted (cleaned state failed validation)")
 
     if result.total_removed:
         lines.append("---")
@@ -854,7 +960,10 @@ def run_clean_tree(options: CleanTreeOptions) -> int:
 
     ctx = TreeContext(root=options.workflow_path, tool_info=tool_info, include_format2=True)
     process_one = _make_clean_process_one(
-        policy=policy, output_template=options.output_template, skip_uuid=options.skip_uuid
+        policy=policy,
+        output_template=options.output_template,
+        skip_uuid=options.skip_uuid,
+        validate=options.validate_state,
     )
 
     return run_tree(
@@ -889,7 +998,14 @@ def _run_single(options: CleanOptions, tool_info, policy: StaleKeyPolicy) -> int
             print(f"Skipped: {precheck.detail}", file=sys.stderr)
             return 0
         normalized = ensure_native(work_copy)
-        result = clean_stale_state(normalized, work_copy, tool_info, policy=policy, skip_uuid=options.skip_uuid)
+        result = clean_stale_state(
+            normalized,
+            work_copy,
+            tool_info,
+            policy=policy,
+            skip_uuid=options.skip_uuid,
+            validate=options.validate_state,
+        )
 
     if options.diff:
         cleaned_json = json.dumps(work_copy, indent=4) + "\n"
