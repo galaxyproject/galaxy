@@ -7,10 +7,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
-import toolsList from "@/components/ToolsView/testData/toolsList.json";
-import toolsListInPanel from "@/components/ToolsView/testData/toolsListInPanel.json";
+import toolsListUntyped from "@/components/ToolsView/testData/toolsList.json";
+import toolsListInPanelUntyped from "@/components/ToolsView/testData/toolsListInPanel.json";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import { useToolStore } from "@/stores/toolStore";
+import { type ToolPanelItem, useToolStore } from "@/stores/toolStore";
 
 import viewsListJson from "./testData/viewsList.json";
 import { getUniqueToolIdsInPanel } from "./utilities";
@@ -30,10 +30,15 @@ const localVue = getLocalVue();
 const router = injectTestRouter(localVue);
 const { server, http } = useServerMock();
 
+const toolsList = toolsListUntyped;
+const toolsListInPanel = toolsListInPanelUntyped as unknown as Record<string, ToolPanelItem>;
+
 const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
-const toolsListWithExtraVersion = [...toolsList, { ...toolsList[0], id: `${toolsList[0].id}/older-version` }];
+
+const firstTool = toolsList[0];
+const toolsListWithExtraVersion = [...toolsList, { ...firstTool, id: `${firstTool?.id}/older-version` }];
 
 vi.mock("@/composables/config");
 
