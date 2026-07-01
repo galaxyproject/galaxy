@@ -4652,6 +4652,12 @@ gx_rules:
     - parameter: "not_a_rules_dict"
     - parameter: {__class__: 'ConnectedValue2'}
     - {}
+  # Index 8 is the unclosed-regex add_column_regex case, rejected by an
+  # AfterValidator that JSON Schema cannot express; the rest of the combo stays checked.
+  _json_schema_skip:
+    request_invalid: [8]
+    request_internal_invalid: [8]
+    request_internal_dereferenced_invalid: [8]
 
 gx_conditional_underscore_name:
   request_valid:

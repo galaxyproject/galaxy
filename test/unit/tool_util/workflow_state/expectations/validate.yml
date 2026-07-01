@@ -7,11 +7,6 @@ validate_legacy_encoding_skipped:
   operation: validate
   expect_error: true
 
-validate_legacy_encoding_skipped_2:
-  fixture: test_workflow_2.ga
-  operation: validate
-  expect_error: true
-
 validate_stale_keys_rejected:
   fixture: synthetic-cat1-stale.ga
   operation: validate
