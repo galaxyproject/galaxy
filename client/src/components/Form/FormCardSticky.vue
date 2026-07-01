@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { faWrench, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BBadge } from "bootstrap-vue";
 
 import { absPath } from "@/utils/redirect";
 
@@ -17,8 +18,10 @@ withDefaults(
         logo?: string;
         name?: string;
         version?: string;
+        isLatestVersion?: boolean;
     }>(),
     {
+        isLatestVersion: false,
         isLoading: false,
     },
 );
@@ -41,10 +44,21 @@ withDefaults(
                             v-if="version"
                             class="text-muted"
                             data-description="galaxy tool version"
-                            :data-version="version"
-                            >(Galaxy Version {{ version }})</span
-                        >
+                            :data-version="version">
+                            (Galaxy Version {{ version }})
+                        </span>
+
+                        <BBadge
+                            v-if="isLatestVersion"
+                            v-g-tooltip.hover
+                            pill
+                            variant="info"
+                            title="Selected tool version is the latest available version"
+                            data-description="latest tool version">
+                            Latest version
+                        </BBadge>
                     </div>
+
                     <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
                         <slot name="buttons" />
                     </div>
