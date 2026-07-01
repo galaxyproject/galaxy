@@ -244,6 +244,36 @@ describe("ToolBox search", () => {
         expect(wrapper.find('[data-tool-id="__ZIP_COLLECTION__"]').exists()).toBe(false);
     });
 
+    it("shows each recent tool once when stored recent tools contain duplicate or non-panel version IDs", async () => {
+        const latestZipVersion = {
+            ...toolsList.find((tool) => tool.id === "__ZIP_COLLECTION__")!,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/1.0",
+            version: "1.0",
+        };
+        const olderZipVersion = {
+            ...latestZipVersion,
+            id: "toolshed.example.org/repos/dev/zip_collection/zip/0.9",
+            version: "0.9",
+        };
+        const { wrapper } = mountToolBox({
+            tools: [...toolsList, latestZipVersion, olderZipVersion],
+            toolSections: {
+                default: {
+                    ...toolsListInPanel,
+                    collection_operations: {
+                        ...(toolsListInPanel.collection_operations as ToolSection),
+                        tools: [latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"],
+                    },
+                },
+            },
+            recentTools: [olderZipVersion.id, latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"],
+        });
+        await flushPromises();
+
+        const toolIds = wrapper.findAll("a[data-tool-id]").wrappers.map((item) => item.attributes("data-tool-id"));
+        expect(toolIds).toEqual([latestZipVersion.id, "__FILTER_EMPTY_DATASETS__"]);
+    });
+
     it("shows one section per favorite tag in stored order and hides empty tag sections", async () => {
         const { wrapper, userStore } = mountToolBox({
             currentUser: SIGNED_IN_USER,
