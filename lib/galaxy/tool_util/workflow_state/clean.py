@@ -27,15 +27,11 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
-from ._inline_tool import resolve_for_step
-from ._util import (
-    inline_class_from_run,
-    step_tool_state,
-)
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,
 )
+from ._inline_tool import resolve_for_step
 from ._report_models import (
     CleanStepResult,
     SingleCleanReport,
@@ -51,6 +47,10 @@ from ._types import (
     NativeStepDict,
     NativeWorkflowDict,
     ToolInputs,
+)
+from ._util import (
+    inline_class_from_run,
+    step_tool_state,
 )
 from ._walker import (
     _NATIVE_BOOKKEEPING_KEYS,

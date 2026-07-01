@@ -38,13 +38,13 @@ from galaxy.tool_util.workflow_state.precheck import SkipWorkflowReason
 from galaxy.tool_util.workflow_state.roundtrip import (
     DiffSeverity,
     DiffType,
+    FailureClass,
     RoundTripResult,
     RoundTripTreeReport,
     RoundTripValidationResult,
     StepDiff,
+    StepResult as ConversionStepResult,
 )
-from galaxy.tool_util.workflow_state.roundtrip import StepResult as ConversionStepResult
-from galaxy.tool_util.workflow_state.roundtrip import FailureClass
 from galaxy.tool_util.workflow_state.to_native_stateful import (
     ToNativeTreeReport,
     WorkflowToNativeResult,

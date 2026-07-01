@@ -23,11 +23,17 @@ from gxformat2.lint import (
 )
 from gxformat2.linting import LintContext
 from gxformat2.yaml import ordered_load_path
+
 from ._cli_common import (
     setup_tool_info,
     StrictOptions,
     ToolCacheOptions,
 )
+from ._encoding import (
+    check_strict_encoding as _check_strict_encoding,
+    check_strict_structure as _check_strict_structure,
+)
+from ._inline_tool import ensure_inline_resolver
 from ._report_models import (
     LintTreeReport,
     LintWorkflowResult,
@@ -36,7 +42,6 @@ from ._report_models import (
     ValidationStepResult,
     wrap_single_lint,
 )
-from ._inline_tool import ensure_inline_resolver
 from ._report_output import emit_reports
 from ._report_templates import make_markdown_renderer
 from ._types import GetToolInfo
@@ -44,10 +49,6 @@ from .stale_keys import (
     ConflictingCategoryError,
     InvalidCategoryError,
     StaleKeyPolicy,
-)
-from ._encoding import (
-    check_strict_encoding as _check_strict_encoding,
-    check_strict_structure as _check_strict_structure,
 )
 from .validate import (
     format_text,

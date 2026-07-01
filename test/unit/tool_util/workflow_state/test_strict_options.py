@@ -3,6 +3,8 @@
 import argparse
 import json
 
+from gxformat2.linting import LintContext
+
 from galaxy.tool_util.workflow_state._cli_common import (
     add_strict_args,
     StrictOptions,
@@ -11,6 +13,7 @@ from galaxy.tool_util.workflow_state._encoding import (
     validate_encoding_format2,
     validate_encoding_native,
 )
+from galaxy.tool_util.workflow_state._report_models import ValidationStepResult
 from galaxy.tool_util.workflow_state.export_format2 import ExportOptions
 from galaxy.tool_util.workflow_state.lint_stateful import (
     _combined_exit_code,
@@ -22,8 +25,6 @@ from galaxy.tool_util.workflow_state.validate import (
     run_validate,
     ValidateOptions,
 )
-from galaxy.tool_util.workflow_state._report_models import ValidationStepResult
-from gxformat2.linting import LintContext
 
 
 def test_strict_shorthand_expands():

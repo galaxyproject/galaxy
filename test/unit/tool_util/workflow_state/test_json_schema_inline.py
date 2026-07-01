@@ -21,7 +21,6 @@ from galaxy.tool_util.workflow_state.validation_json_schema import (
     validate_native_workflow_json_schema,
 )
 from galaxy.tool_util_models import ParsedTool
-
 from .inline_udt_fixtures import (
     cat_udt_body,
     load_native_inline_udt as _native_with_inline_udt,

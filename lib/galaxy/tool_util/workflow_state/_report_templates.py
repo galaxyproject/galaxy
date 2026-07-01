@@ -7,6 +7,7 @@ custom filters or globals — so they render identically under Nunjucks in
 the TypeScript mirror. See JINJA_REPORTS_PLAN.md.
 """
 
+from collections.abc import Callable
 from datetime import (
     datetime,
     timezone,
@@ -14,7 +15,6 @@ from datetime import (
 from typing import (
     Any,
 )
-from collections.abc import Callable
 
 REPORT_VERSION = "26.1"
 

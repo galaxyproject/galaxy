@@ -11,13 +11,17 @@ import pytest
 from gxformat2.normalized import ensure_native
 from gxformat2.testing import DeclarativeTestSuite
 
-from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state._encoding import (
     check_strict_encoding,
     check_strict_structure,
 )
+from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state.cache import build_tool_info
-from galaxy.tool_util.workflow_state.clean import clean_format2_state, clean_stale_state, _is_format2
+from galaxy.tool_util.workflow_state.clean import (
+    _is_format2,
+    clean_format2_state,
+    clean_stale_state,
+)
 from galaxy.tool_util.workflow_state.export_format2 import export_workflow_to_format2
 from galaxy.tool_util.workflow_state.stale_keys import StaleKeyPolicy
 from galaxy.tool_util.workflow_state.validate import validate_workflow_cli

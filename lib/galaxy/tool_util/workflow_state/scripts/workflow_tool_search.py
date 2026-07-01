@@ -5,6 +5,10 @@ import json
 import re
 import sys
 
+from ._toolshed_cli_format import (
+    format_table,
+    truncate,
+)
 from .._toolshed_search_client import (
     iterate_tool_search_pages,
     ToolFetchError,
@@ -17,10 +21,6 @@ from ..tool_search import (
 from ..toolshed_tool_info import (
     DEFAULT_TOOLSHED_URL,
     ToolShedGetToolInfo,
-)
-from ._toolshed_cli_format import (
-    format_table,
-    truncate,
 )
 
 SUBCOMMAND = "tool-search"

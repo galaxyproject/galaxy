@@ -24,7 +24,6 @@ from galaxy.tool_util.workflow_state.validate import (
     validate_workflow_cli,
 )
 from galaxy.tool_util_models import ParsedTool
-
 from .inline_udt_fixtures import (
     cat_udt_body,
     load_format2_inline_udt as _format2_with_inline_udt,

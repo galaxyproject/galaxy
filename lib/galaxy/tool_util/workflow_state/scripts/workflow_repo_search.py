@@ -14,16 +14,16 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
+from ._toolshed_cli_format import (
+    format_table,
+    truncate,
+)
 from .._toolshed_search_client import (
     iterate_repo_search_pages,
     ToolFetchError,
 )
 from .._toolshed_search_models import RepositorySearchHit
 from ..toolshed_tool_info import DEFAULT_TOOLSHED_URL
-from ._toolshed_cli_format import (
-    format_table,
-    truncate,
-)
 
 SUBCOMMAND = "repo-search"
 

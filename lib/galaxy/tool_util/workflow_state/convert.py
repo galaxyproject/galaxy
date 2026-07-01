@@ -96,7 +96,10 @@ def convert_state_to_format2_using(native_step: StepLike, parsed_tool: ToolInput
 
         from ._util import step_as_dict
         from .clean import strip_stale_keys
-        from .stale_keys import ALL_CATEGORIES, StaleKeyPolicy
+        from .stale_keys import (
+            ALL_CATEGORIES,
+            StaleKeyPolicy,
+        )
 
         step_copy = _copy.deepcopy(step_as_dict(native_step))
         strip_stale_keys(step_copy, parsed_tool, policy=StaleKeyPolicy(denied=set(ALL_CATEGORIES)))

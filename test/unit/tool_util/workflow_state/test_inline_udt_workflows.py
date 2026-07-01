@@ -23,7 +23,6 @@ from galaxy.tool_util.workflow_state.connection_validation import validate_conne
 from galaxy.tool_util.workflow_state.validation_format2 import validate_workflow_format2
 from galaxy.tool_util.workflow_state.validation_native import validate_workflow_native
 from galaxy.tool_util_models import ParsedTool
-
 from .inline_udt_fixtures import (
     cat_udt_body,
     load_format2_inline_udt as _format2_with_inline_udt,

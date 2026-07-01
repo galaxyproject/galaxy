@@ -11,13 +11,13 @@ from pathlib import Path
 import pytest
 from gxformat2.normalized import ensure_native
 
-from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state._encoding import (
     check_strict_encoding,
     check_strict_structure,
     validate_encoding_format2,
     validate_encoding_native,
 )
+from galaxy.tool_util.workflow_state._report_models import SKIP_STATUSES
 from galaxy.tool_util.workflow_state.cache import (
     build_tool_info,
     populate_cache,

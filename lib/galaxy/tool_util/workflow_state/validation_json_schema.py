@@ -17,10 +17,10 @@ from dataclasses import (
 )
 from typing import (
     Any,
+    Literal,
 )
 
 from jsonschema import Draft202012Validator
-from typing import Literal
 
 from ._inline_tool import resolve_for_step
 from ._state_merge import inject_connections_into_state

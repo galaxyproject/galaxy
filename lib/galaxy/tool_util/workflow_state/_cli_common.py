@@ -8,12 +8,11 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from typing_extensions import Self
-
 from pydantic import (
     BaseModel,
     model_validator,
 )
+from typing_extensions import Self
 
 from .cache import (
     build_tool_info,

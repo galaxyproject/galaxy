@@ -518,7 +518,6 @@ def run_embedded_schema(options: EmbeddedSchemaOptions) -> int:
     """
     from galaxy.tool_util.parameters.json import to_json_schema_string
     from galaxy.tool_util.parameters.state import WorkflowStepToolState
-
     from ._inline_tool import _parse_inline_tool
 
     entries = collect_inline_tools(options.workflow_path)

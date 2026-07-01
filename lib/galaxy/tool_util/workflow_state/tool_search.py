@@ -20,7 +20,6 @@ from pydantic import (
 from pydantic.alias_generators import to_camel
 
 from galaxy.tool_util_models import ParsedTool
-
 from ._toolshed_search_client import (
     get_latest_trs_tool_version,
     get_trs_tool_versions,

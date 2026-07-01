@@ -28,7 +28,6 @@ from galaxy.tool_util_models import (
     ParsedTool,
     UserToolSource,
 )
-
 from ._types import GetToolInfo
 from ._util import (
     inline_class_from_run,

@@ -29,14 +29,14 @@ from ._cli_common import (
     StrictOptions,
     ToolCacheOptions,
 )
-from ._report_models import (
-    TreeReportBase,
-    WorkflowResultBase,
-)
 from ._encoding import (
     check_strict_structure as _check_strict_structure,
     validate_encoding_format2,
     validate_encoding_native,
+)
+from ._report_models import (
+    TreeReportBase,
+    WorkflowResultBase,
 )
 from ._report_output import emit_reports
 from ._report_templates import make_markdown_renderer
