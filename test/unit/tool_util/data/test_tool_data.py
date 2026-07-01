@@ -217,8 +217,9 @@ def test_directory_walked_once_per_load_pass(tmp_path):
         exists_lookups += 1
         return real_exists(self, path)
 
-    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update), mock.patch.object(
-        ToolDataPathFiles, "exists", counting_exists
+    with (
+        mock.patch.object(ToolDataPathFiles, "update_files", counting_update),
+        mock.patch.object(ToolDataPathFiles, "exists", counting_exists),
     ):
         manager = ToolDataTableManager(tmp_path, conf)
 
