@@ -1,12 +1,12 @@
 from typing import (
     Any,
+    Literal,
     TypeAlias,
 )
 
 from typing_extensions import (
     Protocol,
 )
-from typing import Literal
 
 from galaxy.tool_util.parameters import ToolParameterT
 from galaxy.tool_util_models import ParsedTool
