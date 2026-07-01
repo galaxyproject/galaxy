@@ -27,7 +27,6 @@ from galaxy.tool_util.parameters import (
     ToolParameterT,
 )
 from galaxy.tool_util_models.parameters import SectionParameterModel
-
 from ._cli_common import (
     setup_tool_info,
     ToolCacheOptions,

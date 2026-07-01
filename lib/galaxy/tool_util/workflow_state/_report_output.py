@@ -6,11 +6,11 @@ used by both validate.py and clean.py entry points.
 
 import json
 import sys
+from collections.abc import Callable
 from typing import (
     Any,
     Protocol,
 )
-from collections.abc import Callable
 
 from pydantic import BaseModel
 

@@ -11,11 +11,11 @@ Two walkers for the two serialization formats:
   validation and reverse encoding.
 """
 
+from collections.abc import Callable
 from typing import (
     Any,
     cast,
 )
-from collections.abc import Callable
 
 from galaxy.tool_util.parameters import (
     ConditionalParameterModel,

@@ -5,6 +5,7 @@ each tree command only needs to supply a per-workflow processing function
 and an aggregation/report-building function.
 """
 
+from collections.abc import Callable
 from dataclasses import (
     dataclass,
     field,
@@ -13,7 +14,6 @@ from typing import (
     Generic,
     TypeVar,
 )
-from collections.abc import Callable
 
 from pydantic import BaseModel
 
