@@ -43,6 +43,11 @@
             @onChangeVersion="onChangeVersion">
             <div class="mt-2 mb-4">
                 <Heading v-localize h2 separator bold size="sm"> Tool Parameters </Heading>
+
+                <GAlert v-if="showNoToolParametersAlert" show variant="info" data-description="no tool parameters">
+                    This tool requires no input parameters and can be run as is.
+                </GAlert>
+
                 <FormDisplay
                     :id="toolId"
                     :inputs="formConfig.inputs"
@@ -134,6 +139,7 @@ import GModal from "../BaseComponents/GModal.vue";
 import ToolRecommendation from "../ToolRecommendation.vue";
 import ToolCard from "./ToolCard.vue";
 import ToolFormTags from "./ToolFormTags.vue";
+import GAlert from "@/components/BaseComponents/GAlert.vue";
 import ButtonSpinner from "@/components/Common/ButtonSpinner.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
@@ -154,6 +160,7 @@ export default {
         ToolFormTags,
         ToolRecommendation,
         Heading,
+        GAlert,
         GModal,
     },
     props: {
@@ -277,6 +284,9 @@ export default {
         },
         initialized() {
             return this.formData !== undefined;
+        },
+        showNoToolParametersAlert() {
+            return !this.loading && this.formConfig?.inputs?.length === 0;
         },
         canMutateHistory() {
             return this.currentHistory && canMutateHistory(this.currentHistory);
