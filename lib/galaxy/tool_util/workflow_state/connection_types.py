@@ -9,6 +9,8 @@ do the real work — this module handles sentinel dispatch and the dataset
 (non-collection) case.
 """
 
+from typing import TypeAlias
+
 from galaxy.tool_util.collections import (
     COLLECTION_TYPE_DESCRIPTION_FACTORY,
     CollectionTypeDescription,
@@ -40,7 +42,7 @@ class _AnyCollectionType:
 NULL_COLLECTION_TYPE = _NullCollectionType()
 ANY_COLLECTION_TYPE = _AnyCollectionType()
 
-CollectionTypeOrSentinel = CollectionTypeDescription | _NullCollectionType | _AnyCollectionType
+CollectionTypeOrSentinel: TypeAlias = CollectionTypeDescription | _NullCollectionType | _AnyCollectionType
 
 
 def collection_type_rank(ctd: CollectionTypeDescription) -> int:
