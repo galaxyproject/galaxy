@@ -3,7 +3,7 @@ import { getLocalVue, injectTestRouter } from "@tests/vitest/helpers";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ref } from "vue";
 
 import { HttpResponse, useServerMock } from "@/api/client/__mocks__";
@@ -13,6 +13,7 @@ import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useToolStore } from "@/stores/toolStore";
 
 import viewsListJson from "./testData/viewsList.json";
+import { getUniqueToolIdsInPanel } from "./utilities";
 
 import ToolPanel from "./ToolPanel.vue";
 
@@ -32,6 +33,7 @@ const { server, http } = useServerMock();
 const TEST_PANELS_URI = "/api/tool_panels";
 const DEFAULT_VIEW_ID = "default";
 const PANEL_VIEW_ERR_MSG = "Error loading panel view";
+const toolsListWithExtraVersion = [...toolsList, { ...toolsList[0], id: `${toolsList[0].id}/older-version` }];
 
 vi.mock("@/composables/config");
 
@@ -43,6 +45,10 @@ vi.mock("@/composables/userLocalStorage", () => ({
 
 describe("ToolPanel", () => {
     const viewsList = viewsListJson as Record<string, ToolPanelView>;
+
+    beforeEach(() => {
+        storePanelView(DEFAULT_VIEW_ID);
+    });
 
     /** Mocks and stores a non-default panel view as the current panel view */
     function storeNonDefaultView() {
@@ -62,6 +68,12 @@ describe("ToolPanel", () => {
         return { viewKey, view };
     }
 
+    function storePanelView(viewKey: string) {
+        vi.mocked(useUserLocalStorage).mockImplementation((_key: string, initialValue: unknown) =>
+            ref(_key === "tool-store-view" ? viewKey : initialValue),
+        );
+    }
+
     /**
      * Sets up wrapper for ToolPanel component
      * @param {String} errorView If provided, we mock an error for this view
@@ -73,13 +85,14 @@ describe("ToolPanel", () => {
         errorView: string = "",
         failDefault: boolean = false,
         captureToolsRequest?: (url: URL) => void,
+        panelResponses: Record<string, unknown> = {},
     ) {
         server.use(
             http.untyped.get("/api/tools", ({ request }) => {
                 const url = new URL(request.url);
                 captureToolsRequest?.(url);
                 if (url.searchParams.get("in_panel")?.toLowerCase() === "false") {
-                    return HttpResponse.json(toolsList);
+                    return HttpResponse.json(toolsListWithExtraVersion);
                 }
                 return HttpResponse.json([]);
             }),
@@ -113,8 +126,9 @@ describe("ToolPanel", () => {
         } else {
             // mock response for all panel views
             server.use(
-                http.untyped.get(/\/api\/tool_panels\/.*/, () => {
-                    return HttpResponse.json(toolsListInPanel);
+                http.untyped.get(/\/api\/tool_panels\/.*/, ({ request }) => {
+                    const panelView = new URL(request.url).pathname.split("/").pop() || "";
+                    return HttpResponse.json(panelResponses[panelView] ?? toolsListInPanel);
                 }),
             );
         }
@@ -232,7 +246,24 @@ describe("ToolPanel", () => {
 
     it("shows the tools count on the discover tools button", async () => {
         const wrapper = await createWrapper();
-        const count = toolsList.length;
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
+        const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
+        const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
+        expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
+    });
+
+    it("shows the default panel tools count on the My Tools discover tools button", async () => {
+        storePanelView("my_panel");
+        const wrapper = await createWrapper("", false, undefined, {
+            my_panel: {
+                recent_tools_label: {
+                    model_class: "ToolSectionLabel",
+                    id: "recent_tools_label",
+                    text: "Recent tools",
+                },
+            },
+        });
+        const count = getUniqueToolIdsInPanel(toolsListInPanel).size;
         const formatted = count < 1000 ? `${count}` : `${Math.floor(count / 1000)}k+`;
         const discoverButton = wrapper.find('[data-description="toolbox discover tools"]');
         expect(discoverButton.text()).toBe(`Discover ${formatted} Tools`);
