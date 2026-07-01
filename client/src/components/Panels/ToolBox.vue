@@ -23,7 +23,6 @@ import {
     filterTools,
     getValidPanelItems,
     getValidToolsInEachSection,
-    getUniqueToolIdsInPanel,
     getVisibleTools,
     UNSECTIONED_SECTION,
 } from "./utilities";
