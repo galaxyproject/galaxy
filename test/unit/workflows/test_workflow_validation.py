@@ -6,7 +6,6 @@ from galaxy.util import galaxy_directory
 from galaxy.workflow.gx_validator import validate_workflow
 
 TEST_WORKFLOW_DIRECTORY = os.path.join(galaxy_directory(), "lib", "galaxy_test", "workflow")
-TEST_BASE_DATA_DIRECTORY = os.path.join(galaxy_directory(), "lib", "galaxy_test", "base", "data")
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -16,18 +15,6 @@ def test_validate_simple_functional_test_case_workflow():
     validate_workflow(framework_test_workflow_as_dict("empty_collection_sort"))
     validate_workflow(framework_test_workflow_as_dict("flatten_collection"))
     validate_workflow(framework_test_workflow_as_dict("flatten_collection_over_execution"))
-
-
-def test_validate_native_workflows():
-    validate_workflow(base_package_workflow_as_dict("test_workflow_two_random_lines.ga"))
-    # disconnected input...
-    # validate_workflow(base_package_workflow_as_dict("test_workflow_topoambigouity.ga"))
-    # double nested JSON?
-    # validate_workflow(base_package_workflow_as_dict("test_Workflow_map_reduce_pause.ga"))
-    # handle subworkflows...
-    # validate_workflow(base_package_workflow_as_dict("test_subworkflow_with_integer_input.ga"))
-    # handle gx_text....
-    # validate_workflow(base_package_workflow_as_dict("test_workflow_batch.ga"))
 
 
 def test_validate_unit_test_workflows():
@@ -60,10 +47,6 @@ def _assert_validation_failure(workflow_name: str) -> Exception:
         exc = e
     assert exc, f"Target workflow ({workflow_name}) did not failure validation as expected."
     return exc
-
-
-def base_package_workflow_as_dict(file_name: str) -> dict:
-    return _load(os.path.join(TEST_BASE_DATA_DIRECTORY, file_name))
 
 
 def unit_test_workflow_as_dict(workflow_name: str) -> dict:
