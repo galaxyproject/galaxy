@@ -1,5 +1,3 @@
-from unittest import mock
-
 import pytest
 
 from galaxy.tool_util.data import (
@@ -195,7 +193,7 @@ def _write_multi_table_conf(tmp_path):
     return conf
 
 
-def test_directory_walked_once_per_load_pass(tmp_path):
+def test_directory_walked_once_per_load_pass(tmp_path, monkeypatch):
     # Regression: the tool-data tree must be walked once per load pass, not once
     # per exists() check. update_files() is the sole os.walk site, so counting
     # its calls counts walks; exists() (many calls, one per table) must not add
@@ -217,11 +215,9 @@ def test_directory_walked_once_per_load_pass(tmp_path):
         exists_lookups += 1
         return real_exists(self, path)
 
-    with (
-        mock.patch.object(ToolDataPathFiles, "update_files", counting_update),
-        mock.patch.object(ToolDataPathFiles, "exists", counting_exists),
-    ):
-        manager = ToolDataTableManager(tmp_path, conf)
+    monkeypatch.setattr(ToolDataPathFiles, "update_files", counting_update)
+    monkeypatch.setattr(ToolDataPathFiles, "exists", counting_exists)
+    manager = ToolDataTableManager(tmp_path, conf)
 
     assert {"t1", "t2", "t3"}.issubset(manager.data_tables)
     # One exists() per table (at least), but the tree is walked exactly once.
@@ -229,7 +225,7 @@ def test_directory_walked_once_per_load_pass(tmp_path):
     assert walks == 1, f"expected one walk per load pass, got {walks}"
 
 
-def test_reload_walks_once_regardless_of_table_count(tmp_path):
+def test_reload_walks_once_regardless_of_table_count(tmp_path, monkeypatch):
     conf = _write_multi_table_conf(tmp_path)
     manager = ToolDataTableManager(tmp_path, conf)
 
@@ -241,12 +237,12 @@ def test_reload_walks_once_regardless_of_table_count(tmp_path):
         walks += 1
         return real_update(self)
 
-    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update):
-        manager.reload_tables()
+    monkeypatch.setattr(ToolDataPathFiles, "update_files", counting_update)
+    manager.reload_tables()
     assert walks == 1, f"expected one walk per reload pass, got {walks}"
 
 
-def test_exists_outside_load_pass_does_not_walk(tmp_path):
+def test_exists_outside_load_pass_does_not_walk(tmp_path, monkeypatch):
     # Outside a load pass nothing is cached, so exists() falls back to
     # os.path.exists() and never walks -- the listing can't outlive disk state.
     conf = _write_multi_table_conf(tmp_path)
@@ -261,8 +257,8 @@ def test_exists_outside_load_pass_does_not_walk(tmp_path):
         walks += 1
         return real_update(self)
 
-    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update):
-        assert tdpf.exists(str(tmp_path / "t1.loc")) is True
-        assert tdpf.exists(str(tmp_path / "missing.loc")) is False
+    monkeypatch.setattr(ToolDataPathFiles, "update_files", counting_update)
+    assert tdpf.exists(str(tmp_path / "t1.loc")) is True
+    assert tdpf.exists(str(tmp_path / "missing.loc")) is False
     assert walks == 0, f"exists() outside a load pass must not walk, got {walks}"
     assert tdpf._tool_data_path_files is None
