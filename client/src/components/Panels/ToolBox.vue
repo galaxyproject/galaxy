@@ -17,11 +17,13 @@ import {
     buildToolEntries,
     buildToolLabel,
     buildToolSection,
+    countUniqueToolsInPanel,
     FAVORITES_KEYS,
     filterPanelByToolIds,
     filterTools,
     getValidPanelItems,
     getValidToolsInEachSection,
+    getUniqueToolIdsInPanel,
     getVisibleTools,
     UNSECTIONED_SECTION,
 } from "./utilities";
@@ -187,7 +189,9 @@ const { favoritesCollapsed, favoriteToolIdSet, recentToolIdsToShowSet } = useToo
 // Use composable for search results filtering
 const { favoriteResults, nonFavoriteResults, hasMixedResults } = useFavoriteSearchResults(results, favoriteToolIdSet);
 
-const toolsCount = computed(() => toolsList.value.length);
+const toolsCount = computed(() =>
+    countUniqueToolsInPanel(defaultSectionsById.value || localSectionsById.value, toolsList.value.length),
+);
 
 const resultsSet = computed(() => new Set(results.value));
 const nonFavoriteResultsSet = computed(() => new Set(nonFavoriteResults.value));
