@@ -4,6 +4,7 @@ import json
 from typing import (
     cast,
     Literal,
+    TypeAlias,
 )
 
 from gxformat2.normalized import (
@@ -13,7 +14,7 @@ from gxformat2.normalized import (
 
 from ._types import NativeStepDict
 
-StepLike = NormalizedNativeStep | NativeStepDict | NormalizedWorkflowStep
+StepLike: TypeAlias = NormalizedNativeStep | NativeStepDict | NormalizedWorkflowStep
 
 InlineToolClass = Literal["GalaxyUserTool", "GalaxyTool"]
 _INLINE_CLASSES = ("GalaxyUserTool", "GalaxyTool")
