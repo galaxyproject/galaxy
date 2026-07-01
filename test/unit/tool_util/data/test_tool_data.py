@@ -1,6 +1,28 @@
+from unittest import mock
+
 import pytest
 
-from galaxy.tool_util.data import DataTableColumnMismatch
+from galaxy.tool_util.data import (
+    DataTableColumnMismatch,
+    ToolDataPathFiles,
+    ToolDataTableManager,
+)
+
+MULTI_TABLE_CONF_XML = """<tables>
+  <table name="t1" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="{here}/t1.loc" />
+  </table>
+  <table name="t2" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="{here}/t2.loc" />
+  </table>
+  <table name="t3" comment_char="#">
+    <columns>value, name, path</columns>
+    <file path="{here}/t3.loc" />
+  </table>
+</tables>
+"""
 
 LOC_ALPHA_CONTENTS_V2 = """
 data1	data1name	${__HERE__}/data1/entry.txt
@@ -163,3 +185,83 @@ def test_append_entries_with_attribution_noop_when_all_duplicates(tdt_manager):
         after = fh.read()
     assert after == before
     assert table.data == rows_before
+
+
+def _write_multi_table_conf(tmp_path):
+    for name in ("t1", "t2", "t3"):
+        (tmp_path / f"{name}.loc").write_text(f"{name}\t{name}name\t/irrelevant\n")
+    conf = tmp_path / "tool_data_table_conf.xml"
+    conf.write_text(MULTI_TABLE_CONF_XML.format(here=str(tmp_path)))
+    return conf
+
+
+def test_directory_walked_once_per_load_pass(tmp_path):
+    # Regression: the tool-data tree must be walked once per load pass, not once
+    # per exists() check. update_files() is the sole os.walk site, so counting
+    # its calls counts walks; exists() (many calls, one per table) must not add
+    # walks. Guards ToolDataPathFiles.cached() against the old per-call re-walk.
+    conf = _write_multi_table_conf(tmp_path)
+
+    walks = 0
+    exists_lookups = 0
+    real_update = ToolDataPathFiles.update_files
+    real_exists = ToolDataPathFiles.exists
+
+    def counting_update(self):
+        nonlocal walks
+        walks += 1
+        return real_update(self)
+
+    def counting_exists(self, path):
+        nonlocal exists_lookups
+        exists_lookups += 1
+        return real_exists(self, path)
+
+    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update), mock.patch.object(
+        ToolDataPathFiles, "exists", counting_exists
+    ):
+        manager = ToolDataTableManager(tmp_path, conf)
+
+    assert {"t1", "t2", "t3"}.issubset(manager.data_tables)
+    # One exists() per table (at least), but the tree is walked exactly once.
+    assert exists_lookups >= 3
+    assert walks == 1, f"expected one walk per load pass, got {walks}"
+
+
+def test_reload_walks_once_regardless_of_table_count(tmp_path):
+    conf = _write_multi_table_conf(tmp_path)
+    manager = ToolDataTableManager(tmp_path, conf)
+
+    walks = 0
+    real_update = ToolDataPathFiles.update_files
+
+    def counting_update(self):
+        nonlocal walks
+        walks += 1
+        return real_update(self)
+
+    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update):
+        manager.reload_tables()
+    assert walks == 1, f"expected one walk per reload pass, got {walks}"
+
+
+def test_exists_outside_load_pass_does_not_walk(tmp_path):
+    # Outside a load pass nothing is cached, so exists() falls back to
+    # os.path.exists() and never walks -- the listing can't outlive disk state.
+    conf = _write_multi_table_conf(tmp_path)
+    manager = ToolDataTableManager(tmp_path, conf)
+    tdpf = manager.tool_data_path_files
+
+    walks = 0
+    real_update = ToolDataPathFiles.update_files
+
+    def counting_update(self):
+        nonlocal walks
+        walks += 1
+        return real_update(self)
+
+    with mock.patch.object(ToolDataPathFiles, "update_files", counting_update):
+        assert tdpf.exists(str(tmp_path / "t1.loc")) is True
+        assert tdpf.exists(str(tmp_path / "missing.loc")) is False
+    assert walks == 0, f"exists() outside a load pass must not walk, got {walks}"
+    assert tdpf._tool_data_path_files is None
