@@ -127,6 +127,10 @@ const visibleVersions = computed(() => {
     return filtered;
 });
 const showVersions = computed(() => visibleVersions.value.length > 1);
+const latestVersion = computed(() => versions.value[versions.value.length - 1]);
+const isLatestVersion = computed(() =>
+    Boolean(props.version && latestVersion.value && props.version === latestVersion.value),
+);
 
 const storageLocationModalTitle = computed(() => {
     if (isOnlyPreference.value) {
@@ -166,7 +170,8 @@ onBeforeMount(() => {
         :error-message="errorText || ''"
         :description="props.description"
         :name="props.title"
-        :version="props.version">
+        :version="props.version"
+        :is-latest-version="isLatestVersion">
         <template v-slot:buttons>
             <GButtonGroup class="tool-card-buttons">
                 <ToolFavoriteButton v-if="hasUser" :id="props.id" />
