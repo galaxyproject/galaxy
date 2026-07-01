@@ -91,6 +91,22 @@ def _json_schema_validates(schema: dict[str, Any], state_dict: RawStateDict) -> 
     return len(errors) == 0
 
 
+def _skips(skip_config: dict[str, Any], combo_key: str, index: int) -> bool:
+    """Whether a divergence at ``combo_key[index]`` is intentionally skipped.
+
+    A string value (a reason) skips the whole combo. A list of ints, or a mapping
+    of index -> reason, skips only those indices — used when a single case relies
+    on an ``AfterValidator`` that JSON Schema cannot express while the rest of the
+    combo remains checked.
+    """
+    if combo_key not in skip_config:
+        return False
+    spec = skip_config[combo_key]
+    if isinstance(spec, (list, dict)):
+        return index in spec
+    return True
+
+
 def _test_file_json_schema(
     file: str,
     specification=None,
@@ -102,19 +118,8 @@ def _test_file_json_schema(
         parameter_bundle = parameter_bundle_for_file(file)
     assert parameter_bundle
 
-    # A skip value may be a string (skip every entry in the combo, for combos where all cases
-    # exercise the same AfterValidator-only constraint) or a mapping of index -> reason (skip only
-    # those entries, so JSON-Schema-catchable cases in the same combo remain covered).
     json_schema_skip: dict[str, Any] = combos.get("_json_schema_skip", {}) or {}
     json_schema_valid_skip: dict[str, Any] = combos.get("_json_schema_valid_skip", {}) or {}
-
-    def _is_skipped(skip_map: dict[str, Any], key: str, index: int) -> bool:
-        entry = skip_map.get(key)
-        if entry is None:
-            return False
-        if isinstance(entry, dict):
-            return index in entry
-        return True
 
     failures: list[str] = []
 
@@ -142,9 +147,9 @@ def _test_file_json_schema(
         for i, test_case in enumerate(test_cases):
             passes = _json_schema_validates(schema, test_case)
 
-            if is_valid and not passes and not _is_skipped(json_schema_valid_skip, combo_key, i):
+            if is_valid and not passes and not _skips(json_schema_valid_skip, combo_key, i):
                 failures.append(f"{file}/{combo_key}[{i}]: valid entry REJECTED by JSON Schema: {test_case}")
-            elif not is_valid and passes and not _is_skipped(json_schema_skip, combo_key, i):
+            elif not is_valid and passes and not _skips(json_schema_skip, combo_key, i):
                 failures.append(
                     f"{file}/{combo_key}[{i}]: invalid entry ACCEPTED by JSON Schema (not skipped): {test_case}"
                 )
