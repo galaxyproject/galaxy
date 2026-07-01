@@ -1,5 +1,6 @@
 from typing import (
     Any,
+    TypeAlias,
 )
 
 from typing_extensions import (
@@ -12,7 +13,7 @@ from galaxy.tool_util_models import ParsedTool
 
 NativeWorkflowDict = dict[str, Any]
 Format2WorkflowDict = dict[str, Any]
-AnyWorkflowDict = NativeWorkflowDict | Format2WorkflowDict
+AnyWorkflowDict: TypeAlias = NativeWorkflowDict | Format2WorkflowDict
 WorkflowFormat = Literal["gxformat2", "native"]
 NativeStepDict = dict[str, Any]
 Format2StateDict = dict[str, Any]
