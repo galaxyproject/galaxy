@@ -53,7 +53,7 @@ jobs:
   build-test-dev:
     name: Build and test dev branch
     if: github.repository_owner == 'galaxyproject'
-    uses: ./.github/workflows/container_build_test.yml
+    uses: ./.github/workflows/container_build_test.yaml
     with:
       ref: refs/heads/dev
       image_tag: dev
@@ -80,7 +80,7 @@ jobs:
       matrix:
         branch: ${{ fromJson(needs.detect-changed-release-branches.outputs.release_branches) }}
       fail-fast: false
-    uses: ./.github/workflows/container_build_test.yml
+    uses: ./.github/workflows/container_build_test.yaml
     with:
       ref: refs/heads/${{ matrix.branch }}
       image_tag: ${{ matrix.branch }}-auto

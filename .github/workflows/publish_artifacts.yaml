@@ -167,7 +167,7 @@ jobs:
   build-test-container:
     name: Build and test release container
     needs: [get-version]
-    uses: ./.github/workflows/container_build_test.yml
+    uses: ./.github/workflows/container_build_test.yaml
     with:
       ref: ${{ needs.get-version.outputs.tag }}
       image_tag: ${{ needs.get-version.outputs.version }}

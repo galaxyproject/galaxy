@@ -99,6 +99,20 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+      - name: Free up disk space
+        # GitHub-hosted runners can land on a smaller (~72G) VM, leaving too
+        # little ephemeral storage for the full Galaxy + deps deploy, which
+        # triggers disk-pressure eviction of the pods. Reclaim unused toolchains
+        # up front so the smoke test fits regardless of which VM we draw.
+        uses: endersonmenezes/free-disk-space@7901478139cff6e9d44df5972fd8ab8fcade4db1 # v3.2.2
+        with:
+          remove_android: true
+          remove_dotnet: true
+          remove_haskell: true
+          remove_tool_cache: false   # kubectl/helm/k3s tooling lives here; keep it
+          remove_swap: true
+          remove_packages: false   # NOTE: this input takes a space-separated package list, not a boolean; "false" = skip
+
       - name: Download and decompress image artifact
         uses: actions/download-artifact@v8
         with:

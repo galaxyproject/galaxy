@@ -13,7 +13,7 @@ jobs:
   build-and-test:
     name: Build and test dev container
     if: github.repository_owner == 'galaxyproject'
-    uses: ./.github/workflows/container_build_test.yml
+    uses: ./.github/workflows/container_build_test.yaml
     with:
       ref: ${{ github.sha }}
       image_tag: dev
