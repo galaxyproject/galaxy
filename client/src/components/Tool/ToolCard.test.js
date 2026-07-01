@@ -14,6 +14,13 @@ const { server, http } = useServerMock();
 
 vi.mock("@/api/schema");
 
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: (_key, initialValue) => ref(initialValue),
+    };
+});
+
 const config = { enable_tool_source_display: false };
 setupMockConfig(config);
 
@@ -90,5 +97,31 @@ describe("ToolCard", () => {
         const backdropActive = wrapper.findAll(".portlet-backdrop");
         expect(backdropActive.length).toBe(1);
         await flushPromises();
+    });
+
+    it("shows latest version badge for the latest lineage version", async () => {
+        await wrapper.setProps({
+            version: "2.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "2.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='latest tool version']").text()).toBe("Latest version");
+    });
+
+    it("does not show latest version badge for older lineage versions", async () => {
+        await wrapper.setProps({
+            version: "1.0",
+            options: {
+                ...wrapper.props("options"),
+                version: "1.0",
+                versions: ["1.0", "2.0"],
+            },
+        });
+
+        expect(wrapper.find("[data-description='latest tool version']").exists()).toBe(false);
     });
 });
