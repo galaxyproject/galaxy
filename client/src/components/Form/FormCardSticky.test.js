@@ -66,6 +66,18 @@ describe("FormCardSticky.vue", () => {
         expect(wrapper.text()).toContain("(Galaxy Version 23.0)");
     });
 
+    it("renders latest version badge when requested", () => {
+        const wrapper = mountComponent({ isLatestVersion: true });
+        const badge = wrapper.find("[data-description='latest tool version']");
+        expect(badge.exists()).toBe(true);
+        expect(badge.text()).toBe("Latest version");
+    });
+
+    it("does not render latest version badge by default", () => {
+        const wrapper = mountComponent();
+        expect(wrapper.find("[data-description='latest tool version']").exists()).toBe(false);
+    });
+
     it("renders slot content: buttons, default, footer", () => {
         const wrapper = mountComponent(
             {},
