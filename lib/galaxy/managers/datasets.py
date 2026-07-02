@@ -36,6 +36,7 @@ from galaxy.model.db.role import (
     get_private_role_user_emails_dict,
     role_name_id_pairs,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     PurgeDatasetsTaskRequest,
@@ -71,7 +72,7 @@ class DatasetManager(
     def copy(self, item, **kwargs):
         raise exceptions.NotImplemented("Datasets cannot be copied")
 
-    def purge(self, item, flush=True, **kwargs):
+    def purge(self, item, flush=True, user=None, **kwargs):
         """
         Remove the object_store/file for this dataset from storage and mark
         as purged.
@@ -81,14 +82,14 @@ class DatasetManager(
         self.error_unless_dataset_purge_allowed(item)
 
         # the following also marks dataset as purged and deleted
-        item.full_delete()
+        item.full_delete(user=user)
         self.session().add(item)
         if flush:
             session = self.session()
             session.commit()
         return item
 
-    def purge_datasets(self, request: PurgeDatasetsTaskRequest):
+    def purge_datasets(self, request: PurgeDatasetsTaskRequest, user: model.User | None = None):
         """
         Caution: any additional security checks must be done before executing this action.
 
@@ -100,7 +101,7 @@ class DatasetManager(
             dataset: Dataset | None = self.session().get(Dataset, dataset_id)
             if dataset and dataset.user_can_purge:
                 try:
-                    dataset.full_delete()
+                    dataset.full_delete(user)
                 except Exception:
                     log.exception(f"Unable to purge dataset ({dataset.id})")
         self.session().commit()
@@ -170,9 +171,14 @@ class DatasetManager(
         try:
             if extra_files_path:
                 extra_dir = dataset.extra_files_path_name
-                file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
+                file_path = self.app.object_store.get_filename(
+                    dataset,
+                    extra_dir=extra_dir,
+                    alt_name=extra_files_path,
+                    auth=ObjectStoreAuth(user=request.user) if request.user else None,
+                )
             else:
-                file_path = dataset.get_file_name()
+                file_path = dataset.get_file_name(auth=ObjectStoreAuth(user=request.user) if request.user else None)
         except ObjectInvalid:
             log.warning(
                 "Unable to calculate hash for dataset [%s]: object is invalid (dataset may have failed or been purged).",

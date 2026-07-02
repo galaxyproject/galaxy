@@ -483,31 +483,26 @@ class RucioObjectStore(CachingConcreteObjectStore):
         return False
 
     def _get_token(self, **kwargs):
-        auth_token = kwargs.get("auth_token", None)
-        if auth_token:
-            return auth_token
+        auth = kwargs.get("auth", None)
+        if auth and auth.token:
+            return auth.token
 
-        arg_user = kwargs.get("user", None)
-        try:
-            if not arg_user:
-                trans = kwargs.get("trans")
-                assert trans
-                user = trans.user
-            else:
-                user = arg_user
-            for oidc_provider in self.oidc_providers:
-                backend = provider_name_to_backend(oidc_provider)
-                tokens = user.get_oidc_tokens(backend)
-                if tokens["id"]:
-                    return tokens["id"]
-        except Exception as e:
-            log.debug("Failed to get auth token: %s", e)
-            return None
+        if auth and auth.user:
+            try:
+                user = auth.user
+                for oidc_provider in self.oidc_providers:
+                    backend = provider_name_to_backend(oidc_provider)
+                    tokens = user.get_oidc_tokens(backend)
+                    if tokens["id"]:
+                        return tokens["id"]
+            except Exception as e:
+                log.debug("Failed to get auth token: %s", e)
+                return None
+        return None
 
     def _get_filename(self, obj, sync_cache: bool = True, **kwargs) -> str:
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)
-        auth_token = self._get_token(**kwargs)
         rel_path = self._construct_path(obj, **kwargs)
 
         log.debug("rucio _get_filename: %s", rel_path)
@@ -540,7 +535,7 @@ class RucioObjectStore(CachingConcreteObjectStore):
             if dir_only:  # Directories do not get pulled into cache
                 return cache_path
             else:
-                if self._pull_into_cache(rel_path, auth_token=auth_token):
+                if self._pull_into_cache(rel_path, auth=kwargs.get("auth")):
                     return cache_path
         raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
 

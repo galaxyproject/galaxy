@@ -494,7 +494,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
 
             purge_datasets.delay(request=request, task_user_id=getattr(user, "id", None))
         else:
-            self.dataset_manager.purge_datasets(request)
+            self.dataset_manager.purge_datasets(request, user=user)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,

@@ -12,6 +12,7 @@ import random
 import shutil
 import threading
 import time
+from dataclasses import dataclass
 from typing import (
     Any,
     Literal,
@@ -61,6 +62,7 @@ if TYPE_CHECKING:
     from galaxy.model import (
         Dataset,
         DatasetInstance,
+        User,
     )
 
 NO_SESSION_ERROR_MESSAGE = (
@@ -73,6 +75,12 @@ DEFAULT_DEVICE_ID = None
 USER_OBJECTS_SCHEME = "user_objects://"
 
 log = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class ObjectStoreAuth:
+    user: Optional["User"] = None
+    token: Optional[str] = None
 
 
 def is_user_object_store(object_store_id: str | None) -> bool:
@@ -224,6 +232,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir: bool = False,
+        auth: ObjectStoreAuth | None = None,
     ) -> bool:
         """
         Delete the object identified by `obj`.
@@ -272,6 +281,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         alt_name=None,
         obj_dir: bool = False,
         sync_cache: bool = True,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         """
         Get the expected filename with absolute path for object with id `obj.id`.
@@ -592,6 +602,7 @@ class BaseObjectStore(ObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir: bool = False,
+        auth: ObjectStoreAuth | None = None,
     ) -> bool:
         return self._invoke(
             "delete",
@@ -603,6 +614,7 @@ class BaseObjectStore(ObjectStore):
             extra_dir_at_root=extra_dir_at_root,
             alt_name=alt_name,
             obj_dir=obj_dir,
+            auth=auth,
         )
 
     def get_data(
@@ -638,6 +650,7 @@ class BaseObjectStore(ObjectStore):
         alt_name=None,
         obj_dir: bool = False,
         sync_cache: bool = True,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         return self._invoke(
             "get_filename",
@@ -649,6 +662,7 @@ class BaseObjectStore(ObjectStore):
             alt_name=alt_name,
             obj_dir=obj_dir,
             sync_cache=sync_cache,
+            auth=auth,
         )
 
     def update_from_file(
@@ -998,6 +1012,7 @@ class DiskObjectStore(ConcreteObjectStore):
         obj_dir: bool = False,
         in_cache: bool = False,
         old_style=False,
+        auth: ObjectStoreAuth | None = None,
     ) -> str:
         """
         Construct the absolute path for accessing the object identified by `obj.id`.

@@ -47,6 +47,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     resolve_job_markdown,
 )
+from galaxy.objectstore import ObjectStoreAuth
 from galaxy.objectstore.badges import BadgeDict
 from galaxy.schema import (
     FilterQueryParams,
@@ -538,7 +539,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def report(self, trans: ProvidesHistoryContext, dataset_id: DecodedDatabaseIdField) -> ToolReportForDataset:
         dataset_instance = self.hda_manager.get_accessible(dataset_id, trans.user)
         self.hda_manager.ensure_dataset_on_disk(trans, dataset_instance)
-        file_path = trans.app.object_store.get_filename(dataset_instance.dataset)
+        file_path = trans.app.object_store.get_filename(dataset_instance.dataset, auth=ObjectStoreAuth(user=trans.user))
         raw_content = open(file_path).read(1024 * 10)
         internal_markdown = resolve_job_markdown(trans, dataset_instance.creating_job, raw_content)
         content, extra_attributes = ready_galaxy_markdown_for_export(trans, internal_markdown)
@@ -736,10 +737,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     object_store = trans.app.object_store
                     dir_name = dataset_instance.dataset.extra_files_path_name
                     file_path = object_store.get_filename(
-                        dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
+                        dataset_instance.dataset,
+                        extra_dir=dir_name,
+                        alt_name=filename,
+                        auth=ObjectStoreAuth(user=trans.user),
                     )
                 else:
-                    file_path = dataset_instance.get_file_name()
+                    file_path = dataset_instance.get_file_name(auth=ObjectStoreAuth(user=trans.user))
                 rval = open(file_path, "rb")
             else:
                 if offset is not None:
@@ -765,7 +769,9 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         if filename and filename != "index":
             object_store = trans.app.object_store
             dir_name = hda.dataset.extra_files_path_name
-            file_path = object_store.get_filename(hda.dataset, extra_dir=dir_name, alt_name=filename)
+            file_path = object_store.get_filename(
+                hda.dataset, extra_dir=dir_name, alt_name=filename, auth=ObjectStoreAuth(user=user)
+            )
             truncated, dataset_data = self.hda_manager.text_data_truncated(file_path, preview=True)
         else:
             truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
@@ -811,7 +817,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             raise galaxy_exceptions.RequestParameterInvalidException(
                 f"Metadata file {metadata_file} is not set for this dataset"
             )
-        file_path = mf.get_file_name()
+        file_path = mf.get_file_name(auth=ObjectStoreAuth(user=trans.user))
         if open_file:
             return open(file_path, "rb"), headers
         return file_path, headers

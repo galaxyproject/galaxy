@@ -1047,7 +1047,7 @@ class DirectoryAsExtraFiles(HasExtraFiles):
 class OutputDataset(HasExtraFiles, Protocol):
     ext: str
 
-    def get_file_name(self, sync_cache=True) -> str: ...
+    def get_file_name(self, sync_cache=True, auth=None) -> str: ...
 
 
 class ToolDataTableManager(Dictifiable):
