@@ -719,7 +719,7 @@ galaxy:
 
   # Location of files available for a short time as downloads (short
   # term storage). This directory is exclusively used for serving
-  # dynamically generated downloadable content. Galaxy may uses the
+  # dynamically generated downloadable content. Galaxy may use the
   # new_file_path parameter as a general temporary directory and that
   # directory should be monitored by a tool such as tmpwatch in
   # production environments. short_term_storage_dir on the other hand is
@@ -866,7 +866,7 @@ galaxy:
   #hours_between_check: 12
 
   # XML config file that contains data table entries for the
-  # ToolDataTableManager.  This file is manually # maintained by the
+  # ToolDataTableManager.  This file is manually maintained by the
   # Galaxy administrator (.sample used if default does not exist).
   # The value of this option will be resolved with respect to
   # <config_dir>.
@@ -999,7 +999,7 @@ galaxy:
   # destination level for heterogeneous clusters. conda job resolution
   # requires bash or zsh so if this is switched to /bin/sh for instance
   # - conda resolution should be disabled. Containerized jobs always use
-  # /bin/sh - so more maximum portability tool authors should assume
+  # /bin/sh - so for maximum portability tool authors should assume
   # generated commands run in sh.
   #default_job_shell: /bin/bash
 
@@ -1024,7 +1024,7 @@ galaxy:
   #biotools_content_directory: null
 
   # Set this to true to attempt to resolve bio.tools metadata for tools
-  # for tool not resovled via biotools_content_directory.
+  # for tool not resolved via biotools_content_directory.
   #biotools_use_api: false
 
   # bio.tools web service request related caching. The type of beaker
@@ -1593,7 +1593,7 @@ galaxy:
 
   # The BibTeX citation for Galaxy, to be displayed in the History Tool
   # Reference List
-  #citation_bibtex: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
+  #citation_bibtex: '@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}'
 
   # The URL linked by the "Galaxy Version" link in the "Help" menu.
   #release_doc_base_url: https://docs.galaxyproject.org/en/release_
