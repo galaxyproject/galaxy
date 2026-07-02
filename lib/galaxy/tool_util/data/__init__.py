@@ -85,15 +85,36 @@ class StoresConfigFilePaths(Protocol):
     def get(self, key: Any, default: Optional[Any]) -> Optional[Any]: ...
 
 
+class ToolDataFilesystem(Protocol):
+    """The two filesystem operations ``ToolDataPathFiles`` performs.
+
+    Injected so tests can supply an in-memory implementation and assert caching
+    behaviour (e.g. one walk per load pass) without monkeypatching ``os``.
+    """
+
+    def walk(self, path: str) -> Iterator[Tuple[str, List[str], List[str]]]: ...
+
+    def exists(self, path: str) -> bool: ...
+
+
+class _OsFilesystem:
+    def walk(self, path: str) -> Iterator[Tuple[str, List[str], List[str]]]:
+        return os.walk(path)
+
+    def exists(self, path: str) -> bool:
+        return os.path.exists(path)
+
+
 class ToolDataPathFiles:
     # ``None`` means no directory listing is cached, in which case ``exists()``
-    # resolves each path directly via ``os.path.exists``. A listing is only
-    # cached for the duration of a load pass (see ``cached``), so it can never
-    # outlive the on-disk state it was taken from.
+    # resolves each path directly via the filesystem. A listing is only cached
+    # for the duration of a load pass (see ``cached``), so it can never outlive
+    # the on-disk state it was taken from.
     _tool_data_path_files: Optional[Set[str]]
 
-    def __init__(self, tool_data_path):
+    def __init__(self, tool_data_path, filesystem: Optional[ToolDataFilesystem] = None):
         self.tool_data_path = os.path.abspath(tool_data_path)
+        self._fs = filesystem or _OsFilesystem()
         self._tool_data_path_files = None
         self._cache_depth = 0
 
@@ -124,10 +145,10 @@ class ToolDataPathFiles:
 
     def update_files(self) -> None:
         try:
-            content = os.walk(self.tool_data_path)
+            content = self._fs.walk(self.tool_data_path)
             self._tool_data_path_files = set(
                 filter(
-                    os.path.exists,
+                    self._fs.exists,
                     [
                         os.path.join(dirpath, fn)
                         for dirpath, _, fn_list in content
@@ -147,7 +168,7 @@ class ToolDataPathFiles:
         if path in self.tool_data_path_files:
             return True
         else:
-            return os.path.exists(path)
+            return self._fs.exists(path)
 
 
 ErrorListT = List[str]
@@ -1046,13 +1067,14 @@ class ToolDataTableManager(Dictifiable):
         config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
         other_config_dict: Optional[StoresConfigFilePaths] = None,
+        filesystem: Optional[ToolDataFilesystem] = None,
     ) -> None:
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
-        self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
+        self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path, filesystem=filesystem)
         self.other_config_dict = other_config_dict or {}
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
