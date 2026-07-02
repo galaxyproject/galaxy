@@ -530,8 +530,8 @@ def cleanup_jwds(sa_session: galaxy_scoped_session, object_store: BaseObjectStor
         except OSError as e:
             log.error(f"Error deleting job working directory: {path} : {e.strerror}")
 
-    failed_jobs = get_failed_jobs()
     days = config.failed_jobs_working_directory_cleanup_days
+    failed_jobs = get_failed_jobs()
 
     if not failed_jobs:
         log.info("No failed jobs found within the last %s days", days)
