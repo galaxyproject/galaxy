@@ -1288,7 +1288,7 @@
     destination level for heterogeneous clusters. conda job resolution
     requires bash or zsh so if this is switched to /bin/sh for
     instance - conda resolution should be disabled. Containerized jobs
-    always use /bin/sh - for maximum portability tool authors
+    always use /bin/sh - so for maximum portability tool authors
     should assume generated commands run in sh.
 :Default: ``/bin/bash``
 :Type: str
@@ -2550,7 +2550,7 @@
 :Description:
     The BibTeX citation for Galaxy, to be displayed in the History
     Tool Reference List
-:Default: ``@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}``
+:Default: ``@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}``
 :Type: str
 
 

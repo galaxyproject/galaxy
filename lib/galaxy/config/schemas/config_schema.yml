@@ -519,7 +519,7 @@ mapping:
         desc: |
           Location of files available for a short time as downloads (short term storage).
           This directory is exclusively used for serving dynamically generated downloadable
-          content. Galaxy may uses the new_file_path parameter as a general temporary directory
+          content. Galaxy may use the new_file_path parameter as a general temporary directory
           and that directory should be monitored by a tool such as tmpwatch in production
           environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
           framework and should not require such external tooling.
@@ -738,7 +738,7 @@ mapping:
         required: false
         desc: |
           XML config file that contains data table entries for the
-          ToolDataTableManager.  This file is manually # maintained by the Galaxy
+          ToolDataTableManager.  This file is manually maintained by the Galaxy
           administrator (.sample used if default does not exist).
 
       shed_tool_data_table_config:
@@ -934,7 +934,7 @@ mapping:
           defaults to bash for all jobs and can be overridden at the destination
           level for heterogeneous clusters. conda job resolution requires bash or zsh
           so if this is switched to /bin/sh for instance - conda resolution
-          should be disabled. Containerized jobs always use /bin/sh - so more maximum
+          should be disabled. Containerized jobs always use /bin/sh - so for maximum
           portability tool authors should assume generated commands run in sh.
 
       tool_search_index_dir:
@@ -971,7 +971,7 @@ mapping:
         required: false
         desc: |
           Set this to true to attempt to resolve bio.tools metadata for tools for tool not
-          resovled via biotools_content_directory.
+          resolved via biotools_content_directory.
 
       biotools_service_cache_type:
         type: str
@@ -1894,7 +1894,7 @@ mapping:
 
       citation_bibtex:
         type: str
-        default: '@article{Galaxy2024, title="The Galaxy platform for accessible, reproducible, and collaborative data analyses: 2024 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2024", doi="10.1093/nar/gkae410", url="https://doi.org/10.1093/nar/gkae410"}'
+        default: '@article{Galaxy2026, title="Galaxy for accessible, reproducible, and collaborative data analyses: 2026 update", author="{The Galaxy Community}", journal="Nucleic Acids Research", year="2026", doi="10.1093/nar/gkag469", url="https://doi.org/10.1093/nar/gkag469"}'
         required: false
         per_host: true
         desc: |

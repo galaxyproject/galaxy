@@ -274,6 +274,7 @@ class GalaxyAppConfigurationAttributes:
     statsd_influxdb: bool
     statsd_mock_calls: bool
     queue_metrics_interval: int
+    enable_sse_connection_metrics: bool
     library_import_dir: str | None
     user_library_import_dir: str | None
     user_library_import_dir_auto_creation: bool
@@ -434,6 +435,8 @@ class GalaxyAppConfigurationAttributes:
     agent_model_capabilities_file: str
     gtn_database_path: str
     gtn_database_url: str
+    gtn_database_refresh_interval: int
+    iwc_manifest_refresh_interval: int
     enable_tool_recommendations: bool
     tool_recommendation_model_path: str
     topk_recommendations: int
