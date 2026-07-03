@@ -881,7 +881,12 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
         return []
 
     def tools(self):
-        return self._tools_by_id.copy().items()
+        # Snapshot the id list so a concurrent shed install can't mutate
+        # the dict mid-iteration.
+        for tool_id in list(self._tools_by_id):
+            tool = self._tools_by_id.get(tool_id)
+            if tool is not None:
+                yield tool_id, tool
 
     def dynamic_confs(self, include_migrated_tool_conf=False) -> list[DynamicToolConfDict]:
         confs = []
