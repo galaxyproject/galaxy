@@ -1,4 +1,4 @@
-import { faFilter, faUnlockAlt, faUser, type IconDefinition } from "font-awesome-6";
+import { faUnlockAlt, faUser, type IconDefinition } from "font-awesome-6";
 import { storeToRefs } from "pinia";
 
 import { isRegisteredUser } from "@/api";
@@ -6,7 +6,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
 
-export type UserPreferencesKey = "information" | "password" | "toolbox_filters";
+export type UserPreferencesKey = "information" | "password";
 
 interface UserPreference {
     title: string;
@@ -57,16 +57,6 @@ export const getUserPreferencesModel: (user_id?: string) => UserPreferencesModel
                 (config.value.use_remote_user ||
                     config.value.disable_local_accounts ||
                     !config.value.enable_account_interface),
-        },
-        toolbox_filters: {
-            title: localize("Manage Toolbox Filters"),
-            id: "edit-preferences-toolbox-filters",
-            description: localize("Customize your Toolbox by displaying or omitting sets of Tools."),
-            url: `/api/users/${user_id}/toolbox_filters/inputs`,
-            icon: faFilter,
-            submitTitle: "Save Filters",
-            redirect: "/user",
-            disabled: isConfigLoaded.value && !config.value.has_user_tool_filters,
         },
     };
 };

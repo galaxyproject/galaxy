@@ -41,7 +41,6 @@ interface Rootpreferences extends Component {
     sign_out: SelectorTemplate;
     change_password: SelectorTemplate;
     manage_information: SelectorTemplate;
-    toolbox_filters: SelectorTemplate;
     manage_api_key: SelectorTemplate;
     current_email: SelectorTemplate;
     get_new_key: SelectorTemplate;
@@ -53,10 +52,6 @@ interface Rootpreferences extends Component {
     email_input: SelectorTemplate;
     username_input: SelectorTemplate;
     object_store_selection: Rootpreferencesobject_store_selection;
-}
-interface Roottoolbox_filters extends Component {
-    input: SelectorTemplate;
-    submit: SelectorTemplate;
 }
 interface Rootchange_user_email extends Component {
     submit: SelectorTemplate;
@@ -739,7 +734,6 @@ export interface root_component {
     _: Root_;
     masthead: Rootmasthead;
     preferences: Rootpreferences;
-    toolbox_filters: Roottoolbox_filters;
     change_user_email: Rootchange_user_email;
     change_user_password: Rootchange_user_password;
     change_user_address: Rootchange_user_address;

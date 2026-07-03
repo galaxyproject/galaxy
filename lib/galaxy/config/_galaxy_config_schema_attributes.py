@@ -411,13 +411,6 @@ class GalaxyAppConfigurationAttributes:
     workflow_scheduling_separate_materialization_iteration: bool
     cache_user_job_count: bool
     toolbox_auto_sort: bool
-    tool_filters: list[str]
-    tool_label_filters: list[str]
-    tool_section_filters: list[str]
-    user_tool_filters: list[str]
-    user_tool_section_filters: list[str]
-    user_tool_label_filters: list[str]
-    toolbox_filter_base_modules: list[str]
     amqp_internal_connection: str | None
     enable_celery_tasks: bool
     enable_tool_requests: bool

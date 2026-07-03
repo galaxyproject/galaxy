@@ -10,6 +10,13 @@ vi.mock("@/composables/config", () => ({
     useConfig: vi.fn(),
 }));
 
+vi.mock("@/composables/userLocalStorageFromHashedId", async () => {
+    const { ref } = await import("vue");
+    return {
+        useUserLocalStorageFromHashId: <T>(_key: string, initialValue: T) => ref(initialValue),
+    };
+});
+
 const mockConfig = (cfg: any) =>
     vi.mocked(useConfig).mockReturnValue({
         config: computed(() => cfg),
@@ -26,7 +33,6 @@ describe("getUserPreferencesModel", () => {
             enable_account_interface: false,
             use_remote_user: false,
             disable_local_accounts: false,
-            has_user_tool_filters: false,
             themes: {},
         });
 
@@ -39,7 +45,6 @@ describe("getUserPreferencesModel", () => {
             enable_account_interface: true,
             use_remote_user: true,
             disable_local_accounts: false,
-            has_user_tool_filters: false,
             themes: {},
         });
 
@@ -52,7 +57,6 @@ describe("getUserPreferencesModel", () => {
             enable_account_interface: true,
             use_remote_user: false,
             disable_local_accounts: false,
-            has_user_tool_filters: false,
             themes: {},
         });
 

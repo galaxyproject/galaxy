@@ -563,14 +563,7 @@ _ATTR_TYPE_OVERRIDES: dict[str, dict[str, str]] = {
         # Listified by _process_config or CommonConfigurationMixin
         "allowed_origin_hostnames": "list[str]",
         "mulled_channels": "list[str]",
-        "tool_filters": "list[str]",
-        "tool_label_filters": "list[str]",
-        "tool_section_filters": "list[str]",
-        "toolbox_filter_base_modules": "list[str]",
         "user_library_import_symlink_allowlist": "list[str]",
-        "user_tool_filters": "list[str]",
-        "user_tool_label_filters": "list[str]",
-        "user_tool_section_filters": "list[str]",
         # Can be conditionally set to None in _process_config despite non-null schema default
         "interactivetools_map": "str | None",
         "tool_dependency_dir": "str | None",

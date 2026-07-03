@@ -68,7 +68,6 @@ preferences:
     sign_out: "#g-card-edit-preferences-sign-out"
     change_password: "#g-card-edit-preferences-password"
     manage_information: '#g-card-edit-preferences-information'
-    toolbox_filters: '#g-card-edit-preferences-toolbox-filters'
     manage_api_key: '#g-card-edit-preferences-api-key'
     custom_builds: '#g-card-edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
@@ -115,13 +114,6 @@ file_source_instances:
       select: '#g-card-action-select-${template_id}'
       _: '#create-file-source-landing'
       submit: '#submit:not([aria-disabled])'
-
-toolbox_filters:
-  selectors:
-    input:
-      type: xpath
-      selector: "//span[contains(., '${description}')]/../div/div/label[@class='custom-control-label']"
-    submit: '#submit:not([aria-disabled])'
 
 change_user_email:
   selectors:

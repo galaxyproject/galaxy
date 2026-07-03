@@ -757,22 +757,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["PUT"]),
     )
 
-    webapp.mapper.connect(
-        "get_toolbox_filters",
-        "/api/users/{id}/toolbox_filters/inputs",
-        controller="users",
-        action="get_toolbox_filters",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "set_toolbox_filters",
-        "/api/users/{id}/toolbox_filters/inputs",
-        controller="users",
-        action="set_toolbox_filters",
-        conditions=dict(method=["PUT"]),
-    )
-
     # ========================
     # ===== WEBHOOKS API =====
     # ========================

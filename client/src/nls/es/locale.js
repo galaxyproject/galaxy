@@ -607,7 +607,6 @@ export default {
     "Add or modify the configuration that grants Galaxy to access your cloud-based resources":
         "Agregar o modificar la configuración que permite que Galaxy acceda a tus recursos en la nube",
 
-    "Manage Toolbox Filters": "Manejar filtros de la caja de herramientas",
     "Manage Custom Builds": "Administrar construcciones personalizadas",
 
     "Enable notifications": "Habilitar notificaciones",

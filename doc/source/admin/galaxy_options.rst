@@ -5425,91 +5425,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~
-``tool_filters``
-~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    admins may use to restrict the tools to display.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``tool_label_filters``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    admins may use to restrict the tool labels to display.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_section_filters``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    admins may use to restrict the tool sections to display.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~
-``user_tool_filters``
-~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    users may use to restrict the tools to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_tool_section_filters``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    users may use to restrict the tool sections to display.
-:Default: ``examples:restrict_text``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``user_tool_label_filters``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Define toolbox filters
-    (https://galaxyproject.org/user-defined-toolbox-filters/) that
-    users may use to restrict the tool labels to display.
-:Default: ``examples:restrict_upload_to_admins, examples:restrict_encode``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``toolbox_filter_base_modules``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The base module(s) that are searched for modules for toolbox
-    filtering
-    (https://galaxyproject.org/user-defined-toolbox-filters/)
-    functions.
-:Default: ``galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``amqp_internal_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -6293,6 +6208,5 @@
     for user defined tools.
 :Default: ``false``
 :Type: bool
-
 
 

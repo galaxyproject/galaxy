@@ -71,11 +71,6 @@ from galaxy.security.validate_user_input import (
     validate_publicname,
 )
 from galaxy.security.vault import UserVaultWrapper
-from galaxy.tool_util.toolbox.filters import FilterFactory
-from galaxy.util import (
-    docstring_trim,
-    listify,
-)
 from galaxy.web import expose_api
 from galaxy.web.form_builder import AddressField
 from galaxy.webapps.base.controller import (
@@ -1113,104 +1108,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             permissions[action_id] = [trans.sa_session.get(Role, x) for x in (payload.get(index) or [])]
         trans.app.security_agent.user_set_default_permissions(user, permissions)
         return {"message": "Permissions have been saved."}
-
-    @expose_api
-    def get_toolbox_filters(self, trans, id, payload=None, **kwd):
-        """
-        API call for fetching toolbox filters data. Toolbox filters are specified in galaxy.ini.
-        The user can activate them and the choice is stored in user_preferences.
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        filter_types = self._get_filter_types(trans)
-        saved_values = {}
-        for name, value in user.preferences.items():
-            if name in filter_types:
-                saved_values[name] = listify(value, do_strip=True)
-        inputs = [
-            {
-                "type": "hidden",
-                "name": "helptext",
-                "label": "In this section you may enable or disable Toolbox filters. Please contact your admin to configure filters as necessary.",
-            }
-        ]
-        errors = {}
-        factory = FilterFactory(trans.app.toolbox)
-        for filter_type in filter_types:
-            self._add_filter_inputs(factory, filter_types, inputs, errors, filter_type, saved_values)
-        return {"inputs": inputs, "errors": errors}
-
-    @expose_api
-    def set_toolbox_filters(self, trans, id, payload=None, **kwd):
-        """
-        API call to update toolbox filters data.
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        filter_types = self._get_filter_types(trans)
-        for filter_type in filter_types:
-            new_filters = []
-            for prefixed_name in payload:
-                if prefixed_name.startswith(filter_type):
-                    filter_selection = payload.get(prefixed_name)
-                    if not isinstance(filter_selection, bool):
-                        raise exceptions.RequestParameterInvalidException(
-                            "Please specify the filter selection as boolean value."
-                        )
-                    if filter_selection:
-                        prefix = f"{filter_type}|"
-                        new_filters.append(prefixed_name[len(prefix) :])
-            user.preferences[filter_type] = ",".join(new_filters)
-        trans.sa_session.add(user)
-        trans.sa_session.commit()
-        return {"message": "Toolbox filters have been saved."}
-
-    def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
-        filter_inputs = []
-        filter_values = saved_values.get(filter_type, [])
-        filter_config = filter_types[filter_type]["config"]
-        filter_title = filter_types[filter_type]["title"]
-        for filter_name in filter_config:
-            function = factory.build_filter_function(filter_name)
-            if function is None:
-                errors[f"{filter_type}|{filter_name}"] = "Filter function not found."
-
-            short_description, description = None, None
-            doc_string = docstring_trim(function.__doc__)
-            split = doc_string.split("\n\n")
-            if split:
-                short_description = split[0]
-                if len(split) > 1:
-                    description = split[1]
-            else:
-                log.warning(f"No description specified in the __doc__ string for {filter_name}.")
-
-            filter_inputs.append(
-                {
-                    "type": "boolean",
-                    "name": filter_name,
-                    "label": short_description or filter_name,
-                    "help": description or "No description available.",
-                    "value": True if filter_name in filter_values else False,
-                }
-            )
-        if filter_inputs:
-            inputs.append(
-                {
-                    "type": "section",
-                    "title": filter_title,
-                    "name": filter_type,
-                    "expanded": True,
-                    "inputs": filter_inputs,
-                }
-            )
-
-    def _get_filter_types(self, trans):
-        return {
-            "toolbox_tool_filters": {"title": "Tools", "config": trans.app.config.user_tool_filters},
-            "toolbox_section_filters": {"title": "Sections", "config": trans.app.config.user_tool_section_filters},
-            "toolbox_label_filters": {"title": "Labels", "config": trans.app.config.user_tool_label_filters},
-        }
 
     def _get_user(self, trans, id):
         user = self.get_user(trans, id)

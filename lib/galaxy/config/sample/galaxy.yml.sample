@@ -2950,41 +2950,6 @@ galaxy:
   # files.
   #toolbox_auto_sort: true
 
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
-  # admins may use to restrict the tools to display.
-  #tool_filters: null
-
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
-  # admins may use to restrict the tool labels to display.
-  #tool_label_filters: null
-
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that
-  # admins may use to restrict the tool sections to display.
-  #tool_section_filters: null
-
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
-  # may use to restrict the tools to display.
-  #user_tool_filters: examples:restrict_upload_to_admins, examples:restrict_encode
-
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
-  # may use to restrict the tool sections to display.
-  #user_tool_section_filters: examples:restrict_text
-
-  # Define toolbox filters
-  # (https://galaxyproject.org/user-defined-toolbox-filters/) that users
-  # may use to restrict the tool labels to display.
-  #user_tool_label_filters: examples:restrict_upload_to_admins, examples:restrict_encode
-
-  # The base module(s) that are searched for modules for toolbox
-  # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
-  # functions.
-  #toolbox_filter_base_modules: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
-
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,
   # the process that handled that particular request will tell all
@@ -3383,4 +3348,3 @@ galaxy:
   # Enable beta tool formats (yaml, cwl, ...) which is a prerequisite
   # for user defined tools.
   #enable_beta_tool_formats: false
-

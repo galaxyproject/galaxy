@@ -167,7 +167,6 @@ class RemoteUser:
                 "/user/dbkeys",
                 "/user/information",
                 "/user/logout",
-                "/user/toolbox_filters",
                 "/user/set_default_permissions",
             )
 

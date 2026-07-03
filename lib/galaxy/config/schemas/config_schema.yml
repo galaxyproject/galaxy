@@ -4018,59 +4018,6 @@ mapping:
           order in the UI.  If false, the order of tools in the toolbox will be
           preserved as they are loaded from the tool config files.
 
-      tool_filters:
-        type: str
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that admins may use to restrict the tools to display.
-
-      tool_label_filters:
-        type: str
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that admins may use to restrict the tool labels to display.
-
-      tool_section_filters:
-        type: str
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that admins may use to restrict the tool sections to display.
-
-      user_tool_filters:
-        type: str
-        default: examples:restrict_upload_to_admins, examples:restrict_encode
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that users may use to restrict the tools to display.
-
-      user_tool_section_filters:
-        type: str
-        default: examples:restrict_text
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that users may use to restrict the tool sections to display.
-
-      user_tool_label_filters:
-        type: str
-        default: examples:restrict_upload_to_admins, examples:restrict_encode
-        required: false
-        desc: |
-          Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
-          that users may use to restrict the tool labels to display.
-
-      toolbox_filter_base_modules:
-        type: str
-        default: galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
-        required: false
-        desc: |
-          The base module(s) that are searched for modules for toolbox filtering
-          (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
-
       amqp_internal_connection:
         type: str
         default: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE

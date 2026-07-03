@@ -881,18 +881,6 @@ class GalaxyAppConfiguration(GalaxyAppConfigurationAttributes, BaseAppConfigurat
             self.integrated_tool_panel_tracking_directory = self._in_root_dir(integrated_tool_panel_tracking_directory)
         else:
             self.integrated_tool_panel_tracking_directory = None
-        self.toolbox_filter_base_modules = listify(self.toolbox_filter_base_modules)
-        self.tool_filters = listify(self.tool_filters, do_strip=True)
-        self.tool_label_filters = listify(self.tool_label_filters, do_strip=True)
-        self.tool_section_filters = listify(self.tool_section_filters, do_strip=True)
-
-        self.user_tool_filters = listify(self.user_tool_filters, do_strip=True)
-        self.user_tool_label_filters = listify(self.user_tool_label_filters, do_strip=True)
-        self.user_tool_section_filters = listify(self.user_tool_section_filters, do_strip=True)
-        self.has_user_tool_filters = bool(
-            self.user_tool_filters or self.user_tool_label_filters or self.user_tool_section_filters
-        )
-
         self.password_expiration_period = timedelta(days=int(cast(SupportsInt, self.password_expiration_period)))
 
         if self.shed_tool_data_path:
