@@ -14,7 +14,7 @@ import os
 import os.path
 import re
 import string
-import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from glob import glob
 from tempfile import NamedTemporaryFile
@@ -23,6 +23,7 @@ from typing import (
     BinaryIO,
     Callable,
     Dict,
+    Iterator,
     List,
     Optional,
     overload,
@@ -84,25 +85,70 @@ class StoresConfigFilePaths(Protocol):
     def get(self, key: Any, default: Optional[Any]) -> Optional[Any]: ...
 
 
-class ToolDataPathFiles:
-    update_time: float
+class ToolDataFilesystem(Protocol):
+    """The two filesystem operations ``ToolDataPathFiles`` performs.
 
-    def __init__(self, tool_data_path):
+    Injected so tests can supply an in-memory implementation and assert caching
+    behaviour (e.g. one walk per load pass) without monkeypatching ``os``.
+    """
+
+    def walk(self, path: str) -> Iterator[Tuple[str, List[str], List[str]]]: ...
+
+    def exists(self, path: str) -> bool: ...
+
+
+class _OsFilesystem:
+    def walk(self, path: str) -> Iterator[Tuple[str, List[str], List[str]]]:
+        return os.walk(path)
+
+    def exists(self, path: str) -> bool:
+        return os.path.exists(path)
+
+
+class ToolDataPathFiles:
+    # ``None`` means no directory listing is cached, in which case ``exists()``
+    # resolves each path directly via the filesystem. A listing is only cached
+    # for the duration of a load pass (see ``cached``), so it can never outlive
+    # the on-disk state it was taken from.
+    _tool_data_path_files: Optional[Set[str]]
+
+    def __init__(self, tool_data_path, filesystem: Optional[ToolDataFilesystem] = None):
         self.tool_data_path = os.path.abspath(tool_data_path)
-        self.update_time = 0
+        self._fs = filesystem or _OsFilesystem()
+        self._tool_data_path_files = None
+        self._cache_depth = 0
 
     @property
     def tool_data_path_files(self) -> Set[str]:
-        if time.time() - self.update_time > 1:
+        return self._tool_data_path_files if self._tool_data_path_files is not None else set()
+
+    @contextmanager
+    def cached(self) -> Iterator[None]:
+        # Walk the tool-data tree once and share the listing for the duration of
+        # a load pass, so the many ``exists()`` checks a pass performs don't each
+        # re-walk (a full walk of a production tool-data tree can take longer
+        # than a single table takes to load). The snapshot is dropped on exit so
+        # it can never go stale relative to disk. Re-entrant: only the outermost
+        # ``cached`` builds and clears the listing.
+        if self._cache_depth == 0:
             self.update_files()
-        return self._tool_data_path_files
+        self._cache_depth += 1
+        try:
+            yield
+        finally:
+            self._cache_depth -= 1
+            if self._cache_depth == 0:
+                self.invalidate()
+
+    def invalidate(self) -> None:
+        self._tool_data_path_files = None
 
     def update_files(self) -> None:
         try:
-            content = os.walk(self.tool_data_path)
+            content = self._fs.walk(self.tool_data_path)
             self._tool_data_path_files = set(
                 filter(
-                    os.path.exists,
+                    self._fs.exists,
                     [
                         os.path.join(dirpath, fn)
                         for dirpath, _, fn_list in content
@@ -111,17 +157,18 @@ class ToolDataPathFiles:
                     ],
                 )
             )
-            self.update_time = time.time()
         except Exception:
             log.exception("Failed to update _tool_data_path_files")
-            self._tool_data_path_files = set()
+            # Leave the listing uncached so exists() falls back to
+            # os.path.exists(); the walk is retried on the next load pass.
+            self.invalidate()
 
     def exists(self, path: str) -> bool:
         path = os.path.abspath(path)
         if path in self.tool_data_path_files:
             return True
         else:
-            return os.path.exists(path)
+            return self._fs.exists(path)
 
 
 ErrorListT = List[str]
@@ -1020,13 +1067,14 @@ class ToolDataTableManager(Dictifiable):
         config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
         other_config_dict: Optional[StoresConfigFilePaths] = None,
+        filesystem: Optional[ToolDataFilesystem] = None,
     ) -> None:
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
         # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
         # from that file are inserted into this dict at the time of installation.
         self.data_tables = {}
-        self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path)
+        self.tool_data_path_files = ToolDataPathFiles(self.tool_data_path, filesystem=filesystem)
         self.other_config_dict = other_config_dict or {}
         for single_config_filename in util.listify(config_filename):
             if not single_config_filename:
@@ -1097,29 +1145,32 @@ class ToolDataTableManager(Dictifiable):
         table_elems = []
         tree = util.parse_xml(config_filename)
         root = tree.getroot()
-        for table_elem in root.findall("table"):
-            table = self.from_elem(
-                table_elem,
-                tool_data_path,
-                from_shed_config,
-                filename=config_filename,
-                tool_data_path_files=self.tool_data_path_files,
-                other_config_dict=self.other_config_dict,
-            )
-            table_elems.append(table_elem)
-            if table.name not in self.data_tables:
-                self.data_tables[table.name] = table
-                log.debug("Loaded tool data table '%s' from file '%s'", table.name, config_filename)
-            else:
-                log.debug(
-                    "Loading another instance of data table '%s' from file '%s', attempting to merge content.",
-                    table.name,
-                    config_filename,
+        # Share a single directory listing across every table in this config so
+        # the per-table exists() checks don't each re-walk the tool-data tree.
+        with self.tool_data_path_files.cached():
+            for table_elem in root.findall("table"):
+                table = self.from_elem(
+                    table_elem,
+                    tool_data_path,
+                    from_shed_config,
+                    filename=config_filename,
+                    tool_data_path_files=self.tool_data_path_files,
+                    other_config_dict=self.other_config_dict,
                 )
-                self.data_tables[table.name].merge_tool_data_table(
-                    table, allow_duplicates=False
-                )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
-                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                table_elems.append(table_elem)
+                if table.name not in self.data_tables:
+                    self.data_tables[table.name] = table
+                    log.debug("Loaded tool data table '%s' from file '%s'", table.name, config_filename)
+                else:
+                    log.debug(
+                        "Loading another instance of data table '%s' from file '%s', attempting to merge content.",
+                        table.name,
+                        config_filename,
+                    )
+                    self.data_tables[table.name].merge_tool_data_table(
+                        table, allow_duplicates=False
+                    )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
+                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
     def from_elem(
@@ -1223,7 +1274,6 @@ class ToolDataTableManager(Dictifiable):
         out_elems = [elem for elem in out_elems if elem not in remove_elems]
         # add new elems
         out_elems.extend(new_elems)
-        out_path_is_new = not os.path.exists(full_path)
 
         root = util.parse_xml_string('<?xml version="1.0"?>\n<tables></tables>')
         for elem in out_elems:
@@ -1231,8 +1281,6 @@ class ToolDataTableManager(Dictifiable):
         with RenamedTemporaryFile(full_path, mode="w") as out:
             out.write(util.xml_to_string(root, pretty=True))
         os.chmod(full_path, RW_R__R__)
-        if out_path_is_new:
-            self.tool_data_path_files.update_files()
 
     def reload_tables(
         self, table_names: Optional[Union[List[str], str]] = None, path: Optional[str] = None
@@ -1248,9 +1296,12 @@ class ToolDataTableManager(Dictifiable):
                 table_names = list(tables.keys())
         elif not isinstance(table_names, list):
             table_names = [table_names]
-        for table_name in table_names:
-            tables[table_name].reload_from_files()
-            log.debug("Reloaded tool data table '%s' from files.", table_name)
+        # Share a single, freshly walked directory listing across every table
+        # reloaded in this pass, then drop it so it can't go stale on disk.
+        with self.tool_data_path_files.cached():
+            for table_name in table_names:
+                tables[table_name].reload_from_files()
+                log.debug("Reloaded tool data table '%s' from files.", table_name)
         return table_names
 
     def get_table_names_by_path(self, path: str) -> List[str]:
