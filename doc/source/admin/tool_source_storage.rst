@@ -1,0 +1,274 @@
+Tool Source Storage
+===================
+
+Galaxy can pre-parse and store tool sources, plus a lightweight index, in a
+configurable backend. This is especially useful for large Galaxy installations
+with thousands of tools.
+
+A toolbox that consumes this store to load tools on demand is planned as
+follow-up work; this document covers the store, the populator, and the index
+that it will build on.
+
+Overview
+--------
+
+By default, Galaxy loads all tools into memory at startup. For installations with many tools,
+this can:
+
+- Slow down Galaxy startup significantly
+- Consume large amounts of memory
+
+The tool source storage system provides the groundwork to address these issues by:
+
+1. Pre-parsing and storing tool sources in a configurable backend
+2. Maintaining a lightweight index for fast API responses
+
+Configuration
+-------------
+
+Tool source storage is configured in ``galaxy.yml``. The following options are available:
+
+Backend Selection
+^^^^^^^^^^^^^^^^^
+
+.. code-block:: yaml
+
+    galaxy:
+      # Backend for storing tool sources: 'database' or 'sqlalchemy'
+      tool_source_store: database
+
+**Database Backend** (default)
+
+Stores tool sources in the Galaxy database. Best for:
+
+- Single-server deployments
+- Installations where tools don't change frequently
+- Simplest setup (no additional infrastructure)
+
+**SQLAlchemy Backend**
+
+Stores tool sources in a separate SQLAlchemy-managed database (typically a
+SQLite file). Useful for shipping read-only tool source bundles via per-conf
+``tool_source_stores`` entries (see CVMFS recipe below).
+
+.. code-block:: yaml
+
+    galaxy:
+      tool_source_store: sqlalchemy
+      tool_source_disk_path: /path/to/tool_sources.sqlite  # SQLite shortcut
+
+Per-conf Store Routing (CVMFS Recipe)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Individual ``tool_conf`` files can opt into a *named* tool source store,
+distinct from the global default. The typical use case is shipping a
+read-only SQLite bundle on CVMFS alongside a tool_conf, so worker
+processes can resolve every tool in that conf with local-cached lookups
+instead of one network round-trip per JSON file.
+
+Declare the named stores under the new top-level ``tool_source_stores``
+key in ``galaxy.yml``. The ``sqlalchemy`` backend takes either a SQLAlchemy
+``url`` or a ``path`` shortcut that builds a SQLite URL. SQLite is the
+typical choice for CVMFS bundles (single self-contained file), but any
+SQLAlchemy-supported database works:
+
+.. code-block:: yaml
+
+    galaxy:
+      tool_source_store: database          # the writable default
+      tool_source_stores:
+        cvmfs_main:
+          backend: sqlalchemy
+          path: /cvmfs/example.org/tools/sources.sqlite
+          read_only: true
+        site_shared:
+          backend: sqlalchemy
+          url: postgresql://galaxy_ro@db.example.org/tool_sources
+          read_only: true
+
+Then point the tool_conf at it via the root element's ``store`` attribute
+(XML) or top-level key (YAML):
+
+.. code-block:: xml
+
+    <?xml version="1.0"?>
+    <toolbox store="cvmfs_main">
+      <section id="cvmfs_tools" name="CVMFS Tools">
+        <tool file="bwa/bwa.xml"/>
+        ...
+      </section>
+    </toolbox>
+
+At startup, Galaxy inspects every ``tool_conf`` for the attribute, builds
+the referenced stores, and wraps them with the writable default in a
+composite store. Reads are tried in declared order (first hit wins) and
+writes always go to the default store. If no tool_conf opts in, the
+default store is used directly with zero overhead.
+
+**Building the bundle**
+
+Build the SQLite file from a writable host before shipping it:
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py -c galaxy.yml --target cvmfs_main
+
+Use ``--target`` to restrict population to a single named store; without
+it, ``populate_store.py`` populates **every writable store** referenced
+from a tool_conf in the same run.
+
+Once the bundle is in place on CVMFS (or any read-only mount), restart
+Galaxy.
+
+Populating the Tool Source Store
+--------------------------------
+
+After configuring tool source storage, you need to populate it with your tools.
+Use the ``populate_store.py`` script:
+
+Basic Usage
+^^^^^^^^^^^
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py --config /path/to/galaxy.yml
+
+This will:
+
+1. Discover tools from your tool configs (uses the same logic as Galaxy startup)
+2. Parse each tool (with macro expansion) and compute a content hash
+3. Store the tool sources in the configured backend (skipping unchanged tools)
+
+Note: ``--config`` is required; the script does not assume a default path.
+
+Command Line Options
+^^^^^^^^^^^^^^^^^^^^
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py --help
+
+    Options:
+      --config, -c PATH      Galaxy configuration file (required)
+      --dry-run              Show what would be stored without storing
+      --incremental          Only store new/changed tools (default)
+      --full                 Force re-store of all tools
+      --tool-id PATTERN      Only process tools whose ID contains PATTERN
+      --parallel, -j N       Number of parallel workers (default: 4)
+      --rebuild-index        Rebuild the tool index after population
+      --target NAME          Restrict to a single named store from
+                             tool_source_stores (or '__default__'). Without
+                             this, every writable store is populated.
+      --verbose, -v          Verbose output
+      --watch, -w            Watch tool directories and send reload notifications
+      --watch-polling        Use polling observer (for NFS/CVMFS/network FS)
+      --debounce SECS        Debounce time for watch mode (default: 2.0)
+
+Examples
+^^^^^^^^
+
+**Initial population:**
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py -c /path/to/galaxy.yml
+
+**Force re-store everything (e.g., after a parser change):**
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py -c galaxy.yml --full
+
+**Process only a subset of tools:**
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py -c galaxy.yml --tool-id samtools
+
+Automation with Cron
+^^^^^^^^^^^^^^^^^^^^
+
+For installations where tools are frequently updated, you can run the population
+script on a schedule:
+
+.. code-block:: cron
+
+    # Update tool source store every hour (incremental is the default)
+    0 * * * * /path/to/galaxy/.venv/bin/python /path/to/galaxy/scripts/tool_source/populate_store.py -c /path/to/galaxy.yml >> /var/log/galaxy/tool_source_update.log 2>&1
+
+Watch Mode (Live Updates)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For development environments or installations where tools change frequently, you can run
+the population script in watch mode. This uses ``watchdog`` to monitor tool directories
+for changes and automatically updates the store, then sends a notification via Kombu
+to trigger cache reloads in all Galaxy processes.
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py --config galaxy.yml --watch
+
+Watch mode options:
+
+- ``--watch, -w`` - Enable watch mode
+- ``--watch-polling`` - Use polling observer (required for network filesystems like NFS/CVMFS)
+- ``--debounce SECS`` - Debounce time for file changes (default: 2.0 seconds)
+
+Example with polling for network filesystem:
+
+.. code-block:: console
+
+    $ python scripts/tool_source/populate_store.py -c galaxy.yml --watch --watch-polling --debounce 5.0
+
+**Requirements:**
+
+- The ``watchdog`` library must be installed: ``pip install watchdog``
+- Galaxy must have ``amqp_internal_connection`` configured for Kombu notifications
+- All Galaxy processes must be connected to the same AMQP broker
+
+When a tool XML file changes, watch mode will:
+
+1. Detect the file change (with debouncing to handle rapid edits)
+2. Re-parse the tool and update the store
+3. Send a ``reload_tool_source_cache`` control message via Kombu
+4. All Galaxy processes will invalidate their local caches
+
+This is useful for:
+
+- Development environments where tools are being actively edited
+- CI/CD pipelines that deploy tool updates
+- Installations using shared storage where tools may be updated externally
+
+Troubleshooting
+---------------
+
+Tools not appearing in the index
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. Re-run the population script with verbose output:
+
+   .. code-block:: console
+
+       $ python scripts/tool_source/populate_store.py -c galaxy.yml -v
+
+2. Check for parsing errors in the Galaxy log
+
+Populating an existing installation
+-----------------------------------
+
+To set up tool source storage on an existing Galaxy installation:
+
+1. Add the configuration to ``galaxy.yml``:
+
+   .. code-block:: yaml
+
+       galaxy:
+         tool_source_store: database
+
+2. Run the population script:
+
+   .. code-block:: console
+
+       $ python scripts/tool_source/populate_store.py -c /path/to/galaxy.yml
+
+3. Restart Galaxy
