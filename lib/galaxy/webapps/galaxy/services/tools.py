@@ -689,7 +689,7 @@ class ToolsService(ServiceBase):
         for hit in self._search(query, view) or []:
             try:
                 tool = self._get_tool(trans, hit, user=trans.user)
-                if tool:
+                if tool and tool.id:
                     results.append(tool.id)
             except exceptions.AuthenticationFailed:
                 pass

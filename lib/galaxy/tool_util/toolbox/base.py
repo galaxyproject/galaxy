@@ -894,6 +894,14 @@ class AbstractToolBox(ManagesIntegratedToolPanelMixin):
                 return [tool]
         return []
 
+    def invalidate_index_cache(self) -> None:
+        """Drop any cached tool-index state.
+
+        No-op for the eager toolbox — there is no external index to go
+        stale. ``LazyToolBox`` overrides this to re-read the persistent
+        ``ToolIndex`` after an out-of-band populator write.
+        """
+
     def tools(self):
         # Snapshot the id list so a concurrent shed install can't mutate
         # the dict mid-iteration.

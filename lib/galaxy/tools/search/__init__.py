@@ -30,6 +30,7 @@ import os
 import re
 import shutil
 from typing import (
+    Any,
     TYPE_CHECKING,
 )
 
@@ -149,7 +150,7 @@ class LazyToolboxSearch(ToolBoxSearch):
         self.panel_searches: dict[str, ToolPanelViewSearch] = {}
         self.index_count = -1
 
-    def build_index(self, tool_cache, toolbox, index_help: bool = True) -> None:
+    def build_index(self, tool_cache: Any, toolbox: Any, index_help: bool = True) -> None:
         # Populator side owns whoosh writes; bump the watermark so the
         # rebuild_toolbox_search_index control task observes "in sync".
         self.index_count += 1

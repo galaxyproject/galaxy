@@ -41,6 +41,7 @@ from datetime import (
 from pathlib import Path
 from typing import (
     Any,
+    cast,
 )
 
 from galaxy.tool_source_store import (
@@ -65,6 +66,7 @@ from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.registry import Registry
 from galaxy.model import set_datatypes_registry
 from galaxy.model.mapping import init_models_from_config
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.queues import galaxy_exchange
 from galaxy.tool_source_store import build_tool_source_store
 from galaxy.tool_source_store.search import (
@@ -169,7 +171,9 @@ class ToolFileWatcher:
         self.verbose = verbose
         # Injected so tests can substitute a fake; default is the AMQP notifier.
         self._notify = notify_callable or send_reload_notification
-        self.observer = None
+        # ``watchdog`` observer; typed Any because watchdog is an optional
+        # dependency imported inside :meth:`start`.
+        self.observer: Any = None
         self._pending_changes: set[str] = set()
         self._lock = threading.Lock()
         self._debounce_timer: threading.Timer | None = None
@@ -862,7 +866,7 @@ def watch_mode(
 
     log.info(f"Building tool source store (backend: {config.tool_source_store})...")
 
-    store = build_tool_source_store(config, model.context)
+    store = build_tool_source_store(config, cast("galaxy_scoped_session", model.context))
 
     # Determine directories to watch from tool configurations
     tools_dirs_set: set[Path] = set()

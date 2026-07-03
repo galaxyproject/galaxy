@@ -134,7 +134,7 @@ def _resolve_file_template_kwds(root_dir: str | None) -> dict[str, str]:
     """
     try:
         # Lazy + optional: helper must still work outside a galaxy install.
-        from galaxy.tools import MODEL_TOOLS_PATH  # type: ignore[attr-defined]
+        from galaxy.tools import MODEL_TOOLS_PATH
     except Exception:
         if root_dir:
             MODEL_TOOLS_PATH = os.path.abspath(os.path.join(root_dir, "lib", "galaxy", "tools"))

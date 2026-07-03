@@ -972,11 +972,11 @@ class LazyToolBox(ToolBox):
             if not any(getattr(t, "id", None) == tool_id for t in bucket):
                 bucket.append(stub)  # type: ignore[arg-type]
         if entry.uuid:
-            self._tools_by_uuid[entry.uuid] = stub  # type: ignore[assignment]
+            self._tools_by_uuid[UUID(entry.uuid)] = stub  # type: ignore[assignment]
         # Lineage: LazyLineageMap builds it from entries_by_version, which the
         # populator wrote on the previous step, so .get() returns the right
         # ToolLineage; register() is the fallback for an as-yet-unseen id.
-        stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)
+        stub._lineage = self._lineage_map.get(tool_id) or self._lineage_map.register(stub)  # type: ignore[arg-type]
         # Place into the panel. The populator stamped panel_section_id /
         # panel_section_name onto the entry; create the ToolSection if it
         # doesn't already exist (peer-process install of the first tool in
@@ -990,7 +990,7 @@ class LazyToolBox(ToolBox):
                 self._tool_panel[section_key] = section
             section.elems.append_tool(stub)
         else:
-            self._tool_panel[f"tool_{tool_id}"] = stub  # type: ignore[assignment]
+            self._tool_panel[f"tool_{tool_id}"] = stub
         return stub
 
     def _register_loaded_tool(self, tool: "Tool") -> None:

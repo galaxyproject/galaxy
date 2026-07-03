@@ -124,7 +124,7 @@ def test_to_panel_entry_does_not_materialise():
 
 
 def test_to_dict_materialises():
-    calls = []
+    calls: list[Any] = []
 
     class _Real:
         def to_dict(self, trans, link_details, tool_help, **kw):
