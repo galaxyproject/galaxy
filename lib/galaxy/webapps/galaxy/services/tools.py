@@ -656,11 +656,12 @@ class ToolsService(ServiceBase):
         For panel listings or when the index is unavailable, falls back to the
         traditional toolbox.
         """
-        if not in_panel:
-            lazy_toolbox = self._get_lazy_toolbox(trans)
-            if lazy_toolbox and lazy_toolbox.tool_index:
-                entries = lazy_toolbox.tool_index.list_all()
-                return [entry.to_api_dict() for entry in entries]
+        # Both modes go through ``AbstractToolBox.to_dict``: the flat listing
+        # runs the ``FilterFactory`` pass (admin/user tool filters and
+        # ``allow_user_access``) over every tool, and ``get_tool_to_dict``
+        # serves ``LazyTool`` stubs from the index without materialising —
+        # so lazy mode stays O(1) parses while honoring the same filters as
+        # the eager toolbox.
         return trans.app.toolbox.to_dict(trans, in_panel=in_panel, tool_help=tool_help, view=view)
 
     def search_tools(
@@ -677,5 +678,21 @@ class ToolsService(ServiceBase):
         :class:`ToolBoxSearch` walking ``tool_cache``. Both expose the same
         ``search(q, panel_view, config)`` interface, so this method doesn't
         branch on which toolbox flavour is active.
+
+        Every hit is resolved through :meth:`_get_tool` so per-tool access
+        control (``allow_user_access``, e.g. ``require_login`` tools for
+        anonymous users) filters the results — same contract as the old
+        controller loop. In lazy mode ``get_tool`` returns the registered
+        ``LazyTool`` stub, so this does not materialise the hits.
         """
-        return list(self._search(query, view) or [])
+        results: list[str] = []
+        for hit in self._search(query, view) or []:
+            try:
+                tool = self._get_tool(trans, hit, user=trans.user)
+                if tool:
+                    results.append(tool.id)
+            except exceptions.AuthenticationFailed:
+                pass
+            except exceptions.ObjectNotFound:
+                pass
+        return results

@@ -41,10 +41,7 @@ from galaxy.tool_util.toolbox.base import ToolConfRepository
 from galaxy.util.tool_version import remove_version_from_guid
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.tool_util.toolbox.lineages.interface import ToolLineage
-from galaxy.tool_util.toolbox.panel import (
-    panel_item_types,
-    ToolSection,
-)
+from galaxy.tool_util.toolbox.panel import ToolSection
 from . import (
     create_tool_from_source,
     ToolBox,
@@ -1240,33 +1237,7 @@ class LazyToolBox(ToolBox):
             ]
         return []
 
-    # === Override to_dict for API responses ===
-
-    def to_dict(
-        self, trans, in_panel: bool = True, tool_help: bool = False, view: Optional[str] = None, **kwds
-    ) -> list[dict[str, Any]]:
-        """Toolbox API serialisation.
-
-        For ``in_panel=False`` (the flat ``/api/tools`` listing the
-        Galaxy client uses), walk ``_tools_by_id`` directly: every value
-        is a ``LazyTool`` stub or a real ``Tool``, both implement
-        ``ToolFilterContext`` (``allow_user_access``, ``require_login``,
-        ``tool_type``, ...) and ``to_dict(link_details=False)`` returns
-        the listing-shaped dict from the entry without parsing XML.
-
-        For ``in_panel=True`` (the section-aware response), defer to the
-        parent — it walks the eager-populated ``_tool_panel_view_rendered``
-        which already holds ``LazyTool`` stubs from the seam-driven boot.
-        """
-        if in_panel:
-            return super().to_dict(trans, in_panel=True, tool_help=tool_help, view=view, **kwds)
-
-        filter_method = self._build_filter_method(trans)
-        rval = []
-        for _tool_id, tool in list(self._tools_by_id.items()):
-            if not filter_method(tool, panel_item_types.TOOL):
-                continue
-            rval.append(tool.to_dict(trans, link_details=False))
-
-        log.debug("LazyToolBox.to_dict: returning %d tools (in_panel=False)", len(rval))
-        return rval
+    # ``to_dict`` is NOT overridden: ``AbstractToolBox.to_dict`` runs the
+    # ``FilterFactory`` pass for both the panel and the flat listing, and
+    # its ``get_tool_to_dict`` serves ``LazyTool`` stubs via
+    # ``to_panel_entry`` — filtered AND non-materialising.
