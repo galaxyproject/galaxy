@@ -1223,7 +1223,6 @@ class LazyToolBox(ToolBox):
             return self._tool_index.get(tool_id)
         return None
 
-
     # === Required property overrides ===
 
     @property
