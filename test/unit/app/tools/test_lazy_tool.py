@@ -1,5 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -275,7 +278,7 @@ def test_create_tool_returns_lazytool_on_source_path_hit():
         tool_id="bowtie2",
         tool_dir=None,
         source_path="/tools/bowtie2.xml",
-        stored_at=datetime.utcnow(),
+        stored_at=datetime.now(timezone.utc),
     )
     tool = box.create_tool(config_file="/tools/bowtie2.xml")
     assert isinstance(tool, LazyTool)
