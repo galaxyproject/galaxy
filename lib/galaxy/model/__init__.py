@@ -1428,6 +1428,36 @@ class ToolSource(Base, Dictifiable, RepresentById):
     dynamic_tool: Mapped[Optional["DynamicTool"]] = relationship()
 
 
+class ToolSourceRecord(Base, Dictifiable, RepresentById):
+    """
+    A tool source persisted by the tool source store.
+
+    Deliberately separate from :class:`ToolSource`, whose rows are created
+    per executed tool by the job-request path and whose ``source`` column
+    carries the raw source string contract that path deserializes. Store
+    rows are content-addressed by ``hash`` and carry populator metadata;
+    the populator may prune them freely without affecting job records.
+    """
+
+    __tablename__ = "tool_source_record"
+
+    dict_collection_visible_keys = ("id", "hash", "tool_id", "tool_version", "create_time", "update_time")
+    dict_element_visible_keys = ("id", "hash", "tool_id", "tool_version", "create_time", "update_time")
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hash: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+    source: Mapped[str] = mapped_column(Text().with_variant(mysql.LONGTEXT(), "mysql"), nullable=False)
+    source_class: Mapped[str] = mapped_column(TrimmedString(255))
+    tool_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    tool_version: Mapped[str | None] = mapped_column(String(255))
+    tool_dir: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_path: Mapped[str | None] = mapped_column(Text, nullable=True)
+    stored_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    source_metadata: Mapped[dict | None] = mapped_column(JSONType, nullable=True)
+    create_time: Mapped[datetime] = mapped_column(DateTime, default=now, nullable=False)
+    update_time: Mapped[datetime] = mapped_column(DateTime, default=now, onupdate=now, nullable=False)
+
+
 class ToolIndexCache(Base, Dictifiable, RepresentById):
     """
     Stores pre-computed tool index for fast API responses.

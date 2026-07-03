@@ -53,15 +53,18 @@ Two persistence concepts:
 **StoredToolSource** — the canonical macro-expanded XML/YAML for a tool,
 keyed by SHA-256 of the expanded content. Multiple versions of the same
 ``tool_id`` coexist as separate hashes. The DB backend persists these in the
-``tool_source`` table; the Redis and disk backends use their own layout.
+store-owned ``tool_source_record`` table (the ``tool_source`` table belongs
+to the job-request path and has a different payload contract); the Redis and
+disk backends use their own layout.
 
 **ToolIndex** — a single dataclass containing one ``ToolIndexEntry`` per tool,
 holding everything the batch APIs need (id, name, description, panel section,
 labels, EDAM, requirements, container info, test counts, hidden/disabled,
 shed metadata). The index is serialized and gzip-compressed as a blob.
 
-The DB backend gets a new ``tool_index`` table (migration
-``f5a73c8b9d12_add_tool_index_table``) with a single row per index version.
+The DB backend gets the ``tool_index`` and ``tool_source_record`` tables
+(migration ``f5a73c8b9d12``); ``tool_index`` holds a single row per index
+version.
 Redis stores the blob under a known key; disk stores it as a file.
 
 Backend Abstraction

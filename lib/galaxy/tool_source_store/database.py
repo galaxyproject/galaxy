@@ -2,8 +2,9 @@
 Database backend for Tool Source Store.
 
 This module provides a database-backed implementation of the ToolSourceStore
-that uses the existing tool_source table and adds a tool_index table for
-lightweight metadata.
+backed by the store-owned ``tool_source_record`` table (content-addressed
+sources) and the ``tool_index`` table (serialized ToolIndex). The unrelated
+``tool_source`` table belongs to the job-request path and is never touched.
 """
 
 import gzip
@@ -11,7 +12,6 @@ import json
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
 from typing import (
     cast,
 )
@@ -22,10 +22,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from galaxy.managers.tool_source import static_tool_source_identity_hash
 from galaxy.model import (
     ToolIndexCache,
-    ToolSource as ToolSourceModel,
+    ToolSourceRecord,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
 from . import (
@@ -44,8 +43,8 @@ class DatabaseToolSourceStore(ToolSourceStore):
     """
     Database-backed tool source store.
 
-    Uses the existing tool_source table for storing full tool sources
-    and a separate tool_index table for lightweight metadata.
+    Uses the ``tool_source_record`` table for full tool sources and the
+    ``tool_index`` table for the serialized index.
     """
 
     def __init__(self, sa_session: galaxy_scoped_session):
@@ -89,35 +88,22 @@ class DatabaseToolSourceStore(ToolSourceStore):
         """Store a tool source in the database."""
         session = self._get_session()
 
-        # Check if already exists
         existing = session.execute(
-            select(ToolSourceModel).where(ToolSourceModel.hash == tool_source.hash)
+            select(ToolSourceRecord.id).where(ToolSourceRecord.hash == tool_source.hash)
         ).scalar_one_or_none()
-
         if existing:
             return tool_source.hash
 
-        # Create new record
-        source_data = {
-            "raw": tool_source.raw_source,
-            "tool_source_class": tool_source.tool_source_class,
-            "tool_id": tool_source.tool_id,
-            "tool_version": tool_source.tool_version,
-            "tool_dir": tool_source.tool_dir,
-            "source_path": tool_source.source_path,
-            "stored_at": (tool_source.stored_at.isoformat() if tool_source.stored_at else None),
-            "metadata": tool_source.metadata,
-        }
-
-        model = ToolSourceModel(
+        model = ToolSourceRecord(
             hash=tool_source.hash,
-            source=source_data,
+            source=tool_source.raw_source,
             source_class=tool_source.tool_source_class,
             tool_id=tool_source.tool_id,
             tool_version=tool_source.tool_version,
-            # Same "static" identity as galaxy.managers.tool_source.tool_source_identity_hash —
-            # store-backed sources never carry a dynamic tool.
-            identity_hash=static_tool_source_identity_hash(tool_source.tool_id, tool_source.tool_version),
+            tool_dir=tool_source.tool_dir,
+            source_path=tool_source.source_path,
+            stored_at=tool_source.stored_at,
+            source_metadata=tool_source.metadata or None,
         )
         session.add(model)
         session.flush()
@@ -128,38 +114,31 @@ class DatabaseToolSourceStore(ToolSourceStore):
         """Retrieve a tool source by hash."""
         with self._read_session() as session:
             model = session.execute(
-                select(ToolSourceModel).where(ToolSourceModel.hash == hash)
+                select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)
             ).scalar_one_or_none()
             if not model:
                 return None
             return self._model_to_stored(model)
 
-    def _model_to_stored(self, model: ToolSourceModel) -> StoredToolSource:
+    def _model_to_stored(self, model: ToolSourceRecord) -> StoredToolSource:
         """Convert database model to StoredToolSource."""
-        source_data = model.source or {}
-
-        stored_at = source_data.get("stored_at")
-        if stored_at and isinstance(stored_at, str):
-            stored_at = datetime.fromisoformat(stored_at)
-
-        assert model.hash is not None
         return StoredToolSource(
             hash=model.hash,
-            tool_source_class=source_data.get("tool_source_class", "XmlToolSource"),
-            raw_source=source_data.get("raw", ""),
-            tool_id=source_data.get("tool_id"),
-            tool_version=source_data.get("tool_version"),
-            tool_dir=source_data.get("tool_dir"),
-            source_path=source_data.get("source_path"),
-            stored_at=stored_at,
-            metadata=source_data.get("metadata", {}),
+            tool_source_class=model.source_class or "XmlToolSource",
+            raw_source=model.source or "",
+            tool_id=model.tool_id,
+            tool_version=model.tool_version,
+            tool_dir=model.tool_dir,
+            source_path=model.source_path,
+            stored_at=model.stored_at,
+            metadata=model.source_metadata or {},
         )
 
     def exists(self, hash: str) -> bool:
         """Check if a tool source exists."""
         with self._read_session() as session:
             result = session.execute(
-                select(ToolSourceModel.id).where(ToolSourceModel.hash == hash)
+                select(ToolSourceRecord.id).where(ToolSourceRecord.hash == hash)
             ).scalar_one_or_none()
             return result is not None
 
@@ -167,7 +146,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
         """Delete a tool source by hash."""
         session = self._get_session()
 
-        model = session.execute(select(ToolSourceModel).where(ToolSourceModel.hash == hash)).scalar_one_or_none()
+        model = session.execute(select(ToolSourceRecord).where(ToolSourceRecord.hash == hash)).scalar_one_or_none()
 
         if not model:
             return False
@@ -182,7 +161,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
         # yield — otherwise an outer caller could keep the session open
         # indefinitely while iterating.
         with self._read_session() as session:
-            result = session.execute(select(ToolSourceModel.hash)).all()
+            result = session.execute(select(ToolSourceRecord.hash)).all()
         for (hash_value,) in result:
             if hash_value:
                 yield hash_value
@@ -190,35 +169,28 @@ class DatabaseToolSourceStore(ToolSourceStore):
     def get_by_tool_id(self, tool_id: str, version: str | None = None) -> list[StoredToolSource]:
         """Get tool sources by tool ID and optional version."""
         with self._read_session() as session:
-            # Query all and filter in Python since tool_id is in JSON
-            result = session.execute(select(ToolSourceModel))
-            sources = []
-            for (model,) in result:
-                source_data = model.source or {}
-                if source_data.get("tool_id") == tool_id:
-                    if version is None or source_data.get("tool_version") == version:
-                        sources.append(self._model_to_stored(model))
-            return sources
+            stmt = select(ToolSourceRecord).where(ToolSourceRecord.tool_id == tool_id)
+            if version is not None:
+                stmt = stmt.where(ToolSourceRecord.tool_version == version)
+            return [self._model_to_stored(model) for model in session.scalars(stmt)]
 
     def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
         """Get the stored source for a given on-disk file path.
 
-        ``source_path`` lives inside the JSON ``source`` blob so this scans the
-        table and filters in Python — same shape as ``get_by_tool_id``. The
-        populator writes one entry per file, so there is at most one match.
+        The populator writes one entry per file, so there is at most one match.
         """
         with self._read_session() as session:
-            result = session.execute(select(ToolSourceModel))
-            for (model,) in result:
-                source_data = model.source or {}
-                if source_data.get("source_path") == source_path:
-                    return self._model_to_stored(model)
-            return None
+            model = session.execute(
+                select(ToolSourceRecord).where(ToolSourceRecord.source_path == source_path).limit(1)
+            ).scalar_one_or_none()
+            if not model:
+                return None
+            return self._model_to_stored(model)
 
     def count(self) -> int:
         """Return the total number of stored tool sources."""
         with self._read_session() as session:
-            result = session.execute(select(func.count(ToolSourceModel.id)))
+            result = session.execute(select(func.count(ToolSourceRecord.id)))
             return result.scalar() or 0
 
     def get_stats(self) -> dict:
@@ -289,18 +261,6 @@ class DatabaseToolSourceStore(ToolSourceStore):
                     return self._cached_index
                 except Exception as e:
                     log.warning(f"Failed to load index from tool_index table: {e}")
-
-            # Fall back to legacy storage in tool_source table
-            legacy = session.execute(
-                select(ToolSourceModel).where(ToolSourceModel.hash == "__tool_index__")
-            ).scalar_one_or_none()
-
-            if legacy:
-                source_data = legacy.source or {}
-                index_data = source_data.get("index")
-                if index_data:
-                    self._cached_index = ToolIndex.from_dict(index_data)
-                    return self._cached_index
 
             return None
 
