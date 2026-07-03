@@ -24,6 +24,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.toolbox.parser import (
     get_toolbox_parser,
     ToolConfItem,
@@ -75,16 +76,16 @@ def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
     configs = []
 
     # Get main tool config files
-    if hasattr(config, "tool_configs") and config.tool_configs:
+    if config.tool_configs:
         configs.extend(config.tool_configs)
 
     # Ensure shed_tool_config_file is included if not already
-    if hasattr(config, "shed_tool_config_file") and config.shed_tool_config_file:
+    if config.shed_tool_config_file:
         if config.shed_tool_config_file not in configs:
             configs.append(config.shed_tool_config_file)
 
     # Include migrated_tools_config if present
-    if hasattr(config, "migrated_tools_config") and config.migrated_tools_config:
+    if config.migrated_tools_config:
         if config.migrated_tools_config not in configs:
             configs.append(config.migrated_tools_config)
 
@@ -125,21 +126,15 @@ def _resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: st
     return os.path.abspath(os.path.join(tool_conf_dir, tool_path))
 
 
-def _resolve_file_template_kwds(root_dir: str | None) -> dict[str, str]:
+def _resolve_file_template_kwds() -> dict[str, str]:
     """Resolve template variables that tool conf ``file=...`` attributes may use.
 
-    Mirrors :py:meth:`galaxy.tools.ToolBox._path_template_kwds`. The galaxy
-    import is optional so this script-local helper still works when galaxy is
-    not importable; falls back to a path computed from ``root_dir``.
+    Mirrors :py:meth:`galaxy.tools.ToolBox._path_template_kwds`.
     """
-    try:
-        # Lazy + optional: helper must still work outside a galaxy install.
-        from galaxy.tools import MODEL_TOOLS_PATH
-    except Exception:
-        if root_dir:
-            MODEL_TOOLS_PATH = os.path.abspath(os.path.join(root_dir, "lib", "galaxy", "tools"))
-        else:
-            return {}
+    # Local import: only a path constant is needed, and a module-level import
+    # would pull the whole galaxy.tools package into every discover() caller.
+    from galaxy.tools import MODEL_TOOLS_PATH
+
     return {"model_tools_path": MODEL_TOOLS_PATH}
 
 
@@ -161,36 +156,6 @@ def _iter_tool_items(
             yield item, parent_section
         elif isinstance(item, ToolConfSection):
             yield from _iter_tool_items(item.items, parent_section=item)
-
-
-def _looks_like_a_tool(path: str) -> bool:
-    """Cheap filter mirroring ``galaxy.tool_util.toolbox.base.looks_like_a_tool``.
-
-    We only want XML or YAML/CWL files that plausibly define a tool. Avoid
-    importing the real ``looks_like_a_tool`` so this script-local helper still
-    works without galaxy on sys.path.
-    """
-    name = os.path.basename(path)
-    if name.startswith((".", "_")) or "macro" in name.lower():
-        return False
-    ext = os.path.splitext(name)[1].lower()
-    if ext == ".xml":
-        try:
-            with open(path, encoding="utf-8") as fh:
-                head = fh.read(2000)
-        except Exception:
-            return False
-        return "<tool" in head
-    if ext in (".yml", ".yaml"):
-        try:
-            with open(path, encoding="utf-8") as fh:
-                head = fh.read(2000)
-        except Exception:
-            return False
-        # YAML user-defined tools start with ``class: GalaxyUserTool`` /
-        # ``class: GalaxyTool``; CWL via ``cwlVersion:`` is acceptable too.
-        return "class: Galaxy" in head or "cwlVersion" in head
-    return False
 
 
 def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
@@ -218,6 +183,7 @@ def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
 def discover_tools_from_config(
     config_filename: str,
     root_dir: str | None = None,
+    enable_beta_formats: bool = False,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.
@@ -248,7 +214,7 @@ def discover_tools_from_config(
     # (e.g. ``<tool file="${model_tools_path}/apply_rules.xml" />`` in
     # tool_conf.xml.sample). Without expanding this, those tools are silently
     # dropped at the os.path.exists check below.
-    file_template_kwds = _resolve_file_template_kwds(root_dir)
+    file_template_kwds = _resolve_file_template_kwds()
 
     for item, section in _iter_tool_items(tool_conf_source.parse_items()):
         section_id = section.get("id") if section is not None else None
@@ -264,7 +230,7 @@ def discover_tools_from_config(
                 directory = os.path.join(resolved_tool_path, dir_attr)
             recursive = str(item.get("recursive", "true")).lower() != "false"
             for candidate in _walk_tool_dir(os.path.normpath(directory), recursive):
-                if not _looks_like_a_tool(candidate):
+                if not looks_like_a_tool(candidate, enable_beta_formats=enable_beta_formats):
                     continue
                 yield DiscoveredTool(
                     path=candidate,
@@ -326,12 +292,12 @@ def discover_tools(
     Yields:
         DiscoveredTool objects for each tool found.
     """
-    root_dir = getattr(config, "root", None)
+    root_dir = config.root
     seen_paths: set = set()
 
     # Discover from all tool config files
     for config_filename in get_tool_configs(config):
-        for tool in discover_tools_from_config(config_filename, root_dir):
+        for tool in discover_tools_from_config(config_filename, root_dir, config.enable_beta_tool_formats):
             if tool.path not in seen_paths:
                 seen_paths.add(tool.path)
                 yield tool

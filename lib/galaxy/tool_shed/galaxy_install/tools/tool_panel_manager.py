@@ -140,7 +140,7 @@ class ToolPanelManager:
         )
         if new_install:
             tool_path = shed_tool_conf_dict["tool_path"]
-            use_lazy_toolbox = getattr(self.app.config, "use_lazy_toolbox", False)
+            use_lazy_toolbox = self.app.config.use_lazy_toolbox
             if use_lazy_toolbox:
                 # The populator writes ``StoredToolSource`` + ``ToolIndexEntry``
                 # + whoosh for every new tool file, then broadcasts

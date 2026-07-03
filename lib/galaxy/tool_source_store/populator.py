@@ -360,7 +360,7 @@ def _build_whoosh_for_store(config, store_name: str, tool_index) -> None:
     populator's job is to write what it can; an unbuildable index is a
     deploy issue, not a populator-CLI fatal).
     """
-    index_dir = whoosh_dir_for_store(getattr(config, "tool_search_index_dir", None), store_name)
+    index_dir = whoosh_dir_for_store(config.tool_search_index_dir, store_name)
     if index_dir is None:
         return
     try:
@@ -465,6 +465,7 @@ def build_index_entry_from_source(
             edam_topics=edam_topics,
             source_hash=stored.hash,
             source_class=stored.tool_source_class,
+            source_path=stored.source_path,
             hidden=hidden,
             require_login=require_login,
             tool_type=tool_type,
@@ -474,8 +475,8 @@ def build_index_entry_from_source(
     except Exception as e:
         log.warning(
             "Error building index entry (id=%s, hash=%s): %s",
-            getattr(stored, "tool_id", None),
-            getattr(stored, "hash", None),
+            stored.tool_id,
+            stored.hash,
             e,
         )
         return None

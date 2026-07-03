@@ -74,6 +74,7 @@ class Config:
     shed_tools_dir: str
     edam_panel_views: list = []
     tool_configs: list = []
+    use_lazy_toolbox: bool = False
     shed_tool_data_table_config: str
     shed_data_manager_config_file: str
 

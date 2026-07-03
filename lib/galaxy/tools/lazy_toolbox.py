@@ -212,13 +212,10 @@ class LazyTool:
 
     @property
     def config_file(self) -> str | None:
-        # ``StoredToolSource.source_path`` was added on this branch precisely
-        # so the lazy path can resolve a tool back to its on-disk conf without
-        # parsing. Older entries serialised before that field exists return
-        # ``None`` — callers that need a real path (``_write_integrated_tool_panel_config_file``,
-        # ``get_externally_referenced_paths``) fall through to ``__getattr__``
-        # and materialise.
-        return getattr(self._entry, "source_path", None)
+        # ``source_path`` is stamped by the populator; entries serialized
+        # before the field existed deserialize as ``None`` and callers that
+        # need a real path fall through to ``__getattr__`` and materialise.
+        return self._entry.source_path
 
     @property
     def lineage(self):

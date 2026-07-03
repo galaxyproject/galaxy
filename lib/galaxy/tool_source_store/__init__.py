@@ -230,13 +230,10 @@ def _build_default_store(
     if backend in ("sqlalchemy", "sqlite"):
         from .sqlalchemy import SqlAlchemyToolSourceStore
 
-        url = getattr(config, "tool_source_url", None)
         path = config.tool_source_disk_path
-        if url:
-            return SqlAlchemyToolSourceStore(url=url, read_only=False)
         if path:
             return SqlAlchemyToolSourceStore(path=path, read_only=False)
-        raise ConfigurationError(f"{backend!r} backend requires tool_source_url or tool_source_disk_path")
+        raise ConfigurationError(f"{backend!r} backend requires tool_source_disk_path")
 
     raise ConfigurationError(f"Unknown tool source store backend: {backend}")
 
