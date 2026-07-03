@@ -16,7 +16,6 @@ import re
 import shutil
 from dataclasses import dataclass
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -127,7 +126,7 @@ def build_schema(tuning: ToolSearchTuning) -> Schema:
 _REX = analysis.RegexTokenizer()
 
 
-def _clean(s: Optional[str]) -> str:
+def _clean(s: str | None) -> str:
     """Tokenise hyphenated text — hyphens are Whoosh wildcards."""
     if not s:
         return ""
@@ -137,7 +136,7 @@ def _clean(s: Optional[str]) -> str:
     return text
 
 
-def _entry_to_doc(entry: "ToolIndexEntry") -> Optional[dict]:
+def _entry_to_doc(entry: "ToolIndexEntry") -> dict | None:
     """Turn a ``ToolIndexEntry`` into the document shape ``Schema`` expects."""
     # Data manager tools are admin-only; mirror ``ToolPanelViewSearch._create_doc``
     # by leaving them out of the public search corpus.

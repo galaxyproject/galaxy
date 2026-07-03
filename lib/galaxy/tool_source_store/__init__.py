@@ -36,12 +36,12 @@ class StoredToolSource:
     hash: str  # Content hash (SHA256)
     tool_source_class: str  # XmlToolSource, YamlToolSource, etc.
     raw_source: str  # Serialized tool source string
-    tool_id: Optional[str] = None  # Tool ID if known
-    tool_version: Optional[str] = None  # Tool version if known
-    tool_dir: Optional[str] = None  # Original tool directory
-    source_path: Optional[str] = None  # Original file path (used as a lookup key)
-    stored_at: Optional[datetime] = None
-    metadata: Optional[dict] = field(default_factory=dict)
+    tool_id: str | None = None  # Tool ID if known
+    tool_version: str | None = None  # Tool version if known
+    tool_dir: str | None = None  # Original tool directory
+    source_path: str | None = None  # Original file path (used as a lookup key)
+    stored_at: datetime | None = None
+    metadata: dict | None = field(default_factory=dict)
 
 
 class ToolSourceStore(ABC):
@@ -65,7 +65,7 @@ class ToolSourceStore(ABC):
         """
 
     @abstractmethod
-    def get(self, hash: str) -> Optional[StoredToolSource]:
+    def get(self, hash: str) -> StoredToolSource | None:
         """
         Retrieve a tool source by hash.
 
@@ -110,7 +110,7 @@ class ToolSourceStore(ABC):
         """
 
     @abstractmethod
-    def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
+    def get_by_tool_id(self, tool_id: str, version: str | None = None) -> list[StoredToolSource]:
         """
         Get tool sources by tool ID and optional version.
 
@@ -123,7 +123,7 @@ class ToolSourceStore(ABC):
         """
 
     @abstractmethod
-    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+    def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
         """
         Get the stored tool source for a given on-disk file path.
 

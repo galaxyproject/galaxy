@@ -41,7 +41,6 @@ from datetime import (
 from pathlib import Path
 from typing import (
     Any,
-    Optional,
 )
 
 from galaxy.tool_source_store import (
@@ -85,7 +84,7 @@ def compute_hash(content: str) -> str:
     return hashlib.sha256(content.encode()).hexdigest()
 
 
-def iter_tool_sources(toolbox, pattern: Optional[str] = None) -> Iterator[tuple]:
+def iter_tool_sources(toolbox, pattern: str | None = None) -> Iterator[tuple]:
     """
     Iterate over all tools in the toolbox.
 
@@ -154,7 +153,7 @@ class ToolFileWatcher:
         debounce_seconds: float = 2.0,
         use_polling: bool = False,
         verbose: bool = False,
-        notify_callable: Optional[Callable[[Any], bool]] = None,
+        notify_callable: Callable[[Any], bool] | None = None,
         sa_session: Any = None,
     ):
         self.config = config
@@ -173,7 +172,7 @@ class ToolFileWatcher:
         self.observer = None
         self._pending_changes: set[str] = set()
         self._lock = threading.Lock()
-        self._debounce_timer: Optional[threading.Timer] = None
+        self._debounce_timer: threading.Timer | None = None
         self._shutdown_event = threading.Event()
 
     def start(self):
@@ -333,7 +332,7 @@ DEFAULT_STORE_NAME = "__default__"
 _WHOOSH_DEFAULT_SUBDIR = "_lazy_default"
 
 
-def whoosh_dir_for_store(tool_search_index_dir: Optional[str], store_name: str) -> Optional[str]:
+def whoosh_dir_for_store(tool_search_index_dir: str | None, store_name: str) -> str | None:
     """Resolve the on-disk whoosh dir for ``store_name``.
 
     Returns ``None`` if the config doesn't define ``tool_search_index_dir``
@@ -522,11 +521,11 @@ def populate_store(
     config_file: str,
     dry_run: bool = False,
     incremental: bool = True,
-    pattern: Optional[str] = None,
+    pattern: str | None = None,
     parallel: int = 4,
     verbose: bool = False,
     rebuild_index: bool = False,
-    target: Optional[str] = None,
+    target: str | None = None,
 ) -> dict[str, int]:
     """CLI entry: load Galaxy config from disk, then delegate to
     :func:`populate_store_inline` for the actual work.
@@ -558,15 +557,15 @@ def populate_store_inline(
     config,
     sa_session,
     *,
-    paths: Optional[list[str]] = None,
-    pattern: Optional[str] = None,
+    paths: list[str] | None = None,
+    pattern: str | None = None,
     parallel: int = 1,
     dry_run: bool = False,
     incremental: bool = True,
     verbose: bool = False,
     rebuild_whoosh: bool = True,
     broadcast: bool = False,
-    target: Optional[str] = None,
+    target: str | None = None,
     prune: bool = False,
 ) -> dict[str, int]:
     """In-process populator entry.
@@ -645,7 +644,7 @@ def populate_store_inline(
 
     def process_tool(
         d: DiscoveredTool, store_name: str
-    ) -> tuple[str, DiscoveredTool, str, Optional[StoredToolSource], Optional[Any], Optional[str]]:
+    ) -> tuple[str, DiscoveredTool, str, StoredToolSource | None, Any | None, str | None]:
         """Process a single tool file with proper macro expansion.
 
         Returns ``(status, discovered, store_name, stored, tool_source, err)``.

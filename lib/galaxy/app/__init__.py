@@ -429,7 +429,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             ToolSourceStore,
         )
 
-        self.tool_source_store: Optional[ToolSourceStore] = self._register_singleton(
+        self.tool_source_store: ToolSourceStore | None = self._register_singleton(
             ToolSourceStore,  # type: ignore[type-abstract,unused-ignore]
             build_tool_source_store(self.config, self.model.context),  # type: ignore[arg-type,unused-ignore]
         )

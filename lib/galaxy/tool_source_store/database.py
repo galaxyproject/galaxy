@@ -14,7 +14,6 @@ from contextlib import contextmanager
 from datetime import datetime
 from typing import (
     cast,
-    Optional,
 )
 
 from sqlalchemy import (
@@ -56,7 +55,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
             sa_session: Galaxy's scoped SQLAlchemy session (``app.model.context``).
         """
         self._sa_session = sa_session
-        self._cached_index: Optional[ToolIndex] = None
+        self._cached_index: ToolIndex | None = None
 
     def _get_session(self) -> Session:
         """Get the shared scoped session — used for writes that must commit
@@ -119,7 +118,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
 
         return tool_source.hash
 
-    def get(self, hash: str) -> Optional[StoredToolSource]:
+    def get(self, hash: str) -> StoredToolSource | None:
         """Retrieve a tool source by hash."""
         with self._read_session() as session:
             model = session.execute(
@@ -182,7 +181,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
             if hash_value:
                 yield hash_value
 
-    def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
+    def get_by_tool_id(self, tool_id: str, version: str | None = None) -> list[StoredToolSource]:
         """Get tool sources by tool ID and optional version."""
         with self._read_session() as session:
             # Query all and filter in Python since tool_id is in JSON
@@ -195,7 +194,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
                         sources.append(self._model_to_stored(model))
             return sources
 
-    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+    def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
         """Get the stored source for a given on-disk file path.
 
         ``source_path`` lives inside the JSON ``source`` blob so this scans the
@@ -261,7 +260,7 @@ class DatabaseToolSourceStore(ToolSourceStore):
         session.flush()
         self._cached_index = index
 
-    def load_index(self) -> Optional[ToolIndex]:
+    def load_index(self) -> ToolIndex | None:
         """Load the tool index from the tool_index table.
 
         Uses a private session so the implicit read transaction is

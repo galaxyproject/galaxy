@@ -8,7 +8,6 @@ from abc import (
     ABCMeta,
     abstractmethod,
 )
-from typing import Optional
 
 import yaml
 
@@ -40,7 +39,7 @@ class ToolConfSource(metaclass=ABCMeta):
         """Monitor the toolbox configuration source for changes and reload."""
         return DEFAULT_MONITOR
 
-    def parse_store_name(self) -> Optional[str]:
+    def parse_store_name(self) -> str | None:
         """Return the named tool source store this conf routes to, or None.
 
         Lets a single tool_conf opt into a non-default store (e.g. a
@@ -69,7 +68,7 @@ class XmlToolConfSource(ToolConfSource):
     def parse_monitor(self):
         return string_as_bool(self.root.get("monitor", DEFAULT_MONITOR))
 
-    def parse_store_name(self) -> Optional[str]:
+    def parse_store_name(self) -> str | None:
         return self.root.get("store") or None
 
 
@@ -91,7 +90,7 @@ class YamlToolConfSource(ToolConfSource):
     def is_shed_tool_conf(self):
         return False
 
-    def parse_store_name(self) -> Optional[str]:
+    def parse_store_name(self) -> str | None:
         store = self.as_dict.get("store")
         return store or None
 

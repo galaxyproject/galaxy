@@ -14,7 +14,6 @@ from dataclasses import (
 from datetime import datetime
 from typing import (
     Any,
-    Optional,
 )
 
 
@@ -29,17 +28,17 @@ class ToolIndexEntry:
 
     # === Identity ===
     id: str
-    uuid: Optional[str] = None
-    version: Optional[str] = None
-    tool_shed_repository_id: Optional[str] = None  # Link to repository
+    uuid: str | None = None
+    version: str | None = None
+    tool_shed_repository_id: str | None = None  # Link to repository
 
     # === Display ===
     name: str = ""
     description: str = ""
 
     # === Classification ===
-    panel_section_id: Optional[str] = None
-    panel_section_name: Optional[str] = None
+    panel_section_id: str | None = None
+    panel_section_name: str | None = None
     labels: list[str] = field(default_factory=list)
     edam_operations: list[str] = field(default_factory=list)
     edam_topics: list[str] = field(default_factory=list)
@@ -74,14 +73,14 @@ class ToolIndexEntry:
     # Example: [{"type": "docker", "identifier": "biocontainers/samtools:1.9"}]
 
     # === Tool Shed Info (for sanitize_allow, shed endpoints) ===
-    tool_shed: Optional[str] = None  # e.g., "toolshed.g2.bx.psu.edu"
-    repository_name: Optional[str] = None
-    repository_owner: Optional[str] = None
-    changeset_revision: Optional[str] = None
+    tool_shed: str | None = None  # e.g., "toolshed.g2.bx.psu.edu"
+    repository_name: str | None = None
+    repository_owner: str | None = None
+    changeset_revision: str | None = None
     is_local: bool = True  # True if not from tool shed
 
     # === Timestamps ===
-    indexed_at: Optional[datetime] = None
+    indexed_at: datetime | None = None
 
     def to_api_dict(self, detail: bool = False) -> dict[str, Any]:
         """Convert to /api/tools response format."""
@@ -218,18 +217,18 @@ class ToolIndex:
     by_section: dict[str, list[str]] = field(default_factory=dict)
     panel_views: dict[str, dict] = field(default_factory=dict)
     version: str = ""  # For cache invalidation
-    built_at: Optional[datetime] = None
+    built_at: datetime | None = None
 
     # Cached computations
-    _requirements_cache: Optional[list[dict[str, Any]]] = field(default=None, repr=False)
-    _tests_summary_cache: Optional[dict[str, dict[str, dict]]] = field(default=None, repr=False)
+    _requirements_cache: list[dict[str, Any]] | None = field(default=None, repr=False)
+    _tests_summary_cache: dict[str, dict[str, dict]] | None = field(default=None, repr=False)
 
     def invalidate_caches(self) -> None:
         """Invalidate all cached computations."""
         self._requirements_cache = None
         self._tests_summary_cache = None
 
-    def get(self, tool_id: str, tool_version: Optional[str] = None) -> Optional[ToolIndexEntry]:
+    def get(self, tool_id: str, tool_version: str | None = None) -> ToolIndexEntry | None:
         """Get a tool entry by ID, optionally honoring a specific version.
 
         ``tool_version=None`` returns the default (newest indexed) entry.
@@ -276,7 +275,7 @@ class ToolIndex:
 
     def list_all(
         self,
-        section_id: Optional[str] = None,
+        section_id: str | None = None,
         include_hidden: bool = False,
     ) -> list[ToolIndexEntry]:
         """
@@ -456,7 +455,7 @@ class ToolIndex:
         """Return pre-computed panel view dictionaries."""
         return self.panel_views
 
-    def get_panel_view(self, view: str) -> Optional[dict]:
+    def get_panel_view(self, view: str) -> dict | None:
         """Return pre-computed panel view."""
         return self.panel_views.get(view)
 

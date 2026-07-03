@@ -21,7 +21,6 @@ from dataclasses import (
 )
 from pathlib import Path
 from typing import (
-    Optional,
     TYPE_CHECKING,
 )
 
@@ -43,8 +42,8 @@ class DiscoveredTool:
 
     path: str  # Absolute path to tool file
     tool_conf: str  # Path to the tool_conf file that referenced this tool
-    tool_path: Optional[str]  # The tool_path from the tool_conf
-    guid: Optional[str] = None  # GUID for shed tools
+    tool_path: str | None  # The tool_path from the tool_conf
+    guid: str | None = None  # GUID for shed tools
     is_shed_tool: bool = False
     # Conf-level ``hidden="true"`` on the ``<tool>`` element (NOT the XML
     # body's ``<tool hidden="true">`` — that's already on the parsed source).
@@ -59,8 +58,8 @@ class DiscoveredTool:
     # Parent ``<section id="..." name="...">`` of this tool, if any. The
     # populator stamps these onto ``ToolIndexEntry`` so the panel render in
     # ``LazyToolBox`` doesn't need a separate post-walk pass to find them.
-    section_id: Optional[str] = None
-    section_name: Optional[str] = None
+    section_id: str | None = None
+    section_name: str | None = None
 
 
 def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
@@ -92,7 +91,7 @@ def get_tool_configs(config: "GalaxyAppConfiguration") -> list[str]:
     return configs
 
 
-def _resolve_tool_path(tool_path: Optional[str], config_filename: str, root_dir: Optional[str] = None) -> str:
+def _resolve_tool_path(tool_path: str | None, config_filename: str, root_dir: str | None = None) -> str:
     """
     Resolve the tool_path to an absolute directory path.
 
@@ -126,7 +125,7 @@ def _resolve_tool_path(tool_path: Optional[str], config_filename: str, root_dir:
     return os.path.abspath(os.path.join(tool_conf_dir, tool_path))
 
 
-def _resolve_file_template_kwds(root_dir: Optional[str]) -> dict[str, str]:
+def _resolve_file_template_kwds(root_dir: str | None) -> dict[str, str]:
     """Resolve template variables that tool conf ``file=...`` attributes may use.
 
     Mirrors :py:meth:`galaxy.tools.ToolBox._path_template_kwds`. The galaxy
@@ -146,8 +145,8 @@ def _resolve_file_template_kwds(root_dir: Optional[str]) -> dict[str, str]:
 
 def _iter_tool_items(
     items: Iterable[ToolConfItem],
-    parent_section: Optional[ToolConfSection] = None,
-) -> Iterator[tuple[ToolConfItem, Optional[ToolConfSection]]]:
+    parent_section: ToolConfSection | None = None,
+) -> Iterator[tuple[ToolConfItem, ToolConfSection | None]]:
     """
     Recursively iterate over tool items, including those nested in sections.
 
@@ -218,7 +217,7 @@ def _walk_tool_dir(directory: str, recursive: bool) -> Iterator[str]:
 
 def discover_tools_from_config(
     config_filename: str,
-    root_dir: Optional[str] = None,
+    root_dir: str | None = None,
 ) -> Iterator[DiscoveredTool]:
     """
     Discover all tools from a single tool configuration file.

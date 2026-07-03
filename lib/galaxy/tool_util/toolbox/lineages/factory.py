@@ -1,9 +1,7 @@
 from typing import (
-    Callable,
-    Iterable,
-    Optional,
     TYPE_CHECKING,
 )
+from collections.abc import Callable, Iterable
 
 from galaxy.util.tool_version import remove_version_from_guid
 from .interface import ToolLineage
@@ -82,11 +80,11 @@ class LazyLineageMap(LineageMap):
     on demand.
     """
 
-    def __init__(self, app, versions_for: Optional[Callable[[str], Iterable[str]]] = None):
+    def __init__(self, app, versions_for: Callable[[str], Iterable[str]] | None = None):
         super().__init__(app)
         self._versions_for = versions_for
 
-    def get(self, tool_id: str) -> Optional[ToolLineage]:
+    def get(self, tool_id: str) -> ToolLineage | None:
         # Always source versions from the index when available — the parent's
         # fallback path builds a lineage from a single ``Tool`` object's
         # version (via ``ToolLineage.from_tool``) and memoises it, which

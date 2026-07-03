@@ -15,7 +15,6 @@ from typing import (
     Optional,
     overload,
     TYPE_CHECKING,
-    Union,
 )
 from uuid import UUID
 
@@ -65,7 +64,7 @@ log = logging.getLogger(__name__)
 _LAZY_TOOL_PERMISSIVE = os.environ.get("LAZY_TOOL_STRICT") != "1"
 
 
-def _entry_attr(name: str, entry_attr: Optional[str] = None, mutable: bool = False):
+def _entry_attr(name: str, entry_attr: str | None = None, mutable: bool = False):
     """Build a ``LazyTool`` property forwarding ``name`` to ``ToolIndexEntry``.
 
     ``_overrides`` shadows the entry so writes from the eager pipeline
@@ -191,9 +190,9 @@ class LazyTool:
         self._materialize_cb = materialize_callback
         self._is_admin_user = is_admin_user
         self._overrides: dict[str, Any] = {}
-        self._real: Optional[Tool] = None
+        self._real: Tool | None = None
         # Assigned by AbstractToolBox.__add_tool via _lineage_map.register(tool).
-        self._lineage: Optional[Any] = None
+        self._lineage: Any | None = None
 
     # --- derived properties ---
     @property
@@ -212,7 +211,7 @@ class LazyTool:
         return short or self._entry.id
 
     @property
-    def config_file(self) -> Optional[str]:
+    def config_file(self) -> str | None:
         # ``StoredToolSource.source_path`` was added on this branch precisely
         # so the lazy path can resolve a tool back to its on-disk conf without
         # parsing. Older entries serialised before that field exists return
@@ -390,7 +389,7 @@ class LazyToolBox(ToolBox):
         config_filenames: list[str],
         tool_root_dir: str,
         app: "UniverseApplication",
-        tool_source_store: Optional[ToolSourceStore],
+        tool_source_store: ToolSourceStore | None,
         cache_size: int = 500,
         save_integrated_tool_panel: bool = True,
     ) -> None:
@@ -403,7 +402,7 @@ class LazyToolBox(ToolBox):
         self._cache_lock = threading.RLock()
         # ``_tool_index`` is filled by our ``_init_tools_from_configs`` override
         # before the eager walk runs.
-        self._tool_index: Optional[ToolIndex] = None
+        self._tool_index: ToolIndex | None = None
         # Mirror the eager toolbox's short-id → Tool mapping so
         # ``GET /api/tools/<short_id>`` resolves shed installs even when
         # only the guid landed in the panel. Filled after the eager walk
@@ -529,34 +528,34 @@ class LazyToolBox(ToolBox):
     @overload
     def get_tool(
         self,
-        tool_id: Optional[str] = None,
-        tool_version: Optional[str] = None,
-        tool_uuid: Optional[Union[UUID, str]] = None,
+        tool_id: str | None = None,
+        tool_version: str | None = None,
+        tool_uuid: UUID | str | None = None,
         get_all_versions: Literal[False] = False,
-        exact: Optional[bool] = False,
+        exact: bool | None = False,
         user: Optional["User"] = None,
     ) -> Optional["Tool"]: ...
 
     @overload
     def get_tool(
         self,
-        tool_id: Optional[str] = None,
-        tool_version: Optional[str] = None,
-        tool_uuid: Optional[Union[UUID, str]] = None,
+        tool_id: str | None = None,
+        tool_version: str | None = None,
+        tool_uuid: UUID | str | None = None,
         get_all_versions: Literal[True] = True,
-        exact: Optional[bool] = False,
+        exact: bool | None = False,
         user: Optional["User"] = None,
     ) -> list["Tool"]: ...
 
     def get_tool(
         self,
-        tool_id: Optional[str] = None,
-        tool_version: Optional[str] = None,
-        tool_uuid: Optional[Union[UUID, str]] = None,
-        get_all_versions: Optional[bool] = False,
-        exact: Optional[bool] = False,
+        tool_id: str | None = None,
+        tool_version: str | None = None,
+        tool_uuid: UUID | str | None = None,
+        get_all_versions: bool | None = False,
+        exact: bool | None = False,
         user: Optional["User"] = None,
-    ) -> Union[Optional["Tool"], list["Tool"]]:
+    ) -> Optional["Tool"] | list["Tool"]:
         """
         Get a tool, loading from store on-demand if needed.
 
@@ -752,7 +751,7 @@ class LazyToolBox(ToolBox):
         """Bypass the disk ``ToolCache`` — see :meth:`load_tool_from_cache`."""
         return None
 
-    def _resolve_index_entry(self, config_file, guid: Optional[str]) -> Optional[ToolIndexEntry]:
+    def _resolve_index_entry(self, config_file, guid: str | None) -> ToolIndexEntry | None:
         """Find a matching index entry for the (config_file, guid) pair, or ``None``."""
         if self._tool_index is None:
             return None
@@ -810,7 +809,7 @@ class LazyToolBox(ToolBox):
         self._register_loaded_tool(tool)
         return tool
 
-    def _load_tool_on_demand(self, tool_id: str, tool_version: Optional[str] = None) -> Optional["Tool"]:
+    def _load_tool_on_demand(self, tool_id: str, tool_version: str | None = None) -> Optional["Tool"]:
         """
         Load a tool from the store on-demand.
 
@@ -866,7 +865,7 @@ class LazyToolBox(ToolBox):
         return tool
 
     def _create_tool_from_stored_source(
-        self, stored: StoredToolSource, entry: Optional[ToolIndexEntry] = None
+        self, stored: StoredToolSource, entry: ToolIndexEntry | None = None
     ) -> "Tool":
         """Create a Tool object from stored source."""
         tool_source = get_tool_source(
@@ -1142,9 +1141,9 @@ class LazyToolBox(ToolBox):
 
     def has_tool(
         self,
-        tool_id: Optional[str],
-        tool_version: Optional[str] = None,
-        tool_uuid: Optional[Union[UUID, str]] = None,
+        tool_id: str | None,
+        tool_version: str | None = None,
+        tool_uuid: UUID | str | None = None,
         exact: bool = False,
         user: Optional["User"] = None,
     ) -> bool:
@@ -1204,7 +1203,7 @@ class LazyToolBox(ToolBox):
     # === Index access methods ===
 
     @property
-    def tool_index(self) -> Optional[ToolIndex]:
+    def tool_index(self) -> ToolIndex | None:
         """Get the tool index."""
         return self._tool_index
 
@@ -1214,7 +1213,7 @@ class LazyToolBox(ToolBox):
             return list(self._tool_index.entries.keys())
         return []
 
-    def get_index_entry(self, tool_id: str) -> Optional[ToolIndexEntry]:
+    def get_index_entry(self, tool_id: str) -> ToolIndexEntry | None:
         """Get index entry for a tool without loading it."""
         if self._tool_index:
             return self._tool_index.get(tool_id)

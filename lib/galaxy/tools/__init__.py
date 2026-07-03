@@ -656,7 +656,7 @@ class ToolBox(AbstractToolBox):
         tool_source = self.get_expanded_tool_source(config_file, tool_id=guid)
         return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
-    def get_expanded_tool_source(self, config_file: StrPath, tool_id: Optional[str] = None) -> ToolSource:
+    def get_expanded_tool_source(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource:
         # Try to load from tool source store first (pre-parsed, macro-expanded)
         tool_source = self._get_tool_source_from_store(config_file, tool_id=tool_id)
         if tool_source is not None:
@@ -677,7 +677,7 @@ class ToolBox(AbstractToolBox):
             global_tool_errors.add_error(config_file, "Tool XML parsing", e)
             raise e
 
-    def _get_tool_source_from_store(self, config_file: StrPath, tool_id: Optional[str] = None) -> Optional[ToolSource]:
+    def _get_tool_source_from_store(self, config_file: StrPath, tool_id: str | None = None) -> ToolSource | None:
         """
         Try to load tool source from the pre-parsed store.
 

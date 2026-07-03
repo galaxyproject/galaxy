@@ -15,7 +15,6 @@ import logging
 from collections.abc import Iterator
 from typing import (
     Any,
-    Optional,
 )
 
 from . import (
@@ -76,7 +75,7 @@ class CompositeToolSourceStore(ToolSourceStore):
 
     # --- read ops: priority order --------------------------------------
 
-    def get(self, hash: str) -> Optional[StoredToolSource]:
+    def get(self, hash: str) -> StoredToolSource | None:
         for _name, member in self._members:
             found = member.get(hash)
             if found is not None:
@@ -86,7 +85,7 @@ class CompositeToolSourceStore(ToolSourceStore):
     def exists(self, hash: str) -> bool:
         return any(m.exists(hash) for _, m in self._members)
 
-    def get_by_tool_id(self, tool_id: str, version: Optional[str] = None) -> list[StoredToolSource]:
+    def get_by_tool_id(self, tool_id: str, version: str | None = None) -> list[StoredToolSource]:
         # Union across members, deduped by hash, preserving member order.
         seen: set[str] = set()
         out: list[StoredToolSource] = []
@@ -98,7 +97,7 @@ class CompositeToolSourceStore(ToolSourceStore):
                 out.append(src)
         return out
 
-    def get_by_source_path(self, source_path: str) -> Optional[StoredToolSource]:
+    def get_by_source_path(self, source_path: str) -> StoredToolSource | None:
         for _name, member in self._members:
             found = member.get_by_source_path(source_path)
             if found is not None:
@@ -149,7 +148,7 @@ class CompositeToolSourceStore(ToolSourceStore):
 
     # --- index ---------------------------------------------------------
 
-    def load_index(self) -> Optional[ToolIndex]:
+    def load_index(self) -> ToolIndex | None:
         merged = ToolIndex()
         any_loaded = False
         for name, member in self._members:
