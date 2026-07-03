@@ -376,6 +376,7 @@ def build_index_entry_from_source(
     discovered,
     stored,
     tool_source,
+    biotools_metadata_source=None,
 ):
     """Assemble a :class:`ToolIndexEntry` from a populator triple.
 
@@ -428,19 +429,48 @@ def build_index_entry_from_source(
             except Exception:
                 pass
 
-        edam_operations: list[str] = []
-        if hasattr(tool_source, "parse_edam_operations"):
-            try:
-                edam_operations = list(tool_source.parse_edam_operations() or ())
-            except Exception:
-                pass
+        lowered = tool_id.lower()
+        all_ids = [lowered]
+        if "/repos/" in lowered:
+            all_ids = [lowered, lowered.rsplit("/", 1)[0], lowered.rsplit("/", 2)[-2]]
+        # Same ontology expansion as ``Tool.__init__`` — curated EDAM mapping
+        # overrides and legacy bio.tools xrefs included.
+        from galaxy.tool_util.ontologies.ontology_data import expand_ontology_data
 
-        edam_topics: list[str] = []
-        if hasattr(tool_source, "parse_edam_topics"):
-            try:
-                edam_topics = list(tool_source.parse_edam_topics() or ())
-            except Exception:
-                pass
+        ontology_data = expand_ontology_data(tool_source, all_ids, biotools_metadata_source)
+        edam_operations = list(ontology_data.edam_operations or ())
+        edam_topics = list(ontology_data.edam_topics or ())
+        xrefs: list[dict[str, Any]] = [dict(x) for x in ontology_data.xrefs or ()]
+
+        icon = tool_source.parse_icon() if hasattr(tool_source, "parse_icon") else None
+
+        # ``model_class`` / ``form_style`` mirror ``Tool.to_dict``'s ad-hoc
+        # class inspection via the same tool_type registry the eager path
+        # constructs tools with. Local import: galaxy.tools is the full tool
+        # machinery; only the registry mapping is needed.
+        from galaxy.tools import (
+            DatabaseOperationTool,
+            InteractiveTool,
+            Tool,
+            tool_types,
+        )
+
+        tool_class = tool_types.get(tool_type, Tool)
+        regular_form = tool_class is Tool or issubclass(tool_class, (DatabaseOperationTool, InteractiveTool))
+
+        # ``Tool.check_workflow_compatible`` equivalents derivable at parse
+        # time: multi-page tools and data sources are incompatible; XML tools
+        # may opt out via workflow_compatible="false" on the root.
+        is_workflow_compatible = not tool_type.startswith("data_source")
+        try:
+            pages = tool_source.parse_input_pages()
+            if pages is not None and len(pages.page_sources) > 1:
+                is_workflow_compatible = False
+        except Exception:
+            pass
+        root = getattr(tool_source, "root", None)
+        if root is not None and str(root.get("workflow_compatible", "True")).lower() in ("false", "0", "no"):
+            is_workflow_compatible = False
 
         # Honour the same version-default rules as ``Tool.__init__``: empty
         # ``version`` on a pre-16.04-profile tool becomes "1.0.0"; on newer
@@ -461,6 +491,11 @@ def build_index_entry_from_source(
             panel_section_id=discovered.section_id,
             panel_section_name=discovered.section_name,
             labels=list(discovered.labels or ()),
+            icon=icon,
+            xrefs=xrefs,
+            model_class=tool_class.__name__,
+            form_style="regular" if regular_form else "special",
+            is_workflow_compatible=is_workflow_compatible,
             edam_operations=edam_operations,
             edam_topics=edam_topics,
             source_hash=stored.hash,
@@ -738,6 +773,11 @@ def populate_store_inline(
         # post-walk syncs (_stamp_panel_sections_onto_index,
         # _sync_tool_mutations_to_index) replaced ad-hoc.
         full_scan = paths is None or prune
+        # Local import: galaxy.tools.biotools executes the galaxy.tools
+        # package; only the metadata-source factory is needed, once per run.
+        from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
+
+        biotools_metadata_source = get_galaxy_biotools_metadata_source(config)
         for store_name in sorted(writable_names):
             triples = parsed_per_store[store_name]
             if full_scan:
@@ -749,7 +789,7 @@ def populate_store_inline(
                 # stays as-is (use reconcile_index for full prune).
                 index = stores[store_name].load_index() or ToolIndex()
             for d, stored, tool_source in triples:
-                entry = build_index_entry_from_source(d, stored, tool_source)
+                entry = build_index_entry_from_source(d, stored, tool_source, biotools_metadata_source)
                 if entry is not None:
                     index.add_entry(entry)
             try:

@@ -133,6 +133,28 @@ def test_tool_tags_answered_without_materialise():
     assert t.tool_tags == ["curated"]
 
 
+def test_to_panel_entry_carries_client_contract_fields():
+    e = _entry(
+        id="toolshed.example.com/repos/owner/repo/tool/1.0",
+        tool_shed="toolshed.example.com",
+        repository_name="repo",
+        repository_owner="owner",
+        changeset_revision="abc123",
+        model_class="Tool",
+        form_style="regular",
+        is_workflow_compatible=True,
+        xrefs=[{"value": "bwa", "reftype": "bio.tools"}],
+    )
+    t = _stub(e)
+    d = t.to_panel_entry(trans=None)
+    assert d["is_workflow_compatible"] is True
+    assert d["form_style"] == "regular"
+    assert d["xrefs"] == [{"value": "bwa", "reftype": "bio.tools"}]
+    assert d["versions"] == ["2.5.0"]
+    assert d["tool_shed_repository"]["changeset_revision"] == "abc123"
+    assert "config_file" not in d
+
+
 def test_to_dict_materialises():
     calls: list[Any] = []
 

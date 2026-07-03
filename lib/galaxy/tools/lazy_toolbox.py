@@ -173,6 +173,9 @@ class LazyTool:
     require_login = _entry_attr("require_login")
     edam_operations = _entry_attr("edam_operations")
     edam_topics = _entry_attr("edam_topics")
+    icon = _entry_attr("icon")
+    xrefs = _entry_attr("xrefs")
+    is_workflow_compatible = _entry_attr("is_workflow_compatible")
 
     # --- forwarded mutable entry surface ---
     # Eager ``_load_tool_tag_set`` (base.py:964-987) mutates these post-create.
@@ -317,20 +320,42 @@ class LazyTool:
         parse every tool on the first request.
         """
         entry = self._entry
-        return {
+        if self._lineage is not None:
+            versions = list(self._lineage.tool_versions)
+        else:
+            versions = [entry.version] if entry.version else []
+        payload = {
+            "model_class": entry.model_class,
             "id": self.id,
             "name": self.name,
             "version": self.version,
             "description": self.description,
             "labels": self.labels if self.labels else [],
+            "icon": entry.icon,
             "edam_operations": entry.edam_operations or [],
             "edam_topics": entry.edam_topics or [],
             "hidden": self.hidden,
-            "model_class": "Tool",
+            "is_workflow_compatible": entry.is_workflow_compatible,
+            "xrefs": entry.xrefs or [],
+            "versions": versions,
+            "hidden_versions": [],
+            "link": f"/tool_runner?tool_id={self.id}",
             "panel_section_id": entry.panel_section_id,
             "panel_section_name": entry.panel_section_name,
-            "link": f"/tool_runner?tool_id={self.id}",
+            "form_style": entry.form_style,
         }
+        if entry.uuid:
+            payload["uuid"] = entry.uuid
+        if entry.tool_shed:
+            payload["tool_shed_repository"] = {
+                "name": entry.repository_name,
+                "owner": entry.repository_owner,
+                "changeset_revision": entry.changeset_revision,
+                "tool_shed": entry.tool_shed,
+            }
+        if trans is not None and getattr(trans, "user_is_admin", False):
+            payload["config_file"] = entry.source_path
+        return payload
 
     def to_dict(self, trans=None, link_details: bool = False, tool_help: bool = False, **kw) -> dict[str, Any]:
         """Materialise and delegate — ``/api/tools/{id}`` contract.

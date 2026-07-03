@@ -37,6 +37,11 @@ class ToolIndexEntry:
     description: str = ""
 
     # === Classification ===
+    icon: str | None = None
+    xrefs: list[dict[str, Any]] = field(default_factory=list)
+    model_class: str = "Tool"
+    form_style: str = "regular"
+    is_workflow_compatible: bool = True
     panel_section_id: str | None = None
     panel_section_name: str | None = None
     labels: list[str] = field(default_factory=list)
@@ -136,6 +141,11 @@ class ToolIndexEntry:
             "tool_shed_repository_id": self.tool_shed_repository_id,
             "name": self.name,
             "description": self.description,
+            "icon": self.icon,
+            "xrefs": self.xrefs,
+            "model_class": self.model_class,
+            "form_style": self.form_style,
+            "is_workflow_compatible": self.is_workflow_compatible,
             "panel_section_id": self.panel_section_id,
             "panel_section_name": self.panel_section_name,
             "labels": self.labels,
@@ -174,6 +184,11 @@ class ToolIndexEntry:
             tool_shed_repository_id=data.get("tool_shed_repository_id"),
             name=data.get("name", ""),
             description=data.get("description", ""),
+            icon=data.get("icon"),
+            xrefs=data.get("xrefs", []),
+            model_class=data.get("model_class", "Tool"),
+            form_style=data.get("form_style", "regular"),
+            is_workflow_compatible=data.get("is_workflow_compatible", True),
             panel_section_id=data.get("panel_section_id"),
             panel_section_name=data.get("panel_section_name"),
             labels=data.get("labels", []),
