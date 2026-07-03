@@ -166,11 +166,11 @@ class LazyToolboxSearch(ToolBoxSearch):
             ToolWhooshIndex,
         )
 
-        index_dir = whoosh_dir_for_store(getattr(config, "tool_search_index_dir", None), DEFAULT_STORE_NAME)
+        index_dir = whoosh_dir_for_store(config.tool_search_index_dir, DEFAULT_STORE_NAME)
         if index_dir is None:
             return []
         searcher = ToolWhooshIndex(index_dir=index_dir, tuning=ToolSearchTuning.from_config(config))
-        return searcher.search(q, limit=int(getattr(config, "tool_search_limit", 20)))
+        return searcher.search(q, limit=int(config.tool_search_limit))
 
 
 class ToolPanelViewSearch:
