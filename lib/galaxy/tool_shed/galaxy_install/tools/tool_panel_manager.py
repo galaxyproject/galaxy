@@ -140,23 +140,21 @@ class ToolPanelManager:
         )
         if new_install:
             tool_path = shed_tool_conf_dict["tool_path"]
-            # Build the new in-memory list of config_elems. We persist the
-            # updated shed_tool_conf.xml *before* invoking the populator so
-            # ``discover_tools`` sees the new entries when it walks the confs.
-            config_elems = shed_tool_conf_dict["config_elems"]
-            for config_elem in elem_list:
-                config_elems.append(config_elem)
-            shed_tool_conf_dict["config_elems"] = config_elems
-            self.app.toolbox.update_shed_config(shed_tool_conf_dict)
-            self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
-            # Lazy mode only: the populator writes ``StoredToolSource`` +
-            # ``ToolIndexEntry`` + whoosh for every new tool file, then
-            # broadcasts ``reload_tool_source_cache`` so peer Galaxy
-            # processes refresh. ``create_tool`` raises on index miss, so
-            # this MUST run before ``load_item`` reaches the seam. Eager
-            # deployments never touch the store here —
-            # ``invalidate_index_cache`` only exists on ``LazyToolBox``.
-            if getattr(self.app.config, "use_lazy_toolbox", False):
+            use_lazy_toolbox = getattr(self.app.config, "use_lazy_toolbox", False)
+            if use_lazy_toolbox:
+                # The populator writes ``StoredToolSource`` + ``ToolIndexEntry``
+                # + whoosh for every new tool file, then broadcasts
+                # ``reload_tool_source_cache`` so peer Galaxy processes
+                # refresh. ``create_tool`` raises on index miss, so this MUST
+                # run before ``load_item`` reaches the seam — and the
+                # populator's conf walk needs the updated shed_tool_conf on
+                # disk, so persist it first.
+                config_elems = shed_tool_conf_dict["config_elems"]
+                for config_elem in elem_list:
+                    config_elems.append(config_elem)
+                shed_tool_conf_dict["config_elems"] = config_elems
+                self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+                self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
                 new_paths = _collect_new_tool_paths(elem_list, tool_path)
                 if new_paths:
                     from galaxy.tool_source_store.populator import populate_for_paths
@@ -171,16 +169,33 @@ class ToolPanelManager:
                     # above only reaches peers asynchronously, but the install
                     # response should reflect the new tools immediately.
                     self.app.toolbox.invalidate_index_cache()
-            # Wire the new tools into the in-memory panel. In lazy mode
-            # ``create_tool`` finds them in the index and hands back
-            # ``LazyTool`` stubs; in eager mode this parses as before.
-            for config_elem in elem_list:
-                self.app.toolbox.load_item(
-                    config_elem,
-                    tool_path=tool_path,
-                    load_panel_dict=True,
-                    guid=config_elem.get("guid"),
-                )
+                # Wire the new tools into the in-memory panel; ``create_tool``
+                # finds them in the index and hands back ``LazyTool`` stubs.
+                for config_elem in elem_list:
+                    self.app.toolbox.load_item(
+                        config_elem,
+                        tool_path=tool_path,
+                        load_panel_dict=True,
+                        guid=config_elem.get("guid"),
+                    )
+            else:
+                # Eager path: identical to upstream — append + load each elem,
+                # then persist the updated shed_tool_conf.
+                config_elems = shed_tool_conf_dict["config_elems"]
+                for config_elem in elem_list:
+                    # Add the new elements to the in-memory list of config_elems.
+                    config_elems.append(config_elem)
+                    # Load the tools into the in-memory tool panel.
+                    self.app.toolbox.load_item(
+                        config_elem,
+                        tool_path=tool_path,
+                        load_panel_dict=True,
+                        guid=config_elem.get("guid"),
+                    )
+                # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
+                shed_tool_conf_dict["config_elems"] = config_elems
+                self.app.toolbox.update_shed_config(shed_tool_conf_dict)
+                self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
     def config_elems_to_xml_file(self, config_elems, config_filename, tool_path) -> None:
         """
